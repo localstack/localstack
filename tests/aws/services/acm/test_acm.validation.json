@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/acm/test_acm.py::TestACM::test_certificate_for_subdomain_wildcard": {
+    "last_validated_date": "2023-04-18T17:01:27+00:00"
+  }
+}

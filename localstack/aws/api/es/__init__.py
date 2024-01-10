@@ -273,6 +273,7 @@ class ScheduledAutoTuneSeverityType(str):
 class TLSSecurityPolicy(str):
     Policy_Min_TLS_1_0_2019_07 = "Policy-Min-TLS-1-0-2019-07"
     Policy_Min_TLS_1_2_2019_07 = "Policy-Min-TLS-1-2-2019-07"
+    Policy_Min_TLS_1_2_PFS_2023_10 = "Policy-Min-TLS-1-2-PFS-2023-10"
 
 
 class TimeUnit(str):

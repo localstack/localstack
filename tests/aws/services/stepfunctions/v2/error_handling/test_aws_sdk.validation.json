@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_invalid_param": {
+    "last_validated_date": "2023-07-27T17:06:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_dynamodb_put_item_no_such_table": {
+    "last_validated_date": "2023-07-27T17:06:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_invalid_secret_name": {
+    "last_validated_date": "2023-06-22T11:25:51+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_no_such_bucket": {
+    "last_validated_date": "2023-06-22T11:26:06+00:00"
+  }
+}

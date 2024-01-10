@@ -39,14 +39,14 @@ class AsgiGateway:
         self,
         gateway: Gateway,
         event_loop: Optional[AbstractEventLoop] = None,
-        threads: int = 1000,
+        threads: int = None,
         lifespan_listener: Optional[ASGILifespanListener] = None,
         websocket_listener=None,
     ) -> None:
         self.gateway = gateway
 
         self.event_loop = event_loop or asyncio.get_event_loop()
-        self.executor = _ThreadPool(threads, thread_name_prefix="asgi_gw")
+        self.executor = _ThreadPool(threads or 1000, thread_name_prefix="asgi_gw")
         self.adapter = ASGIAdapter(
             WsgiGateway(gateway),
             event_loop=event_loop,

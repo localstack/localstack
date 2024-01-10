@@ -1101,6 +1101,7 @@ class AssociateDataShareConsumerMessage(ServiceRequest):
     AssociateEntireAccount: Optional[BooleanOptional]
     ConsumerArn: Optional[String]
     ConsumerRegion: Optional[String]
+    AllowWrites: Optional[BooleanOptional]
 
 
 class ClusterAssociatedToSchedule(TypedDict, total=False):
@@ -1186,6 +1187,7 @@ class AuthorizeClusterSecurityGroupIngressResult(TypedDict, total=False):
 class AuthorizeDataShareMessage(ServiceRequest):
     DataShareArn: String
     ConsumerIdentifier: String
+    AllowWrites: Optional[BooleanOptional]
 
 
 VpcIdentifierList = List[String]
@@ -2033,6 +2035,8 @@ class DataShareAssociation(TypedDict, total=False):
     ConsumerRegion: Optional[String]
     CreatedDate: Optional[TStamp]
     StatusChangeDate: Optional[TStamp]
+    ProducerAllowedWrites: Optional[BooleanOptional]
+    ConsumerAcceptedWrites: Optional[BooleanOptional]
 
 
 DataShareAssociationList = List[DataShareAssociation]
@@ -3395,6 +3399,7 @@ class RedshiftApi:
         associate_entire_account: BooleanOptional = None,
         consumer_arn: String = None,
         consumer_region: String = None,
+        allow_writes: BooleanOptional = None,
     ) -> DataShare:
         raise NotImplementedError
 
@@ -3411,7 +3416,11 @@ class RedshiftApi:
 
     @handler("AuthorizeDataShare")
     def authorize_data_share(
-        self, context: RequestContext, data_share_arn: String, consumer_identifier: String
+        self,
+        context: RequestContext,
+        data_share_arn: String,
+        consumer_identifier: String,
+        allow_writes: BooleanOptional = None,
     ) -> DataShare:
         raise NotImplementedError
 

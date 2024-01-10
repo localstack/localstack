@@ -800,7 +800,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
-    "recorded-date": "27-02-2023, 17:42:01",
+    "recorded-date": "19-12-2023, 08:08:47",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -981,6 +981,7 @@
             }
           ],
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {

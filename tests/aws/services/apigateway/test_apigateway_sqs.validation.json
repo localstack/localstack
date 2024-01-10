@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration": {
+    "last_validated_date": "2023-08-12T15:44:13+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_request_and_response_xml_templates_integration": {
+    "last_validated_date": "2023-09-10T08:13:06+00:00"
+  }
+}

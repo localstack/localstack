@@ -95,6 +95,7 @@ from localstack.services.stepfunctions.asl.component.common.timeouts.timeout imp
     TimeoutSeconds,
     TimeoutSecondsPath,
 )
+from localstack.services.stepfunctions.asl.component.common.version import Version
 from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
@@ -224,6 +225,10 @@ class Preprocessor(ASLParserVisitor):
     def visitComment_decl(self, ctx: ASLParser.Comment_declContext) -> Comment:
         inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return Comment(comment=inner_str)
+
+    def visitVersion_decl(self, ctx: ASLParser.Version_declContext) -> Version:
+        version_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        return Version(version=version_str)
 
     def visitStartat_decl(self, ctx: ASLParser.Startat_declContext) -> StartAt:
         inner_str = self._inner_string_of(
@@ -553,12 +558,7 @@ class Preprocessor(ASLParserVisitor):
                 typ=States,
                 raise_on_missing=ValueError(f"Expected a States declaration at '{ctx.getText()}'."),
             ),
-            processor_config=props.get(
-                typ=ProcessorConfig,
-                raise_on_missing=ValueError(
-                    f"Expected a ProcessorConfig declaration at '{ctx.getText()}'."
-                ),
-            ),
+            processor_config=props.get(typ=ProcessorConfig),
         )
 
     def visitIterator_decl(self, ctx: ASLParser.Iterator_declContext) -> IteratorDecl:
@@ -816,5 +816,6 @@ class Preprocessor(ASLParserVisitor):
             ),
             timeout_seconds=props.get(TimeoutSeconds),
             comment=props.get(typ=Comment),
+            version=props.get(typ=Version),
         )
         return program

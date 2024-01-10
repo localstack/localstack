@@ -31,6 +31,7 @@ DeliveryS3Bucket = str
 DeliveryS3KeyPrefix = str
 DescribeConformancePackComplianceLimit = int
 DescribePendingAggregationRequestsLimit = int
+Description = str
 EmptiableStringWithCharLimit256 = str
 ErrorMessage = str
 EvaluationContextIdentifier = str
@@ -252,6 +253,11 @@ class RecorderStatus(str):
     Pending = "Pending"
     Success = "Success"
     Failure = "Failure"
+
+
+class RecordingFrequency(str):
+    CONTINUOUS = "CONTINUOUS"
+    DAILY = "DAILY"
 
 
 class RecordingStrategyType(str):
@@ -697,6 +703,24 @@ class ResourceType(str):
     AWS_Lambda_CodeSigningConfig = "AWS::Lambda::CodeSigningConfig"
     AWS_NetworkManager_ConnectPeer = "AWS::NetworkManager::ConnectPeer"
     AWS_ResourceExplorer2_Index = "AWS::ResourceExplorer2::Index"
+    AWS_AppStream_Fleet = "AWS::AppStream::Fleet"
+    AWS_Cognito_UserPool = "AWS::Cognito::UserPool"
+    AWS_Cognito_UserPoolClient = "AWS::Cognito::UserPoolClient"
+    AWS_Cognito_UserPoolGroup = "AWS::Cognito::UserPoolGroup"
+    AWS_EC2_NetworkInsightsAccessScope = "AWS::EC2::NetworkInsightsAccessScope"
+    AWS_EC2_NetworkInsightsAnalysis = "AWS::EC2::NetworkInsightsAnalysis"
+    AWS_Grafana_Workspace = "AWS::Grafana::Workspace"
+    AWS_GroundStation_DataflowEndpointGroup = "AWS::GroundStation::DataflowEndpointGroup"
+    AWS_ImageBuilder_ImageRecipe = "AWS::ImageBuilder::ImageRecipe"
+    AWS_KMS_Alias = "AWS::KMS::Alias"
+    AWS_M2_Environment = "AWS::M2::Environment"
+    AWS_QuickSight_DataSource = "AWS::QuickSight::DataSource"
+    AWS_QuickSight_Template = "AWS::QuickSight::Template"
+    AWS_QuickSight_Theme = "AWS::QuickSight::Theme"
+    AWS_RDS_OptionGroup = "AWS::RDS::OptionGroup"
+    AWS_Redshift_EndpointAccess = "AWS::Redshift::EndpointAccess"
+    AWS_Route53Resolver_FirewallRuleGroup = "AWS::Route53Resolver::FirewallRuleGroup"
+    AWS_SSM_Document = "AWS::SSM::Document"
 
 
 class ResourceValueType(str):
@@ -1183,6 +1207,7 @@ class AggregationAuthorization(TypedDict, total=False):
 
 AggregationAuthorizationList = List[AggregationAuthorization]
 AutoRemediationAttemptSeconds = int
+ConfigurationItemDeliveryTime = datetime
 SupplementaryConfiguration = Dict[SupplementaryConfigurationName, SupplementaryConfigurationValue]
 ResourceCreationTime = datetime
 ConfigurationItemCaptureTime = datetime
@@ -1203,6 +1228,8 @@ class BaseConfigurationItem(TypedDict, total=False):
     resourceCreationTime: Optional[ResourceCreationTime]
     configuration: Optional[Configuration]
     supplementaryConfiguration: Optional[SupplementaryConfiguration]
+    recordingFrequency: Optional[RecordingFrequency]
+    configurationItemDeliveryTime: Optional[ConfigurationItemDeliveryTime]
 
 
 BaseConfigurationItems = List[BaseConfigurationItem]
@@ -1422,9 +1449,26 @@ class ConfigurationItem(TypedDict, total=False):
     relationships: Optional[RelationshipList]
     configuration: Optional[Configuration]
     supplementaryConfiguration: Optional[SupplementaryConfiguration]
+    recordingFrequency: Optional[RecordingFrequency]
+    configurationItemDeliveryTime: Optional[ConfigurationItemDeliveryTime]
 
 
 ConfigurationItemList = List[ConfigurationItem]
+RecordingModeResourceTypesList = List[ResourceType]
+
+
+class RecordingModeOverride(TypedDict, total=False):
+    description: Optional[Description]
+    resourceTypes: RecordingModeResourceTypesList
+    recordingFrequency: RecordingFrequency
+
+
+RecordingModeOverrides = List[RecordingModeOverride]
+
+
+class RecordingMode(TypedDict, total=False):
+    recordingFrequency: RecordingFrequency
+    recordingModeOverrides: Optional[RecordingModeOverrides]
 
 
 class RecordingStrategy(TypedDict, total=False):
@@ -1450,6 +1494,7 @@ class ConfigurationRecorder(TypedDict, total=False):
     name: Optional[RecorderName]
     roleARN: Optional[String]
     recordingGroup: Optional[RecordingGroup]
+    recordingMode: Optional[RecordingMode]
 
 
 ConfigurationRecorderList = List[ConfigurationRecorder]

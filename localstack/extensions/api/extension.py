@@ -1,6 +1,6 @@
 from plugin import Plugin
 
-from .aws import CompositeHandler, CompositeResponseHandler
+from .aws import CompositeExceptionHandler, CompositeHandler, CompositeResponseHandler
 from .http import RouteHandler, Router
 
 
@@ -75,6 +75,14 @@ class Extension(BaseExtension):
         Called with the custom response handlers of the LocalStack gateway. Overwrite this to add or update handlers.
 
         :param handlers: custom response handlers of the gateway
+        """
+        pass
+
+    def update_exception_handlers(self, handlers: CompositeExceptionHandler):
+        """
+        Called with the custom exception handlers of the LocalStack gateway. Overwrite this to add or update handlers.
+
+        :param handlers: custom exception handlers of the gateway
         """
         pass
 

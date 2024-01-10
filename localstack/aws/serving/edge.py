@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+from localstack import config
 from localstack.config import HostAndPort
 from localstack.http.hypercorn import GatewayServer
 from localstack.runtime.shutdown import ON_AFTER_SERVICE_SHUTDOWN_HANDLERS
@@ -21,7 +22,7 @@ def serve_gateway(
     gateway = LocalstackAwsGateway(SERVICE_PLUGINS)
 
     # start serving gateway
-    server = GatewayServer(gateway, listen, use_ssl)
+    server = GatewayServer(gateway, listen, use_ssl, config.GATEWAY_WORKER_COUNT)
     server.start()
 
     # with the current way the infrastructure is started, this is the easiest way to shut down the server correctly

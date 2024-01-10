@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestBasicCRD::test_black_box": {
+    "last_validated_date": "2023-06-21T14:57:04+00:00"
+  }
+}

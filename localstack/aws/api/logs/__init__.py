@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, Iterator, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -6,7 +6,10 @@ AccessPolicy = str
 AccountId = str
 AccountPolicyDocument = str
 AmazonResourceName = str
+AnomalyDetectorArn = str
+AnomalyId = str
 Arn = str
+Boolean = bool
 ClientToken = str
 DataProtectionPolicyDocument = str
 Days = int
@@ -18,10 +21,13 @@ DeliverySourceName = str
 Descending = bool
 DescribeLimit = int
 DescribeQueriesMaxResults = int
+Description = str
 DestinationArn = str
 DestinationName = str
+DetectorName = str
 DimensionsKey = str
 DimensionsValue = str
+DynamicTokenPosition = int
 EncryptionKey = str
 EventId = str
 EventMessage = str
@@ -37,9 +43,15 @@ FilterName = str
 FilterPattern = str
 ForceUpdate = bool
 IncludeLinkedAccounts = bool
+Integer = int
 Interleaved = bool
+IsSampled = bool
 KmsKeyId = str
+ListAnomaliesLimit = int
+ListLogAnomalyDetectorsLimit = int
+LogEvent = str
 LogEventIndex = int
+LogGroupArn = str
 LogGroupIdentifier = str
 LogGroupName = str
 LogGroupNamePattern = str
@@ -52,28 +64,45 @@ MetricName = str
 MetricNamespace = str
 MetricValue = str
 NextToken = str
+PatternId = str
+PatternRegex = str
+PatternString = str
 Percentage = int
 PolicyDocument = str
 PolicyName = str
+Priority = str
 QueryCharOffset = int
 QueryDefinitionName = str
 QueryDefinitionString = str
 QueryId = str
 QueryListMaxResults = int
 QueryString = str
+RequestId = str
 ResourceIdentifier = str
 RoleArn = str
 SequenceToken = str
 Service = str
+SessionId = str
 StartFromHead = bool
 StatsValue = float
 Success = bool
 TagKey = str
 TagValue = str
 TargetArn = str
+Time = str
 Token = str
+TokenString = str
 Unmask = bool
 Value = str
+
+
+class AnomalyDetectorStatus(str):
+    INITIALIZING = "INITIALIZING"
+    TRAINING = "TRAINING"
+    ANALYZING = "ANALYZING"
+    FAILED = "FAILED"
+    DELETED = "DELETED"
+    PAUSED = "PAUSED"
 
 
 class DataProtectionStatus(str):
@@ -94,6 +123,15 @@ class Distribution(str):
     ByLogStream = "ByLogStream"
 
 
+class EvaluationFrequency(str):
+    ONE_MIN = "ONE_MIN"
+    FIVE_MIN = "FIVE_MIN"
+    TEN_MIN = "TEN_MIN"
+    FIFTEEN_MIN = "FIFTEEN_MIN"
+    THIRTY_MIN = "THIRTY_MIN"
+    ONE_HOUR = "ONE_HOUR"
+
+
 class ExportTaskStatusCode(str):
     CANCELLED = "CANCELLED"
     COMPLETED = "COMPLETED"
@@ -105,6 +143,11 @@ class ExportTaskStatusCode(str):
 
 class InheritedProperty(str):
     ACCOUNT_DATA_PROTECTION = "ACCOUNT_DATA_PROTECTION"
+
+
+class LogGroupClass(str):
+    STANDARD = "STANDARD"
+    INFREQUENT_ACCESS = "INFREQUENT_ACCESS"
 
 
 class OrderBy(str):
@@ -166,6 +209,28 @@ class StandardUnit(str):
     Terabits_Second = "Terabits/Second"
     Count_Second = "Count/Second"
     None_ = "None"
+
+
+class State(str):
+    Active = "Active"
+    Suppressed = "Suppressed"
+    Baseline = "Baseline"
+
+
+class SuppressionState(str):
+    SUPPRESSED = "SUPPRESSED"
+    UNSUPPRESSED = "UNSUPPRESSED"
+
+
+class SuppressionType(str):
+    LIMITED = "LIMITED"
+    INFINITE = "INFINITE"
+
+
+class SuppressionUnit(str):
+    SECONDS = "SECONDS"
+    MINUTES = "MINUTES"
+    HOURS = "HOURS"
 
 
 class AccessDeniedException(ServiceException):
@@ -259,6 +324,18 @@ class ServiceUnavailableException(ServiceException):
     status_code: int = 400
 
 
+class SessionStreamingException(ServiceException):
+    code: str = "SessionStreamingException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class SessionTimeoutException(ServiceException):
+    code: str = "SessionTimeoutException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ThrottlingException(ServiceException):
     code: str = "ThrottlingException"
     sender_fault: bool = False
@@ -298,6 +375,65 @@ class AccountPolicy(TypedDict, total=False):
 
 
 AccountPolicies = List[AccountPolicy]
+EpochMillis = int
+LogGroupArnList = List[LogGroupArn]
+TokenValue = int
+Enumerations = Dict[TokenString, TokenValue]
+
+
+class PatternToken(TypedDict, total=False):
+    dynamicTokenPosition: Optional[DynamicTokenPosition]
+    isDynamic: Optional[Boolean]
+    tokenString: Optional[TokenString]
+    enumerations: Optional[Enumerations]
+
+
+PatternTokens = List[PatternToken]
+LogSamples = List[LogEvent]
+Count = int
+Histogram = Dict[Time, Count]
+
+
+class Anomaly(TypedDict, total=False):
+    anomalyId: AnomalyId
+    patternId: PatternId
+    anomalyDetectorArn: AnomalyDetectorArn
+    patternString: PatternString
+    patternRegex: Optional[PatternRegex]
+    priority: Optional[Priority]
+    firstSeen: EpochMillis
+    lastSeen: EpochMillis
+    description: Description
+    active: Boolean
+    state: State
+    histogram: Histogram
+    logSamples: LogSamples
+    patternTokens: PatternTokens
+    logGroupArnList: LogGroupArnList
+    suppressed: Optional[Boolean]
+    suppressedDate: Optional[EpochMillis]
+    suppressedUntil: Optional[EpochMillis]
+    isPatternLevelSuppression: Optional[Boolean]
+
+
+Anomalies = List[Anomaly]
+AnomalyVisibilityTime = int
+
+
+class AnomalyDetector(TypedDict, total=False):
+    anomalyDetectorArn: Optional[AnomalyDetectorArn]
+    detectorName: Optional[DetectorName]
+    logGroupArnList: Optional[LogGroupArnList]
+    evaluationFrequency: Optional[EvaluationFrequency]
+    filterPattern: Optional[FilterPattern]
+    anomalyDetectorStatus: Optional[AnomalyDetectorStatus]
+    kmsKeyId: Optional[KmsKeyId]
+    creationTimeStamp: Optional[EpochMillis]
+    lastModifiedTimeStamp: Optional[EpochMillis]
+    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+
+
+AnomalyDetectors = List[AnomalyDetector]
 
 
 class AssociateKmsKeyRequest(ServiceRequest):
@@ -351,10 +487,25 @@ class CreateExportTaskResponse(TypedDict, total=False):
     taskId: Optional[ExportTaskId]
 
 
+class CreateLogAnomalyDetectorRequest(ServiceRequest):
+    logGroupArnList: LogGroupArnList
+    detectorName: Optional[DetectorName]
+    evaluationFrequency: Optional[EvaluationFrequency]
+    filterPattern: Optional[FilterPattern]
+    kmsKeyId: Optional[KmsKeyId]
+    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+    tags: Optional[Tags]
+
+
+class CreateLogAnomalyDetectorResponse(TypedDict, total=False):
+    anomalyDetectorArn: Optional[AnomalyDetectorArn]
+
+
 class CreateLogGroupRequest(ServiceRequest):
     logGroupName: LogGroupName
     kmsKeyId: Optional[KmsKeyId]
     tags: Optional[Tags]
+    logGroupClass: Optional[LogGroupClass]
 
 
 class CreateLogStreamRequest(ServiceRequest):
@@ -389,6 +540,10 @@ class DeleteDeliverySourceRequest(ServiceRequest):
 
 class DeleteDestinationRequest(ServiceRequest):
     destinationName: DestinationName
+
+
+class DeleteLogAnomalyDetectorRequest(ServiceRequest):
+    anomalyDetectorArn: AnomalyDetectorArn
 
 
 class DeleteLogGroupRequest(ServiceRequest):
@@ -568,6 +723,7 @@ class DescribeLogGroupsRequest(ServiceRequest):
     nextToken: Optional[NextToken]
     limit: Optional[DescribeLimit]
     includeLinkedAccounts: Optional[IncludeLinkedAccounts]
+    logGroupClass: Optional[LogGroupClass]
 
 
 InheritedProperties = List[InheritedProperty]
@@ -584,6 +740,7 @@ class LogGroup(TypedDict, total=False):
     kmsKeyId: Optional[KmsKeyId]
     dataProtectionStatus: Optional[DataProtectionStatus]
     inheritedProperties: Optional[InheritedProperties]
+    logGroupClass: Optional[LogGroupClass]
 
 
 LogGroups = List[LogGroup]
@@ -850,6 +1007,22 @@ class GetDeliverySourceResponse(TypedDict, total=False):
     deliverySource: Optional[DeliverySource]
 
 
+class GetLogAnomalyDetectorRequest(ServiceRequest):
+    anomalyDetectorArn: AnomalyDetectorArn
+
+
+class GetLogAnomalyDetectorResponse(TypedDict, total=False):
+    detectorName: Optional[DetectorName]
+    logGroupArnList: Optional[LogGroupArnList]
+    evaluationFrequency: Optional[EvaluationFrequency]
+    filterPattern: Optional[FilterPattern]
+    anomalyDetectorStatus: Optional[AnomalyDetectorStatus]
+    kmsKeyId: Optional[KmsKeyId]
+    creationTimeStamp: Optional[EpochMillis]
+    lastModifiedTimeStamp: Optional[EpochMillis]
+    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+
+
 class GetLogEventsRequest(ServiceRequest):
     logGroupName: Optional[LogGroupName]
     logGroupIdentifier: Optional[LogGroupIdentifier]
@@ -941,6 +1114,29 @@ class InputLogEvent(TypedDict, total=False):
 InputLogEvents = List[InputLogEvent]
 
 
+class ListAnomaliesRequest(ServiceRequest):
+    anomalyDetectorArn: Optional[AnomalyDetectorArn]
+    suppressionState: Optional[SuppressionState]
+    limit: Optional[ListAnomaliesLimit]
+    nextToken: Optional[NextToken]
+
+
+class ListAnomaliesResponse(TypedDict, total=False):
+    anomalies: Optional[Anomalies]
+    nextToken: Optional[NextToken]
+
+
+class ListLogAnomalyDetectorsRequest(ServiceRequest):
+    filterLogGroupArn: Optional[LogGroupArn]
+    limit: Optional[ListLogAnomalyDetectorsLimit]
+    nextToken: Optional[NextToken]
+
+
+class ListLogAnomalyDetectorsResponse(TypedDict, total=False):
+    anomalyDetectors: Optional[AnomalyDetectors]
+    nextToken: Optional[NextToken]
+
+
 class ListTagsForResourceRequest(ServiceRequest):
     resourceArn: AmazonResourceName
 
@@ -955,6 +1151,36 @@ class ListTagsLogGroupRequest(ServiceRequest):
 
 class ListTagsLogGroupResponse(TypedDict, total=False):
     tags: Optional[Tags]
+
+
+class LiveTailSessionLogEvent(TypedDict, total=False):
+    logStreamName: Optional[LogStreamName]
+    logGroupIdentifier: Optional[LogGroupIdentifier]
+    message: Optional[EventMessage]
+    timestamp: Optional[Timestamp]
+    ingestionTime: Optional[Timestamp]
+
+
+class LiveTailSessionMetadata(TypedDict, total=False):
+    sampled: Optional[IsSampled]
+
+
+LiveTailSessionResults = List[LiveTailSessionLogEvent]
+StartLiveTailLogGroupIdentifiers = List[LogGroupIdentifier]
+
+
+class LiveTailSessionStart(TypedDict, total=False):
+    requestId: Optional[RequestId]
+    sessionId: Optional[SessionId]
+    logGroupIdentifiers: Optional[StartLiveTailLogGroupIdentifiers]
+    logStreamNames: Optional[InputLogStreamNames]
+    logStreamNamePrefixes: Optional[InputLogStreamNames]
+    logEventFilterPattern: Optional[FilterPattern]
+
+
+class LiveTailSessionUpdate(TypedDict, total=False):
+    sessionMetadata: Optional[LiveTailSessionMetadata]
+    sessionResults: Optional[LiveTailSessionResults]
 
 
 LogGroupIdentifiers = List[LogGroupIdentifier]
@@ -1099,6 +1325,24 @@ class PutSubscriptionFilterRequest(ServiceRequest):
     distribution: Optional[Distribution]
 
 
+class StartLiveTailRequest(ServiceRequest):
+    logGroupIdentifiers: StartLiveTailLogGroupIdentifiers
+    logStreamNames: Optional[InputLogStreamNames]
+    logStreamNamePrefixes: Optional[InputLogStreamNames]
+    logEventFilterPattern: Optional[FilterPattern]
+
+
+class StartLiveTailResponseStream(TypedDict, total=False):
+    sessionStart: Optional[LiveTailSessionStart]
+    sessionUpdate: Optional[LiveTailSessionUpdate]
+    SessionTimeoutException: Optional[SessionTimeoutException]
+    SessionStreamingException: Optional[SessionStreamingException]
+
+
+class StartLiveTailResponse(TypedDict, total=False):
+    responseStream: Iterator[StartLiveTailResponseStream]
+
+
 class StartQueryRequest(ServiceRequest):
     logGroupName: Optional[LogGroupName]
     logGroupNames: Optional[LogGroupNames]
@@ -1119,6 +1363,11 @@ class StopQueryRequest(ServiceRequest):
 
 class StopQueryResponse(TypedDict, total=False):
     success: Optional[Success]
+
+
+class SuppressionPeriod(TypedDict, total=False):
+    value: Optional[Integer]
+    suppressionUnit: Optional[SuppressionUnit]
 
 
 TagKeyList = List[TagKey]
@@ -1157,6 +1406,22 @@ class UntagResourceRequest(ServiceRequest):
     tagKeys: TagKeyList
 
 
+class UpdateAnomalyRequest(ServiceRequest):
+    anomalyId: Optional[AnomalyId]
+    patternId: Optional[PatternId]
+    anomalyDetectorArn: AnomalyDetectorArn
+    suppressionType: Optional[SuppressionType]
+    suppressionPeriod: Optional[SuppressionPeriod]
+
+
+class UpdateLogAnomalyDetectorRequest(ServiceRequest):
+    anomalyDetectorArn: AnomalyDetectorArn
+    evaluationFrequency: Optional[EvaluationFrequency]
+    filterPattern: Optional[FilterPattern]
+    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+    enabled: Boolean
+
+
 class LogsApi:
     service = "logs"
     version = "2014-03-28"
@@ -1191,6 +1456,20 @@ class LogsApi:
     ) -> CreateExportTaskResponse:
         raise NotImplementedError
 
+    @handler("CreateLogAnomalyDetector")
+    def create_log_anomaly_detector(
+        self,
+        context: RequestContext,
+        log_group_arn_list: LogGroupArnList,
+        detector_name: DetectorName = None,
+        evaluation_frequency: EvaluationFrequency = None,
+        filter_pattern: FilterPattern = None,
+        kms_key_id: KmsKeyId = None,
+        anomaly_visibility_time: AnomalyVisibilityTime = None,
+        tags: Tags = None,
+    ) -> CreateLogAnomalyDetectorResponse:
+        raise NotImplementedError
+
     @handler("CreateLogGroup")
     def create_log_group(
         self,
@@ -1198,6 +1477,7 @@ class LogsApi:
         log_group_name: LogGroupName,
         kms_key_id: KmsKeyId = None,
         tags: Tags = None,
+        log_group_class: LogGroupClass = None,
     ) -> None:
         raise NotImplementedError
 
@@ -1242,6 +1522,12 @@ class LogsApi:
     @handler("DeleteDestination")
     def delete_destination(
         self, context: RequestContext, destination_name: DestinationName
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteLogAnomalyDetector")
+    def delete_log_anomaly_detector(
+        self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn
     ) -> None:
         raise NotImplementedError
 
@@ -1344,6 +1630,7 @@ class LogsApi:
         next_token: NextToken = None,
         limit: DescribeLimit = None,
         include_linked_accounts: IncludeLinkedAccounts = None,
+        log_group_class: LogGroupClass = None,
     ) -> DescribeLogGroupsResponse:
         raise NotImplementedError
 
@@ -1467,6 +1754,12 @@ class LogsApi:
     ) -> GetDeliverySourceResponse:
         raise NotImplementedError
 
+    @handler("GetLogAnomalyDetector")
+    def get_log_anomaly_detector(
+        self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn
+    ) -> GetLogAnomalyDetectorResponse:
+        raise NotImplementedError
+
     @handler("GetLogEvents")
     def get_log_events(
         self,
@@ -1503,6 +1796,27 @@ class LogsApi:
     def get_query_results(
         self, context: RequestContext, query_id: QueryId
     ) -> GetQueryResultsResponse:
+        raise NotImplementedError
+
+    @handler("ListAnomalies")
+    def list_anomalies(
+        self,
+        context: RequestContext,
+        anomaly_detector_arn: AnomalyDetectorArn = None,
+        suppression_state: SuppressionState = None,
+        limit: ListAnomaliesLimit = None,
+        next_token: NextToken = None,
+    ) -> ListAnomaliesResponse:
+        raise NotImplementedError
+
+    @handler("ListLogAnomalyDetectors")
+    def list_log_anomaly_detectors(
+        self,
+        context: RequestContext,
+        filter_log_group_arn: LogGroupArn = None,
+        limit: ListLogAnomalyDetectorsLimit = None,
+        next_token: NextToken = None,
+    ) -> ListLogAnomalyDetectorsResponse:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
@@ -1651,6 +1965,17 @@ class LogsApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("StartLiveTail")
+    def start_live_tail(
+        self,
+        context: RequestContext,
+        log_group_identifiers: StartLiveTailLogGroupIdentifiers,
+        log_stream_names: InputLogStreamNames = None,
+        log_stream_name_prefixes: InputLogStreamNames = None,
+        log_event_filter_pattern: FilterPattern = None,
+    ) -> StartLiveTailResponse:
+        raise NotImplementedError
+
     @handler("StartQuery")
     def start_query(
         self,
@@ -1699,5 +2024,29 @@ class LogsApi:
     @handler("UntagResource")
     def untag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateAnomaly")
+    def update_anomaly(
+        self,
+        context: RequestContext,
+        anomaly_detector_arn: AnomalyDetectorArn,
+        anomaly_id: AnomalyId = None,
+        pattern_id: PatternId = None,
+        suppression_type: SuppressionType = None,
+        suppression_period: SuppressionPeriod = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateLogAnomalyDetector")
+    def update_log_anomaly_detector(
+        self,
+        context: RequestContext,
+        anomaly_detector_arn: AnomalyDetectorArn,
+        enabled: Boolean,
+        evaluation_frequency: EvaluationFrequency = None,
+        filter_pattern: FilterPattern = None,
+        anomaly_visibility_time: AnomalyVisibilityTime = None,
     ) -> None:
         raise NotImplementedError

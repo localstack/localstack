@@ -6,6 +6,7 @@ import logging
 import re
 import threading
 import time
+from datetime import datetime
 from queue import Empty, PriorityQueue, Queue
 from typing import Dict, Optional, Set
 
@@ -27,11 +28,13 @@ from localstack.services.sqs.exceptions import (
 )
 from localstack.services.sqs.utils import (
     decode_receipt_handle,
+    encode_move_task_handle,
     encode_receipt_handle,
     global_message_sequence,
     is_message_deduplication_id_required,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.utils.strings import long_uid
 from localstack.utils.time import now
 from localstack.utils.urls import localstack_host
 
@@ -185,6 +188,54 @@ class ReceiveMessageResult:
         self.dead_letter_messages = []
 
 
+class MessageMoveTaskStatus(str):
+    CREATED = "CREATED"  # not validated, for internal use
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    CANCELLING = "CANCELLING"
+    CANCELLED = "CANCELLED"
+    FAILED = "FAILED"
+
+
+class MessageMoveTask:
+    """
+    A task created by the ``StartMessageMoveTask`` operation.
+    """
+
+    # configurable fields
+    source_arn: str
+    destination_arn: str
+    max_number_of_messages_per_second: int | None = None
+
+    # dynamic fields
+    task_id: str
+    status: str = MessageMoveTaskStatus.CREATED
+    started_timestamp: datetime | None = None
+    approximate_number_of_messages_moved: int | None = None
+    approximate_number_of_messages_to_move: int | None = None
+    failure_reason: str | None = None
+
+    cancel_event: threading.Event
+
+    def __init__(
+        self, source_arn: str, destination_arn: str, max_number_of_messages_per_second: int = None
+    ):
+        self.task_id = long_uid()
+        self.source_arn = source_arn
+        self.destination_arn = destination_arn
+        self.max_number_of_messages_per_second = max_number_of_messages_per_second
+        self.cancel_event = threading.Event()
+
+    def mark_started(self):
+        self.started_timestamp = datetime.utcnow()
+        self.status = MessageMoveTaskStatus.RUNNING
+        self.cancel_event.clear()
+
+    @property
+    def task_handle(self) -> str:
+        return encode_move_task_handle(self.task_id, self.source_arn)
+
+
 class SqsQueue:
     name: str
     region: str
@@ -246,8 +297,9 @@ class SqsQueue:
 
     def update_delay_seconds(self, value: int):
         """
-        For standard queues, the per-queue delay setting is not retroactive—changing the setting doesn't affect the delay of messages already in the queue.
-        For FIFO queues, the per-queue delay setting is retroactive—changing the setting affects the delay of messages already in the queue.
+        For standard queues, the per-queue delay setting is not retroactive—changing the setting doesn't affect the
+        delay of messages already in the queue. For FIFO queues, the per-queue delay setting is retroactive—changing
+        the setting affects the delay of messages already in the queue.
 
         https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-delay-queues.html
 
@@ -329,6 +381,14 @@ class SqsQueue:
     @property
     def wait_time_seconds(self) -> int:
         return int(self.attributes[QueueAttributeName.ReceiveMessageWaitTimeSeconds])
+
+    @property
+    def message_retention_period(self) -> int:
+        """
+        ``MessageRetentionPeriod`` -- the length of time, in seconds, for which Amazon SQS retains a message. Valid
+        values: An integer representing seconds, from 60 (1 minute) to 1,209,600 (14 days). Default: 345,600 (4 days).
+        """
+        return int(self.attributes[QueueAttributeName.MessageRetentionPeriod])
 
     @property
     def maximum_message_size(self) -> int:
@@ -483,6 +543,12 @@ class SqsQueue:
                 self.delayed.remove(standard_message)
                 self._put_message(standard_message)
 
+    def remove_expired_messages(self):
+        """
+        Removes messages from the queue whose retention period has expired.
+        """
+        raise NotImplementedError
+
     def _assert_queue_name(self, name):
         if not re.match(r"^[a-zA-Z0-9_-]{1,80}$", name):
             raise InvalidParameterValueException(
@@ -569,6 +635,33 @@ class SqsQueue:
         else:
             del self.attributes[QueueAttributeName.Policy]
 
+    @staticmethod
+    def remove_expired_messages_from_heap(
+        heap: list[SqsMessage], message_retention_period: int
+    ) -> list[SqsMessage]:
+        """
+        Removes from the given heap of SqsMessages all messages that have expired in the context of the current time
+        and the given message retention period. The method manipulates the heap but retains the heap property.
+
+        :param heap: an array satisfying the heap property
+        :param message_retention_period: the message retention period to use in relation to the current time
+        :return: a list of expired messages that have been removed from the heap
+        """
+        th = time.time() - message_retention_period
+
+        expired = []
+        while heap:
+            # here we're leveraging the heap property "that a[0] is always its smallest element"
+            # and the assumption that message.created == message.priority
+            message = heap[0]
+            if th < message.created:
+                break
+            # remove the expired element
+            expired.append(message)
+            heapq.heappop(heap)
+
+        return expired
+
 
 class StandardQueue(SqsQueue):
     visible: PriorityQueue
@@ -598,12 +691,12 @@ class StandardQueue(SqsQueue):
         if message_deduplication_id:
             raise InvalidParameterValueException(
                 f"Value {message_deduplication_id} for parameter MessageDeduplicationId is invalid. Reason: The "
-                f"request includes a parameter that is not valid for this queue type. "
+                f"request includes a parameter that is not valid for this queue type."
             )
         if message_group_id:
             raise InvalidParameterValueException(
                 f"Value {message_group_id} for parameter MessageGroupId is invalid. Reason: The request includes a "
-                f"parameter that is not valid for this queue type. "
+                f"parameter that is not valid for this queue type."
             )
 
         standard_message = SqsMessage(time.time(), message)
@@ -628,6 +721,15 @@ class StandardQueue(SqsQueue):
 
     def _put_message(self, message: SqsMessage):
         self.visible.put_nowait(message)
+
+    def remove_expired_messages(self):
+        with self.mutex:
+            messages = self.remove_expired_messages_from_heap(
+                self.visible.queue, self.message_retention_period
+            )
+
+        for message in messages:
+            LOG.debug("Removed expired message %s from queue %s", message.message_id, self.arn)
 
     def receive(
         self,
@@ -712,8 +814,12 @@ class StandardQueue(SqsQueue):
             # this likely means the message was removed with an expired receipt handle unfortunately this
             # means we need to scan the queue for the element and remove it from there, and then re-heapify
             # the queue
-            self.visible.queue.remove(message)
-            heapq.heapify(self.visible.queue)
+            try:
+                self.visible.queue.remove(message)
+                heapq.heapify(self.visible.queue)
+            except ValueError:
+                # this may happen if the message no longer exists because it was removed earlier
+                pass
 
 
 class MessageGroup:
@@ -883,10 +989,28 @@ class FifoQueue(SqsQueue):
             # put the message into the group
             message_group.push(message)
 
-            # if a message becomes visible in the queue, that message's group becomes visible also
+            # if an older message becomes visible again in the queue, that message's group becomes visible also.
+            if message.receive_count < 1:
+                return
             if message_group in self.inflight_groups:
                 self.inflight_groups.remove(message_group)
                 self.message_group_queue.put_nowait(message_group)
+
+    def remove_expired_messages(self):
+        with self.mutex:
+            retention_period = self.message_retention_period
+            for message_group in self.message_groups.values():
+                messages = self.remove_expired_messages_from_heap(
+                    message_group.messages, retention_period
+                )
+
+                for message in messages:
+                    LOG.debug(
+                        "Removed expired message %s from message group %s in queue %s",
+                        message.message_id,
+                        message.message_group_id,
+                        self.arn,
+                    )
 
     def receive(
         self,
@@ -930,6 +1054,8 @@ class FifoQueue(SqsQueue):
                 # this can be the case if all messages in the group are still invisible
                 # TODO: it should be blocking until at least one message is in the queue, but we don't
                 #  want to block the group
+                # TODO: check behavior in case it happens if all messages were removed from a group due to message
+                #  retention period.
                 timeout -= time.time() - start
                 if timeout < 0:
                     timeout = 0
@@ -1061,6 +1187,9 @@ class SqsStore(BaseStore):
     queues: Dict[str, SqsQueue] = LocalAttribute(default=dict)
 
     deleted: Dict[str, float] = LocalAttribute(default=dict)
+
+    move_tasks: Dict[str, MessageMoveTask] = LocalAttribute(default=dict)
+    """Maps task IDs to their ``MoveMessageTask`` object. Task IDs can be found by decoding a task handle."""
 
     def expire_deleted(self):
         for k in list(self.deleted.keys()):

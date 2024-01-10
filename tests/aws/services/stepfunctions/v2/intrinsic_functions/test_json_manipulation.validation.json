@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_json_manipulation.py::TestJsonManipulation::test_json_merge": {
+    "last_validated_date": "2023-02-13T11:49:30+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_json_manipulation.py::TestJsonManipulation::test_json_to_string": {
+    "last_validated_date": "2023-02-09T09:21:51+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_json_manipulation.py::TestJsonManipulation::test_string_to_json": {
+    "last_validated_date": "2023-02-09T09:21:46+00:00"
+  }
+}
