@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_gateway_request_validator": {
-    "last_validated_date": "2023-07-27T15:59:26+00:00"
+    "last_validated_date": "2024-01-10T00:06:10+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestDeployments::test_create_delete_deployments[False]": {
     "last_validated_date": "2023-09-07T17:20:47+00:00"
