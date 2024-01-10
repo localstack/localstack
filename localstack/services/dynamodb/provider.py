@@ -676,6 +676,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             schema = SchemaExtractor.get_table_schema(
                 table_name, context.account_id, global_table_region
             )
+
+            if sse_specification_input := update_table_input.get("SSESpecification"):
+                # If SSESpecification is changed, update store and return the 'UPDATING' status in the response
+                table_definition = get_store(
+                    context.account_id, context.region
+                ).table_definitions.setdefault(table_name, {})
+                if not sse_specification_input["Enabled"]:
+                    table_definition.pop("SSEDescription", None)
+                    schema["Table"]["SSEDescription"]["Status"] = "UPDATING"
+
             return UpdateTableOutput(TableDescription=schema["Table"])
 
         SchemaExtractor.invalidate_table_schema(table_name, context.account_id, global_table_region)
