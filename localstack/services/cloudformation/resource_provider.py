@@ -100,6 +100,7 @@ PROVIDER_DEFAULTS = {
     "AWS::DocDB::DBCluster": "ResourceProvider",
     "AWS::DocDB::DBInstance": "ResourceProvider",
     "AWS::DocDB::DBClusterParameterGroup": "ResourceProvider",
+    "AWS::DocDB::DBSubnetGroup": "ResourceProvider",
     "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::EC2::Instance": "ResourceProvider",
     "AWS::EC2::InternetGateway": "ResourceProvider",
