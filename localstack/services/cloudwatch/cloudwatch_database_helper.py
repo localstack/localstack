@@ -1,6 +1,7 @@
 import logging
 import os
 import sqlite3
+import threading
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
@@ -33,94 +34,117 @@ class CloudwatchDatabase:
     METRICS_DB: str = os.path.join(CLOUDWATCH_DATA_ROOT, DB_NAME)
     TABLE_SINGLE_METRICS = "SINGLE_METRICS"
     TABLE_AGGREGATED_METRICS = "AGGREGATED_METRICS"
+    DATABASE_WRITE_LOCK: threading.RLock
 
     def __init__(self):
+        self.DATABASE_WRITE_LOCK = threading.RLock()
         if os.path.exists(self.METRICS_DB):
             LOG.debug(f"database for metrics already exists ({self.METRICS_DB})")
             return
 
         mkdir(self.CLOUDWATCH_DATA_ROOT)
-        with sqlite3.connect(self.METRICS_DB, isolation_level="EXCLUSIVE") as conn:
-            cur = conn.cursor()
-            common_columns = """
-                "id"	                INTEGER,
-                "account_id"	        TEXT,
-                "region"	            TEXT,
-                "metric_name"	        TEXT,
-                "namespace" 	        TEXT,
-                "timestamp"	            NUMERIC,
-                "dimensions"	        TEXT,
-                "unit"	                TEXT,
-                "storage_resolution"	INTEGER
-            """
-            cur.execute(
-                f"""
-            CREATE TABLE "{self.TABLE_SINGLE_METRICS}" (
-                {common_columns},
-                "value"	                NUMERIC,
-                PRIMARY KEY("id")
-            );
-            """
-            )
-
-            cur.execute(
-                f"""
-            CREATE TABLE "{self.TABLE_AGGREGATED_METRICS}" (
-                {common_columns},
-                "sample_count"          NUMERIC,
-                "sum"	                NUMERIC,
-                "min"	                NUMERIC,
-                "max"	                NUMERIC,
-                PRIMARY KEY("id")
-            );
-            """
-            )
-            # create indexes
-            cur.executescript(
+        with self.DATABASE_WRITE_LOCK:
+            with sqlite3.connect(self.METRICS_DB, isolation_level="EXCLUSIVE") as conn:
+                cur = conn.cursor()
+                common_columns = """
+                    "id"	                INTEGER,
+                    "account_id"	        TEXT,
+                    "region"	            TEXT,
+                    "metric_name"	        TEXT,
+                    "namespace" 	        TEXT,
+                    "timestamp"	            NUMERIC,
+                    "dimensions"	        TEXT,
+                    "unit"	                TEXT,
+                    "storage_resolution"	INTEGER
                 """
-            CREATE INDEX idx_single_metrics_comp ON SINGLE_METRICS (metric_name, namespace);
-            CREATE INDEX idx_aggregated_metrics_comp ON AGGREGATED_METRICS (metric_name, namespace);
-            """
-            )
-            conn.commit()
+                cur.execute(
+                    f"""
+                CREATE TABLE "{self.TABLE_SINGLE_METRICS}" (
+                    {common_columns},
+                    "value"	                NUMERIC,
+                    PRIMARY KEY("id")
+                );
+                """
+                )
+
+                cur.execute(
+                    f"""
+                CREATE TABLE "{self.TABLE_AGGREGATED_METRICS}" (
+                    {common_columns},
+                    "sample_count"          NUMERIC,
+                    "sum"	                NUMERIC,
+                    "min"	                NUMERIC,
+                    "max"	                NUMERIC,
+                    PRIMARY KEY("id")
+                );
+                """
+                )
+                # create indexes
+                cur.executescript(
+                    """
+                CREATE INDEX idx_single_metrics_comp ON SINGLE_METRICS (metric_name, namespace);
+                CREATE INDEX idx_aggregated_metrics_comp ON AGGREGATED_METRICS (metric_name, namespace);
+                """
+                )
+                conn.commit()
 
     def add_metric_data(
         self, account_id: str, region: str, namespace: str, metric_data: MetricData
     ):
         # TODO consider using thread-lock here instead of increasing busy-timeout
-        with sqlite3.connect(self.METRICS_DB, isolation_level="EXCLUSIVE") as conn:
-            conn.execute(
-                "PRAGMA busy_timeout = 20000"
-            )  # TODO check if we need to set timeout higher, testing with 20 seconds
-            cur = conn.cursor()
+        def _get_current_unix_timestamp_utc():
+            now = datetime.utcnow().replace(tzinfo=timezone.utc)
+            return int(now.timestamp())
 
-            def _get_current_unix_timestamp_utc():
-                now = datetime.utcnow().replace(tzinfo=timezone.utc)
-                return int(now.timestamp())
+        for metric in metric_data:
+            unix_timestamp = (
+                self._convert_timestamp_to_unix(metric.get("Timestamp"))
+                if metric.get("Timestamp")
+                else _get_current_unix_timestamp_utc()
+            )
 
-            for metric in metric_data:
-                unix_timestamp = (
-                    self._convert_timestamp_to_unix(metric.get("Timestamp"))
-                    if metric.get("Timestamp")
-                    else _get_current_unix_timestamp_utc()
-                )
+            inserts = []
+            if metric.get("Value") is not None:
+                inserts.append({"Value": metric.get("Value"), "TimesToInsert": 1})
+            elif metric.get("Values"):
+                counts = metric.get("Counts", [1] * len(metric.get("Values")))
+                inserts = [
+                    {"Value": value, "TimesToInsert": int(counts[indexValue])}
+                    for indexValue, value in enumerate(metric.get("Values"))
+                ]
+            with self.DATABASE_WRITE_LOCK:
+                with sqlite3.connect(self.METRICS_DB, isolation_level="EXCLUSIVE") as conn:
+                    cur = conn.cursor()
 
-                inserts = []
-                if metric.get("Value") is not None:
-                    inserts.append({"Value": metric.get("Value"), "TimesToInsert": 1})
-                elif metric.get("Values"):
-                    counts = metric.get("Counts", [1] * len(metric.get("Values")))
-                    inserts = [
-                        {"Value": value, "TimesToInsert": int(counts[indexValue])}
-                        for indexValue, value in enumerate(metric.get("Values"))
-                    ]
+                    for insert in inserts:
+                        times_to_insert = insert.get("TimesToInsert")
+                        prepared_placeholder = ",".join(
+                            ["(?, ?, ?, ?, ?, ?, ?, ?, ?)" for _ in range(times_to_insert)]
+                        )
+                        data = (
+                            account_id,
+                            region,
+                            metric.get("MetricName"),
+                            namespace,
+                            unix_timestamp,
+                            self._get_ordered_dimensions_with_separator(metric.get("Dimensions")),
+                            metric.get("Unit"),
+                            metric.get("StorageResolution"),
+                            insert.get("Value"),
+                        ) * times_to_insert
 
-                for insert in inserts:
-                    for _ in range(insert.get("TimesToInsert")):
                         cur.execute(
                             f"""INSERT INTO {self.TABLE_SINGLE_METRICS}
                     ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "value")
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    VALUES {prepared_placeholder}""",
+                            data,
+                        )
+
+                    if statistic_values := metric.get("StatisticValues"):
+                        cur.execute(
+                            f"""INSERT INTO {self.TABLE_AGGREGATED_METRICS}
+                        ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "sample_count", "sum", "min", "max")
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                             (
                                 account_id,
                                 region,
@@ -132,32 +156,14 @@ class CloudwatchDatabase:
                                 ),
                                 metric.get("Unit"),
                                 metric.get("StorageResolution"),
-                                insert.get("Value"),
+                                statistic_values.get("SampleCount"),
+                                statistic_values.get("Sum"),
+                                statistic_values.get("Minimum"),
+                                statistic_values.get("Maximum"),
                             ),
                         )
 
-                if statistic_values := metric.get("StatisticValues"):
-                    cur.execute(
-                        f"""INSERT INTO {self.TABLE_AGGREGATED_METRICS}
-                    ("account_id", "region", "metric_name", "namespace", "timestamp", "dimensions", "unit", "storage_resolution", "sample_count", "sum", "min", "max")
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (
-                            account_id,
-                            region,
-                            metric.get("MetricName"),
-                            namespace,
-                            unix_timestamp,
-                            self._get_ordered_dimensions_with_separator(metric.get("Dimensions")),
-                            metric.get("Unit"),
-                            metric.get("StorageResolution"),
-                            statistic_values.get("SampleCount"),
-                            statistic_values.get("Sum"),
-                            statistic_values.get("Minimum"),
-                            statistic_values.get("Maximum"),
-                        ),
-                    )
-
-            conn.commit()
+                conn.commit()
 
     def get_units_for_metric_data_stat(
         self,
@@ -168,42 +174,40 @@ class CloudwatchDatabase:
         metric_name: str,
         namespace: str,
     ):
-        with sqlite3.connect(self.METRICS_DB) as conn:
-            cur = conn.cursor()
+        # prepare SQL query
+        start_time_unix = self._convert_timestamp_to_unix(start_time)
+        end_time_unix = self._convert_timestamp_to_unix(end_time)
 
-            # prepare SQL query
-            start_time_unix = self._convert_timestamp_to_unix(start_time)
-            end_time_unix = self._convert_timestamp_to_unix(end_time)
+        data = (
+            account_id,
+            region,
+            namespace,
+            metric_name,
+            start_time_unix,
+            end_time_unix,
+        )
 
-            data = (
-                account_id,
-                region,
-                namespace,
-                metric_name,
-                start_time_unix,
-                end_time_unix,
-            )
-
-            sql_query = f"""
-            SELECT GROUP_CONCAT(unit) AS unit_values
-            FROM(
+        sql_query = f"""
+        SELECT GROUP_CONCAT(unit) AS unit_values
+        FROM(
+            SELECT
+                DISTINCT COALESCE(unit, 'NULL_VALUE') AS unit
+            FROM (
                 SELECT
-                    DISTINCT COALESCE(unit, 'NULL_VALUE') AS unit
-                FROM (
-                    SELECT
-                    account_id, region, metric_name, namespace, timestamp, unit
-                    FROM {self.TABLE_SINGLE_METRICS}
-                    UNION ALL
-                    SELECT
-                    account_id, region, metric_name, namespace, timestamp, unit
-                    FROM {self.TABLE_AGGREGATED_METRICS}
-                ) AS combined
-                WHERE account_id = ? AND region = ?
-                AND namespace = ? AND metric_name = ?
-                AND timestamp >= ? AND timestamp < ?
-            ) AS subquery
-            """
-
+                account_id, region, metric_name, namespace, timestamp, unit
+                FROM {self.TABLE_SINGLE_METRICS}
+                UNION ALL
+                SELECT
+                account_id, region, metric_name, namespace, timestamp, unit
+                FROM {self.TABLE_AGGREGATED_METRICS}
+            ) AS combined
+            WHERE account_id = ? AND region = ?
+            AND namespace = ? AND metric_name = ?
+            AND timestamp >= ? AND timestamp < ?
+        ) AS subquery
+        """
+        with sqlite3.connect(f"file:{self.METRICS_DB}", uri=True) as conn:
+            cur = conn.cursor()
             cur.execute(
                 sql_query,
                 data,
@@ -220,67 +224,64 @@ class CloudwatchDatabase:
         end_time: datetime,
         scan_by: str,
     ) -> Dict[str, List]:
-        # TODO exclude null values, check if dimensions must be null though if missing
+        metric_stat = query.get("MetricStat")
+        metric = metric_stat.get("Metric")
+        period = metric_stat.get("Period")
+        stat = metric_stat.get("Stat")
+        dimensions = metric.get("Dimensions", [])
+        unit = metric_stat.get("Unit")
 
-        with sqlite3.connect(self.METRICS_DB) as conn:
-            cur = conn.cursor()
-            metric_stat = query.get("MetricStat")
-            metric = metric_stat.get("Metric")
-            period = metric_stat.get("Period")
-            stat = metric_stat.get("Stat")
-            dimensions = metric.get("Dimensions", [])
-            unit = metric_stat.get("Unit")
+        # prepare SQL query
+        start_time_unix = self._convert_timestamp_to_unix(start_time)
+        end_time_unix = self._convert_timestamp_to_unix(end_time)
 
-            # prepare SQL query
-            start_time_unix = self._convert_timestamp_to_unix(start_time)
-            end_time_unix = self._convert_timestamp_to_unix(end_time)
+        data = (
+            account_id,
+            region,
+            metric.get("Namespace"),
+            metric.get("MetricName"),
+        )
 
-            data = (
-                account_id,
-                region,
-                metric.get("Namespace"),
-                metric.get("MetricName"),
-            )
+        dimension_filter = ""
+        for dimension in dimensions:
+            dimension_filter += "AND dimensions LIKE ? "
+            data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
 
-            dimension_filter = ""
-            for dimension in dimensions:
-                dimension_filter += "AND dimensions LIKE ? "
-                data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
+        if not dimensions:
+            dimension_filter = "AND dimensions is null "
 
-            if not dimensions:
-                dimension_filter = "AND dimensions is null "
+        unit_filter = ""
+        if unit:
+            if unit == "NULL_VALUE":
+                unit_filter = "AND unit IS NULL"
+            else:
+                unit_filter = "AND unit = ? "
+                data += (unit,)
 
-            unit_filter = ""
-            if unit:
-                if unit == "NULL_VALUE":
-                    unit_filter = "AND unit IS NULL"
-                else:
-                    unit_filter = "AND unit = ? "
-                    data += (unit,)
-
-            sql_query = f"""
+        sql_query = f"""
+        SELECT
+            {STAT_TO_SQLITE_AGGREGATION_FUNC[stat]},
+            SUM(count)
+        FROM (
             SELECT
-                {STAT_TO_SQLITE_AGGREGATION_FUNC[stat]},
-                SUM(count)
-            FROM (
-                SELECT
-                value, 1 as count,
-                account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution
-                FROM {self.TABLE_SINGLE_METRICS}
-                UNION ALL
-                SELECT
-                {STAT_TO_SQLITE_COL_NAME_HELPER[stat]} as value, sample_count as count,
-                account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution
-                FROM {self.TABLE_AGGREGATED_METRICS}
-            ) AS combined
-            WHERE account_id = ? AND region = ?
-            AND namespace = ? AND metric_name = ?
-            {unit_filter}
-            {dimension_filter}
-            AND timestamp >= ? AND timestamp < ?
-            ORDER BY timestamp ASC
-            """
-
+            value, 1 as count,
+            account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution
+            FROM {self.TABLE_SINGLE_METRICS}
+            UNION ALL
+            SELECT
+            {STAT_TO_SQLITE_COL_NAME_HELPER[stat]} as value, sample_count as count,
+            account_id, region, metric_name, namespace, timestamp, dimensions, unit, storage_resolution
+            FROM {self.TABLE_AGGREGATED_METRICS}
+        ) AS combined
+        WHERE account_id = ? AND region = ?
+        AND namespace = ? AND metric_name = ?
+        {unit_filter}
+        {dimension_filter}
+        AND timestamp >= ? AND timestamp < ?
+        ORDER BY timestamp ASC
+        """
+        with sqlite3.connect(f"file:{self.METRICS_DB}", uri=True) as conn:
+            cur = conn.cursor()
             timestamps = []
             values = []
             while start_time_unix < end_time_unix:
@@ -320,41 +321,40 @@ class CloudwatchDatabase:
         metric_name: str,
         dimensions: list[dict[str, str]],
     ) -> dict:
-        with sqlite3.connect(self.METRICS_DB) as conn:
+        data = (account_id, region)
+
+        namespace_filter = ""
+        if namespace:
+            namespace_filter = "AND namespace = ?"
+            data = data + (namespace,)
+
+        metric_name_filter = ""
+        if metric_name:
+            metric_name_filter = "AND metric_name = ?"
+            data = data + (metric_name,)
+
+        dimension_filter = ""
+        for dimension in dimensions:
+            dimension_filter += "AND dimensions LIKE ? "
+            data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
+
+        query = f"""
+            SELECT DISTINCT metric_name, namespace, dimensions
+            FROM (
+                SELECT metric_name, namespace, dimensions, account_id, region, timestamp
+                FROM SINGLE_METRICS
+                UNION
+                SELECT metric_name, namespace, dimensions, account_id, region, timestamp
+                FROM AGGREGATED_METRICS
+            ) AS combined
+            WHERE account_id = ? AND region = ?
+            {namespace_filter}
+            {metric_name_filter}
+            {dimension_filter}
+            ORDER BY timestamp DESC
+        """
+        with sqlite3.connect(f"file:{self.METRICS_DB}", uri=True) as conn:
             cur = conn.cursor()
-
-            data = (account_id, region)
-
-            namespace_filter = ""
-            if namespace:
-                namespace_filter = "AND namespace = ?"
-                data = data + (namespace,)
-
-            metric_name_filter = ""
-            if metric_name:
-                metric_name_filter = "AND metric_name = ?"
-                data = data + (metric_name,)
-
-            dimension_filter = ""
-            for dimension in dimensions:
-                dimension_filter += "AND dimensions LIKE ? "
-                data = data + (f"%{dimension.get('Name')}={dimension.get('Value','')}%",)
-
-            query = f"""
-                SELECT DISTINCT metric_name, namespace, dimensions
-                FROM (
-                    SELECT metric_name, namespace, dimensions, account_id, region, timestamp
-                    FROM SINGLE_METRICS
-                    UNION
-                    SELECT metric_name, namespace, dimensions, account_id, region, timestamp
-                    FROM AGGREGATED_METRICS
-                ) AS combined
-                WHERE account_id = ? AND region = ?
-                {namespace_filter}
-                {metric_name_filter}
-                {dimension_filter}
-                ORDER BY timestamp DESC
-            """
 
             cur.execute(
                 query,
@@ -369,21 +369,17 @@ class CloudwatchDatabase:
                 for r in cur.fetchall()
             ]
 
-            cur.execute(
-                query,
-                data,
-            )
-
             return {"metrics": metrics_result}
 
     def clear_tables(self):
-        with sqlite3.connect(self.METRICS_DB) as conn:
-            cur = conn.cursor()
-            cur.execute(f"DELETE FROM {self.TABLE_SINGLE_METRICS}")
-            cur.execute(f"DELETE FROM {self.TABLE_AGGREGATED_METRICS}")
-            conn.commit()
-            cur.execute("VACUUM")
-            conn.commit()
+        with self.DATABASE_WRITE_LOCK:
+            with sqlite3.connect(self.METRICS_DB) as conn:
+                cur = conn.cursor()
+                cur.execute(f"DELETE FROM {self.TABLE_SINGLE_METRICS}")
+                cur.execute(f"DELETE FROM {self.TABLE_AGGREGATED_METRICS}")
+                conn.commit()
+                cur.execute("VACUUM")
+                conn.commit()
 
     def _get_ordered_dimensions_with_separator(self, dims: Optional[List[Dict]]):
         if not dims:
@@ -413,7 +409,7 @@ class CloudwatchDatabase:
         return int(timestamp.timestamp())
 
     def get_all_metric_data(self):
-        with sqlite3.connect(self.METRICS_DB) as conn:
+        with sqlite3.connect(f"file:{self.METRICS_DB}", uri=True) as conn:
             cur = conn.cursor()
             """ shape for each data entry:
             {
