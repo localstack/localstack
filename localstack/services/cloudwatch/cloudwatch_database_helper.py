@@ -32,6 +32,7 @@ class CloudwatchDatabase:
     DB_NAME = "metrics.db"
     CLOUDWATCH_DATA_ROOT: str = os.path.join(config.dirs.data, "cloudwatch")
     METRICS_DB: str = os.path.join(CLOUDWATCH_DATA_ROOT, DB_NAME)
+    METRICS_DB_READ_ONLY: str = f"file:{METRICS_DB}?mode=ro"
     TABLE_SINGLE_METRICS = "SINGLE_METRICS"
     TABLE_AGGREGATED_METRICS = "AGGREGATED_METRICS"
     DATABASE_WRITE_LOCK: threading.RLock
@@ -206,7 +207,7 @@ class CloudwatchDatabase:
             AND timestamp >= ? AND timestamp < ?
         ) AS subquery
         """
-        with sqlite3.connect(f"file:{self.METRICS_DB}", uri=True) as conn:
+        with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
             cur = conn.cursor()
             cur.execute(
                 sql_query,
@@ -280,7 +281,7 @@ class CloudwatchDatabase:
         AND timestamp >= ? AND timestamp < ?
         ORDER BY timestamp ASC
         """
-        with sqlite3.connect(f"file:{self.METRICS_DB}", uri=True) as conn:
+        with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
             cur = conn.cursor()
             timestamps = []
             values = []
@@ -353,7 +354,7 @@ class CloudwatchDatabase:
             {dimension_filter}
             ORDER BY timestamp DESC
         """
-        with sqlite3.connect(f"file:{self.METRICS_DB}", uri=True) as conn:
+        with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
             cur = conn.cursor()
 
             cur.execute(
@@ -409,7 +410,7 @@ class CloudwatchDatabase:
         return int(timestamp.timestamp())
 
     def get_all_metric_data(self):
-        with sqlite3.connect(f"file:{self.METRICS_DB}", uri=True) as conn:
+        with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
             cur = conn.cursor()
             """ shape for each data entry:
             {
