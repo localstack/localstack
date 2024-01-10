@@ -1503,6 +1503,7 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     match = re.match(HOST_REGEX_EXECUTE_API, hostname)
     return match.group(1)
 
+
 def is_greedy_path(path_part: str) -> bool:
     return path_part.startswith("{") and path_part.endswith("+}")
 
