@@ -35,17 +35,17 @@ class CloudwatchDatabase:
     METRICS_DB_READ_ONLY: str = f"file:{METRICS_DB}?mode=ro"
     TABLE_SINGLE_METRICS = "SINGLE_METRICS"
     TABLE_AGGREGATED_METRICS = "AGGREGATED_METRICS"
-    DATABASE_WRITE_LOCK: threading.RLock
+    DATABASE_LOCK: threading.RLock
 
     def __init__(self):
-        self.DATABASE_WRITE_LOCK = threading.RLock()
+        self.DATABASE_LOCK = threading.RLock()
         if os.path.exists(self.METRICS_DB):
             LOG.debug(f"database for metrics already exists ({self.METRICS_DB})")
             return
 
         mkdir(self.CLOUDWATCH_DATA_ROOT)
-        with self.DATABASE_WRITE_LOCK:
-            with sqlite3.connect(self.METRICS_DB, isolation_level="EXCLUSIVE") as conn:
+        with self.DATABASE_LOCK:
+            with sqlite3.connect(self.METRICS_DB) as conn:
                 cur = conn.cursor()
                 common_columns = """
                     "id"	                INTEGER,
@@ -92,7 +92,6 @@ class CloudwatchDatabase:
     def add_metric_data(
         self, account_id: str, region: str, namespace: str, metric_data: MetricData
     ):
-        # TODO consider using thread-lock here instead of increasing busy-timeout
         def _get_current_unix_timestamp_utc():
             now = datetime.utcnow().replace(tzinfo=timezone.utc)
             return int(now.timestamp())
@@ -113,10 +112,10 @@ class CloudwatchDatabase:
                     {"Value": value, "TimesToInsert": int(counts[indexValue])}
                     for indexValue, value in enumerate(metric.get("Values"))
                 ]
-            with self.DATABASE_WRITE_LOCK:
-                with sqlite3.connect(self.METRICS_DB, isolation_level="EXCLUSIVE") as conn:
+            with self.DATABASE_LOCK:
+                with sqlite3.connect(self.METRICS_DB) as conn:
                     cur = conn.cursor()
-
+                    print(f"""---> {cur.execute("pragma lockstatus").fetchall()}""")
                     for insert in inserts:
                         times_to_insert = insert.get("TimesToInsert")
                         prepared_placeholder = ",".join(
@@ -164,7 +163,7 @@ class CloudwatchDatabase:
                             ),
                         )
 
-                conn.commit()
+                    conn.commit()
 
     def get_units_for_metric_data_stat(
         self,
@@ -207,14 +206,15 @@ class CloudwatchDatabase:
             AND timestamp >= ? AND timestamp < ?
         ) AS subquery
         """
-        with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
-            cur = conn.cursor()
-            cur.execute(
-                sql_query,
-                data,
-            )
-            result_row = cur.fetchone()
-            return result_row[0].split(",") if result_row[0] else ["NULL_VALUE"]
+        with self.DATABASE_LOCK:
+            with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
+                cur = conn.cursor()
+                cur.execute(
+                    sql_query,
+                    data,
+                )
+                result_row = cur.fetchone()
+                return result_row[0].split(",") if result_row[0] else ["NULL_VALUE"]
 
     def get_metric_data_stat(
         self,
@@ -281,38 +281,39 @@ class CloudwatchDatabase:
         AND timestamp >= ? AND timestamp < ?
         ORDER BY timestamp ASC
         """
-        with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
-            cur = conn.cursor()
-            timestamps = []
-            values = []
-            while start_time_unix < end_time_unix:
-                next_start_time = start_time_unix + period
-                cur.execute(
-                    sql_query,
-                    data + (start_time_unix, next_start_time),
-                )
-                result_row = cur.fetchone()
-
-                if result_row[1]:
-                    calculated_result = (
-                        result_row[0] / result_row[1] if stat == "Average" else result_row[0]
+        with self.DATABASE_LOCK:
+            with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
+                cur = conn.cursor()
+                timestamps = []
+                values = []
+                while start_time_unix < end_time_unix:
+                    next_start_time = start_time_unix + period
+                    cur.execute(
+                        sql_query,
+                        data + (start_time_unix, next_start_time),
                     )
-                    timestamps.append(start_time_unix)
-                    values.append(calculated_result)
+                    result_row = cur.fetchone()
 
-                start_time_unix = next_start_time
+                    if result_row[1]:
+                        calculated_result = (
+                            result_row[0] / result_row[1] if stat == "Average" else result_row[0]
+                        )
+                        timestamps.append(start_time_unix)
+                        values.append(calculated_result)
 
-            # The while loop while always give us the timestamps in ascending order as we start with the start_time
-            # and increase it by the period until we reach the end_time
-            # If we want the timestamps in descending order we need to reverse the list
-            if scan_by is None or scan_by == ScanBy.TimestampDescending:
-                timestamps = timestamps[::-1]
-                values = values[::-1]
+                    start_time_unix = next_start_time
 
-            return {
-                "timestamps": timestamps,
-                "values": values,
-            }
+                # The while loop while always give us the timestamps in ascending order as we start with the start_time
+                # and increase it by the period until we reach the end_time
+                # If we want the timestamps in descending order we need to reverse the list
+                if scan_by is None or scan_by == ScanBy.TimestampDescending:
+                    timestamps = timestamps[::-1]
+                    values = values[::-1]
+
+                return {
+                    "timestamps": timestamps,
+                    "values": values,
+                }
 
     def list_metrics(
         self,
@@ -354,26 +355,27 @@ class CloudwatchDatabase:
             {dimension_filter}
             ORDER BY timestamp DESC
         """
-        with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
-            cur = conn.cursor()
+        with self.DATABASE_LOCK:
+            with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
+                cur = conn.cursor()
 
-            cur.execute(
-                query,
-                data,
-            )
-            metrics_result = [
-                {
-                    "metric_name": r[0],
-                    "namespace": r[1],
-                    "dimensions": self._restore_dimensions_from_string(r[2]),
-                }
-                for r in cur.fetchall()
-            ]
+                cur.execute(
+                    query,
+                    data,
+                )
+                metrics_result = [
+                    {
+                        "metric_name": r[0],
+                        "namespace": r[1],
+                        "dimensions": self._restore_dimensions_from_string(r[2]),
+                    }
+                    for r in cur.fetchall()
+                ]
 
-            return {"metrics": metrics_result}
+                return {"metrics": metrics_result}
 
     def clear_tables(self):
-        with self.DATABASE_WRITE_LOCK:
+        with self.DATABASE_LOCK:
             with sqlite3.connect(self.METRICS_DB) as conn:
                 cur = conn.cursor()
                 cur.execute(f"DELETE FROM {self.TABLE_SINGLE_METRICS}")
@@ -410,32 +412,33 @@ class CloudwatchDatabase:
         return int(timestamp.timestamp())
 
     def get_all_metric_data(self):
-        with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
-            cur = conn.cursor()
-            """ shape for each data entry:
-            {
-                "ns": r.namespace,
-                "n": r.name,
-                "v": r.value,
-                "t": r.timestamp,
-                "d": [{"n": d.name, "v": d.value} for d in r.dimensions],
-                "account": account-id, # new for v2
-                "region": region_name, # new for v2
-            }
-            """
-            query = f"SELECT namespace, metric_name, value, timestamp, dimensions, account_id, region from {self.TABLE_SINGLE_METRICS}"
-            cur.execute(query)
-            metrics_result = [
+        with self.DATABASE_LOCK:
+            with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
+                cur = conn.cursor()
+                """ shape for each data entry:
                 {
-                    "ns": r[0],
-                    "n": r[1],
-                    "v": r[2],
-                    "t": r[3],
-                    "d": r[4],
-                    "account": r[5],
-                    "region": r[6],
+                    "ns": r.namespace,
+                    "n": r.name,
+                    "v": r.value,
+                    "t": r.timestamp,
+                    "d": [{"n": d.name, "v": d.value} for d in r.dimensions],
+                    "account": account-id, # new for v2
+                    "region": region_name, # new for v2
                 }
-                for r in cur.fetchall()
-            ]
-            # TODO add aggregated metrics (was not handled by v1 either)
-            return metrics_result
+                """
+                query = f"SELECT namespace, metric_name, value, timestamp, dimensions, account_id, region from {self.TABLE_SINGLE_METRICS}"
+                cur.execute(query)
+                metrics_result = [
+                    {
+                        "ns": r[0],
+                        "n": r[1],
+                        "v": r[2],
+                        "t": r[3],
+                        "d": r[4],
+                        "account": r[5],
+                        "region": r[6],
+                    }
+                    for r in cur.fetchall()
+                ]
+                # TODO add aggregated metrics (was not handled by v1 either)
+                return metrics_result
