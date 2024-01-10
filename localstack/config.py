@@ -655,6 +655,8 @@ def populate_edge_configuration(
     GATEWAY_LISTEN,
 ) = populate_edge_configuration(os.environ)
 
+GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
+
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
@@ -1114,6 +1116,7 @@ CONFIG_ENV_VARS = [
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",
     "GATEWAY_LISTEN",
+    "GATEWAY_WORKER_THREAD_COUNT",
     "HOSTNAME",
     "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
