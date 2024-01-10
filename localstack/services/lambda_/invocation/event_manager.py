@@ -77,12 +77,12 @@ class EventQueueUpdateWorker(QueueUpdateWorker):
 class QueueManager:
     queues: dict[str, StandardQueue]
     queue_lock: threading.RLock
-    queue_update_worker: QueueUpdateWorker
+    queue_update_worker: EventQueueUpdateWorker
 
     def __init__(self):
         self.queues = {}
         self.queue_lock = threading.RLock()
-        self.queue_update_worker = QueueUpdateWorker()
+        self.queue_update_worker = EventQueueUpdateWorker()
         self.queue_update_worker.start()
 
     def get_queue(self, queue_name: str):
