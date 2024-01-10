@@ -403,7 +403,9 @@ def delete_expired_items() -> int:
                         delete_requests = [
                             {"DeleteRequest": {"Key": key}} for key in keys_to_delete
                         ]
-                        client.batch_write_item(RequestItems={table_name: delete_requests})
+                        for i in range(0, len(delete_requests), 25):
+                            batch = delete_requests[i : i + 25]
+                            client.batch_write_item(RequestItems={table_name: batch})
                     except Exception as e:
                         LOG.warning(
                             "An error occurred when deleting expired items from table %s: %s",
