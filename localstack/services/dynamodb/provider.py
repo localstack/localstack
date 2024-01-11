@@ -380,7 +380,7 @@ def delete_expired_items() -> int:
     no_expired_items = 0
     for account_id, region_name, state in dynamodb_stores.iter_stores():
         ttl_specs = state.ttl_specifications
-        client = connect_to(region_name=region_name).dynamodb
+        client = connect_to(aws_access_key_id=account_id, region_name=region_name).dynamodb
         for table_name, ttl_spec in ttl_specs.items():
             if ttl_spec.get("Enabled", False):
                 attribute_name = ttl_spec.get("AttributeName")
