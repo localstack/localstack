@@ -509,6 +509,14 @@ class RuleGroup(RuleFactory):
 
 
 class _EndpointRule(RuleFactory, Generic[E]):
+    """
+    Generates default werkzeug ``Rule`` object with the given attributes. Additionally, it makes sure that
+    the generated rule always has a default host value, if the map has host matching enabled. Specifically,
+    it adds the well-known placeholder ``<__host__>``, which is later stripped out of the request arguments
+    when dispatching to the endpoint. This ensures compatibility of rule definitions across routers that
+    have host matching enabled or not.
+    """
+
     def __init__(
         self,
         path: str,
@@ -540,6 +548,19 @@ class _EndpointRule(RuleFactory, Generic[E]):
 
 
 class _EndpointFunction(RuleFactory):
+    """
+    Internal rule factory that generates router Rules from ``@route`` annotated functions, or anything else
+    that can be interpreted as a ``_RouteEndpoint``. It extracts the rule attributes from the
+    ``_RuleAttributes`` attribute defined by ``_RouteEndpoint``. Example::
+
+        @route("/my_api", methods=["GET"])
+        def do_get(request: Request, _args):
+            # should be inherited
+            return Response(f"{request.path}/do-get")
+
+        router.add(do_get)  # <- will use an _EndpointFunction RuleFactory.
+    """
+
     def __init__(self, fn: _RouteEndpoint):
         self.fn = fn
 
