@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 class SQSEventSourceListener(EventSourceListener):
     # SQS listener thread settings
     SQS_LISTENER_THREAD: Dict = {}
-    SQS_POLL_INTERVAL_SEC: float = config.LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL
+    SQS_POLL_INTERVAL_SEC: float = config.LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC
 
     _invoke_adapter: EventSourceAdapter
 
