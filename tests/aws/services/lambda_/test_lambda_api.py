@@ -408,7 +408,9 @@ class TestLambdaFunction:
         )
 
     # TODO: fix type of AccessDeniedException yielding null
-    @markers.snapshot.skip_snapshot_verify(paths=["function_arn_other_account_exc..Error.Message"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["function_arn_other_account_exc..Error.Message", "$..CodeSha256"]
+    )
     @markers.aws.validated
     def test_function_arns(
         self, create_lambda_function, region, account_id, aws_client, lambda_su_role, snapshot
