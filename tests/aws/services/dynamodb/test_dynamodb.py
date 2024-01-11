@@ -1579,6 +1579,16 @@ class TestDynamoDB:
         result = aws_client.kms.describe_key(KeyId=kms_master_key_arn)
         snapshot.match("KMSDescription", result)
 
+        result = aws_client.dynamodb.update_table(
+            TableName=table_name, SSESpecification={"Enabled": False}
+        )
+        snapshot.match(
+            "update-table-disable-sse-spec", result["TableDescription"]["SSEDescription"]
+        )
+
+        result = aws_client.dynamodb.describe_table(TableName=table_name)
+        assert "SSESpecification" not in result["Table"]
+
     @markers.aws.validated
     def test_dynamodb_get_batch_items(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
