@@ -115,7 +115,6 @@ class CloudwatchDatabase:
             with self.DATABASE_LOCK:
                 with sqlite3.connect(self.METRICS_DB) as conn:
                     cur = conn.cursor()
-                    print(f"""---> {cur.execute("pragma lockstatus").fetchall()}""")
                     for insert in inserts:
                         times_to_insert = insert.get("TimesToInsert")
                         prepared_placeholder = ",".join(
@@ -416,16 +415,16 @@ class CloudwatchDatabase:
             with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
                 cur = conn.cursor()
                 """ shape for each data entry:
-                {
-                    "ns": r.namespace,
-                    "n": r.name,
-                    "v": r.value,
-                    "t": r.timestamp,
-                    "d": [{"n": d.name, "v": d.value} for d in r.dimensions],
-                    "account": account-id, # new for v2
-                    "region": region_name, # new for v2
-                }
-                """
+                    {
+                        "ns": r.namespace,
+                        "n": r.name,
+                        "v": r.value,
+                        "t": r.timestamp,
+                        "d": [{"n": d.name, "v": d.value} for d in r.dimensions],
+                        "account": account-id, # new for v2
+                        "region": region_name, # new for v2
+                    }
+                    """
                 query = f"SELECT namespace, metric_name, value, timestamp, dimensions, account_id, region from {self.TABLE_SINGLE_METRICS}"
                 cur.execute(query)
                 metrics_result = [

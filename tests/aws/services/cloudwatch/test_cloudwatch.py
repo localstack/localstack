@@ -2283,7 +2283,7 @@ class TestCloudwatch:
         snapshot.match("result", data)
 
     @markers.aws.only_localstack
-    # @pytest.mark.skipif(is_old_provider(), reason="old provider has known concurrency issues")
+    @pytest.mark.skipif(is_old_provider(), reason="old provider has known concurrency issues")
     # test some basic concurrency tasks
     def test_parallel_put_metric_data_list_metrics(self, aws_client):
         num_threads = 20
