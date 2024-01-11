@@ -465,7 +465,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def on_before_start(self):
         self.server.start_dynamodb()
-        self._expired_items_worker.start()
+        if config.DYNAMODB_REMOVE_EXPIRED_ITEMS:
+            self._expired_items_worker.start()
         self._router_rules = ROUTER.add(DynamoDBDeveloperEndpoints())
 
     def on_before_stop(self):
