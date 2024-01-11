@@ -1657,6 +1657,35 @@
       }
     }
   },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[metric_data0]": {
+    "recorded-date": "15-12-2023, 08:58:39",
+    "recorded-content": {
+      "get_metric_data_with_no_unit_specified": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "m1",
+            "Label": "m-test",
+            "Messages": [
+              {
+                "Code": "MultipleUnits",
+                "Value": "Multiple units returned: '[Milliseconds, Seconds]'"
+              }
+            ],
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              60000.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[input_pairs0]": {
     "recorded-date": "15-12-2023, 11:27:23",
     "recorded-content": {
@@ -1721,6 +1750,36 @@
       }
     }
   },
+
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[metric_data1]": {
+    "recorded-date": "15-12-2023, 08:58:42",
+    "recorded-content": {
+      "get_metric_data_with_no_unit_specified": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "m1",
+            "Label": "m-test",
+            "Messages": [
+              {
+                "Code": "MultipleUnits",
+                "Value": "Multiple units returned: '[Milliseconds, Seconds]'"
+              }
+            ],
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              120000.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[input_pairs2]": {
     "recorded-date": "15-12-2023, 11:27:27",
     "recorded-content": {
@@ -1743,6 +1802,35 @@
             "Timestamps": "timestamp",
             "Values": [
               109.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[metric_data2]": {
+    "recorded-date": "15-12-2023, 08:58:44",
+    "recorded-content": {
+      "get_metric_data_with_no_unit_specified": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "m1",
+            "Label": "m-test",
+            "Messages": [
+              {
+                "Code": "MultipleUnits",
+                "Value": "Multiple units returned: '[Count, Milliseconds, Seconds]'"
+              }
+            ],
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              5.0
             ]
           }
         ],

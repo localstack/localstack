@@ -2056,6 +2056,91 @@ class TestCloudwatch:
         sleep_before = 2 if is_aws_cloud() else 0.0
         retry(assert_results, retries=retries, sleep=1.0, sleep_before=sleep_before)
 
+    base_metric_data = [
+        {
+            "MetricName": "<metric_name>",
+            "Timestamp": "<now>",
+            "Value": 60000,
+            "Unit": "Milliseconds",
+        },
+        {
+            "MetricName": "<metric_name>",
+            "Timestamp": "<now>",
+            "Value": 60,
+            "Unit": "Seconds",
+        },
+    ]
+    count_metric = {
+        "MetricName": "<metric_name>",
+        "Timestamp": "<now>",
+        "Value": 5,
+        "Unit": "Count",
+    }
+
+    @pytest.mark.parametrize(
+        "metric_data",
+        [
+            base_metric_data,
+            base_metric_data + base_metric_data,
+            base_metric_data + base_metric_data + [count_metric],
+        ],
+    )
+    @markers.aws.needs_fixing
+    @pytest.mark.skip(reason="Not supported in either provider, needs to be fixed in new one")
+    def test_get_metric_data_different_units_no_unit_in_query(
+        self, aws_client, snapshot, metric_data
+    ):
+        # From the docs:
+        """
+        In a Get operation, if you omit Unit then all data that was collected with any unit is returned, along with the
+        corresponding units that were specified when the data was reported to CloudWatch. If you specify a unit, the
+        operation returns only data that was collected with that unit specified. If you specify a unit that does not
+        match the data collected, the results of the operation are null. CloudWatch does not perform unit conversions.
+        """
+        # TODO: Check if this part of the docs hold -> this seems to be impossible. When provided with a statistic,
+        # it simply picks the first unit out of the list of allowed units, then returns the statistic based exclusively
+        # on the values that have this particular unit. And there seems to be no way to not provide a statistic.
+
+        # The list of allowed units seems to be:
+        # [Megabits, Terabits, Gigabits, Count, Bytes, Gigabytes, Gigabytes / Second, Kilobytes, Kilobits / Second,
+        # Terabytes, Terabits/Second, Bytes/Second, Percent, Megabytes, Megabits/Second, Milliseconds, Microseconds,
+        # Kilobytes/Second, Gigabits/Second, Megabytes/Second, Bits, Bits/Second, Count/Second, Seconds, Kilobits,
+        # Terabytes/Second, None ].
+
+        namespace = f"n-sp-{short_uid()}"
+        metric_name = "m-test"
+        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+
+        for m in metric_data:
+            m["MetricName"] = metric_name
+            m["Timestamp"] = now
+        aws_client.cloudwatch.put_metric_data(Namespace=namespace, MetricData=metric_data)
+
+        def assert_results():
+            response = aws_client.cloudwatch.get_metric_data(
+                MetricDataQueries=[
+                    {
+                        "Id": "m1",
+                        "MetricStat": {
+                            "Metric": {
+                                "Namespace": namespace,
+                                "MetricName": metric_name,
+                            },
+                            "Period": 60,
+                            "Stat": "Sum",
+                        },
+                    }
+                ],
+                StartTime=now,
+                EndTime=now + timedelta(seconds=60),
+                MaxDatapoints=10,
+            )
+            snapshot.match("get_metric_data_with_no_unit_specified", response)
+
+        retries = 10 if is_aws_cloud() else 1
+        sleep_before = 2 if is_aws_cloud() else 0.0
+        retry(assert_results, retries=retries, sleep=1.0, sleep_before=sleep_before)
+
     @pytest.mark.parametrize(
         "input_pairs",
         [
