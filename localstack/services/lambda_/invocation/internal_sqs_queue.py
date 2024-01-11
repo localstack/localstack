@@ -63,7 +63,12 @@ class QueueManager:
         # lock for handling queue lifecycle and avoiding duplicates
         self.queue_lock = threading.RLock()
         self.queue_update_worker = EventQueueUpdateWorker()
+
+    def start(self):
         self.queue_update_worker.start()
+
+    def stop(self):
+        self.queue_update_worker.stop()
 
     def get_queue(self, queue_name: str):
         if queue_name not in self.queues:
@@ -205,4 +210,6 @@ class FakeSqsClient:
 
 @singleton_factory
 def get_fake_sqs_client():
-    return FakeSqsClient(QueueManager())
+    queue_manager = QueueManager()
+    queue_manager.start()
+    return FakeSqsClient(queue_manager)
