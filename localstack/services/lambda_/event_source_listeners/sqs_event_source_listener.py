@@ -88,7 +88,12 @@ class SQSEventSourceListener(EventSourceListener):
                     except Exception as e:
                         if "NonExistentQueue" not in str(e):
                             # TODO: remove event source if queue does no longer exist?
-                            LOG.debug("Unable to poll SQS messages for queue %s: %s", queue_arn, e)
+                            LOG.debug(
+                                "Unable to poll SQS messages for queue %s: %s",
+                                queue_arn,
+                                e,
+                                exc_info=True,
+                            )
 
             except Exception as e:
                 LOG.debug(e)
