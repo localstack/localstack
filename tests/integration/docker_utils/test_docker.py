@@ -1415,6 +1415,23 @@ class TestRunWithAdditionalArgs:
         result = docker_client.inspect_container(container_name)
         assert set(result["HostConfig"]["Dns"]) == {"1.2.3.4", "5.6.7.8"}
 
+    def test_run_with_additional_arguments_random_port(
+        self, docker_client: ContainerClient, create_container
+    ):
+        container = create_container(
+            "alpine",
+            command=["sh", "-c", "while true; do sleep 1; done"],
+            additional_flags="-p 0:80",
+        )
+        docker_client.start_container(container.container_id)
+        inspect_result = docker_client.inspect_container(
+            container_name_or_id=container.container_id
+        )
+        automatic_host_port = int(
+            inspect_result["NetworkSettings"]["Ports"]["80/tcp"][0]["HostPort"]
+        )
+        assert automatic_host_port > 0
+
 
 class TestDockerImages:
     def test_commit_creates_image_from_running_container(self, docker_client: ContainerClient):
