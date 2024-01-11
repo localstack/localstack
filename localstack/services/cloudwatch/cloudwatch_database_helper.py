@@ -1,9 +1,10 @@
 import logging
 import os
 import sqlite3
-import threading
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
+
+from readerwriterlock import rwlock
 
 from localstack import config
 from localstack.aws.api.cloudwatch import MetricData, MetricDataQuery, ScanBy
@@ -35,16 +36,16 @@ class CloudwatchDatabase:
     METRICS_DB_READ_ONLY: str = f"file:{METRICS_DB}?mode=ro"
     TABLE_SINGLE_METRICS = "SINGLE_METRICS"
     TABLE_AGGREGATED_METRICS = "AGGREGATED_METRICS"
-    DATABASE_LOCK: threading.RLock
+    DATABASE_RW_LOCK: rwlock.RWLockWrite
 
     def __init__(self):
-        self.DATABASE_LOCK = threading.RLock()
+        self.DATABASE_RW_LOCK = rwlock.RWLockWrite()
         if os.path.exists(self.METRICS_DB):
             LOG.debug(f"database for metrics already exists ({self.METRICS_DB})")
             return
 
         mkdir(self.CLOUDWATCH_DATA_ROOT)
-        with self.DATABASE_LOCK:
+        with self.DATABASE_RW_LOCK.gen_wlock():
             with sqlite3.connect(self.METRICS_DB) as conn:
                 cur = conn.cursor()
                 common_columns = """
@@ -112,7 +113,7 @@ class CloudwatchDatabase:
                     {"Value": value, "TimesToInsert": int(counts[indexValue])}
                     for indexValue, value in enumerate(metric.get("Values"))
                 ]
-            with self.DATABASE_LOCK:
+            with self.DATABASE_RW_LOCK.gen_wlock():
                 with sqlite3.connect(self.METRICS_DB) as conn:
                     cur = conn.cursor()
                     for insert in inserts:
@@ -205,7 +206,7 @@ class CloudwatchDatabase:
             AND timestamp >= ? AND timestamp < ?
         ) AS subquery
         """
-        with self.DATABASE_LOCK:
+        with self.DATABASE_RW_LOCK.gen_rlock():
             with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
                 cur = conn.cursor()
                 cur.execute(
@@ -280,7 +281,7 @@ class CloudwatchDatabase:
         AND timestamp >= ? AND timestamp < ?
         ORDER BY timestamp ASC
         """
-        with self.DATABASE_LOCK:
+        with self.DATABASE_RW_LOCK.gen_rlock():
             with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
                 cur = conn.cursor()
                 timestamps = []
@@ -354,7 +355,7 @@ class CloudwatchDatabase:
             {dimension_filter}
             ORDER BY timestamp DESC
         """
-        with self.DATABASE_LOCK:
+        with self.DATABASE_RW_LOCK.gen_rlock():
             with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
                 cur = conn.cursor()
 
@@ -374,7 +375,7 @@ class CloudwatchDatabase:
                 return {"metrics": metrics_result}
 
     def clear_tables(self):
-        with self.DATABASE_LOCK:
+        with self.DATABASE_RW_LOCK.gen_wlock():
             with sqlite3.connect(self.METRICS_DB) as conn:
                 cur = conn.cursor()
                 cur.execute(f"DELETE FROM {self.TABLE_SINGLE_METRICS}")
@@ -411,7 +412,7 @@ class CloudwatchDatabase:
         return int(timestamp.timestamp())
 
     def get_all_metric_data(self):
-        with self.DATABASE_LOCK:
+        with self.DATABASE_RW_LOCK.gen_rlock():
             with sqlite3.connect(self.METRICS_DB_READ_ONLY, uri=True) as conn:
                 cur = conn.cursor()
                 """ shape for each data entry:
