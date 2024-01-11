@@ -936,6 +936,10 @@ LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = int(
 
 LAMBDA_EVENTS_INTERNAL_SQS = is_env_true("LAMBDA_EVENTS_INTERNAL_SQS")
 
+LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC = float(
+    os.environ.get("LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC") or 1.0
+)
+
 # DEV: 0 (default) only applies to new lambda provider. For LS developers only.
 # Whether to explicitly expose a free TCP port in lambda containers when invoking functions in host mode for
 # systems that cannot reach the container via its IPv4. For example, macOS cannot reach Docker containers:
@@ -1158,6 +1162,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_LIMITS_CODE_SIZE_UNZIPPED",
     "LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE",
     "LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES",
+    "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
