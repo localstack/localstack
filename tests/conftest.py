@@ -25,6 +25,39 @@ pytest_plugins = [
 ]
 
 
+# FIXME: remove this, quick hack to prevent the HTTPServer fixture to spawn non-daemon threads
+def patch_http_server_fixture():
+    import threading
+
+    try:
+        from pytest_httpserver import HTTPServer, HTTPServerError
+        from werkzeug.serving import make_server
+
+        from localstack.utils.patch import patch
+
+        print("is this executed")
+
+        @patch(HTTPServer.start, pass_target=False)
+        def start_non_daemon_thread(self):
+            if self.is_running():
+                raise HTTPServerError("Server is already running")
+
+            self.server = make_server(
+                self.host, self.port, self.application, ssl_context=self.ssl_context
+            )
+            self.port = self.server.port  # Update port (needed if `port` was set to 0)
+            self.server_thread = threading.Thread(target=self.thread_target, daemon=True)
+            self.server_thread.start()
+
+    except ImportError:
+        # this will be executed in the CLI tests as well, where we don't have the pytest_httpserver dependency
+        # skip in that case
+        pass
+
+
+patch_http_server_fixture()
+
+
 @pytest.hookimpl
 def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
     parser.addoption(
