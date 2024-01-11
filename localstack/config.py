@@ -877,7 +877,8 @@ LAMBDA_IGNORE_ARCHITECTURE = is_env_true("LAMBDA_IGNORE_ARCHITECTURE")
 # TODO: test and add to docs
 # EXPERIMENTAL: 0 (default)
 # prebuild images before execution? Increased cold start time on the tradeoff of increased time until lambda is ACTIVE
-LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
+LAMBDA_PREBUILD_IMAGES = is_env_not_false("LAMBDA_PREBUILD_IMAGES")
+# LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 
 # PUBLIC: docker (default), kubernetes (pro)
 # Where Lambdas will be executed.
