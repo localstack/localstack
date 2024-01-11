@@ -20,6 +20,15 @@
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_enable_disable_alarm_actions": {
     "last_validated_date": "2023-09-12T10:00:45+00:00"
   },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[metric_data0]": {
+    "last_validated_date": "2024-01-11T11:07:38+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[metric_data1]": {
+    "last_validated_date": "2024-01-11T11:07:41+00:00"
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[metric_data2]": {
+    "last_validated_date": "2024-01-11T11:07:43+00:00"
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_no_results": {
     "last_validated_date": "2024-01-10T15:29:50+00:00"
   },
