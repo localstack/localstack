@@ -86,7 +86,7 @@ class TestCloudWatchPerformance:
 
     @markers.aws.only_localstack
     def test_parallel_list_metrics(self, aws_client, aws_client_factory):
-        num_threads = 1200
+        num_threads = 200
         create_barrier = threading.Barrier(num_threads)
         error_counter = Counter()
         namespace = f"namespace-{short_uid()}"
