@@ -818,6 +818,9 @@ DYNAMODB_SHARE_DB = int(os.environ.get("DYNAMODB_SHARE_DB") or 0)
 # the port on which to expose dynamodblocal
 DYNAMODB_LOCAL_PORT = int(os.environ.get("DYNAMODB_LOCAL_PORT") or 0)
 
+# Enables the automatic removal of stale KV pais based on TTL
+DYNAMODB_REMOVE_EXPIRED_ITEMS = is_env_true("DYNAMODB_REMOVE_EXPIRED_ITEMS")
+
 # Used to toggle PurgeInProgress exceptions when calling purge within 60 seconds
 SQS_DELAY_PURGE_RETRY = is_env_true("SQS_DELAY_PURGE_RETRY")
 
@@ -1111,6 +1114,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_LOCAL_PORT",
     "DYNAMODB_SHARE_DB",
     "DYNAMODB_READ_ERROR_PROBABILITY",
+    "DYNAMODB_REMOVE_EXPIRED_ITEMS",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
     "ENABLE_CONFIG_UPDATES",
