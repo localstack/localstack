@@ -558,10 +558,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             }
             for metric in result.get("metrics", [])
         ]
-
         aliases_list = PaginatedList(metrics)
         page, nxt = aliases_list.get_page(
-            lambda metric: metric.get("MetricName"),
+            lambda metric: f"{metric.get('Namespace')}-{metric.get('MetricName')}-{metric.get('Dimensions')}",
             next_token=next_token,
             page_size=LIST_METRICS_MAX_RESULTS,
         )
