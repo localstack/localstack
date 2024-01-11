@@ -171,7 +171,7 @@ class TestACM:
             # expecting FAILED on aws due to not requesting a valid certificate
             # expecting ISSUED as default response from moto
             if response["Certificate"]["Status"] not in ["FAILED", "ISSUED"]:
-                raise Exception("Certificate no yet ready")
+                raise Exception("Certificate not yet ready")
 
         retry(_certificate_ready, sleep=1, retries=30)
 
