@@ -647,6 +647,7 @@ class TestApiGatewayImportRestApi:
         paths=[
             "$.resources.items..resourceMethods.POST",
             # TODO: this is really weird, after importing, AWS returns them empty?
+            "$..rootResourceId",  # TODO: newly added
         ]
     )
     @markers.aws.validated

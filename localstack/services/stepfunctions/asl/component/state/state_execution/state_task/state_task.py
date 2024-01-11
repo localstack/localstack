@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-import copy
 from typing import Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskTimedOutEventDetails
@@ -48,37 +47,6 @@ class StateTask(ExecutionState, abc.ABC):
     def _get_supported_parameters(self) -> Optional[set[str]]:  # noqa
         return None
 
-    def _get_parameters_normalising_bindings(self) -> dict[str, str]:  # noqa
-        return dict()
-
-    def _normalised_parameters_bindings(self, raw_parameters: dict[str, str]) -> dict[str, str]:
-        normalised_parameters = copy.deepcopy(raw_parameters)
-        # Normalise bindings.
-        parameter_normalisers = self._get_parameters_normalising_bindings()
-        for parameter_key in list(normalised_parameters.keys()):
-            norm_parameter_key = parameter_normalisers.get(parameter_key, None)
-            if norm_parameter_key:
-                tmp = normalised_parameters[parameter_key]
-                del normalised_parameters[parameter_key]
-                normalised_parameters[norm_parameter_key] = tmp
-        return normalised_parameters
-
-    def _get_timed_out_failure_event(self) -> FailureEvent:
-        return FailureEvent(
-            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
-            event_type=HistoryEventType.TaskTimedOut,
-            event_details=EventDetails(
-                taskTimedOutEventDetails=TaskTimedOutEventDetails(
-                    error=StatesErrorNameType.StatesTimeout.to_name(),
-                )
-            ),
-        )
-
-    def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-        if isinstance(ex, TimeoutError):
-            return self._get_timed_out_failure_event()
-        return super()._from_error(env=env, ex=ex)
-
     def _eval_parameters(self, env: Environment) -> dict:
         # Eval raw parameters.
         parameters = dict()
@@ -98,6 +66,22 @@ class StateTask(ExecutionState, abc.ABC):
                 parameters.pop(unsupported_parameter, None)
 
         return parameters
+
+    def _get_timed_out_failure_event(self) -> FailureEvent:
+        return FailureEvent(
+            error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
+            event_type=HistoryEventType.TaskTimedOut,
+            event_details=EventDetails(
+                taskTimedOutEventDetails=TaskTimedOutEventDetails(
+                    error=StatesErrorNameType.StatesTimeout.to_name(),
+                )
+            ),
+        )
+
+    def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
+        if isinstance(ex, TimeoutError):
+            return self._get_timed_out_failure_event()
+        return super()._from_error(env=env, ex=ex)
 
     def _eval_body(self, env: Environment) -> None:
         super(StateTask, self)._eval_body(env=env)

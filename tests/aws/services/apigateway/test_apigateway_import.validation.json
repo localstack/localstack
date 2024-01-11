@@ -33,7 +33,7 @@
     "last_validated_date": "2023-06-07T00:26:07+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models_and_request_validation": {
-    "last_validated_date": "2023-06-07T00:25:28+00:00"
+    "last_validated_date": "2024-01-09T22:35:26+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_global_api_key_authorizer": {
     "last_validated_date": "2023-06-07T01:16:37+00:00"
