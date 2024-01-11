@@ -1,7 +1,9 @@
 import copy
 import gzip
 import json
+import logging
 import os
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
@@ -25,6 +27,9 @@ from localstack.utils.sync import poll_condition, wait_until
 if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
 PUBLICATION_RETRIES = 5
+
+
+LOG = logging.getLogger(__name__)
 
 
 def is_old_provider():
@@ -2276,6 +2281,86 @@ class TestCloudwatch:
         )
         snapshot.add_transformer(snapshot.transform.key_value("Label"))
         snapshot.match("result", data)
+
+    @markers.aws.only_localstack
+    # @pytest.mark.skipif(is_old_provider(), reason="old provider has known concurrency issues")
+    # test some basic concurrency tasks
+    def test_parallel_put_metric_data_list_metrics(self, aws_client):
+        num_threads = 20
+        create_barrier = threading.Barrier(num_threads)
+        namespace = f"namespace-{short_uid()}"
+        exception_caught = False
+
+        def _put_metric_get_metric_data(runner: int):
+            nonlocal create_barrier
+            nonlocal namespace
+            nonlocal exception_caught
+            create_barrier.wait()
+            try:
+                if runner % 2:
+                    aws_client.cloudwatch.put_metric_data(
+                        Namespace=namespace,
+                        MetricData=[
+                            {
+                                "MetricName": f"metric-{runner}-1",
+                                "Value": 25,
+                                "Unit": "Seconds",
+                            },
+                            {
+                                "MetricName": f"metric-{runner}-2",
+                                "Value": runner + 1,
+                                "Unit": "Seconds",
+                            },
+                        ],
+                    )
+                else:
+                    now = datetime.utcnow().replace(microsecond=0)
+                    start_time = now - timedelta(minutes=10)
+                    end_time = now + timedelta(minutes=5)
+                    aws_client.cloudwatch.get_metric_data(
+                        MetricDataQueries=[
+                            {
+                                "Id": "some",
+                                "MetricStat": {
+                                    "Metric": {
+                                        "Namespace": namespace,
+                                        "MetricName": f"metric-{runner-1}-1",
+                                    },
+                                    "Period": 60,
+                                    "Stat": "Sum",
+                                },
+                            },
+                            {
+                                "Id": "part",
+                                "MetricStat": {
+                                    "Metric": {
+                                        "Namespace": namespace,
+                                        "MetricName": f"metric-{runner-1}-2",
+                                    },
+                                    "Period": 60,
+                                    "Stat": "Sum",
+                                },
+                            },
+                        ],
+                        StartTime=start_time,
+                        EndTime=end_time,
+                    )
+            except Exception as e:
+                LOG.exception(f"runner {runner} failed: {e}")
+                exception_caught = True
+
+        thread_list = []
+        for i in range(1, num_threads + 1):
+            thread = threading.Thread(target=_put_metric_get_metric_data, args=[i])
+            thread.start()
+            thread_list.append(thread)
+
+        for thread in thread_list:
+            thread.join()
+
+        assert not exception_caught
+        metrics = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
+        assert 20 == len(metrics)  # every second thread inserted two metrics
 
 
 def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
