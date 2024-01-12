@@ -62,6 +62,7 @@ class TestKinesis:
         self,
         kinesis_create_stream,
         wait_for_stream_ready,
+        register_kinesis_consumer,
         wait_for_consumer_ready,
         snapshot,
         aws_client,
@@ -81,10 +82,7 @@ class TestKinesis:
 
         # create consumer and snapshot 1 consumer by list_stream_consumers
         consumer_name = "consumer"
-        response = aws_client.kinesis.register_stream_consumer(
-            StreamARN=stream_arn, ConsumerName=consumer_name
-        )
-        consumer_arn = response["Consumer"]["ConsumerARN"]
+        consumer_arn = register_kinesis_consumer(stream_arn, consumer_name)
         wait_for_consumer_ready(consumer_arn=consumer_arn)
 
         consumer_list = aws_client.kinesis.list_stream_consumers(StreamARN=stream_arn).get(
@@ -99,17 +97,13 @@ class TestKinesis:
 
         snapshot.match("One_consumer_by_describe_stream", consumer_description_by_arn)
 
-        # delete existing consumer and assert 0 remaining consumers
-        aws_client.kinesis.deregister_stream_consumer(
-            StreamARN=stream_arn, ConsumerName=consumer_name
-        )
-
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard(
         self,
         kinesis_create_stream,
         wait_for_stream_ready,
+        register_kinesis_consumer,
         wait_for_consumer_ready,
         snapshot,
         aws_client,
@@ -120,11 +114,8 @@ class TestKinesis:
             "StreamDescription"
         ]["StreamARN"]
         wait_for_stream_ready(stream_name)
-
-        result = aws_client.kinesis.register_stream_consumer(
-            StreamARN=stream_arn, ConsumerName="c1"
-        )["Consumer"]
-        consumer_arn = result["ConsumerARN"]
+        consumer_name = "c1"
+        consumer_arn = register_kinesis_consumer(stream_arn, consumer_name)
         wait_for_consumer_ready(consumer_arn=consumer_arn)
 
         # subscribe to shard
@@ -132,7 +123,7 @@ class TestKinesis:
 
         shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
         result = aws_client.kinesis.subscribe_to_shard(
-            ConsumerARN=result["ConsumerARN"],
+            ConsumerARN=consumer_arn,
             ShardId=shard_id,
             StartingPosition={"Type": "TRIM_HORIZON"},
         )
@@ -157,15 +148,13 @@ class TestKinesis:
         results.sort(key=lambda k: k.get("Data"))
         snapshot.match("Records", results)
 
-        # clean up
-        aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
-
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
     def test_subscribe_to_shard_with_sequence_number_as_iterator(
         self,
         kinesis_create_stream,
         wait_for_stream_ready,
+        register_kinesis_consumer,
         wait_for_consumer_ready,
         snapshot,
         aws_client,
@@ -177,11 +166,10 @@ class TestKinesis:
         ]["StreamARN"]
         wait_for_stream_ready(stream_name)
 
-        result = aws_client.kinesis.register_stream_consumer(
-            StreamARN=stream_arn, ConsumerName="c1"
-        )["Consumer"]
-        consumer_arn = result["ConsumerARN"]
+        consumer_name = "c1"
+        consumer_arn = register_kinesis_consumer(stream_arn, consumer_name)
         wait_for_consumer_ready(consumer_arn=consumer_arn)
+
         # get starting sequence number
         response = aws_client.kinesis.describe_stream(StreamName=stream_name)
         sequence_number = (
@@ -190,11 +178,12 @@ class TestKinesis:
             .get("SequenceNumberRange")
             .get("StartingSequenceNumber")
         )
+
         # subscribe to shard with iterator type as AT_SEQUENCE_NUMBER
         response = aws_client.kinesis.describe_stream(StreamName=stream_name)
         shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
         result = aws_client.kinesis.subscribe_to_shard(
-            ConsumerARN=result["ConsumerARN"],
+            ConsumerARN=consumer_arn,
             ShardId=shard_id,
             StartingPosition={
                 "Type": "AT_SEQUENCE_NUMBER",
@@ -221,9 +210,6 @@ class TestKinesis:
 
         results.sort(key=lambda k: k.get("Data"))
         snapshot.match("Records", results)
-
-        # clean up
-        aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
     @markers.aws.unknown
     def test_get_records(self, kinesis_create_stream, wait_for_stream_ready, aws_client):
@@ -321,7 +307,12 @@ class TestKinesis:
     @markers.aws.validated
     @patch.object(kinesis_provider, "MAX_SUBSCRIPTION_SECONDS", 3)
     def test_subscribe_to_shard_timeout(
-        self, kinesis_create_stream, wait_for_stream_ready, wait_for_consumer_ready, aws_client
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        register_kinesis_consumer,
+        wait_for_consumer_ready,
+        aws_client,
     ):
         # create stream and consumer
         stream_name = kinesis_create_stream(ShardCount=1)
@@ -329,18 +320,17 @@ class TestKinesis:
             "StreamDescription"
         ]["StreamARN"]
         wait_for_stream_ready(stream_name)
+
         # create consumer
-        result = aws_client.kinesis.register_stream_consumer(
-            StreamARN=stream_arn, ConsumerName="c1"
-        )["Consumer"]
-        consumer_arn = result["ConsumerARN"]
+        consumer_name = "c1"
+        consumer_arn = register_kinesis_consumer(stream_arn, consumer_name)
         wait_for_consumer_ready(consumer_arn=consumer_arn)
 
         # subscribe to shard
         response = aws_client.kinesis.describe_stream(StreamName=stream_name)
         shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
         result = aws_client.kinesis.subscribe_to_shard(
-            ConsumerARN=result["ConsumerARN"],
+            ConsumerARN=consumer_arn,
             ShardId=shard_id,
             StartingPosition={"Type": "TRIM_HORIZON"},
         )
@@ -362,9 +352,6 @@ class TestKinesis:
             results.extend(records)
 
         assert len(results) == 0
-
-        # clean up
-        aws_client.kinesis.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
     @markers.aws.validated
     def test_add_tags_to_stream(

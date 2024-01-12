@@ -1,6 +1,33 @@
+import logging
+
 import pytest
 
 from localstack.utils.common import poll_condition
+
+LOG = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def register_kinesis_consumer(aws_client):
+    kinesis = aws_client.kinesis
+    consumer_arns = []
+
+    def _register_kinesis_consumer(stream_arn: str, consumer_name: str):
+        response = kinesis.register_stream_consumer(
+            StreamARN=stream_arn, ConsumerName=consumer_name
+        )
+        consumer_arn = response["Consumer"]["ConsumerARN"]
+        consumer_arns.append(consumer_arn)
+
+        return consumer_arn
+
+    yield _register_kinesis_consumer
+
+    for consumer_arn in consumer_arns:
+        try:
+            kinesis.deregister_stream_consumer(ConsumerARN=consumer_arn)
+        except Exception:
+            LOG.info("Failed to deregister stream consumer %s", consumer_arn)
 
 
 @pytest.fixture(autouse=True)
