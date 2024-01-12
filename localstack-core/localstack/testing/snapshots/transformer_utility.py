@@ -637,10 +637,12 @@ class TransformerUtility:
     def sfn_map_run_arn(map_run_arn: LongArn, index: int) -> list[RegexTransformer]:
         map_run_arn_part = map_run_arn.split("/")[-1]
         arn_parts = map_run_arn_part.split(":")
-        return [
-            RegexTransformer(arn_parts[0], f"<MapRunArnPart0_{index}idx>"),
+        transformers = [
             RegexTransformer(arn_parts[1], f"<MapRunArnPart1_{index}idx>"),
         ]
+        if re.match(PATTERN_UUID, arn_parts[0]):
+            transformers.append(RegexTransformer(arn_parts[0], f"<MapRunArnPart0_{index}idx>"))
+        return transformers
 
     @staticmethod
     def sfn_sqs_integration():

@@ -147,6 +147,7 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_TOLERATED_FAILURE_PERCENTAGE_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_tolerated_failure_percentage_path.json5"
     )
+    MAP_STATE_LABEL: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_state_label.json5")
     CHOICE_STATE_UNSORTED_CHOICE_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/choice_state_unsorted_choice_parameters.json5"
     )

@@ -110,12 +110,13 @@ class MapRunRecord:
         max_concurrency: int,
         tolerated_failure_count: int,
         tolerated_failure_percentage: float,
+        label: str,
     ):
         self.update_event = threading.Event()
         (
             map_state_machine_arn,
             map_run_arn,
-        ) = self._generate_map_run_arns(state_machine_arn=state_machine_arn)
+        ) = self._generate_map_run_arns(state_machine_arn=state_machine_arn, label=label)
         self.map_run_arn = map_run_arn
         self.map_state_machine_arn = map_state_machine_arn
         self.execution_arn = execution_arn
@@ -129,13 +130,13 @@ class MapRunRecord:
         self.tolerated_failure_percentage = tolerated_failure_percentage
 
     @staticmethod
-    def _generate_map_run_arns(state_machine_arn: Arn) -> tuple[LongArn, LongArn]:
+    def _generate_map_run_arns(state_machine_arn: Arn, label: str) -> tuple[LongArn, LongArn]:
         # Generate a new MapRunArn given the StateMachineArn, such that:
         # inp: arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>
         # MRA: arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>
         # SMA: arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>
         map_run_arn = state_machine_arn.replace(":stateMachine:", ":mapRun:")
-        part_1 = long_uid()
+        part_1 = long_uid() if label == "" else label
         map_run_arn = f"{map_run_arn}/{part_1}:{long_uid()}"
         return f"{state_machine_arn}/{part_1}", map_run_arn
 
