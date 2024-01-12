@@ -13,7 +13,7 @@ from localstack.services.kinesis import provider as kinesis_provider
 from localstack.testing.pytest import markers
 from localstack.utils.aws import resources
 from localstack.utils.aws.request_context import mock_aws_request_headers
-from localstack.utils.common import poll_condition, retry, select_attributes, short_uid
+from localstack.utils.common import retry, select_attributes, short_uid
 from localstack.utils.kinesis import kinesis_connector
 
 
@@ -33,11 +33,6 @@ def get_shard_iterator(stream_name, kinesis_client):
         StartingSequenceNumber=sequence_number,
     )
     return response.get("ShardIterator")
-
-
-@pytest.fixture(autouse=True)
-def kinesis_snapshot_transformer(snapshot):
-    snapshot.add_transformer(snapshot.transform.kinesis_api())
 
 
 class TestKinesis:
@@ -434,20 +429,6 @@ class TestKinesis:
         )["ShardIterator"]
 
         assert aws_client.kinesis.get_records(ShardIterator=f'"{shard_iterator}"')["Records"]
-
-
-@pytest.fixture
-def wait_for_consumer_ready(aws_client):
-    def _wait_for_consumer_ready(consumer_arn: str):
-        def is_consumer_ready():
-            describe_response = aws_client.kinesis.describe_stream_consumer(
-                ConsumerARN=consumer_arn
-            )
-            return describe_response["ConsumerDescription"]["ConsumerStatus"] == "ACTIVE"
-
-        poll_condition(is_consumer_ready)
-
-    return _wait_for_consumer_ready
 
 
 class TestKinesisPythonClient:
