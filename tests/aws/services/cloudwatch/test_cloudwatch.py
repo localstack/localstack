@@ -2362,6 +2362,37 @@ class TestCloudwatch:
         metrics = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
         assert 20 == len(metrics)  # every second thread inserted two metrics
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_provider,
+        paths=[
+            "$..describe-alarm.MetricAlarms..AlarmDescription",
+            "$..describe-alarm.MetricAlarms..StateTransitionedTimestamp",
+        ],
+    )
+    def test_delete_alarm(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudwatch_api())
+
+        alarm_name = "test-alarm"
+        aws_client.cloudwatch.put_metric_alarm(
+            AlarmName="test-alarm",
+            Namespace=f"my-namespace-{short_uid()}",
+            MetricName="metric1",
+            EvaluationPeriods=1,
+            ComparisonOperator="GreaterThanThreshold",
+            Period=60,
+            Statistic="Sum",
+            Threshold=30,
+        )
+        result = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+        snapshot.match("describe-alarm", result)
+
+        delete_result = aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name])
+        snapshot.match("delete-alarm", delete_result)
+
+        describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+        snapshot.match("describe-after-delete", describe_alarm)
+
 
 def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
     log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")["events"]

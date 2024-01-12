@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import threading
 import uuid
 from typing import List
 
@@ -95,6 +96,7 @@ LABEL_DIFFERENTIATORS = ["Stat", "Period"]
 
 
 LOG = logging.getLogger(__name__)
+_STORE_LOCK = threading.RLock()
 
 
 class ValidationError(CommonServiceException):
@@ -183,12 +185,14 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         """
         Delete alarms.
         """
-
-        for alarm_name in alarm_names:
-            alarm_arn = arns.cloudwatch_alarm_arn(
-                alarm_name, account_id=context.account_id, region_name=context.region
-            )  # obtain alarm ARN from alarm name
-            self.alarm_scheduler.delete_scheduler_for_alarm(alarm_arn)
+        with _STORE_LOCK:
+            for alarm_name in alarm_names:
+                alarm_arn = arns.cloudwatch_alarm_arn(
+                    alarm_name, account_id=context.account_id, region_name=context.region
+                )  # obtain alarm ARN from alarm name
+                self.alarm_scheduler.delete_scheduler_for_alarm(alarm_arn)
+                store = self.get_store(context.account_id, context.region)
+                store.Alarms.pop(alarm_arn, None)
 
     def put_metric_data(
         self, context: RequestContext, namespace: Namespace, metric_data: MetricData
@@ -288,60 +292,60 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             raise InvalidParameterValueException(
                 "TODO: check right error message: Json was not correctly formatted"
             )
-
-        store = self.get_store(context.account_id, context.region)
-        alarm = store.Alarms.get(
-            arns.cloudwatch_alarm_arn(
-                alarm_name, account_id=context.account_id, region_name=context.region
-            )
-        )
-        if not alarm:
-            raise ResourceNotFound()
-
-        old_state = alarm.alarm["StateValue"]
-        if state_value not in ("OK", "ALARM", "INSUFFICIENT_DATA"):
-            raise ValidationError(
-                f"1 validation error detected: Value '{state_value}' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
-            )
-
-        old_state_reason = alarm.alarm["StateReason"]
-        old_state_update_timestamp = alarm.alarm["StateUpdatedTimestamp"]
-
-        self._update_state(context, alarm, state_value, state_reason, state_reason_data)
-
-        if not alarm.alarm["ActionsEnabled"] or old_state == state_value:
-            return
-        if state_value == "OK":
-            actions = alarm.alarm["OKActions"]
-        elif state_value == "ALARM":
-            actions = alarm.alarm["AlarmActions"]
-        else:
-            actions = alarm.alarm["InsufficientDataActions"]
-        for action in actions:
-            data = arns.parse_arn(action)
-            # test for sns - can this be done in a more generic way?
-            if data["service"] == "sns":
-                service = connect_to(
-                    region_name=data["region"], aws_access_key_id=data["account"]
-                ).sns
-                subject = f"""{state_value}: "{alarm_name}" in {context.region}"""
-                message = create_message_response_update_state_sns(alarm, old_state)
-                service.publish(TopicArn=action, Subject=subject, Message=message)
-            elif data["service"] == "lambda":
-                service = connect_to(
-                    region_name=data["region"], aws_access_key_id=data["account"]
-                ).lambda_
-                message = create_message_response_update_state_lambda(
-                    alarm, old_state, old_state_reason, old_state_update_timestamp
+        with _STORE_LOCK:
+            store = self.get_store(context.account_id, context.region)
+            alarm = store.Alarms.get(
+                arns.cloudwatch_alarm_arn(
+                    alarm_name, account_id=context.account_id, region_name=context.region
                 )
-                service.invoke(FunctionName=lambda_function_name(action), Payload=message)
+            )
+            if not alarm:
+                raise ResourceNotFound()
+
+            old_state = alarm.alarm["StateValue"]
+            if state_value not in ("OK", "ALARM", "INSUFFICIENT_DATA"):
+                raise ValidationError(
+                    f"1 validation error detected: Value '{state_value}' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
+                )
+
+            old_state_reason = alarm.alarm["StateReason"]
+            old_state_update_timestamp = alarm.alarm["StateUpdatedTimestamp"]
+
+            self._update_state(context, alarm, state_value, state_reason, state_reason_data)
+
+            if not alarm.alarm["ActionsEnabled"] or old_state == state_value:
+                return
+            if state_value == "OK":
+                actions = alarm.alarm["OKActions"]
+            elif state_value == "ALARM":
+                actions = alarm.alarm["AlarmActions"]
             else:
-                # TODO: support other actions
-                LOG.warning(
-                    "Action for service %s not implemented, action '%s' will not be triggered.",
-                    data["service"],
-                    action,
-                )
+                actions = alarm.alarm["InsufficientDataActions"]
+            for action in actions:
+                data = arns.parse_arn(action)
+                # test for sns - can this be done in a more generic way?
+                if data["service"] == "sns":
+                    service = connect_to(
+                        region_name=data["region"], aws_access_key_id=data["account"]
+                    ).sns
+                    subject = f"""{state_value}: "{alarm_name}" in {context.region}"""
+                    message = create_message_response_update_state_sns(alarm, old_state)
+                    service.publish(TopicArn=action, Subject=subject, Message=message)
+                elif data["service"] == "lambda":
+                    service = connect_to(
+                        region_name=data["region"], aws_access_key_id=data["account"]
+                    ).lambda_
+                    message = create_message_response_update_state_lambda(
+                        alarm, old_state, old_state_reason, old_state_update_timestamp
+                    )
+                    service.invoke(FunctionName=lambda_function_name(action), Payload=message)
+                else:
+                    # TODO: support other actions
+                    LOG.warning(
+                        "Action for service %s not implemented, action '%s' will not be triggered.",
+                        data["service"],
+                        action,
+                    )
 
     def get_raw_metrics(self, request: Request):
         """this feature was introduced with https://github.com/localstack/localstack/pull/3535
@@ -401,12 +405,12 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 f"Option {evaluate_low_sample_count_percentile} is not supported. "
                 "Supported options for parameter EvaluateLowSampleCountPercentile are evaluate and ignore."
             )
-
-        store = self.get_store(context.account_id, context.region)
-        metric_alarm = LocalStackMetricAlarm(context.account_id, context.region, {**request})
-        alarm_arn = metric_alarm.alarm["AlarmArn"]
-        store.Alarms[alarm_arn] = metric_alarm
-        self.alarm_scheduler.schedule_metric_alarm(alarm_arn)
+        with _STORE_LOCK:
+            store = self.get_store(context.account_id, context.region)
+            metric_alarm = LocalStackMetricAlarm(context.account_id, context.region, {**request})
+            alarm_arn = metric_alarm.alarm["AlarmArn"]
+            store.Alarms[alarm_arn] = metric_alarm
+            self.alarm_scheduler.schedule_metric_alarm(alarm_arn)
 
     @handler("PutCompositeAlarm", expand=False)
     def put_composite_alarm(self, context: RequestContext, request: PutCompositeAlarmInput) -> None:
