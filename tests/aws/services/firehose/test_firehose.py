@@ -35,7 +35,11 @@ def handler(event, context):
 @pytest.mark.parametrize("lambda_processor_enabled", [True, False])
 @markers.aws.unknown
 def test_firehose_http(
-    aws_client, lambda_processor_enabled: bool, create_lambda_function, httpserver: HTTPServer
+    aws_client,
+    lambda_processor_enabled: bool,
+    create_lambda_function,
+    httpserver: HTTPServer,
+    cleanups,
 ):
     httpserver.expect_request("").respond_with_data(b"", 200)
     http_endpoint = httpserver.url_for("/")
@@ -47,7 +51,6 @@ def test_firehose_http(
         ]["FunctionArn"]
 
     # define firehose configs
-    # records = []
     http_destination_update = {
         "EndpointConfiguration": {"Url": http_endpoint, "Name": "test_update"}
     }
@@ -87,6 +90,8 @@ def test_firehose_http(
         HttpEndpointDestinationConfiguration=http_destination,
     )
     assert stream
+    cleanups.append(lambda: firehose.delete_delivery_stream(DeliveryStreamName=stream_name))
+
     stream_description = firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
     stream_description = stream_description["DeliveryStreamDescription"]
     destination_description = stream_description["Destinations"][0][
@@ -122,10 +127,6 @@ def test_firehose_http(
         "HttpEndpointDestinationDescription"
     ]
     assert destination_description["EndpointConfiguration"]["Name"] == "test_update"
-
-    # delete stream
-    stream = firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
-    assert stream["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
 class TestFirehoseIntegration:
