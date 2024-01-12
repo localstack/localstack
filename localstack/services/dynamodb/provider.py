@@ -4,12 +4,14 @@ import logging
 import os
 import random
 import re
+import threading
 import time
 import traceback
 from binascii import crc32
 from contextlib import contextmanager
+from datetime import datetime
 from operator import itemgetter
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import requests
 import werkzeug
@@ -105,7 +107,7 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.http import Response
+from localstack.http import Request, Response, route
 from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
 from localstack.services.dynamodb.server import DynamodbServer
 from localstack.services.dynamodb.utils import (
@@ -132,8 +134,9 @@ from localstack.utils.aws.request_context import (
 from localstack.utils.collections import select_attributes, select_from_typed_dict
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
+from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import long_uid, to_str
-from localstack.utils.threads import start_worker_thread
+from localstack.utils.threads import FuncThread, start_thread, start_worker_thread
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -356,15 +359,120 @@ def modify_context_region(context: RequestContext, region: str):
         context.request.headers["Authorization"] = original_authorization
 
 
+class DynamoDBDeveloperEndpoints:
+    """
+    Developer endpoints for DynamoDB
+    DELETE /_aws/dynamodb/expired - delete expired items from tables with TTL enabled; return the number of expired
+        items deleted
+    """
+
+    @route("/_aws/dynamodb/expired", methods=["DELETE"])
+    def delete_expired_messages(self, _: Request):
+        no_expired_items = delete_expired_items()
+        return {"ExpiredItems": no_expired_items}
+
+
+def delete_expired_items() -> int:
+    """
+    This utility function iterates over all stores, looks for tables with TTL enabled,
+    scan such tables and delete expired items.
+    """
+    no_expired_items = 0
+    for account_id, region_name, state in dynamodb_stores.iter_stores():
+        ttl_specs = state.ttl_specifications
+        client = connect_to(aws_access_key_id=account_id, region_name=region_name).dynamodb
+        for table_name, ttl_spec in ttl_specs.items():
+            if ttl_spec.get("Enabled", False):
+                attribute_name = ttl_spec.get("AttributeName")
+                current_time = int(datetime.now().timestamp())
+                try:
+                    result = client.scan(
+                        TableName=table_name,
+                        FilterExpression=f"{attribute_name} <= :threshold",
+                        ExpressionAttributeValues={":threshold": {"N": str(current_time)}},
+                    )
+                    items_to_delete = result.get("Items", [])
+                    no_expired_items += len(items_to_delete)
+                    table_description = client.describe_table(TableName=table_name)
+                    partition_key = _get_partition_key(table_description)
+                    keys_to_delete = [
+                        {partition_key: item.get(partition_key)} for item in items_to_delete
+                    ]
+                    delete_requests = [{"DeleteRequest": {"Key": key}} for key in keys_to_delete]
+                    for i in range(0, len(delete_requests), 25):
+                        batch = delete_requests[i : i + 25]
+                        client.batch_write_item(RequestItems={table_name: batch})
+                except Exception as e:
+                    LOG.warning(
+                        "An error occurred when deleting expired items from table %s: %s",
+                        table_name,
+                        e,
+                    )
+    return no_expired_items
+
+
+def _get_partition_key(table_description: DescribeTableOutput) -> str:
+    key_schema = table_description.get("Table", {}).get("KeySchema", [])
+    for key in key_schema:
+        if key["KeyType"] == "HASH":
+            return key["AttributeName"]
+
+
+class ExpiredItemsWorker:
+    """A worker that periodically computes and deletes expired items from DynamoDB tables"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.scheduler = Scheduler()
+        self.thread: Optional[FuncThread] = None
+        self.mutex = threading.RLock()
+
+    def start(self):
+        with self.mutex:
+            if self.thread:
+                return
+
+            self.scheduler = Scheduler()
+            self.scheduler.schedule(
+                delete_expired_items, period=60 * 60
+            )  # the background process seems slow on AWS
+
+            def _run(*_args):
+                self.scheduler.run()
+
+            self.thread = start_thread(_run, name="ddb-remove-expired-items")
+
+    def stop(self):
+        with self.mutex:
+            if self.scheduler:
+                self.scheduler.close()
+
+            if self.thread:
+                self.thread.stop()
+
+            self.thread = None
+            self.scheduler = None
+
+
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     server: DynamodbServer
     """The instance of the server managing the instance of DynamoDB local"""
 
     def __init__(self):
         self.server = self._new_dynamodb_server()
+        self._expired_items_worker = ExpiredItemsWorker()
+        self._router_rules = []
 
     def on_before_start(self):
         self.server.start_dynamodb()
+        if config.DYNAMODB_REMOVE_EXPIRED_ITEMS:
+            self._expired_items_worker.start()
+        self._router_rules = ROUTER.add(DynamoDBDeveloperEndpoints())
+
+    def on_before_stop(self):
+        self._expired_items_worker.stop()
+        for rule in self._router_rules:
+            ROUTER.remove_rule(rule)
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(dynamodb_stores)
@@ -676,6 +784,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             schema = SchemaExtractor.get_table_schema(
                 table_name, context.account_id, global_table_region
             )
+
+            if sse_specification_input := update_table_input.get("SSESpecification"):
+                # If SSESpecification is changed, update store and return the 'UPDATING' status in the response
+                table_definition = get_store(
+                    context.account_id, context.region
+                ).table_definitions.setdefault(table_name, {})
+                if not sse_specification_input["Enabled"]:
+                    table_definition.pop("SSEDescription", None)
+                    schema["Table"]["SSEDescription"]["Status"] = "UPDATING"
+
             return UpdateTableOutput(TableDescription=schema["Table"])
 
         SchemaExtractor.invalidate_table_schema(table_name, context.account_id, global_table_region)

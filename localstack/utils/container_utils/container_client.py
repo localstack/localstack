@@ -166,7 +166,7 @@ class PortMappings:
                 else:
                     self.add(port[0] + i, mapped, protocol)
             return
-        if port is None or int(port) <= 0:
+        if port is None or int(port) < 0:
             raise Exception(f"Unable to add mapping for invalid port: {port}")
         if self.contains(port, protocol):
             return
@@ -242,6 +242,14 @@ class PortMappings:
     def to_dict(self) -> Dict[str, Union[Tuple[str, Union[int, List[int]]], int]]:
         bind_address = self.bind_host or ""
 
+        def bind_port(bind_address, host_port):
+            if host_port == 0:
+                return None
+            elif bind_address:
+                return (bind_address, host_port)
+            else:
+                return host_port
+
         def entry(k, v):
             from_range, protocol = k
             to_range = v
@@ -258,7 +266,7 @@ class PortMappings:
             return [
                 (
                     f"{container_port}{protocol_suffix}",
-                    (bind_address, host_port) if bind_address else host_port,
+                    bind_port(bind_address, host_port),
                 )
                 for container_port, host_port in zip(
                     range(to_range[0], to_range[1] + 1), range(from_range[0], from_range[1] + 1)

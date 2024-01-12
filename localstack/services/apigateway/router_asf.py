@@ -45,6 +45,7 @@ def to_invocation_context(
     data = restore_payload(request)
     headers = Headers(request.headers)
 
+    # TODO: verify that this is needed
     # adjust the X-Forwarded-For header
     x_forwarded_for = headers.getlist("X-Forwarded-For")
     x_forwarded_for.append(request.remote_addr)
@@ -61,6 +62,7 @@ def to_invocation_context(
     #   and use it everywhere.
     ctx = ApiInvocationContext(method, path, data, headers, stage=url_params.get("stage"))
     ctx.raw_uri = raw_uri
+    ctx.auth_identity["sourceIp"] = request.remote_addr
 
     return ctx
 

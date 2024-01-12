@@ -139,9 +139,9 @@
     }
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_create_certificate_for_multiple_alternative_domains": {
-    "recorded-date": "18-12-2023, 13:01:36",
+    "recorded-date": "09-01-2024, 14:58:14",
     "recorded-content": {
-      "list-cert-subject-alternative-names": {
+      "list-cert-summary-list": {
         "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
         "CreatedAt": "datetime",
         "DomainName": "test.example.com",
@@ -153,8 +153,65 @@
         "RenewalEligibility": "INELIGIBLE",
         "Status": "FAILED",
         "SubjectAlternativeNameSummaries": [
+          "*.test.example.com",
+          "another.domain.com",
           "test.example.com",
-          "another.domain.com"
+          "yet-another.domain.com"
+        ],
+        "Type": "AMAZON_ISSUED"
+      },
+      "describe-cert": {
+        "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+        "CreatedAt": "datetime",
+        "DomainName": "test.example.com",
+        "DomainValidationOptions": [
+          {
+            "DomainName": "*.test.example.com",
+            "ValidationDomain": "*.test.example.com",
+            "ValidationEmails": [],
+            "ValidationMethod": "EMAIL",
+            "ValidationStatus": "FAILED"
+          },
+          {
+            "DomainName": "another.domain.com",
+            "ValidationDomain": "another.domain.com",
+            "ValidationEmails": [],
+            "ValidationMethod": "EMAIL",
+            "ValidationStatus": "PENDING_VALIDATION"
+          },
+          {
+            "DomainName": "test.example.com",
+            "ValidationDomain": "test.example.com",
+            "ValidationEmails": [],
+            "ValidationMethod": "EMAIL",
+            "ValidationStatus": "PENDING_VALIDATION"
+          },
+          {
+            "DomainName": "yet-another.domain.com",
+            "ValidationDomain": "yet-another.domain.com",
+            "ValidationEmails": [],
+            "ValidationMethod": "EMAIL",
+            "ValidationStatus": "PENDING_VALIDATION"
+          }
+        ],
+        "ExtendedKeyUsages": [],
+        "FailureReason": "ADDITIONAL_VERIFICATION_REQUIRED",
+        "InUseBy": [],
+        "Issuer": "Amazon",
+        "KeyAlgorithm": "RSA-2048",
+        "KeyUsages": [],
+        "Options": {
+          "CertificateTransparencyLoggingPreference": "ENABLED"
+        },
+        "RenewalEligibility": "INELIGIBLE",
+        "SignatureAlgorithm": "SHA256WITHRSA",
+        "Status": "FAILED",
+        "Subject": "CN=test.example.com",
+        "SubjectAlternativeNames": [
+          "*.test.example.com",
+          "another.domain.com",
+          "test.example.com",
+          "yet-another.domain.com"
         ],
         "Type": "AMAZON_ISSUED"
       }

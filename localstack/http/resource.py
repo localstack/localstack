@@ -45,7 +45,7 @@ def resource(path: str, host: Optional[str] = None, **kwargs):
             def on_post(request: Request, resource_id: str) -> Response:
                 return Response(f"POST called on {resource_id}")
 
-    This class can then be added to a router via ``router.add_route_endpoints(MyResource())``.
+    This class can then be added to a router via ``router.add(MyResource())``.
 
     Note that, if an on_get method is present in the resource but on_head is not, then HEAD requests are automatically
     routed to ``on_get``. This replicates Werkzeug's behavior https://werkzeug.palletsprojects.com/en/2.2.x/routing/.

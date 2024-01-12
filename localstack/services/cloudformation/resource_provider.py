@@ -152,6 +152,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Lambda::CodeSigningConfig": "ResourceProvider",
     "AWS::Lambda::EventInvokeConfig": "ResourceProvider",
     "AWS::Lambda::EventSourceMapping": "ResourceProvider",
+    "AWS::Lambda::Function": "ResourceProvider",
     "AWS::Lambda::LayerVersion": "ResourceProvider",
     "AWS::Lambda::LayerVersionPermission": "ResourceProvider",
     "AWS::Lambda::Permission": "ResourceProvider",
