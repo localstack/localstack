@@ -709,6 +709,12 @@ class TestS3BucketVersioning:
         snapshot.match("put-versioning-suspended-after", put_versioning_suspended_after)
 
         with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_versioning(
+                Bucket=s3_bucket, VersioningConfiguration={"Status": "Disabled"}
+            )
+        snapshot.match("put-versioning-disabled", e.value.response)
+
+        with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_versioning(Bucket=s3_bucket, VersioningConfiguration={})
         snapshot.match("put-versioning-empty", e.value.response)
 
@@ -1342,6 +1348,16 @@ class TestS3ObjectLock:
     def test_put_object_lock_configuration_on_existing_bucket(
         self, s3_bucket, aws_client, snapshot
     ):
+        # this has been updated by AWS:
+        # https://aws.amazon.com/about-aws/whats-new/2023/11/amazon-s3-enabling-object-lock-buckets/
+        # before, S3 buckets had to be created with a specific config to be able to be use S3 Object Lock
+        # however, the bucket needs to be at least versioned
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+
+        snapshot.match("get-object-lock-existing-bucket-no-config", e.value.response)
+
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_lock_configuration(
                 Bucket=s3_bucket,
@@ -1349,21 +1365,37 @@ class TestS3ObjectLock:
                     "ObjectLockEnabled": "Enabled",
                 },
             )
-        snapshot.match("put-object-lock-existing-bucket-enabled", e.value.response)
+        snapshot.match("put-object-lock-existing-bucket-no-versioning", e.value.response)
+
+        suspend_versioning = aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Suspended"}
+        )
+        snapshot.match("suspended-versioning", suspend_versioning)
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_lock_configuration(
                 Bucket=s3_bucket,
                 ObjectLockConfiguration={
-                    "Rule": {
-                        "DefaultRetention": {
-                            "Mode": "GOVERNANCE",
-                            "Days": 1,
-                        }
-                    }
+                    "ObjectLockEnabled": "Enabled",
                 },
             )
-        snapshot.match("put-object-lock-existing-bucket-rule", e.value.response)
+        snapshot.match("put-object-lock-existing-bucket-versioning-disabled", e.value.response)
+
+        enable_versioning = aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        snapshot.match("enabled-versioning", enable_versioning)
+
+        put_lock_on_existing_bucket = aws_client.s3.put_object_lock_configuration(
+            Bucket=s3_bucket,
+            ObjectLockConfiguration={
+                "ObjectLockEnabled": "Enabled",
+            },
+        )
+        snapshot.match("put-object-lock-existing-bucket-enabled", put_lock_on_existing_bucket)
+
+        get_lock_on_existing_bucket = aws_client.s3.get_object_lock_configuration(Bucket=s3_bucket)
+        snapshot.match("get-object-lock-existing-bucket-enabled", get_lock_on_existing_bucket)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
