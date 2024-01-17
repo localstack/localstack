@@ -17,7 +17,7 @@ class JSONPathUtils:
                 f"The JSONPath {path} could not be found in the input {to_json_str(data)}"
             )
 
-        if isinstance(matches[0].path, Index):
+        if len(matches) > 1 or isinstance(matches[0].path, Index):
             value = [match.value for match in matches]
         else:
             value = matches[0].value
