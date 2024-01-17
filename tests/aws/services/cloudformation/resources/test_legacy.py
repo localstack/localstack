@@ -753,9 +753,6 @@ class TestCloudFormation:
         assert not vpcs
 
     # TODO: evaluate (can we drop this?)
-    @pytest.mark.skip(
-        reason="GetAtt resolved old value. Lambda resource cleanup leaking: poller stays alive."
-    )
     @markers.aws.validated
     def test_updating_stack_with_iam_role(self, deploy_cfn_template, aws_client):
         lambda_role_name = f"lambda-role-{short_uid()}"

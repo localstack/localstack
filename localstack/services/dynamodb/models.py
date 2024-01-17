@@ -1,4 +1,9 @@
-from localstack.aws.api.dynamodb import RegionName, ReplicaDescription, TableName
+from localstack.aws.api.dynamodb import (
+    RegionName,
+    ReplicaDescription,
+    TableName,
+    TimeToLiveSpecification,
+)
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -29,7 +34,7 @@ class DynamoDBStore(BaseStore):
     table_properties: dict[str, dict] = LocalAttribute(default=dict)
 
     # maps table names to TTL specifications
-    ttl_specifications: dict[str, dict] = LocalAttribute(default=dict)
+    ttl_specifications: dict[str, TimeToLiveSpecification] = LocalAttribute(default=dict)
 
     # maps backups
     backups: dict[str, dict] = LocalAttribute(default=dict)

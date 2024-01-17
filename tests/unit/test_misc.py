@@ -63,6 +63,10 @@ class TestMisc(unittest.TestCase):
         map.add([234, 237], [345, 348])
         self.assertEqual("-p 123-124:123-124 -p 234-237:345-348", map.to_str())
 
+        map = PortMappings()
+        map.add(0, 123)
+        self.assertEqual("-p 0:123", map.to_str())
+
     def test_port_mappings_single_protocol(self):
         map = PortMappings()
         map.add(port=53, protocol="udp")
@@ -110,6 +114,15 @@ class TestMisc(unittest.TestCase):
             map.to_dict(),
         )
 
+        map = PortMappings()
+        map.add(port=0, mapped=123, protocol="tcp")
+        self.assertEqual(
+            {
+                "123/tcp": None,
+            },
+            map.to_dict(),
+        )
+
     def test_port_mappings_list(self):
         map = PortMappings()
         map.add(port=[122, 124], protocol="tcp")
@@ -118,6 +131,10 @@ class TestMisc(unittest.TestCase):
         map.add(port=[123, 125], protocol="tcp")
         map.add(port=[124, 126], protocol="udp")
         self.assertEqual(["-p", "122-125:122-125", "-p", "123-126:123-126/udp"], map.to_list())
+
+        map = PortMappings()
+        map.add(port=0, mapped=123, protocol="tcp")
+        self.assertEqual(["-p", "0:123"], map.to_list())
 
     def test_update_config_variable(self):
         config_listener.update_config_variable("foo", "bar")

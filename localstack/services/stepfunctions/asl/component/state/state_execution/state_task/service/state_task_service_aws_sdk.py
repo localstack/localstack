@@ -21,38 +21,16 @@ from localstack.services.stepfunctions.asl.component.state.state_props import St
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
-from localstack.utils.common import camel_to_snake_case
 
 
 class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     _NORMALISED_SERVICE_NAMES = {"dynamodb": "DynamoDb"}
-    _API_NAMES: dict[str, str] = {"sfn": "stepfunctions"}
-    _SFN_TO_BOTO_PARAM_NORMALISERS = {
-        "stepfunctions": {
-            "send_task_success": {"Output": "output", "TaskToken": "taskToken"},
-            "send_task_heartbeat": {"TaskToken": "taskToken"},
-            "send_task_failure": {"TaskToken": "taskToken", "Error": "error", "Cause": "cause"},
-        }
-    }
-
-    _normalised_api_name: str
-    _normalised_api_action: str
 
     def from_state_props(self, state_props: StateProps) -> None:
         super().from_state_props(state_props=state_props)
-        self._normalised_api_name = self._normalise_api_name(self.resource.api_name)
-        self._normalised_api_action = camel_to_snake_case(self.resource.api_action)
-
-    def _get_parameters_normalising_bindings(self) -> dict[str, str]:
-        api_normalisers = self._SFN_TO_BOTO_PARAM_NORMALISERS.get(self._normalised_api_name, dict())
-        action_normalisers = api_normalisers.get(self._normalised_api_action, dict())
-        return action_normalisers
 
     def _get_sfn_resource_type(self) -> str:
         return f"{self.resource.service_name}:{self.resource.api_name}"
-
-    def _normalise_api_name(self, api_name: str) -> str:
-        return self._API_NAMES.get(api_name, api_name)
 
     @staticmethod
     def _normalise_service_name(service_name: str) -> str:
@@ -112,14 +90,14 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
     ):
+        service_name = self._get_boto_service_name()
+        api_action = self._get_boto_service_action()
         api_client = boto_client_for(
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
-            service=self._normalised_api_name,
+            service=service_name,
         )
-        response = (
-            getattr(api_client, self._normalised_api_action)(**normalised_parameters) or dict()
-        )
+        response = getattr(api_client, api_action)(**normalised_parameters) or dict()
         if response:
             response.pop("ResponseMetadata", None)
         env.stack.append(response)

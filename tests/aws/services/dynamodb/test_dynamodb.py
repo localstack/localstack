@@ -1,14 +1,17 @@
 import json
 import re
+import time
 from datetime import datetime
 from time import sleep
 from typing import Dict
 
 import botocore.exceptions
 import pytest
+import requests
 from boto3.dynamodb.types import STRING
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
 from localstack.constants import AWS_REGION_US_EAST_1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
@@ -103,8 +106,39 @@ class TestDynamoDB:
         assert len(result["Items"]) == num_items
 
     @markers.aws.only_localstack
+    def test_time_to_live_deletion(self, aws_client, ddb_test_table):
+        table_name = ddb_test_table
+        aws_client.dynamodb.update_time_to_live(
+            TableName=table_name,
+            TimeToLiveSpecification={"Enabled": True, "AttributeName": "expiringAt"},
+        )
+        aws_client.dynamodb.describe_time_to_live(TableName=table_name)
+
+        exp = int(time.time()) - 10  # expired
+        items = [
+            {PARTITION_KEY: {"S": "expired"}, "expiringAt": {"N": str(exp)}},
+            {PARTITION_KEY: {"S": "not-expired"}, "expiringAt": {"N": str(exp + 120)}},
+        ]
+        for item in items:
+            aws_client.dynamodb.put_item(TableName=table_name, Item=item)
+
+        url = f"{config.internal_service_url()}/_aws/dynamodb/expired"
+        response = requests.delete(url)
+        assert response.status_code == 200
+        assert response.json() == {"ExpiredItems": 1}
+
+        result = aws_client.dynamodb.get_item(
+            TableName=table_name, Key={PARTITION_KEY: {"S": "not-expired"}}
+        )
+        assert result.get("Item")
+        result = aws_client.dynamodb.get_item(
+            TableName=table_name, Key={PARTITION_KEY: {"S": "expired"}}
+        )
+        assert not result.get("Item")
+
+    @markers.aws.only_localstack
     def test_time_to_live(self, aws_client, ddb_test_table):
-        # check response for inexistent table
+        # check response for nonexistent table
         response = testutil.send_describe_dynamodb_ttl_request("test")
         assert json.loads(response._content)["__type"] == "ResourceNotFoundException"
         assert response.status_code == 400
@@ -1544,6 +1578,16 @@ class TestDynamoDB:
         kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
         result = aws_client.kms.describe_key(KeyId=kms_master_key_arn)
         snapshot.match("KMSDescription", result)
+
+        result = aws_client.dynamodb.update_table(
+            TableName=table_name, SSESpecification={"Enabled": False}
+        )
+        snapshot.match(
+            "update-table-disable-sse-spec", result["TableDescription"]["SSEDescription"]
+        )
+
+        result = aws_client.dynamodb.describe_table(TableName=table_name)
+        assert "SSESpecification" not in result["Table"]
 
     @markers.aws.validated
     def test_dynamodb_get_batch_items(
