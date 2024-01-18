@@ -242,6 +242,50 @@ class CompositeHandler(Handler):
                 return
 
 
+class CompositeExceptionHandler(ExceptionHandler):
+    """
+    A exception handler that sequentially invokes a list of ExceptionHandler instances, forming a
+    stripped-down version of a handler chain for exception handlers.
+    """
+
+    handlers: List[ExceptionHandler]
+
+    def __init__(self) -> None:
+        """
+        Creates a new composite exception handler with an empty handler list.
+        """
+        self.handlers = []
+
+    def append(self, handler: ExceptionHandler) -> None:
+        """
+        Adds the given handler to the list of handlers.
+
+        :param handler: the handler to add
+        """
+        self.handlers.append(handler)
+
+    def remove(self, handler: ExceptionHandler) -> None:
+        """
+        Remove the given handler from the list of handlers
+        :param handler: the handler to remove
+        """
+        self.handlers.remove(handler)
+
+    def __call__(
+        self, chain: HandlerChain, exception: Exception, context: RequestContext, response: Response
+    ):
+        for handler in self.handlers:
+            try:
+                handler(chain, exception, context, response)
+            except Exception as nested:
+                # make sure we run all exception handlers
+                msg = "exception while running exception handler"
+                if LOG.isEnabledFor(logging.DEBUG):
+                    LOG.exception(msg)
+                else:
+                    LOG.warning(msg + ": %s", nested)
+
+
 class CompositeResponseHandler(CompositeHandler):
     """
     A CompositeHandler that by default does not return on stop, meaning that all handlers in the composite

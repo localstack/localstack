@@ -95,7 +95,7 @@ from werkzeug.datastructures import Headers, MIMEAccept
 from werkzeug.http import parse_accept_header
 
 from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
-from localstack.aws.spec import load_service
+from localstack.aws.spec import ProtocolName, load_service
 from localstack.constants import (
     APPLICATION_AMZ_CBOR_1_1,
     APPLICATION_AMZ_JSON_1_0,
@@ -1465,6 +1465,8 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         "UploadPartCopyOutput": "CopyPartResult",
     }
 
+    XML_NAMESPACE = "http://s3.amazonaws.com/doc/2006-03-01/"
+
     def _serialize_response(
         self,
         parameters: dict,
@@ -1577,6 +1579,8 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         if root and not root.tail:
             root.tail = "\n"
 
+        root.attrib["xmlns"] = self.XML_NAMESPACE
+
     @staticmethod
     def _timestamp_iso8601(value: datetime) -> str:
         """
@@ -1600,33 +1604,12 @@ class SqsQueryResponseSerializer(QueryResponseSerializer):
     - These double-escapes are corrected by replacing such strings with their original.
     """
 
-    # those are deleted from the JSON specs, but need to be kept for legacy reason (sent in 'x-amzn-query-error')
-    QUERY_PREFIXED_ERRORS = {
-        "BatchEntryIdsNotDistinct",
-        "BatchRequestTooLong",
-        "EmptyBatchRequest",
-        "InvalidBatchEntryId",
-        "MessageNotInflight",
-        "PurgeQueueInProgress",
-        "QueueDeletedRecently",
-        "TooManyEntriesInBatchRequest",
-        "UnsupportedOperation",
-    }
-
     # Some error code changed between JSON and query, and we need to have a way to map it for legacy reason
     JSON_TO_QUERY_ERROR_CODES = {
         "InvalidParameterValueException": "InvalidParameterValue",
         "MissingRequiredParameterException": "MissingParameter",
         "AccessDeniedException": "AccessDenied",
-        "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
-        "QueueNameExists": "QueueAlreadyExists",
     }
-
-    SENDER_FAULT_ERRORS = (
-        QUERY_PREFIXED_ERRORS
-        | JSON_TO_QUERY_ERROR_CODES.keys()
-        | {"OverLimit", "ResourceNotFoundException"}
-    )
 
     def _default_serialize(self, xmlnode: ETree.Element, params: str, _, name: str, __) -> None:
         """
@@ -1664,40 +1647,28 @@ class SqsQueryResponseSerializer(QueryResponseSerializer):
 
         if error.code in self.JSON_TO_QUERY_ERROR_CODES:
             error_code = self.JSON_TO_QUERY_ERROR_CODES[error.code]
-        elif error.code in self.QUERY_PREFIXED_ERRORS:
-            error_code = f"AWS.SimpleQueueService.{error.code}"
         else:
             error_code = error.code
         code_tag.text = error_code
         message = self._get_error_message(error)
         if message:
             self._default_serialize(error_tag, message, None, "Message", mime_type)
-        if error.code in self.SENDER_FAULT_ERRORS or error.sender_fault:
+        if error.sender_fault:
             # The sender fault is either not set or "Sender"
             self._default_serialize(error_tag, "Sender", None, "Type", mime_type)
 
 
-class SqsResponseSerializer(JSONResponseSerializer):
-    # those are deleted from the JSON specs, but need to be kept for legacy reason (sent in 'x-amzn-query-error')
-    QUERY_PREFIXED_ERRORS = {
-        "BatchEntryIdsNotDistinct",
-        "BatchRequestTooLong",
-        "EmptyBatchRequest",
-        "InvalidBatchEntryId",
-        "MessageNotInflight",
-        "PurgeQueueInProgress",
-        "QueueDeletedRecently",
-        "TooManyEntriesInBatchRequest",
-        "UnsupportedOperation",
-    }
-
+class SqsJsonResponseSerializer(JSONResponseSerializer):
     # Some error code changed between JSON and query, and we need to have a way to map it for legacy reason
     JSON_TO_QUERY_ERROR_CODES = {
         "InvalidParameterValueException": "InvalidParameterValue",
         "MissingRequiredParameterException": "MissingParameter",
         "AccessDeniedException": "AccessDenied",
-        "QueueDoesNotExist": "AWS.SimpleQueueService.NonExistentQueue",
-        "QueueNameExists": "QueueAlreadyExists",
+    }
+
+    QUERY_TO_JSON_ERROR_CODES = {
+        "NonExistentQueue": "QueueDoesNotExist",
+        "QueueAlreadyExists": "QueueNameExists",
     }
 
     def _serialize_error(
@@ -1718,16 +1689,18 @@ class SqsResponseSerializer(JSONResponseSerializer):
         # AWS: "com.amazon.coral.service#InvalidParameterValueException"
         # or AWS: "com.amazonaws.sqs#BatchRequestTooLong"
         # LocalStack: "InvalidParameterValue"
-        super()._serialize_error(error, response, shape, operation_model, mime_type, request_id)
+
         # We need to add a prefix to certain errors, as they have been deleted in the specs. These will not change
         if error.code in self.JSON_TO_QUERY_ERROR_CODES:
             code = self.JSON_TO_QUERY_ERROR_CODES[error.code]
-        elif error.code in self.QUERY_PREFIXED_ERRORS:
-            code = f"AWS.SimpleQueueService.{error.code}"
         else:
             code = error.code
-
         response.headers["x-amzn-query-error"] = f"{code};Sender"
+
+        error.code = error.code.removeprefix("AWS.SimpleQueueService.")
+        if error.code in self.QUERY_TO_JSON_ERROR_CODES:
+            error.code = self.QUERY_TO_JSON_ERROR_CODES[error.code]
+        super()._serialize_error(error, response, shape, operation_model, mime_type, request_id)
 
 
 def gen_amzn_requestid():
@@ -1743,6 +1716,7 @@ def gen_amzn_requestid():
     return long_uid()
 
 
+@functools.cache
 def create_serializer(service: ServiceModel) -> ResponseSerializer:
     """
     Creates the right serializer for the given service model.
@@ -1758,9 +1732,8 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
     # Therefore, the service-specific serializer implementations (basically the implicit / informally more specific
     # protocol implementation) has precedence over the more general protocol-specific serializers.
     service_specific_serializers = {
-        "sqs-query": SqsQueryResponseSerializer,
-        "sqs": SqsResponseSerializer,
-        "s3": S3ResponseSerializer,
+        "sqs": {"json": SqsJsonResponseSerializer, "query": SqsQueryResponseSerializer},
+        "s3": {"rest-xml": S3ResponseSerializer},
     }
     protocol_specific_serializers = {
         "query": QueryResponseSerializer,
@@ -1770,15 +1743,20 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
         "ec2": EC2ResponseSerializer,
     }
 
-    # Try to select a service-specific serializer implementation
-    if service.service_name in service_specific_serializers:
-        return service_specific_serializers[service.service_name]()
+    # Try to select a service- and protocol-specific serializer implementation
+    if (
+        service.service_name in service_specific_serializers
+        and service.protocol in service_specific_serializers[service.service_name]
+    ):
+        return service_specific_serializers[service.service_name][service.protocol]()
     else:
         # Otherwise, pick the protocol-specific serializer for the protocol of the service
         return protocol_specific_serializers[service.protocol]()
 
 
-def aws_response_serializer(service: str, operation: str):
+def aws_response_serializer(
+    service_name: str, operation: str, protocol: Optional[ProtocolName] = None
+):
     """
     A decorator for an HTTP route that can serialize return values or exceptions into AWS responses.
     This can be used to create AWS request handlers in a convenient way. Example usage::
@@ -1794,13 +1772,15 @@ def aws_response_serializer(service: str, operation: str):
 
             return ListQueuesResult(QueueUrls=...)  # <- object from the SQS API will be serialized
 
-    :param service: the AWS service (e.g., "sqs", "lambda")
+    :param service_name: the AWS service (e.g., "sqs", "lambda")
+    :param protocol: the protocol of the AWS service to serialize to. If not set (by default) the default protocol
+                    of the service in botocore is used.
     :param operation: the operation name (e.g., "ReceiveMessage", "ListFunctions")
     :returns: a decorator
     """
 
     def _decorate(fn):
-        service_model = load_service(service)
+        service_model = load_service(service_name, protocol=protocol)
         operation_model = service_model.operation_model(operation)
         serializer = create_serializer(service_model)
 

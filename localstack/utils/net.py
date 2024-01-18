@@ -322,6 +322,30 @@ class PortRange:
         )
         self._ports_lock = threading.RLock()
 
+    def subrange(self, start: int = None, end: int = None) -> "PortRange":
+        """
+        Creates a new PortRange object from this range which is a sub-range of this port range. The new
+        object will use the same port cache and locks of this port range, so you can constrain port
+        reservations of an existing port range but have reservations synced between them.
+
+        :param start: the start of the subrange
+        :param end: the end of the subrange
+        :raises ValueError: if start or end are outside the current port range
+        :return: a new PortRange object synced to this one
+        """
+        start = start if start is not None else self.start
+        end = end if end is not None else self.end
+
+        if start < self.start:
+            raise ValueError(f"start not in range ({start} < {self.start})")
+        if end > self.end:
+            raise ValueError(f"end not in range ({end} < {self.end})")
+
+        port_range = PortRange(start, end)
+        port_range._ports_cache = self._ports_cache
+        port_range._ports_lock = self._ports_lock
+        return port_range
+
     def as_range(self) -> range:
         """
         Returns a ``range(start, end+1)`` object representing this port range.

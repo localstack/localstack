@@ -408,7 +408,9 @@ class TestLambdaFunction:
         )
 
     # TODO: fix type of AccessDeniedException yielding null
-    @markers.snapshot.skip_snapshot_verify(paths=["function_arn_other_account_exc..Error.Message"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["function_arn_other_account_exc..Error.Message", "$..CodeSha256"]
+    )
     @markers.aws.validated
     def test_function_arns(
         self, create_lambda_function, region, account_id, aws_client, lambda_su_role, snapshot
@@ -4242,6 +4244,7 @@ class TestLambdaEventSourceMappings:
         snapshot.match("create_unknown_params", e.value.response)
         # TODO: add test for event source arn == failure destination
         # TODO: add test for adding success destination
+        # TODO: add test_multiple_esm_conflict: create an event source mapping for a combination of function + target ARN that already exists
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[

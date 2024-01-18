@@ -3,6 +3,7 @@ import dataclasses
 import json
 import logging
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from math import ceil
@@ -12,8 +13,10 @@ from botocore.config import Config
 from localstack import config
 from localstack.aws.api.lambda_ import TooManyRequestsException
 from localstack.aws.connect import connect_to
+from localstack.services.lambda_.invocation.internal_sqs_queue import get_fake_sqs_client
 from localstack.services.lambda_.invocation.lambda_models import (
     EventInvokeConfig,
+    FunctionVersion,
     Invocation,
     InvocationResult,
 )
@@ -27,13 +30,16 @@ from localstack.utils.time import timestamp_millis
 LOG = logging.getLogger(__name__)
 
 
-def get_sqs_client(function_version, client_config=None):
-    region_name = function_version.id.region
-    return connect_to(
-        aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
-        region_name=region_name,
-        config=client_config,
-    ).sqs
+def get_sqs_client(function_version: FunctionVersion, client_config=None):
+    if config.LAMBDA_EVENTS_INTERNAL_SQS:
+        return get_fake_sqs_client()
+    else:
+        region_name = function_version.id.region
+        return connect_to(
+            aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
+            region_name=region_name,
+            config=client_config,
+        ).sqs
 
 
 # TODO: remove once DLQ handling is refactored following the removal of the legacy lambda provider
@@ -104,9 +110,10 @@ def has_enough_time_for_retry(
     )
 
 
+# TODO: optimize this client configuration. Do we need to consider client caching here?
 CLIENT_CONFIG = Config(
-    connect_timeout=1,
-    read_timeout=5,
+    connect_timeout=5,
+    read_timeout=10,
     retries={"max_attempts": 0},
 )
 
@@ -128,41 +135,48 @@ class Poller:
         )
 
     def run(self, *args, **kwargs):
-        try:
-            sqs_client = get_sqs_client(
-                self.version_manager.function_version, client_config=CLIENT_CONFIG
-            )
-            function_timeout = self.version_manager.function_version.config.timeout
-            while not self._shutdown_event.is_set():
-                # TODO: Fix proper shutdown causing EndpointConnectionError
-                # https://app.circleci.com/pipelines/github/localstack/localstack/17428/workflows/391fc320-0cec-4dd1-9e3b-d7511de61d12/jobs/132663/parallel-runs/2
-                # Test case (happens not every time!):
-                # tests.aws.services.cloudformation.resources.test_legacy.TestCloudFormation.test_updating_stack_with_iam_role
-                messages = sqs_client.receive_message(
+        sqs_client = get_sqs_client(
+            self.version_manager.function_version, client_config=CLIENT_CONFIG
+        )
+        function_timeout = self.version_manager.function_version.config.timeout
+        while not self._shutdown_event.is_set():
+            try:
+                response = sqs_client.receive_message(
                     QueueUrl=self.event_queue_url,
+                    # TODO: consider replacing with short polling instead of long polling to prevent keeping connections open
+                    # however, we had some serious performance issues when tried out, so those have to be investigated first
                     WaitTimeSeconds=2,
-                    # TODO: MAYBE: increase number of messages if single thread schedules invocations
-                    MaxNumberOfMessages=1,
+                    # Related: SQS event source mapping batches up to 10 messages:
+                    # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
+                    MaxNumberOfMessages=10,
                     VisibilityTimeout=function_timeout + 60,
                 )
-                if not messages.get("Messages"):
+                if not response.get("Messages"):
                     continue
-                message = messages["Messages"][0]
+                LOG.debug("[%s] Got %d messages", self.event_queue_url, len(response["Messages"]))
+                # Guard against shutdown event arriving while polling SQS for messages
+                if not self._shutdown_event.is_set():
+                    for message in response["Messages"]:
+                        # NOTE: queueing within the thread pool executor could lead to double executions
+                        #  due to the visibility timeout
+                        self.invoker_pool.submit(self.handle_message, message)
 
-                # NOTE: queueing within the thread pool executor could lead to double executions
-                #  due to the visibility timeout
-                self.invoker_pool.submit(self.handle_message, message)
-        except Exception as e:
-            # TODO gateway shuts down before shutdown event even is set, so this log message might be sent regardless
-            if isinstance(e, ConnectionRefusedError) and self._shutdown_event.is_set():
-                return
-            # TODO: investigate what causes ReadTimeoutError (fixed with increasing read timeout?)
-            LOG.error(
-                "Error while polling lambda events for function %s: %s",
-                self.version_manager.function_version.qualified_arn,
-                e,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
+            except Exception as e:
+                # TODO: if the gateway shuts down before the shutdown event even is set,
+                #  we might still get an error message
+                # after shutdown of LS, we might expectedly get errors, if other components shut down.
+                # In any case, after the event manager is shut down, we do not need to spam error logs in case
+                # some resource is already missing
+                if self._shutdown_event.is_set():
+                    return
+                LOG.error(
+                    "Error while polling lambda events for function %s: %s",
+                    self.version_manager.function_version.qualified_arn,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+                # some time between retries to avoid running into the problem right again
+                time.sleep(1)
 
     def stop(self):
         LOG.debug(
@@ -199,36 +213,7 @@ class Poller:
                     self.process_dead_letter_queue(sqs_invocation, invocation_result)
                     return
                 # 3) Otherwise, retry without increasing counter
-
-                # If the function doesn't have enough concurrency available to process all events, additional
-                # requests are throttled. For throttling errors (429) and system errors (500-series), Lambda returns
-                # the event to the queue and attempts to run the function again for up to 6 hours. The retry interval
-                # increases exponentially from 1 second after the first attempt to a maximum of 5 minutes. If the
-                # queue contains many entries, Lambda increases the retry interval and reduces the rate at which it
-                # reads events from the queue. Source:
-                # https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
-                # Difference depending on error cause:
-                # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
-                # Troubleshooting 500 errors:
-                # https://repost.aws/knowledge-center/lambda-troubleshoot-invoke-error-502-500
-                if isinstance(e, TooManyRequestsException):  # Throttles 429
-                    LOG.debug("Throttled lambda %s: %s", self.version_manager.function_arn, e)
-                else:  # System errors 5xx
-                    LOG.debug(
-                        "Service exception in lambda %s: %s", self.version_manager.function_arn, e
-                    )
-
-                maximum_exception_retry_delay_seconds = 5 * 60
-                delay_seconds = min(
-                    2**sqs_invocation.exception_retries, maximum_exception_retry_delay_seconds
-                )
-                # TODO: calculate delay seconds into max event age handling
-                sqs_client = get_sqs_client(self.version_manager.function_version)
-                sqs_client.send_message(
-                    QueueUrl=self.event_queue_url,
-                    MessageBody=sqs_invocation.encode(),
-                    DelaySeconds=delay_seconds,
-                )
+                self.process_throttles_and_system_errors(sqs_invocation, e)
                 return
             finally:
                 sqs_client = get_sqs_client(self.version_manager.function_version)
@@ -289,6 +274,36 @@ class Poller:
             LOG.error(
                 "Error handling lambda invoke %s", e, exc_info=LOG.isEnabledFor(logging.DEBUG)
             )
+
+    def process_throttles_and_system_errors(self, sqs_invocation: SQSInvocation, error: Exception):
+        # If the function doesn't have enough concurrency available to process all events, additional
+        # requests are throttled. For throttling errors (429) and system errors (500-series), Lambda returns
+        # the event to the queue and attempts to run the function again for up to 6 hours. The retry interval
+        # increases exponentially from 1 second after the first attempt to a maximum of 5 minutes. If the
+        # queue contains many entries, Lambda increases the retry interval and reduces the rate at which it
+        # reads events from the queue. Source:
+        # https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html
+        # Difference depending on error cause:
+        # https://aws.amazon.com/blogs/compute/introducing-new-asynchronous-invocation-metrics-for-aws-lambda/
+        # Troubleshooting 500 errors:
+        # https://repost.aws/knowledge-center/lambda-troubleshoot-invoke-error-502-500
+        if isinstance(error, TooManyRequestsException):  # Throttles 429
+            LOG.debug("Throttled lambda %s: %s", self.version_manager.function_arn, error)
+        else:  # System errors 5xx
+            LOG.debug(
+                "Service exception in lambda %s: %s", self.version_manager.function_arn, error
+            )
+        maximum_exception_retry_delay_seconds = 5 * 60
+        delay_seconds = min(
+            2**sqs_invocation.exception_retries, maximum_exception_retry_delay_seconds
+        )
+        # TODO: calculate delay seconds into max event age handling
+        sqs_client = get_sqs_client(self.version_manager.function_version)
+        sqs_client.send_message(
+            QueueUrl=self.event_queue_url,
+            MessageBody=sqs_invocation.encode(),
+            DelaySeconds=delay_seconds,
+        )
 
     def process_success_destination(
         self,

@@ -1396,7 +1396,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     api_id = invocation_context.api_id
     stage = invocation_context.stage
 
-    source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
+    source_ip = invocation_context.auth_identity.get("sourceIp")
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
     account_id = account_id or DEFAULT_AWS_ACCOUNT_ID

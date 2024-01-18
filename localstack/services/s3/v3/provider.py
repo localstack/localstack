@@ -630,7 +630,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         body = request.get("Body")
         # check if chunked request
         headers = context.request.headers
-        is_aws_chunked = headers.get("x-amz-content-sha256", "").startswith("STREAMING-")
+        is_aws_chunked = headers.get("x-amz-content-sha256", "").startswith(
+            "STREAMING-"
+        ) or "aws-chunked" in headers.get("content-encoding", "")
         if is_aws_chunked:
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             body = AwsChunkedDecoder(body, decoded_content_length, s3_object=s3_object)
@@ -1876,7 +1878,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
         body = request.get("Body")
         headers = context.request.headers
-        is_aws_chunked = headers.get("x-amz-content-sha256", "").startswith("STREAMING-")
+        is_aws_chunked = headers.get("x-amz-content-sha256", "").startswith(
+            "STREAMING-"
+        ) or "aws-chunked" in headers.get("content-encoding", "")
         # check if chunked request
         if is_aws_chunked:
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))

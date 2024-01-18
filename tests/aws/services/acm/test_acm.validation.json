@@ -1,5 +1,8 @@
 {
   "tests/aws/services/acm/test_acm.py::TestACM::test_certificate_for_subdomain_wildcard": {
     "last_validated_date": "2023-04-18T17:01:27+00:00"
+  },
+  "tests/aws/services/acm/test_acm.py::TestACM::test_create_certificate_for_multiple_alternative_domains": {
+    "last_validated_date": "2024-01-09T14:58:14+00:00"
   }
 }

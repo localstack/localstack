@@ -90,7 +90,7 @@ class TestS3BucketCRUD:
 )
 class TestS3ObjectCRUD:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise exceptions",
     )
@@ -112,7 +112,7 @@ class TestS3ObjectCRUD:
         snapshot.match("delete-nonexistent-object-versionid", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise exceptions",
     )
@@ -145,7 +145,7 @@ class TestS3ObjectCRUD:
         snapshot.match("delete-objects", delete_objects)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not return proper headers",
     )
@@ -247,7 +247,7 @@ class TestS3ObjectCRUD:
         snapshot.match("delete-wrong-key", delete_wrong_key)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not return right values",
     )
@@ -327,7 +327,7 @@ class TestS3ObjectCRUD:
         snapshot.match("delete-objects-version-id", delete_objects_marker)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation raises the wrong exception",
     )
@@ -347,7 +347,7 @@ class TestS3ObjectCRUD:
         snapshot.match("get-obj-with-null-version", get_obj)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation deletes all versions when suspending versioning, when it should keep it",
     )
@@ -398,7 +398,7 @@ class TestS3ObjectCRUD:
         snapshot.match("get-object-current", get_object)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation has the wrong behaviour",
     )
@@ -546,7 +546,7 @@ class TestS3Multipart:
     # TODO: write a validated test for UploadPartCopy preconditions
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto does not handle the exceptions properly",
     )
@@ -672,7 +672,7 @@ class TestS3Multipart:
 
 class TestS3BucketVersioning:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation not raising exceptions",
     )
@@ -726,7 +726,7 @@ class TestS3BucketVersioning:
 
 class TestS3BucketEncryption:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have default encryption",
     )
@@ -744,7 +744,7 @@ class TestS3BucketEncryption:
         snapshot.match("get-bucket-no-encryption", bucket_versioning)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have proper validation",
     )
@@ -904,7 +904,7 @@ class TestS3BucketEncryption:
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have S3 KMS managed key",
     )
@@ -1060,7 +1060,7 @@ class TestS3BucketObjectTagging:
         snapshot.match("get-obj-after-tags-deleted", get_object)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation do not catch exceptions",
     )
@@ -1106,7 +1106,7 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-obj-wrong-format", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation missing versioning implementation",
     )
@@ -1248,7 +1248,7 @@ class TestS3BucketObjectTagging:
         snapshot.match("get-object-after-recreation", get_bucket_tags)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise exceptions",
     )
@@ -1335,7 +1335,7 @@ class TestS3BucketObjectTagging:
 
 class TestS3ObjectLock:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not catch exception",
     )
@@ -1405,7 +1405,7 @@ class TestS3ObjectLock:
         snapshot.match("get-lock-config-only-enabled", get_lock_config)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not catch exception",
     )
@@ -1493,7 +1493,7 @@ class TestS3ObjectLock:
         snapshot.match("get-lock-config-bucket-not-exists", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise exceptions",
     )
@@ -1530,7 +1530,7 @@ class TestS3ObjectLock:
 
 class TestS3BucketOwnershipControls:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have default ownership controls",
     )
@@ -1566,7 +1566,7 @@ class TestS3BucketOwnershipControls:
         snapshot.match("get-ownership-at-creation", get_ownership_at_creation)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have default ownership controls",
     )
@@ -1613,7 +1613,7 @@ class TestS3BucketOwnershipControls:
 
 class TestS3PublicAccessBlock:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not have default public access block",
     )
@@ -1691,7 +1691,7 @@ class TestS3BucketPolicy:
         snapshot.match("delete-bucket-policy-after-delete", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=config.LEGACY_V2_S3_PROVIDER,
         reason="Moto implementation does not raise Exception",
     )

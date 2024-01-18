@@ -3,6 +3,7 @@ import math
 import time
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import (
@@ -139,6 +140,79 @@ class TestDynamoDBEventSourceMapping:
         # check if the timestamp has same amount of numbers before the comma as the current timestamp
         # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
         assert int(math.log10(timestamp)) == 9
+
+    @markers.aws.validated
+    def test_duplicate_event_source_mappings(
+        self,
+        create_lambda_function,
+        lambda_su_role,
+        create_event_source_mapping,
+        dynamodb_create_table,
+        wait_for_dynamodb_stream_ready,
+        snapshot,
+        aws_client,
+        cleanups,
+    ):
+        function_name_1 = f"lambda_func-{short_uid()}"
+        function_name_2 = f"lambda_func-{short_uid()}"
+
+        table_name = f"test-table-{short_uid()}"
+        partition_key = "my_partition_key"
+
+        create_table_result = dynamodb_create_table(
+            table_name=table_name, partition_key=partition_key
+        )
+        # snapshot create table to get the table name registered as resource
+        snapshot.match("create-table-result", create_table_result)
+        _await_dynamodb_table_active(aws_client.dynamodb, table_name)
+        event_source_arn = aws_client.dynamodb.update_table(
+            TableName=table_name,
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_IMAGE"},
+        )["TableDescription"]["LatestStreamArn"]
+
+        # extra arguments for create_event_source_mapping calls
+        kwargs = dict(
+            StartingPosition="TRIM_HORIZON",
+            MaximumBatchingWindowInSeconds=1,
+            MaximumRetryAttempts=1,
+        )
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name_1,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+
+        response = create_event_source_mapping(
+            FunctionName=function_name_1,
+            EventSourceArn=event_source_arn,
+            **kwargs,
+        )
+        snapshot.match("create", response)
+
+        with pytest.raises(ClientError) as e:
+            create_event_source_mapping(
+                FunctionName=function_name_1,
+                EventSourceArn=event_source_arn,
+                **kwargs,
+            )
+
+        response = e.value.response
+        snapshot.match("error", response)
+
+        # this should work without problem since it's a new function
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name_2,
+            runtime=Runtime.python3_9,
+            role=lambda_su_role,
+        )
+        create_event_source_mapping(
+            FunctionName=function_name_2,
+            EventSourceArn=event_source_arn,
+            **kwargs,
+        )
 
     @markers.aws.validated
     def test_disabled_dynamodb_event_source_mapping(
