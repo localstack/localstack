@@ -33,6 +33,7 @@ OutpostResolverName = str
 OutpostResolverStatusMessage = str
 Port = int
 Priority = int
+Qtype = str
 ResolverQueryLogConfigAssociationErrorMessage = str
 ResolverQueryLogConfigName = str
 ResolverQueryLogConfigPolicy = str
@@ -522,6 +523,7 @@ class CreateFirewallRuleRequest(ServiceRequest):
     BlockOverrideDnsType: Optional[BlockOverrideDnsType]
     BlockOverrideTtl: Optional[BlockOverrideTtl]
     Name: Name
+    Qtype: Optional[Qtype]
 
 
 class FirewallRule(TypedDict, total=False):
@@ -537,6 +539,7 @@ class FirewallRule(TypedDict, total=False):
     CreatorRequestId: Optional[CreatorRequestId]
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
+    Qtype: Optional[Qtype]
 
 
 class CreateFirewallRuleResponse(TypedDict, total=False):
@@ -680,6 +683,7 @@ class DeleteFirewallRuleGroupResponse(TypedDict, total=False):
 class DeleteFirewallRuleRequest(ServiceRequest):
     FirewallRuleGroupId: ResourceId
     FirewallDomainListId: ResourceId
+    Qtype: Optional[Qtype]
 
 
 class DeleteFirewallRuleResponse(TypedDict, total=False):
@@ -1271,6 +1275,7 @@ class UpdateFirewallRuleRequest(ServiceRequest):
     BlockOverrideDnsType: Optional[BlockOverrideDnsType]
     BlockOverrideTtl: Optional[BlockOverrideTtl]
     Name: Optional[Name]
+    Qtype: Optional[Qtype]
 
 
 class UpdateFirewallRuleResponse(TypedDict, total=False):
@@ -1402,6 +1407,7 @@ class Route53ResolverApi:
         block_override_domain: BlockOverrideDomain = None,
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
+        qtype: Qtype = None,
     ) -> CreateFirewallRuleResponse:
         raise NotImplementedError
 
@@ -1482,6 +1488,7 @@ class Route53ResolverApi:
         context: RequestContext,
         firewall_rule_group_id: ResourceId,
         firewall_domain_list_id: ResourceId,
+        qtype: Qtype = None,
     ) -> DeleteFirewallRuleResponse:
         raise NotImplementedError
 
@@ -1866,6 +1873,7 @@ class Route53ResolverApi:
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
         name: Name = None,
+        qtype: Qtype = None,
     ) -> UpdateFirewallRuleResponse:
         raise NotImplementedError
 
