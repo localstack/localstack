@@ -47,7 +47,7 @@ class AlarmScheduler:
         Shutsdown the scheduler, must be called before application stops
         """
         self.scheduler.close()
-        self.thread.join(5)
+        self.thread.join(10)
 
     def schedule_metric_alarm(self, alarm_arn: str) -> None:
         """(Re-)schedules the alarm, if the alarm is re-scheduled, the running alarm scheduler will be cancelled before
