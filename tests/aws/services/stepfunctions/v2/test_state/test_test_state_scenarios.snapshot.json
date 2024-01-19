@@ -1,0 +1,431 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_pass[INFO]": {
+    "recorded-date": "19-01-2024, 18:53:33",
+    "recorded-content": {
+      "test_case_output": {
+        "output": {
+          "initialData": {
+            "fieldFromInput": "value from input",
+            "otherField": "other value"
+          },
+          "unrelatedData": {
+            "someOtherField": 1234
+          },
+          "modifiedData": {
+            "staticValue": "some value",
+            "inputValue": "value from input"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_pass[DEBUG]": {
+    "recorded-date": "19-01-2024, 18:53:45",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "fieldFromInput": "value from input",
+            "otherField": "other value"
+          },
+          "afterParameters": {
+            "staticValue": "some value",
+            "inputValue": "value from input"
+          },
+          "afterResultPath": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other value"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            },
+            "modifiedData": {
+              "staticValue": "some value",
+              "inputValue": "value from input"
+            }
+          },
+          "afterResultSelector": {
+            "staticValue": "some value",
+            "inputValue": "value from input"
+          },
+          "input": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other value"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            }
+          }
+        },
+        "output": {
+          "initialData": {
+            "fieldFromInput": "value from input",
+            "otherField": "other value"
+          },
+          "unrelatedData": {
+            "someOtherField": 1234
+          },
+          "modifiedData": {
+            "staticValue": "some value",
+            "inputValue": "value from input"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_pass[TRACE]": {
+    "recorded-date": "19-01-2024, 18:53:58",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "fieldFromInput": "value from input",
+            "otherField": "other value"
+          },
+          "afterParameters": {
+            "staticValue": "some value",
+            "inputValue": "value from input"
+          },
+          "afterResultPath": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other value"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            },
+            "modifiedData": {
+              "staticValue": "some value",
+              "inputValue": "value from input"
+            }
+          },
+          "afterResultSelector": {
+            "staticValue": "some value",
+            "inputValue": "value from input"
+          },
+          "input": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other value"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            }
+          }
+        },
+        "output": {
+          "initialData": {
+            "fieldFromInput": "value from input",
+            "otherField": "other value"
+          },
+          "unrelatedData": {
+            "someOtherField": 1234
+          },
+          "modifiedData": {
+            "staticValue": "some value",
+            "inputValue": "value from input"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass[INFO]": {
+    "recorded-date": "19-01-2024, 18:52:52",
+    "recorded-content": {
+      "test_case_output": {
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass[DEBUG]": {
+    "recorded-date": "19-01-2024, 18:53:06",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "afterParameters": {
+            "Value": "HelloWorld"
+          },
+          "afterResultPath": {
+            "Value": "HelloWorld"
+          },
+          "afterResultSelector": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass[TRACE]": {
+    "recorded-date": "19-01-2024, 18:53:20",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "afterParameters": {
+            "Value": "HelloWorld"
+          },
+          "afterResultPath": {
+            "Value": "HelloWorld"
+          },
+          "afterResultSelector": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_result_pass[INFO]": {
+    "recorded-date": "19-01-2024, 19:35:16",
+    "recorded-content": {
+      "test_case_output": {
+        "output": {
+          "resultKey": "result value"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_result_pass[DEBUG]": {
+    "recorded-date": "19-01-2024, 19:35:29",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterResultPath": {
+            "resultKey": "result value"
+          },
+          "afterResultSelector": {
+            "resultKey": "result value"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "result": {
+            "resultKey": "result value"
+          }
+        },
+        "output": {
+          "resultKey": "result value"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_result_pass[TRACE]": {
+    "recorded-date": "19-01-2024, 19:35:42",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterResultPath": {
+            "resultKey": "result value"
+          },
+          "afterResultSelector": {
+            "resultKey": "result value"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "result": {
+            "resultKey": "result value"
+          }
+        },
+        "output": {
+          "resultKey": "result value"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_result_pass[INFO]": {
+    "recorded-date": "19-01-2024, 19:41:10",
+    "recorded-content": {
+      "test_case_output": {
+        "output": {
+          "initialData": {
+            "fieldFromInput": "value from input",
+            "otherField": "other value"
+          },
+          "unrelatedData": {
+            "someOtherField": 1234
+          },
+          "modifiedData": {
+            "resultKey": "result value"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_result_pass[DEBUG]": {
+    "recorded-date": "19-01-2024, 19:41:23",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterResultPath": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other value"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            },
+            "modifiedData": {
+              "resultKey": "result value"
+            }
+          },
+          "afterResultSelector": {
+            "resultKey": "result value"
+          },
+          "input": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other value"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            }
+          },
+          "result": {
+            "resultKey": "result value"
+          }
+        },
+        "output": {
+          "initialData": {
+            "fieldFromInput": "value from input",
+            "otherField": "other value"
+          },
+          "unrelatedData": {
+            "someOtherField": 1234
+          },
+          "modifiedData": {
+            "resultKey": "result value"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_result_pass[TRACE]": {
+    "recorded-date": "19-01-2024, 19:41:36",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterResultPath": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other value"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            },
+            "modifiedData": {
+              "resultKey": "result value"
+            }
+          },
+          "afterResultSelector": {
+            "resultKey": "result value"
+          },
+          "input": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other value"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            }
+          },
+          "result": {
+            "resultKey": "result value"
+          }
+        },
+        "output": {
+          "initialData": {
+            "fieldFromInput": "value from input",
+            "otherField": "other value"
+          },
+          "unrelatedData": {
+            "someOtherField": 1234
+          },
+          "modifiedData": {
+            "resultKey": "result value"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -89,7 +89,6 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackOutcomeSuccess,
 )
 from localstack.services.stepfunctions.asl.parse.asl_parser import (
-    AmazonStateLanguageParser,
     ASLParserException,
 )
 from localstack.services.stepfunctions.asl.static_analyser.static_analyser import StaticAnalyser
@@ -104,7 +103,7 @@ from localstack.services.stepfunctions.backend.state_machine import (
     TestStateMachine,
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
-from localstack.services.stepfunctions.backend.test_case.execution import TestCaseExecution
+from localstack.services.stepfunctions.backend.test_state.execution import TestStateExecution
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
     stepfunctions_execution_state_machine_arn,
@@ -180,13 +179,10 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return None
 
     @staticmethod
-    def _validate_definition(
-        definition: str, static_analysers: Optional[list[StaticAnalyser]] = None
-    ) -> None:
+    def _validate_definition(derivation: str, static_analysers: list[StaticAnalyser]) -> None:
         try:
-            program, parse_tree = AmazonStateLanguageParser.parse(definition)
             for static_analyser in static_analysers:
-                static_analyser.analyse(parse_tree)
+                static_analyser.analyse(derivation)
         except ASLParserException as asl_parser_exception:
             invalid_definition = InvalidDefinition()
             invalid_definition.message = repr(asl_parser_exception)
@@ -196,7 +192,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             exception_args = list(exception.args)
             invalid_definition = InvalidDefinition()
             invalid_definition.message = (
-                f"Error={exception_name} Args={exception_args} in definition '{definition}'."
+                f"Error={exception_name} Args={exception_args} in derivation '{derivation}'."
             )
             raise invalid_definition
 
@@ -225,7 +221,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             )
 
         state_machine_definition: str = request["definition"]
-        StepFunctionsProvider._validate_definition(definition=state_machine_definition)
+        StepFunctionsProvider._validate_definition(
+            derivation=state_machine_definition, static_analysers=[StaticAnalyser()]
+        )
 
         name: Optional[Name] = request["name"]
         arn = stepfunctions_state_machine_arn(
@@ -532,7 +530,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             )
 
         if definition is not None:
-            self._validate_definition(definition=definition)
+            self._validate_definition(derivation=definition, static_analysers=[StaticAnalyser()])
 
         revision_id = state_machine.create_revision(definition=definition, role_arn=role_arn)
 
@@ -691,7 +689,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         reveal_secrets: RevealSecrets = None,
     ) -> TestStateOutput:
         StepFunctionsProvider._validate_definition(
-            definition=definition, static_analysers=[TestStateStaticAnalyser()]
+            derivation=definition, static_analysers=[TestStateStaticAnalyser()]
         )
 
         name: Optional[Name] = f"TestState-{short_uid()}"
@@ -706,7 +704,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
         exec_arn = stepfunctions_execution_state_machine_arn(state_machine.arn, name)
 
-        execution = TestCaseExecution(
+        input_json = json.loads(input)
+        execution = TestStateExecution(
             name=name,
             role_arn=role_arn,
             exec_arn=exec_arn,
@@ -714,10 +713,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             region_name=context.region,
             state_machine=state_machine,
             start_date=datetime.datetime.now(tz=datetime.timezone.utc),
-            input_data=input,
+            input_data=input_json,
         )
         execution.start()
 
-        test_state_output = execution.to_test_state_output()
+        test_state_output = execution.to_test_state_output(
+            inspection_level=inspection_level or InspectionLevel.INFO
+        )
 
         return test_state_output

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 import logging
 from typing import Final, Optional
 
@@ -16,7 +17,6 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventList,
     InvalidName,
     SensitiveCause,
-    SensitiveData,
     SensitiveError,
     StartExecutionOutput,
     Timestamp,
@@ -60,9 +60,7 @@ class BaseExecutionWorkerComm(ExecutionWorkerComm):
         self.execution.stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
         if isinstance(exit_program_state, ProgramEnded):
             self.execution.exec_status = ExecutionStatus.SUCCEEDED
-            self.execution.output = to_json_str(
-                self.execution.exec_worker.env.inp, separators=(",", ":")
-            )
+            self.execution.output = self.execution.exec_worker.env.inp
         elif isinstance(exit_program_state, ProgramStopped):
             self.execution.exec_status = ExecutionStatus.ABORTED
         elif isinstance(exit_program_state, ProgramError):
@@ -91,14 +89,14 @@ class Execution:
 
     state_machine: Final[StateMachineInstance]
     start_date: Final[Timestamp]
-    input_data: Final[Optional[dict]]
+    input_data: Final[Optional[json]]
     input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]]
     trace_header: Final[Optional[TraceHeader]]
 
     exec_status: Optional[ExecutionStatus]
     stop_date: Optional[Timestamp]
 
-    output: Optional[SensitiveData]
+    output: Optional[json]
     output_details: Optional[CloudWatchEventsExecutionDataDetails]
 
     error: Optional[SensitiveError]
@@ -155,7 +153,7 @@ class Execution:
             traceHeader=self.trace_header,
         )
         if describe_output["status"] == ExecutionStatus.SUCCEEDED:
-            describe_output["output"] = self.output
+            describe_output["output"] = to_json_str(self.output, separators=(",", ":"))
             describe_output["outputDetails"] = self.output_details
         if self.error is not None:
             describe_output["error"] = self.error
@@ -267,7 +265,9 @@ class Execution:
         input_value = (
             dict() if not self.input_data else to_json_str(self.input_data, separators=(",", ":"))
         )
-        output_value = self.output
+        output_value = (
+            None if self.output is None else to_json_str(self.output, separators=(",", ":"))
+        )
         output_details = None if output_value is None else self.output_details
         entry = PutEventsRequestEntry(
             Source="aws.states",

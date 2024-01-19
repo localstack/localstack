@@ -7,6 +7,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     ServiceResource,
 )
 from localstack.services.stepfunctions.asl.component.state.state_type import StateType
+from localstack.services.stepfunctions.asl.parse.test_state.asl_parser import (
+    TestStateAmazonStateLanguageParser,
+)
 from localstack.services.stepfunctions.asl.static_analyser.static_analyser import StaticAnalyser
 
 
@@ -19,8 +22,9 @@ class TestStateStaticAnalyser(StaticAnalyser):
         StateType.Wait,
     }
 
-    def analyse(self, program_tree) -> None:
-        self.visitState_decl_body(program_tree)
+    def analyse(self, derivation) -> None:
+        _, parser_rule_context = TestStateAmazonStateLanguageParser.parse(derivation)
+        self.visit(parser_rule_context)
 
     def visitState_type(self, ctx: ASLParser.State_typeContext) -> None:
         state_type_value: int = ctx.children[0].symbol.type

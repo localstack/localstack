@@ -1,15 +1,13 @@
 import abc
 from typing import Final
 
-from antlr4 import CommonTokenStream, InputStream
+from antlr4 import CommonTokenStream, InputStream, ParserRuleContext
 from antlr4.error.ErrorListener import ErrorListener
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexer
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
-from localstack.services.stepfunctions.asl.component.program.program import Program
+from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.parse.preprocessor import Preprocessor
-
-ASLParseTree = ASLParser.Program_declContext
 
 
 class SyntaxErrorListener(ErrorListener):
@@ -50,11 +48,11 @@ class ASLParserException(Exception):
 
 class AmazonStateLanguageParser(abc.ABC):
     @staticmethod
-    def parse(src: str) -> tuple[Program, ASLParseTree]:
+    def parse(derivation: str) -> tuple[EvalComponent, ParserRuleContext]:
         # Attempt to build the AST and look out for syntax errors.
         syntax_error_listener = SyntaxErrorListener()
 
-        input_stream = InputStream(src)
+        input_stream = InputStream(derivation)
         lexer = ASLLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = ASLParser(stream)
@@ -70,4 +68,4 @@ class AmazonStateLanguageParser(abc.ABC):
         preprocessor = Preprocessor()
         program = preprocessor.visit(tree)
 
-        return program
+        return program, tree

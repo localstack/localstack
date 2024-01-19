@@ -1,8 +1,10 @@
 import abc
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParserVisitor import ASLParserVisitor
+from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
 
 
 class StaticAnalyser(ASLParserVisitor, abc.ABC):
-    def analyse(self, program_tree) -> None:
-        self.visit(program_tree)
+    def analyse(self, derivation: str) -> None:
+        _, parser_rule_context = AmazonStateLanguageParser.parse(derivation)
+        self.visit(parser_rule_context)

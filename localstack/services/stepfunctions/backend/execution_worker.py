@@ -9,6 +9,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
 )
+from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObjectInitData,
@@ -44,13 +45,19 @@ class ExecutionWorker:
         self._aws_execution_details = aws_execution_details
         self.env = None
 
-    def _execution_logic(self):
-        program, _ = AmazonStateLanguageParser.parse(self._definition)
-        self.env = Environment(
+    def _get_evaluation_entrypoint(self) -> EvalComponent:
+        return AmazonStateLanguageParser.parse(self._definition)[0]
+
+    def _get_evaluation_environment(self) -> Environment:
+        return Environment(
             aws_execution_details=self._aws_execution_details,
             context_object_init=self._context_object_init,
             event_history_context=EventHistoryContext.of_program_start(),
         )
+
+    def _execution_logic(self):
+        program = self._get_evaluation_entrypoint()
+        self.env = self._get_evaluation_environment()
         self.env.inp = copy.deepcopy(
             self._input_data
         )  # The program will mutate the input_data, which is otherwise constant in regard to the execution value.

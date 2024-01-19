@@ -1,28 +1,35 @@
 from __future__ import annotations
 
 import threading
-from typing import Final, Optional
+from typing import Optional
 
-from localstack.aws.api.stepfunctions import Arn, TestStateOutput, Timestamp
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.aws.api.stepfunctions import (
+    Arn,
+    InspectionLevel,
+    TestExecutionStatus,
+    TestStateOutput,
+    Timestamp,
+)
+from localstack.services.stepfunctions.asl.eval.program_state import (
+    ProgramEnded,
+    ProgramError,
+    ProgramState,
+)
 from localstack.services.stepfunctions.backend.execution import BaseExecutionWorkerComm, Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachineInstance
-from localstack.services.stepfunctions.backend.test_case.execution_worker import (
-    TestCaseExecutionWorker,
+from localstack.services.stepfunctions.backend.test_state.execution_worker import (
+    TestStateExecutionWorker,
 )
 
 
-class TestCaseExecution(Execution):
-    _TEST_CASE_EXECUTION_TIMEOUT_SECONDS: Final[int] = 300  # 5 minutes.
-
-    _execution_terminated_event: Final[threading.Event]
+class TestStateExecution(Execution):
+    exec_worker: Optional[TestStateExecutionWorker]
 
     class TestCaseExecutionWorkerComm(BaseExecutionWorkerComm):
-        _execution: TestCaseExecution
+        _execution: TestStateExecution
 
         def terminated(self) -> None:
             self._reflect_execution_status()
-            self._execution._execution_terminated_event.set()
 
     def __init__(
         self,
@@ -51,8 +58,8 @@ class TestCaseExecution(Execution):
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerComm:
         return self.TestCaseExecutionWorkerComm(self)
 
-    def _get_start_execution_worker(self) -> TestCaseExecutionWorker:
-        return TestCaseExecutionWorker(
+    def _get_start_execution_worker(self) -> TestStateExecutionWorker:
+        return TestStateExecutionWorker(
             definition=self.state_machine.definition,
             input_data=self.input_data,
             exec_comm=self._get_start_execution_worker_comm(),
@@ -60,15 +67,26 @@ class TestCaseExecution(Execution):
             aws_execution_details=self._get_start_aws_execution_details(),
         )
 
-    def start(self) -> None:
-        super().start()
-        self._execution_terminated_event.wait(timeout=self._TEST_CASE_EXECUTION_TIMEOUT_SECONDS)
-
     def publish_execution_status_change_event(self):
         # Do not publish execution status change events during test state execution.
         pass
 
-    def to_test_state_output(self) -> TestStateOutput:
-        return TestStateOutput(
-            output=to_json_str(self.output),
-        )
+    def to_test_state_output(self, inspection_level: InspectionLevel) -> TestStateOutput:
+        exit_program_state: ProgramState = self.exec_worker.env.program_state()
+        if isinstance(exit_program_state, ProgramEnded):
+            status = TestExecutionStatus.SUCCEEDED
+        elif isinstance(exit_program_state, ProgramError):
+            status = TestExecutionStatus.FAILED
+        else:
+            # TODO: handle other statuses
+            status = None
+
+        test_state_output = TestStateOutput(status=status, output=self.output)
+
+        match inspection_level:
+            case InspectionLevel.TRACE:
+                test_state_output["inspectionData"] = self.exec_worker.env.inspection_data
+            case InspectionLevel.DEBUG:
+                test_state_output["inspectionData"] = self.exec_worker.env.inspection_data
+
+        return test_state_output
