@@ -612,15 +612,17 @@ def transcribe_create_job(s3_bucket, aws_client):
 
 
 @pytest.fixture
-def kinesis_create_stream(aws_client):
+def kinesis_create_stream(aws_client, wait_for_stream_ready):
     stream_names = []
 
     def _create_stream(**kwargs):
         if "StreamName" not in kwargs:
             kwargs["StreamName"] = f"test-stream-{short_uid()}"
+        stream_name = kwargs["StreamName"]
         aws_client.kinesis.create_stream(**kwargs)
-        stream_names.append(kwargs["StreamName"])
-        return kwargs["StreamName"]
+        stream_names.append(stream_name)
+        wait_for_stream_ready(stream_name)
+        return stream_name
 
     yield _create_stream
 
