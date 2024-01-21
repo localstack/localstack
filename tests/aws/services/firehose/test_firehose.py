@@ -31,6 +31,8 @@ def handler(event, context):
     return {"records": records}
 """
 
+TEST_MESSAGE = "Test-message-2948294kdlsie"
+
 
 @pytest.mark.parametrize("lambda_processor_enabled", [True, False])
 @markers.aws.unknown
@@ -498,7 +500,7 @@ class TestFirehoseIntegration:
             retry(_create_firehose_delivery_stream, sleep=1, retries=10)
 
         # put message to kinesis event stream
-        record_data = "Test-message-2948294kdlsie"
+        record_data = TEST_MESSAGE
         aws_client.kinesis.put_record(
             StreamName=stream_name,
             Data=record_data,
