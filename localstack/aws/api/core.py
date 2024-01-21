@@ -97,13 +97,12 @@ class RequestContext(RoloRequestContext):
     internal_request_params: Optional[InternalRequestParameters]
     """Data sent by client-side LocalStack during internal calls."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, request=None) -> None:
+        super().__init__(request)
         self.service = None
         self.operation = None
         self.region = None
         self.account_id = None
-        self.request = None
         self.request_id = long_uid()
         self.service_request = None
         self.service_response = None
