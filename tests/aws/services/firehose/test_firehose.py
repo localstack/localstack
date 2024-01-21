@@ -415,7 +415,7 @@ class TestFirehoseIntegration:
 
         assert poll_condition(check_stream_state, 45, 1)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_multiple_delivery_streams_with_kinesis_as_source(
         self,
         s3_create_bucket,
