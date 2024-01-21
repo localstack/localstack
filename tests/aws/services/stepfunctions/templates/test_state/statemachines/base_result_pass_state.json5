@@ -1,6 +1,6 @@
 {
   "Type": "Pass",
-    "Result": {
+  "Result": {
     "resultKey": "result value"
   },
   "End": true,

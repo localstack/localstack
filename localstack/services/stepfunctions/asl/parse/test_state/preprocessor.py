@@ -44,8 +44,8 @@ class TestStatePreprocessor(Preprocessor):
             state_props.add(cmp)
 
         # Enforce the following missing fields to ensure inspection level traceability.
-        if not state_props.get(InputPath):
-            state_props.add(TestStateInputPath(TestStateInputPath.DEFAULT_PATH))
+        # if not state_props.get(InputPath):
+        #     state_props.add(TestStateInputPath(TestStateInputPath.DEFAULT_PATH))
         # if not state_props.get(Parameters):
         #     state_props.add(TestStateParameters(payload_tmpl=None))
         # if not state_props.get(ResultSelector):
