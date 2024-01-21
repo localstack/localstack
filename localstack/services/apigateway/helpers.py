@@ -590,7 +590,7 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     ).apigateway
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
-        return response.get("variables")
+        return response.get("variables", {})
     except Exception:
         LOG.info("Failed to get stage %s for API id %s", context.stage, context.api_id)
         return {}
