@@ -1,0 +1,15 @@
+{
+  "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_multiple_delivery_streams_with_kinesis_as_source": {
+    "recorded-date": "21-01-2024, 17:23:36",
+    "recorded-content": {
+      "kinesis-event-stream-multiple-delivery-streams": {
+        "bucket-a": {
+          "folder-name": "Test-message-2948294kdlsie"
+        },
+        "bucket-b": {
+          "folder-name": "Test-message-2948294kdlsie"
+        }
+      }
+    }
+  }
+}
