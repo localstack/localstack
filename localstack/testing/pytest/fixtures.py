@@ -1592,13 +1592,18 @@ def lambda_su_role(aws_client):
 def create_iam_role_with_policy(aws_client):
     roles = {}
 
-    def _create_role_and_policy(**kwargs):
+    def _create_role_and_policy(**kwargs: dict[str, any]) -> str:
+        if "RoleName" not in kwargs:
+            kwargs["RoleName"] = f"test-role-{short_uid()}"
         role = kwargs["RoleName"]
+        if "PolicyName" not in kwargs:
+            kwargs["PolicyName"] = f"test-policy-{short_uid()}"
         policy = kwargs["PolicyName"]
         role_policy = json.dumps(kwargs["RoleDefinition"])
 
         result = aws_client.iam.create_role(RoleName=role, AssumeRolePolicyDocument=role_policy)
         role_arn = result["Role"]["Arn"]
+
         policy_document = json.dumps(kwargs["PolicyDefinition"])
         aws_client.iam.put_role_policy(
             RoleName=role, PolicyName=policy, PolicyDocument=policy_document
