@@ -337,10 +337,11 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
 
+    @pytest.mark.parametrize("rotate_immediately", [True, None])
     @markers.snapshot.skip_snapshot_verify(paths=["$..Versions..KmsKeyIds"])
     @markers.aws.validated
     def test_rotate_secret_with_lambda_success(
-        self, sm_snapshot, secret_name, create_secret, create_lambda_function, aws_client
+        self, sm_snapshot, secret_name, create_secret, create_lambda_function, aws_client, rotate_immediately
     ):
         cre_res = create_secret(
             Name=secret_name,
@@ -373,7 +374,7 @@ class TestSecretsManager:
             RotationRules={
                 "AutomaticallyAfterDays": 1,
             },
-            RotateImmediately=True,
+            RotateImmediately=rotate_immediately,
         )
 
         sm_snapshot.match("rotate_secret_immediately", rot_res)
