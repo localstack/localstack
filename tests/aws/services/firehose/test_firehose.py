@@ -480,7 +480,7 @@ class TestFirehoseIntegration:
                 "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
                 "CloudWatchLoggingOptions": {
                     "Enabled": True,
-                    "LogGroupName": f"group-{short_uid()}",
+                    "LogGroupName": log_group_name,
                     "LogStreamName": f"stream-{short_uid()}",
                 },
             }
