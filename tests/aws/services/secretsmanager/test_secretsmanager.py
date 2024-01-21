@@ -341,7 +341,13 @@ class TestSecretsManager:
     @markers.snapshot.skip_snapshot_verify(paths=["$..Versions..KmsKeyIds"])
     @markers.aws.validated
     def test_rotate_secret_with_lambda_success(
-        self, sm_snapshot, secret_name, create_secret, create_lambda_function, aws_client, rotate_immediately
+        self,
+        sm_snapshot,
+        secret_name,
+        create_secret,
+        create_lambda_function,
+        aws_client,
+        rotate_immediately,
     ):
         cre_res = create_secret(
             Name=secret_name,
