@@ -414,3 +414,110 @@ class TestFirehoseIntegration:
             return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
         assert poll_condition(check_stream_state, 45, 1)
+
+    @markers.aws.unknown
+    def test_multiple_delivery_streams_with_kinesis_as_source(
+        self,
+        s3_create_bucket,
+        kinesis_create_stream,
+        get_firehose_iam_documents,
+        create_iam_role_with_policy,
+        firehose_create_delivery_stream,
+        read_s3_data,
+        snapshot,
+        aws_client,
+    ):
+        # create s3 bucket a and b
+        bucket_a_name = f"test-bucket-a-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_a_name)
+        bucket_a_arn = arns.s3_bucket_arn(bucket_a_name)
+        bucket_b_name = f"test-bucket-b-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_b_name)
+        bucket_b_arn = arns.s3_bucket_arn(bucket_b_name)
+
+        # create kinesis stream
+        stream_name = f"test-stream-{short_uid()}"
+        kinesis_create_stream(
+            StreamName=stream_name,
+            ShardCount=1,
+            StreamModeDetails={"StreamMode": "PROVISIONED"},
+        )
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        # create IAM role and policy
+        role_document, policy_document = get_firehose_iam_documents(
+            [bucket_a_arn, bucket_b_arn], stream_arn
+        )
+        role_arn = create_iam_role_with_policy(
+            RoleDefinition=role_document, PolicyDefinition=policy_document
+        )
+
+        # create log groupe for firehose delivery stream error logging
+        log_group_name = f"group-{short_uid()}"
+        aws_client.logs.create_log_group(
+            logGroupName=log_group_name,
+        )
+
+        # create firehose streams & subscribe to kinesis
+        delivery_stream_a_name = f"test-delivery-stream-a-{short_uid()}"
+        delivery_stream_b_name = f"test-delivery-stream-b-{short_uid()}"
+
+        for bucket_arn, delivery_stream_name in [
+            (bucket_a_arn, delivery_stream_a_name),
+            (bucket_b_arn, delivery_stream_b_name),
+        ]:
+            extended_s3_destination_configuration = {
+                "RoleARN": role_arn,
+                "BucketARN": bucket_arn,
+                "Prefix": "test-prefix",
+                "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 1},
+                "CompressionFormat": "UNCOMPRESSED",
+                "EncryptionConfiguration": {"NoEncryptionConfig": "NoEncryption"},
+                "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
+                "CloudWatchLoggingOptions": {
+                    "Enabled": True,
+                    "LogGroupName": f"group-{short_uid()}",
+                    "LogStreamName": f"stream-{short_uid()}",
+                },
+            }
+
+            def _create_firehose_delivery_stream():
+                firehose_create_delivery_stream(
+                    DeliveryStreamName=delivery_stream_name,
+                    DeliveryStreamType="KinesisStreamAsSource",
+                    KinesisStreamSourceConfiguration={
+                        "KinesisStreamARN": stream_arn,
+                        "RoleARN": role_arn,
+                    },
+                    ExtendedS3DestinationConfiguration=extended_s3_destination_configuration,
+                )
+
+            # required for role propagation delay on aws
+            retry(_create_firehose_delivery_stream, sleep=1, retries=10)
+
+        # put message to kinesis event stream
+        record_data = "Test-message-2948294kdlsie"
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=record_data,
+            PartitionKey="1",
+        )
+
+        # poll file from s3 buckets
+        s3_data = dict()
+        for bucket_name in [bucket_a_name, bucket_b_name]:
+            s3_data_bucket = read_s3_data(bucket_name, timeout=300)
+            assert len(s3_data_bucket.keys()) == 1
+            assert record_data == next(iter(s3_data_bucket.values()))
+            s3_data_bucket = {"folder-name": s3_data_bucket.popitem()[1]}
+            s3_data[bucket_name] = s3_data_bucket
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(bucket_a_name, "bucket-a"),
+                snapshot.transform.regex(bucket_b_name, "bucket-b"),
+            ]
+        )
+        snapshot.match("kinesis-event-stream-multiple-delivery-streams", s3_data)
