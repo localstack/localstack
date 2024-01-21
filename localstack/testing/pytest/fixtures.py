@@ -1613,21 +1613,24 @@ def create_iam_role_with_policy(aws_client):
 
 @pytest.fixture
 def firehose_create_delivery_stream(wait_for_delivery_stream_ready, aws_client):
-    delivery_streams = {}
+    delivery_stream_names = []
 
     def _create_delivery_stream(**kwargs):
         if "DeliveryStreamName" not in kwargs:
             kwargs["DeliveryStreamName"] = f"test-delivery-stream-{short_uid()}"
-
-        delivery_stream = aws_client.firehose.create_delivery_stream(**kwargs)
-        delivery_streams.update({kwargs["DeliveryStreamName"]: delivery_stream})
-        wait_for_delivery_stream_ready(kwargs["DeliveryStreamName"])
-        return delivery_stream
+        delivery_stream_name = kwargs["DeliveryStreamName"]
+        response = aws_client.firehose.create_delivery_stream(**kwargs)
+        delivery_stream_names.append(delivery_stream_name)
+        wait_for_delivery_stream_ready(delivery_stream_name)
+        return response
 
     yield _create_delivery_stream
 
-    for delivery_stream_name in delivery_streams.keys():
-        aws_client.firehose.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+    for delivery_stream_name in delivery_stream_names:
+        try:
+            aws_client.firehose.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+        except Exception:
+            LOG.info("Failed to delete delivery stream %s", delivery_stream_name)
 
 
 @pytest.fixture
