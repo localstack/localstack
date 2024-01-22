@@ -84,6 +84,11 @@ TimeToLiveEnabled = bool
 UpdateExpression = str
 
 
+class ApproximateCreationDateTimePrecision(str):
+    MILLISECOND = "MILLISECOND"
+    MICROSECOND = "MICROSECOND"
+
+
 class AttributeAction(str):
     ADD = "ADD"
     PUT = "PUT"
@@ -173,6 +178,7 @@ class DestinationStatus(str):
     DISABLING = "DISABLING"
     DISABLED = "DISABLED"
     ENABLE_FAILED = "ENABLE_FAILED"
+    UPDATING = "UPDATING"
 
 
 class ExportFormat(str):
@@ -1445,6 +1451,7 @@ class KinesisDataStreamDestination(TypedDict, total=False):
     StreamArn: Optional[StreamArn]
     DestinationStatus: Optional[DestinationStatus]
     DestinationStatusDescription: Optional[String]
+    ApproximateCreationDateTimePrecision: Optional[ApproximateCreationDateTimePrecision]
 
 
 KinesisDataStreamDestinations = List[KinesisDataStreamDestination]
@@ -1517,6 +1524,10 @@ class DescribeTimeToLiveInput(ServiceRequest):
 
 class DescribeTimeToLiveOutput(TypedDict, total=False):
     TimeToLiveDescription: Optional[TimeToLiveDescription]
+
+
+class EnableKinesisStreamingConfiguration(TypedDict, total=False):
+    ApproximateCreationDateTimePrecision: Optional[ApproximateCreationDateTimePrecision]
 
 
 class ExecuteStatementInput(ServiceRequest):
@@ -1687,12 +1698,14 @@ KeyConditions = Dict[AttributeName, Condition]
 class KinesisStreamingDestinationInput(ServiceRequest):
     TableName: TableName
     StreamArn: StreamArn
+    EnableKinesisStreamingConfiguration: Optional[EnableKinesisStreamingConfiguration]
 
 
 class KinesisStreamingDestinationOutput(TypedDict, total=False):
     TableName: Optional[TableName]
     StreamArn: Optional[StreamArn]
     DestinationStatus: Optional[DestinationStatus]
+    EnableKinesisStreamingConfiguration: Optional[EnableKinesisStreamingConfiguration]
 
 
 TimeRangeUpperBound = datetime
@@ -2102,6 +2115,23 @@ class UpdateItemOutput(TypedDict, total=False):
     ItemCollectionMetrics: Optional[ItemCollectionMetrics]
 
 
+class UpdateKinesisStreamingConfiguration(TypedDict, total=False):
+    ApproximateCreationDateTimePrecision: Optional[ApproximateCreationDateTimePrecision]
+
+
+class UpdateKinesisStreamingDestinationInput(ServiceRequest):
+    TableName: TableName
+    StreamArn: StreamArn
+    UpdateKinesisStreamingConfiguration: Optional[UpdateKinesisStreamingConfiguration]
+
+
+class UpdateKinesisStreamingDestinationOutput(TypedDict, total=False):
+    TableName: Optional[TableName]
+    StreamArn: Optional[StreamArn]
+    DestinationStatus: Optional[DestinationStatus]
+    UpdateKinesisStreamingConfiguration: Optional[UpdateKinesisStreamingConfiguration]
+
+
 class UpdateTableInput(ServiceRequest):
     AttributeDefinitions: Optional[AttributeDefinitions]
     TableName: TableName
@@ -2308,13 +2338,21 @@ class DynamodbApi:
 
     @handler("DisableKinesisStreamingDestination")
     def disable_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
+        self,
+        context: RequestContext,
+        table_name: TableName,
+        stream_arn: StreamArn,
+        enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
     ) -> KinesisStreamingDestinationOutput:
         raise NotImplementedError
 
     @handler("EnableKinesisStreamingDestination")
     def enable_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
+        self,
+        context: RequestContext,
+        table_name: TableName,
+        stream_arn: StreamArn,
+        enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
     ) -> KinesisStreamingDestinationOutput:
         raise NotImplementedError
 
@@ -2645,6 +2683,16 @@ class DynamodbApi:
         expression_attribute_values: ExpressionAttributeValueMap = None,
         return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
     ) -> UpdateItemOutput:
+        raise NotImplementedError
+
+    @handler("UpdateKinesisStreamingDestination")
+    def update_kinesis_streaming_destination(
+        self,
+        context: RequestContext,
+        table_name: TableName,
+        stream_arn: StreamArn,
+        update_kinesis_streaming_configuration: UpdateKinesisStreamingConfiguration = None,
+    ) -> UpdateKinesisStreamingDestinationOutput:
         raise NotImplementedError
 
     @handler("UpdateTable")

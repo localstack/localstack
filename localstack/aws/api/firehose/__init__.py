@@ -71,6 +71,18 @@ RedshiftRetryDurationInSeconds = int
 RetryDurationInSeconds = int
 RoleARN = str
 SizeInMBs = int
+SnowflakeAccountUrl = str
+SnowflakeContentColumnName = str
+SnowflakeDatabase = str
+SnowflakeKeyPassphrase = str
+SnowflakeMetaDataColumnName = str
+SnowflakePrivateKey = str
+SnowflakePrivateLinkVpceId = str
+SnowflakeRetryDurationInSeconds = int
+SnowflakeRole = str
+SnowflakeSchema = str
+SnowflakeTable = str
+SnowflakeUser = str
 SplunkBufferingIntervalInSeconds = int
 SplunkBufferingSizeInMBs = int
 SplunkRetryDurationInSeconds = int
@@ -245,6 +257,17 @@ class RedshiftS3BackupMode(str):
 class S3BackupMode(str):
     Disabled = "Disabled"
     Enabled = "Enabled"
+
+
+class SnowflakeDataLoadingOption(str):
+    JSON_MAPPING = "JSON_MAPPING"
+    VARIANT_CONTENT_MAPPING = "VARIANT_CONTENT_MAPPING"
+    VARIANT_CONTENT_AND_METADATA_MAPPING = "VARIANT_CONTENT_AND_METADATA_MAPPING"
+
+
+class SnowflakeS3BackupMode(str):
+    FailedDataOnly = "FailedDataOnly"
+    AllData = "AllData"
 
 
 class SplunkS3BackupMode(str):
@@ -513,6 +536,40 @@ class CopyCommand(TypedDict, total=False):
     CopyOptions: Optional[CopyOptions]
 
 
+class SnowflakeRetryOptions(TypedDict, total=False):
+    DurationInSeconds: Optional[SnowflakeRetryDurationInSeconds]
+
+
+class SnowflakeVpcConfiguration(TypedDict, total=False):
+    PrivateLinkVpceId: SnowflakePrivateLinkVpceId
+
+
+class SnowflakeRoleConfiguration(TypedDict, total=False):
+    Enabled: Optional[BooleanObject]
+    SnowflakeRole: Optional[SnowflakeRole]
+
+
+class SnowflakeDestinationConfiguration(TypedDict, total=False):
+    AccountUrl: SnowflakeAccountUrl
+    PrivateKey: SnowflakePrivateKey
+    KeyPassphrase: Optional[SnowflakeKeyPassphrase]
+    User: SnowflakeUser
+    Database: SnowflakeDatabase
+    Schema: SnowflakeSchema
+    Table: SnowflakeTable
+    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
+    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
+    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
+    ContentColumnName: Optional[SnowflakeContentColumnName]
+    SnowflakeVpcConfiguration: Optional[SnowflakeVpcConfiguration]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    RoleARN: RoleARN
+    RetryOptions: Optional[SnowflakeRetryOptions]
+    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    S3Configuration: S3DestinationConfiguration
+
+
 class MSKSourceConfiguration(TypedDict, total=False):
     MSKClusterARN: MSKClusterARN
     TopicName: TopicName
@@ -759,6 +816,7 @@ class CreateDeliveryStreamInput(ServiceRequest):
         AmazonOpenSearchServerlessDestinationConfiguration
     ]
     MSKSourceConfiguration: Optional[MSKSourceConfiguration]
+    SnowflakeDestinationConfiguration: Optional[SnowflakeDestinationConfiguration]
 
 
 class CreateDeliveryStreamOutput(TypedDict, total=False):
@@ -778,6 +836,25 @@ class DeleteDeliveryStreamOutput(TypedDict, total=False):
 
 
 DeliveryStartTimestamp = datetime
+
+
+class SnowflakeDestinationDescription(TypedDict, total=False):
+    AccountUrl: Optional[SnowflakeAccountUrl]
+    User: Optional[SnowflakeUser]
+    Database: Optional[SnowflakeDatabase]
+    Schema: Optional[SnowflakeSchema]
+    Table: Optional[SnowflakeTable]
+    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
+    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
+    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
+    ContentColumnName: Optional[SnowflakeContentColumnName]
+    SnowflakeVpcConfiguration: Optional[SnowflakeVpcConfiguration]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    RoleARN: Optional[RoleARN]
+    RetryOptions: Optional[SnowflakeRetryOptions]
+    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    S3DestinationDescription: Optional[S3DestinationDescription]
 
 
 class HttpEndpointDescription(TypedDict, total=False):
@@ -867,6 +944,7 @@ class DestinationDescription(TypedDict, total=False):
     ]
     SplunkDestinationDescription: Optional[SplunkDestinationDescription]
     HttpEndpointDestinationDescription: Optional[HttpEndpointDestinationDescription]
+    SnowflakeDestinationDescription: Optional[SnowflakeDestinationDescription]
     AmazonOpenSearchServerlessDestinationDescription: Optional[
         AmazonOpenSearchServerlessDestinationDescription
     ]
@@ -1055,6 +1133,26 @@ class RedshiftDestinationUpdate(TypedDict, total=False):
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
 
 
+class SnowflakeDestinationUpdate(TypedDict, total=False):
+    AccountUrl: Optional[SnowflakeAccountUrl]
+    PrivateKey: Optional[SnowflakePrivateKey]
+    KeyPassphrase: Optional[SnowflakeKeyPassphrase]
+    User: Optional[SnowflakeUser]
+    Database: Optional[SnowflakeDatabase]
+    Schema: Optional[SnowflakeSchema]
+    Table: Optional[SnowflakeTable]
+    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
+    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
+    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
+    ContentColumnName: Optional[SnowflakeContentColumnName]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    RoleARN: Optional[RoleARN]
+    RetryOptions: Optional[SnowflakeRetryOptions]
+    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    S3Update: Optional[S3DestinationUpdate]
+
+
 class SplunkDestinationUpdate(TypedDict, total=False):
     HECEndpoint: Optional[HECEndpoint]
     HECEndpointType: Optional[HECEndpointType]
@@ -1120,6 +1218,7 @@ class UpdateDestinationInput(ServiceRequest):
     AmazonOpenSearchServerlessDestinationUpdate: Optional[
         AmazonOpenSearchServerlessDestinationUpdate
     ]
+    SnowflakeDestinationUpdate: Optional[SnowflakeDestinationUpdate]
 
 
 class UpdateDestinationOutput(TypedDict, total=False):
@@ -1148,6 +1247,7 @@ class FirehoseApi:
         tags: TagDeliveryStreamInputTagList = None,
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
+        snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1253,5 +1353,6 @@ class FirehoseApi:
         splunk_destination_update: SplunkDestinationUpdate = None,
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
+        snowflake_destination_update: SnowflakeDestinationUpdate = None,
     ) -> UpdateDestinationOutput:
         raise NotImplementedError
