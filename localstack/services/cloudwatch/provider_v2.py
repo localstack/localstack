@@ -196,7 +196,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 )  # obtain alarm ARN from alarm name
                 self.alarm_scheduler.delete_scheduler_for_alarm(alarm_arn)
                 store = self.get_store(context.account_id, context.region)
-                store.Alarms.pop(alarm_arn, None)
+                store.alarms.pop(alarm_arn, None)
 
     def put_metric_data(
         self, context: RequestContext, namespace: Namespace, metric_data: MetricData
@@ -494,7 +494,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         store = self.get_store(context.account_id, context.region)
         alarms = [
             a.alarm
-            for a in store.Alarms.values()
+            for a in store.alarms.values()
             if isinstance(a, LocalStackMetricAlarm)
             and a.alarm.get("MetricName") == metric_name
             and a.alarm.get("Namespace") == namespace
@@ -764,7 +764,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         scan_by: ScanBy = None,
     ) -> DescribeAlarmHistoryOutput:
         store = self.get_store(context.account_id, context.region)
-        history = store.Histories
+        history = store.histories
         if alarm_name:
             history = [h for h in history if h["AlarmName"] == alarm_name]
 
