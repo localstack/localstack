@@ -26,7 +26,7 @@ jobs:
           python-version: '3.11'
 
       - name: Cache LocalStack community dependencies (venv)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
           key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.cfg') }}
