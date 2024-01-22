@@ -21,9 +21,12 @@ from localstack.aws.api.cloudwatch import (
     DashboardNames,
     Datapoint,
     DeleteDashboardsOutput,
+    DescribeAlarmHistoryOutput,
+    DescribeAlarmsForMetricOutput,
     DescribeAlarmsOutput,
     DimensionFilters,
     Dimensions,
+    ExtendedStatistic,
     ExtendedStatistics,
     GetDashboardOutput,
     GetMetricDataMaxDatapoints,
@@ -58,6 +61,7 @@ from localstack.aws.api.cloudwatch import (
     StateReason,
     StateReasonData,
     StateValue,
+    Statistic,
     Statistics,
     TagKeyList,
     TagList,
@@ -93,7 +97,7 @@ MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 LIST_METRICS_MAX_RESULTS = 500
 # If the values in these fields are not the same, their values are added when generating labels
 LABEL_DIFFERENTIATORS = ["Stat", "Period"]
-
+HISTORY_VERSION = "1.0"
 
 LOG = logging.getLogger(__name__)
 _STORE_LOCK = threading.RLock()
@@ -287,7 +291,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
     ) -> None:
         try:
             if state_reason_data:
-                json.loads(state_reason_data)
+                state_reason_data = json.loads(state_reason_data)
         except ValueError:
             raise InvalidParameterValueException(
                 "TODO: check right error message: Json was not correctly formatted"
@@ -311,9 +315,24 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             old_state_reason = alarm.alarm["StateReason"]
             old_state_update_timestamp = alarm.alarm["StateUpdatedTimestamp"]
 
-            self._update_state(context, alarm, state_value, state_reason, state_reason_data)
+            if old_state == state_value:
+                return
 
-            if not alarm.alarm["ActionsEnabled"] or old_state == state_value:
+            alarm.alarm["StateTransitionedTimestamp"] = datetime.datetime.now()
+            # update startDate (=last ALARM date) - should only update when a new alarm is triggered
+            # the date is only updated if we have a reason-data, which is set by an alarm
+            if state_reason_data:
+                state_reason_data["startDate"] = state_reason_data.get("queryDate")
+
+            self._update_state(
+                context,
+                alarm,
+                state_value,
+                state_reason,
+                state_reason_data,
+            )
+
+            if not alarm.alarm["ActionsEnabled"]:
                 return
             if state_value == "OK":
                 actions = alarm.alarm["OKActions"]
@@ -460,6 +479,36 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         metric_alarms = [a for a in alarms if a.get("AlarmRule") is None]
         composite_alarms = [a for a in alarms if a.get("AlarmRule") is not None]
         return DescribeAlarmsOutput(CompositeAlarms=composite_alarms, MetricAlarms=metric_alarms)
+
+    def describe_alarms_for_metric(
+        self,
+        context: RequestContext,
+        metric_name: MetricName,
+        namespace: Namespace,
+        statistic: Statistic = None,
+        extended_statistic: ExtendedStatistic = None,
+        dimensions: Dimensions = None,
+        period: Period = None,
+        unit: StandardUnit = None,
+    ) -> DescribeAlarmsForMetricOutput:
+        store = self.get_store(context.account_id, context.region)
+        alarms = [
+            a.alarm
+            for a in store.Alarms.values()
+            if isinstance(a, LocalStackMetricAlarm)
+            and a.alarm.get("MetricName") == metric_name
+            and a.alarm.get("Namespace") == namespace
+        ]
+
+        if statistic:
+            alarms = [a for a in alarms if a.get("Statistic") == statistic]
+        if dimensions:
+            alarms = [a for a in alarms if a.get("Dimensions") == dimensions]
+        if period:
+            alarms = [a for a in alarms if a.get("Period") == period]
+        if unit:
+            alarms = [a for a in alarms if a.get("Unit") == unit]
+        return DescribeAlarmsForMetricOutput(MetricAlarms=alarms)
 
     def list_tags_for_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName
@@ -651,25 +700,39 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         alarm: LocalStackAlarm,
         state_value: str,
         state_reason: str,
-        state_reason_data: str = None,
+        state_reason_data: dict = None,
     ):
         old_state = alarm.alarm["StateValue"]
+        old_state_reason = alarm.alarm["StateReason"]
         store = self.get_store(context.account_id, context.region)
         current_time = datetime.datetime.now()
+        if state_reason_data:
+            state_reason_data["version"] = HISTORY_VERSION
+        history_data = {
+            "version": HISTORY_VERSION,
+            "oldState": {"stateValue": old_state, "stateReason": old_state_reason},
+            "newState": {
+                "stateValue": state_value,
+                "stateReason": state_reason,
+                "stateReasonData": state_reason_data,
+            },
+        }
         store.Histories.append(
             {
                 "Timestamp": timestamp_millis(alarm.alarm["StateUpdatedTimestamp"]),
                 "HistoryItemType": HistoryItemType.StateUpdate,
                 "AlarmName": alarm.alarm["AlarmName"],
-                "HistoryData": alarm.alarm.get(
-                    "StateReasonData"
-                ),  # FIXME general formatting and data content not on par with AWS at the moment
+                "HistoryData": json.dumps(history_data),
                 "HistorySummary": f"Alarm updated from {old_state} to {state_value}",
+                "AlarmType": "MetricAlarm"
+                if isinstance(alarm, LocalStackMetricAlarm)
+                else "CompositeAlarm",
             }
         )
         alarm.alarm["StateValue"] = state_value
         alarm.alarm["StateReason"] = state_reason
-        alarm.alarm["StateReasonData"] = state_reason_data
+        if state_reason_data:
+            alarm.alarm["StateReasonData"] = json.dumps(state_reason_data)
         alarm.alarm["StateUpdatedTimestamp"] = current_time
 
     def disable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
@@ -687,6 +750,34 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             alarm = store.Alarms.get(alarm_arn)
             if alarm:
                 alarm.alarm["ActionsEnabled"] = enabled
+
+    def describe_alarm_history(
+        self,
+        context: RequestContext,
+        alarm_name: AlarmName = None,
+        alarm_types: AlarmTypes = None,
+        history_item_type: HistoryItemType = None,
+        start_date: Timestamp = None,
+        end_date: Timestamp = None,
+        max_records: MaxRecords = None,
+        next_token: NextToken = None,
+        scan_by: ScanBy = None,
+    ) -> DescribeAlarmHistoryOutput:
+        store = self.get_store(context.account_id, context.region)
+        history = store.Histories
+        if alarm_name:
+            history = [h for h in history if h["AlarmName"] == alarm_name]
+
+        def _get_timestamp(input: dict):
+            if timestamp_string := input.get("Timestamp"):
+                return datetime.datetime.fromisoformat(timestamp_string)
+            return None
+
+        if start_date:
+            history = [h for h in history if (date := _get_timestamp(h)) and date >= start_date]
+        if end_date:
+            history = [h for h in history if (date := _get_timestamp(h)) and date <= end_date]
+        return DescribeAlarmHistoryOutput(AlarmHistoryItems=history)
 
 
 def create_metric_data_query_from_alarm(alarm: LocalStackMetricAlarm):
