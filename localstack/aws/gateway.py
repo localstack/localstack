@@ -27,6 +27,10 @@ class Gateway:
         self.finalizers = list()
         self.exception_handlers = list()
 
+    def handle(self, context: RequestContext, response: Response) -> None:
+        """Exposes the same interface as ``HandlerChain.handle``."""
+        return self.new_chain().handle(context, response)
+
     def new_chain(self) -> HandlerChain:
         return HandlerChain(
             self.request_handlers,
@@ -36,12 +40,10 @@ class Gateway:
         )
 
     def process(self, request: Request, response: Response):
-        chain = self.new_chain()
-
         context = RequestContext()
         context.request = request
 
-        chain.handle(context, response)
+        self.handle(context, response)
 
     def accept(self, request: WebSocketRequest):
         response = Response(status=101)
