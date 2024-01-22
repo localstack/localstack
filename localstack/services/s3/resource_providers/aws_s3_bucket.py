@@ -461,6 +461,12 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
                 CORSConfiguration=cors_configuration,
             )
 
+        if object_lock_configuration := model.get("ObjectLockConfiguration"):
+            s3_client.put_object_lock_configuration(
+                Bucket=model["BucketName"],
+                ObjectLockConfiguration=object_lock_configuration,
+            )
+
         if tags := model.get("Tags"):
             s3_client.put_bucket_tagging(Bucket=model["BucketName"], Tagging={"TagSet": tags})
 
@@ -604,6 +610,9 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
                 "Bucket": model["BucketName"],
                 "ACL": self._convert_acl_cf_to_s3(model.get("AccessControl", "PublicRead")),
             }
+
+            if model.get("ObjectLockEnabled"):
+                params["ObjectLockEnabledForBucket"] = True
 
             if region_name != "us-east-1":
                 params["CreateBucketConfiguration"] = {
