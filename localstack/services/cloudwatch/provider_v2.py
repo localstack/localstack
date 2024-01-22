@@ -97,7 +97,7 @@ MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 LIST_METRICS_MAX_RESULTS = 500
 # If the values in these fields are not the same, their values are added when generating labels
 LABEL_DIFFERENTIATORS = ["Stat", "Period"]
-
+HISTORY_VERSION = "1.0"
 
 LOG = logging.getLogger(__name__)
 _STORE_LOCK = threading.RLock()
@@ -707,9 +707,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         store = self.get_store(context.account_id, context.region)
         current_time = datetime.datetime.now()
         if state_reason_data:
-            state_reason_data["version"] = "1.0"
+            state_reason_data["version"] = HISTORY_VERSION
         history_data = {
-            "version": "1.0",
+            "version": HISTORY_VERSION,
             "oldState": {"stateValue": old_state, "stateReason": old_state_reason},
             "newState": {
                 "stateValue": state_value,
