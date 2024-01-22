@@ -13,6 +13,7 @@ from typing import Dict, Optional, Set
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sqs import (
+    AttributeNameList,
     InvalidAttributeName,
     Message,
     QueueAttributeMap,
@@ -634,6 +635,31 @@ class SqsQueue:
             self.attributes[QueueAttributeName.Policy] = json.dumps(policy)
         else:
             del self.attributes[QueueAttributeName.Policy]
+
+    def get_queue_attributes(self, attribute_names: AttributeNameList = None) -> dict[str, str]:
+        if not attribute_names:
+            return {}
+
+        if QueueAttributeName.All in attribute_names:
+            attribute_names = self.attributes.keys()
+
+        result: Dict[QueueAttributeName, str] = {}
+
+        for attr in attribute_names:
+            try:
+                getattr(QueueAttributeName, attr)
+            except AttributeError:
+                raise InvalidAttributeName(f"Unknown Attribute {attr}.")
+
+            value = self.attributes.get(attr)
+            if callable(value):
+                func = value
+                value = func()
+                if value is not None:
+                    result[attr] = value
+            elif value is not None:
+                result[attr] = value
+        return result
 
     @staticmethod
     def remove_expired_messages_from_heap(

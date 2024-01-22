@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_api_gateway_request_validator": {
-    "recorded-date": "27-07-2023, 17:59:26",
+    "recorded-date": "10-01-2024, 00:06:10",
     "recorded-content": {
       "register-lambda": {
         "fn_arn": "arn:aws:lambda:<region>:111111111111:function:<fn_name:1>",
@@ -30,42 +30,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path//2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
-        },
-        "methodResponses": {
-          "200": {
-            "statusCode": "200"
-          }
-        },
-        "requestParameters": {
-          "method.request.path.issuer": true
-        },
-        "requestValidatorId": "<request-validator-id:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "missing-required-request-params": {
-        "message": "Missing required request parameters: [issuer]"
-      },
-      "add-schema-GET": {
-        "apiKeyRequired": false,
-        "authorizationType": "NONE",
-        "httpMethod": "GET",
-        "methodIntegration": {
-          "cacheKeyParameters": [],
-          "cacheNamespace": "<cache-namespace:1>",
-          "httpMethod": "POST",
-          "integrationResponses": {
-            "200": {
-              "statusCode": "200"
-            }
-          },
-          "passthroughBehavior": "WHEN_NO_MATCH",
-          "timeoutInMillis": 29000,
-          "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path//2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
+          "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
         },
         "methodResponses": {
           "200": {
@@ -76,7 +41,9 @@
           "application/json": "testSchema"
         },
         "requestParameters": {
-          "method.request.path.test": true
+          "method.request.header.x-header-param": true,
+          "method.request.path.issuer": true,
+          "method.request.querystring.qs1": true
         },
         "requestValidatorId": "<request-validator-id:1>",
         "ResponseMetadata": {
@@ -84,40 +51,14 @@
           "HTTPStatusCode": 200
         }
       },
-      "add-schema-POST": {
-        "apiKeyRequired": false,
-        "authorizationType": "NONE",
-        "httpMethod": "POST",
-        "methodIntegration": {
-          "cacheKeyParameters": [],
-          "cacheNamespace": "<cache-namespace:1>",
-          "httpMethod": "POST",
-          "integrationResponses": {
-            "200": {
-              "statusCode": "200"
-            }
-          },
-          "passthroughBehavior": "WHEN_NO_MATCH",
-          "timeoutInMillis": 29000,
-          "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path//2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
-        },
-        "methodResponses": {
-          "200": {
-            "statusCode": "200"
-          }
-        },
-        "requestModels": {
-          "application/json": "testSchema"
-        },
-        "requestParameters": {
-          "method.request.path.issuer": true
-        },
-        "requestValidatorId": "<request-validator-id:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
+      "missing-all-required-request-params-post": {
+        "message": "Missing required request parameters: [x-header-param, issuer, qs1]"
+      },
+      "missing-required-headers-request-params-get": {
+        "message": "Missing required request parameters: [x-header-param]"
+      },
+      "missing-required-qs-request-params-get": {
+        "message": "Missing required request parameters: [qs1]"
       },
       "revert-request-path-names": {
         "apiKeyRequired": false,
@@ -135,7 +76,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path//2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
+          "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
         },
         "methodResponses": {
           "200": {
@@ -146,7 +87,9 @@
           "application/json": "testSchema"
         },
         "requestParameters": {
-          "method.request.path.test": true
+          "method.request.header.x-header-param": true,
+          "method.request.path.test": true,
+          "method.request.querystring.qs1": true
         },
         "requestValidatorId": "<request-validator-id:1>",
         "ResponseMetadata": {
@@ -157,69 +100,11 @@
       "invalid-request-body": {
         "message": "Invalid request body"
       },
-      "remove-validator-GET": {
-        "apiKeyRequired": false,
-        "authorizationType": "NONE",
-        "httpMethod": "GET",
-        "methodIntegration": {
-          "cacheKeyParameters": [],
-          "cacheNamespace": "<cache-namespace:1>",
-          "httpMethod": "POST",
-          "integrationResponses": {
-            "200": {
-              "statusCode": "200"
-            }
-          },
-          "passthroughBehavior": "WHEN_NO_MATCH",
-          "timeoutInMillis": 29000,
-          "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path//2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
-        },
-        "methodResponses": {
-          "200": {
-            "statusCode": "200"
-          }
-        },
-        "requestModels": {
-          "application/json": "testSchema"
-        },
-        "requestParameters": {
-          "method.request.path.test": true
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "remove-validator-POST": {
-        "apiKeyRequired": false,
-        "authorizationType": "NONE",
-        "httpMethod": "POST",
-        "methodIntegration": {
-          "cacheKeyParameters": [],
-          "cacheNamespace": "<cache-namespace:1>",
-          "httpMethod": "POST",
-          "integrationResponses": {
-            "200": {
-              "statusCode": "200"
-            }
-          },
-          "passthroughBehavior": "WHEN_NO_MATCH",
-          "timeoutInMillis": 29000,
-          "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path//2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
-        },
-        "methodResponses": {
-          "200": {
-            "statusCode": "200"
-          }
-        },
-        "requestModels": {
-          "application/json": "testSchema"
-        },
-        "requestParameters": {
-          "method.request.path.test": true
-        },
+      "disable-request-validator": {
+        "id": "<request-validator-id:1>",
+        "name": "test-validator",
+        "validateRequestBody": false,
+        "validateRequestParameters": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

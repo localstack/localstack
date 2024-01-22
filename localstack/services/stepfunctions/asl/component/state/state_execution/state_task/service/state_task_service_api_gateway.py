@@ -4,7 +4,7 @@ import http
 import json
 import logging
 from json import JSONDecodeError
-from typing import Final, Optional, TypedDict
+from typing import Any, Final, Optional, TypedDict
 from urllib.parse import urlencode, urljoin, urlparse
 
 import requests
@@ -123,6 +123,24 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
 
     def _get_supported_parameters(self) -> Optional[set[str]]:
         return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
+
+    def _normalise_parameters(
+        self,
+        parameters: dict,
+        boto_service_name: Optional[str] = None,
+        service_action_name: Optional[str] = None,
+    ) -> None:
+        # ApiGateway does not support botocore request relay.
+        pass
+
+    def _normalise_response(
+        self,
+        response: Any,
+        boto_service_name: Optional[str] = None,
+        service_action_name: Optional[str] = None,
+    ) -> None:
+        # ApiGateway does not support botocore request relay.
+        pass
 
     @staticmethod
     def _query_parameters_of(parameters: TaskParameters) -> Optional[str]:

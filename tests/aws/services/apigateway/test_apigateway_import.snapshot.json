@@ -4377,7 +4377,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models_and_request_validation": {
-    "recorded-date": "07-06-2023, 02:25:28",
+    "recorded-date": "09-01-2024, 22:35:27",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -4390,6 +4390,7 @@
         },
         "id": "<rest-id:1>",
         "name": "Circular model reference",
+        "rootResourceId": "<resource-id:1>",
         "version": "1.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},

@@ -140,8 +140,7 @@ class ExecutorEndpoint:
             ) from e
 
     def shutdown(self) -> None:
-        for rule in self.rules:
-            self.router.remove_rule(rule)
+        self.router.remove(self.rules)
         self.startup_future.cancel()
         if self.invocation_future:
             self.invocation_future.cancel()

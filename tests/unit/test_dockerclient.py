@@ -230,6 +230,13 @@ class TestArgumentParsing:
         flags = Util.parse_additional_flags(argument_string)
         assert flags.mounts == [("/var/test", "/var/task")]
 
+    def test_random_ports(self):
+        argument_string = r"-p 0:80"
+        ports = PortMappings()
+        Util.parse_additional_flags(argument_string, ports=ports)
+        assert ports.to_str() == "-p 0:80"
+        assert ports.to_dict() == {"80/tcp": None}
+
 
 def list_in(a, b):
     return len(a) <= len(b) and any(

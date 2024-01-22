@@ -28,7 +28,11 @@ from localstack.services.apigateway.integration import (
     LambdaProxyIntegration,
     apply_request_parameters,
 )
-from localstack.services.apigateway.invocations import ApiInvocationContext, RequestValidator
+from localstack.services.apigateway.invocations import (
+    ApiInvocationContext,
+    BadRequestBody,
+    RequestValidator,
+)
 from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
 from localstack.services.apigateway.templates import (
     RequestTemplates,
@@ -149,7 +153,7 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
         ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
         ctx.region_name = TEST_AWS_REGION_NAME
         validator = RequestValidator(ctx, Mock())
-        self.assertTrue(validator.is_request_valid())
+        assert validator.validate_request() is None
 
     def test_if_request_is_valid_with_no_matching_method(self):
         ctx = ApiInvocationContext(
@@ -162,7 +166,7 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
         ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
         ctx.region_name = TEST_AWS_REGION_NAME
         validator = RequestValidator(ctx, Mock())
-        self.assertTrue(validator.is_request_valid())
+        assert validator.validate_request() is None
 
     def test_if_request_is_valid_with_no_validator(self):
         ctx = ApiInvocationContext(
@@ -177,7 +181,7 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
         ctx.api_id = "deadbeef"
         ctx.resource = {"resourceMethods": {"POST": {"requestValidatorId": " "}}}
         validator = RequestValidator(ctx, Mock())
-        self.assertTrue(validator.is_request_valid())
+        assert validator.validate_request() is None
 
     def test_if_request_has_body_validator(self):
         ctx = ApiInvocationContext(
@@ -205,7 +209,7 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
         container.models[model_name] = {"schema": '{"type": "object"}'}
         store.rest_apis["deadbeef"] = container
         validator = RequestValidator(ctx, store)
-        self.assertTrue(validator.is_request_valid())
+        assert validator.validate_request() is None
 
     def test_request_validate_body_with_no_request_model(self):
         ctx = ApiInvocationContext(
@@ -242,7 +246,7 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
         container.models.get.return_value = {"schema": empty_schema}
         store.rest_apis["deadbeef"] = container
         validator = RequestValidator(ctx, store)
-        self.assertTrue(validator.is_request_valid())
+        assert validator.validate_request() is None
 
         container.validators.get.assert_called_with("112233")
         container.models.get.assert_called_with("Empty")
@@ -275,7 +279,8 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
         container.models.get.return_value = None
         store.rest_apis["deadbeef"] = container
         validator = RequestValidator(ctx, store)
-        self.assertFalse(validator.is_request_valid())
+        with pytest.raises(BadRequestBody):
+            validator.validate_request()
 
     def test_request_validate_body_with_circular_and_recursive_model(self):
         def _create_context_with_data(body_data: dict):
@@ -374,7 +379,8 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
         )
 
         validator = RequestValidator(invocation_context, store)
-        self.assertFalse(validator.is_request_valid())
+        with pytest.raises(BadRequestBody):
+            validator.validate_request()
 
         invocation_context = _create_context_with_data(
             {
@@ -388,7 +394,7 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
         )
 
         validator = RequestValidator(invocation_context, store)
-        self.assertTrue(validator.is_request_valid())
+        assert validator.validate_request() is None
 
     def _mock_client(self):
         return Mock(boto3.client("apigateway", region_name=AWS_REGION_US_EAST_1))

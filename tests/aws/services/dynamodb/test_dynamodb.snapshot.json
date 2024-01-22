@@ -265,7 +265,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_create_table_with_partial_sse_specification": {
-    "recorded-date": "23-08-2023, 16:33:50",
+    "recorded-date": "10-01-2024, 12:59:51",
     "recorded-content": {
       "SSEDescription": {
         "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
@@ -295,6 +295,11 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "update-table-disable-sse-spec": {
+        "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/<uuid:1>",
+        "SSEType": "KMS",
+        "Status": "UPDATING"
       }
     }
   },
