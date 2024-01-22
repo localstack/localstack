@@ -25,6 +25,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::ApiGateway::Stage": "/properties/StageName",
     "AWS::ApiGateway::BasePathMapping": "/properties/RestApiId",
     "AWS::ApiGateway::Model": "/properties/Name",
+    "AWS::Cognito::UserPoolClient": "/properties/ClientId",
     "AWS::Logs::LogStream": "/properties/LogStreamName",
     "AWS::Logs::SubscriptionFilter": "/properties/LogGroupName",
     "AWS::SSM::Parameter": "/properties/Name",

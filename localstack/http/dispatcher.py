@@ -1,78 +1,25 @@
-import json
-from typing import Any, Dict, Protocol, Union
+from json import JSONEncoder
+from typing import Type
 
-from werkzeug import Response as WerkzeugResponse
+from rolo.dispatcher import Handler, ResultValue
+from rolo.dispatcher import handler_dispatcher as _handler_dispatcher
+from rolo.router import Dispatcher
 
 from localstack.utils.json import CustomEncoder
 
-from .request import Request
-from .response import Response
-from .router import Dispatcher, RequestArguments
-
-ResultValue = Union[
-    WerkzeugResponse,
-    str,
-    bytes,
-    Dict[str, Any],  # a JSON dict
+__all__ = [
+    "ResultValue",
+    "Handler",
+    "handler_dispatcher",
 ]
 
 
-def _populate_response(response: WerkzeugResponse, result: ResultValue):
-    if result is None:
-        return response
-
-    elif isinstance(result, (str, bytes, bytearray)):
-        response.data = result
-    elif isinstance(result, dict):
-        response.data = json.dumps(result, cls=CustomEncoder)
-        response.mimetype = "application/json"
-    else:
-        raise ValueError("unhandled result type %s", type(result))
-
-    return response
-
-
-class Handler(Protocol):
+def handler_dispatcher(json_encoder: Type[JSONEncoder] = None) -> Dispatcher[Handler]:
     """
-    A protocol used by a ``Router`` together with the dispatcher created with ``handler_dispatcher``. Endpoints added
-    with this protocol take as first argument the HTTP request object, and then as keyword arguments the request
-    parameters added in the rule. This makes it work very similar to flask routes.
+    Replacement for ``rolo.dispatcher.handler_dispatcher`` that uses by default LocalStack's CustomEncoder for
+    serializing JSON documents.
 
-    Example code could look like this::
-
-        def my_route(request: Request, organization: str, repo: str):
-            return {"something": "returned as json response"}
-
-        router = Router(dispatcher=handler_dispatcher)
-        router.add("/<organization>/<repo>", endpoint=my_route)
-
+    :param json_encoder: the encoder to use
+    :return: a Dispatcher that dispatches to instances of a Handler
     """
-
-    def __call__(self, request: Request, **kwargs) -> ResultValue:
-        """
-        Handle the given request.
-
-        :param request: the HTTP request object
-        :param kwargs: the url request parameters
-        :return: a string or bytes value, a dict to create a json response, or a raw werkzeug Response object.
-        """
-        raise NotImplementedError
-
-
-def handler_dispatcher() -> Dispatcher[Handler]:
-    """
-    Creates a Dispatcher that treats endpoints like callables of the ``Handler`` Protocol.
-
-    :return: a new dispatcher
-    """
-
-    def _dispatch(request: Request, endpoint: Handler, args: RequestArguments) -> Response:
-        result = endpoint(request, **args)
-        if isinstance(result, WerkzeugResponse):
-            return result
-        response = Response()
-        if result is not None:
-            _populate_response(response, result)
-        return response
-
-    return _dispatch
+    return _handler_dispatcher(json_encoder or CustomEncoder)
