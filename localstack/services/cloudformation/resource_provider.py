@@ -124,6 +124,7 @@ PROVIDER_DEFAULTS = {
     "AWS::EC2::TransitGatewayAttachment": "ResourceProvider",
     "AWS::EC2::VPC": "ResourceProvider",
     "AWS::EC2::VPCCidrBlock": "ResourceProvider",
+    "AWS::EC2::VPCEndpoint": "ResourceProvider",
     "AWS::EC2::VPCEndpointService": "ResourceProvider",
     "AWS::EC2::VPCGatewayAttachment": "ResourceProvider",
     "AWS::ECR::Repository": "ResourceProvider",
