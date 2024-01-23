@@ -444,7 +444,11 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
         if config.LAMBDA_PREBUILD_IMAGES:
-            CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
+            # TODO re-enable image cleanup. Currently creates issues
+            pass
+            # image_name = get_image_name_for_function(function_version)
+            # LOG.debug("Removing image %s after version deletion", image_name)
+            # CONTAINER_CLIENT.remove_image(image_name)
 
     def get_runtime_endpoint(self) -> str:
         return f"http://{self.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}{self.executor_endpoint.get_endpoint_prefix()}"
