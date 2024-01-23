@@ -15,7 +15,7 @@ from localstack.utils.common import get_arch
 
 # Internal representation of the OpenSearch versions (without the "OpenSearch_" prefix)
 _opensearch_install_versions = {
-    "2.11": "2.11.0",
+    "2.11": "2.11.1",
     "2.10": "2.10.0",
     "2.9": "2.9.0",
     "2.7": "2.7.0",
@@ -221,7 +221,6 @@ compatible_versions = [
             "OpenSearch_2.5",
             "OpenSearch_2.7",
             "OpenSearch_2.9",
-            "OpenSearch_2.10",
             "OpenSearch_2.11",
         ],
     ),
