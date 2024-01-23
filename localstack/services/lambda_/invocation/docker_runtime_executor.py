@@ -16,6 +16,7 @@ from localstack.services.lambda_.invocation.executor_endpoint import (
 )
 from localstack.services.lambda_.invocation.lambda_models import FunctionVersion
 from localstack.services.lambda_.invocation.runtime_executor import (
+    LambdaPrebuildContext,
     LambdaRuntimeException,
     RuntimeExecutor,
 )
@@ -179,16 +180,29 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
         raise NotImplementedError("Custom images are currently not supported")
 
     # create dockerfile
-    docker_file_path = target_path / ".." / "Dockerfile"
     docker_file = LAMBDA_DOCKERFILE.format(
         base_img=resolver.get_image_for_runtime(function_version.config.runtime),
         rapid_entrypoint=RAPID_ENTRYPOINT,
     )
+    context_path = target_path.parent
+    prebuild_context = LambdaPrebuildContext(
+        docker_file_content=docker_file,
+        context_path=context_path,
+        function_version=function_version,
+    )
+    lambda_hooks.prebuild_lambda_image.run(prebuild_context)
+    LOG.debug(
+        "Building image for function %s with docker file %s in context %s",
+        function_version.qualified_arn,
+        prebuild_context.docker_file_content,
+        str(prebuild_context.context_path),
+    )
+    docker_file_path = prebuild_context.context_path / "Dockerfile"
     with docker_file_path.open(mode="w") as f:
-        f.write(docker_file)
+        f.write(prebuild_context.docker_file_content)
 
     # copy init file
-    init_destination_path = target_path / ".." / "init"
+    init_destination_path = prebuild_context.context_path / "init"
     src_init = f"{get_runtime_client_path()}/var/rapid/init"
     shutil.copy(src_init, init_destination_path)
     init_destination_path.chmod(0o755)
@@ -211,6 +225,12 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
                 function_version.qualified_arn,
                 e,
             )
+    finally:
+        pass
+        # cleanup
+        # for file in context_path.iterdir():
+        #     if file.name != "code":
+        #         rm_rf(str(file))
 
 
 @dataclasses.dataclass
@@ -444,7 +464,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
         if config.LAMBDA_PREBUILD_IMAGES:
-            # TODO re-enable image cleanup. Currently creates issues
+            # TODO re-enable image cleanup. Currently creates issues when cleanup is concurrently with build
             pass
             # image_name = get_image_name_for_function(function_version)
             # LOG.debug("Removing image %s after version deletion", image_name)
