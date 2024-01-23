@@ -1,12 +1,13 @@
 import dataclasses
 import os
-from typing import Tuple
+from typing import Iterable, Tuple
 
 import click
 from rich.rule import Rule
 
 from localstack import config
 from localstack.cli import console
+from localstack.runtime import hooks
 from localstack.utils.bootstrap import Container, ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
@@ -114,9 +115,6 @@ from .paths import HostPaths
     required=False,
     help="Docker network to start the container in",
 )
-@click.option(
-    "--dev-extensions", is_flag=True, default=False, help="Load extensions in develop mode"
-)
 @click.argument("command", nargs=-1, required=False)
 def run(
     image: str = None,
@@ -134,7 +132,6 @@ def run(
     entrypoint: str = None,
     network: str = None,
     command: str = None,
-    dev_extensions: bool = False,
 ):
     """
     A tool for localstack developers to start localstack containers. Run this in your localstack or
@@ -218,6 +215,12 @@ def run(
     status = console.status("Configuring")
     status.start()
 
+    env_vars = parse_env_vars(env)
+    configure_licensing_credentials_environment(env_vars)
+
+    # run all prepare_host hooks
+    hooks.prepare_host.run()
+
     # set the VOLUME_DIR config variable like in the CLI
     if not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
         config.VOLUME_DIR = str(cache_dir() / "volume")
@@ -266,6 +269,13 @@ def run(
         ContainerConfigurators.mount_localstack_volume(host_paths.volume_dir),
         CoverageRunScriptConfigurator(host_paths=host_paths),
     ]
+
+    # create stub container with configuration to apply
+    c = Container(container_config=container_config)
+
+    # apply existing hooks first that can later be overwritten
+    hooks.configure_localstack_container.run(c)
+
     if command:
         configurators.append(ContainerConfigurators.custom_command(list(command)))
     if entrypoint:
@@ -285,25 +295,6 @@ def run(
         configurators.append(DependencyMountConfigurator(host_paths=host_paths))
     if develop:
         configurators.append(ContainerConfigurators.develop)
-    if dev_extensions:
-        if pro:
-            try:
-                from localstack_ext.extensions.bootstrap import (
-                    run_on_configure_host_hook,
-                    run_on_configure_localstack_container_hook,
-                )
-
-                # collect dev extensions
-                run_on_configure_host_hook()
-
-                # create stub container with configuration to apply
-                c = Container(container_config=container_config)
-                run_on_configure_localstack_container_hook(c)
-
-            except ImportError:
-                pass
-        else:
-            click.echo("Pro mode is required for extensions support")
 
     # make sure anything coming from CLI arguments has priority
     configurators.extend(
@@ -354,6 +345,41 @@ def print_config(cfg: ContainerConfiguration):
             d.pop(k)
 
     console.print(d)
+
+
+def parse_env_vars(params: Iterable[str] = None) -> dict[str, str]:
+    env = {}
+
+    if not params:
+        return env
+
+    for e in params:
+        if "=" in e:
+            k, v = e.split("=", maxsplit=1)
+            env[k] = v
+        else:
+            # there's currently no way in our abstraction to only pass the variable name (as
+            # you can do in docker) so we resolve the value here.
+            env[e] = os.getenv(e)
+
+    return env
+
+
+def configure_licensing_credentials_environment(env_vars: dict[str, str]):
+    """
+    If an api key or auth token is set in the parsed CLI parameters, then we also set them into the OS environment
+    unless they are already set. This is just convenience so you don't have to set them twice.
+
+    :param env_vars: the environment variables parsed from the CLI parameters
+    """
+    if os.environ.get("LOCALSTACK_API_KEY"):
+        return
+    if os.environ.get("LOCALSTACK_AUTH_TOKEN"):
+        return
+    if api_key := env_vars.get("LOCALSTACK_API_KEY"):
+        os.environ["LOCALSTACK_API_KEY"] = api_key
+    if api_key := env_vars.get("LOCALSTACK_AUTH_TOKEN"):
+        os.environ["LOCALSTACK_AUTH_TOKEN"] = api_key
 
 
 def main():
