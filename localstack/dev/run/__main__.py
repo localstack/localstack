@@ -268,6 +268,7 @@ def run(
         ConfigEnvironmentConfigurator(pro),
         ContainerConfigurators.mount_localstack_volume(host_paths.volume_dir),
         CoverageRunScriptConfigurator(host_paths=host_paths),
+        ContainerConfigurators.config_env_vars,
     ]
 
     # create stub container with configuration to apply
