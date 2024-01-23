@@ -404,7 +404,7 @@ class LambdaService:
                 self.task_executor.submit(old_event_manager.stop_for_update)
             if old_version:
                 # if there is an old version, we assume it is an update, and stop the old one
-                self.task_executor.submit(old_version.stop)
+                self.task_executor.submit(old_version.stop_for_update)
                 if function:
                     self.task_executor.submit(
                         destroy_code_if_not_used, old_version.function_version.config.code, function

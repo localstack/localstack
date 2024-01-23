@@ -84,7 +84,7 @@ def docker_platform(lambda_architecture: Architecture) -> DockerPlatform | None:
 
 
 def get_image_name_for_function(function_version: FunctionVersion) -> str:
-    return f"localstack/lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
+    return f"localstack/prebuild-lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
 
 
 def get_default_image_for_runtime(runtime: str) -> str:
