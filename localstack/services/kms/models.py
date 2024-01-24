@@ -303,9 +303,13 @@ class KmsKey:
     def sign(
         self, data: bytes, message_type: MessageType, signing_algorithm: SigningAlgorithmSpec
     ) -> bytes:
-        kwargs = self._construct_sign_verify_kwargs(signing_algorithm, message_type)
+        hasher, wrapped_hasher = self._construct_sign_verify_hasher(signing_algorithm, message_type)
         try:
-            return self.crypto_key.key.sign(data=data, **kwargs)
+            if signing_algorithm.startswith("ECDSA"):
+                return self.crypto_key.key.sign(data, ec.ECDSA(wrapped_hasher))
+            else:
+                padding = self._construct_sign_verify_padding(signing_algorithm, hasher)
+                return self.crypto_key.key.sign(data, padding, wrapped_hasher)
         except ValueError as exc:
             raise ValidationException(str(exc))
 
@@ -316,9 +320,13 @@ class KmsKey:
         signing_algorithm: SigningAlgorithmSpec,
         signature: bytes,
     ) -> bool:
-        kwargs = self._construct_sign_verify_kwargs(signing_algorithm, message_type)
+        hasher, wrapped_hasher = self._construct_sign_verify_hasher(signing_algorithm, message_type)
         try:
-            self.crypto_key.key.public_key().verify(signature=signature, data=data, **kwargs)
+            if signing_algorithm.startswith("ECDSA"):
+                self.crypto_key.key.public_key().verify(signature, data, ec.ECDSA(wrapped_hasher))
+            else:
+                padding = self._construct_sign_verify_padding(signing_algorithm, hasher)
+                self.crypto_key.key.public_key().verify(signature, data, padding, wrapped_hasher)
             return True
         except ValueError as exc:
             raise ValidationException(str(exc))
@@ -343,11 +351,9 @@ class KmsKey:
             )
         return h
 
-    def _construct_sign_verify_kwargs(
-        self, signing_algorithm: SigningAlgorithmSpec, message_type: MessageType
-    ) -> Dict:
-        kwargs = {}
-
+    def _construct_sign_verify_hasher(
+            self, signing_algorithm: SigningAlgorithmSpec, message_type: MessageType
+    ) -> (Prehashed | SHA256 | SHA384 | SHA512, Prehashed | SHA256 | SHA384 | SHA512):
         if "SHA_256" in signing_algorithm:
             hasher = hashes.SHA256()
         elif "SHA_384" in signing_algorithm:
@@ -359,26 +365,23 @@ class KmsKey:
                 f"Unsupported hash type in SigningAlgorithm '{signing_algorithm}'"
             )
 
+        wrapped_hasher = hasher
         if message_type == MessageType.DIGEST:
-            kwargs["algorithm"] = utils.Prehashed(hasher)
-        else:
-            kwargs["algorithm"] = hasher
+            wrapped_hasher = utils.Prehashed(hasher)
+        return hasher, wrapped_hasher
 
-        if signing_algorithm.startswith("ECDSA"):
-            kwargs["signature_algorithm"] = ec.ECDSA(algorithm=kwargs.pop("algorithm", None))
-            return kwargs
-
+    def _construct_sign_verify_padding(
+            self, signing_algorithm: SigningAlgorithmSpec, hasher: Prehashed | SHA256 | SHA384 | SHA512
+    ) -> PKCS1v15 | PSS:
         if signing_algorithm.startswith("RSA"):
             if "PKCS" in signing_algorithm:
-                kwargs["padding"] = padding.PKCS1v15()
+                return padding.PKCS1v15()
             elif "PSS" in signing_algorithm:
-                kwargs["padding"] = padding.PSS(
+                return padding.PSS(
                     mgf=padding.MGF1(hasher), salt_length=padding.PSS.MAX_LENGTH
                 )
             else:
                 LOG.warning("Unsupported padding in SigningAlgorithm '%s'", signing_algorithm)
-
-        return kwargs
 
     # Not a comment, rather some possibly relevant links for the future.
     # https://docs.aws.amazon.com/kms/latest/developerguide/asymm-create-key.html
