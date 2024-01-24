@@ -8,7 +8,8 @@ from random import getrandbits
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.services.kms.utils import get_hash_algorithm
@@ -559,7 +560,7 @@ class TestKMS:
         assert key_id in _get_all_key_ids(aws_client.kms)
 
     @markers.aws.validated
-    def test_import_key(self, kms_create_key, aws_client, snapshot):
+    def test_import_key_symmetric(self, kms_create_key, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("Description"))
         key = kms_create_key(Origin="EXTERNAL")
         snapshot.match("created-key", key)
@@ -573,7 +574,7 @@ class TestKMS:
 
         # get key import params
         params = aws_client.kms.get_parameters_for_import(
-            KeyId=key_id, WrappingAlgorithm="RSAES_PKCS1_V1_5", WrappingKeySpec="RSA_2048"
+            KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_2048"
         )
         assert params["KeyId"] == key["Arn"]
         assert params["ImportToken"]
@@ -586,7 +587,12 @@ class TestKMS:
 
         # import symmetric key (key material) into KMS
         public_key = load_der_public_key(params["PublicKey"])
-        encrypted_key = public_key.encrypt(symmetric_key, PKCS1v15())
+        encrypted_key = public_key.encrypt(symmetric_key,
+                                           padding.OAEP(
+                                               mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                                               algorithm=hashes.SHA256(),
+                                               label=None
+                                           ))
         describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
         snapshot.match("describe-key-before-import", describe_key_before_import)
 
