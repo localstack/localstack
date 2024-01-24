@@ -2,6 +2,7 @@ import dataclasses
 import json
 import logging
 import shutil
+import tempfile
 from functools import cache
 from pathlib import Path
 from typing import Callable, Dict, Literal, Optional
@@ -39,8 +40,9 @@ from localstack.utils.container_utils.container_client import (
     VolumeMappings,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
+from localstack.utils.files import rm_rf
 from localstack.utils.net import get_free_tcp_port
-from localstack.utils.strings import truncate
+from localstack.utils.strings import short_uid, truncate
 
 LOG = logging.getLogger(__name__)
 
@@ -175,7 +177,7 @@ def get_runtime_client_path() -> Path:
     return Path(installer.get_installed_dir())
 
 
-def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
+def prepare_image(function_version: FunctionVersion) -> None:
     if not function_version.config.runtime:
         raise NotImplementedError("Custom images are currently not supported")
 
@@ -184,7 +186,12 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
         base_img=resolver.get_image_for_runtime(function_version.config.runtime),
         rapid_entrypoint=RAPID_ENTRYPOINT,
     )
-    context_path = target_path.parent
+
+    code_path = function_version.config.code.get_unzipped_code_location()
+    context_path = Path(
+        f"{tempfile.gettempdir()}/lambda/prebuild_tmp/{function_version.id.function_name}-{short_uid()}"
+    )
+    context_path.mkdir(parents=True)
     prebuild_context = LambdaPrebuildContext(
         docker_file_content=docker_file,
         context_path=context_path,
@@ -197,6 +204,7 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
         prebuild_context.docker_file_content,
         str(prebuild_context.context_path),
     )
+    # save dockerfile
     docker_file_path = prebuild_context.context_path / "Dockerfile"
     with docker_file_path.open(mode="w") as f:
         f.write(prebuild_context.docker_file_content)
@@ -206,6 +214,13 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
     src_init = f"{get_runtime_client_path()}/var/rapid/init"
     shutil.copy(src_init, init_destination_path)
     init_destination_path.chmod(0o755)
+
+    # copy function code
+    shutil.copytree(
+        f"{str(code_path)}/",
+        str(context_path / "code"),
+        dirs_exist_ok=True,
+    )
 
     try:
         image_name = get_image_name_for_function(function_version)
@@ -226,11 +241,7 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
                 e,
             )
     finally:
-        pass
-        # cleanup
-        # for file in context_path.iterdir():
-        #     if file.name != "code":
-        #         rm_rf(str(file))
+        rm_rf(str(context_path))
 
 
 @dataclasses.dataclass
@@ -458,17 +469,19 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                     )
                     raise e
             if config.LAMBDA_PREBUILD_IMAGES:
-                target_path = function_version.config.code.get_unzipped_code_location()
-                prepare_image(target_path, function_version)
+                prepare_image(function_version)
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
         if config.LAMBDA_PREBUILD_IMAGES:
-            # TODO re-enable image cleanup. Currently creates issues when cleanup is concurrently with build
-            pass
+            # TODO re-enable image cleanup.
+            # Enabling it currently deletes image after updates as well
+            # It also creates issues when cleanup is concurrently with build
+            # probably due to intermediate layers being deleted
             # image_name = get_image_name_for_function(function_version)
             # LOG.debug("Removing image %s after version deletion", image_name)
             # CONTAINER_CLIENT.remove_image(image_name)
+            pass
 
     def get_runtime_endpoint(self) -> str:
         return f"http://{self.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}{self.executor_endpoint.get_endpoint_prefix()}"

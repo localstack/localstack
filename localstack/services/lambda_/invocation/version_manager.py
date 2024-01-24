@@ -121,10 +121,6 @@ class LambdaVersionManager:
                 )
 
     def stop(self) -> None:
-        self.stop_for_update()
-        get_runtime_executor().cleanup_version(self.function_version)  # TODO: make pluggable?
-
-    def stop_for_update(self):
         LOG.debug("Stopping lambda version '%s'", self.function_arn)
         self.state = VersionState(
             state=State.Inactive, code=StateReasonCode.Idle, reason="Shutting down"
@@ -132,6 +128,7 @@ class LambdaVersionManager:
         self.shutdown_event.set()
         self.log_handler.stop()
         self.assignment_service.stop_environments_for_version(self.function_version)
+        get_runtime_executor().cleanup_version(self.function_version)  # TODO: make pluggable?
 
     def update_provisioned_concurrency_config(
         self, provisioned_concurrent_executions: int
