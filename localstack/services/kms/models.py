@@ -17,7 +17,12 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
+from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15, PSS
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
+from cryptography.hazmat.primitives.hashes import SHA256, SHA384, SHA512
+from cryptography.hazmat.primitives.serialization import load_der_private_key
 
 from localstack.aws.api.kms import (
     CreateAliasRequest,
@@ -156,6 +161,7 @@ class KmsCryptoKey:
     public_key: Optional[bytes]
     private_key: Optional[bytes]
     key_material: bytes
+    key_spec: str
 
     def __init__(self, key_spec: str):
         self.private_key = None
@@ -163,8 +169,9 @@ class KmsCryptoKey:
         # Technically, key_material, being a symmetric encryption key, is only relevant for
         #   key_spec == SYMMETRIC_DEFAULT.
         # But LocalStack uses symmetric encryption with this key_material even for other specs. Asymmetric keys are
-        # generated, but are not actually used.
+        # generated, but are not actually used for encryption. Signing is different.
         self.key_material = os.urandom(SYMMETRIC_DEFAULT_MATERIAL_LENGTH)
+        self.key_spec = key_spec
 
         if key_spec == "SYMMETRIC_DEFAULT":
             return
@@ -201,8 +208,23 @@ class KmsCryptoKey:
             crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
         )
 
+    def load_key_material(self, material: bytes):
+        if self.key_spec == "SYMMETRIC_DEFAULT":
+            self.key_material = material
+        else:
+            key = load_der_private_key(material, password=None)
+            self.public_key = key.public_key().public_bytes(
+                crypto_serialization.Encoding.DER,
+                crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
+            self.private_key = key.private_bytes(
+                crypto_serialization.Encoding.DER,
+                crypto_serialization.PrivateFormat.PKCS8,
+                crypto_serialization.NoEncryption(),
+            )
+
     @property
-    def key(self) -> RSAPrivateKey:
+    def key(self) -> RSAPrivateKey | EllipticCurvePrivateKey:
         return crypto_serialization.load_der_private_key(
             self.private_key,
             password=None,
