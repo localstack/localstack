@@ -1073,7 +1073,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             enabled_key_allowed=True,
             disabled_key_allowed=True,
         )
-        self._validate_key_for_encryption_decryption(context, key_to_import_material_to)
 
         if import_state.wrapping_algo == AlgorithmSpec.RSAES_PKCS1_V1_5:
             decrypt_padding = padding.PKCS1v15()
