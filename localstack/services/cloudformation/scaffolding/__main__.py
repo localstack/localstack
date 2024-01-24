@@ -762,6 +762,9 @@ class Output:
             case FileType.schema:
                 self.printer.print("\n[underline]Schema[/underline]\n")
                 self.printer.print(Syntax(self.contents, "json"))
+            case FileType.conftest:
+                self.printer.print("\n[underline]Test conftest[/underline]\n")
+                self.printer.print(Syntax(self.contents, "python"))
             case _:
                 raise NotImplementedError(self.file_type)
 
