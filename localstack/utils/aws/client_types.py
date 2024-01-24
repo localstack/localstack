@@ -252,6 +252,7 @@ class ServicePrincipal(str):
     firehose = "firehose"
     lambda_ = "lambda"
     logs = "logs"
+    pipes = "pipes"
     s3 = "s3"
     sns = "sns"
     sqs = "sqs"
