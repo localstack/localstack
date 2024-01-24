@@ -8,7 +8,7 @@ from random import getrandbits
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
@@ -587,12 +587,12 @@ class TestKMS:
 
         # import symmetric key (key material) into KMS
         public_key = load_der_public_key(params["PublicKey"])
-        encrypted_key = public_key.encrypt(symmetric_key,
-                                           padding.OAEP(
-                                               mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                                               algorithm=hashes.SHA256(),
-                                               label=None
-                                           ))
+        encrypted_key = public_key.encrypt(
+            symmetric_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+            ),
+        )
         describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
         snapshot.match("describe-key-before-import", describe_key_before_import)
 
@@ -653,12 +653,12 @@ class TestKMS:
 
         # import asymmetric key (key material) into KMS
         public_key = load_der_public_key(params["PublicKey"])
-        encrypted_key = public_key.encrypt(raw_private_key,
-                                           padding.OAEP(
-                                               mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                                               algorithm=hashes.SHA256(),
-                                               label=None
-                                           ))
+        encrypted_key = public_key.encrypt(
+            raw_private_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+            ),
+        )
         describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
         snapshot.match("describe-key-before-import", describe_key_before_import)
 
@@ -676,10 +676,16 @@ class TestKMS:
         assert get_public_key_after_import["PublicKey"] == raw_public_key
 
         # Do a sign/verify cycle
-        signed_data = aws_client.kms.sign(Message=plaintext, MessageType="RAW", SigningAlgorithm="ECDSA_SHA_256",
-                                          KeyId=key_id)
-        verify_data = aws_client.kms.verify(Message=plaintext, Signature=signed_data["Signature"], MessageType="RAW",
-                                            SigningAlgorithm="ECDSA_SHA_256", KeyId=key_id)
+        signed_data = aws_client.kms.sign(
+            Message=plaintext, MessageType="RAW", SigningAlgorithm="ECDSA_SHA_256", KeyId=key_id
+        )
+        verify_data = aws_client.kms.verify(
+            Message=plaintext,
+            Signature=signed_data["Signature"],
+            MessageType="RAW",
+            SigningAlgorithm="ECDSA_SHA_256",
+            KeyId=key_id,
+        )
         assert verify_data["SignatureValid"]
 
         aws_client.kms.delete_imported_key_material(KeyId=key_id)

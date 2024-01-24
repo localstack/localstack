@@ -17,12 +17,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
-from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15, PSS
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.padding import PSS, PKCS1v15
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
-from cryptography.hazmat.primitives.hashes import SHA256, SHA384, SHA512
-from cryptography.hazmat.primitives.serialization import load_der_private_key
 
 from localstack.aws.api.kms import (
     CreateAliasRequest,
@@ -198,30 +196,25 @@ class KmsCryptoKey:
             # but only used in China AWS regions.
             raise UnsupportedOperationException(f"KeySpec {key_spec} is not supported")
 
-        self.private_key = key.private_bytes(
-            crypto_serialization.Encoding.DER,
-            crypto_serialization.PrivateFormat.PKCS8,
-            crypto_serialization.NoEncryption(),
-        )
-        self.public_key = key.public_key().public_bytes(
-            crypto_serialization.Encoding.DER,
-            crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
+        self._serialize_key(key)
 
     def load_key_material(self, material: bytes):
         if self.key_spec == "SYMMETRIC_DEFAULT":
             self.key_material = material
         else:
-            key = load_der_private_key(material, password=None)
-            self.public_key = key.public_key().public_bytes(
-                crypto_serialization.Encoding.DER,
-                crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
-            )
-            self.private_key = key.private_bytes(
-                crypto_serialization.Encoding.DER,
-                crypto_serialization.PrivateFormat.PKCS8,
-                crypto_serialization.NoEncryption(),
-            )
+            key = crypto_serialization.load_der_private_key(material, password=None)
+            self._serialize_key(key)
+
+    def _serialize_key(self, key: ec.EllipticCurvePrivateKey | rsa.RSAPrivateKey):
+        self.public_key = key.public_key().public_bytes(
+            crypto_serialization.Encoding.DER,
+            crypto_serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        self.private_key = key.private_bytes(
+            crypto_serialization.Encoding.DER,
+            crypto_serialization.PrivateFormat.PKCS8,
+            crypto_serialization.NoEncryption(),
+        )
 
     @property
     def key(self) -> RSAPrivateKey | EllipticCurvePrivateKey:
@@ -352,8 +345,11 @@ class KmsKey:
         return h
 
     def _construct_sign_verify_hasher(
-            self, signing_algorithm: SigningAlgorithmSpec, message_type: MessageType
-    ) -> (Prehashed | SHA256 | SHA384 | SHA512, Prehashed | SHA256 | SHA384 | SHA512):
+        self, signing_algorithm: SigningAlgorithmSpec, message_type: MessageType
+    ) -> (
+        Prehashed | hashes.SHA256 | hashes.SHA384 | hashes.SHA512,
+        Prehashed | hashes.SHA256 | hashes.SHA384 | hashes.SHA512,
+    ):
         if "SHA_256" in signing_algorithm:
             hasher = hashes.SHA256()
         elif "SHA_384" in signing_algorithm:
@@ -371,15 +367,15 @@ class KmsKey:
         return hasher, wrapped_hasher
 
     def _construct_sign_verify_padding(
-            self, signing_algorithm: SigningAlgorithmSpec, hasher: Prehashed | SHA256 | SHA384 | SHA512
+        self,
+        signing_algorithm: SigningAlgorithmSpec,
+        hasher: Prehashed | hashes.SHA256 | hashes.SHA384 | hashes.SHA512,
     ) -> PKCS1v15 | PSS:
         if signing_algorithm.startswith("RSA"):
             if "PKCS" in signing_algorithm:
                 return padding.PKCS1v15()
             elif "PSS" in signing_algorithm:
-                return padding.PSS(
-                    mgf=padding.MGF1(hasher), salt_length=padding.PSS.MAX_LENGTH
-                )
+                return padding.PSS(mgf=padding.MGF1(hasher), salt_length=padding.PSS.MAX_LENGTH)
             else:
                 LOG.warning("Unsupported padding in SigningAlgorithm '%s'", signing_algorithm)
 
