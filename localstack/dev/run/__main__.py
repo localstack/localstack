@@ -212,113 +212,108 @@ def run(
         │   └── ...
 
     """
-    status = console.status("Configuring")
-    status.start()
+    with console.status("Configuring") as status:
+        env_vars = parse_env_vars(env)
+        configure_licensing_credentials_environment(env_vars)
 
-    env_vars = parse_env_vars(env)
-    configure_licensing_credentials_environment(env_vars)
+        # run all prepare_host hooks
+        hooks.prepare_host.run()
 
-    # run all prepare_host hooks
-    hooks.prepare_host.run()
+        # set the VOLUME_DIR config variable like in the CLI
+        if not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
+            config.VOLUME_DIR = str(cache_dir() / "volume")
 
-    # set the VOLUME_DIR config variable like in the CLI
-    if not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
-        config.VOLUME_DIR = str(cache_dir() / "volume")
-
-    # setup important paths on the host
-    host_paths = HostPaths(
-        # we assume that python -m localstack.dev.run is always executed in the repo source
-        workspace_dir=os.path.abspath(os.path.join(os.getcwd(), "..")),
-        volume_dir=volume_dir or config.VOLUME_DIR,
-    )
-
-    # auto-set pro flag
-    if pro is None:
-        if os.getcwd().endswith("localstack-ext"):
-            pro = True
-        else:
-            pro = False
-
-    # setup base configuration
-    container_config = ContainerConfiguration(
-        image_name=image,
-        name=config.MAIN_CONTAINER_NAME if not randomize else f"localstack-{short_uid()}",
-        remove=True,
-        interactive=True,
-        tty=True,
-        env_vars=dict(),
-        volumes=VolumeMappings(),
-        ports=PortMappings(),
-        network=network,
-    )
-
-    # replicate pro startup
-    if pro:
-        try:
-            from localstack_ext.plugins import modify_gateway_listen_config
-
-            modify_gateway_listen_config(config)
-        except ImportError:
-            pass
-
-    # setup configurators
-    configurators = [
-        ImageConfigurator(pro, image),
-        PortConfigurator(randomize),
-        ConfigEnvironmentConfigurator(pro),
-        ContainerConfigurators.mount_localstack_volume(host_paths.volume_dir),
-        CoverageRunScriptConfigurator(host_paths=host_paths),
-        ContainerConfigurators.config_env_vars,
-    ]
-
-    # create stub container with configuration to apply
-    c = Container(container_config=container_config)
-
-    # apply existing hooks first that can later be overwritten
-    hooks.configure_localstack_container.run(c)
-
-    if command:
-        configurators.append(ContainerConfigurators.custom_command(list(command)))
-    if entrypoint:
-        container_config.entrypoint = entrypoint
-    if mount_docker_socket:
-        configurators.append(ContainerConfigurators.mount_docker_socket)
-    if mount_source:
-        configurators.append(
-            SourceVolumeMountConfigurator(
-                host_paths=host_paths,
-                pro=pro,
-            )
+        # setup important paths on the host
+        host_paths = HostPaths(
+            # we assume that python -m localstack.dev.run is always executed in the repo source
+            workspace_dir=os.path.abspath(os.path.join(os.getcwd(), "..")),
+            volume_dir=volume_dir or config.VOLUME_DIR,
         )
-    if mount_entrypoints:
-        configurators.append(EntryPointMountConfigurator(host_paths=host_paths, pro=pro))
-    if mount_dependencies:
-        configurators.append(DependencyMountConfigurator(host_paths=host_paths))
-    if develop:
-        configurators.append(ContainerConfigurators.develop)
 
-    # make sure anything coming from CLI arguments has priority
-    configurators.extend(
-        [
-            ContainerConfigurators.volume_cli_params(volume),
-            ContainerConfigurators.port_cli_params(publish),
-            ContainerConfigurators.env_cli_params(env),
+        # auto-set pro flag
+        if pro is None:
+            if os.getcwd().endswith("localstack-ext"):
+                pro = True
+            else:
+                pro = False
+
+        # setup base configuration
+        container_config = ContainerConfiguration(
+            image_name=image,
+            name=config.MAIN_CONTAINER_NAME if not randomize else f"localstack-{short_uid()}",
+            remove=True,
+            interactive=True,
+            tty=True,
+            env_vars=dict(),
+            volumes=VolumeMappings(),
+            ports=PortMappings(),
+            network=network,
+        )
+
+        # replicate pro startup
+        if pro:
+            try:
+                from localstack_ext.plugins import modify_gateway_listen_config
+
+                modify_gateway_listen_config(config)
+            except ImportError:
+                pass
+
+        # setup configurators
+        configurators = [
+            ImageConfigurator(pro, image),
+            PortConfigurator(randomize),
+            ConfigEnvironmentConfigurator(pro),
+            ContainerConfigurators.mount_localstack_volume(host_paths.volume_dir),
+            CoverageRunScriptConfigurator(host_paths=host_paths),
+            ContainerConfigurators.config_env_vars,
         ]
-    )
 
-    # run configurators
-    for configurator in configurators:
-        configurator(container_config)
-    # print the config
-    print_config(container_config)
+        # create stub container with configuration to apply
+        c = Container(container_config=container_config)
 
-    # run the container
-    docker = CmdDockerClient()
-    status.update("Creating container")
-    try:
+        # apply existing hooks first that can later be overwritten
+        hooks.configure_localstack_container.run(c)
+
+        if command:
+            configurators.append(ContainerConfigurators.custom_command(list(command)))
+        if entrypoint:
+            container_config.entrypoint = entrypoint
+        if mount_docker_socket:
+            configurators.append(ContainerConfigurators.mount_docker_socket)
+        if mount_source:
+            configurators.append(
+                SourceVolumeMountConfigurator(
+                    host_paths=host_paths,
+                    pro=pro,
+                )
+            )
+        if mount_entrypoints:
+            configurators.append(EntryPointMountConfigurator(host_paths=host_paths, pro=pro))
+        if mount_dependencies:
+            configurators.append(DependencyMountConfigurator(host_paths=host_paths))
+        if develop:
+            configurators.append(ContainerConfigurators.develop)
+
+        # make sure anything coming from CLI arguments has priority
+        configurators.extend(
+            [
+                ContainerConfigurators.volume_cli_params(volume),
+                ContainerConfigurators.port_cli_params(publish),
+                ContainerConfigurators.env_cli_params(env),
+            ]
+        )
+
+        # run configurators
+        for configurator in configurators:
+            configurator(container_config)
+        # print the config
+        print_config(container_config)
+
+        # run the container
+        docker = CmdDockerClient()
+        status.update("Creating container")
         container_id = docker.create_container_from_config(container_config)
-    finally:
-        status.stop()
 
     rule = Rule(f"Interactive session with {container_id[:12]} 💻")
     console.print(rule)
