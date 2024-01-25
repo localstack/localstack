@@ -92,10 +92,14 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 3.0.2
+ 💻 LocalStack CLI 3.1.0
+ 👤 Profile: default
 
-[20:22:20] starting LocalStack in Docker mode 🐳
-[20:22:21] detaching
+[12:47:13] starting LocalStack in Docker mode 🐳                       localstack.py:494
+           preparing environment                                       bootstrap.py:1240
+           configuring container                                       bootstrap.py:1248
+           starting container                                          bootstrap.py:1258
+[12:47:15] detaching                                                   bootstrap.py:1262
 ```
 
 You can query the status of respective services on LocalStack by running:
@@ -148,7 +152,7 @@ To start using LocalStack, check out our [documentation](https://docs.localstack
 To use LocalStack with a graphical user interface, you can use the following UI clients:
 
 * [LocalStack Web Application](https://app.localstack.cloud)
-* [LocalStack Desktop](https://docs.localstack.cloud/user-guide/tools/localstack-desktop/) 
+* [LocalStack Desktop](https://docs.localstack.cloud/user-guide/tools/localstack-desktop/)
 * [LocalStack Docker Extension](https://docs.localstack.cloud/user-guide/tools/localstack-docker-extension/)
 
 ## Releases
