@@ -179,7 +179,9 @@ def get_runtime_client_path() -> Path:
 
 def prepare_image(function_version: FunctionVersion, platform: DockerPlatform) -> None:
     if not function_version.config.runtime:
-        raise NotImplementedError("Custom images are currently not supported")
+        raise NotImplementedError(
+            "Custom images are currently not supported with image prebuilding"
+        )
 
     # create dockerfile
     docker_file = LAMBDA_DOCKERFILE.format(
@@ -197,12 +199,12 @@ def prepare_image(function_version: FunctionVersion, platform: DockerPlatform) -
         context_path=context_path,
         function_version=function_version,
     )
-    lambda_hooks.prebuild_lambda_image.run(prebuild_context)
+    lambda_hooks.prebuild_environment_image.run(prebuild_context)
     LOG.debug(
-        "Building image for function %s with docker file %s in context %s",
+        "Prebuilding image for function %s from context %s and Dockerfile %s",
         function_version.qualified_arn,
-        prebuild_context.docker_file_content,
         str(prebuild_context.context_path),
+        prebuild_context.docker_file_content,
     )
     # save dockerfile
     docker_file_path = prebuild_context.context_path / "Dockerfile"
@@ -218,7 +220,7 @@ def prepare_image(function_version: FunctionVersion, platform: DockerPlatform) -
     # copy function code
     shutil.copytree(
         f"{str(code_path)}/",
-        str(context_path / "code"),
+        str(prebuild_context.context_path / "code"),
         dirs_exist_ok=True,
     )
 
@@ -242,7 +244,7 @@ def prepare_image(function_version: FunctionVersion, platform: DockerPlatform) -
                 e,
             )
     finally:
-        rm_rf(str(context_path))
+        rm_rf(str(prebuild_context.context_path))
 
 
 @dataclasses.dataclass
