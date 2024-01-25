@@ -2,6 +2,7 @@ import dataclasses
 import json
 import logging
 import shutil
+import tempfile
 from functools import cache
 from pathlib import Path
 from typing import Callable, Dict, Literal, Optional
@@ -16,6 +17,7 @@ from localstack.services.lambda_.invocation.executor_endpoint import (
 )
 from localstack.services.lambda_.invocation.lambda_models import FunctionVersion
 from localstack.services.lambda_.invocation.runtime_executor import (
+    LambdaPrebuildContext,
     LambdaRuntimeException,
     RuntimeExecutor,
 )
@@ -38,8 +40,9 @@ from localstack.utils.container_utils.container_client import (
     VolumeMappings,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
+from localstack.utils.files import rm_rf
 from localstack.utils.net import get_free_tcp_port
-from localstack.utils.strings import truncate
+from localstack.utils.strings import short_uid, truncate
 
 LOG = logging.getLogger(__name__)
 
@@ -51,7 +54,7 @@ RAPID_ENTRYPOINT = "/var/rapid/init"
 InitializationType = Literal["on-demand", "provisioned-concurrency"]
 
 LAMBDA_DOCKERFILE = """FROM {base_img}
-COPY aws-lambda-rie {rapid_entrypoint}
+COPY init {rapid_entrypoint}
 COPY code/ /var/task
 """
 
@@ -84,7 +87,7 @@ def docker_platform(lambda_architecture: Architecture) -> DockerPlatform | None:
 
 
 def get_image_name_for_function(function_version: FunctionVersion) -> str:
-    return f"localstack/lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
+    return f"localstack/prebuild-lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
 
 
 def get_default_image_for_runtime(runtime: str) -> str:
@@ -174,27 +177,59 @@ def get_runtime_client_path() -> Path:
     return Path(installer.get_installed_dir())
 
 
-def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
+def prepare_image(function_version: FunctionVersion, platform: DockerPlatform) -> None:
     if not function_version.config.runtime:
-        raise NotImplementedError("Custom images are currently not supported")
-    src_init = get_runtime_client_path()
-    # copy init file
-    target_init = lambda_runtime_package.get_installer().get_executable_path()
-    shutil.copy(src_init, target_init)
-    target_init.chmod(0o755)
-    # copy code
+        raise NotImplementedError(
+            "Custom images are currently not supported with image prebuilding"
+        )
+
     # create dockerfile
-    docker_file_path = target_path / "Dockerfile"
     docker_file = LAMBDA_DOCKERFILE.format(
         base_img=resolver.get_image_for_runtime(function_version.config.runtime),
         rapid_entrypoint=RAPID_ENTRYPOINT,
     )
+
+    code_path = function_version.config.code.get_unzipped_code_location()
+    context_path = Path(
+        f"{tempfile.gettempdir()}/lambda/prebuild_tmp/{function_version.id.function_name}-{short_uid()}"
+    )
+    context_path.mkdir(parents=True)
+    prebuild_context = LambdaPrebuildContext(
+        docker_file_content=docker_file,
+        context_path=context_path,
+        function_version=function_version,
+    )
+    lambda_hooks.prebuild_environment_image.run(prebuild_context)
+    LOG.debug(
+        "Prebuilding image for function %s from context %s and Dockerfile %s",
+        function_version.qualified_arn,
+        str(prebuild_context.context_path),
+        prebuild_context.docker_file_content,
+    )
+    # save dockerfile
+    docker_file_path = prebuild_context.context_path / "Dockerfile"
     with docker_file_path.open(mode="w") as f:
-        f.write(docker_file)
+        f.write(prebuild_context.docker_file_content)
+
+    # copy init file
+    init_destination_path = prebuild_context.context_path / "init"
+    src_init = f"{get_runtime_client_path()}/var/rapid/init"
+    shutil.copy(src_init, init_destination_path)
+    init_destination_path.chmod(0o755)
+
+    # copy function code
+    shutil.copytree(
+        f"{str(code_path)}/",
+        str(prebuild_context.context_path / "code"),
+        dirs_exist_ok=True,
+    )
+
     try:
+        image_name = get_image_name_for_function(function_version)
         CONTAINER_CLIENT.build_image(
             dockerfile_path=str(docker_file_path),
-            image_name=get_image_name_for_function(function_version),
+            image_name=image_name,
+            platform=platform,
         )
     except Exception as e:
         if LOG.isEnabledFor(logging.DEBUG):
@@ -208,6 +243,8 @@ def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
                 function_version.qualified_arn,
                 e,
             )
+    finally:
+        rm_rf(str(prebuild_context.context_path))
 
 
 @dataclasses.dataclass
@@ -435,13 +472,19 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                     )
                     raise e
             if config.LAMBDA_PREBUILD_IMAGES:
-                target_path = function_version.config.code.get_unzipped_code_location()
-                prepare_image(target_path, function_version)
+                prepare_image(function_version, platform)
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
         if config.LAMBDA_PREBUILD_IMAGES:
-            CONTAINER_CLIENT.remove_image(get_image_name_for_function(function_version))
+            # TODO re-enable image cleanup.
+            # Enabling it currently deletes image after updates as well
+            # It also creates issues when cleanup is concurrently with build
+            # probably due to intermediate layers being deleted
+            # image_name = get_image_name_for_function(function_version)
+            # LOG.debug("Removing image %s after version deletion", image_name)
+            # CONTAINER_CLIENT.remove_image(image_name)
+            pass
 
     def get_runtime_endpoint(self) -> str:
         return f"http://{self.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}{self.executor_endpoint.get_endpoint_prefix()}"
