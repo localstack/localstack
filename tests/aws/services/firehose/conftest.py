@@ -78,7 +78,7 @@ def read_s3_data(aws_client):
         def _get_data():
             response = s3.list_objects(Bucket=bucket_name)
             if response.get("Contents") is None:
-                raise Exception("No da in bucket yet")
+                raise Exception("No data in bucket yet")
 
             keys = [obj.get("Key") for obj in response.get("Contents")]
 
