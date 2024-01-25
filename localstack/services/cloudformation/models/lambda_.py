@@ -9,12 +9,13 @@ from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     select_parameters,
 )
-from localstack.services.cloudformation.packages import cloudformation_package
 from localstack.services.cloudformation.service_models import LOG, GenericBaseModel
 from localstack.services.lambda_.lambda_utils import get_handler_file_from_name
+from localstack.services.lambda_.resource_providers.aws_lambda_function import (
+    NODEJS_CFN_RESPONSE_CONTENT,
+)
 from localstack.utils.aws import arns
 from localstack.utils.common import (
-    cp_r,
     is_base64,
     is_zip_file,
     mkdir,
@@ -121,16 +122,9 @@ class LambdaFunction(GenericBaseModel):
 
             # add 'cfn-response' module to archive - see:
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
-            cloudformation_installer = cloudformation_package.get_installer()
-            cloudformation_installer.install()
-            cfn_response_tmp_file = cloudformation_installer.get_executable_path()
-
             cfn_response_mod_dir = os.path.join(tmp_dir, "node_modules", "cfn-response")
             mkdir(cfn_response_mod_dir)
-            cp_r(
-                cfn_response_tmp_file,
-                os.path.join(cfn_response_mod_dir, "index.js"),
-            )
+            save_file(os.path.join(cfn_response_mod_dir, "index.js"), NODEJS_CFN_RESPONSE_CONTENT)
 
             # create zip file
             zip_file = create_zip_file(tmp_dir, get_content=True)

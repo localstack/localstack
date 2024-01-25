@@ -20,6 +20,9 @@ class ServicesTemplates(TemplateLoader):
     AWS_SDK_DYNAMODB_PUT_UPDATE_GET_ITEM: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/aws_sdk_dynamodb_put_update_get_item.json5"
     )
+    AWS_SDK_SFN_START_EXECUTION: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/aws_sdk_sfn_start_execution.json5"
+    )
     API_GATEWAY_INVOKE_BASE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/api_gateway_invoke_base.json5"
     )

@@ -1,6 +1,7 @@
 import abc
 import json
 import logging
+import threading
 from abc import ABC
 from functools import lru_cache
 from typing import Callable, Optional
@@ -19,7 +20,6 @@ from localstack.services.lambda_.invocation.models import lambda_stores
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.json import BytesEncoder
 from localstack.utils.strings import to_bytes, to_str
-from localstack.utils.threads import FuncThread
 
 LOG = logging.getLogger(__name__)
 
@@ -74,52 +74,79 @@ class EventSourceAsfAdapter(EventSourceAdapter):
         self.lambda_service = lambda_service
 
     def invoke(self, function_arn, context, payload, invocation_type, callback=None):
+        request_id = gen_amzn_requestid()
+        self._invoke_async(request_id, function_arn, context, payload, invocation_type, callback)
+
+    def _invoke_async(
+        self,
+        request_id: str,
+        function_arn: str,
+        context: dict,
+        payload: dict,
+        invocation_type: InvocationType,
+        callback: Optional[Callable] = None,
+    ):
         # split ARN ( a bit unnecessary since we build an ARN again in the service)
         fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
         function_name = fn_parts["function_name"]
-        request_id = gen_amzn_requestid()
-
-        def _invoke(*args, **kwargs):
-            result = self.lambda_service.invoke(
-                # basically function ARN
-                function_name=function_name,
-                qualifier=fn_parts["qualifier"],
-                region=fn_parts["region_name"],
-                account_id=fn_parts["account_id"],
-                invocation_type=invocation_type,
-                client_context=json.dumps(context or {}),
-                payload=to_bytes(json.dumps(payload or {}, cls=BytesEncoder)),
-                request_id=request_id,
-            )
-
-            if callback:
-                try:
-                    error = None
-                    if result.is_error:
-                        error = "?"
-                    callback(
-                        result=LegacyInvocationResult(
-                            result=to_str(json.loads(result.payload)),
-                            log_output=result.logs,
-                        ),
-                        func_arn="doesntmatter",
-                        event="doesntmatter",
-                        error=error,
-                    )
-
-                except Exception as e:
-                    # TODO: map exception to old error format?
-                    LOG.debug("Encountered an exception while handling callback", exc_info=True)
-                    callback(
-                        result=None,
-                        func_arn="doesntmatter",
-                        event="doesntmatter",
-                        error=e,
-                    )
-
         # TODO: think about scaling here because this spawns a new thread for every invoke without limits!
-        thread = FuncThread(_invoke, name=f"event-source-invoker-{function_name}-{request_id}")
+        thread = threading.Thread(
+            target=self._invoke_sync,
+            args=(request_id, function_arn, context, payload, invocation_type, callback),
+            daemon=True,
+            name=f"event-source-invoker-{function_name}-{request_id}",
+        )
         thread.start()
+
+    def _invoke_sync(
+        self,
+        request_id: str,
+        function_arn: str,
+        context: dict,
+        payload: dict,
+        invocation_type: InvocationType,
+        callback: Optional[Callable] = None,
+    ):
+        """Performs the actual lambda invocation which will be run from a thread."""
+        fn_parts = api_utils.FULL_FN_ARN_PATTERN.search(function_arn).groupdict()
+        function_name = fn_parts["function_name"]
+
+        result = self.lambda_service.invoke(
+            # basically function ARN
+            function_name=function_name,
+            qualifier=fn_parts["qualifier"],
+            region=fn_parts["region_name"],
+            account_id=fn_parts["account_id"],
+            invocation_type=invocation_type,
+            client_context=json.dumps(context or {}),
+            payload=to_bytes(json.dumps(payload or {}, cls=BytesEncoder)),
+            request_id=request_id,
+        )
+
+        if callback:
+            try:
+                error = None
+                if result.is_error:
+                    error = "?"
+                callback(
+                    result=LegacyInvocationResult(
+                        result=to_str(json.loads(result.payload)),
+                        log_output=result.logs,
+                    ),
+                    func_arn="doesntmatter",
+                    event="doesntmatter",
+                    error=error,
+                )
+
+            except Exception as e:
+                # TODO: map exception to old error format?
+                LOG.debug("Encountered an exception while handling callback", exc_info=True)
+                callback(
+                    result=None,
+                    func_arn="doesntmatter",
+                    event="doesntmatter",
+                    error=e,
+                )
 
     def invoke_with_statuscode(
         self,

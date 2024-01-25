@@ -540,7 +540,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketVersioning::test_bucket_versioning_crud": {
-    "recorded-date": "01-08-2023, 16:50:36",
+    "recorded-date": "15-01-2024, 03:12:30",
     "recorded-content": {
       "get-versioning-before": {
         "ResponseMetadata": {
@@ -588,6 +588,16 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "put-versioning-disabled": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       },
       "put-versioning-empty": {
@@ -2140,26 +2150,64 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_on_existing_bucket": {
-    "recorded-date": "09-08-2023, 01:27:32",
+    "recorded-date": "15-01-2024, 03:13:25",
     "recorded-content": {
-      "put-object-lock-existing-bucket-enabled": {
+      "get-object-lock-existing-bucket-no-config": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "ObjectLockConfigurationNotFoundError",
+          "Message": "Object Lock configuration does not exist for this bucket"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-object-lock-existing-bucket-no-versioning": {
         "Error": {
           "Code": "InvalidBucketState",
-          "Message": "Object Lock configuration cannot be enabled on existing buckets"
+          "Message": "Versioning must be 'Enabled' on the bucket to apply a Object Lock configuration"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
         }
       },
-      "put-object-lock-existing-bucket-rule": {
+      "suspended-versioning": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-lock-existing-bucket-versioning-disabled": {
         "Error": {
           "Code": "InvalidBucketState",
-          "Message": "Object Lock configuration cannot be enabled on existing buckets"
+          "Message": "Versioning must be 'Enabled' on the bucket to apply a Object Lock configuration"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
+        }
+      },
+      "enabled-versioning": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-lock-existing-bucket-enabled": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-lock-existing-bucket-enabled": {
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
@@ -2215,7 +2263,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_exc": {
-    "recorded-date": "10-08-2023, 14:13:45",
+    "recorded-date": "15-01-2024, 03:08:09",
     "recorded-content": {
       "put-lock-config-no-enabled": {
         "Error": {
