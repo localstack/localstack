@@ -478,11 +478,11 @@ class TestFirehoseIntegration:
             extended_s3_destination_configuration = {
                 "RoleARN": role_arn,
                 "BucketARN": bucket_arn,
-                "Prefix": "test-prefix",
+                "Prefix": "firehoseTest",
+                "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
                 "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 1},
                 "CompressionFormat": "UNCOMPRESSED",
                 "EncryptionConfiguration": {"NoEncryptionConfig": "NoEncryption"},
-                "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
                 "CloudWatchLoggingOptions": {
                     "Enabled": True,
                     "LogGroupName": log_group_name,
@@ -519,8 +519,8 @@ class TestFirehoseIntegration:
 
         snapshot.add_transformer(
             [
-                snapshot.transform.regex(bucket_a_name, "bucket-a"),
-                snapshot.transform.regex(bucket_b_name, "bucket-b"),
+                snapshot.transform.regex(bucket_a_name, "<bucket-a>"),
+                snapshot.transform.regex(bucket_b_name, "<bucket-b>"),
             ]
         )
         snapshot.match("kinesis-event-stream-multiple-delivery-streams", s3_data)
