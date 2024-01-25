@@ -15,3 +15,13 @@ class TestStateTemplate(TemplateLoader):
     IO_RESULT_PASS_STATE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/io_result_pass_state.json5"
     )
+
+    BASE_LAMBDA_TASK_STATE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_lambda_task_state.json5"
+    )
+    BASE_LAMBDA_SERVICE_TASK_STATE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_lambda_service_task_state.json5"
+    )
+    IO_LAMBDA_SERVICE_TASK_STATE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/io_lambda_service_task_state.json5"
+    )

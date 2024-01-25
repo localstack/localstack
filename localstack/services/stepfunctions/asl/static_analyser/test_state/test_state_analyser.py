@@ -15,11 +15,12 @@ from localstack.services.stepfunctions.asl.static_analyser.static_analyser impor
 
 class TestStateStaticAnalyser(StaticAnalyser):
     _SUPPORTED_STATE_TYPES: Final[set[StateType]] = {
-        StateType.Choice,
+        StateType.Task,
         StateType.Pass,
+        StateType.Wait,
+        StateType.Choice,
         StateType.Succeed,
         StateType.Fail,
-        StateType.Wait,
     }
 
     def analyse(self, derivation) -> None:
@@ -30,15 +31,19 @@ class TestStateStaticAnalyser(StaticAnalyser):
         state_type_value: int = ctx.children[0].symbol.type
         state_type = StateType(state_type_value)
         if state_type not in self._SUPPORTED_STATE_TYPES:
-            raise ValueError(f"TODO ${state_type}")
+            raise ValueError(f"Unsupported state type for TestState runs '{state_type}'.")
 
     def visitResource_decl(self, ctx: ASLParser.Resource_declContext) -> None:
         resource_str: str = ctx.keyword_or_string().getText()[1:-1]
         resource = Resource.from_resource_arn(resource_str)
 
         if isinstance(resource, ActivityResource):
-            raise ValueError("TODO: ActivityResource")
+            raise ValueError(
+                f"ActivityResources are not supported for TestState runs {resource_str}."
+            )
 
         if isinstance(resource, ServiceResource):
             if resource.condition is not None:
-                raise ValueError(f"TODO: condition {resource.condition}")
+                raise ValueError(
+                    f"Service integration patterns are not supported for TestState runs {resource_str}."
+                )

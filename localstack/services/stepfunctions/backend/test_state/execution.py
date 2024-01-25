@@ -15,6 +15,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramError,
     ProgramState,
 )
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution import BaseExecutionWorkerComm, Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachineInstance
 from localstack.services.stepfunctions.backend.test_state.execution_worker import (
@@ -81,7 +82,8 @@ class TestStateExecution(Execution):
             # TODO: handle other statuses
             status = None
 
-        test_state_output = TestStateOutput(status=status, output=self.output)
+        output_str = to_json_str(self.output)
+        test_state_output = TestStateOutput(status=status, output=output_str)
 
         match inspection_level:
             case InspectionLevel.TRACE:

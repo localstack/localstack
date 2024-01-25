@@ -427,5 +427,63 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_info": {
+    "recorded-date": "21-01-2024, 13:29:10",
+    "recorded-content": {}
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_debug": {
+    "recorded-date": "21-01-2024, 12:53:39",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "inputData": "HelloWorld"
+          },
+          "afterParameters": {
+            "inputData": "HelloWorld"
+          },
+          "afterResultPath": "\"HelloWorld!\"",
+          "afterResultSelector": "\"HelloWorld!\"",
+          "input": {
+            "inputData": "HelloWorld"
+          },
+          "result": "\"HelloWorld!\""
+        },
+        "output": "\"HelloWorld!\"",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_trace": {
+    "recorded-date": "21-01-2024, 12:54:23",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "inputData": "HelloWorld"
+          },
+          "afterParameters": {
+            "inputData": "HelloWorld"
+          },
+          "afterResultPath": "\"HelloWorld!\"",
+          "afterResultSelector": "\"HelloWorld!\"",
+          "input": {
+            "inputData": "HelloWorld"
+          },
+          "result": "\"HelloWorld!\""
+        },
+        "output": "\"HelloWorld!\"",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

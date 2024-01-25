@@ -1,4 +1,13 @@
 {
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_debug": {
+    "last_validated_date": "2024-01-21T12:53:39+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_info": {
+    "last_validated_date": "2024-01-21T12:44:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_trace": {
+    "last_validated_date": "2024-01-21T12:54:23+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass_debug": {
     "last_validated_date": "2024-01-21T11:35:42+00:00"
   },
