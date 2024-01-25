@@ -402,9 +402,14 @@ class LambdaProxyIntegration(BackendIntegration):
 
 class LambdaIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
-        headers = helpers.create_invocation_headers(invocation_context)
         invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        headers = invocation_context.headers
+
+        # resolve integration parameters
+        integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
+        headers.update(integration_parameters.get("headers", {}))
+
         if invocation_context.authorizer_type:
             invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
@@ -622,9 +627,14 @@ class HTTPIntegration(BackendIntegration):
         integration = invocation_context.integration
         path_params = invocation_context.path_params
         method = invocation_context.method
-        headers = helpers.create_invocation_headers(invocation_context)
+        headers = invocation_context.headers
+
         relative_path, query_string_params = extract_query_string_params(path=invocation_path)
         uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        # resolve integration parameters
+        integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
+        headers.update(integration_parameters.get("headers", {}))
 
         if ":servicediscovery:" in uri:
             # check if this is a servicediscovery integration URI

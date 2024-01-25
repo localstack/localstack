@@ -19,7 +19,6 @@ from localstack.services.apigateway.helpers import (
     OpenAPISpecificationResolver,
     RequestParametersResolver,
     apply_json_patch_safe,
-    create_invocation_headers,
     extract_path_params,
     extract_query_string_params,
     get_resource_for_path,
@@ -677,14 +676,24 @@ def test_create_invocation_headers():
     invocation_context.integration = {
         "requestParameters": {"integration.request.header.X-Custom": "'Event'"}
     }
-    headers = create_invocation_headers(invocation_context)
-    assert headers == {"X-Header": "foobar", "X-Custom": "'Event'"}
+    headers = invocation_context.headers
+
+    req_params_resolver = RequestParametersResolver()
+    req_params = req_params_resolver.resolve(invocation_context)
+
+    headers.update(req_params.get("headers", {}))
+    assert headers == {"X-Header": "foobar", "X-Custom": "Event"}
 
     invocation_context.integration = {
         "requestParameters": {"integration.request.path.foobar": "'CustomValue'"}
     }
-    headers = create_invocation_headers(invocation_context)
-    assert headers == {"X-Header": "foobar", "X-Custom": "'Event'"}
+
+    req_params = req_params_resolver.resolve(invocation_context)
+    headers.update(req_params.get("headers", {}))
+    assert headers == {"X-Header": "foobar", "X-Custom": "Event"}
+
+    path = req_params.get("path", {})
+    assert path == {"foobar": "CustomValue"}
 
 
 class TestApigatewayEvents:

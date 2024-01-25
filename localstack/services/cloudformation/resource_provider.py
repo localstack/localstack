@@ -161,6 +161,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Logs::LogStream": "ResourceProvider",
     "AWS::Logs::SubscriptionFilter": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
+    "AWS::Pipes::Pipe": "ResourceProvider",
     "AWS::RDS::DBCluster": "ResourceProvider",
     "AWS::RDS::GlobalCluster": "ResourceProvider",
     "AWS::RDS::DBSubnetGroup": "ResourceProvider",
