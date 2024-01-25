@@ -165,6 +165,7 @@ PROVIDER_DEFAULTS = {
     "AWS::Logs::LogStream": "ResourceProvider",
     "AWS::Logs::SubscriptionFilter": "ResourceProvider",
     "AWS::OpenSearchService::Domain": "ResourceProvider",
+    "AWS::Pipes::Pipe": "ResourceProvider",
     "AWS::RDS::DBCluster": "ResourceProvider",
     "AWS::Redshift::Cluster": "ResourceProvider",
     "AWS::Route53::HealthCheck": "ResourceProvider",
