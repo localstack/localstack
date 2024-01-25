@@ -130,6 +130,7 @@ PROVIDER_DEFAULTS = {
     "AWS::EC2::EIP": "ResourceProvider",
     "AWS::EC2::SecurityGroupEgress": "ResourceProvider",
     "AWS::EC2::SecurityGroupIngress": "ResourceProvider",
+    "AWS::EC2::LaunchTemplate": "ResourceProvider",
     "AWS::ECR::Repository": "ResourceProvider",
     "AWS::EKS::Nodegroup": "ResourceProvider",
     "AWS::ElasticBeanstalk::Application": "ResourceProvider",
