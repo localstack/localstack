@@ -60,6 +60,8 @@ from localstack.aws.api.firehose import (
     S3DestinationConfiguration,
     S3DestinationDescription,
     S3DestinationUpdate,
+    SnowflakeDestinationConfiguration,
+    SnowflakeDestinationUpdate,
     SplunkDestinationConfiguration,
     SplunkDestinationUpdate,
     TagDeliveryStreamInputTagList,
@@ -220,6 +222,7 @@ class FirehoseProvider(FirehoseApi):
         tags: TagDeliveryStreamInputTagList = None,
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
+        snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
     ) -> CreateDeliveryStreamOutput:
         store = self.get_store(context.account_id, context.region)
 
@@ -464,6 +467,7 @@ class FirehoseProvider(FirehoseApi):
         splunk_destination_update: SplunkDestinationUpdate = None,
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
+        snowflake_destination_update: SnowflakeDestinationUpdate = None,
     ) -> UpdateDestinationOutput:
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
