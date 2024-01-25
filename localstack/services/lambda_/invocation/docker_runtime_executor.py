@@ -177,7 +177,7 @@ def get_runtime_client_path() -> Path:
     return Path(installer.get_installed_dir())
 
 
-def prepare_image(function_version: FunctionVersion) -> None:
+def prepare_image(function_version: FunctionVersion, platform: DockerPlatform) -> None:
     if not function_version.config.runtime:
         raise NotImplementedError("Custom images are currently not supported")
 
@@ -227,6 +227,7 @@ def prepare_image(function_version: FunctionVersion) -> None:
         CONTAINER_CLIENT.build_image(
             dockerfile_path=str(docker_file_path),
             image_name=image_name,
+            platform=platform,
         )
     except Exception as e:
         if LOG.isEnabledFor(logging.DEBUG):
@@ -469,7 +470,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                     )
                     raise e
             if config.LAMBDA_PREBUILD_IMAGES:
-                prepare_image(function_version)
+                prepare_image(function_version, platform)
 
     @classmethod
     def cleanup_version(cls, function_version: FunctionVersion) -> None:
