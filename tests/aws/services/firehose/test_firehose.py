@@ -1,5 +1,6 @@
 import base64
 import json
+import time
 
 import pytest as pytest
 import requests
@@ -7,6 +8,7 @@ from pytest_httpserver import HTTPServer
 
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -455,6 +457,9 @@ class TestFirehoseIntegration:
         role_arn = create_iam_role_with_policy(
             RoleDefinition=role_document, PolicyDefinition=policy_document
         )
+        # required for role propagation delay on aws
+        if is_aws_cloud():
+            time.sleep(10)
 
         # create log groupe for firehose delivery stream error logging
         log_group_name = f"group-{short_uid()}"
@@ -485,19 +490,15 @@ class TestFirehoseIntegration:
                 },
             }
 
-            def _create_firehose_delivery_stream():
-                firehose_create_delivery_stream(
-                    DeliveryStreamName=delivery_stream_name,
-                    DeliveryStreamType="KinesisStreamAsSource",
-                    KinesisStreamSourceConfiguration={
-                        "KinesisStreamARN": stream_arn,
-                        "RoleARN": role_arn,
-                    },
-                    ExtendedS3DestinationConfiguration=extended_s3_destination_configuration,
-                )
-
-            # required for role propagation delay on aws
-            retry(_create_firehose_delivery_stream, sleep=1, retries=10)
+            firehose_create_delivery_stream(
+                DeliveryStreamName=delivery_stream_name,
+                DeliveryStreamType="KinesisStreamAsSource",
+                KinesisStreamSourceConfiguration={
+                    "KinesisStreamARN": stream_arn,
+                    "RoleARN": role_arn,
+                },
+                ExtendedS3DestinationConfiguration=extended_s3_destination_configuration,
+            )
 
         # put message to kinesis event stream
         record_data = TEST_MESSAGE
