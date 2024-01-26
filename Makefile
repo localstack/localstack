@@ -33,26 +33,61 @@ venv: $(VENV_ACTIVATE)    ## Create a new (empty) virtual environment
 freeze:                   ## Run pip freeze -l in the virtual environment
 	@$(VENV_RUN); pip freeze -l
 
+pip-tools: venv
+	$(VENV_RUN); $(PIP_CMD) install --upgrade pip-tools
+
+upgrade-runtime-reqs: pip-tools
+	$(VENV_RUN); pip-compile --upgrade --extra runtime -o runtime-requirements.txt pyproject.toml
+
+upgrade-test-only-reqs: pip-tools
+	$(VENV_RUN); pip-compile --upgrade --extra test -o test-only-requirements.txt pyproject.toml
+
+upgrade-test-reqs: pip-tools
+	$(VENV_RUN); pip-compile --upgrade --extra runtime,test -o test-requirements.txt pyproject.toml
+
+upgrade-dev-reqs: pip-tools
+	$(VENV_RUN); pip-compile --upgrade --extra runtime,test,dev -o requirements.txt pyproject.toml
+
+upgrade-dev-types-reqs: pip-tools
+	$(VENV_RUN); pip-compile --upgrade --extra runtime,test,dev,typehint -o types-requirements.txt pyproject.toml
+
+upgrade-s3-reqs: pip-tools
+	$(VENV_RUN); pip-compile --upgrade --extra base-runtime -o s3-requirements.txt pyproject.toml
+
+upgrade-all-reqs: upgrade-runtime-reqs upgrade-test-reqs upgrade-dev-reqs upgrade-dev-types-reqs upgrade-s3-reqs
+
 install-basic: venv       ## Install basic dependencies for CLI usage into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli]"
 
 install-runtime: venv     ## Install dependencies for the localstack runtime into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime]"
+	$(VENV_RUN)
+	$(PIP_CMD) install -r runtime-requirements.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime]"
 
 install-test: venv        ## Install requirements to run tests into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test]"
+	$(VENV_RUN)
+	$(PIP_CMD) install -r test-requirements.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test]"
 
 install-test-only: venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[test]"
+	$(VENV_RUN)
+	$(PIP_CMD) install -r test-only-requirements.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[test]"
 
 install-dev: venv         ## Install developer requirements into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
+	$(VENV_RUN)
+	$(PIP_CMD) install -r requirements.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
 
 install-dev-types: venv   ## Install developer requirements incl. type hints into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev,typehint]"
+	$(VENV_RUN)
+	$(PIP_CMD) install -r types-requirements.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev,typehint]"
 
 install-s3: venv     ## Install dependencies for the localstack runtime for s3-only into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,base-runtime]"
+	$(VENV_RUN)
+	$(PIP_CMD) install -r s3-requirements.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,base-runtime]"
 
 install: install-dev entrypoints  ## Install full dependencies into venv
 
@@ -255,4 +290,4 @@ clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-.PHONY: usage freeze install-basic install-runtime install-test install-test-only install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist
+.PHONY: usage freeze install-basic install-runtime install-test install-test-only install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist pip-tools upgrade-all-reqs upgrade-runtime-reqs upgrade-test-reqs upgrade-dev-reqs upgrade-dev-types-reqs upgrade-s3-reqs upgrade-test-only-reqs
