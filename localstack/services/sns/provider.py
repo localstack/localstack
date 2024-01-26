@@ -275,7 +275,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         if attribute_name == "FilterPolicy":
             store = self.get_store(account_id=context.account_id, region_name=context.region)
-            store.subscription_filter_policy[subscription_arn] = json.loads(attribute_value)
+            store.subscription_filter_policy[subscription_arn] = (
+                json.loads(attribute_value) if attribute_value else None
+            )
 
         sub[attribute_name] = attribute_value
 
