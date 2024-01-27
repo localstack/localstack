@@ -134,7 +134,7 @@ class BackendIntegration(ABC):
                 "stage_variables": invocation_context.stage_variables or {},
             }
         }
-        return VtlTemplate().render_vtl(template_selection_expression, variables)
+        return VtlTemplate().render_vtl(template_selection_expression, variables) or "$default"
 
 
 @lru_cache(maxsize=64)
@@ -812,7 +812,11 @@ class SNSIntegration(BackendIntegration):
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
         try:
-            payload = self.request_templates.render(invocation_context)
+            if invocation_context.is_websocket_request():
+                template_key = self.render_template_selection_expression(invocation_context)
+                payload = self.request_templates.render(invocation_context, template_key)
+            else:
+                payload = self.request_templates.render(invocation_context)
         except Exception as e:
             LOG.warning("Failed to apply template for SNS integration", e)
             raise
@@ -820,10 +824,13 @@ class SNSIntegration(BackendIntegration):
         headers = mock_aws_request_headers(
             service="sns", aws_access_key_id=invocation_context.account_id, region_name=region_name
         )
-        result = make_http_request(
+        response = make_http_request(
             config.internal_service_url(), method="POST", headers=headers, data=payload
         )
-        return self.apply_response_parameters(invocation_context, result)
+
+        invocation_context.response = response
+        response._content = self.response_templates.render(invocation_context)
+        return self.apply_response_parameters(invocation_context, response)
 
 
 class StepFunctionIntegration(BackendIntegration):
