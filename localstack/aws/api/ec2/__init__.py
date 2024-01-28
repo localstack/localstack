@@ -505,6 +505,7 @@ class AvailabilityZoneState(str):
     information = "information"
     impaired = "impaired"
     unavailable = "unavailable"
+    constrained = "constrained"
 
 
 class BareMetal(str):
@@ -1990,6 +1991,8 @@ class InstanceType(str):
     m7i_metal_48xl = "m7i.metal-48xl"
     r7i_metal_24xl = "r7i.metal-24xl"
     r7i_metal_48xl = "r7i.metal-48xl"
+    r7iz_metal_16xl = "r7iz.metal-16xl"
+    r7iz_metal_32xl = "r7iz.metal-32xl"
 
 
 class InstanceTypeHypervisor(str):
@@ -2889,6 +2892,7 @@ class SubnetCidrReservationType(str):
 class SubnetState(str):
     pending = "pending"
     available = "available"
+    unavailable = "unavailable"
 
 
 class SummaryStatus(str):
@@ -7352,6 +7356,7 @@ class CreateNetworkAclRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     VpcId: VpcId
     TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: Optional[String]
 
 
 class NetworkAclEntry(TypedDict, total=False):
@@ -7389,6 +7394,7 @@ class NetworkAcl(TypedDict, total=False):
 
 class CreateNetworkAclResult(TypedDict, total=False):
     NetworkAcl: Optional[NetworkAcl]
+    ClientToken: Optional[String]
 
 
 class CreateNetworkInsightsAccessScopeRequest(ServiceRequest):
@@ -7724,6 +7730,7 @@ class CreateRouteTableRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     VpcId: VpcId
     TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: Optional[String]
 
 
 class Route(TypedDict, total=False):
@@ -7779,6 +7786,7 @@ class RouteTable(TypedDict, total=False):
 
 class CreateRouteTableResult(TypedDict, total=False):
     RouteTable: Optional[RouteTable]
+    ClientToken: Optional[String]
 
 
 class CreateSecurityGroupRequest(ServiceRequest):
@@ -11569,6 +11577,8 @@ class EbsInstanceBlockDevice(TypedDict, total=False):
     DeleteOnTermination: Optional[Boolean]
     Status: Optional[AttachmentStatus]
     VolumeId: Optional[String]
+    AssociatedResource: Optional[String]
+    VolumeOwnerId: Optional[String]
 
 
 class InstanceBlockDeviceMapping(TypedDict, total=False):
@@ -13852,6 +13862,8 @@ class VolumeAttachment(TypedDict, total=False):
     State: Optional[VolumeAttachmentState]
     VolumeId: Optional[String]
     DeleteOnTermination: Optional[Boolean]
+    AssociatedResource: Optional[String]
+    InstanceOwningService: Optional[String]
 
 
 VolumeAttachmentList = List[VolumeAttachment]
@@ -19165,6 +19177,7 @@ class Ec2Api:
         vpc_id: VpcId,
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
+        client_token: String = None,
     ) -> CreateNetworkAclResult:
         raise NotImplementedError
 
@@ -19341,6 +19354,7 @@ class Ec2Api:
         vpc_id: VpcId,
         dry_run: Boolean = None,
         tag_specifications: TagSpecificationList = None,
+        client_token: String = None,
     ) -> CreateRouteTableResult:
         raise NotImplementedError
 

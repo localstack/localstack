@@ -182,7 +182,7 @@ jobs:
 
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             localstack-ext/.venv
@@ -193,7 +193,7 @@ jobs:
 
       - name: Cache Ext Dependencies (libs)
         if: inputs.disableCaching != true
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             localstack/.filesystem/var/lib/localstack
@@ -206,7 +206,7 @@ jobs:
       - name: Restore Lambda common runtime packages
         id: cached-lambda-common-restore
         if: inputs.disableCaching != true
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             localstack/tests/aws/services/lambda_/functions/common
@@ -218,7 +218,7 @@ jobs:
 
       - name: Save Lambda common runtime packages
         if: inputs.disableCaching != true
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: |
             localstack/tests/aws/services/lambda_/functions/common

@@ -48,6 +48,7 @@ from localstack.aws.api.dynamodb import (
     DescribeTimeToLiveOutput,
     DestinationStatus,
     DynamodbApi,
+    EnableKinesisStreamingConfiguration,
     ExecuteStatementInput,
     ExecuteStatementOutput,
     ExecuteTransactionInput,
@@ -1349,7 +1350,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     #
 
     def enable_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
+        self,
+        context: RequestContext,
+        table_name: TableName,
+        stream_arn: StreamArn,
+        enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
     ) -> KinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
@@ -1390,7 +1395,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
     def disable_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName, stream_arn: StreamArn
+        self,
+        context: RequestContext,
+        table_name: TableName,
+        stream_arn: StreamArn,
+        enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
     ) -> KinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
 

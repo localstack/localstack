@@ -80,6 +80,7 @@ QueryString = str
 RequestId = str
 ResourceIdentifier = str
 RoleArn = str
+SelectionCriteria = str
 SequenceToken = str
 Service = str
 SessionId = str
@@ -165,6 +166,7 @@ class OutputFormat(str):
 
 class PolicyType(str):
     DATA_PROTECTION_POLICY = "DATA_PROTECTION_POLICY"
+    SUBSCRIPTION_FILTER_POLICY = "SUBSCRIPTION_FILTER_POLICY"
 
 
 class QueryStatus(str):
@@ -371,6 +373,7 @@ class AccountPolicy(TypedDict, total=False):
     lastUpdatedTime: Optional[Timestamp]
     policyType: Optional[PolicyType]
     scope: Optional[Scope]
+    selectionCriteria: Optional[SelectionCriteria]
     accountId: Optional[AccountId]
 
 
@@ -1200,6 +1203,7 @@ class PutAccountPolicyRequest(ServiceRequest):
     policyDocument: AccountPolicyDocument
     policyType: PolicyType
     scope: Optional[Scope]
+    selectionCriteria: Optional[SelectionCriteria]
 
 
 class PutAccountPolicyResponse(TypedDict, total=False):
@@ -1839,6 +1843,7 @@ class LogsApi:
         policy_document: AccountPolicyDocument,
         policy_type: PolicyType,
         scope: Scope = None,
+        selection_criteria: SelectionCriteria = None,
     ) -> PutAccountPolicyResponse:
         raise NotImplementedError
 
