@@ -464,6 +464,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         # TODO: add support for paging, ordering, and other manipulations.
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
         history: GetExecutionHistoryOutput = execution.to_history_output()
+        if reverse_order:
+            history["events"].reverse()
         return history
 
     def delete_state_machine(

@@ -91,6 +91,7 @@ class LambdaService:
         shutdown_futures = []
         for event_manager in self.event_managers.values():
             shutdown_futures.append(self.task_executor.submit(event_manager.stop))
+        # TODO: switch shutdown order?
         for version_manager in self.lambda_running_versions.values():
             shutdown_futures.append(self.task_executor.submit(version_manager.stop))
         for version_manager in self.lambda_starting_versions.values():
