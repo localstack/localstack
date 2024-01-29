@@ -38,7 +38,7 @@ TEST_MESSAGE = "Test-message-2948294kdlsie"
 
 @pytest.mark.parametrize("lambda_processor_enabled", [True, False])
 @markers.aws.unknown
-def test_firehose_http(
+def test_kinesis_firehose_http(
     aws_client,
     lambda_processor_enabled: bool,
     create_lambda_function,
@@ -352,7 +352,7 @@ class TestFirehoseIntegration:
             aws_client.opensearch.delete_domain(DomainName=domain_name)
 
     @markers.aws.unknown
-    def test_delivery_stream_with_kinesis_as_source(
+    def test_kinesis_firehose_kinesis_as_source(
         self, s3_bucket, kinesis_create_stream, cleanups, aws_client
     ):
         bucket_arn = arns.s3_bucket_arn(s3_bucket)
@@ -420,7 +420,7 @@ class TestFirehoseIntegration:
         assert poll_condition(check_stream_state, 45, 1)
 
     @markers.aws.validated
-    def test_multiple_delivery_streams_with_kinesis_as_source(
+    def test_kinesis_firehose_kinesis_as_source_multiple_delivery_streams(
         self,
         s3_create_bucket,
         kinesis_create_stream,
