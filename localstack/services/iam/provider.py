@@ -487,15 +487,17 @@ def apply_patches():
     MotoRole.arn = moto_role_arn
 
     # Add missing managed polices
-    @patch(IAMBackend.__init__)
-    def add_attributes(__init__, self, region_name, account_id, aws_policies=None):
-        __init__(self, region_name, account_id, aws_policies=aws_policies)
-        self.aws_managed_policies.extend(
+    # TODO this might not be necessary
+    @patch(IAMBackend._init_aws_policies)
+    def _init_aws_policies_extended(_init_aws_policies, self):
+        loaded_policies = _init_aws_policies(self)
+        loaded_policies.extend(
             [
                 AWSManagedPolicy.from_data(name, self.account_id, d)
                 for name, d in ADDITIONAL_MANAGED_POLICIES.items()
             ]
         )
+        return loaded_policies
 
     if "Principal" not in VALID_STATEMENT_ELEMENTS:
         VALID_STATEMENT_ELEMENTS.append("Principal")
