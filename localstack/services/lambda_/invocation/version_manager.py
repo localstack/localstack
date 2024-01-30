@@ -229,8 +229,8 @@ class LambdaVersionManager:
             start_thread(
                 lambda *args, **kwargs: record_cw_metric_error(
                     function_name=self.function.function_name,
+                    account_id=self.function_version.id.account,
                     region_name=self.function_version.id.region,
-                    function_arn=self.function_arn,
                 ),
                 name=f"record-cloudwatch-metric-error-{function_id.function_name}:{function_id.qualifier}",
             )
@@ -238,8 +238,8 @@ class LambdaVersionManager:
             start_thread(
                 lambda *args, **kwargs: record_cw_metric_invocation(
                     function_name=self.function.function_name,
+                    account_id=self.function_version.id.account,
                     region_name=self.function_version.id.region,
-                    function_arn=self.function_arn,
                 ),
                 name=f"record-cloudwatch-metric-{function_id.function_name}:{function_id.qualifier}",
             )

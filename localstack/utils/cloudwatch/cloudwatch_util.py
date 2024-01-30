@@ -30,11 +30,10 @@ def dimension_lambda(kwargs):
     return [{"Name": "FunctionName", "Value": func_name}]
 
 
-def publish_lambda_metric(metric, value, kwargs, region_name: Optional[str] = None):
+def publish_lambda_metric(metric, value, kwargs, account_id: Optional[str] = None, region_name: Optional[str] = None):
     # publish metric only if CloudWatch service is available
     if not is_api_enabled("cloudwatch"):
         return
-    _, _, account_id, _ = function_locators_from_arn(kwargs.get("func_arn"))
     cw_client = connect_to(aws_access_key_id=account_id, region_name=region_name).cloudwatch
     try:
         cw_client.put_metric_data(
