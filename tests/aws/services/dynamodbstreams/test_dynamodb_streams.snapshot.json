@@ -1,0 +1,37 @@
+{
+  "tests/aws/services/dynamodbstreams/test_dynamodb_streams.py::TestDynamoDBStreams::test_enable_kinesis_streaming_destination": {
+    "recorded-date": "30-01-2024, 10:33:36",
+    "recorded-content": {
+      "result-records": [
+        {
+          "SequenceNumber": "<sequence-number:1>",
+          "ApproximateArrivalTimestamp": "timestamp",
+          "Data": {
+            "awsRegion": "<region>",
+            "eventID": "<event-i-d:1>",
+            "eventName": "INSERT",
+            "userIdentity": null,
+            "recordFormat": "application/json",
+            "tableName": "<table-name:1>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "approximate-creation-date-time",
+              "Keys": {
+                "id": {
+                  "S": "test"
+                }
+              },
+              "NewImage": {
+                "id": {
+                  "S": "test"
+                }
+              },
+              "SizeBytes": 12
+            },
+            "eventSource": "aws:dynamodb"
+          },
+          "PartitionKey": "<partition-key:1>"
+        }
+      ]
+    }
+  }
+}
