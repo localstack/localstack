@@ -522,7 +522,7 @@ def split_list_by(
     return truthy, falsy
 
 
-def is_comma_delimited_list(string: str, item_regex: str | None = None) -> bool:
+def is_comma_delimited_list(string: str, item_regex: Optional[str] = None) -> bool:
     """
     Checks if the given string is a comma-delimited list of items.
     The optional `item_regex` parameter specifies the regex pattern for each item in the list.
