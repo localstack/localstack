@@ -239,7 +239,7 @@ def execute_macro(
     if not isinstance(result.get("fragment"), dict) and not is_intrinsic:
         raise FailedTransformationException(
             transformation=macro["Name"],
-            message="Template format error: unsupported structure.. Rollback requested by user.",
+            message="Template format error: unsupported structure. Rollback requested by user.",
         )
 
     return result.get("fragment")
