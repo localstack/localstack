@@ -127,6 +127,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ECR::Repository": "ResourceProvider",
     "AWS::EKS::Nodegroup": "ResourceProvider",
     "AWS::EKS::Cluster": "ResourceProvider",
+    "AWS::EKS::FargateProfile": "ResourceProvider",
     "AWS::ElasticBeanstalk::Application": "ResourceProvider",
     "AWS::ElasticBeanstalk::ApplicationVersion": "ResourceProvider",
     "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
