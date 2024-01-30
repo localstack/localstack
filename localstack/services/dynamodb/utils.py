@@ -3,6 +3,7 @@ import re
 from decimal import Decimal
 from typing import Dict, List, Mapping, Optional
 
+from boto3.dynamodb.types import TypeDeserializer
 from cachetools import TTLCache
 from moto.core.exceptions import JsonRESTError
 
@@ -159,14 +160,11 @@ class ItemFinder:
         if "Item" not in existing_item:
             if "message" in existing_item:
                 table_names = ddb_client.list_tables()["TableNames"]
-                msg = (
-                    "Unable to get item from DynamoDB (existing tables: %s ...truncated if >100 tables): %s"
-                    % (
-                        table_names,
-                        existing_item["message"],
-                    )
+                LOG.warning(
+                    "Unable to get item from DynamoDB (existing tables: %s ...truncated if >100 tables): %s",
+                    table_names,
+                    existing_item["message"],
                 )
-                LOG.warning(msg)
             return
         return existing_item.get("Item")
 
@@ -202,7 +200,7 @@ def extract_table_name_from_partiql_update(statement: str) -> Optional[str]:
     return match and match.group(2)
 
 
-def dynamize_value(value):
+def dynamize_value(value) -> dict:
     """
     Taken from boto.dynamodb.types and augmented to support BOOL, M and L types (recursive), as well as fixing binary
     encoding, already done later by the SDK.
@@ -286,3 +284,12 @@ def _serialize_num(val):
     if isinstance(val, bool):
         return str(int(val))
     return str(val)
+
+
+def de_dynamize_record(item: dict) -> dict:
+    """
+    Return the given item in DynamoDB format parsed as regular dict object, i.e., convert
+    something like `{'foo': {'S': 'test'}, 'bar': {'N': 123}}` to `{'foo': 'test', 'bar': 123}`.
+    Note: This is the reverse operation of `dynamize_value(..)` above.
+    """
+    return TypeDeserializer().deserialize({"M": item})

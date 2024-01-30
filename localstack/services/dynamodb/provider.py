@@ -115,6 +115,7 @@ from localstack.services.dynamodb.utils import (
     ItemFinder,
     ItemSet,
     SchemaExtractor,
+    de_dynamize_record,
     extract_table_name_from_partiql_update,
 )
 from localstack.services.dynamodbstreams import dynamodbstreams_api
@@ -165,7 +166,7 @@ THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 MANAGED_KMS_KEYS = {}
 
 
-def dynamodb_table_exists(table_name, client=None):
+def dynamodb_table_exists(table_name: str, client=None):
     client = client or connect_to().dynamodb
     paginator = client.get_paginator("list_tables")
     pages = paginator.paginate(PaginationConfig={"PageSize": 100})
@@ -1143,6 +1144,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 event_sources_or_streams_enabled
                 or has_streams_enabled(context.account_id, context.region, record["eventSourceARN"])
             )
+        # TODO: forward selectively only for the streams that are enabled
         if event_sources_or_streams_enabled:
             self.forward_stream_records(context.account_id, context.region, records)
 
@@ -1647,7 +1649,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 new_record["eventSourceARN"] = arns.dynamodb_table_arn(
                     table_name, account_id=account_id, region_name=region_name
                 )
-                new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(put_request["Item"])
+                record_item = de_dynamize_record(put_request["Item"])
+                new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(record_item)
                 records.append(new_record)
                 i += 1
             update_request = request.get("Update")
@@ -1847,7 +1850,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 # ---
 # Misc. util functions
 # ---
-def _get_size_bytes(item) -> int:
+
+
+def _get_size_bytes(item: dict) -> int:
     try:
         size_bytes = len(json.dumps(item))
     except TypeError:
@@ -1886,9 +1891,10 @@ def is_index_query_valid(account_id: str, region_name: str, query_data: dict) ->
     return True
 
 
-def has_streams_enabled(account_id: str, region_name: str, table_name: str):
-    if not table_name:
+def has_streams_enabled(account_id: str, region_name: str, table_name_or_arn: str):
+    if not table_name_or_arn:
         return
+    table_name = table_name_or_arn.split(":table/")[-1]
     table_arn = arns.dynamodb_table_arn(table_name, account_id=account_id, region_name=region_name)
 
     if dynamodbstreams_api.get_stream_for_table(account_id, region_name, table_arn):
