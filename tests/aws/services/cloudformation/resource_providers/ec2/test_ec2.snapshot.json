@@ -1,0 +1,33 @@
+{
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_instance_with_key_pair": {
+    "recorded-date": "30-01-2024, 21:09:52",
+    "recorded-content": {
+      "key_pair": {
+        "KeyPairs": [
+          {
+            "CreateTime": "datetime",
+            "KeyFingerprint": "<key-fingerprint:1>",
+            "KeyName": "<key-name:1>",
+            "KeyPairId": "<key-pair-id:1>",
+            "KeyType": "rsa",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "key_pair_deleted": {
+        "Error": {
+          "Code": "InvalidKeyPair.NotFound",
+          "Message": "The key pair '<key-name:1>' does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}
