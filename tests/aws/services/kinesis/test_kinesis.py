@@ -51,9 +51,18 @@ class TestKinesis:
 
     @markers.aws.validated
     def test_create_stream_without_shard_count(
-        self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
+        self, wait_for_stream_ready, snapshot, aws_client, cleanups
     ):
-        stream_name = kinesis_create_stream()
+        stream_name = f"test-stream-{short_uid()}"
+        # we need to manually create a stream and its cleanup, because the `kinesis_create_stream` fixture will
+        # automatically set a shard count for better resource usage (only in AWS)
+
+        cleanups.append(
+            lambda: aws_client.kinesis.delete_stream(
+                StreamName=stream_name, EnforceConsumerDeletion=True
+            )
+        )
+        aws_client.kinesis.create_stream(StreamName=stream_name)
         wait_for_stream_ready(stream_name)
         describe_stream = aws_client.kinesis.describe_stream(StreamName=stream_name)
 

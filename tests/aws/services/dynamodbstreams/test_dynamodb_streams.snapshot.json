@@ -1,6 +1,6 @@
 {
   "tests/aws/services/dynamodbstreams/test_dynamodb_streams.py::TestDynamoDBStreams::test_enable_kinesis_streaming_destination": {
-    "recorded-date": "30-01-2024, 10:33:36",
+    "recorded-date": "30-01-2024, 20:27:32",
     "recorded-content": {
       "result-records": [
         {

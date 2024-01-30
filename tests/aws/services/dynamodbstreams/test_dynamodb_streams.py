@@ -66,6 +66,7 @@ class TestDynamoDBStreams:
         retry(_assert_stream_deleted, sleep=0.4, retries=5)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..EncryptionType", "$..SizeBytes"])
     def test_enable_kinesis_streaming_destination(
         self,
         aws_client,
@@ -119,12 +120,17 @@ class TestDynamoDBStreams:
         dynamodb.transact_write_items(TransactItems=updates)
 
         def _receive_records():
-            records = kinesis_get_latest_records(stream_name, shards[0]["ShardId"], client=kinesis)
-            assert records
-            return records
+            _records = kinesis_get_latest_records(stream_name, shards[0]["ShardId"], client=kinesis)
+            assert _records
+            return _records
 
         # assert that record has been received in the stream
         records = retry(_receive_records, sleep=0.7, retries=15)
+
         for record in records:
             record["Data"] = json.loads(record["Data"])
+
+        # assert that the PartitionKey is a Hex string looking like an MD5 hash
+        assert len(records[0]["PartitionKey"]) == 32
+        assert int(records[0]["PartitionKey"], 16)
         snapshot.match("result-records", records)

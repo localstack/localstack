@@ -137,7 +137,7 @@ from localstack.utils.collections import select_attributes, select_from_typed_di
 from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
 from localstack.utils.scheduler import Scheduler
-from localstack.utils.strings import long_uid, to_str
+from localstack.utils.strings import long_uid, md5, to_str
 from localstack.utils.threads import FuncThread, start_thread, start_worker_thread
 
 # set up logger
@@ -217,8 +217,12 @@ class EventForwarder:
             record["tableName"] = table_name
             record.pop("eventSourceARN", None)
             record["dynamodb"].pop("StreamViewType", None)
+            record.pop("eventVersion", None)
+            record["recordFormat"] = "application/json"
+            record["userIdentity"] = None
             hash_keys = list(filter(lambda key: key["KeyType"] == "HASH", table_def["KeySchema"]))
-            partition_key = hash_keys[0]["AttributeName"]
+            # TODO: reverse properly how AWS creates the partition key, it seems to be an MD5 hash
+            kinesis_partition_key = md5(f"{table_name}{hash_keys[0]['AttributeName']}")
 
             stream_account_id = extract_account_id_from_arn(stream_arn)
             stream_region_name = extract_region_from_arn(stream_arn)
@@ -230,7 +234,7 @@ class EventForwarder:
             kinesis.put_record(
                 StreamARN=stream_arn,
                 Data=json.dumps(record, cls=BytesEncoder),
-                PartitionKey=partition_key,
+                PartitionKey=kinesis_partition_key,
             )
 
     @classmethod
@@ -1854,7 +1858,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
 def _get_size_bytes(item: dict) -> int:
     try:
-        size_bytes = len(json.dumps(item))
+        size_bytes = len(json.dumps(item, separators=(",", ":")))
     except TypeError:
         size_bytes = len(str(item))
     return size_bytes
