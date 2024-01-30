@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Dict, Type, Union
+from typing import Dict, Optional, Type, Union
 
 import boto3
 from samtranslator.translator.transform import transform as transform_sam
@@ -53,7 +53,7 @@ class AwsIncludeTransformer(Transformer):
 transformers: Dict[str, Type] = {"AWS::Include": AwsIncludeTransformer}
 
 
-def apply_snipped_transformations(
+def apply_intrinsic_transformations(
     account_id: str,
     region_name: str,
     template: dict,
@@ -197,7 +197,9 @@ def execute_macro(
 ) -> str:
     macro_definition = get_cloudformation_store(account_id, region_name).macros.get(macro["Name"])
     if not macro_definition:
-        raise FailedTransformationException(macro["Name"], "2DO")
+        raise FailedTransformationException(
+            macro["Name"], f"Transformation {macro['Name']} is not supported."
+        )
 
     formatted_stack_parameters = {}
     for key, value in stack_parameters.items():
@@ -245,7 +247,7 @@ def execute_macro(
 
 def apply_serverless_transformation(
     account_id: str, region_name: str, parsed_template: dict, template_parameters: dict
-):
+) -> Optional[str]:
     """only returns string when parsing SAM template, otherwise None"""
     # TODO: we might also want to override the access key ID to account ID
     region_before = os.environ.get("AWS_DEFAULT_REGION")

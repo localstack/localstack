@@ -676,7 +676,6 @@ class TestMacros:
             handler_file=macro_function_path,
             runtime=Runtime.python3_10,
             client=aws_client.lambda_,
-            timeout=1,
         )
 
         macro_name = "GenerateRandom"

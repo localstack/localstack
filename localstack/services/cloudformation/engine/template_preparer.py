@@ -4,7 +4,7 @@ import logging
 from localstack.services.cloudformation.engine import yaml_parser
 from localstack.services.cloudformation.engine.transformers import (
     apply_global_transformations,
-    apply_snipped_transformations,
+    apply_intrinsic_transformations,
 )
 from localstack.utils.json import clone_safe
 
@@ -42,7 +42,7 @@ def transform_template(
 
     # apply 'Fn::Transform' intrinsic functions (note: needs to be applied before global
     #  transforms below, as some utils - incl samtransformer - expect them to be resolved already)
-    proccesed_template = apply_snipped_transformations(
+    proccesed_template = apply_intrinsic_transformations(
         account_id,
         region_name,
         proccesed_template,
