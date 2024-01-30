@@ -1,156 +1,7 @@
 {
   "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_instance_with_key_pair": {
-    "recorded-date": "22-01-2024, 19:10:34",
+    "recorded-date": "30-01-2024, 21:09:52",
     "recorded-content": {
-      "instance": {
-        "AmiLaunchIndex": 0,
-        "Architecture": "x86_64",
-        "BlockDeviceMappings": [
-          {
-            "DeviceName": "/dev/xvda",
-            "Ebs": {
-              "AttachTime": "datetime",
-              "DeleteOnTermination": true,
-              "Status": "attached",
-              "VolumeId": "vol-0c0d0818c7f74748c"
-            }
-          }
-        ],
-        "BootMode": "uefi-preferred",
-        "CapacityReservationSpecification": {
-          "CapacityReservationPreference": "open"
-        },
-        "ClientToken": "stack-Ec2In-PME8SSPXE5VV",
-        "CpuOptions": {
-          "CoreCount": 1,
-          "ThreadsPerCore": 1
-        },
-        "CurrentInstanceBootMode": "legacy-bios",
-        "EbsOptimized": false,
-        "EnaSupport": true,
-        "EnclaveOptions": {
-          "Enabled": false
-        },
-        "HibernationOptions": {
-          "Configured": false
-        },
-        "Hypervisor": "xen",
-        "ImageId": "<image-id:1>",
-        "InstanceId": "<instance-id:1>",
-        "InstanceType": "m1.small",
-        "KeyName": "<key-name:1>",
-        "LaunchTime": "datetime",
-        "MaintenanceOptions": {
-          "AutoRecovery": "default"
-        },
-        "MetadataOptions": {
-          "HttpEndpoint": "enabled",
-          "HttpProtocolIpv6": "disabled",
-          "HttpPutResponseHopLimit": 2,
-          "HttpTokens": "required",
-          "InstanceMetadataTags": "disabled",
-          "State": "applied"
-        },
-        "Monitoring": {
-          "State": "disabled"
-        },
-        "NetworkInterfaces": [
-          {
-            "Association": {
-              "IpOwnerId": "amazon",
-              "PublicDnsName": "ec2-52-202-96-111.compute-1.amazonaws.com",
-              "PublicIp": "52.202.96.111"
-            },
-            "Attachment": {
-              "AttachTime": "datetime",
-              "AttachmentId": "eni-attach-0151791280598c6b5",
-              "DeleteOnTermination": true,
-              "DeviceIndex": 0,
-              "NetworkCardIndex": 0,
-              "Status": "attached"
-            },
-            "Description": "",
-            "Groups": [
-              {
-                "GroupId": "sg-0ffe5ab1750ba9dc0",
-                "GroupName": "default"
-              }
-            ],
-            "InterfaceType": "interface",
-            "Ipv6Addresses": [],
-            "MacAddress": "12:83:14:e8:a3:e9",
-            "NetworkInterfaceId": "eni-02bda13be0024576b",
-            "OwnerId": "111111111111",
-            "PrivateDnsName": "ip-172-31-85-49.ec2.internal",
-            "PrivateIpAddress": "172.31.85.49",
-            "PrivateIpAddresses": [
-              {
-                "Association": {
-                  "IpOwnerId": "amazon",
-                  "PublicDnsName": "ec2-52-202-96-111.compute-1.amazonaws.com",
-                  "PublicIp": "52.202.96.111"
-                },
-                "Primary": true,
-                "PrivateDnsName": "ip-172-31-85-49.ec2.internal",
-                "PrivateIpAddress": "172.31.85.49"
-              }
-            ],
-            "SourceDestCheck": true,
-            "Status": "in-use",
-            "SubnetId": "<subnet-id:1>",
-            "VpcId": "<vpc-id:1>"
-          }
-        ],
-        "Placement": {
-          "AvailabilityZone": "<region>b",
-          "GroupName": "",
-          "Tenancy": "default"
-        },
-        "PlatformDetails": "Linux/UNIX",
-        "PrivateDnsName": "ip-172-31-85-49.ec2.internal",
-        "PrivateDnsNameOptions": {
-          "EnableResourceNameDnsAAAARecord": false,
-          "EnableResourceNameDnsARecord": false,
-          "HostnameType": "ip-name"
-        },
-        "PrivateIpAddress": "172.31.85.49",
-        "ProductCodes": [],
-        "PublicDnsName": "ec2-52-202-96-111.compute-1.amazonaws.com",
-        "PublicIpAddress": "52.202.96.111",
-        "RootDeviceName": "/dev/xvda",
-        "RootDeviceType": "ebs",
-        "SecurityGroups": [
-          {
-            "GroupId": "sg-0ffe5ab1750ba9dc0",
-            "GroupName": "default"
-          }
-        ],
-        "SourceDestCheck": true,
-        "State": {
-          "Code": 16,
-          "Name": "running"
-        },
-        "StateTransitionReason": "",
-        "SubnetId": "<subnet-id:1>",
-        "Tags": [
-          {
-            "Key": "aws:cloudformation:stack-name",
-            "Value": "stack-389a9c6a"
-          },
-          {
-            "Key": "aws:cloudformation:stack-id",
-            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-389a9c6a/de6a7250-b959-11ee-ada6-0e7ce14c05f5"
-          },
-          {
-            "Key": "aws:cloudformation:logical-id",
-            "Value": "Ec2Instance"
-          }
-        ],
-        "UsageOperation": "RunInstances",
-        "UsageOperationUpdateTime": "datetime",
-        "VirtualizationType": "hvm",
-        "VpcId": "<vpc-id:1>"
-      },
       "key_pair": {
         "KeyPairs": [
           {
@@ -165,6 +16,16 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "key_pair_deleted": {
+        "Error": {
+          "Code": "InvalidKeyPair.NotFound",
+          "Message": "The key pair '<key-name:1>' does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

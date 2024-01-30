@@ -1,5 +1,5 @@
 {
   "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_instance_with_key_pair": {
-    "last_validated_date": "2024-01-22T19:10:34+00:00"
+    "last_validated_date": "2024-01-30T21:09:52+00:00"
   }
 }

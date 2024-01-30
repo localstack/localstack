@@ -77,6 +77,13 @@ class EC2KeyPairProvider(ResourceProvider[EC2KeyPairProperties]):
         model["KeyPairId"] = response["KeyPairId"]
         model["KeyFingerprint"] = response["KeyFingerprint"]
 
+        request.aws_client_factory.ssm.put_parameter(
+            Name=f"/ec2/keypair/{model['KeyPairId']}",
+            Value=model["KeyName"],
+            Type="String",
+            Overwrite=True,
+        )
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
@@ -110,6 +117,11 @@ class EC2KeyPairProvider(ResourceProvider[EC2KeyPairProperties]):
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
         ec2.delete_key_pair(KeyName=model["KeyName"])
+
+        request.aws_client_factory.ssm.delete_parameter(
+            Name=f"/ec2/keypair/{model['KeyPairId']}",
+        )
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
