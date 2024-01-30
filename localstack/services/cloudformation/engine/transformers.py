@@ -98,7 +98,9 @@ def apply_intrinsic_transformations(
                 )
                 return result
             else:
-                LOG.warning("Unsupported transform function: %s", transform_name)
+                LOG.warning(
+                    "Unsupported transform function '%s' used in %s", transform_name, stack_name
+                )
         return obj
 
     return recurse_object(template, _visit)
