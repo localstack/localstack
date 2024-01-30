@@ -126,6 +126,7 @@ PROVIDER_DEFAULTS = {
     "AWS::EC2::VPCGatewayAttachment": "ResourceProvider",
     "AWS::ECR::Repository": "ResourceProvider",
     "AWS::EKS::Nodegroup": "ResourceProvider",
+    "AWS::EKS::Cluster": "ResourceProvider",
     "AWS::ElasticBeanstalk::Application": "ResourceProvider",
     "AWS::ElasticBeanstalk::ApplicationVersion": "ResourceProvider",
     "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
