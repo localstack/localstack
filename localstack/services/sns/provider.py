@@ -422,8 +422,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if not sub:
             raise NotFoundException("Subscription does not exist")
         removed_attrs = ["sqs_queue_url"]
-        if "FilterPolicyScope" in sub and "FilterPolicy" not in sub:
+        if "FilterPolicyScope" in sub and not sub.get("FilterPolicy"):
             removed_attrs.append("FilterPolicyScope")
+            removed_attrs.append("FilterPolicy")
         elif "FilterPolicy" in sub and "FilterPolicyScope" not in sub:
             sub["FilterPolicyScope"] = "MessageAttributes"
 
@@ -640,8 +641,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if attributes:
             subscription.update(attributes)
             if "FilterPolicy" in attributes:
-                store.subscription_filter_policy[subscription_arn] = json.loads(
-                    attributes["FilterPolicy"]
+                store.subscription_filter_policy[subscription_arn] = (
+                    json.loads(attributes["FilterPolicy"]) if attributes["FilterPolicy"] else None
                 )
 
         store.subscriptions[subscription_arn] = subscription
