@@ -618,8 +618,6 @@ def kinesis_create_stream(aws_client):
     def _create_stream(**kwargs):
         if "StreamName" not in kwargs:
             kwargs["StreamName"] = f"test-stream-{short_uid()}"
-        if "ShardCount" not in kwargs:
-            kwargs["ShardCount"] = 1
         aws_client.kinesis.create_stream(**kwargs)
         stream_names.append(kwargs["StreamName"])
         return kwargs["StreamName"]

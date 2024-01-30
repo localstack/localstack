@@ -93,7 +93,7 @@ class TestDynamoDBStreams:
         # create DDB table and Kinesis stream
         table = dynamodb_create_table()
         table_name = table["TableDescription"]["TableName"]
-        stream_name = kinesis_create_stream()
+        stream_name = kinesis_create_stream(ShardCount=1)
         wait_for_stream_ready(stream_name)
         stream_arn = kinesis_stream_arn(
             stream_name, account_id, region_name=kinesis.meta.region_name
