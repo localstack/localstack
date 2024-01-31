@@ -1,3 +1,4 @@
+import json
 import time
 from unittest.mock import patch
 
@@ -485,22 +486,123 @@ class TestKinesisPythonClient:
             wait_for_client_ready=True,
         )
 
-        try:
-            stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
-            assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
+        num_events_kinesis = 10
+        kinesis.put_records(
+            Records=[
+                {"Data": '{"second"}', "PartitionKey": "test_%s" % i}
+                for i in range(10, num_events_kinesis + 10)
+            ],
+            StreamName=stream_name,
+        )
 
-            num_events_kinesis = 10
-            kinesis.put_records(
-                Records=[
-                    {"Data": "{}", "PartitionKey": "test_%s" % i}
-                    for i in range(0, num_events_kinesis)
-                ],
-                StreamName=stream_name,
-            )
+        def check_events():
+            try:
+                assert 20 == len(result)
+            except AssertionError:
+                raise Exception("Expected 20 events, got %s" % len(result))
 
-            def check_events():
-                assert num_events_kinesis == len(result)
+        retry(check_events, retries=4, sleep=2)
 
-            retry(check_events, retries=4, sleep=2)
-        finally:
-            process.stop()
+        process.stop()
+
+    @markers.aws.only_localstack
+    def test_run_kinesis_processor_resharding_split(
+        self,
+        aws_client,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        get_shards_starting_hash_keys,
+    ):
+        # define listener function
+        result = []
+
+        def process_records(records):
+            result.extend(records)
+
+        # create kinesis stream
+        stream_name = f"test-stream-{short_uid()}"
+        kinesis_create_stream(
+            StreamName=stream_name,
+            ShardCount=1,
+            StreamModeDetails={"StreamMode": "PROVISIONED"},
+        )
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        # put message to kinesis event stream
+        TEST_MESSAGE = "Hello world"
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=json.dumps({"message-0": TEST_MESSAGE}),
+            PartitionKey="0",
+        )
+
+        # start Kinesis processor
+        process = kinesis_connector.listen_to_kinesis(
+            stream_name=stream_name,
+            stream_arn=stream_arn,
+            account_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=TEST_AWS_REGION_NAME,
+            listener_func=process_records,
+            wait_for_client_ready=True,
+        )
+
+        # add new shard to kinesis stream
+        target_shard_count = 2  # Set to your desired number of shards
+        scaling_type = "UNIFORM_SCALING"
+        # requires kinesis stream to be of type StreamModeDetails={"StreamMode": "PROVISIONED"},
+        aws_client.kinesis.update_shard_count(
+            StreamName=stream_name, TargetShardCount=target_shard_count, ScalingType=scaling_type
+        )
+        wait_for_stream_ready(stream_name)
+
+        # get new shard starting hash keys
+        shards_starting_hash_keys = get_shards_starting_hash_keys(stream_name)
+        assert (
+            len(shards_starting_hash_keys) == target_shard_count + 1
+        )  # parent shard still existing
+
+        # put messages to specific shards
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=json.dumps({"message-1": TEST_MESSAGE}),
+            ExplicitHashKey=shards_starting_hash_keys["00"],
+            PartitionKey="0",
+        )
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=json.dumps({"message-2": TEST_MESSAGE}),
+            ExplicitHashKey=shards_starting_hash_keys["01"],
+            PartitionKey="1",
+        )
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=json.dumps({"message-3": TEST_MESSAGE}),
+            ExplicitHashKey=shards_starting_hash_keys["02"],
+            PartitionKey="2",
+        )
+
+        def check_events():
+            try:
+                assert 4 == len(result)
+            except AssertionError:
+                raise Exception("Expected 4 events, got %s" % len(result))
+
+        retry(check_events, retries=4, sleep=2)
+
+        process.stop()
+
+
+@pytest.fixture
+def get_shards_starting_hash_keys(aws_client):
+    def _get_shards_starting_hash_keys(stream_name: str) -> dict[str, str]:
+        response = aws_client.kinesis.describe_stream(StreamName=stream_name)
+        shards_after = response["StreamDescription"]["Shards"]
+        shards_starting_hash_key = {}
+        for shard in shards_after:
+            shard_number = shard["ShardId"][-2:]
+            shards_starting_hash_key[shard_number] = shard["HashKeyRange"]["StartingHashKey"]
+        return shards_starting_hash_key
+
+    return _get_shards_starting_hash_keys
