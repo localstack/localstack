@@ -51,7 +51,7 @@ class TestKinesis:
 
     @markers.aws.validated
     def test_create_stream_without_shard_count(
-        self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client
+        self, kinesis_create_stream, wait_for_stream_ready, snapshot, aws_client, cleanups
     ):
         stream_name = kinesis_create_stream()
         wait_for_stream_ready(stream_name)
