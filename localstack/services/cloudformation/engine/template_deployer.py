@@ -327,7 +327,10 @@ def _resolve_refs_recursively(
             )
             # TODO: we should check the deployment state and not try to GetAtt from a resource that is still IN_PROGRESS or hasn't started yet.
             if resolved_getatt is None:
-                raise DependencyNotYetSatisfied(resource_ids=resource_logical_id, message="")
+                raise DependencyNotYetSatisfied(
+                    resource_ids=resource_logical_id,
+                    message=f"Could not resolve attribute {attribute_name} on resource {resource_logical_id}",
+                )
             return resolved_getatt
 
         if stripped_fn_lower == "join":
@@ -363,7 +366,7 @@ def _resolve_refs_recursively(
             none_values = [v for v in join_values if v is None]
             if none_values:
                 raise Exception(
-                    "Cannot resolve CF fn::Join %s due to null values: %s" % (value, join_values)
+                    f"Cannot resolve CF Fn::Join {value} due to null values: {join_values}"
                 )
             return value[keys_list[0]][0].join([str(v) for v in join_values])
 
@@ -377,7 +380,7 @@ def _resolve_refs_recursively(
             item_to_sub[1].update(attr_refs)
 
             for key, val in item_to_sub[1].items():
-                val = resolve_refs_recursively(
+                resolved_val = resolve_refs_recursively(
                     account_id,
                     region_name,
                     stack_name,
@@ -387,11 +390,13 @@ def _resolve_refs_recursively(
                     parameters,
                     val,
                 )
-                if not isinstance(val, str):
+                if not isinstance(resolved_val, str):
                     # We don't have access to the resource that's a dependency in this case,
                     # so do the best we can with the resource ids
-                    raise DependencyNotYetSatisfied(resource_ids=key, message="")
-                result = result.replace("${%s}" % key, val)
+                    raise DependencyNotYetSatisfied(
+                        resource_ids=key, message=f"Could not resolve {val} to terminal value type"
+                    )
+                result = result.replace("${%s}" % key, resolved_val)
 
             # resolve placeholders
             result = resolve_placeholders_in_string(
@@ -1286,7 +1291,7 @@ class TemplateDeployer:
                 break
             if not updated:
                 raise Exception(
-                    "Resource deployment loop completed, pending resource changes: %s" % changes
+                    f"Resource deployment loop completed, pending resource changes: {changes}"
                 )
 
         # clean up references to deleted resources in stack
