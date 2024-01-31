@@ -60,39 +60,32 @@ upgrade-s3-reqs: pip-tools
 upgrade-all-reqs: upgrade-basic-reqs upgrade-runtime-reqs upgrade-test-only-reqs upgrade-test-reqs upgrade-dev-reqs upgrade-dev-types-reqs upgrade-s3-reqs
 
 install-basic: venv       ## Install basic dependencies for CLI usage into venv
-	$(VENV_RUN)
-	$(PIP_CMD) install -r requirements-basic.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e .
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-basic.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e .
 
 install-runtime: venv     ## Install dependencies for the localstack runtime into venv
-	$(VENV_RUN)
-	$(PIP_CMD) install -r requirements-runtime.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[runtime]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-runtime.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[runtime]"
 
 install-test: venv        ## Install requirements to run tests into venv
-	$(VENV_RUN)
-	$(PIP_CMD) install -r requirements-test.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[test]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-test.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[test]"
 
 install-test-only: venv
-	$(VENV_RUN)
-	$(PIP_CMD) install -r requirements-test-only.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[test-only]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-test-only.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[test-only]"
 
 install-dev: venv         ## Install developer requirements into venv
-	$(VENV_RUN)
-	$(PIP_CMD) install -r requirements-dev.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[dev]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-dev.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[dev]"
 
 install-dev-types: venv   ## Install developer requirements incl. type hints into venv
-	$(VENV_RUN)
-	$(PIP_CMD) install -r requirements-typehint.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[typehint]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-typehint.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[typehint]"
 
 install-s3: venv     ## Install dependencies for the localstack runtime for s3-only into venv
-	$(VENV_RUN)
-	$(PIP_CMD) install -r requirements-base-runtime.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[base-runtime]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-base-runtime.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[base-runtime]"
 
 install: install-dev entrypoints  ## Install full dependencies into venv
 
