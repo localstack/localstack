@@ -170,7 +170,7 @@ def resolve_ref(
     resource = resources.get(ref)
     if not resource:
         raise Exception(
-            f"Resource target for `!Ref {ref}` could not be found. Is there a resource with name {ref} in your stack?"
+            f"Resource target for `Ref {ref}` could not be found. Is there a resource with name {ref} in your stack?"
         )
 
     return resources[ref].get("PhysicalResourceId")
@@ -329,7 +329,7 @@ def _resolve_refs_recursively(
             if resolved_getatt is None:
                 raise DependencyNotYetSatisfied(
                     resource_ids=resource_logical_id,
-                    message=f"Could not resolve attribute {attribute_name} on resource {resource_logical_id}",
+                    message=f"Could not resolve attribute '{attribute_name}' on resource '{resource_logical_id}'",
                 )
             return resolved_getatt
 
