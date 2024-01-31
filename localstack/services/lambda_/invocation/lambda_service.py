@@ -577,7 +577,9 @@ def store_s3_bucket_archive(
     if archive_bucket == config.BUCKET_MARKER_LOCAL:
         usage.hotreload.increment()
         return create_hot_reloading_code(path=archive_key)
-    s3_client: "S3Client" = connect_to().s3
+    s3_client: "S3Client" = connect_to(
+        aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT, region_name=AWS_REGION_US_EAST_1
+    ).s3
     kwargs = {"VersionId": archive_version} if archive_version else {}
     archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[
         "Body"
