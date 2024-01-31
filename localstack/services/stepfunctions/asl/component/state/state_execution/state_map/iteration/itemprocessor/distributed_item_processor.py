@@ -34,9 +34,15 @@ class DistributedItemProcessorEvalInput(DistributedIterationComponentEvalInput):
         max_concurrency: int,
         item_reader: ItemReader,
         item_selector: Optional[ItemSelector],
+        tolerated_failure_count: int,
+        tolerated_failure_percentage: float,
     ):
         super().__init__(
-            state_name=state_name, max_concurrency=max_concurrency, item_reader=item_reader
+            state_name=state_name,
+            max_concurrency=max_concurrency,
+            item_reader=item_reader,
+            tolerated_failure_count=tolerated_failure_count,
+            tolerated_failure_percentage=tolerated_failure_percentage,
         )
         self.item_selector = item_selector
 

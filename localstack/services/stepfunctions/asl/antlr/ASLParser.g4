@@ -63,6 +63,10 @@ state_stmt
     | retry_decl
     | catch_decl
     | result_selector_decl
+    | tolerated_failure_count_decl
+    | tolerated_failure_count_path_decl
+    | tolerated_failure_percentage_decl
+    | tolerated_failure_percentage_path_decl
     ;
 
 states_decl
@@ -400,6 +404,22 @@ max_items_path_decl
     : MAXITEMSPATH COLON STRINGPATH
     ;
 
+tolerated_failure_count_decl
+    : TOLERATEDFAILURECOUNT COLON INT
+    ;
+
+tolerated_failure_count_path_decl
+    : TOLERATEDFAILURECOUNTPATH COLON STRINGPATH
+    ;
+
+tolerated_failure_percentage_decl
+    : TOLERATEDFAILUREPERCENTAGE COLON NUMBER
+    ;
+
+tolerated_failure_percentage_path_decl
+    : TOLERATEDFAILUREPERCENTAGEPATH COLON STRINGPATH
+    ;
+
 retry_decl
     : RETRY
       COLON
@@ -655,6 +675,10 @@ keyword_or_string // TODO: check keywords can be used as strings.
     | CSVHEADERS
     | MAXITEMS
     | MAXITEMSPATH
+    | TOLERATEDFAILURECOUNT
+    | TOLERATEDFAILURECOUNTPATH
+    | TOLERATEDFAILUREPERCENTAGE
+    | TOLERATEDFAILUREPERCENTAGEPATH
     | NEXT
     | END
     | CAUSE

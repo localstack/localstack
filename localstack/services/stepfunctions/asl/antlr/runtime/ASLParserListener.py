@@ -1,4 +1,4 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.13.1
+# Generated from ASLParser.g4 by ANTLR 4.13.1
 from antlr4 import *
 if "." in __name__:
     from .ASLParser import ASLParser
@@ -689,6 +689,42 @@ class ASLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLParser#max_items_path_decl.
     def exitMax_items_path_decl(self, ctx:ASLParser.Max_items_path_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#tolerated_failure_count_decl.
+    def enterTolerated_failure_count_decl(self, ctx:ASLParser.Tolerated_failure_count_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#tolerated_failure_count_decl.
+    def exitTolerated_failure_count_decl(self, ctx:ASLParser.Tolerated_failure_count_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#tolerated_failure_count_path_decl.
+    def enterTolerated_failure_count_path_decl(self, ctx:ASLParser.Tolerated_failure_count_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#tolerated_failure_count_path_decl.
+    def exitTolerated_failure_count_path_decl(self, ctx:ASLParser.Tolerated_failure_count_path_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#tolerated_failure_percentage_decl.
+    def enterTolerated_failure_percentage_decl(self, ctx:ASLParser.Tolerated_failure_percentage_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#tolerated_failure_percentage_decl.
+    def exitTolerated_failure_percentage_decl(self, ctx:ASLParser.Tolerated_failure_percentage_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#tolerated_failure_percentage_path_decl.
+    def enterTolerated_failure_percentage_path_decl(self, ctx:ASLParser.Tolerated_failure_percentage_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#tolerated_failure_percentage_path_decl.
+    def exitTolerated_failure_percentage_path_decl(self, ctx:ASLParser.Tolerated_failure_percentage_path_declContext):
         pass
 
 

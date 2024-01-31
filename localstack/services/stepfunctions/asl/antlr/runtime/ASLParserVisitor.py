@@ -1,4 +1,4 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.13.1
+# Generated from ASLParser.g4 by ANTLR 4.13.1
 from antlr4 import *
 if "." in __name__:
     from .ASLParser import ASLParser
@@ -386,6 +386,26 @@ class ASLParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by ASLParser#max_items_path_decl.
     def visitMax_items_path_decl(self, ctx:ASLParser.Max_items_path_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_count_decl.
+    def visitTolerated_failure_count_decl(self, ctx:ASLParser.Tolerated_failure_count_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_count_path_decl.
+    def visitTolerated_failure_count_path_decl(self, ctx:ASLParser.Tolerated_failure_count_path_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_decl.
+    def visitTolerated_failure_percentage_decl(self, ctx:ASLParser.Tolerated_failure_percentage_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#tolerated_failure_percentage_path_decl.
+    def visitTolerated_failure_percentage_path_decl(self, ctx:ASLParser.Tolerated_failure_percentage_path_declContext):
         return self.visitChildren(ctx)
 
 

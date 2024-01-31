@@ -118,6 +118,11 @@ CSVHEADERS: '"CSVHeaders"';
 MAXITEMS: '"MaxItems"';
 MAXITEMSPATH: '"MaxItemsPath"';
 
+TOLERATEDFAILURECOUNT: '"ToleratedFailureCount"';
+TOLERATEDFAILURECOUNTPATH: '"ToleratedFailureCountPath"';
+TOLERATEDFAILUREPERCENTAGE: '"ToleratedFailurePercentage"';
+TOLERATEDFAILUREPERCENTAGEPATH: '"ToleratedFailurePercentagePath"';
+
 NEXT: '"Next"';
 END: '"End"';
 
