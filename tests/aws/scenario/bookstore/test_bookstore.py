@@ -416,28 +416,6 @@ class BooksApi(Construct):
             projection_type=dynamodb.ProjectionType.ALL,
         )
 
-        #        policy_document = iam.PolicyDocument(
-        #            statements=[
-        #                iam.PolicyStatement(
-        #                    actions=['*'],
-        #                    resources=['*'],
-        #                    effect=iam.Effect.ALLOW,
-        #                )
-        #            ]
-        #
-        #        )
-        #        self.lambda_su_role = iam.Role(f'lambda-su-role', assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"))
-        #        s3_ddb_policy = iam.Policy(document=...)
-        #
-
-        # self.lambda_user = iam.User(
-        #    self, 'LambdaUser',
-        #    managed_policies=[
-        #        iam.ManagedPolicy.from_aws_managed_policy_name('AmazonS3FullAccess'),
-        #        iam.ManagedPolicy.from_aws_managed_policy_name('AmazonDynamoDBFullAccess'),
-        #    ]
-        # )
-
         self.lambda_role = iam.Role(
             self, "LambdaRole", assumed_by=iam.ServicePrincipal("lambda.amazonaws.com")
         )
@@ -459,7 +437,6 @@ class BooksApi(Construct):
                 "TABLE_NAME": self.books_table.table_name,
                 "S3_BUCKET": S3_BUCKET_BOOKS_INIT,
                 "FILE_NAME": S3_KEY_BOOKS_INIT,
-                "REGION": stack.region,
             },
             role=self.lambda_role,
         )
@@ -473,7 +450,6 @@ class BooksApi(Construct):
             runtime=awslambda.Runtime.NODEJS_16_X,
             environment={
                 "TABLE_NAME": self.books_table.table_name,
-                "REGION": stack.region,
             },
             role=self.lambda_role,
         )
@@ -486,7 +462,6 @@ class BooksApi(Construct):
             runtime=awslambda.Runtime.NODEJS_16_X,
             environment={
                 "TABLE_NAME": self.books_table.table_name,
-                "REGION": stack.region,
             },
             role=self.lambda_role,
         )
@@ -505,7 +480,6 @@ class BooksApi(Construct):
             runtime=awslambda.Runtime.PYTHON_3_10,
             environment={
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
-                "REGION": stack.region,
             },
             role=self.lambda_role,
         )
@@ -519,7 +493,6 @@ class BooksApi(Construct):
             runtime=awslambda.Runtime.PYTHON_3_10,
             environment={
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
-                "REGION": stack.region,
             },
             role=self.lambda_role,
         )

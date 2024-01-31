@@ -1,22 +1,20 @@
 // source: https://github.com/aws-samples/aws-bookstore-demo-app/blob/master/functions/setup/uploadBooks.js
+
 "use strict";
 
 const https = require("https");
 const url = require("url");
+const AWS = require("aws-sdk");
 
-var AWS = require("aws-sdk");
-
-var config = {};
+var config = {
+    's3ForcePathStyle': true,
+};
 if (process.env.AWS_ENDPOINT_URL) {
     config.endpoint = process.env.AWS_ENDPOINT_URL;
-    config.s3ForcePathStyle = true;
 }
-if (process.env.REGION) {
-    config.region = process.env.REGION;
-}
-documentClient = new AWS.DynamoDB.DocumentClient(config);
 
-s3Client = new AWS.S3(config);
+let documentClient = new AWS.DynamoDB.DocumentClient(config);
+let s3Client = new AWS.S3(config);
 
 // UploadBooks - Upload sample set of books to DynamoDB
 exports.handler = function(event, context, callback) {

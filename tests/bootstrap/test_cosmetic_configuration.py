@@ -11,7 +11,6 @@ from botocore.exceptions import ClientError
 from localstack import constants
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.config import in_docker
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.container import ContainerFactory, LogStreamFactory
 from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_s3
@@ -126,9 +125,7 @@ class TestLocalStackHost:
     def infrastructure(
         self, aws_client_factory, infrastructure_setup, port, chosen_localstack_host
     ):
-        aws_client = aws_client_factory(
-            endpoint_url=f"http://localhost:{port}", region_name=TEST_AWS_REGION_NAME
-        )
+        aws_client = aws_client_factory(endpoint_url=f"http://localhost:{port}")
 
         infra: InfraProvisioner = infrastructure_setup(
             namespace="LocalStackHostBootstrap",

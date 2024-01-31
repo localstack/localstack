@@ -3,14 +3,14 @@
 "use strict";
 
 const AWS = require("aws-sdk");
+
 var config = {};
 if (process.env.AWS_ENDPOINT_URL) {
     config.endpoint = process.env.AWS_ENDPOINT_URL;
 }
-if (process.env.REGION) {
-    config.region = process.env.REGION;
-}
-dynamoDb = new AWS.DynamoDB.DocumentClient(config);
+
+let dynamoDb = new AWS.DynamoDB.DocumentClient(config);
+
 // ListBooks - List all books or list all books in a particular category
 exports.handler = (event, context, callback) => {
 
