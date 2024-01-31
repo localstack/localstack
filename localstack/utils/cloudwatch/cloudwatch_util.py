@@ -7,7 +7,6 @@ from typing import Optional, TypedDict
 from werkzeug import Response as WerkzeugResponse
 
 from localstack.aws.connect import connect_to
-from localstack.services.lambda_.api_utils import function_locators_from_arn
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.strings import to_str
 from localstack.utils.time import now_utc
@@ -30,7 +29,9 @@ def dimension_lambda(kwargs):
     return [{"Name": "FunctionName", "Value": func_name}]
 
 
-def publish_lambda_metric(metric, value, kwargs, account_id: Optional[str] = None, region_name: Optional[str] = None):
+def publish_lambda_metric(
+    metric, value, kwargs, account_id: Optional[str] = None, region_name: Optional[str] = None
+):
     # publish metric only if CloudWatch service is available
     if not is_api_enabled("cloudwatch"):
         return
