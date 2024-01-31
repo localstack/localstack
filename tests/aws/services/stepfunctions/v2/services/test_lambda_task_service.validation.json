@@ -1,0 +1,35 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke": {
+    "last_validated_date": "2023-06-22T11:39:30+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_bytes_payload": {
+    "last_validated_date": "2023-08-04T08:48:27+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[0.0]": {
+    "last_validated_date": "2023-08-04T14:04:46+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[00]": {
+    "last_validated_date": "2023-08-04T14:05:04+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[01]": {
+    "last_validated_date": "2023-08-04T14:05:23+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[HelloWorld]": {
+    "last_validated_date": "2023-08-04T14:04:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[True]": {
+    "last_validated_date": "2023-08-04T14:05:41+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value5]": {
+    "last_validated_date": "2023-08-04T14:05:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value6]": {
+    "last_validated_date": "2023-08-04T14:06:16+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_unsupported_param": {
+    "last_validated_date": "2023-06-22T12:15:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_list_functions": {
+    "last_validated_date": "2023-05-11T09:29:56+00:00"
+  }
+}

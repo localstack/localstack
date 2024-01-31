@@ -100,3 +100,22 @@ def test_cors_configuration(deploy_cfn_template, snapshot, aws_client):
     bucket_name_required = result.outputs["BucketNameOnlyRequired"]
     cors_info = aws_client.s3.get_bucket_cors(Bucket=bucket_name_required)
     snapshot.match("cors-info-only-required", cors_info)
+
+
+@markers.aws.validated
+def test_object_lock_configuration(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.s3_api())
+
+    result = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/s3_object_lock_config.yaml"
+        ),
+    )
+    bucket_name_optional = result.outputs["LockConfigAllParameters"]
+    cors_info = aws_client.s3.get_object_lock_configuration(Bucket=bucket_name_optional)
+    snapshot.match("object-lock-info-with-configuration", cors_info)
+
+    bucket_name_required = result.outputs["LockConfigOnlyRequired"]
+    cors_info = aws_client.s3.get_object_lock_configuration(Bucket=bucket_name_required)
+    snapshot.match("object-lock-info-only-enabled", cors_info)

@@ -93,8 +93,8 @@ def patch_instance_tracker_meta():
     if not find_spec("moto"):
         return
 
-    from moto.core import BaseModel
     from moto.core.base_backend import InstanceTrackerMeta
+    from moto.core.common_models import BaseModel
 
     if hasattr(InstanceTrackerMeta, "_ls_patch_applied"):
         return  # ensure we're not applying the patch multiple times

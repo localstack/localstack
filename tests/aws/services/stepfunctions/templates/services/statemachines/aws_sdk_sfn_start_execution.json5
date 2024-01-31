@@ -1,0 +1,16 @@
+{
+  "Comment": "AWS_SDK_SFN_START_EXECUTION",
+  "StartAt": "StartExecution",
+  "States": {
+   "StartExecution": {
+     "Type": "Task",
+     "Resource": "arn:aws:states:::aws-sdk:sfn:startExecution",
+     "Parameters": {
+       "StateMachineArn.$": "$.StateMachineArn",
+       "Input.$": "$.Input",
+       "Name.$": "$.Name"
+     },
+     "End": true
+    }
+  }
+}

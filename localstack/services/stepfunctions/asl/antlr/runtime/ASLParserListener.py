@@ -44,6 +44,15 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#version_decl.
+    def enterVersion_decl(self, ctx:ASLParser.Version_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#version_decl.
+    def exitVersion_decl(self, ctx:ASLParser.Version_declContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#state_stmt.
     def enterState_stmt(self, ctx:ASLParser.State_stmtContext):
         pass

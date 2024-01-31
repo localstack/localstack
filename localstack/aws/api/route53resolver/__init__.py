@@ -33,6 +33,7 @@ OutpostResolverName = str
 OutpostResolverStatusMessage = str
 Port = int
 Priority = int
+Qtype = str
 ResolverQueryLogConfigAssociationErrorMessage = str
 ResolverQueryLogConfigName = str
 ResolverQueryLogConfigPolicy = str
@@ -135,6 +136,12 @@ class OutpostResolverStatus(str):
     ACTION_NEEDED = "ACTION_NEEDED"
     FAILED_CREATION = "FAILED_CREATION"
     FAILED_DELETION = "FAILED_DELETION"
+
+
+class Protocol(str):
+    DoH = "DoH"
+    Do53 = "Do53"
+    DoH_FIPS = "DoH-FIPS"
 
 
 class ResolverAutodefinedReverseStatus(str):
@@ -393,6 +400,7 @@ class AssociateResolverEndpointIpAddressRequest(ServiceRequest):
     IpAddress: IpAddressUpdate
 
 
+ProtocolList = List[Protocol]
 SecurityGroupIds = List[ResourceId]
 
 
@@ -409,9 +417,10 @@ class ResolverEndpoint(TypedDict, total=False):
     StatusMessage: Optional[StatusMessage]
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
-    ResolverEndpointType: Optional[ResolverEndpointType]
     OutpostArn: Optional[OutpostArn]
     PreferredInstanceType: Optional[OutpostInstanceType]
+    ResolverEndpointType: Optional[ResolverEndpointType]
+    Protocols: Optional[ProtocolList]
 
 
 class AssociateResolverEndpointIpAddressResponse(TypedDict, total=False):
@@ -514,6 +523,7 @@ class CreateFirewallRuleRequest(ServiceRequest):
     BlockOverrideDnsType: Optional[BlockOverrideDnsType]
     BlockOverrideTtl: Optional[BlockOverrideTtl]
     Name: Name
+    Qtype: Optional[Qtype]
 
 
 class FirewallRule(TypedDict, total=False):
@@ -529,6 +539,7 @@ class FirewallRule(TypedDict, total=False):
     CreatorRequestId: Optional[CreatorRequestId]
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
+    Qtype: Optional[Qtype]
 
 
 class CreateFirewallRuleResponse(TypedDict, total=False):
@@ -577,10 +588,11 @@ class CreateResolverEndpointRequest(ServiceRequest):
     SecurityGroupIds: SecurityGroupIds
     Direction: ResolverEndpointDirection
     IpAddresses: IpAddressesRequest
-    Tags: Optional[TagList]
-    ResolverEndpointType: Optional[ResolverEndpointType]
     OutpostArn: Optional[OutpostArn]
     PreferredInstanceType: Optional[OutpostInstanceType]
+    Tags: Optional[TagList]
+    ResolverEndpointType: Optional[ResolverEndpointType]
+    Protocols: Optional[ProtocolList]
 
 
 class CreateResolverEndpointResponse(TypedDict, total=False):
@@ -615,6 +627,7 @@ class TargetAddress(TypedDict, total=False):
     Ip: Optional[Ip]
     Port: Optional[Port]
     Ipv6: Optional[Ipv6]
+    Protocol: Optional[Protocol]
 
 
 TargetList = List[TargetAddress]
@@ -624,7 +637,7 @@ class CreateResolverRuleRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
     Name: Optional[Name]
     RuleType: RuleTypeOption
-    DomainName: DomainName
+    DomainName: Optional[DomainName]
     TargetIps: Optional[TargetList]
     ResolverEndpointId: Optional[ResourceId]
     Tags: Optional[TagList]
@@ -670,6 +683,7 @@ class DeleteFirewallRuleGroupResponse(TypedDict, total=False):
 class DeleteFirewallRuleRequest(ServiceRequest):
     FirewallRuleGroupId: ResourceId
     FirewallDomainListId: ResourceId
+    Qtype: Optional[Qtype]
 
 
 class DeleteFirewallRuleResponse(TypedDict, total=False):
@@ -1261,6 +1275,7 @@ class UpdateFirewallRuleRequest(ServiceRequest):
     BlockOverrideDnsType: Optional[BlockOverrideDnsType]
     BlockOverrideTtl: Optional[BlockOverrideTtl]
     Name: Optional[Name]
+    Qtype: Optional[Qtype]
 
 
 class UpdateFirewallRuleResponse(TypedDict, total=False):
@@ -1309,6 +1324,7 @@ class UpdateResolverEndpointRequest(ServiceRequest):
     Name: Optional[Name]
     ResolverEndpointType: Optional[ResolverEndpointType]
     UpdateIpAddresses: Optional[UpdateIpAddresses]
+    Protocols: Optional[ProtocolList]
 
 
 class UpdateResolverEndpointResponse(TypedDict, total=False):
@@ -1391,6 +1407,7 @@ class Route53ResolverApi:
         block_override_domain: BlockOverrideDomain = None,
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
+        qtype: Qtype = None,
     ) -> CreateFirewallRuleResponse:
         raise NotImplementedError
 
@@ -1426,10 +1443,11 @@ class Route53ResolverApi:
         direction: ResolverEndpointDirection,
         ip_addresses: IpAddressesRequest,
         name: Name = None,
-        tags: TagList = None,
-        resolver_endpoint_type: ResolverEndpointType = None,
         outpost_arn: OutpostArn = None,
         preferred_instance_type: OutpostInstanceType = None,
+        tags: TagList = None,
+        resolver_endpoint_type: ResolverEndpointType = None,
+        protocols: ProtocolList = None,
     ) -> CreateResolverEndpointResponse:
         raise NotImplementedError
 
@@ -1450,8 +1468,8 @@ class Route53ResolverApi:
         context: RequestContext,
         creator_request_id: CreatorRequestId,
         rule_type: RuleTypeOption,
-        domain_name: DomainName,
         name: Name = None,
+        domain_name: DomainName = None,
         target_ips: TargetList = None,
         resolver_endpoint_id: ResourceId = None,
         tags: TagList = None,
@@ -1470,6 +1488,7 @@ class Route53ResolverApi:
         context: RequestContext,
         firewall_rule_group_id: ResourceId,
         firewall_domain_list_id: ResourceId,
+        qtype: Qtype = None,
     ) -> DeleteFirewallRuleResponse:
         raise NotImplementedError
 
@@ -1854,6 +1873,7 @@ class Route53ResolverApi:
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
         name: Name = None,
+        qtype: Qtype = None,
     ) -> UpdateFirewallRuleResponse:
         raise NotImplementedError
 
@@ -1902,6 +1922,7 @@ class Route53ResolverApi:
         name: Name = None,
         resolver_endpoint_type: ResolverEndpointType = None,
         update_ip_addresses: UpdateIpAddresses = None,
+        protocols: ProtocolList = None,
     ) -> UpdateResolverEndpointResponse:
         raise NotImplementedError
 

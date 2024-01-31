@@ -1,0 +1,44 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_publish_describe_no_version_description": {
+    "last_validated_date": "2023-08-11T10:09:39+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_publish_describe_with_version_description": {
+    "last_validated_date": "2023-08-11T10:09:54+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_with_publish": {
+    "last_validated_date": "2023-08-11T10:09:12+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_with_version_description_no_publish": {
+    "last_validated_date": "2023-08-11T10:09:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_describe_state_machine_for_execution_of_version": {
+    "last_validated_date": "2023-08-21T19:00:57+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_describe_state_machine_for_execution_of_version_with_revision": {
+    "last_validated_date": "2023-08-21T19:19:46+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_empty_revision_with_publish_and_no_publish_on_creation": {
+    "last_validated_date": "2023-08-11T14:53:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_empty_revision_with_publish_and_publish_on_creation": {
+    "last_validated_date": "2023-08-11T14:55:57+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_idempotent_publish": {
+    "last_validated_date": "2023-08-11T13:57:54+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_list_delete_version": {
+    "last_validated_date": "2023-08-11T10:10:11+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_publish_state_machine_version": {
+    "last_validated_date": "2023-08-11T10:10:42+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_start_version_execution": {
+    "last_validated_date": "2023-08-17T07:53:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_update_state_machine": {
+    "last_validated_date": "2023-08-11T16:02:02+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_version_ids_between_deletions": {
+    "last_validated_date": "2023-08-11T13:46:39+00:00"
+  }
+}

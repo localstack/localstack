@@ -1,15 +1,32 @@
 import dataclasses
 import json
+import logging
 import os
 from collections import defaultdict
 from functools import cached_property, lru_cache
-from typing import Dict, Generator, List, Optional, Tuple
+from typing import Dict, Generator, List, Literal, NamedTuple, Optional, Tuple
 
 import jsonpatch
+from botocore.exceptions import UnknownServiceError
 from botocore.loaders import Loader, instance_cache
 from botocore.model import OperationModel, ServiceModel
 
+LOG = logging.getLogger(__name__)
+
 ServiceName = str
+ProtocolName = Literal["query", "json", "rest-json", "rest-xml", "ec2"]
+
+
+class ServiceModelIdentifier(NamedTuple):
+    """
+    Identifies a specific service model.
+    If the protocol is not given, the default protocol of the service with the specific name is assumed.
+    Maybe also add versions here in the future (if we can support multiple different versions for one service).
+    """
+
+    name: ServiceName
+    protocol: Optional[ProtocolName] = None
+
 
 spec_patches_json = os.path.join(os.path.dirname(__file__), "spec-patches.json")
 
@@ -61,15 +78,54 @@ class CustomLoader(PatchingLoader, LocalStackBuiltInDataLoaderMixin):
 loader = CustomLoader(load_spec_patches())
 
 
-def list_services(model_type="service-2") -> List[ServiceModel]:
-    return [load_service(service) for service in loader.list_available_services(model_type)]
+class UnknownServiceProtocolError(UnknownServiceError):
+    """Raised when trying to load a service with an unknown protocol.
+
+    :ivar service_name: The name of the service.
+    :ivar protocol: The name of the unknown protocol.
+    """
+
+    fmt = "Unknown service protocol: '{service_name}-{protocol}'."
 
 
-def load_service(service: ServiceName, version: str = None, model_type="service-2") -> ServiceModel:
+def list_services() -> List[ServiceModel]:
+    return [load_service(service) for service in loader.list_available_services("service-2")]
+
+
+def load_service(
+    service: ServiceName, version: Optional[str] = None, protocol: Optional[ProtocolName] = None
+) -> ServiceModel:
     """
-    For example: load_service("sqs", "2012-11-05")
+    Loads a service
+    :param service: to load, f.e. "sqs". For custom, internalized, service protocol specs (f.e. sqs-json) it's also
+                    possible to directly define the protocol in the service name (f.e. use sqs-json)
+    :param version: of the service to load, f.e. "2012-11-05", by default the latest version will be used
+    :param protocol: specific protocol to load for the specific service, f.e. "json" for the "sqs" service
+                     if the service cannot be found
+    :return: Loaded service model of the service
+    :raises: UnknownServiceError if the service cannot be found
+    :raises: UnknownServiceProtocolError if the specific protocol of the service cannot be found
     """
-    service_description = loader.load_service_model(service, model_type, version)
+    service_description = loader.load_service_model(service, "service-2", version)
+
+    # check if the protocol is defined, and if so, if the loaded service defines this protocol
+    if protocol is not None and protocol != service_description.get("metadata", {}).get("protocol"):
+        # if the protocol is defined, but not the one of the currently loaded service,
+        # check if we already loaded the custom spec based on the naming convention (<service>-<protocol>),
+        # f.e. "sqs-json"
+        if service.endswith(f"-{protocol}"):
+            # if so, we raise an exception
+            raise UnknownServiceProtocolError(service_name=service, protocol=protocol)
+        # otherwise we try to load it (recursively)
+        try:
+            return load_service(f"{service}-{protocol}", version, protocol=protocol)
+        except UnknownServiceError:
+            # raise an unknown protocol error in case the service also can't be loaded with the naming convention
+            raise UnknownServiceProtocolError(service_name=service, protocol=protocol)
+
+    # remove potential protocol names from the service name
+    # FIXME add more protocols here if we have to internalize more than just sqs-json
+    service = service.removesuffix("-json")
     return ServiceModel(service_description, service)
 
 
@@ -92,10 +148,10 @@ class ServiceCatalogIndex:
     """
 
     service_names: List[ServiceName]
-    target_prefix_index: Dict[str, List[ServiceName]]
-    signing_name_index: Dict[str, List[ServiceName]]
-    operations_index: Dict[str, List[ServiceName]]
-    endpoint_prefix_index: Dict[str, List[ServiceName]]
+    target_prefix_index: Dict[str, List[ServiceModelIdentifier]]
+    signing_name_index: Dict[str, List[ServiceModelIdentifier]]
+    operations_index: Dict[str, List[ServiceModelIdentifier]]
+    endpoint_prefix_index: Dict[str, List[ServiceModelIdentifier]]
 
 
 class LazyServiceCatalogIndex:
@@ -108,41 +164,58 @@ class LazyServiceCatalogIndex:
         return list(self._services.keys())
 
     @cached_property
-    def target_prefix_index(self) -> Dict[str, List[ServiceName]]:
+    def target_prefix_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
         result = defaultdict(list)
-        for service in self._services.values():
-            target_prefix = service.metadata.get("targetPrefix")
-            if target_prefix:
-                result[target_prefix].append(service.service_name)
+        for service_models in self._services.values():
+            for service_model in service_models:
+                target_prefix = service_model.metadata.get("targetPrefix")
+                if target_prefix:
+                    result[target_prefix].append(
+                        ServiceModelIdentifier(service_model.service_name, service_model.protocol)
+                    )
         return dict(result)
 
     @cached_property
-    def signing_name_index(self) -> Dict[str, List[ServiceName]]:
+    def signing_name_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
         result = defaultdict(list)
-        for service in self._services.values():
-            result[service.signing_name].append(service.service_name)
+        for service_models in self._services.values():
+            for service_model in service_models:
+                result[service_model.signing_name].append(
+                    ServiceModelIdentifier(service_model.service_name, service_model.protocol)
+                )
         return dict(result)
 
     @cached_property
-    def operations_index(self) -> Dict[str, List[ServiceName]]:
+    def operations_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
         result = defaultdict(list)
-        for service in self._services.values():
-            operations = service.operation_names
-            if operations:
-                for operation in operations:
-                    result[operation].append(service.service_name)
+        for service_models in self._services.values():
+            for service_model in service_models:
+                operations = service_model.operation_names
+                if operations:
+                    for operation in operations:
+                        result[operation].append(
+                            ServiceModelIdentifier(
+                                service_model.service_name, service_model.protocol
+                            )
+                        )
         return dict(result)
 
     @cached_property
-    def endpoint_prefix_index(self) -> Dict[str, List[ServiceName]]:
+    def endpoint_prefix_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
         result = defaultdict(list)
-        for service in self._services.values():
-            result[service.endpoint_prefix].append(service.service_name)
+        for service_models in self._services.values():
+            for service_model in service_models:
+                result[service_model.endpoint_prefix].append(
+                    ServiceModelIdentifier(service_model.service_name, service_model.protocol)
+                )
         return dict(result)
 
     @cached_property
-    def _services(self) -> Dict[ServiceName, ServiceModel]:
-        return {service.service_name: service for service in list_services()}
+    def _services(self) -> Dict[ServiceName, List[ServiceModel]]:
+        services = defaultdict(list)
+        for service in list_services():
+            services[service.service_name].append(service)
+        return services
 
 
 class ServiceCatalog:
@@ -152,36 +225,38 @@ class ServiceCatalog:
         self.index = index or LazyServiceCatalogIndex()
 
     @lru_cache(maxsize=512)
-    def get(self, name: ServiceName) -> Optional[ServiceModel]:
-        return load_service(name)
+    def get(
+        self, name: ServiceName, protocol: Optional[ProtocolName] = None
+    ) -> Optional[ServiceModel]:
+        return load_service(name, protocol=protocol)
 
     @property
     def service_names(self) -> List[ServiceName]:
         return self.index.service_names
 
     @property
-    def target_prefix_index(self) -> Dict[str, List[ServiceName]]:
+    def target_prefix_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
         return self.index.target_prefix_index
 
     @property
-    def signing_name_index(self) -> Dict[str, List[ServiceName]]:
+    def signing_name_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
         return self.index.signing_name_index
 
     @property
-    def operations_index(self) -> Dict[str, List[ServiceName]]:
+    def operations_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
         return self.index.operations_index
 
     @property
-    def endpoint_prefix_index(self) -> Dict[str, List[ServiceName]]:
+    def endpoint_prefix_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
         return self.index.endpoint_prefix_index
 
-    def by_target_prefix(self, target_prefix: str) -> List[ServiceName]:
+    def by_target_prefix(self, target_prefix: str) -> List[ServiceModelIdentifier]:
         return self.target_prefix_index.get(target_prefix, [])
 
-    def by_signing_name(self, signing_name: str) -> List[ServiceName]:
+    def by_signing_name(self, signing_name: str) -> List[ServiceModelIdentifier]:
         return self.signing_name_index.get(signing_name, [])
 
-    def by_operation(self, operation_name: str) -> List[ServiceName]:
+    def by_operation(self, operation_name: str) -> List[ServiceModelIdentifier]:
         return self.operations_index.get(operation_name, [])
 
 

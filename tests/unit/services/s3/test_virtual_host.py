@@ -30,6 +30,9 @@ class _RequestCollectingClient(HttpClient):
             config.internal_service_url(host="localhost"), preserve_host=False, client=self
         )
 
+    def close(self):
+        pass
+
 
 class TestS3VirtualHostProxyHandler:
     def test_vhost_without_region(self):

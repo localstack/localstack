@@ -1,5 +1,5 @@
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:11@sha256:b64ecd1a2c7ad6f12df1b2473070123b8312772fb6ebc4e1437b1783f9a91837 as java-builder
+FROM eclipse-temurin:11@sha256:32e4a5403df29aee3f695249eaed1391cd194152109b0fef6b2ed12ad78273e1 as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.6-slim-bookworm@sha256:cc758519481092eb5a4a5ab0c1b303e288880d59afc601958d19e95b300bc86b as base
+FROM python:3.11.7-slim-bookworm@sha256:d11b9bd5e49ea7401753d78f4d3b56f3aec952b85b49bcae88981f0452818e0b as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -133,7 +133,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install the latest version of awslocal globally
 RUN --mount=type=cache,target=/root/.cache \
-    pip3 install --upgrade awscli==1.30.5 awscli-local requests
+    pip3 install --upgrade awscli awscli-local requests
 
 
 

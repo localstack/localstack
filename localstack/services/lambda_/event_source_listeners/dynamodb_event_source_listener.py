@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from localstack.services.lambda_.event_source_listeners.stream_event_source_listener import (
     StreamEventSourceListener,
 )
+from localstack.services.lambda_.event_source_listeners.utils import filter_stream_records
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.threads import FuncThread
 
@@ -37,6 +38,14 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
         return stream_client.get_shard_iterator(
             StreamArn=stream_arn, ShardId=shard_id, ShardIteratorType=iterator_type
         )["ShardIterator"]
+
+    def _filter_records(
+        self, records: List[Dict], event_filter_criterias: List[Dict]
+    ) -> List[Dict]:
+        if len(event_filter_criterias) == 0:
+            return records
+
+        return filter_stream_records(records, event_filter_criterias)
 
     def _create_lambda_event_payload(self, stream_arn, records, shard_id=None):
         record_payloads = []

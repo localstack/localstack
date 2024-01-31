@@ -1,3 +1,4 @@
+import abc
 import logging
 from concurrent.futures import CancelledError, Future
 from http import HTTPStatus
@@ -5,11 +6,11 @@ from typing import Dict, Optional
 
 import requests
 from werkzeug import Request
-from werkzeug.routing import Rule
 
-from localstack.http import Response, Router
+from localstack.http import Response, route
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
+from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
@@ -36,97 +37,128 @@ class ShutdownDuringStartup(Exception):
         super().__init__(message)
 
 
-class ExecutorEndpoint:
+class Endpoint(abc.ABC):
+    @abc.abstractmethod
+    def invocation_response(self, request: Request, req_id: str) -> Response:
+        pass
+
+    @abc.abstractmethod
+    def invocation_error(self, request: Request, req_id: str) -> Response:
+        pass
+
+    @abc.abstractmethod
+    def invocation_logs(self, request: Request, invoke_id: str) -> Response:
+        pass
+
+    @abc.abstractmethod
+    def status_ready(self, request: Request, executor_id: str) -> Response:
+        pass
+
+    @abc.abstractmethod
+    def status_error(self, request: Request, executor_id: str) -> Response:
+        pass
+
+
+class ExecutorRouter:
+    endpoints: dict[str, Endpoint]
+
+    def __init__(self):
+        self.endpoints = {}
+
+    def register_endpoint(self, executor_id: str, endpoint: Endpoint):
+        self.endpoints[executor_id] = endpoint
+
+    def unregister_endpoint(self, executor_id: str):
+        self.endpoints.pop(executor_id)
+
+    @route(f"{NAMESPACE}/<executor_id>/invocations/<req_id>/response", methods=["POST"])
+    def invocation_response(self, request: Request, executor_id: str, req_id: str) -> Response:
+        endpoint = self.endpoints[executor_id]
+        return endpoint.invocation_response(request, req_id)
+
+    @route(f"{NAMESPACE}/<executor_id>/invocations/<req_id>/error", methods=["POST"])
+    def invocation_error(self, request: Request, executor_id: str, req_id: str) -> Response:
+        endpoint = self.endpoints[executor_id]
+        return endpoint.invocation_error(request, req_id)
+
+    @route(f"{NAMESPACE}/<executor_id>/invocations/<invoke_id>/logs", methods=["POST"])
+    def invocation_logs(self, request: Request, executor_id: str, invoke_id: str) -> Response:
+        endpoint = self.endpoints[executor_id]
+        return endpoint.invocation_logs(request, invoke_id)
+
+    @route(f"{NAMESPACE}/<env_id>/status/<executor_id>/ready", methods=["POST"])
+    def status_ready(self, request: Request, env_id: str, executor_id: str) -> Response:
+        endpoint = self.endpoints[executor_id]
+        return endpoint.status_ready(request, executor_id)
+
+    @route(f"{NAMESPACE}/<env_id>/status/<executor_id>/error", methods=["POST"])
+    def status_error(self, request: Request, env_id: str, executor_id: str) -> Response:
+        endpoint = self.endpoints[executor_id]
+        return endpoint.status_error(request, executor_id)
+
+
+@singleton_factory
+def executor_router():
+    router = ExecutorRouter()
+    ROUTER.add(router)
+    return router
+
+
+class ExecutorEndpoint(Endpoint):
     container_address: str
     container_port: int
-    rules: list[Rule]
-    endpoint_id: str
-    router: Router
+    executor_id: str
     startup_future: Future[bool] | None
     invocation_future: Future[InvocationResult] | None
     logs: str | None
 
     def __init__(
         self,
-        endpoint_id: str,
+        executor_id: str,
         container_address: Optional[str] = None,
         container_port: Optional[int] = INVOCATION_PORT,
     ) -> None:
         self.container_address = container_address
         self.container_port = container_port
-        self.rules = []
-        self.endpoint_id = endpoint_id
-        self.router = ROUTER
+        self.executor_id = executor_id
         self.startup_future = None
         self.invocation_future = None
         self.logs = None
 
-    def _create_endpoint(self, router: Router) -> list[Rule]:
-        def invocation_response(request: Request, req_id: str) -> Response:
-            result = InvocationResult(req_id, request.data, is_error=False, logs=self.logs)
-            self.invocation_future.set_result(result)
-            return Response(status=HTTPStatus.ACCEPTED)
+    def invocation_response(self, request: Request, req_id: str) -> Response:
+        result = InvocationResult(req_id, request.data, is_error=False, logs=self.logs)
+        self.invocation_future.set_result(result)
+        return Response(status=HTTPStatus.ACCEPTED)
 
-        def invocation_error(request: Request, req_id: str) -> Response:
-            result = InvocationResult(req_id, request.data, is_error=True, logs=self.logs)
-            self.invocation_future.set_result(result)
-            return Response(status=HTTPStatus.ACCEPTED)
+    def invocation_error(self, request: Request, req_id: str) -> Response:
+        result = InvocationResult(req_id, request.data, is_error=True, logs=self.logs)
+        self.invocation_future.set_result(result)
+        return Response(status=HTTPStatus.ACCEPTED)
 
-        def invocation_logs(request: Request, invoke_id: str) -> Response:
-            logs = request.json
-            if isinstance(logs, Dict):
-                self.logs = logs["logs"]
-            else:
-                LOG.error("Invalid logs from RAPID! Logs: %s", logs)
-            return Response(status=HTTPStatus.ACCEPTED)
+    def invocation_logs(self, request: Request, invoke_id: str) -> Response:
+        logs = request.json
+        if isinstance(logs, Dict):
+            self.logs = logs["logs"]
+        else:
+            LOG.error("Invalid logs from init! Logs: %s", logs)
+        return Response(status=HTTPStatus.ACCEPTED)
 
-        def status_ready(request: Request, executor_id: str) -> Response:
-            self.startup_future.set_result(True)
-            return Response(status=HTTPStatus.ACCEPTED)
+    def status_ready(self, request: Request, executor_id: str) -> Response:
+        self.startup_future.set_result(True)
+        return Response(status=HTTPStatus.ACCEPTED)
 
-        def status_error(request: Request, executor_id: str) -> Response:
-            LOG.warning("Execution environment startup failed: %s", to_str(request.data))
-            # TODO: debug Lambda runtime init to not send `runtime/init/error` twice
-            if self.startup_future.done():
-                return Response(status=HTTPStatus.BAD_REQUEST)
-            self.startup_future.set_exception(
-                StatusErrorException("Environment startup failed", payload=request.data)
-            )
-            return Response(status=HTTPStatus.ACCEPTED)
-
-        return [
-            router.add(
-                f"{self.get_endpoint_prefix()}/invocations/<req_id>/response",
-                endpoint=invocation_response,
-                methods=["POST"],
-            ),
-            router.add(
-                f"{self.get_endpoint_prefix()}/invocations/<req_id>/error",
-                endpoint=invocation_error,
-                methods=["POST"],
-            ),
-            router.add(
-                f"{self.get_endpoint_prefix()}/invocations/<invoke_id>/logs",
-                endpoint=invocation_logs,
-                methods=["POST"],
-            ),
-            router.add(
-                f"{self.get_endpoint_prefix()}/status/<executor_id>/ready",
-                endpoint=status_ready,
-                methods=["POST"],
-            ),
-            router.add(
-                f"{self.get_endpoint_prefix()}/status/<executor_id>/error",
-                endpoint=status_error,
-                methods=["POST"],
-            ),
-        ]
-
-    def get_endpoint_prefix(self):
-        return f"{NAMESPACE}/{self.endpoint_id}"
+    def status_error(self, request: Request, executor_id: str) -> Response:
+        LOG.warning("Execution environment startup failed: %s", to_str(request.data))
+        # TODO: debug Lambda runtime init to not send `runtime/init/error` twice
+        if self.startup_future.done():
+            return Response(status=HTTPStatus.BAD_REQUEST)
+        self.startup_future.set_exception(
+            StatusErrorException("Environment startup failed", payload=request.data)
+        )
+        return Response(status=HTTPStatus.ACCEPTED)
 
     def start(self) -> None:
-        self.rules = self._create_endpoint(self.router)
+        executor_router().register_endpoint(self.executor_id, self)
         self.startup_future = Future()
 
     def wait_for_startup(self):
@@ -139,9 +171,11 @@ class ExecutorEndpoint:
                 "Executor environment shutdown during container startup"
             ) from e
 
+    def get_endpoint_prefix(self):
+        return f"{NAMESPACE}/{self.executor_id}"
+
     def shutdown(self) -> None:
-        for rule in self.rules:
-            self.router.remove_rule(rule)
+        executor_router().unregister_endpoint(self.executor_id)
         self.startup_future.cancel()
         if self.invocation_future:
             self.invocation_future.cancel()

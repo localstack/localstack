@@ -130,3 +130,65 @@ class TestACM:
         summaries = response.get("CertificateSummaryList") or []
         matching = [cert for cert in summaries if cert["CertificateArn"] == cert_arn]
         snapshot.match("list-cert", matching)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ExtendedKeyUsages",
+            "$..IssuedAt",
+            "$..KeyUsages",
+            "$..NotAfter",
+            "$..NotBefore",
+            "$..Status",
+            "$..DomainValidationOptions..ValidationMethod",
+            "$..DomainValidationOptions..ValidationEmails",
+            "$..DomainValidationOptions..ValidationStatus",
+            "$..FailureReason",
+            "$..ResourceRecord",
+            "$..SignatureAlgorithm",
+            "$..Serial",
+        ]
+    )
+    def test_create_certificate_for_multiple_alternative_domains(
+        self, acm_request_certificate, aws_client, snapshot
+    ):
+        domain_name = "test.example.com"
+        subject_alternative_names = [
+            "test.example.com",
+            "another.domain.com",
+            "yet-another.domain.com",
+            "*.test.example.com",
+        ]
+
+        create_response = acm_request_certificate(
+            DomainName=domain_name, SubjectAlternativeNames=subject_alternative_names
+        )
+
+        cert_arn = create_response["CertificateArn"]
+
+        def _certificate_ready():
+            response = aws_client.acm.describe_certificate(CertificateArn=cert_arn)
+            # expecting FAILED on aws due to not requesting a valid certificate
+            # expecting ISSUED as default response from moto
+            if response["Certificate"]["Status"] not in ["FAILED", "ISSUED"]:
+                raise Exception("Certificate not yet ready")
+
+        retry(_certificate_ready, sleep=1, retries=30)
+
+        cert_list_response = aws_client.acm.list_certificates()
+        cert_summaries = cert_list_response["CertificateSummaryList"]
+        cert = next((cert for cert in cert_summaries if cert["CertificateArn"] == cert_arn), None)
+        # Order of sns is not guaranteed therefor we sort them
+        cert["SubjectAlternativeNameSummaries"].sort()
+        cert_id = cert_arn.split("certificate/")[-1]
+        snapshot.add_transformer(snapshot.transform.regex(cert_id, "<cert-id>"))
+        snapshot.match("list-cert-summary-list", cert)
+
+        cert_describe_response = aws_client.acm.describe_certificate(CertificateArn=cert_arn)
+        cert_description = cert_describe_response["Certificate"]
+        # Order of sns is not guaranteed therefor we sort them
+        cert_description["SubjectAlternativeNames"].sort()
+        cert_description["DomainValidationOptions"] = sorted(
+            cert_description["DomainValidationOptions"], key=lambda x: x["DomainName"]
+        )
+        snapshot.match("describe-cert", cert_description)

@@ -1,0 +1,38 @@
+{
+  "Comment": "PARALLEL_STATE_CATCH",
+  "StartAt": "ParallelState",
+  "States": {
+    "ParallelState": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Branch1",
+          "States": {
+            "Branch1": {
+              "Type": "Fail",
+              "Error": "FailureType",
+              "Cause": "Cause description"
+            }
+          }
+        },
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "FailureType"
+          ],
+          "Next": "FinalCaught",
+        },
+      ],
+      "Next": "Final"
+    },
+    "FinalCaught": {
+      "Type": "Pass",
+      "End": true
+    },
+    "Final": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

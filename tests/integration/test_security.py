@@ -41,7 +41,7 @@ class TestCSRF:
         assert response.headers["Vary"] == "Origin"
         assert response.headers["Access-Control-Allow-Credentials"] == "true"
 
-    @pytest.mark.parametrize("path", ["/health", "/_localstack/health"])
+    @pytest.mark.parametrize("path", ["/_localstack/health"])
     def test_internal_route_cors_headers(self, path):
         headers = {"Origin": "https://app.localstack.cloud"}
         response = requests.get(f"{config.internal_service_url()}{path}", headers=headers)

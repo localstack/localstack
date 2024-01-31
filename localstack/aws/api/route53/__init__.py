@@ -5,9 +5,11 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 
 ARN = str
 AWSAccountID = str
+AWSRegion = str
 AlarmName = str
 AliasHealthEnabled = bool
 AssociateVPCComment = str
+Bias = int
 ChangeId = str
 Cidr = str
 CidrLocationNameDefaultAllowed = str
@@ -39,6 +41,9 @@ IPAddress = str
 IPAddressCidr = str
 Inverted = bool
 IsPrivateZone = bool
+Latitude = str
+LocalZoneGroup = str
+Longitude = str
 MaxResults = str
 MeasureLatency = bool
 Message = str
@@ -152,6 +157,7 @@ class CloudWatchRegion(str):
     us_isob_east_1 = "us-isob-east-1"
     ap_southeast_4 = "ap-southeast-4"
     il_central_1 = "il-central-1"
+    ca_west_1 = "ca-west-1"
 
 
 class ComparisonOperator(str):
@@ -257,6 +263,7 @@ class ResourceRecordSetRegion(str):
     eu_south_2 = "eu-south-2"
     ap_southeast_4 = "ap-southeast-4"
     il_central_1 = "il-central-1"
+    ca_west_1 = "ca-west-1"
 
 
 class ReusableDelegationSetLimitType(str):
@@ -311,6 +318,7 @@ class VPCRegion(str):
     eu_south_2 = "eu-south-2"
     ap_southeast_4 = "ap-southeast-4"
     il_central_1 = "il-central-1"
+    ca_west_1 = "ca-west-1"
 
 
 class CidrBlockInUseException(ServiceException):
@@ -784,6 +792,18 @@ class AssociateVPCWithHostedZoneResponse(TypedDict, total=False):
     ChangeInfo: ChangeInfo
 
 
+class Coordinates(TypedDict, total=False):
+    Latitude: Latitude
+    Longitude: Longitude
+
+
+class GeoProximityLocation(TypedDict, total=False):
+    AWSRegion: Optional[AWSRegion]
+    LocalZoneGroup: Optional[LocalZoneGroup]
+    Coordinates: Optional[Coordinates]
+    Bias: Optional[Bias]
+
+
 class CidrRoutingConfig(TypedDict, total=False):
     CollectionId: UUID
     LocationName: CidrLocationNameDefaultAllowed
@@ -821,6 +841,7 @@ class ResourceRecordSet(TypedDict, total=False):
     HealthCheckId: Optional[HealthCheckId]
     TrafficPolicyInstanceId: Optional[TrafficPolicyInstanceId]
     CidrRoutingConfig: Optional[CidrRoutingConfig]
+    GeoProximityLocation: Optional[GeoProximityLocation]
 
 
 class Change(TypedDict, total=False):

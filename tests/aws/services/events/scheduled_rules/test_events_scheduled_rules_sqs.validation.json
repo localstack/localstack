@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/events/scheduled_rules/test_events_scheduled_rules_sqs.py::test_scheduled_rule_sqs": {
+    "last_validated_date": "2023-10-05T17:18:50+00:00"
+  }
+}

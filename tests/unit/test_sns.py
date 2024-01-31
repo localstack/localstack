@@ -1,3 +1,4 @@
+import base64
 import json
 import re
 import uuid
@@ -13,7 +14,12 @@ from localstack.services.sns.provider import (
     get_region_from_subscription_token,
     is_raw_message_delivery,
 )
-from localstack.services.sns.publisher import SubscriptionFilter, create_sns_message_body
+from localstack.services.sns.publisher import (
+    SubscriptionFilter,
+    compute_canonical_string,
+    create_sns_message_body,
+)
+from localstack.utils.time import timestamp_millis
 
 
 @pytest.fixture
@@ -58,15 +64,22 @@ class TestSns:
         except ValueError:
             assert False, "SNS response Timestamp not a valid ISO 8601 date"
 
+        try:
+            base64.b64decode(result.pop("Signature"))
+        except KeyError:
+            assert False, "Signature missing in SNS response message body"
+        except ValueError:
+            assert False, "SNS response Signature is not a valid base64 encoded value"
+
         expected_sns_body = {
             "Message": "msg",
-            "Signature": "EXAMPLEpH+..",
             "SignatureVersion": "1",
-            "SigningCertURL": "https://sns.jupiter-south-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+            "SigningCertURL": "http://localhost.localstack.cloud:4566/_aws/sns/SimpleNotificationService-6c6f63616c737461636b69736e696365.pem",
             "TopicArn": "arn",
             "Type": "Notification",
             "UnsubscribeURL": f"http://localhost.localstack.cloud:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
         }
+
         assert expected_sns_body == result
 
         # Now add a subject and message attributes
@@ -90,12 +103,12 @@ class TestSns:
         result = json.loads(result_str)
         del result["MessageId"]
         del result["Timestamp"]
+        del result["Signature"]
         msg = {
             "Message": "msg",
             "Subject": "subject",
-            "Signature": "EXAMPLEpH+..",
             "SignatureVersion": "1",
-            "SigningCertURL": "https://sns.jupiter-south-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
+            "SigningCertURL": "http://localhost.localstack.cloud:4566/_aws/sns/SimpleNotificationService-6c6f63616c737461636b69736e696365.pem",
             "TopicArn": "arn",
             "Type": "Notification",
             "UnsubscribeURL": f"http://localhost.localstack.cloud:4566/?Action=Unsubscribe&SubscriptionArn={subscriber['SubscriptionArn']}",
@@ -612,3 +625,41 @@ class TestSns:
             get_region_from_subscription_token(token)
 
         assert e.match("Invalid parameter: Token")
+
+    def test_canonical_string_calculation(self):
+        timestamp = timestamp_millis()
+        data = {
+            "Type": "Notification",
+            "MessageId": "abdcdef",
+            "TopicArn": "arn",
+            "Message": "test content",
+            "Subject": "random",
+            "Timestamp": timestamp,
+            "UnsubscribeURL": "http://randomurl.com",
+        }
+
+        canonical_string = compute_canonical_string(data, notification_type="Notification")
+        assert (
+            canonical_string
+            == f"Message\ntest content\nMessageId\nabdcdef\nSubject\nrandom\nTimestamp\n{timestamp}\nTopicArn\narn\nType\nNotification\n"
+        )
+
+        data_unsub = {
+            "Type": "SubscriptionConfirmation",
+            "MessageId": "abdcdef",
+            "TopicArn": "arn",
+            "Message": "test content",
+            "Subject": "random",
+            "Timestamp": timestamp,
+            "UnsubscribeURL": "http://randomurl.com",
+            "SubscribeURL": "http://randomurl.com",
+            "Token": "randomtoken",
+        }
+
+        canonical_string = compute_canonical_string(
+            data_unsub, notification_type="SubscriptionConfirmation"
+        )
+        assert (
+            canonical_string
+            == f"Message\ntest content\nMessageId\nabdcdef\nSubscribeURL\nhttp://randomurl.com\nTimestamp\n{timestamp}\nToken\nrandomtoken\nTopicArn\narn\nType\nSubscriptionConfirmation\n"
+        )

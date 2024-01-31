@@ -1,0 +1,8 @@
+{
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_encode_decode.py::TestEncodeDecode::test_base_64_decode": {
+    "last_validated_date": "2023-02-17T12:42:08+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/intrinsic_functions/test_encode_decode.py::TestEncodeDecode::test_base_64_encode": {
+    "last_validated_date": "2023-02-17T12:07:48+00:00"
+  }
+}

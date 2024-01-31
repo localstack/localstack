@@ -92,10 +92,14 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 3.0.2
+ 💻 LocalStack CLI 3.1.0
+ 👤 Profile: default
 
-[20:22:20] starting LocalStack in Docker mode 🐳
-[20:22:21] detaching
+[12:47:13] starting LocalStack in Docker mode 🐳                       localstack.py:494
+           preparing environment                                       bootstrap.py:1240
+           configuring container                                       bootstrap.py:1248
+           starting container                                          bootstrap.py:1258
+[12:47:15] detaching                                                   bootstrap.py:1262
 ```
 
 You can query the status of respective services on LocalStack by running:
@@ -148,7 +152,7 @@ To start using LocalStack, check out our [documentation](https://docs.localstack
 To use LocalStack with a graphical user interface, you can use the following UI clients:
 
 * [LocalStack Web Application](https://app.localstack.cloud)
-* [LocalStack Desktop](https://docs.localstack.cloud/user-guide/tools/localstack-desktop/) 
+* [LocalStack Desktop](https://docs.localstack.cloud/user-guide/tools/localstack-desktop/)
 * [LocalStack Docker Extension](https://docs.localstack.cloud/user-guide/tools/localstack-docker-extension/)
 
 ## Releases
@@ -167,7 +171,11 @@ We are thankful for all the contributions and feedback we receive.
 
 ## Get in touch
 
-To get in touch with LocalStack team for bugs/feature requests, support questions or general discussions, please use:
+Get in touch with the LocalStack Team to
+report 🐞 [issues](https://github.com/localstack/localstack/issues/new/choose),
+upvote 👍 [feature requests](https://github.com/localstack/localstack/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+),
+🙋🏽 ask [support questions](https://docs.localstack.cloud/getting-started/help-and-support/),
+or 🗣️ discuss local cloud development:
 
 - [LocalStack Slack Community](https://localstack.cloud/contact/)
 - [LocalStack Discussion Page](https://discuss.localstack.cloud/)
@@ -202,7 +210,7 @@ You can also support this project by becoming a sponsor on [Open Collective](htt
 
 ## License
 
-Copyright (c) 2017-2023 LocalStack maintainers and contributors.
+Copyright (c) 2017-2024 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 

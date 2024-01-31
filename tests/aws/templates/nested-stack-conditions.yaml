@@ -23,3 +23,5 @@ Resources:
 Outputs:
   ProdBucket:
     Value: !GetAtt Bucket.Outputs.ProdBucket
+  NestedStackArn:
+    Value: !Ref Bucket

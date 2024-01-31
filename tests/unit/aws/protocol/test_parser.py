@@ -45,7 +45,7 @@ def test_query_parser():
 
 def test_sqs_query_parse_tag_map_with_member_name_as_location():
     # see https://github.com/localstack/localstack/issues/4391
-    parser = create_parser(load_service("sqs-query"))
+    parser = create_parser(load_service("sqs"))
 
     # with "Tag." it works (this is the default request)
     request = HttpRequest(
@@ -116,7 +116,7 @@ def test_query_parser_uri():
 
 def test_query_parser_flattened_map():
     """Simple test with a flattened map (SQS SetQueueAttributes request)."""
-    parser = QueryRequestParser(load_service("sqs-query"))
+    parser = QueryRequestParser(load_service("sqs"))
     request = HttpRequest(
         body=to_bytes(
             "Action=SetQueueAttributes&Version=2012-11-05&"
@@ -250,7 +250,7 @@ def test_query_parser_non_flattened_list_structure_changed_name():
 
 def test_query_parser_flattened_list_structure():
     """Simple test with a flattened list of structures."""
-    parser = QueryRequestParser(load_service("sqs-query"))
+    parser = QueryRequestParser(load_service("sqs"))
     request = HttpRequest(
         body=to_bytes(
             "Action=DeleteMessageBatch&"
@@ -386,7 +386,7 @@ def test_query_parser_sqs_with_botocore():
 
 def test_query_parser_empty_required_members_sqs_with_botocore():
     _botocore_parser_integration_test(
-        service="sqs-query",
+        service="sqs",
         action="SendMessageBatch",
         QueueUrl="string",
         Entries=[],

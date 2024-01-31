@@ -341,6 +341,7 @@ class TestS3:
         snapshot.match("get-copied-object", response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..AccessPointAlias"])
     def test_region_header_exists(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = s3_create_bucket(
@@ -540,6 +541,69 @@ class TestS3:
         snapshot.match("get-object-special-char", resp)
         resp = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key)
         snapshot.match("del-object-special-char", resp)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..ServerSideEncryption"],
+    )
+    def test_copy_object_special_character(self, s3_bucket, s3_create_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        dest_bucket = s3_create_bucket()
+        special_keys = [
+            "file%2Fname",
+            "test@key/",
+            "test key/",
+            "test key//",
+            "a/%F0%9F%98%80/",
+            "test+key",
+        ]
+
+        for key in special_keys:
+            resp = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=b"test")
+            snapshot.match(f"put-object-src-special-char-{key}", resp)
+
+            copy_obj = aws_client.s3.copy_object(
+                Bucket=dest_bucket,
+                Key=key,
+                CopySource=f"{s3_bucket}/{key}",
+            )
+            snapshot.match(f"copy-object-special-char-{key}", copy_obj)
+
+        resp = aws_client.s3.list_objects_v2(Bucket=dest_bucket)
+        snapshot.match("list-object-copy-dest-special-char", resp)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER, reason="moto does not handle this edge case"
+    )
+    def test_copy_object_special_character_plus_for_space(
+        self, s3_bucket, aws_client, aws_http_client_factory
+    ):
+        """
+        Different languages don't always handle the space character the same way when encoding URL. Python uses %20
+        when Go for example encodes it with `+`, which is the form way. This leads to a specific edge case for
+        the CopySource header.
+        """
+        object_key = "test key.txt"
+        dest_key = "dest-key"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test-body")
+
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        bucket_url = _bucket_url(s3_bucket)
+
+        copy_object_url = f"{bucket_url}/{dest_key}"
+        copy_source = f"{s3_bucket}%2F{object_key.replace(' ', '+')}"
+        copy_resp = s3_http_client.put(
+            copy_object_url,
+            headers={
+                "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
+                "x-amz-copy-source": copy_source,
+            },
+        )
+        assert copy_resp.ok
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=dest_key)
+        assert head_object["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.aws.validated
     @pytest.mark.parametrize(
@@ -769,7 +833,7 @@ class TestS3:
             )
         snapshot.match("abort-exc", e.value.response)
 
-    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     @markers.aws.validated
     def test_multipart_complete_multipart_too_small(self, s3_bucket, snapshot, aws_client):
@@ -802,7 +866,7 @@ class TestS3:
             )
         snapshot.match("complete-exc-too-small", e.value.response)
 
-    @pytest.mark.xfail(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
+    @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     @markers.aws.validated
     def test_multipart_complete_multipart_wrong_part(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("UploadId"))
@@ -1810,7 +1874,7 @@ class TestS3:
         snapshot.match("copy-success", copy_obj_all_positive)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -2188,7 +2252,7 @@ class TestS3:
         snapshot.match("get-object-acp-acl", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -2655,7 +2719,7 @@ class TestS3:
         assert body == str(download_file_object)
 
     @markers.aws.only_localstack
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         reason="Not implemented in other providers than stream",
         condition=LEGACY_V2_S3_PROVIDER,
     )
@@ -2768,6 +2832,104 @@ class TestS3:
 
         completed_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
         assert completed_object["Body"].read() == to_bytes(body)
+
+    @markers.aws.only_localstack
+    def test_upload_part_chunked_cancelled_valid_etag(self, s3_bucket, aws_client):
+        """
+        When using async-type requests, it's possible to cancel them inflight. This will make the request body
+        incomplete, and will fail during the stream decoding. We can simulate this with body by passing an incomplete
+        body, which triggers the same kind of exception.
+        This test is to avoid regression for https://github.com/localstack/localstack/issues/9851
+        """
+        body = "Hello Blob"
+        precalculated_etag = hashlib.md5(body.encode()).hexdigest()
+        headers = {
+            "Authorization": mock_aws_request_headers(
+                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            )["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
+        }
+
+        key_name = "test-multipart-chunked"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+        )
+        upload_id = response["UploadId"]
+
+        # # upload the invalid part 1
+        invalid_data = (
+            "\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+        url = f"{config.internal_service_url()}/{s3_bucket}/{key_name}?partNumber={1}&uploadId={upload_id}"
+
+        response = requests.put(url, invalid_data, headers=headers, verify=False)
+        assert response.status_code == 500
+
+        # now re-upload the valid part and assert that the part was correctly uploaded
+        data = (
+            "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+        response = requests.put(url, data, headers=headers, verify=False)
+        assert response.ok
+
+        part_etag = response.headers.get("ETag")
+        assert not response.content
+
+        # validate that the object etag is the same as the pre-calculated one
+        assert part_etag.strip('"') == precalculated_etag
+
+        multipart_upload_parts = [
+            {
+                "ETag": part_etag,
+                "PartNumber": 1,
+            }
+        ]
+
+        aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+
+        completed_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+        assert completed_object["Body"].read() == to_bytes(body)
+
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(
+        reason="Not implemented in other providers than v3, moto fails at decoding",
+        condition=LEGACY_V2_S3_PROVIDER,
+    )
+    def test_put_object_chunked_newlines_no_sig(self, s3_bucket, aws_client):
+        object_key = "data"
+        body = "test;test;test\r\ntest1;test1;test1\r\n"
+        headers = {
+            "Authorization": mock_aws_request_headers(
+                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            )["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
+        }
+        data = "23\r\n" f"{body}\r\n" "0\r\n" "x-amz-checksum-crc32:AKHICA==\r\n" "\r\n"
+        # put object
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
+        requests.put(url, data, headers=headers, verify=False)
+        # get object and assert content length
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        download_file_object = to_str(downloaded_object["Body"].read())
+        assert len(body) == len(str(download_file_object))
+        assert body == str(download_file_object)
 
     @markers.aws.only_localstack
     def test_virtual_host_proxy_does_not_decode_gzip(self, aws_client, s3_bucket):
@@ -3304,7 +3466,7 @@ class TestS3:
         assert copy_etag != multipart_etag
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -3486,7 +3648,7 @@ class TestS3:
             snapshot.match(f"create-bucket-{loc_constraint}", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         reason="asf provider: routing for region-path style not working; "
         "both provider: return 200 for other regions (no redirects)"
     )
@@ -3554,7 +3716,7 @@ class TestS3:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..x-amz-access-point-alias", "$..x-amz-id-2"],
+        paths=["$..x-amz-access-point-alias", "$..x-amz-id-2", "$..AccessPointAlias"],
     )
     def test_create_bucket_head_bucket(self, aws_client_factory, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -3663,7 +3825,13 @@ class TestS3:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_provider, paths=["$..ServerSideEncryption", "$..Prefix"]
+        condition=is_v2_provider,
+        paths=[
+            "$..ServerSideEncryption",
+            "$..Prefix",
+            "$..Marker",
+            "$..NextMarker",
+        ],
     )
     def test_s3_put_more_than_1000_items(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -3916,7 +4084,7 @@ class TestS3:
         assert list_obj_post_versioned["Versions"][2]["VersionId"] is not None
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="ACL behaviour is not implemented, see comments")
+    @pytest.mark.skipif(reason="ACL behaviour is not implemented, see comments")
     def test_s3_batch_delete_objects_using_requests_with_acl(
         self, s3_bucket, allow_bucket_acl, snapshot, aws_client, anonymous_client
     ):
@@ -4481,7 +4649,10 @@ class TestS3:
         assert "ListAllMyBucketsResult" in resp_dict
         # validate that the Owner tag is first, before Buckets. This is because the Java SDK is counting on the order
         # to properly set the Owner value to the buckets.
-        resp_dict["ListAllMyBucketsResult"].pop("@xmlns", None)
+        assert (
+            resp_dict["ListAllMyBucketsResult"].pop("@xmlns")
+            == "http://s3.amazonaws.com/doc/2006-03-01/"
+        )
         list_buckets_tags = list(resp_dict["ListAllMyBucketsResult"].keys())
         assert list_buckets_tags[0] == "Owner"
         assert list_buckets_tags[1] == "Buckets"
@@ -4492,6 +4663,7 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        assert resp_dict["ListBucketResult"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
         # validate that the Contents tag is last, after BucketName. Again for the Java SDK to properly set the
         # BucketName value to the objects.
         list_objects_tags = list(resp_dict["ListBucketResult"].keys())
@@ -4504,6 +4676,7 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListBucketResult" in resp_dict
+        assert resp_dict["ListBucketResult"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
         # same as ListObjects
         list_objects_v2_tags = list(resp_dict["ListBucketResult"].keys())
         assert list_objects_v2_tags.index("Name") < list_objects_v2_tags.index("Contents")
@@ -4515,11 +4688,17 @@ class TestS3:
         assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
         resp_dict = xmltodict.parse(resp.content)
         assert "ListMultipartUploadsResult" in resp_dict
+        assert (
+            resp_dict["ListMultipartUploadsResult"]["@xmlns"]
+            == "http://s3.amazonaws.com/doc/2006-03-01/"
+        )
 
         # GetBucketLocation
         location_constraint_url = f"{bucket_url}?location"
         resp = s3_http_client.get(location_constraint_url, headers=headers)
-        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+        xml_content = get_xml_content(resp.content)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in xml_content
+        assert b'<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/"' in xml_content
 
         tagging = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
         # put some tags on the bucket
@@ -4530,6 +4709,7 @@ class TestS3:
         resp = s3_http_client.get(get_bucket_tagging_url, headers=headers)
         resp_dict = xmltodict.parse(resp.content)
         assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+        assert resp_dict["Tagging"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
 
         # put an object to tests the next requests
         key_name = "test-key"
@@ -4540,18 +4720,21 @@ class TestS3:
         resp = s3_http_client.get(get_object_tagging_url, headers=headers)
         resp_dict = xmltodict.parse(resp.content)
         assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+        assert resp_dict["Tagging"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
 
         # CopyObject
         get_object_tagging_url = f"{bucket_url}/{key_name}?tagging"
         resp = s3_http_client.get(get_object_tagging_url, headers=headers)
         resp_dict = xmltodict.parse(resp.content)
         assert resp_dict["Tagging"]["TagSet"] == {"Tag": {"Key": "tag1", "Value": "tag1"}}
+        assert resp_dict["Tagging"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
 
         copy_object_url = f"{bucket_url}/copied-key"
         copy_object_headers = {**headers, "x-amz-copy-source": f"{bucket_url}/{key_name}"}
         resp = s3_http_client.put(copy_object_url, headers=copy_object_headers)
         resp_dict = xmltodict.parse(resp.content)
         assert "CopyObjectResult" in resp_dict
+        assert resp_dict["CopyObjectResult"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
 
         multipart_key = "multipart-key"
         create_multipart = aws_client.s3.create_multipart_upload(
@@ -4658,7 +4841,7 @@ class TestS3:
         assert resp_dict["DeleteResult"]["Deleted"]["Key"] == object_key
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Behaviour not implemented yet")
+    @pytest.mark.skipif(reason="Behaviour not implemented yet")
     def test_complete_multipart_parts_checksum(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -4824,10 +5007,11 @@ class TestS3:
         snapshot.match("upload-part-no-checksum-exc", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
-        condition=is_v2_provider,
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour not implemented yet: https://github.com/localstack/localstack/issues/6882",
     )
+    @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     # there is currently no server side encryption is place in LS, ETag will be different
     @markers.snapshot.skip_snapshot_verify(paths=["$..ETag"])
     def test_s3_multipart_upload_sse(
@@ -5470,6 +5654,38 @@ class TestS3:
 
         response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
         snapshot.match("list-obj-after-empty", response)
+
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="Moto parsing fails on the form",
+    )
+    def test_s3_raw_request_routing(self, s3_bucket, aws_client):
+        """
+        When sending a PutObject request to S3 with a very raw request not having any indication that the request is
+        directed to S3 (no signing, no specific S3 endpoint) and encoded as a form, the request will go through the
+        ServiceNameParser handler.
+        This parser will try to parse the form data (which in our case is binary data), and will fail with a decoding
+        error. It also consumes the stream, and leaves S3 with no data to save.
+        This test verifies that this scenario works by skipping the service name thanks to the early S3 CORS handler.
+        """
+        default_endpoint = f"http://{get_localstack_host().host_and_port()}"
+        object_key = "test-routing-key"
+        key_url = f"{default_endpoint}/{s3_bucket}/{object_key}"
+        data = os.urandom(445529)
+        resp = requests.put(
+            key_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert resp.ok
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        assert get_object["Body"].read() == data
+
+        fake_key_url = f"{default_endpoint}/fake-bucket-{short_uid()}/{object_key}"
+        resp = requests.put(
+            fake_key_url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        assert b"NoSuchBucket" in resp.content
 
 
 class TestS3MultiAccounts:
@@ -8576,7 +8792,7 @@ class TestS3BucketLifecycle:
 )
 class TestS3ObjectLockRetention:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -8657,7 +8873,7 @@ class TestS3ObjectLockRetention:
         snapshot.match("get-object-retention-regular-bucket", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
@@ -8788,10 +9004,10 @@ class TestS3ObjectLockRetention:
     @markers.aws.validated
     def test_bucket_config_default_retention(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
-        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
         object_key = "default-object"
         put_lock_config = aws_client.s3.put_object_lock_configuration(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             ObjectLockConfiguration={
                 "ObjectLockEnabled": "Enabled",
                 "Rule": {
@@ -8805,13 +9021,13 @@ class TestS3ObjectLockRetention:
         snapshot.match("put-lock-config", put_lock_config)
 
         put_locked_object_default = aws_client.s3.put_object(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             Body="test-default-lock",
         )
         snapshot.match("put-object-default", put_locked_object_default)
 
-        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("head-object-default", head_object)
 
         # add one day to LastModified to validate the Retain date is precise or rounding (it is precise, exactly 1 day
@@ -8825,7 +9041,7 @@ class TestS3ObjectLockRetention:
         )
 
         put_locked_object = aws_client.s3.put_object(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             Body="test-put-object-lock",
             ObjectLockMode="GOVERNANCE",
@@ -8833,21 +9049,21 @@ class TestS3ObjectLockRetention:
         )
         snapshot.match("put-object-with-lock", put_locked_object)
 
-        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("head-object-with-lock", head_object)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",
     )
     def test_object_lock_delete_markers(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
-        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
         object_key = "default-object"
 
         put_locked_object = aws_client.s3.put_object(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             Body="test-put-object-lock",
             ObjectLockMode="GOVERNANCE",
@@ -8855,16 +9071,16 @@ class TestS3ObjectLockRetention:
         )
         snapshot.match("put-object-with-lock", put_locked_object)
 
-        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("head-object-with-lock", head_object)
 
-        put_delete_marker = aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)
+        put_delete_marker = aws_client.s3.delete_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("put-delete-marker", put_delete_marker)
         delete_marker_version = put_delete_marker["VersionId"]
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_retention(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 Key=object_key,
                 VersionId=delete_marker_version,
                 Retention={"Mode": "GOVERNANCE", "RetainUntilDate": datetime.datetime(2030, 1, 1)},
@@ -8873,28 +9089,28 @@ class TestS3ObjectLockRetention:
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_object_retention(
-                Bucket=s3_bucket, Key=object_key, VersionId=delete_marker_version
+                Bucket=bucket_name, Key=object_key, VersionId=delete_marker_version
             )
         snapshot.match("get-object-retention-delete-marker", e.value.response)
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.head_object(
-                Bucket=s3_bucket, Key=object_key, VersionId=delete_marker_version
+                Bucket=bucket_name, Key=object_key, VersionId=delete_marker_version
             )
         snapshot.match("head-object-locked-delete-marker", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented",
     )
     def test_object_lock_extend_duration(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
-        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
         object_key = "default-object"
 
         put_locked_object = aws_client.s3.put_object(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             Body="test-put-object-lock",
             ObjectLockMode="GOVERNANCE",
@@ -8903,12 +9119,12 @@ class TestS3ObjectLockRetention:
         snapshot.match("put-object-with-lock", put_locked_object)
         version_id = put_locked_object["VersionId"]
 
-        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("head-object-with-lock", head_object)
 
         # not putting BypassGovernanceRetention=True on purpose, to see if you can extend the duration by default
         put_locked_object_extend = aws_client.s3.put_object_retention(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             VersionId=version_id,
             Retention={
@@ -8918,13 +9134,13 @@ class TestS3ObjectLockRetention:
         )
         snapshot.match("put-object-retention-extend", put_locked_object_extend)
 
-        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("head-object-with-lock-extended", head_object)
 
         # assert that reducing the duration again won't work
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_object_retention(
-                Bucket=s3_bucket,
+                Bucket=bucket_name,
                 Key=object_key,
                 VersionId=version_id,
                 Retention={
@@ -8941,44 +9157,44 @@ class TestS3ObjectLockRetention:
 )
 class TestS3ObjectLockLegalHold:
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented, does not validate",
     )
     def test_put_get_object_legal_hold(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         object_key = "locked-object"
-        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
 
-        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test")
+        put_obj = aws_client.s3.put_object(Bucket=bucket_name, Key=object_key, Body="test")
         snapshot.match("put-obj", put_obj)
         version_id = put_obj["VersionId"]
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_object_legal_hold(
-                Bucket=s3_bucket, Key=object_key, VersionId=version_id
+                Bucket=bucket_name, Key=object_key, VersionId=version_id
             )
         snapshot.match("get-legal-hold-unset", e.value.response)
 
         put_legal_hold = aws_client.s3.put_object_legal_hold(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             VersionId=version_id,
             LegalHold={"Status": "ON"},
         )
         snapshot.match("put-object-legal-hold", put_legal_hold)
 
-        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("head-object-with-legal-hold", head_object)
 
         get_legal_hold = aws_client.s3.get_object_legal_hold(
-            Bucket=s3_bucket, Key=object_key, VersionId=version_id
+            Bucket=bucket_name, Key=object_key, VersionId=version_id
         )
         snapshot.match("get-legal-hold-set", get_legal_hold)
 
         # disable the LegalHold so that the fixture can clean up
         put_legal_hold = aws_client.s3.put_object_legal_hold(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             VersionId=version_id,
             LegalHold={"Status": "OFF"},
@@ -8989,10 +9205,10 @@ class TestS3ObjectLockLegalHold:
     def test_put_object_with_legal_hold(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
         object_key = "locked-object"
-        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
 
         put_obj = aws_client.s3.put_object(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             Body="test",
             ObjectLockLegalHoldStatus="ON",
@@ -9000,12 +9216,12 @@ class TestS3ObjectLockLegalHold:
         snapshot.match("put-obj", put_obj)
         version_id = put_obj["VersionId"]
 
-        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("head-object-with-legal-hold", head_object)
 
         # disable the LegalHold so that the fixture can clean up
         put_legal_hold = aws_client.s3.put_object_legal_hold(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             VersionId=version_id,
             LegalHold={"Status": "OFF"},
@@ -9013,7 +9229,7 @@ class TestS3ObjectLockLegalHold:
         snapshot.match("put-object-legal-hold-off", put_legal_hold)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented, does not validate",
     )
@@ -9065,20 +9281,20 @@ class TestS3ObjectLockLegalHold:
         snapshot.match("get-object-retention-regular-bucket", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not implemented, does not validate",
     )
     def test_delete_locked_object(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
-        s3_bucket = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        bucket_name = s3_create_bucket(ObjectLockEnabledForBucket=True)
         object_key = "test-delete-locked"
-        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test")
+        put_obj = aws_client.s3.put_object(Bucket=bucket_name, Key=object_key, Body="test")
         snapshot.match("put-obj", put_obj)
         version_id = put_obj["VersionId"]
 
         put_legal_hold = aws_client.s3.put_object_legal_hold(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             VersionId=version_id,
             LegalHold={"Status": "ON"},
@@ -9086,17 +9302,17 @@ class TestS3ObjectLockLegalHold:
         snapshot.match("put-object-legal-hold", put_legal_hold)
 
         with pytest.raises(ClientError) as e:
-            aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key, VersionId=version_id)
+            aws_client.s3.delete_object(Bucket=bucket_name, Key=object_key, VersionId=version_id)
         snapshot.match("delete-object-locked", e.value.response)
 
         delete_objects = aws_client.s3.delete_objects(
-            Bucket=s3_bucket, Delete={"Objects": [{"Key": object_key, "VersionId": version_id}]}
+            Bucket=bucket_name, Delete={"Objects": [{"Key": object_key, "VersionId": version_id}]}
         )
         snapshot.match("delete-objects-locked", delete_objects)
 
         # disable the LegalHold so that the fixture can clean up
         put_legal_hold = aws_client.s3.put_object_legal_hold(
-            Bucket=s3_bucket,
+            Bucket=bucket_name,
             Key=object_key,
             VersionId=version_id,
             LegalHold={"Status": "OFF"},
@@ -9875,7 +10091,7 @@ class TestS3PresignedPost:
         assert response.status_code == 204
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="not implemented in moto",
     )
@@ -9976,7 +10192,7 @@ class TestS3PresignedPost:
         snapshot.match("head-object", head_object)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="not implemented in moto",
     )

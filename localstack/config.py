@@ -247,7 +247,6 @@ def load_environment(profiles: str = None, env=os.environ) -> List[str]:
         profile = profile.strip()
         path = os.path.join(CONFIG_DIR, f"{profile}.env")
         if not os.path.exists(path):
-            print(f"Profile '{profile}' specified, but file {path} not found.")
             continue
         environment.update(dotenv.dotenv_values(path))
 
@@ -656,6 +655,8 @@ def populate_edge_configuration(
     GATEWAY_LISTEN,
 ) = populate_edge_configuration(os.environ)
 
+GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
+
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
@@ -780,6 +781,7 @@ LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
 
 # limit in which to kinesis-mock will start throwing exceptions
 KINESIS_SHARD_LIMIT = os.environ.get("KINESIS_SHARD_LIMIT", "").strip() or "100"
+KINESIS_PERSISTENCE = is_env_not_false("KINESIS_PERSISTENCE")
 
 # limit in which to kinesis-mock will start throwing exceptions
 KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT = (
@@ -816,11 +818,17 @@ DYNAMODB_SHARE_DB = int(os.environ.get("DYNAMODB_SHARE_DB") or 0)
 # the port on which to expose dynamodblocal
 DYNAMODB_LOCAL_PORT = int(os.environ.get("DYNAMODB_LOCAL_PORT") or 0)
 
+# Enables the automatic removal of stale KV pais based on TTL
+DYNAMODB_REMOVE_EXPIRED_ITEMS = is_env_true("DYNAMODB_REMOVE_EXPIRED_ITEMS")
+
 # Used to toggle PurgeInProgress exceptions when calling purge within 60 seconds
 SQS_DELAY_PURGE_RETRY = is_env_true("SQS_DELAY_PURGE_RETRY")
 
 # Used to toggle QueueDeletedRecently errors when re-creating a queue within 60 seconds of deleting it
 SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
+
+# Used to toggle MessageRetentionPeriod functionality in SQS queues
+SQS_ENABLE_MESSAGE_RETENTION_PERIOD = is_env_true("SQS_ENABLE_MESSAGE_RETENTION_PERIOD")
 
 # Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", or "path"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "standard"
@@ -875,9 +883,9 @@ LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 # Where Lambdas will be executed.
 LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
 
-# PUBLIC: 10 (default)
+# PUBLIC: 20 (default)
 # How many seconds Lambda will wait for the runtime environment to start up.
-LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 10)
+LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 20)
 
 # PUBLIC: base images for Lambda (default) https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html
 # localstack/services/lambda_/invocation/lambda_models.py:IMAGE_MAPPING
@@ -924,6 +932,12 @@ LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE = int(
 # SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = int(
     os.environ.get("LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES", 4 * 1024)
+)
+
+LAMBDA_EVENTS_INTERNAL_SQS = is_env_not_false("LAMBDA_EVENTS_INTERNAL_SQS")
+
+LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC = float(
+    os.environ.get("LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC") or 1.0
 )
 
 # DEV: 0 (default) only applies to new lambda provider. For LS developers only.
@@ -1104,6 +1118,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_LOCAL_PORT",
     "DYNAMODB_SHARE_DB",
     "DYNAMODB_READ_ERROR_PROBABILITY",
+    "DYNAMODB_REMOVE_EXPIRED_ITEMS",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
     "ENABLE_CONFIG_UPDATES",
@@ -1111,16 +1126,19 @@ CONFIG_ENV_VARS = [
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",
     "GATEWAY_LISTEN",
+    "GATEWAY_WORKER_THREAD_COUNT",
     "HOSTNAME",
     "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
+    "KINESIS_PERSISTENCE",
     "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",
+    "LAMBDA_EVENTS_INTERNAL_SQS",
     "LAMBDA_INIT_DEBUG",
     "LAMBDA_INIT_BIN_PATH",
     "LAMBDA_INIT_BOOTSTRAP_PATH",
@@ -1144,6 +1162,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_LIMITS_CODE_SIZE_UNZIPPED",
     "LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE",
     "LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES",
+    "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
@@ -1170,6 +1189,7 @@ CONFIG_ENV_VARS = [
     "SNAPSHOT_FLUSH_INTERVAL",
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
+    "SQS_ENABLE_MESSAGE_RETENTION_PERIOD",
     "SQS_ENDPOINT_STRATEGY",
     "SQS_DISABLE_CLOUDWATCH_METRICS",
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",

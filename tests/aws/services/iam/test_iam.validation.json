@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_create_role_with_malformed_assume_role_policy_document": {
+    "last_validated_date": "2023-09-14T15:07:51+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_create_describe_role": {
+    "last_validated_date": "2023-09-14T15:42:37+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_list_roles_with_permission_boundary": {
+    "last_validated_date": "2023-09-14T15:42:39+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_role_attach_policy": {
+    "last_validated_date": "2023-09-14T15:42:42+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_update_assume_role_policy": {
+    "last_validated_date": "2023-09-14T15:42:36+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_user_attach_policy": {
+    "last_validated_date": "2023-09-14T15:42:45+00:00"
+  }
+}

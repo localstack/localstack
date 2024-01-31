@@ -29,7 +29,7 @@ def describe(describe_orig, self):
     cert = result.get("Certificate", {})
     cert["Status"] = cert_status
     sans = cert.setdefault("SubjectAlternativeNames", [])
-    sans_summaries = cert.setdefault("SubjectAlternativeNameSummaries", [])
+    sans_summaries = cert.setdefault("SubjectAlternativeNameSummaries", sans)
 
     # add missing attributes in ACM certs that cause Terraform to fail
     addenda = {
@@ -43,14 +43,6 @@ def describe(describe_orig, self):
         options = addenda["DomainValidationOptions"] = [
             {"ValidationMethod": cert.get("ValidationMethod")}
         ]
-    for san in sans:
-        if san != cert.get("DomainName"):
-            options.append(
-                {
-                    "DomainName": san,
-                    "ValidationMethod": cert.get("ValidationMethod"),
-                }
-            )
 
     for option in options:
         option["DomainName"] = domain_name = option.get("DomainName") or cert.get("DomainName")

@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_lambda_cfn.py::TestApigatewayLambdaIntegration::test_scenario_validate_infra": {
+    "last_validated_date": "2023-08-17T06:43:11+00:00"
+  }
+}

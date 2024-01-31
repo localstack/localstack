@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/cloudformation/engine/test_attributes.py::TestResourceAttributes::test_invalid_getatt_fails": {
+    "last_validated_date": "2023-08-01T09:54:31+00:00"
+  }
+}

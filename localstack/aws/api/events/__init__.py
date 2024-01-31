@@ -42,6 +42,7 @@ EventPattern = str
 EventResource = str
 EventSourceName = str
 EventSourceNamePrefix = str
+GraphQLOperation = str
 HeaderKey = str
 HeaderValue = str
 HeaderValueSensitive = str
@@ -298,6 +299,12 @@ class ApiDestination(TypedDict, total=False):
 
 
 ApiDestinationResponseList = List[ApiDestination]
+
+
+class AppSyncParameters(TypedDict, total=False):
+    GraphQLOperation: Optional[GraphQLOperation]
+
+
 Long = int
 
 
@@ -1181,6 +1188,7 @@ class Target(TypedDict, total=False):
     SageMakerPipelineParameters: Optional[SageMakerPipelineParameters]
     DeadLetterConfig: Optional[DeadLetterConfig]
     RetryPolicy: Optional[RetryPolicy]
+    AppSyncParameters: Optional[AppSyncParameters]
 
 
 TargetList = List[Target]

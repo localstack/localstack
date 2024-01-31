@@ -1,5 +1,6 @@
 from localstack import config
 from localstack.aws import handlers
+from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.metric_handler import MetricHandler
 from localstack.aws.handlers.service_plugin import ServiceLoader
@@ -14,7 +15,7 @@ from .handlers.service import ServiceRequestRouter
 
 class LocalstackAwsGateway(Gateway):
     def __init__(self, service_manager: ServiceManager = None) -> None:
-        super().__init__()
+        super().__init__(context_class=RequestContext)
 
         # basic server components
         self.service_manager = service_manager or ServicePluginManager()
@@ -55,6 +56,7 @@ class LocalstackAwsGateway(Gateway):
         self.exception_handlers.extend(
             [
                 handlers.log_exception,
+                handlers.serve_custom_exception_handlers,
                 handlers.handle_service_exception,
                 handlers.handle_internal_failure,
             ]
@@ -65,20 +67,30 @@ class LocalstackAwsGateway(Gateway):
             [
                 handlers.modify_service_response,
                 handlers.parse_service_response,
-                handlers.set_close_connection_header,
                 handlers.run_custom_response_handlers,
                 handlers.add_cors_response_headers,
                 handlers.log_response,
                 handlers.count_service_request,
-                handlers.pop_request_context,
                 metric_collector.update_metric_collection,
+            ]
+        )
+
+        # request chain finalization
+        self.finalizers.extend(
+            [
+                handlers.set_close_connection_header,
+                handlers.run_custom_finalizers,
+                handlers.pop_request_context,
             ]
         )
 
     def new_chain(self) -> HandlerChain:
         if config.DEBUG_HANDLER_CHAIN:
             return TracingHandlerChain(
-                self.request_handlers, self.response_handlers, self.exception_handlers
+                self.request_handlers,
+                self.response_handlers,
+                self.finalizers,
+                self.exception_handlers,
             )
         return super().new_chain()
 

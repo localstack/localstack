@@ -1,5 +1,6 @@
 import base64
 import itertools
+import json
 import re
 import time
 from typing import Optional, Tuple
@@ -14,7 +15,7 @@ from localstack.services.sqs.constants import (
 )
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.objects import singleton_factory
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import base64_decode, long_uid, to_bytes, to_str
 
 STANDARD_ENDPOINT = re.compile(STANDARD_STRATEGY_URL_REGEX)
 DOMAIN_ENDPOINT = re.compile(DOMAIN_STRATEGY_URL_REGEX)
@@ -103,6 +104,34 @@ def encode_receipt_handle(queue_arn, message) -> str:
     handle = f"{long_uid()} {queue_arn} {message.message.get('MessageId')} {message.last_received}"
     encoded = base64.b64encode(handle.encode("utf-8"))
     return encoded.decode("utf-8")
+
+
+def encode_move_task_handle(task_id: str, source_arn: str) -> str:
+    """
+    Move task handles are base64 encoded JSON dictionaries containing the task id and the source arn.
+
+    :param task_id: the move task id
+    :param source_arn: the source queue arn
+    :return: a string of a base64 encoded json doc
+    """
+    doc = f'{{"taskId":"{task_id}","sourceArn":"{source_arn}"}}'
+    return to_str(base64.b64encode(to_bytes(doc)))
+
+
+def decode_move_task_handle(handle: str | bytes) -> tuple[str, str]:
+    """
+    Inverse operation of ``encode_move_task_handle``.
+
+    :param handle: the base64 encoded task handle
+    :return: a tuple of task_id and source_arn
+    :raises ValueError: if the handle is not encoded correctly or does not contain the necessary fields
+    """
+    doc = json.loads(base64_decode(handle))
+    if "taskId" not in doc:
+        raise ValueError("taskId not found in handle")
+    if "sourceArn" not in doc:
+        raise ValueError("sourceArn not found in handle")
+    return doc["taskId"], doc["sourceArn"]
 
 
 @singleton_factory

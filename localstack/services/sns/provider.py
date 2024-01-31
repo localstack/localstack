@@ -54,6 +54,7 @@ from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns import constants as sns_constants
+from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.models import SnsMessage, SnsStore, SnsSubscription, sns_stores
 from localstack.services.sns.publisher import (
     PublishDispatcher,
@@ -87,9 +88,16 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     - DeleteTopic
     """
 
+    @route(sns_constants.SNS_CERT_ENDPOINT, methods=["GET"])
+    def get_signature_cert_pem_file(self, request: Request):
+        # see http://sns-public-resources.s3.amazonaws.com/SNS_Message_Signing_Release_Note_Jan_25_2011.pdf
+        # see https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message.html
+        return Response(self._signature_cert_pem, 200)
+
     def __init__(self) -> None:
         super().__init__()
         self._publisher = PublishDispatcher()
+        self._signature_cert_pem: str = SNS_SERVER_CERT
 
     def on_before_stop(self):
         self._publisher.shutdown()
@@ -97,6 +105,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def on_after_init(self):
         # Allow sent platform endpoint messages to be retrieved from the SNS endpoint
         register_sns_api_resource(ROUTER)
+        # add the route to serve the certificate used to validate message signatures
+        ROUTER.add(self.get_signature_cert_pem_file)
 
     @staticmethod
     def get_store(account_id: str, region_name: str) -> SnsStore:
@@ -265,7 +275,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         if attribute_name == "FilterPolicy":
             store = self.get_store(account_id=context.account_id, region_name=context.region)
-            store.subscription_filter_policy[subscription_arn] = json.loads(attribute_value)
+            store.subscription_filter_policy[subscription_arn] = (
+                json.loads(attribute_value) if attribute_value else None
+            )
 
         sub[attribute_name] = attribute_value
 
@@ -410,8 +422,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if not sub:
             raise NotFoundException("Subscription does not exist")
         removed_attrs = ["sqs_queue_url"]
-        if "FilterPolicyScope" in sub and "FilterPolicy" not in sub:
+        if "FilterPolicyScope" in sub and not sub.get("FilterPolicy"):
             removed_attrs.append("FilterPolicyScope")
+            removed_attrs.append("FilterPolicy")
         elif "FilterPolicy" in sub and "FilterPolicyScope" not in sub:
             sub["FilterPolicyScope"] = "MessageAttributes"
 
@@ -628,8 +641,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if attributes:
             subscription.update(attributes)
             if "FilterPolicy" in attributes:
-                store.subscription_filter_policy[subscription_arn] = json.loads(
-                    attributes["FilterPolicy"]
+                store.subscription_filter_policy[subscription_arn] = (
+                    json.loads(attributes["FilterPolicy"]) if attributes["FilterPolicy"] else None
                 )
 
         store.subscriptions[subscription_arn] = subscription
