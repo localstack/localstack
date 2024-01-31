@@ -11,6 +11,7 @@ from localstack.testing.pytest import markers
     paths=[
         "$..KeyPairs..KeyType",
         "$..KeyPairs..Tags",
+        "$..Error..Message",
     ]
 )
 def test_deploy_instance_with_key_pair(deploy_cfn_template, aws_client, snapshot):
