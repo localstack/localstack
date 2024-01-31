@@ -88,3 +88,6 @@ log_cli = true
 log_level = "DEBUG"
 log_cli_format = "%(asctime)s.%(msecs)03d %(levelname)5s --- [%(threadName)12s] %(name)-26s : %(message)s"
 log_cli_date_format = "%Y-%m-%dT%H:%M:%S"
+
+[tool.pip-tools]
+unsafe-package = ["pip", "setuptools", "distribute"] # packages that should not be pinned

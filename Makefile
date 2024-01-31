@@ -36,58 +36,63 @@ freeze:                   ## Run pip freeze -l in the virtual environment
 pip-tools: venv
 	$(VENV_RUN); $(PIP_CMD) install --upgrade pip-tools
 
+upgrade-basic-reqs: pip-tools
+	$(VENV_RUN); pip-compile --upgrade --strip-extras -o requirements-basic.txt pyproject.toml
+
 upgrade-runtime-reqs: pip-tools
-	$(VENV_RUN); pip-compile --upgrade --extra runtime -o runtime-requirements.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra runtime -o requirements-runtime.txt pyproject.toml
 
 upgrade-test-only-reqs: pip-tools
-	$(VENV_RUN); pip-compile --upgrade --extra test -o test-only-requirements.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra test_only -o requirements-test-only.txt pyproject.toml
 
 upgrade-test-reqs: pip-tools
-	$(VENV_RUN); pip-compile --upgrade --extra runtime,test -o test-requirements.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra test -o requirements-test.txt pyproject.toml
 
 upgrade-dev-reqs: pip-tools
-	$(VENV_RUN); pip-compile --upgrade --extra runtime,test,dev -o requirements.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra dev -o requirements-dev.txt pyproject.toml
 
 upgrade-dev-types-reqs: pip-tools
-	$(VENV_RUN); pip-compile --upgrade --extra runtime,test,dev,typehint -o types-requirements.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra typehint -o requirements-typehint.txt pyproject.toml
 
 upgrade-s3-reqs: pip-tools
-	$(VENV_RUN); pip-compile --upgrade --extra base-runtime -o s3-requirements.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
 
-upgrade-all-reqs: upgrade-runtime-reqs upgrade-test-reqs upgrade-dev-reqs upgrade-dev-types-reqs upgrade-s3-reqs
+upgrade-all-reqs: upgrade-basic-reqs upgrade-runtime-reqs upgrade-test-only-reqs upgrade-test-reqs upgrade-dev-reqs upgrade-dev-types-reqs upgrade-s3-reqs
 
 install-basic: venv       ## Install basic dependencies for CLI usage into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli]"
+	$(VENV_RUN)
+	$(PIP_CMD) install -r requirements-basic.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e .
 
 install-runtime: venv     ## Install dependencies for the localstack runtime into venv
 	$(VENV_RUN)
-	$(PIP_CMD) install -r runtime-requirements.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime]"
+	$(PIP_CMD) install -r requirements-runtime.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[runtime]"
 
 install-test: venv        ## Install requirements to run tests into venv
 	$(VENV_RUN)
-	$(PIP_CMD) install -r test-requirements.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test]"
+	$(PIP_CMD) install -r requirements-test.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[test]"
 
 install-test-only: venv
 	$(VENV_RUN)
-	$(PIP_CMD) install -r test-only-requirements.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[test]"
+	$(PIP_CMD) install -r requirements-test-only.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[test-only]"
 
 install-dev: venv         ## Install developer requirements into venv
 	$(VENV_RUN)
-	$(PIP_CMD) install -r requirements.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
+	$(PIP_CMD) install -r requirements-dev.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[dev]"
 
 install-dev-types: venv   ## Install developer requirements incl. type hints into venv
 	$(VENV_RUN)
-	$(PIP_CMD) install -r types-requirements.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev,typehint]"
+	$(PIP_CMD) install -r requirements-typehint.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[typehint]"
 
 install-s3: venv     ## Install dependencies for the localstack runtime for s3-only into venv
 	$(VENV_RUN)
-	$(PIP_CMD) install -r s3-requirements.txt
-	$(PIP_CMD) install $(PIP_OPTS) -e ".[cli,base-runtime]"
+	$(PIP_CMD) install -r requirements-base-runtime.txt
+	$(PIP_CMD) install $(PIP_OPTS) -e ".[base-runtime]"
 
 install: install-dev entrypoints  ## Install full dependencies into venv
 
