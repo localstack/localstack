@@ -40,7 +40,7 @@ from localstack.utils.objects import get_all_subclasses
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
-from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
+from localstack.services.cloudformation.models import *  # noqa: F401, F403, isort:skip
 from localstack.utils.urls import localstack_host
 
 ACTION_CREATE = "create"
@@ -169,7 +169,9 @@ def resolve_ref(
     # resource
     resource = resources.get(ref)
     if not resource:
-        raise Exception("Should be detected earlier.")
+        raise Exception(
+            f"Resource target for `!Ref {ref}` could not be found. Is there a resource with name {ref} in your stack?"
+        )
 
     return resources[ref].get("PhysicalResourceId")
 
