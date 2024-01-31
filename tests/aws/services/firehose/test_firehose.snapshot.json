@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_multiple_delivery_streams_with_kinesis_as_source": {
+  "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_kinesis_firehose_kinesis_as_source_multiple_delivery_streams": {
     "recorded-date": "25-01-2024, 10:54:39",
     "recorded-content": {
       "kinesis-event-stream-multiple-delivery-streams": {
