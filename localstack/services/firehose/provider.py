@@ -316,11 +316,11 @@ class FirehoseProvider(FirehoseApi):
                     )
                     process = kinesis_connector.listen_to_kinesis(
                         stream_name=kinesis_stream_name,
+                        stream_anr=kinesis_stream_arn,
                         account_id=context.account_id,
                         region_name=context.region,
                         listener_func=listener_function,
-                        wait_until_started=True,
-                        ddb_lease_table_suffix="-firehose",
+                        wait_for_client_ready=True,
                     )
 
                     self.kinesis_listeners[delivery_stream_arn] = process

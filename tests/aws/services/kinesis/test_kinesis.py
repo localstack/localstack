@@ -452,8 +452,8 @@ def wait_for_consumer_ready(aws_client):
 
 class TestKinesisPythonClient:
     @markers.skip_offline
-    @markers.aws.unknown
-    def test_run_kcl(self, aws_client):
+    @markers.aws.only_localstack
+    def test_run_kcl(self, aws_client, wait_for_stream_ready):
         result = []
 
         def process_records(records):
@@ -463,12 +463,26 @@ class TestKinesisPythonClient:
         kinesis = aws_client.kinesis
         stream_name = f"test-foobar-{short_uid()}"
         resources.create_kinesis_stream(kinesis, stream_name, delete=True)
+        wait_for_stream_ready(stream_name)
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+        num_events_kinesis = 10
+        kinesis.put_records(
+            Records=[
+                {"Data": '{"first"}', "PartitionKey": "test_%s" % i}
+                for i in range(0, num_events_kinesis)
+            ],
+            StreamName=stream_name,
+        )
+
         process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
+            stream_arn=stream_arn,
             account_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
-            wait_until_started=True,
+            wait_for_client_ready=True,
         )
 
         try:
