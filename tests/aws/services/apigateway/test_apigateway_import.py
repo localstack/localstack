@@ -7,6 +7,7 @@ from operator import itemgetter
 import pytest
 import requests
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.apigateway import Resources
@@ -14,7 +15,6 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid

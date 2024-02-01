@@ -2,10 +2,10 @@ import json
 
 import pytest
 import yaml
+from localstack_snapshot.snapshots import RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate

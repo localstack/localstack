@@ -12,11 +12,11 @@ import pytest
 from aws_cdk.aws_lambda_event_sources import DynamoEventSource
 from botocore.exceptions import ClientError
 from constructs import Construct
+from localstack_snapshot.snapshots import GenericTransformer, KeyValueBasedTransformer
 
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_s3
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
-from localstack.testing.snapshots.transformer import GenericTransformer, KeyValueBasedTransformer
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.strings import to_bytes, to_str

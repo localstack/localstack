@@ -4,6 +4,7 @@ import time
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots import KeyValueBasedTransformer
 
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
 from localstack.testing.aws.lambda_utils import (
@@ -15,7 +16,6 @@ from localstack.testing.aws.lambda_utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events

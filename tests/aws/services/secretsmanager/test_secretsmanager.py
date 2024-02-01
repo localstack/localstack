@@ -9,6 +9,7 @@ from typing import Optional
 import pytest
 import requests
 from botocore.auth import SigV4Auth
+from localstack_snapshot.snapshots import SortingTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
@@ -20,7 +21,6 @@ from localstack.aws.api.secretsmanager import (
 )
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_from_typed_dict

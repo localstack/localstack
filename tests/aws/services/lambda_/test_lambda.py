@@ -17,6 +17,7 @@ import pytest
 import requests
 from botocore.config import Config
 from botocore.response import StreamingBody
+from localstack_snapshot.snapshots import KeyValueBasedTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
@@ -29,8 +30,6 @@ from localstack.testing.aws.lambda_utils import (
 )
 from localstack.testing.aws.util import create_client_with_keys, is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.pytest.snapshot import is_aws
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil
 from localstack.utils.aws import arns
@@ -378,7 +377,7 @@ class TestLambdaBehavior:
         snapshot.match("invoke_runtime_x86_introspection", invoke_result)
 
     @pytest.mark.skipif(
-        not is_arm_compatible() and not is_aws(),
+        not is_arm_compatible() and not is_aws_cloud(),
         reason="ARM architecture not supported on this host",
     )
     @markers.snapshot.skip_snapshot_verify(
@@ -920,7 +919,7 @@ class TestLambdaURL:
         assert result.status_code == 502
 
 
-@pytest.mark.skipif(not is_aws(), reason="Not yet implemented")
+@pytest.mark.skipif(not is_aws_cloud(), reason="Not yet implemented")
 class TestLambdaPermissions:
     @markers.aws.validated
     def test_lambda_permission_url_invocation(self, create_lambda_function, snapshot, aws_client):
@@ -1731,7 +1730,7 @@ class TestLambdaConcurrency:
         snapshot.match("invoke_latest_second_exc", e.value.response)
 
     @pytest.mark.skip(reason="Not yet implemented")
-    @pytest.mark.skipif(condition=is_aws(), reason="very slow (only execute when needed)")
+    @pytest.mark.skipif(condition=is_aws_cloud(), reason="very slow (only execute when needed)")
     @markers.aws.validated
     def test_lambda_provisioned_concurrency_moves_with_alias(
         self, create_lambda_function, snapshot, aws_client

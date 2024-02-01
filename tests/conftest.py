@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING
 import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
-from localstack_snapshot.pytest.snapshot import is_aws
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.constants import TEST_AWS_REGION_NAME
-from localstack.testing.snapshot.transformer_utility import (
+from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER,
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
     TransformerUtility,
@@ -226,7 +226,7 @@ def secondary_aws_client(aws_client_factory):
 
 @pytest.fixture(name="region", scope="session")
 def fixture_region(aws_client):
-    if is_aws() or is_api_enabled("sts"):
+    if is_aws_cloud() or is_api_enabled("sts"):
         return aws_client.sts.meta.region_name
     else:
         return TEST_AWS_REGION_NAME

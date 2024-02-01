@@ -4,6 +4,7 @@ import os
 from typing import Callable, Final
 
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots import JsonpathTransformer, RegexTransformer
 
 from localstack.aws.api.stepfunctions import (
     CreateStateMachineOutput,
@@ -12,7 +13,6 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventType,
 )
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
-from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 

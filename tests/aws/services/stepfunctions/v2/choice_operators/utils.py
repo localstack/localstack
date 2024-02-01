@@ -1,8 +1,9 @@
 import json
 from typing import Any, Final
 
+from localstack_snapshot.snapshots import RegexTransformer
+
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
-from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.choiceoperators.choice_operators_templates import (
     ChoiceOperatorTemplate as COT,

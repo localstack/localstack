@@ -1,13 +1,13 @@
 import json
 
 import pytest
+from localstack_snapshot.snapshots import JsonpathTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import JsonpathTransformer
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.strings import short_uid
 from tests.aws.services.apigateway.apigateway_fixtures import create_rest_resource

@@ -2,10 +2,10 @@ import json
 from collections import OrderedDict
 
 import pytest
+from localstack_snapshot.snapshots import JsonpathTransformer, RegexTransformer
 
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.conftest import SfnNoneRecursiveParallelTransformer
 from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_templates import (

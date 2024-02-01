@@ -25,6 +25,7 @@ from botocore import UNSIGNED
 from botocore.auth import SigV4Auth
 from botocore.client import Config
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots import RegexTransformer
 from zoneinfo import ZoneInfo
 
 import localstack.config
@@ -51,7 +52,6 @@ from localstack.services.s3.utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws.request_context import mock_aws_request_headers

@@ -12,11 +12,11 @@ import time
 import zipfile
 
 import pytest
+from localstack_snapshot.snapshots import KeyValueBasedTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.lambda_.runtimes import TESTED_RUNTIMES
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.files import cp_r
 from localstack.utils.platform import Arch, get_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str

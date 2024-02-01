@@ -7,12 +7,12 @@ from operator import itemgetter
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.apigateway import PutMode
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry

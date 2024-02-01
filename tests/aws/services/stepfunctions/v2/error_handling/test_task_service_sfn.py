@@ -1,7 +1,8 @@
 import json
 
+from localstack_snapshot.snapshots import JsonpathTransformer, RegexTransformer
+
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
 from tests.aws.services.stepfunctions.templates.services.services_templates import (

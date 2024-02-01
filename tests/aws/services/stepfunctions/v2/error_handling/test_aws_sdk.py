@@ -1,10 +1,10 @@
 import json
 
 import pytest
+from localstack_snapshot.snapshots import RegexTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_templates import (
     ErrorHandlingTemplate as EHT,

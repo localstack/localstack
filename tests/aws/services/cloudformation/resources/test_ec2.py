@@ -1,10 +1,10 @@
 import os
 
 import pytest
+from localstack_snapshot.snapshots import SortingTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 
 THIS_FOLDER = os.path.dirname(__file__)
 

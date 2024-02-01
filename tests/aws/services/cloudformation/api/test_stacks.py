@@ -5,12 +5,12 @@ import botocore.exceptions
 import pytest
 import yaml
 from botocore.exceptions import WaiterError
+from localstack_snapshot.snapshots import SortingTransformer
 
 from localstack.aws.api.cloudformation import Capability
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until

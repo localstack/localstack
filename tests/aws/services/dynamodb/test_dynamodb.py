@@ -10,6 +10,7 @@ import pytest
 import requests
 from boto3.dynamodb.types import STRING
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
@@ -18,7 +19,6 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, queries, resources
 from localstack.utils.aws.resources import create_dynamodb_table

@@ -4,11 +4,11 @@ from urllib.parse import urlencode
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots import SortingTransformer
 
 from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.strings import long_uid, short_uid
 from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
