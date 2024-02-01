@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import threading
 from typing import Optional
 
@@ -22,6 +23,7 @@ from localstack.services.stepfunctions.backend.test_state.execution_worker impor
     TestStateExecutionWorker,
 )
 
+LOG = logging.getLogger(__name__)
 
 class TestStateExecution(Execution):
     exec_worker: Optional[TestStateExecutionWorker]
@@ -75,15 +77,15 @@ class TestStateExecution(Execution):
     def to_test_state_output(self, inspection_level: InspectionLevel) -> TestStateOutput:
         exit_program_state: ProgramState = self.exec_worker.env.program_state()
         if isinstance(exit_program_state, ProgramEnded):
-            status = TestExecutionStatus.SUCCEEDED
+            output_str = to_json_str(self.output)
+            test_state_output = TestStateOutput(status=TestExecutionStatus.SUCCEEDED, output=output_str)
         elif isinstance(exit_program_state, ProgramError):
-            status = TestExecutionStatus.FAILED
+            test_state_output = TestStateOutput(status=TestExecutionStatus.FAILED, error=exit_program_state.error["error"], cause=exit_program_state.error["cause"])
         else:
             # TODO: handle other statuses
-            status = None
-
-        output_str = to_json_str(self.output)
-        test_state_output = TestStateOutput(status=status, output=output_str)
+            LOG.warning(f"Unsupported StateMachine exit type for TestState '{type(exit_program_state)}'")
+            output_str = to_json_str(self.output)
+            test_state_output = TestStateOutput(status=TestExecutionStatus.FAILED, output=output_str)
 
         match inspection_level:
             case InspectionLevel.TRACE:

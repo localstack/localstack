@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass_info": {
-    "recorded-date": "21-01-2024, 11:35:29",
+    "recorded-date": "31-01-2024, 15:59:17",
     "recorded-content": {
       "test_case_output": {
         "output": {
@@ -15,7 +15,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass_debug": {
-    "recorded-date": "21-01-2024, 11:35:42",
+    "recorded-date": "31-01-2024, 15:59:30",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -47,7 +47,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass_trace": {
-    "recorded-date": "21-01-2024, 11:35:56",
+    "recorded-date": "31-01-2024, 15:59:42",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -79,7 +79,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_result_pass_info": {
-    "recorded-date": "21-01-2024, 11:36:09",
+    "recorded-date": "31-01-2024, 15:59:55",
     "recorded-content": {
       "test_case_output": {
         "output": {
@@ -94,7 +94,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_result_pass_debug": {
-    "recorded-date": "21-01-2024, 11:36:22",
+    "recorded-date": "31-01-2024, 16:00:07",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -123,7 +123,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_result_pass_trace": {
-    "recorded-date": "21-01-2024, 11:36:35",
+    "recorded-date": "31-01-2024, 16:00:14",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -152,7 +152,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_pass_info": {
-    "recorded-date": "21-01-2024, 11:36:43",
+    "recorded-date": "31-01-2024, 16:00:27",
     "recorded-content": {
       "test_case_output": {
         "output": {
@@ -177,7 +177,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_pass_debug": {
-    "recorded-date": "21-01-2024, 11:36:57",
+    "recorded-date": "31-01-2024, 16:00:39",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -238,7 +238,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_pass_trace": {
-    "recorded-date": "21-01-2024, 11:37:10",
+    "recorded-date": "31-01-2024, 16:00:52",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -299,7 +299,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_result_pass_info": {
-    "recorded-date": "21-01-2024, 11:37:23",
+    "recorded-date": "31-01-2024, 16:01:05",
     "recorded-content": {
       "test_case_output": {
         "output": {
@@ -323,7 +323,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_result_pass_debug": {
-    "recorded-date": "21-01-2024, 11:37:36",
+    "recorded-date": "31-01-2024, 16:01:18",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -376,7 +376,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_result_pass_trace": {
-    "recorded-date": "21-01-2024, 11:37:49",
+    "recorded-date": "31-01-2024, 16:01:30",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -429,11 +429,20 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_info": {
-    "recorded-date": "21-01-2024, 13:29:10",
-    "recorded-content": {}
+    "recorded-date": "31-01-2024, 16:01:55",
+    "recorded-content": {
+      "test_case_output": {
+        "output": "\"HelloWorld!\"",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_debug": {
-    "recorded-date": "21-01-2024, 12:53:39",
+    "recorded-date": "31-01-2024, 16:02:10",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -460,7 +469,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_trace": {
-    "recorded-date": "21-01-2024, 12:54:23",
+    "recorded-date": "31-01-2024, 16:02:25",
     "recorded-content": {
       "test_case_output": {
         "inspectionData": {
@@ -478,6 +487,708 @@
           "result": "\"HelloWorld!\""
         },
         "output": "\"HelloWorld!\"",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state_info": {
+    "recorded-date": "31-01-2024, 16:02:40",
+    "recorded-content": {
+      "test_case_output": {
+        "output": {
+          "ExecutedVersion": "$LATEST",
+          "Payload": {},
+          "SdkHttpMetadata": {
+            "AllHttpHeaders": {
+              "X-Amz-Executed-Version": [
+                "$LATEST"
+              ],
+              "x-amzn-Remapped-Content-Length": [
+                "0"
+              ],
+              "Connection": [
+                "keep-alive"
+              ],
+              "x-amzn-RequestId": [
+                "<uuid:1>"
+              ],
+              "Content-Length": [
+                "2"
+              ],
+              "Date": "date",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+              "Content-Type": [
+                "application/json"
+              ]
+            },
+            "HttpHeaders": {
+              "Connection": "keep-alive",
+              "Content-Length": "2",
+              "Content-Type": "application/json",
+              "Date": "date",
+              "X-Amz-Executed-Version": "$LATEST",
+              "x-amzn-Remapped-Content-Length": "0",
+              "x-amzn-RequestId": "<uuid:1>",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+            },
+            "HttpStatusCode": 200
+          },
+          "SdkResponseMetadata": {
+            "RequestId": "<uuid:1>"
+          },
+          "StatusCode": 200
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state_debug": {
+    "recorded-date": "31-01-2024, 16:02:54",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "afterParameters": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "afterResultPath": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          },
+          "afterResultSelector": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          },
+          "input": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "result": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          }
+        },
+        "output": {
+          "ExecutedVersion": "$LATEST",
+          "Payload": {},
+          "SdkHttpMetadata": {
+            "AllHttpHeaders": {
+              "X-Amz-Executed-Version": [
+                "$LATEST"
+              ],
+              "x-amzn-Remapped-Content-Length": [
+                "0"
+              ],
+              "Connection": [
+                "keep-alive"
+              ],
+              "x-amzn-RequestId": [
+                "<uuid:1>"
+              ],
+              "Content-Length": [
+                "2"
+              ],
+              "Date": "date",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+              "Content-Type": [
+                "application/json"
+              ]
+            },
+            "HttpHeaders": {
+              "Connection": "keep-alive",
+              "Content-Length": "2",
+              "Content-Type": "application/json",
+              "Date": "date",
+              "X-Amz-Executed-Version": "$LATEST",
+              "x-amzn-Remapped-Content-Length": "0",
+              "x-amzn-RequestId": "<uuid:1>",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+            },
+            "HttpStatusCode": 200
+          },
+          "SdkResponseMetadata": {
+            "RequestId": "<uuid:1>"
+          },
+          "StatusCode": 200
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state_trace": {
+    "recorded-date": "31-01-2024, 16:03:09",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "afterParameters": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "afterResultPath": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          },
+          "afterResultSelector": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          },
+          "input": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "result": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          }
+        },
+        "output": {
+          "ExecutedVersion": "$LATEST",
+          "Payload": {},
+          "SdkHttpMetadata": {
+            "AllHttpHeaders": {
+              "X-Amz-Executed-Version": [
+                "$LATEST"
+              ],
+              "x-amzn-Remapped-Content-Length": [
+                "0"
+              ],
+              "Connection": [
+                "keep-alive"
+              ],
+              "x-amzn-RequestId": [
+                "<uuid:1>"
+              ],
+              "Content-Length": [
+                "2"
+              ],
+              "Date": "date",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+              "Content-Type": [
+                "application/json"
+              ]
+            },
+            "HttpHeaders": {
+              "Connection": "keep-alive",
+              "Content-Length": "2",
+              "Content-Type": "application/json",
+              "Date": "date",
+              "X-Amz-Executed-Version": "$LATEST",
+              "x-amzn-Remapped-Content-Length": "0",
+              "x-amzn-RequestId": "<uuid:1>",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+            },
+            "HttpStatusCode": 200
+          },
+          "SdkResponseMetadata": {
+            "RequestId": "<uuid:1>"
+          },
+          "StatusCode": 200
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_fail_info": {
+    "recorded-date": "31-01-2024, 16:48:03",
+    "recorded-content": {
+      "test_case_output": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_fail_debug": {
+    "recorded-date": "31-01-2024, 16:49:22",
+    "recorded-content": {
+      "test_case_output": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_fail_trace": {
+    "recorded-date": "31-01-2024, 16:49:56",
+    "recorded-content": {
+      "test_case_output": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_succeed_info": {
+    "recorded-date": "31-01-2024, 16:52:15",
+    "recorded-content": {
+      "test_case_output": {
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_succeed_debug": {
+    "recorded-date": "31-01-2024, 16:52:57",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_succeed_trace": {
+    "recorded-date": "31-01-2024, 16:53:18",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_wait_info": {
+    "recorded-date": "31-01-2024, 16:55:48",
+    "recorded-content": {
+      "test_case_output": {
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_wait_debug": {
+    "recorded-date": "31-01-2024, 16:56:24",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_wait_trace": {
+    "recorded-date": "31-01-2024, 16:56:45",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_choice_info": {
+    "recorded-date": "31-01-2024, 20:51:16",
+    "recorded-content": {
+      "test_case_output": {
+        "nextState": "ValueInTwenties",
+        "output": {
+          "type": "Private",
+          "value": 22
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_choice_debug": {
+    "recorded-date": "31-01-2024, 20:52:22",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "type": "Private",
+            "value": 22
+          },
+          "input": {
+            "type": "Private",
+            "value": 22
+          }
+        },
+        "nextState": "ValueInTwenties",
+        "output": {
+          "type": "Private",
+          "value": 22
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_choice_trace": {
+    "recorded-date": "31-01-2024, 20:52:58",
+    "recorded-content": {
+      "test_case_output": {
+        "inspectionData": {
+          "afterInputPath": {
+            "type": "Private",
+            "value": 22
+          },
+          "input": {
+            "type": "Private",
+            "value": 22
+          }
+        },
+        "nextState": "ValueInTwenties",
+        "output": {
+          "type": "Private",
+          "value": 22
+        },
         "status": "SUCCEEDED",
         "ResponseMetadata": {
           "HTTPHeaders": {},

@@ -1,36 +1,67 @@
+import enum
 from typing import Final
 
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
 from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.common.path.input_path import InputPath
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
-from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue.payloadtmpl.payload_tmpl import (
-    PayloadTmpl,
-)
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
+from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
+from localstack.services.stepfunctions.asl.component.state.state_choice.state_choice import StateChoice
+from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
+    ExecutionState,
+)
 from localstack.services.stepfunctions.asl.component.state.state_pass.result import Result
-from localstack.services.stepfunctions.asl.component.test_state.common.parameters import (
-    TestStateParameters,
-)
-from localstack.services.stepfunctions.asl.component.test_state.common.path.input_path import (
-    TestStateInputPath,
-)
-from localstack.services.stepfunctions.asl.component.test_state.common.path.result_path import (
-    TestStateResultPath,
-)
-from localstack.services.stepfunctions.asl.component.test_state.common.result_selector import (
-    TestStateResultSelector,
-)
 from localstack.services.stepfunctions.asl.component.test_state.program.test_state_program import (
     TestStateProgram,
-)
-from localstack.services.stepfunctions.asl.component.test_state.state.state_pass.result import (
-    TestStateResult,
 )
 from localstack.services.stepfunctions.asl.component.test_state.state.test_state_state_props import (
     TestStateStateProps,
 )
+from localstack.services.stepfunctions.asl.eval.test_state.environment import TestStateEnvironment
 from localstack.services.stepfunctions.asl.parse.preprocessor import Preprocessor
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+
+
+class InspectionDataKey(enum.Enum):
+    INPUT = "input"
+    AFTER_INPUT_PATH = "afterInputPath"
+    AFTER_PARAMETERS = "afterParameters"
+    RESULT = "result"
+    AFTER_RESULT_SELECTOR = "afterResultSelector"
+    AFTER_RESULT_PATH = "afterResultPath"
+    REQUEST = "request"
+    RESPONSE = "response"
+
+
+def _decorated_updated_choice_inspection_data(method):
+    def wrapper(env: TestStateEnvironment, *args, **kwargs):
+        method(env, *args, **kwargs)
+        result = to_json_str(env.stack[-1])
+        # env.inspection_data[inspection_data_key.value] = result  # noqa
+        # env.inspection_data["next"]  env.next_state_name
+        return result
+    return wrapper
+
+
+def _decorated_updates_inspection_data(method, inspection_data_key: InspectionDataKey):
+    def wrapper(env: TestStateEnvironment, *args, **kwargs):
+        method(env, *args, **kwargs)
+        result = to_json_str(env.stack[-1])
+        env.inspection_data[inspection_data_key.value] = result  # noqa
+        return result
+    return wrapper
+
+
+def _decorate_state_field(state_field: CommonStateField) -> None:
+    if isinstance(state_field, ExecutionState):
+        state_field._eval_execution = _decorated_updates_inspection_data(
+            method=state_field._eval_execution, inspection_data_key=InspectionDataKey.RESULT  # noqa
+        )
+    elif isinstance(state_field, StateChoice):
+        state_field._eval_body = _decorated_updated_choice_inspection_data(
+            method=state_field._eval_body
+        )
 
 
 class TestStatePreprocessor(Preprocessor):
@@ -42,38 +73,47 @@ class TestStatePreprocessor(Preprocessor):
         for child in ctx.children:
             cmp = self.visit(child)
             state_props.add(cmp)
-
-        # Enforce the following missing fields to ensure inspection level traceability.
-        # if not state_props.get(InputPath):
-        #     state_props.add(TestStateInputPath(TestStateInputPath.DEFAULT_PATH))
-        # if not state_props.get(Parameters):
-        #     state_props.add(TestStateParameters(payload_tmpl=None))
-        # if not state_props.get(ResultSelector):
-        #     state_props.add(TestStateResultSelector(payload_tmpl=None))
-        # if not state_props.get(ResultPath):
-        #     state_props.add(TestStateResultPath(TestStateResultPath.DEFAULT_PATH))
-
         state_field = self._common_state_field_of(state_props=state_props)
+        _decorate_state_field(state_field)
         return TestStateProgram(state_field)
 
     def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:
-        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
-        return TestStateInputPath(input_path_src=inner_str)
+        input_path: InputPath = super().visitInput_path_decl(ctx=ctx)
+        input_path._eval_body = _decorated_updates_inspection_data(
+            method=input_path._eval_body,  # noqa
+            inspection_data_key=InspectionDataKey.AFTER_INPUT_PATH,
+        )
+        return input_path
 
     def visitParameters_decl(self, ctx: ASLParser.Parameters_declContext) -> Parameters:
-        payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
-        return TestStateParameters(payload_tmpl=payload_tmpl)
+        parameters: Parameters = super().visitParameters_decl(ctx=ctx)
+        parameters._eval_body = _decorated_updates_inspection_data(
+            method=parameters._eval_body,  # noqa
+            inspection_data_key=InspectionDataKey.AFTER_PARAMETERS,
+        )
+        return parameters
 
     def visitResult_selector_decl(
         self, ctx: ASLParser.Result_selector_declContext
     ) -> ResultSelector:
-        payload_tmpl: PayloadTmpl = self.visit(ctx.payload_tmpl_decl())
-        return TestStateResultSelector(payload_tmpl=payload_tmpl)
+        result_selector: ResultSelector = super().visitResult_selector_decl(ctx=ctx)
+        result_selector._eval_body = _decorated_updates_inspection_data(
+            method=result_selector._eval_body,  # noqa
+            inspection_data_key=InspectionDataKey.AFTER_RESULT_SELECTOR,
+        )
+        return result_selector
 
     def visitResult_path_decl(self, ctx: ASLParser.Result_path_declContext) -> ResultPath:
-        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
-        return TestStateResultPath(result_path_src=inner_str)
+        result_path: ResultPath = super().visitResult_path_decl(ctx=ctx)
+        result_path._eval_body = _decorated_updates_inspection_data(
+            method=result_path._eval_body,  # noqa
+            inspection_data_key=InspectionDataKey.AFTER_RESULT_PATH,
+        )
+        return result_path
 
-    def visitResult_decl(self, ctx: ASLParser.Result_declContext) -> TestStateResult:
+    def visitResult_decl(self, ctx: ASLParser.Result_declContext) -> Result:
         result: Result = super().visitResult_decl(ctx=ctx)
-        return TestStateResult(result_obj=result.result_obj)
+        result._eval_body = _decorated_updates_inspection_data(
+            method=result._eval_body, inspection_data_key=InspectionDataKey.RESULT  # noqa
+        )
+        return result

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Final
 
 from localstack.aws.api.stepfunctions import InspectionData
@@ -24,3 +26,11 @@ class TestStateEnvironment(Environment):
             event_history_context=event_history_context,
         )
         self.inspection_data = InspectionData()
+
+    @classmethod
+    def as_frame_of(
+        cls, env: TestStateEnvironment, event_history_frame_cache: EventHistoryContext
+    ) -> TestStateEnvironment:
+        frame = super().as_frame_of(env=env, event_history_frame_cache=event_history_frame_cache)
+        frame.inspection_data = env.inspection_data
+        return frame

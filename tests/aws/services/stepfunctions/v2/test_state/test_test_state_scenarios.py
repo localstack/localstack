@@ -15,7 +15,14 @@ from tests.aws.services.stepfunctions.templates.test_state.test_state_templates 
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..loggingConfiguration",
+        "$..tracingConfiguration",
+        "$..SdkHttpMetadata",
+        "$..SdkResponseMetadata",
+    ]
+)
 class TestStateCaseScenarios:
     @staticmethod
     def _send_test_state_request(aws_client_factory, **kwargs):
@@ -48,7 +55,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers. Such as ResultSelector, which is neither defined in
             # this Pass state, nor supported by Pass states.
             "$..inspectionData.afterInputPath",
@@ -81,7 +88,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers. Such as ResultSelector, which is neither defined in
             # this Pass state, nor supported by Pass states.
             "$..inspectionData.afterInputPath",
@@ -136,7 +143,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers. Such as ResultSelector, which is neither defined in
             # this Pass state, nor supported by Pass states.
             "$..inspectionData.afterResultPath",
@@ -167,7 +174,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers. Such as ResultSelector, which is neither defined in
             # this Pass state, nor supported by Pass states.
             "$..inspectionData.afterResultPath",
@@ -225,7 +232,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers. Such as ResultSelector, which is neither defined in
             # this Pass state, nor supported by Pass states.
             "$..inspectionData.afterResultSelector"
@@ -260,7 +267,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers. Such as ResultSelector, which is neither defined in
             # this Pass state, nor supported by Pass states.
             "$..inspectionData.afterResultSelector"
@@ -322,7 +329,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers. Such as ResultSelector, which is neither defined in
             # this Pass state, nor supported by Pass states. It also prunes declared fields
             # such as InputPath and Parameters.
@@ -360,7 +367,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers. Such as ResultSelector, which is neither defined in
             # this Pass state, nor supported by Pass states. It also prunes declared fields
             # such as InputPath and Parameters.
@@ -430,7 +437,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers.
             "$..inspectionData.afterInputPath",
             "$..inspectionData.afterParameters",
@@ -472,7 +479,7 @@ class TestStateCaseScenarios:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # Unknown generelisable behaviour by AWS leads to the outputting of undeclared and
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
             # unsupported state modifiers.
             "$..inspectionData.afterInputPath",
             "$..inspectionData.afterParameters",
@@ -512,7 +519,7 @@ class TestStateCaseScenarios:
         sfn_snapshot.match("test_case_output", test_case_output)
 
     @markers.aws.validated
-    def test_base_lambda_task_state_info(
+    def test_base_lambda_service_task_state_info(
         self,
         aws_client_factory,
         create_iam_role_for_sfn,
@@ -543,7 +550,15 @@ class TestStateCaseScenarios:
         sfn_snapshot.match("test_case_output", test_case_output)
 
     @markers.aws.validated
-    def test_base_lambda_task_state_debug(
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared state modifiers.
+            "$..inspectionData.afterInputPath",
+            "$..inspectionData.afterResultPath",
+            "$..inspectionData.afterResultSelector",
+        ]
+    )
+    def test_base_lambda_service_task_state_debug(
         self,
         aws_client_factory,
         create_iam_role_for_sfn,
@@ -574,7 +589,15 @@ class TestStateCaseScenarios:
         sfn_snapshot.match("test_case_output", test_case_output)
 
     @markers.aws.validated
-    def test_base_lambda_task_state_trace(
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared state modifiers.
+            "$..inspectionData.afterInputPath",
+            "$..inspectionData.afterResultPath",
+            "$..inspectionData.afterResultSelector",
+        ]
+    )
+    def test_base_lambda_service_task_state_trace(
         self,
         aws_client_factory,
         create_iam_role_for_sfn,
@@ -604,3 +627,238 @@ class TestStateCaseScenarios:
         )
         sfn_snapshot.match("test_case_output", test_case_output)
 
+    @markers.aws.validated
+    def test_base_fail_info(
+        self,
+        aws_client_factory,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = TCT.load_sfn_template(TCT.BASE_FAIL_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"Value": "HelloWorld"})
+
+        sfn_role_arn = create_iam_role_for_sfn()
+        test_case_output = self._send_test_state_request(
+            aws_client_factory,
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=exec_input,
+            inspectionLevel=InspectionLevel.INFO,
+        )
+        sfn_snapshot.match("test_case_output", test_case_output)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
+            # unsupported state modifiers.
+            "$..inspectionData.afterInputPath",
+        ]
+    )
+    def test_base_fail_debug(
+        self,
+        aws_client_factory,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = TCT.load_sfn_template(TCT.BASE_FAIL_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"Value": "HelloWorld"})
+
+        sfn_role_arn = create_iam_role_for_sfn()
+        test_case_output = self._send_test_state_request(
+            aws_client_factory,
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=exec_input,
+            inspectionLevel=InspectionLevel.DEBUG,
+        )
+        sfn_snapshot.match("test_case_output", test_case_output)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
+            # unsupported state modifiers.
+            "$..inspectionData.afterInputPath",
+        ]
+    )
+    def test_base_fail_trace(
+        self,
+        aws_client_factory,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = TCT.load_sfn_template(TCT.BASE_FAIL_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"Value": "HelloWorld"})
+
+        sfn_role_arn = create_iam_role_for_sfn()
+        test_case_output = self._send_test_state_request(
+            aws_client_factory,
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=exec_input,
+            inspectionLevel=InspectionLevel.TRACE,
+        )
+        sfn_snapshot.match("test_case_output", test_case_output)
+
+    @markers.aws.validated
+    def test_base_succeed_info(
+        self,
+        aws_client_factory,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = TCT.load_sfn_template(TCT.BASE_SUCCEED_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"Value": "HelloWorld"})
+
+        sfn_role_arn = create_iam_role_for_sfn()
+        test_case_output = self._send_test_state_request(
+            aws_client_factory,
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=exec_input,
+            inspectionLevel=InspectionLevel.INFO,
+        )
+        sfn_snapshot.match("test_case_output", test_case_output)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared state modifiers.
+            "$..inspectionData.afterInputPath",
+        ]
+    )
+    def test_base_succeed_debug(
+        self,
+        aws_client_factory,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = TCT.load_sfn_template(TCT.BASE_SUCCEED_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"Value": "HelloWorld"})
+
+        sfn_role_arn = create_iam_role_for_sfn()
+        test_case_output = self._send_test_state_request(
+            aws_client_factory,
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=exec_input,
+            inspectionLevel=InspectionLevel.DEBUG,
+        )
+        sfn_snapshot.match("test_case_output", test_case_output)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared state modifiers.
+            "$..inspectionData.afterInputPath",
+        ]
+    )
+    def test_base_succeed_trace(
+        self,
+        aws_client_factory,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = TCT.load_sfn_template(TCT.BASE_SUCCEED_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"Value": "HelloWorld"})
+
+        sfn_role_arn = create_iam_role_for_sfn()
+        test_case_output = self._send_test_state_request(
+            aws_client_factory,
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=exec_input,
+            inspectionLevel=InspectionLevel.TRACE,
+        )
+        sfn_snapshot.match("test_case_output", test_case_output)
+
+    @markers.aws.validated
+    def test_base_choice_info(
+        self,
+        aws_client_factory,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = TCT.load_sfn_template(TCT.BASE_CHOICE_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"type": "Private", "value": 22})
+
+        sfn_role_arn = create_iam_role_for_sfn()
+        test_case_output = self._send_test_state_request(
+            aws_client_factory,
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=exec_input,
+            inspectionLevel=InspectionLevel.INFO,
+        )
+        sfn_snapshot.match("test_case_output", test_case_output)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared state modifiers.
+            "$..inspectionData.afterInputPath",
+        ]
+    )
+    def test_base_choice_debug(
+        self,
+        aws_client_factory,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = TCT.load_sfn_template(TCT.BASE_CHOICE_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"type": "Private", "value": 22})
+
+        sfn_role_arn = create_iam_role_for_sfn()
+        test_case_output = self._send_test_state_request(
+            aws_client_factory,
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=exec_input,
+            inspectionLevel=InspectionLevel.DEBUG,
+        )
+        sfn_snapshot.match("test_case_output", test_case_output)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared state modifiers.
+            "$..inspectionData.afterInputPath",
+        ]
+    )
+    def test_base_choice_trace(
+        self,
+        aws_client_factory,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = TCT.load_sfn_template(TCT.BASE_CHOICE_STATE)
+        definition = json.dumps(template)
+        exec_input = json.dumps({"type": "Private", "value": 22})
+
+        sfn_role_arn = create_iam_role_for_sfn()
+        test_case_output = self._send_test_state_request(
+            aws_client_factory,
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=exec_input,
+            inspectionLevel=InspectionLevel.TRACE,
+        )
+        sfn_snapshot.match("test_case_output", test_case_output)
