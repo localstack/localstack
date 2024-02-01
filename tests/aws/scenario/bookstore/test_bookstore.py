@@ -10,12 +10,14 @@ import aws_cdk.aws_lambda as awslambda
 import aws_cdk.aws_opensearchservice as opensearch
 import pytest
 from aws_cdk.aws_lambda_event_sources import DynamoEventSource
+from botocore.exceptions import ClientError
 from constructs import Construct
 
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_s3
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.testing.snapshots.transformer import GenericTransformer, KeyValueBasedTransformer
+from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry
@@ -115,7 +117,11 @@ class TestBookstoreApplication:
 
         # pre-fill dynamodb
         # json-data is from https://aws-bookstore-demo.s3.amazonaws.com/data/books.json
-        aws_client.s3.create_bucket(Bucket=S3_BUCKET_BOOKS_INIT)
+        try:
+            create_s3_bucket(bucket_name=S3_BUCKET_BOOKS_INIT, s3_client=aws_client.s3)
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] != "BucketAlreadyOwnedByYou":
+                raise exc
         cleanups.append(
             lambda: cleanup_s3_bucket(
                 aws_client.s3, bucket_name=S3_BUCKET_BOOKS_INIT, delete_bucket=True
@@ -410,6 +416,16 @@ class BooksApi(Construct):
             projection_type=dynamodb.ProjectionType.ALL,
         )
 
+        self.lambda_role = iam.Role(
+            self, "LambdaRole", assumed_by=iam.ServicePrincipal("lambda.amazonaws.com")
+        )
+        self.lambda_role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
+        )
+        self.lambda_role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonDynamoDBFullAccess")
+        )
+
         # lambda for pre-filling the dynamodb
         self.load_books_helper_fn = awslambda.Function(
             stack,
@@ -422,16 +438,9 @@ class BooksApi(Construct):
                 "S3_BUCKET": S3_BUCKET_BOOKS_INIT,
                 "FILE_NAME": S3_KEY_BOOKS_INIT,
             },
+            role=self.lambda_role,
         )
-        self.load_books_helper_fn.role.attach_inline_policy(
-            iam.Policy(
-                stack,
-                "BooksS3Policy",
-                statements=[
-                    iam.PolicyStatement(resources=["arn:aws:s3:::*/*"], actions=["s3:GetObject"])
-                ],
-            )
-        )
+
         # lambdas to get and list books
         self.get_book_fn = awslambda.Function(
             stack,
@@ -439,7 +448,10 @@ class BooksApi(Construct):
             handler="index.handler",
             code=awslambda.InlineCode(code=load_file(self.GET_BOOK_PATH)),
             runtime=awslambda.Runtime.NODEJS_16_X,
-            environment={"TABLE_NAME": self.books_table.table_name},
+            environment={
+                "TABLE_NAME": self.books_table.table_name,
+            },
+            role=self.lambda_role,
         )
 
         self.list_books_fn = awslambda.Function(
@@ -448,7 +460,10 @@ class BooksApi(Construct):
             handler="index.handler",
             code=awslambda.InlineCode(code=load_file(self.LIST_BOOKS_PATH)),
             runtime=awslambda.Runtime.NODEJS_16_X,
-            environment={"TABLE_NAME": self.books_table.table_name},
+            environment={
+                "TABLE_NAME": self.books_table.table_name,
+            },
+            role=self.lambda_role,
         )
 
         # lambda to search for book
@@ -465,8 +480,8 @@ class BooksApi(Construct):
             runtime=awslambda.Runtime.PYTHON_3_10,
             environment={
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
-                "REGION": stack.region,
             },
+            role=self.lambda_role,
         )
 
         # lambda to update search cluster
@@ -478,8 +493,8 @@ class BooksApi(Construct):
             runtime=awslambda.Runtime.PYTHON_3_10,
             environment={
                 "ESENDPOINT": self.opensearch_domain.domain_endpoint,
-                "REGION": stack.region,
             },
+            role=self.lambda_role,
         )
 
         event_source = DynamoEventSource(
