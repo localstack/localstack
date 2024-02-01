@@ -141,6 +141,9 @@ class TestLocalStackHost:
         results_bucket = cdk.aws_s3.Bucket(stack, "ResultsBucket")
         cdk.CfnOutput(stack, "ResultsBucketName", value=results_bucket.bucket_name)
 
+        # assets bucket
+        assets_bucket_name = "bootstrap-bucket"
+
         # OpenSearch domain
         domain_name = f"domain-{short_uid()}"
         domain = cdk.aws_opensearchservice.Domain(
@@ -167,7 +170,7 @@ class TestLocalStackHost:
             infra.add_custom_setup(
                 lambda: load_python_lambda_to_s3(
                     s3_client=aws_client.s3,
-                    bucket_name=infra.get_asset_bucket(),
+                    bucket_name=assets_bucket_name,
                     key_name=key_name,
                     code_path=resources_path,
                     additional_python_packages=additional_packages or [],
@@ -198,7 +201,7 @@ class TestLocalStackHost:
         asset_bucket = cdk.aws_s3.Bucket.from_bucket_name(
             stack,
             "BucketName",
-            bucket_name=infra.get_asset_bucket(),
+            bucket_name=assets_bucket_name,
         )
         apigw_handler_fn = create_lambda_function(
             stack,
