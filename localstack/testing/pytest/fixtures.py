@@ -1746,20 +1746,26 @@ def ses_verify_identity(aws_client):
 def ec2_create_security_group(aws_client):
     ec2_sgs = []
 
-    def factory(ports=None, **kwargs):
+    def factory(ports=None, ip_permissions=None, **kwargs):
         if "GroupName" not in kwargs:
             kwargs["GroupName"] = f"test-sg-{short_uid()}"
         security_group = aws_client.ec2.create_security_group(**kwargs)
+        permissions = []
+        if ip_permissions:
+            permissions.extend(ip_permissions)
+        else:
+            permissions.extend(
+                [
+                    {
+                        "FromPort": port,
+                        "IpProtocol": "tcp",
+                        "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+                        "ToPort": port,
+                    }
+                    for port in ports or []
+                ]
+            )
 
-        permissions = [
-            {
-                "FromPort": port,
-                "IpProtocol": "tcp",
-                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
-                "ToPort": port,
-            }
-            for port in ports or []
-        ]
         aws_client.ec2.authorize_security_group_ingress(
             GroupName=kwargs["GroupName"],
             IpPermissions=permissions,
