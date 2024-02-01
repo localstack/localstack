@@ -3,10 +3,17 @@ from typing import Optional
 
 import pytest
 from _pytest.config import Config
+from localstack_snapshot.snapshots import SnapshotSession
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config as localstack_config
 from localstack import constants
 from localstack.testing.scenario.provisioning import InfraProvisioner
+from localstack.testing.snapshots.transformer_utility import (
+    SNAPSHOT_BASIC_TRANSFORMER,
+    SNAPSHOT_BASIC_TRANSFORMER_NEW,
+    TransformerUtility,
+)
 from tests.aws.test_terraform import TestTerraform
 
 
@@ -87,3 +94,50 @@ def infrastructure_setup(cdk_template_path, aws_client):
         )
 
     return _infrastructure_setup
+
+
+@pytest.fixture(scope="function")
+def snapshot(request, _snapshot_session: SnapshotSession, aws_client):
+    account_id = aws_client.sts.get_caller_identity()["Account"]
+    region = aws_client.sts.meta.region_name
+
+    # Overwrite utility with our own => Will be refactored in the future
+    _snapshot_session.transform = TransformerUtility
+
+    _snapshot_session.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)
+    _snapshot_session.add_transformer(RegexTransformer(region, "<region>"), priority=2)
+
+    # TODO: temporary to migrate to new default transformers.
+    #   remove this after all exemptions are gone
+    exemptions = [
+        "tests/aws/services/acm",
+        "tests/aws/services/apigateway",
+        "tests/aws/services/cloudwatch",
+        "tests/aws/services/cloudformation",
+        "tests/aws/services/dynamodb",
+        "tests/aws/services/events",
+        "tests/aws/services/iam",
+        "tests/aws/services/kinesis",
+        "tests/aws/services/kms",
+        "tests/aws/services/lambda_",
+        "tests/aws/services/logs",
+        "tests/aws/services/route53",
+        "tests/aws/services/route53resolver",
+        "tests/aws/services/s3",
+        "tests/aws/services/secretsmanager",
+        "tests/aws/services/ses",
+        "tests/aws/services/sns",
+        "tests/aws/services/stepfunctions",
+        "tests/aws/services/sqs",
+        "tests/aws/services/transcribe",
+        "tests/aws/scenario/bookstore",
+        "tests/aws/scenario/note_taking",
+        "tests/aws/scenario/lambda_destination",
+        "tests/aws/scenario/loan_broker",
+    ]
+    if any([e in request.fspath.dirname for e in exemptions]):
+        _snapshot_session.add_transformer(SNAPSHOT_BASIC_TRANSFORMER, priority=2)
+    else:
+        _snapshot_session.add_transformer(SNAPSHOT_BASIC_TRANSFORMER_NEW, priority=2)
+
+    return _snapshot_session
