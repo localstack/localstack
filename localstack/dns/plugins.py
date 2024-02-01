@@ -26,3 +26,13 @@ def setup_dns_configuration_on_host():
             server.setup_network_configuration()
     except Exception as e:
         LOG.warning("error setting up dns server: %s", e)
+
+
+@hooks.on_infra_shutdown()
+def stop_server():
+    try:
+        from localstack.dns import server
+
+        server.stop_servers()
+    except Exception as e:
+        LOG.warning("Unable to stop DNS servers: %s", e)
