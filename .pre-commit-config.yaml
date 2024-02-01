@@ -20,6 +20,6 @@ repos:
       - id: trailing-whitespace
 
   - repo: git@github.com:localstack/pre-commit-hooks.git
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: upgrade-deps-if-changed

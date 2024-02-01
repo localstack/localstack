@@ -151,7 +151,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
 RUN --mount=type=cache,target=/root/.cache \
     (virtualenv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
 
-# add files necessary to install all dependencies
+# add files necessary to install runtime dependencies
 ADD Makefile setup.py setup.cfg pyproject.toml requirements-runtime.txt ./
 # add the root package init to invalidate docker layers with version bumps
 ADD localstack/__init__.py localstack/
