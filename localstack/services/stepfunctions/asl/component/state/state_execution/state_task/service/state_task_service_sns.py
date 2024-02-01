@@ -87,10 +87,10 @@ class StateTaskServiceSns(StateTaskServiceCallback):
         )
 
         # Optimised integration automatically stringifies
-        if "Message" in normalised_parameters:
-            message = normalised_parameters["Message"]
-            if not isinstance(message, str):
-                normalised_parameters["Message"] = to_json_str(message)
+        if "Message" in normalised_parameters and not isinstance(
+            message := normalised_parameters["Message"], str
+        ):
+            normalised_parameters["Message"] = to_json_str(message)
 
         response = getattr(sns_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
