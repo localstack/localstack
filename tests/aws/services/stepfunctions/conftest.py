@@ -4,7 +4,7 @@ from typing import Final
 
 import pytest
 from jsonpath_ng.ext import parse
-from localstack_snapshot.snapshots import TransformContext
+from localstack_snapshot.snapshots.transformer import TransformContext
 
 from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
