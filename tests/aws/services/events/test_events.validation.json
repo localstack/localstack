@@ -22,5 +22,8 @@
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_test_event_pattern": {
     "last_validated_date": "2023-07-05T17:41:16+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventsInputTransformers::test_put_events_with_input_transformation_to_sqs": {
+    "last_validated_date": "2024-02-01T19:30:48+00:00"
   }
 }

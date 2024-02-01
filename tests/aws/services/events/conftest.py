@@ -124,6 +124,7 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
         pattern: dict,
         entries_asserts: list[Tuple[list[dict], bool]],
         input_path: str = None,
+        input_transformer: dict[dict, str] = None,
     ):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
@@ -158,6 +159,8 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
             EventPattern=json.dumps(pattern),
         )
         kwargs = {"InputPath": input_path} if input_path else {}
+        if input_transformer:
+            kwargs["InputTransformer"] = input_transformer
         rs = events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,

@@ -1963,3 +1963,37 @@ class TestEvents:
 
         message_body = json.loads(messages[0]["Body"])
         assert message_body["time"] == "2022-01-01T00:00:00Z"
+
+
+class TestEventsInputTransformers:
+    @markers.aws.validated
+    def test_put_events_with_input_transformation_to_sqs(
+        self, put_events_with_filter_to_sqs, snapshot
+    ):
+        pattern = {"detail-type": ["customerCreated"]}
+        event_detail = {"command": "display-message", "payload": "baz"}
+        entries = [
+            {
+                "Source": "com.mycompany.myapp",
+                "DetailType": "customerCreated",
+                "Detail": json.dumps(event_detail),
+            }
+        ]
+        entries_asserts = [(entries, True)]
+        input_transformer = {
+            "InputPathsMap": {"detail-type": "$.detail-type"},
+            "InputTemplate": '"This event was of <detail-type> type."',
+        }
+        messages = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer,
+        )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("custom-variable", messages)

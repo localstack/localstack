@@ -344,5 +344,18 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventsInputTransformers::test_put_events_with_input_transformation_to_sqs": {
+    "recorded-date": "01-02-2024, 19:30:48",
+    "recorded-content": {
+      "custom-variable": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"This event was of customerCreated type.\""
+        }
+      ]
+    }
   }
 }
