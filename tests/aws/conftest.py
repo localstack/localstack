@@ -8,12 +8,15 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config as localstack_config
 from localstack import constants
+from localstack.constants import TEST_AWS_REGION_NAME
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER,
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
     TransformerUtility,
 )
+from localstack.utils.bootstrap import is_api_enabled
 from tests.aws.test_terraform import TestTerraform
 
 
@@ -141,3 +144,11 @@ def snapshot(request, _snapshot_session: SnapshotSession, aws_client):
         _snapshot_session.add_transformer(SNAPSHOT_BASIC_TRANSFORMER_NEW, priority=2)
 
     return _snapshot_session
+
+
+@pytest.fixture(name="region", scope="session")
+def fixture_region(aws_client):
+    if is_aws_cloud() or is_api_enabled("sts"):
+        return aws_client.sts.meta.region_name
+    else:
+        return TEST_AWS_REGION_NAME
