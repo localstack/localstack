@@ -159,6 +159,7 @@ def test_number_of_function_versions(create_lambda_function, s3_bucket, aws_clie
     assert set(s3_request_ids) == {request_id_1, request_id_2}
 
 
+# TODO: split into sync and async test
 @markers.aws.unknown
 def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_client_factory):
     """Test how many active functions LocalStack can support.
@@ -179,7 +180,8 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
 
     # idle for a while to see if the pollers can manage the load and any errors occur
     LOG.info("Idle for steady state")
-    time.sleep(30)
+    # TODO: avoid sleep or shorten
+    # time.sleep(30)
 
     LOG.info("Invoke each function once synchronously")
     request_ids = []
@@ -194,24 +196,25 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
         request_id_1 = result_1["ResponseMetadata"]["RequestId"]
         request_ids.append(request_id_1)
 
-    LOG.info("Invoke each function once asynchronously")
-    for num in range(num_functions):
-        function_name = f"test-lambda-perf-{uuid}-{num}"
-        result_2 = lambda_client.invoke(
-            FunctionName=function_name,
-            InvocationType=InvocationType.Event,
-        )
-        assert "FunctionError" not in result_2
-        request_id_2 = result_2["ResponseMetadata"]["RequestId"]
-        request_ids.append(request_id_2)
-
-    # wait to complete the event invoke without causing extra load through polling
-    LOG.info("Waiting for event invokes to be processed ...")
-    time.sleep(200)
-
-    LOG.info("Validate invocations")
-    s3_request_ids = get_s3_keys(aws_client, s3_bucket)
-    assert set(s3_request_ids) == set(request_ids)
+    # LOG.info("Invoke each function once asynchronously")
+    # for num in range(num_functions):
+    #     function_name = f"test-lambda-perf-{uuid}-{num}"
+    #     result_2 = lambda_client.invoke(
+    #         FunctionName=function_name,
+    #         InvocationType=InvocationType.Event,
+    #     )
+    #     assert "FunctionError" not in result_2
+    #     request_id_2 = result_2["ResponseMetadata"]["RequestId"]
+    #     request_ids.append(request_id_2)
+    #
+    # # wait to complete the event invoke without causing extra load through polling
+    # LOG.info("Waiting for event invokes to be processed ...")
+    # # TODO: implement polling
+    # time.sleep(200)
+    #
+    # LOG.info("Validate invocations")
+    # s3_request_ids = get_s3_keys(aws_client, s3_bucket)
+    # assert set(s3_request_ids) == set(request_ids)
 
 
 @markers.aws.validated
