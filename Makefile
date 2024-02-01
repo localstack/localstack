@@ -21,7 +21,7 @@ endif
 VENV_RUN = . $(VENV_ACTIVATE)
 
 usage:                    ## Show this help
-	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-25s %s\n", $$1, $$2 }'
+	@grep -Fh "##" $(MAKEFILE_LIST) | grep -Fv fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-25s %s\n", $$1, $$2 }'
 
 $(VENV_ACTIVATE): setup.py setup.cfg
 	test -d $(VENV_DIR) || $(VENV_BIN) $(VENV_DIR)
@@ -250,9 +250,12 @@ test-docker-mount-code:
 
 lint:              		  ## Run code linter to check code style and check if formatter would make changes
 	($(VENV_RUN); python -m ruff check --show-source . && python -m black --check .)
+	$(VENV_RUN); pre-commit run upgrade-deps-if-changed --files $(git diff master --name-only)
+
 
 lint-modified:     		  ## Run code linter to check code style and check if formatter would make changes on modified files
 	($(VENV_RUN); python -m ruff check --show-source `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` && python -m black --check `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
+	$(VENV_RUN); pre-commit run upgrade-deps-if-changed --files $(git diff master --name-only)
 
 check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibilty markers set
 	($(VENV_RUN); python -m pytest --co tests/aws/)
