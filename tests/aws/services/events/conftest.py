@@ -1,9 +1,11 @@
 import json
+from typing import Tuple
 
 import pytest
 
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 
 
 @pytest.fixture
@@ -114,3 +116,132 @@ def clean_up(aws_client):
             call_safe(_delete_log_group)
 
     yield _clean_up
+
+
+@pytest.fixture
+def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
+    def _put_events_with_filter_to_sqs(
+        pattern: dict,
+        entries_asserts: list[Tuple[list[dict], bool]],
+        input_path: str = None,
+    ):
+        queue_name = f"queue-{short_uid()}"
+        rule_name = f"rule-{short_uid()}"
+        target_id = f"target-{short_uid()}"
+        bus_name = f"bus-{short_uid()}"
+
+        sqs_client = aws_client.sqs
+        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        queue_arn = sqs_get_queue_arn(queue_url)
+        policy = {
+            "Version": "2012-10-17",
+            "Id": f"sqs-eventbridge-{short_uid()}",
+            "Statement": [
+                {
+                    "Sid": f"SendMessage-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sqs:SendMessage",
+                    "Resource": queue_arn,
+                }
+            ],
+        }
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
+        )
+
+        events_client = aws_client.events
+        events_client.create_event_bus(Name=bus_name)
+        events_client.put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps(pattern),
+        )
+        kwargs = {"InputPath": input_path} if input_path else {}
+        rs = events_client.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
+        )
+
+        assert rs["FailedEntryCount"] == 0
+        assert rs["FailedEntries"] == []
+
+        try:
+            messages = []
+            for entry_asserts in entries_asserts:
+                entries = entry_asserts[0]
+                for entry in entries:
+                    entry["EventBusName"] = bus_name
+                message = _put_entries_assert_results_sqs(
+                    events_client,
+                    sqs_client,
+                    queue_url,
+                    entries=entries,
+                    should_match=entry_asserts[1],
+                )
+                if message is not None:
+                    messages.extend(message)
+        finally:
+            clean_up(
+                bus_name=bus_name,
+                rule_name=rule_name,
+                target_ids=target_id,
+                queue_url=queue_url,
+            )
+
+        return messages
+
+    yield _put_events_with_filter_to_sqs
+
+
+def _put_entries_assert_results_sqs(
+    events_client, sqs_client, queue_url: str, entries: list[dict], should_match: bool
+):
+    response = events_client.put_events(Entries=entries)
+    assert not response.get("FailedEntryCount")
+
+    def get_message(queue_url):
+        resp = sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=5, MaxNumberOfMessages=1
+        )
+        messages = resp.get("Messages")
+        if messages:
+            for message in messages:
+                receipt_handle = message["ReceiptHandle"]
+                sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+        if should_match:
+            assert len(messages) == 1
+        return messages
+
+    messages = retry(get_message, retries=5, queue_url=queue_url)
+
+    if should_match:
+        actual_event = json.loads(messages[0]["Body"])
+        if "detail" in actual_event:
+            _assert_valid_event(actual_event)
+        return messages
+    else:
+        assert not messages
+        return None
+
+
+def _assert_valid_event(event):
+    expected_fields = (
+        "version",
+        "id",
+        "detail-type",
+        "source",
+        "account",
+        "time",
+        "region",
+        "resources",
+        "detail",
+    )
+    for field in expected_fields:
+        assert field in event
+
+
+@pytest.fixture
+def assert_valid_event():
+    yield _assert_valid_event
