@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from localstack_snapshot.snapshots import RegexTransformer
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid

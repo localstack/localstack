@@ -12,7 +12,7 @@ import time
 import zipfile
 
 import pytest
-from localstack_snapshot.snapshots import KeyValueBasedTransformer
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.lambda_.runtimes import TESTED_RUNTIMES

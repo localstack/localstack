@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Dict
 import pytest
 import requests
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots import GenericTransformer
+from localstack_snapshot.snapshots.transformer import GenericTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime

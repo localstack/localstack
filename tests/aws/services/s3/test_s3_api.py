@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 
 import pytest
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots import SortingTransformer
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.testing.aws.util import is_aws_cloud

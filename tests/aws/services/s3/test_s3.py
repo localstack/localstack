@@ -25,7 +25,7 @@ from botocore import UNSIGNED
 from botocore.auth import SigV4Auth
 from botocore.client import Config
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots import RegexTransformer
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 from zoneinfo import ZoneInfo
 
 import localstack.config

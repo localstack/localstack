@@ -1,6 +1,6 @@
 import json
 
-from localstack_snapshot.snapshots import RegexTransformer
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.aws.api.sqs import MessageSystemAttributeNameForSends
 from localstack.testing.pytest import markers

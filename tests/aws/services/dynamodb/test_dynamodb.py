@@ -10,7 +10,7 @@ import pytest
 import requests
 from boto3.dynamodb.types import STRING
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots import SortingTransformer
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification

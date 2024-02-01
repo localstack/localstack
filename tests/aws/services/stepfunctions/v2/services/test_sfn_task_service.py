@@ -1,6 +1,6 @@
 import json
 
-from localstack_snapshot.snapshots import JsonpathTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
 from localstack.testing.pytest import markers
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT

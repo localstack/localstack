@@ -1,12 +1,8 @@
 import os
-from typing import TYPE_CHECKING
 
 import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
-
-if TYPE_CHECKING:
-    pass
 
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 

@@ -9,7 +9,7 @@ from typing import Optional
 import pytest
 import requests
 from botocore.auth import SigV4Auth
-from localstack_snapshot.snapshots import SortingTransformer
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (

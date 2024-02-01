@@ -3,7 +3,7 @@ import os
 
 import pytest
 import requests
-from localstack_snapshot.snapshots import SortingTransformer
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME

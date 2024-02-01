@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from localstack_snapshot.snapshots import RegexTransformer
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.aws.api.stepfunctions import Tag
 from localstack.testing.pytest import markers

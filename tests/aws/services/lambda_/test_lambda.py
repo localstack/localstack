@@ -17,7 +17,7 @@ import pytest
 import requests
 from botocore.config import Config
 from botocore.response import StreamingBody
-from localstack_snapshot.snapshots import KeyValueBasedTransformer
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime

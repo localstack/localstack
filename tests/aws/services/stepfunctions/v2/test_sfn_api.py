@@ -2,7 +2,7 @@ import json
 
 import pytest
 import yaml
-from localstack_snapshot.snapshots import RegexTransformer
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers

@@ -2,7 +2,7 @@ import json
 from collections import OrderedDict
 
 import pytest
-from localstack_snapshot.snapshots import JsonpathTransformer, RegexTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.pytest import markers

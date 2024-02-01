@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from localstack_snapshot.snapshots import JsonpathTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime

@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from localstack_snapshot.snapshots import JsonpathTransformer, RegexTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.aws.api.lambda_ import LogType
 from localstack.testing.aws.util import is_aws_cloud

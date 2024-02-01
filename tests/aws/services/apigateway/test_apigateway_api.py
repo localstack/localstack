@@ -7,7 +7,7 @@ from operator import itemgetter
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots import KeyValueBasedTransformer, SortingTransformer
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.apigateway import PutMode
 from localstack.services.apigateway.helpers import TAG_KEY_CUSTOM_ID

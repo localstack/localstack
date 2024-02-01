@@ -7,7 +7,7 @@ from operator import itemgetter
 import pytest
 import requests
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots import SortingTransformer
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.apigateway import Resources

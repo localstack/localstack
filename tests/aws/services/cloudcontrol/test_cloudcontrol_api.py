@@ -5,7 +5,7 @@ from typing import Callable, ParamSpec, TypeVar
 import jsonpatch
 import pytest
 from botocore.exceptions import WaiterError
-from localstack_snapshot.snapshots import SortingTransformer
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.cloudcontrol import Operation, OperationStatus
 from localstack.testing.pytest import markers

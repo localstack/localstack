@@ -4,7 +4,7 @@ import os
 from io import BytesIO
 
 import pytest
-from localstack_snapshot.snapshots import SortingTransformer
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.lambda_ import InvocationType, Runtime, State
 from localstack.testing.pytest import markers

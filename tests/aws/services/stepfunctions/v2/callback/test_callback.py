@@ -1,7 +1,7 @@
 import json
 import threading
 
-from localstack_snapshot.snapshots import JsonpathTransformer, RegexTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
