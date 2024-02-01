@@ -241,8 +241,11 @@ format:            		  ## Run ruff and black to format the whole codebase
 format-modified:          ## Run ruff and black to format only modified code
 	($(VENV_RUN); python -m ruff check --show-source --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
 
-init-precommit:    		  ## install te pre-commit hook into your local git repository
+init-precommit:    		  ## install the pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
+
+init-githooks:    		  ## install all githooks into your local git repository
+	($(VENV_RUN); pre-commit install -t pre-commit -t post-checkout -t post-merge)
 
 clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf .filesystem
