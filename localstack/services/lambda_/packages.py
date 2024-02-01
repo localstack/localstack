@@ -10,7 +10,7 @@ from localstack.utils.platform import get_arch
 """Customized LocalStack version of the AWS Lambda Runtime Interface Emulator (RIE).
 https://github.com/localstack/lambda-runtime-init/blob/localstack/README-LOCALSTACK.md
 """
-LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.24-pre"
+LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.25-pre"
 LAMBDA_RUNTIME_VERSION = config.LAMBDA_INIT_RELEASE_VERSION or LAMBDA_RUNTIME_DEFAULT_VERSION
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
 
