@@ -161,14 +161,14 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
         kwargs = {"InputPath": input_path} if input_path else {}
         if input_transformer:
             kwargs["InputTransformer"] = input_transformer
-        rs = events_client.put_targets(
+        response = events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
             Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
         )
 
-        assert rs["FailedEntryCount"] == 0
-        assert rs["FailedEntries"] == []
+        assert response["FailedEntryCount"] == 0
+        assert response["FailedEntries"] == []
 
         try:
             messages = []
