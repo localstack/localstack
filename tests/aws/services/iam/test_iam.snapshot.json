@@ -44,7 +44,7 @@
     "recorded-content": {
       "invalid-json": {
         "Error": {
-          "Code": "MalformedPolicyDocuments",
+          "Code": "MalformedPolicyDocument",
           "Message": "This policy contains invalid Json",
           "Type": "Sender"
         },
