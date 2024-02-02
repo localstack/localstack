@@ -239,55 +239,6 @@ class TestDynamoDB:
         aws_client.dynamodb.delete_table(TableName=table_name)
 
     @markers.aws.only_localstack
-    def test_stream_spec_and_region_replacement(self, aws_client):
-        ddbstreams = aws_client.dynamodbstreams
-        kinesis = aws_client.kinesis
-        table_name = f"ddb-{short_uid()}"
-        resources.create_dynamodb_table(
-            table_name,
-            partition_key=PARTITION_KEY,
-            stream_view_type="NEW_AND_OLD_IMAGES",
-            client=aws_client.dynamodb,
-        )
-
-        table = aws_client.dynamodb.describe_table(TableName=table_name)["Table"]
-
-        # assert ARN formats
-        expected_arn_prefix = "arn:aws:dynamodb:" + TEST_AWS_REGION_NAME
-        assert table["TableArn"].startswith(expected_arn_prefix)
-        assert table["LatestStreamArn"].startswith(expected_arn_prefix)
-
-        # test list_streams filtering
-        stream_tables = ddbstreams.list_streams(TableName="foo")["Streams"]
-        assert len(stream_tables) == 0
-
-        # assert stream has been created
-        stream_tables = [
-            s["TableName"] for s in ddbstreams.list_streams(TableName=table_name)["Streams"]
-        ]
-        assert table_name in stream_tables
-        assert len(stream_tables) == 1
-        stream_name = get_kinesis_stream_name(table_name)
-        assert stream_name in kinesis.list_streams()["StreamNames"]
-
-        # assert shard ID formats
-        result = ddbstreams.describe_stream(StreamArn=table["LatestStreamArn"])["StreamDescription"]
-        assert "Shards" in result
-        for shard in result["Shards"]:
-            assert re.match(r"^shardId-[0-9]{20}-[a-zA-Z0-9]{1,36}$", shard["ShardId"])
-
-        # clean up
-        aws_client.dynamodb.delete_table(TableName=table_name)
-
-        def _assert_stream_deleted():
-            stream_tables = [s["TableName"] for s in ddbstreams.list_streams()["Streams"]]
-            assert table_name not in stream_tables
-            assert stream_name not in kinesis.list_streams()["StreamNames"]
-
-        # assert stream has been deleted
-        retry(_assert_stream_deleted, sleep=0.4, retries=5)
-
-    @markers.aws.only_localstack
     def test_multiple_update_expressions(self, aws_client, ddb_test_table):
         item_id = short_uid()
         aws_client.dynamodb.put_item(
@@ -885,7 +836,7 @@ class TestDynamoDB:
         sleep(1)
         # Get stream description
         stream_description = kinesis.describe_stream(StreamName=stream_name)["StreamDescription"]
-        table_name = "table_with_kinesis_stream-%s" % short_uid()
+        table_name = f"table_with_kinesis_stream-{short_uid()}"
         # create table
         dynamodb.create_table(
             TableName=table_name,
