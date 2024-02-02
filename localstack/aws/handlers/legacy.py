@@ -38,7 +38,7 @@ def set_close_connection_header(_chain: HandlerChain, context: RequestContext, r
 
 
 class EdgeRouterHandler(RouterHandler):
-    def __init__(self, respond_not_found=False) -> None:
+    def __init__(self, respond_not_found=True) -> None:
         from localstack.services.edge import ROUTER
 
         super().__init__(ROUTER, respond_not_found)
