@@ -7,7 +7,9 @@ from localstack.services.stepfunctions.asl.component.common.path.input_path impo
 from localstack.services.stepfunctions.asl.component.common.path.result_path import ResultPath
 from localstack.services.stepfunctions.asl.component.common.result_selector import ResultSelector
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
-from localstack.services.stepfunctions.asl.component.state.state_choice.state_choice import StateChoice
+from localstack.services.stepfunctions.asl.component.state.state_choice.state_choice import (
+    StateChoice,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.execute_state import (
     ExecutionState,
 )
@@ -37,10 +39,8 @@ class InspectionDataKey(enum.Enum):
 def _decorated_updated_choice_inspection_data(method):
     def wrapper(env: TestStateEnvironment, *args, **kwargs):
         method(env, *args, **kwargs)
-        result = to_json_str(env.stack[-1])
-        # env.inspection_data[inspection_data_key.value] = result  # noqa
-        # env.inspection_data["next"]  env.next_state_name
-        return result
+        env.set_choice_selected(env.next_state_name)
+
     return wrapper
 
 
@@ -49,7 +49,7 @@ def _decorated_updates_inspection_data(method, inspection_data_key: InspectionDa
         method(env, *args, **kwargs)
         result = to_json_str(env.stack[-1])
         env.inspection_data[inspection_data_key.value] = result  # noqa
-        return result
+
     return wrapper
 
 
@@ -60,7 +60,7 @@ def _decorate_state_field(state_field: CommonStateField) -> None:
         )
     elif isinstance(state_field, StateChoice):
         state_field._eval_body = _decorated_updated_choice_inspection_data(
-            method=state_field._eval_body
+            method=state_field._eval_body  # noqa
         )
 
 

@@ -6,6 +6,7 @@ from typing import Optional
 
 from localstack.aws.api.stepfunctions import (
     Arn,
+    ExecutionStatus,
     InspectionLevel,
     TestExecutionStatus,
     TestStateOutput,
@@ -16,6 +17,9 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramError,
     ProgramState,
 )
+from localstack.services.stepfunctions.asl.eval.test_state.program_state import (
+    ProgramChoiceSelected,
+)
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.execution import BaseExecutionWorkerComm, Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachineInstance
@@ -25,14 +29,22 @@ from localstack.services.stepfunctions.backend.test_state.execution_worker impor
 
 LOG = logging.getLogger(__name__)
 
+
 class TestStateExecution(Execution):
     exec_worker: Optional[TestStateExecutionWorker]
+    next_state: Optional[str]
 
     class TestCaseExecutionWorkerComm(BaseExecutionWorkerComm):
         _execution: TestStateExecution
 
         def terminated(self) -> None:
-            self._reflect_execution_status()
+            exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
+            if isinstance(exit_program_state, ProgramChoiceSelected):
+                self.execution.exec_status = ExecutionStatus.SUCCEEDED
+                self.execution.output = self.execution.exec_worker.env.inp
+                self.execution.next_state = exit_program_state.next_state_name
+            else:
+                self._reflect_execution_status()
 
     def __init__(
         self,
@@ -57,6 +69,7 @@ class TestStateExecution(Execution):
             None,
         )
         self._execution_terminated_event = threading.Event()
+        self.next_state = None
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerComm:
         return self.TestCaseExecutionWorkerComm(self)
@@ -78,14 +91,29 @@ class TestStateExecution(Execution):
         exit_program_state: ProgramState = self.exec_worker.env.program_state()
         if isinstance(exit_program_state, ProgramEnded):
             output_str = to_json_str(self.output)
-            test_state_output = TestStateOutput(status=TestExecutionStatus.SUCCEEDED, output=output_str)
+            test_state_output = TestStateOutput(
+                status=TestExecutionStatus.SUCCEEDED, output=output_str
+            )
         elif isinstance(exit_program_state, ProgramError):
-            test_state_output = TestStateOutput(status=TestExecutionStatus.FAILED, error=exit_program_state.error["error"], cause=exit_program_state.error["cause"])
+            test_state_output = TestStateOutput(
+                status=TestExecutionStatus.FAILED,
+                error=exit_program_state.error["error"],
+                cause=exit_program_state.error["cause"],
+            )
+        elif isinstance(exit_program_state, ProgramChoiceSelected):
+            output_str = to_json_str(self.output)
+            test_state_output = TestStateOutput(
+                status=TestExecutionStatus.SUCCEEDED, nextState=self.next_state, output=output_str
+            )
         else:
             # TODO: handle other statuses
-            LOG.warning(f"Unsupported StateMachine exit type for TestState '{type(exit_program_state)}'")
+            LOG.warning(
+                f"Unsupported StateMachine exit type for TestState '{type(exit_program_state)}'"
+            )
             output_str = to_json_str(self.output)
-            test_state_output = TestStateOutput(status=TestExecutionStatus.FAILED, output=output_str)
+            test_state_output = TestStateOutput(
+                status=TestExecutionStatus.FAILED, output=output_str
+            )
 
         match inspection_level:
             case InspectionLevel.TRACE:

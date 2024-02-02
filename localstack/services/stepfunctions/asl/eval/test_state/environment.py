@@ -9,6 +9,10 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistoryContext
+from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunning
+from localstack.services.stepfunctions.asl.eval.test_state.program_state import (
+    ProgramChoiceSelected,
+)
 
 
 class TestStateEnvironment(Environment):
@@ -34,3 +38,12 @@ class TestStateEnvironment(Environment):
         frame = super().as_frame_of(env=env, event_history_frame_cache=event_history_frame_cache)
         frame.inspection_data = env.inspection_data
         return frame
+
+    def set_choice_selected(self, next_state_name: str) -> None:
+        with self._state_mutex:
+            if isinstance(self._program_state, ProgramRunning):
+                self._program_state = ProgramChoiceSelected(next_state_name=next_state_name)
+                self.program_state_event.set()
+                self.program_state_event.clear()
+            else:
+                raise RuntimeError("Cannot set choice selected for non running ProgramState.")
