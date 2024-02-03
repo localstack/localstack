@@ -123,13 +123,16 @@ class BackendIntegration(ABC):
     def render_template_selection_expression(cls, invocation_context: ApiInvocationContext):
         integration = invocation_context.integration
         template_selection_expression = integration.get("templateSelectionExpression")
+
         if not template_selection_expression:
             return "$default"
+
+        data = try_json(invocation_context.data)
         variables = {
             "request": {
                 "header": invocation_context.headers,
                 "querystring": invocation_context.query_params(),
-                "body": invocation_context.data_as_string(),
+                "body": data,
                 "context": invocation_context.context or {},
                 "stage_variables": invocation_context.stage_variables or {},
             }
@@ -416,12 +419,20 @@ class LambdaIntegration(BackendIntegration):
             invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         func_arn = self._lambda_integration_uri(invocation_context)
-        event = self.request_templates.render(invocation_context) or b""
+        # integration type "AWS" is only supported for WebSocket APIs and REST
+        # API (v1), but the template selection expression is only supported for
+        # Websockets
+        if invocation_context.is_websocket_request():
+            template_key = self.render_template_selection_expression(invocation_context)
+            payload = self.request_templates.render(invocation_context, template_key)
+        else:
+            payload = self.request_templates.render(invocation_context)
+
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
         try:
             result = call_lambda(
                 function_arn=func_arn,
-                event=to_bytes(event),
+                event=to_bytes(payload),
                 asynchronous=asynchronous,
                 invocation_context=invocation_context,
             )
