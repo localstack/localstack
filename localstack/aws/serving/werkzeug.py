@@ -1,10 +1,20 @@
+from typing import Any, Optional, Tuple
+
+from rolo.gateway import Gateway
+from rolo.gateway.wsgi import WsgiGateway
 from werkzeug import run_simple
 
-from ..gateway import Gateway
-from .wsgi import WsgiGateway
+from localstack import constants
 
 
-def serve(gateway: Gateway, host="localhost", port=4566, use_reloader=True, **kwargs) -> None:
+def serve(
+    gateway: Gateway,
+    host: str = "localhost",
+    port: int = constants.DEFAULT_PORT_EDGE,
+    use_reloader: bool = True,
+    ssl_creds: Optional[Tuple[Any, Any]] = None,
+    **kwargs,
+) -> None:
     """
     Serve a Gateway as a WSGI application through werkzeug. This is mostly for development purposes.
 
@@ -15,4 +25,5 @@ def serve(gateway: Gateway, host="localhost", port=4566, use_reloader=True, **kw
     :param kwargs: any other arguments that can be passed to `werkzeug.run_simple`
     """
     kwargs["threaded"] = kwargs.get("threaded", True)  # make sure requests don't block
+    kwargs["ssl_context"] = ssl_creds
     run_simple(host, port, WsgiGateway(gateway), use_reloader=use_reloader, **kwargs)
