@@ -39,8 +39,11 @@ def _serve_werkzeug(
 ):
     from werkzeug.serving import ThreadedWSGIServer
 
+    from .werkzeug import CustomWSGIRequestHandler
+
     params = {
         "app": WsgiGateway(gateway),
+        "handler": CustomWSGIRequestHandler,
     }
 
     if use_ssl:

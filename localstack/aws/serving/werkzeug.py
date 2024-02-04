@@ -1,8 +1,12 @@
-from typing import Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 from rolo.gateway import Gateway
 from rolo.gateway.wsgi import WsgiGateway
 from werkzeug import run_simple
+from werkzeug.serving import WSGIRequestHandler
+
+if TYPE_CHECKING:
+    from _typeshed.wsgi import WSGIEnvironment
 
 from localstack import constants
 
@@ -27,3 +31,15 @@ def serve(
     kwargs["threaded"] = kwargs.get("threaded", True)  # make sure requests don't block
     kwargs["ssl_context"] = ssl_creds
     run_simple(host, port, WsgiGateway(gateway), use_reloader=use_reloader, **kwargs)
+
+
+class CustomWSGIRequestHandler(WSGIRequestHandler):
+    def make_environ(self) -> "WSGIEnvironment":
+        environ = super().make_environ()
+
+        # add
+        environ["asgi.headers"] = [
+            (k.encode("latin-1"), v.encode("latin-1")) for k, v in self.headers.raw_items()
+        ]
+
+        return environ
