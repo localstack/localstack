@@ -432,7 +432,7 @@ class LambdaIntegration(BackendIntegration):
         try:
             result = call_lambda(
                 function_arn=func_arn,
-                event=to_bytes(payload),
+                event=to_bytes(payload or ""),
                 asynchronous=asynchronous,
                 invocation_context=invocation_context,
             )
