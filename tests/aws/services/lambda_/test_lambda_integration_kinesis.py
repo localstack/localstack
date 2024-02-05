@@ -130,7 +130,7 @@ class TestKinesisSource:
         kinesis_create_stream,
         lambda_su_role,
         wait_for_stream_ready,
-        cleanups,
+        create_event_source_mapping,
         snapshot,
         aws_client,
     ):
@@ -155,7 +155,7 @@ class TestKinesisSource:
                 runtime=Runtime.python3_9,
                 role=lambda_su_role,
             )
-            create_event_source_mapping_response = aws_client.lambda_.create_event_source_mapping(
+            create_event_source_mapping_response = create_event_source_mapping(
                 EventSourceArn=stream_arn,
                 FunctionName=function_name,
                 StartingPosition="TRIM_HORIZON",  # TODO: test with different starting positions
@@ -164,9 +164,6 @@ class TestKinesisSource:
                 f"create_event_source_mapping_response-{function_id}",
                 create_event_source_mapping_response,
             )
-            uuid = create_event_source_mapping_response["UUID"]
-            cleanups.append(lambda: aws_client.lambda_.delete_event_source_mapping(UUID=uuid))
-            _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
 
         # send messages to kinesis
         record_data = "hello"
