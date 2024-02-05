@@ -49,7 +49,8 @@ from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.json import try_json
-from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
+from localstack.utils.numbers import is_number
+from localstack.utils.strings import canonicalize_bool_to_str, long_uid, short_uid, to_bytes, to_str
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -438,7 +439,6 @@ class RequestParametersResolver:
         """
         params: Dict[str, str] = {}
 
-        # TODO: add support for context variables - include in apiinvocationcontext
         # TODO: add support for multi-values headers and multi-values querystring
 
         for k, v in context.query_params().items():
@@ -452,6 +452,30 @@ class RequestParametersResolver:
 
         for k, v in context.stage_variables.items():
             params[f"stagevariables.{k}"] = v
+
+        # TODO: add support for missing context variables
+        #  see https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference
+        #  - all `context.identity` fields
+        #  - protocol
+        #  - requestId, extendedRequestId
+        #  - all requestOverride, responseOverride
+        #  - requestTime, requestTimeEpoch
+        #  - resourcePath
+        #  - wafResponseCode, webaclArn
+        params["context.accountId"] = context.account_id
+        params["context.apiId"] = context.api_id
+        params["context.domainName"] = context.domain_name
+        params["context.httpMethod"] = context.method
+        params["context.path"] = context.path
+        params["context.resourceId"] = context.resource_id
+        params["context.stage"] = context.stage
+
+        auth_context_authorizer = context.auth_context.get("authorizer") or {}
+        for k, v in auth_context_authorizer.items():
+            if isinstance(v, bool):
+                params[f"context.authorizer.{k}"] = canonicalize_bool_to_str(v)
+            elif is_number(v):
+                params[f"context.authorizer.{k}"] = str(v)
 
         if context.data:
             params["method.request.body"] = context.data
