@@ -477,8 +477,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def on_before_stop(self):
         self._expired_items_worker.stop()
-        for rule in self._router_rules:
-            ROUTER.remove_rule(rule)
+        ROUTER.remove(self._router_rules)
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(dynamodb_stores)
