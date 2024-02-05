@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_kinesis_firehose_kinesis_as_source_resharding_merge": {
+    "last_validated_date": "2024-02-05T17:55:35+00:00"
+  },
   "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_kinesis_firehose_kinesis_as_source_resharding_split": {
     "last_validated_date": "2024-02-05T17:40:37+00:00"
   },

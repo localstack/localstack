@@ -30,5 +30,24 @@
         }
       ]
     }
+  },
+  "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_kinesis_firehose_kinesis_as_source_resharding_merge": {
+    "recorded-date": "05-02-2024, 17:55:35",
+    "recorded-content": {
+      "kinesis-event-stream-merge-shards": [
+        {
+          "message-0": "Test-message-2948294kdlsie"
+        },
+        {
+          "message-2": "Test-message-2948294kdlsie"
+        },
+        {
+          "message-3": "Test-message-2948294kdlsie"
+        },
+        {
+          "message-1": "Test-message-2948294kdlsie"
+        }
+      ]
+    }
   }
 }

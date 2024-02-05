@@ -651,3 +651,146 @@ class TestFirehoseIntegration:
         )
 
         snapshot.match("kinesis-event-stream-split-shards", messages)
+
+    @markers.aws.validated
+    def test_kinesis_firehose_kinesis_as_source_resharding_merge(
+        self,
+        s3_create_bucket,
+        kinesis_create_stream,
+        get_firehose_iam_documents,
+        create_iam_role_with_policy,
+        firehose_create_delivery_stream,
+        wait_for_stream_ready,
+        get_shards_starting_hash_keys,
+        get_all_messages_from_s3,
+        snapshot,
+        aws_client,
+    ):
+        # create s3 bucket
+        bucket_name = f"test-bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name)
+        bucket_arn = arns.s3_bucket_arn(bucket_name)
+
+        # create kinesis stream
+        stream_name = f"test-stream-{short_uid()}"
+        kinesis_create_stream(
+            StreamName=stream_name,
+            ShardCount=2,
+            StreamModeDetails={"StreamMode": "PROVISIONED"},
+        )
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        # create IAM role and policy
+        role_document, policy_document = get_firehose_iam_documents(bucket_arn, stream_arn)
+        role_arn = create_iam_role_with_policy(
+            RoleDefinition=role_document, PolicyDefinition=policy_document
+        )
+        # required for role propagation delay on aws
+        if is_aws_cloud():
+            time.sleep(10)
+
+        # create log groupe for firehose delivery stream error logging
+        log_group_name = f"group-{short_uid()}"
+        aws_client.logs.create_log_group(
+            logGroupName=log_group_name,
+        )
+
+        # create firehose streams & subscribe to kinesis
+        delivery_stream_name = f"test-delivery-stream-{short_uid()}"
+        extended_s3_destination_configuration = {
+            "RoleARN": role_arn,
+            "BucketARN": bucket_arn,
+            "Prefix": "firehoseTest",
+            "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
+            "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 1},
+            "CompressionFormat": "UNCOMPRESSED",
+            "EncryptionConfiguration": {"NoEncryptionConfig": "NoEncryption"},
+            "CloudWatchLoggingOptions": {
+                "Enabled": True,
+                "LogGroupName": log_group_name,
+                "LogStreamName": f"stream-{short_uid()}",
+            },
+        }
+        firehose_create_delivery_stream(
+            DeliveryStreamName=delivery_stream_name,
+            DeliveryStreamType="KinesisStreamAsSource",
+            KinesisStreamSourceConfiguration={
+                "KinesisStreamARN": stream_arn,
+                "RoleARN": role_arn,
+            },
+            ExtendedS3DestinationConfiguration=extended_s3_destination_configuration,
+        )
+
+        # get shard starting hash keys
+        def _get_shards_starting_hash_keys():
+            shards_starting_hash_keys = get_shards_starting_hash_keys(stream_name)
+            if len(shards_starting_hash_keys) != 2:
+                raise Exception("Failed to get all shard iterators")
+            else:
+                return shards_starting_hash_keys
+
+        shards_starting_hash_keys = retry(
+            _get_shards_starting_hash_keys, retries=3, sleep=5
+        )  # required wait for shards to be ready, wait for status ACTIVE not enough
+
+        # put message to kinesis event stream
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=json.dumps({"message-0": TEST_MESSAGE}),
+            PartitionKey="0",
+        )
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=json.dumps({"message-1": TEST_MESSAGE}),
+            ExplicitHashKey=shards_starting_hash_keys["00"],
+            PartitionKey="0",
+        )
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=json.dumps({"message-2": TEST_MESSAGE}),
+            ExplicitHashKey=shards_starting_hash_keys["01"],
+            PartitionKey="1",
+        )
+
+        # add new shard to kinesis stream
+        target_shard_count = 1  # Set to your desired number of shards
+        scaling_type = "UNIFORM_SCALING"
+        # requires kinesis stream to be of type StreamModeDetails={"StreamMode": "PROVISIONED"},
+        response = aws_client.kinesis.update_shard_count(
+            StreamName=stream_name, TargetShardCount=target_shard_count, ScalingType=scaling_type
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        wait_for_stream_ready(stream_name)
+
+        # get new shard starting hash keys
+        def _get_shards_starting_hash_keys():
+            shards_starting_hash_keys = get_shards_starting_hash_keys(stream_name)
+            if len(shards_starting_hash_keys) != 2:
+                raise Exception("Failed to get all shard iterators")
+            else:
+                return shards_starting_hash_keys
+
+        shards_starting_hash_keys = retry(
+            _get_shards_starting_hash_keys, retries=3, sleep=5
+        )  # required wait for shards to be ready, wait for status ACTIVE not enough
+
+        # put message to specific shard
+        if is_aws_cloud():
+            time.sleep(
+                10
+            )  # required wait for shards to be ready, wait for status ACTIVE not enough
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=json.dumps({"message-3": TEST_MESSAGE}),
+            ExplicitHashKey=shards_starting_hash_keys["01"],
+            PartitionKey="0",
+        )
+
+        # poll file from s3 buckets
+        messages = get_all_messages_from_s3(
+            bucket_name, timeout=300, sleep=5, retries=3, assert_message_count=4
+        )
+
+        snapshot.match("kinesis-event-stream-merge-shards", messages)
