@@ -12,9 +12,9 @@ blinker==1.7.0
     # via
     #   flask
     #   quart
-boto3==1.34.33
+boto3==1.34.34
     # via localstack-core (pyproject.toml)
-botocore==1.34.33
+botocore==1.34.34
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -46,7 +46,7 @@ dnspython==2.5.0
     # via localstack-core (pyproject.toml)
 docker==6.1.3
     # via localstack-core (pyproject.toml)
-flask==3.0.1
+flask==3.0.2
     # via
     #   localstack-core (pyproject.toml)
     #   quart
@@ -84,7 +84,7 @@ jsonpointer==2.4
     # via jsonpatch
 markdown-it-py==3.0.0
     # via rich
-markupsafe==2.1.4
+markupsafe==2.1.5
     # via
     #   jinja2
     #   quart
