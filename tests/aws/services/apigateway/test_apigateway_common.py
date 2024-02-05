@@ -294,6 +294,71 @@ class TestApiGatewayCommon:
         response_get = requests.get(url)
         assert response_get.ok
 
+    @markers.aws.validated
+    def test_integration_request_parameters_mapping(
+        self, create_rest_apigw, aws_client, echo_http_server_post
+    ):
+        api_id, _, root = create_rest_apigw(
+            name=f"test-api-{short_uid()}",
+            description="this is my api",
+        )
+
+        create_rest_resource_method(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            authorizationType="none",
+            requestParameters={
+                "method.request.header.customHeader": False,
+            },
+        )
+
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id, resourceId=root, httpMethod="GET", statusCode="200"
+        )
+
+        create_rest_api_integration(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            integrationHttpMethod="POST",
+            type="HTTP",
+            uri=echo_http_server_post,
+            requestParameters={
+                "integration.request.header.testHeader": "method.request.header.customHeader",
+                "integration.request.header.contextHeader": "context.resourceId",
+            },
+        )
+
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            statusCode="200",
+            selectionPattern="2\\d{2}",
+            responseTemplates={},
+        )
+
+        deployment_id, _ = create_rest_api_deployment(aws_client.apigateway, restApiId=api_id)
+        create_rest_api_stage(
+            aws_client.apigateway, restApiId=api_id, stageName="dev", deploymentId=deployment_id
+        )
+
+        invocation_url = api_invoke_url(api_id=api_id, stage="dev", path="/")
+
+        def invoke_api(url):
+            _response = requests.get(url, verify=False, headers={"customHeader": "test"})
+            assert _response.ok
+            content = _response.json()
+            return content
+
+        response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+        lower_case_headers = {k.lower(): v for k, v in response_data["headers"].items()}
+        assert lower_case_headers["contextheader"] == root
+        assert lower_case_headers["testheader"] == "test"
+
 
 class TestUsagePlans:
     @markers.aws.validated

@@ -453,7 +453,7 @@ class RequestParametersResolver:
         for k, v in context.stage_variables.items():
             params[f"stagevariables.{k}"] = v
 
-        # TODO: add support for missing context variables
+        # TODO: add support for missing context variables, use `context.context` which contains most of the variables
         #  see https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference
         #  - all `context.identity` fields
         #  - protocol
@@ -473,9 +473,11 @@ class RequestParametersResolver:
         auth_context_authorizer = context.auth_context.get("authorizer") or {}
         for k, v in auth_context_authorizer.items():
             if isinstance(v, bool):
-                params[f"context.authorizer.{k}"] = canonicalize_bool_to_str(v)
+                v = canonicalize_bool_to_str(v)
             elif is_number(v):
-                params[f"context.authorizer.{k}"] = str(v)
+                v = str(v)
+
+            params[f"context.authorizer.{k.lower()}"] = v
 
         if context.data:
             params["method.request.body"] = context.data

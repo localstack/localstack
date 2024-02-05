@@ -1044,7 +1044,7 @@
           "statusCode": 200
         },
         "statusCode": 202
-      },
+      },x
       "response-template-400": {
         "body": {
           "body": "customerror",
