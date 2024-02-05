@@ -79,7 +79,7 @@ jobs:
           replace: ${{ steps.check-for-changes.outputs.changed-services }}
 
       - name: Create PR
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         with:
           title: "Update ASF APIs"
