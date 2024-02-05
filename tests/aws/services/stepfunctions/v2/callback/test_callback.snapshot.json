@@ -1323,5 +1323,185 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sns_publish_wait_for_task_token": {
+    "recorded-date": "01-02-2024, 20:51:35",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "body": {
+                  "arg1": "Hello",
+                  "arg2": "World"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:2>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+                "body": {
+                  "arg1": "Hello",
+                  "arg2": "World"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Publish"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Message": {
+                  "arg2": "World",
+                  "arg1": "Hello",
+                  "TaskToken": "<task_token:1>"
+                },
+                "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+              },
+              "region": "<region>",
+              "resource": "publish.waitForTaskToken",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "publish.waitForTaskToken",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "294"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "text/xml"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "294",
+                    "Content-Type": "text/xml",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish.waitForTaskToken",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "publish.waitForTaskToken",
+              "resourceType": "sns"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "Publish",
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {},
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": [
+        {
+          "Type": "Notification",
+          "MessageId": "<uuid:1>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "Message": {
+            "arg2": "World",
+            "arg1": "Hello",
+            "TaskToken": "<task_token:1>"
+          },
+          "Timestamp": "date",
+          "SignatureVersion": "1",
+          "Signature": "<signature>",
+          "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+        }
+      ]
+    }
   }
 }
