@@ -6070,6 +6070,7 @@ class InstanceRequirements(TypedDict, total=False):
     AcceleratorTotalMemoryMiB: Optional[AcceleratorTotalMemoryMiB]
     NetworkBandwidthGbps: Optional[NetworkBandwidthGbps]
     AllowedInstanceTypes: Optional[AllowedInstanceTypeSet]
+    MaxSpotPriceAsPercentageOfOptimalOnDemandPrice: Optional[Integer]
 
 
 class PlacementResponse(TypedDict, total=False):
@@ -6183,6 +6184,7 @@ class InstanceRequirementsRequest(TypedDict, total=False):
     AcceleratorTotalMemoryMiB: Optional[AcceleratorTotalMemoryMiBRequest]
     NetworkBandwidthGbps: Optional[NetworkBandwidthGbpsRequest]
     AllowedInstanceTypes: Optional[AllowedInstanceTypeSet]
+    MaxSpotPriceAsPercentageOfOptimalOnDemandPrice: Optional[Integer]
 
 
 class Placement(TypedDict, total=False):

@@ -93,6 +93,7 @@ DocumentVersion = str
 DocumentVersionName = str
 DocumentVersionNumber = str
 DryRun = bool
+Duration = int
 EffectiveInstanceAssociationMaxResults = int
 ErrorCount = int
 ExecutionRoleName = str
@@ -1924,6 +1925,7 @@ class Association(TypedDict, total=False):
     ScheduleExpression: Optional[ScheduleExpression]
     AssociationName: Optional[AssociationName]
     ScheduleOffset: Optional[ScheduleOffset]
+    Duration: Optional[Duration]
     TargetMaps: Optional[TargetMaps]
 
 
@@ -1990,6 +1992,7 @@ class AssociationDescription(TypedDict, total=False):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    Duration: Optional[Duration]
     TargetMaps: Optional[TargetMaps]
     AlarmConfiguration: Optional[AlarmConfiguration]
     TriggeredAlarms: Optional[AlarmStateInformationList]
@@ -2076,6 +2079,7 @@ class AssociationVersionInfo(TypedDict, total=False):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    Duration: Optional[Duration]
     TargetMaps: Optional[TargetMaps]
 
 
@@ -2560,6 +2564,7 @@ class CreateAssociationBatchRequestEntry(TypedDict, total=False):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    Duration: Optional[Duration]
     TargetMaps: Optional[TargetMaps]
     AlarmConfiguration: Optional[AlarmConfiguration]
 
@@ -2603,6 +2608,7 @@ class CreateAssociationRequest(ServiceRequest):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    Duration: Optional[Duration]
     TargetMaps: Optional[TargetMaps]
     Tags: Optional[TagList]
     AlarmConfiguration: Optional[AlarmConfiguration]
@@ -5272,6 +5278,7 @@ class UpdateAssociationRequest(ServiceRequest):
     CalendarNames: Optional[CalendarNameOrARNList]
     TargetLocations: Optional[TargetLocations]
     ScheduleOffset: Optional[ScheduleOffset]
+    Duration: Optional[Duration]
     TargetMaps: Optional[TargetMaps]
     AlarmConfiguration: Optional[AlarmConfiguration]
 
@@ -5576,6 +5583,7 @@ class SsmApi:
         calendar_names: CalendarNameOrARNList = None,
         target_locations: TargetLocations = None,
         schedule_offset: ScheduleOffset = None,
+        duration: Duration = None,
         target_maps: TargetMaps = None,
         tags: TagList = None,
         alarm_configuration: AlarmConfiguration = None,
@@ -6815,6 +6823,7 @@ class SsmApi:
         calendar_names: CalendarNameOrARNList = None,
         target_locations: TargetLocations = None,
         schedule_offset: ScheduleOffset = None,
+        duration: Duration = None,
         target_maps: TargetMaps = None,
         alarm_configuration: AlarmConfiguration = None,
     ) -> UpdateAssociationResult:

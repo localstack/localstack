@@ -36,6 +36,8 @@ ExportValue = str
 FailedStackInstancesCount = int
 FailureToleranceCount = int
 FailureTolerancePercentage = int
+GeneratedTemplateId = str
+GeneratedTemplateName = str
 HookInvocationCount = int
 HookStatusReason = str
 HookTargetTypeName = str
@@ -50,12 +52,15 @@ IncludeNestedStacks = bool
 IsActivated = bool
 IsDefaultConfiguration = bool
 IsDefaultVersion = bool
+JazzResourceIdentifierPropertyKey = str
+JazzResourceIdentifierPropertyValue = str
 Key = str
 LimitName = str
 LimitValue = int
 LogGroupName = str
 LogicalIdHierarchy = str
 LogicalResourceId = str
+ManagedByStack = bool
 ManagedExecutionNullable = bool
 MaxConcurrentCount = int
 MaxConcurrentPercentage = int
@@ -65,6 +70,7 @@ MonitoringTimeInMinutes = int
 NextToken = str
 NoEcho = bool
 NotificationARN = str
+NumberOfResources = int
 OperationResultFilterValues = str
 OptionalSecureUrl = str
 OrganizationalUnitId = str
@@ -73,9 +79,11 @@ OutputValue = str
 ParameterKey = str
 ParameterType = str
 ParameterValue = str
+PercentageCompleted = float
 PhysicalResourceId = str
 PrivateTypeArn = str
 Properties = str
+PropertyDescription = str
 PropertyName = str
 PropertyPath = str
 PropertyValue = str
@@ -84,17 +92,30 @@ PublisherId = str
 PublisherName = str
 PublisherProfile = str
 Reason = str
+RefreshAllResources = bool
 Region = str
 RegistrationToken = str
 RequestToken = str
+RequiredProperty = bool
+ResourceIdentifier = str
 ResourceIdentifierPropertyKey = str
 ResourceIdentifierPropertyValue = str
 ResourceModel = str
 ResourceProperties = str
+ResourceScanId = str
+ResourceScanStatusReason = str
+ResourceScannerMaxResults = int
 ResourceSignalUniqueId = str
 ResourceStatusReason = str
 ResourceToSkip = str
 ResourceType = str
+ResourceTypePrefix = str
+ResourcesFailed = int
+ResourcesPending = int
+ResourcesProcessing = int
+ResourcesRead = int
+ResourcesScanned = int
+ResourcesSucceeded = int
 RetainExceptOnCreate = bool
 RetainStacks = bool
 RetainStacksNullable = bool
@@ -126,10 +147,12 @@ TagKey = str
 TagValue = str
 TemplateBody = str
 TemplateDescription = str
+TemplateStatusReason = str
 TemplateURL = str
 ThirdPartyTypeArn = str
 TimeoutMinutes = int
 TotalStackInstancesCount = int
+TotalWarnings = int
 TransformName = str
 TreatUnrecognizedResourceTypesAsWarnings = bool
 Type = str
@@ -252,6 +275,34 @@ class ExecutionStatus(str):
     EXECUTE_COMPLETE = "EXECUTE_COMPLETE"
     EXECUTE_FAILED = "EXECUTE_FAILED"
     OBSOLETE = "OBSOLETE"
+
+
+class GeneratedTemplateDeletionPolicy(str):
+    DELETE = "DELETE"
+    RETAIN = "RETAIN"
+
+
+class GeneratedTemplateResourceStatus(str):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETE = "COMPLETE"
+
+
+class GeneratedTemplateStatus(str):
+    CREATE_PENDING = "CREATE_PENDING"
+    UPDATE_PENDING = "UPDATE_PENDING"
+    DELETE_PENDING = "DELETE_PENDING"
+    CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
+    UPDATE_IN_PROGRESS = "UPDATE_IN_PROGRESS"
+    DELETE_IN_PROGRESS = "DELETE_IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETE = "COMPLETE"
+
+
+class GeneratedTemplateUpdateReplacePolicy(str):
+    DELETE = "DELETE"
+    RETAIN = "RETAIN"
 
 
 class HandlerErrorCode(str):
@@ -384,6 +435,13 @@ class ResourceAttribute(str):
     DeletionPolicy = "DeletionPolicy"
     UpdateReplacePolicy = "UpdateReplacePolicy"
     Tags = "Tags"
+
+
+class ResourceScanStatus(str):
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETE = "COMPLETE"
+    EXPIRED = "EXPIRED"
 
 
 class ResourceSignalStatus(str):
@@ -527,6 +585,11 @@ class StackStatus(str):
     IMPORT_ROLLBACK_COMPLETE = "IMPORT_ROLLBACK_COMPLETE"
 
 
+class TemplateFormat(str):
+    JSON = "JSON"
+    YAML = "YAML"
+
+
 class TemplateStage(str):
     Original = "Original"
     Processed = "Processed"
@@ -555,6 +618,12 @@ class Visibility(str):
     PRIVATE = "PRIVATE"
 
 
+class WarningType(str):
+    MUTUALLY_EXCLUSIVE_PROPERTIES = "MUTUALLY_EXCLUSIVE_PROPERTIES"
+    UNSUPPORTED_PROPERTIES = "UNSUPPORTED_PROPERTIES"
+    MUTUALLY_EXCLUSIVE_TYPES = "MUTUALLY_EXCLUSIVE_TYPES"
+
+
 class AlreadyExistsException(ServiceException):
     code: str = "AlreadyExistsException"
     sender_fault: bool = True
@@ -573,10 +642,22 @@ class ChangeSetNotFoundException(ServiceException):
     status_code: int = 404
 
 
+class ConcurrentResourcesLimitExceededException(ServiceException):
+    code: str = "ConcurrentResourcesLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 429
+
+
 class CreatedButModifiedException(ServiceException):
     code: str = "CreatedButModifiedException"
     sender_fault: bool = True
     status_code: int = 409
+
+
+class GeneratedTemplateNotFoundException(ServiceException):
+    code: str = "GeneratedTemplateNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class InsufficientCapabilitiesException(ServiceException):
@@ -635,6 +716,24 @@ class OperationNotFoundException(ServiceException):
 
 class OperationStatusCheckFailedException(ServiceException):
     code: str = "ConditionalCheckFailed"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class ResourceScanInProgressException(ServiceException):
+    code: str = "ResourceScanInProgress"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class ResourceScanLimitExceededException(ServiceException):
+    code: str = "ResourceScanLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class ResourceScanNotFoundException(ServiceException):
+    code: str = "ResourceScanNotFound"
     sender_fault: bool = True
     status_code: int = 400
 
@@ -965,6 +1064,31 @@ class CreateChangeSetOutput(TypedDict, total=False):
     StackId: Optional[StackId]
 
 
+class TemplateConfiguration(TypedDict, total=False):
+    DeletionPolicy: Optional[GeneratedTemplateDeletionPolicy]
+    UpdateReplacePolicy: Optional[GeneratedTemplateUpdateReplacePolicy]
+
+
+class ResourceDefinition(TypedDict, total=False):
+    ResourceType: ResourceType
+    LogicalResourceId: Optional[LogicalResourceId]
+    ResourceIdentifier: ResourceIdentifierProperties
+
+
+ResourceDefinitions = List[ResourceDefinition]
+
+
+class CreateGeneratedTemplateInput(ServiceRequest):
+    Resources: Optional[ResourceDefinitions]
+    GeneratedTemplateName: GeneratedTemplateName
+    StackName: Optional[StackName]
+    TemplateConfiguration: Optional[TemplateConfiguration]
+
+
+class CreateGeneratedTemplateOutput(TypedDict, total=False):
+    GeneratedTemplateId: Optional[GeneratedTemplateId]
+
+
 class CreateStackInput(ServiceRequest):
     StackName: StackName
     TemplateBody: Optional[TemplateBody]
@@ -1081,6 +1205,10 @@ class DeleteChangeSetOutput(TypedDict, total=False):
     pass
 
 
+class DeleteGeneratedTemplateInput(ServiceRequest):
+    GeneratedTemplateName: GeneratedTemplateName
+
+
 RetainResources = List[LogicalResourceId]
 
 
@@ -1185,6 +1313,63 @@ class DescribeChangeSetOutput(TypedDict, total=False):
     ImportExistingResources: Optional[ImportExistingResources]
 
 
+class DescribeGeneratedTemplateInput(ServiceRequest):
+    GeneratedTemplateName: GeneratedTemplateName
+
+
+class TemplateProgress(TypedDict, total=False):
+    ResourcesSucceeded: Optional[ResourcesSucceeded]
+    ResourcesFailed: Optional[ResourcesFailed]
+    ResourcesProcessing: Optional[ResourcesProcessing]
+    ResourcesPending: Optional[ResourcesPending]
+
+
+LastUpdatedTime = datetime
+
+
+class WarningProperty(TypedDict, total=False):
+    PropertyPath: Optional[PropertyPath]
+    Required: Optional[RequiredProperty]
+    Description: Optional[PropertyDescription]
+
+
+WarningProperties = List[WarningProperty]
+
+
+class WarningDetail(TypedDict, total=False):
+    Type: Optional[WarningType]
+    Properties: Optional[WarningProperties]
+
+
+WarningDetails = List[WarningDetail]
+
+
+class ResourceDetail(TypedDict, total=False):
+    ResourceType: Optional[ResourceType]
+    LogicalResourceId: Optional[LogicalResourceId]
+    ResourceIdentifier: Optional[ResourceIdentifierProperties]
+    ResourceStatus: Optional[GeneratedTemplateResourceStatus]
+    ResourceStatusReason: Optional[ResourceStatusReason]
+    Warnings: Optional[WarningDetails]
+
+
+ResourceDetails = List[ResourceDetail]
+
+
+class DescribeGeneratedTemplateOutput(TypedDict, total=False):
+    GeneratedTemplateId: Optional[GeneratedTemplateId]
+    GeneratedTemplateName: Optional[GeneratedTemplateName]
+    Resources: Optional[ResourceDetails]
+    Status: Optional[GeneratedTemplateStatus]
+    StatusReason: Optional[TemplateStatusReason]
+    CreationTime: Optional[CreationTime]
+    LastUpdatedTime: Optional[LastUpdatedTime]
+    Progress: Optional[TemplateProgress]
+    StackId: Optional[StackId]
+    TemplateConfiguration: Optional[TemplateConfiguration]
+    TotalWarnings: Optional[TotalWarnings]
+
+
 class DescribeOrganizationsAccessInput(ServiceRequest):
     CallAs: Optional[CallAs]
 
@@ -1202,6 +1387,22 @@ class DescribePublisherOutput(TypedDict, total=False):
     PublisherStatus: Optional[PublisherStatus]
     IdentityProvider: Optional[IdentityProvider]
     PublisherProfile: Optional[PublisherProfile]
+
+
+class DescribeResourceScanInput(ServiceRequest):
+    ResourceScanId: ResourceScanId
+
+
+class DescribeResourceScanOutput(TypedDict, total=False):
+    ResourceScanId: Optional[ResourceScanId]
+    Status: Optional[ResourceScanStatus]
+    StatusReason: Optional[ResourceScanStatusReason]
+    StartTime: Optional[Timestamp]
+    EndTime: Optional[Timestamp]
+    PercentageCompleted: Optional[PercentageCompleted]
+    ResourceTypes: Optional[ResourceTypes]
+    ResourcesScanned: Optional[ResourcesScanned]
+    ResourcesRead: Optional[ResourcesRead]
 
 
 class DescribeStackDriftDetectionStatusInput(ServiceRequest):
@@ -1475,7 +1676,6 @@ class Output(TypedDict, total=False):
 
 
 Outputs = List[Output]
-LastUpdatedTime = datetime
 
 
 class Stack(TypedDict, total=False):
@@ -1638,6 +1838,16 @@ class Export(TypedDict, total=False):
 Exports = List[Export]
 
 
+class GetGeneratedTemplateInput(ServiceRequest):
+    Format: Optional[TemplateFormat]
+    GeneratedTemplateName: GeneratedTemplateName
+
+
+class GetGeneratedTemplateOutput(TypedDict, total=False):
+    Status: Optional[GeneratedTemplateStatus]
+    TemplateBody: Optional[TemplateBody]
+
+
 class GetStackPolicyInput(ServiceRequest):
     StackName: StackName
 
@@ -1737,6 +1947,10 @@ class ImportStacksToStackSetOutput(TypedDict, total=False):
 
 
 Imports = List[StackName]
+JazzLogicalResourceIds = List[LogicalResourceId]
+JazzResourceIdentifierProperties = Dict[
+    JazzResourceIdentifierPropertyKey, JazzResourceIdentifierPropertyValue
+]
 
 
 class ListChangeSetsInput(ServiceRequest):
@@ -1758,6 +1972,29 @@ class ListExportsOutput(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListGeneratedTemplatesInput(ServiceRequest):
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[MaxResults]
+
+
+class TemplateSummary(TypedDict, total=False):
+    GeneratedTemplateId: Optional[GeneratedTemplateId]
+    GeneratedTemplateName: Optional[GeneratedTemplateName]
+    Status: Optional[GeneratedTemplateStatus]
+    StatusReason: Optional[TemplateStatusReason]
+    CreationTime: Optional[CreationTime]
+    LastUpdatedTime: Optional[LastUpdatedTime]
+    NumberOfResources: Optional[NumberOfResources]
+
+
+TemplateSummaries = List[TemplateSummary]
+
+
+class ListGeneratedTemplatesOutput(TypedDict, total=False):
+    Summaries: Optional[TemplateSummaries]
+    NextToken: Optional[NextToken]
+
+
 class ListImportsInput(ServiceRequest):
     ExportName: ExportName
     NextToken: Optional[NextToken]
@@ -1765,6 +2002,75 @@ class ListImportsInput(ServiceRequest):
 
 class ListImportsOutput(TypedDict, total=False):
     Imports: Optional[Imports]
+    NextToken: Optional[NextToken]
+
+
+class ScannedResourceIdentifier(TypedDict, total=False):
+    ResourceType: ResourceType
+    ResourceIdentifier: JazzResourceIdentifierProperties
+
+
+ScannedResourceIdentifiers = List[ScannedResourceIdentifier]
+
+
+class ListResourceScanRelatedResourcesInput(ServiceRequest):
+    ResourceScanId: ResourceScanId
+    Resources: ScannedResourceIdentifiers
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[BoxedMaxResults]
+
+
+class ScannedResource(TypedDict, total=False):
+    ResourceType: Optional[ResourceType]
+    ResourceIdentifier: Optional[JazzResourceIdentifierProperties]
+    ManagedByStack: Optional[ManagedByStack]
+
+
+RelatedResources = List[ScannedResource]
+
+
+class ListResourceScanRelatedResourcesOutput(TypedDict, total=False):
+    RelatedResources: Optional[RelatedResources]
+    NextToken: Optional[NextToken]
+
+
+class ListResourceScanResourcesInput(ServiceRequest):
+    ResourceScanId: ResourceScanId
+    ResourceIdentifier: Optional[ResourceIdentifier]
+    ResourceTypePrefix: Optional[ResourceTypePrefix]
+    TagKey: Optional[TagKey]
+    TagValue: Optional[TagValue]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[ResourceScannerMaxResults]
+
+
+ScannedResources = List[ScannedResource]
+
+
+class ListResourceScanResourcesOutput(TypedDict, total=False):
+    Resources: Optional[ScannedResources]
+    NextToken: Optional[NextToken]
+
+
+class ListResourceScansInput(ServiceRequest):
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[ResourceScannerMaxResults]
+
+
+class ResourceScanSummary(TypedDict, total=False):
+    ResourceScanId: Optional[ResourceScanId]
+    Status: Optional[ResourceScanStatus]
+    StatusReason: Optional[ResourceScanStatusReason]
+    StartTime: Optional[Timestamp]
+    EndTime: Optional[Timestamp]
+    PercentageCompleted: Optional[PercentageCompleted]
+
+
+ResourceScanSummaries = List[ResourceScanSummary]
+
+
+class ListResourceScansOutput(TypedDict, total=False):
+    ResourceScanSummaries: Optional[ResourceScanSummaries]
     NextToken: Optional[NextToken]
 
 
@@ -2169,6 +2475,14 @@ class SignalResourceInput(ServiceRequest):
     Status: ResourceSignalStatus
 
 
+class StartResourceScanInput(ServiceRequest):
+    ClientRequestToken: Optional[ClientRequestToken]
+
+
+class StartResourceScanOutput(TypedDict, total=False):
+    ResourceScanId: Optional[ResourceScanId]
+
+
 class StopStackSetOperationInput(ServiceRequest):
     StackSetName: StackSetName
     OperationId: ClientRequestToken
@@ -2199,6 +2513,19 @@ class TestTypeInput(ServiceRequest):
 
 class TestTypeOutput(TypedDict, total=False):
     TypeVersionArn: Optional[TypeArn]
+
+
+class UpdateGeneratedTemplateInput(ServiceRequest):
+    GeneratedTemplateName: GeneratedTemplateName
+    NewGeneratedTemplateName: Optional[GeneratedTemplateName]
+    AddResources: Optional[ResourceDefinitions]
+    RemoveResources: Optional[JazzLogicalResourceIds]
+    RefreshAllResources: Optional[RefreshAllResources]
+    TemplateConfiguration: Optional[TemplateConfiguration]
+
+
+class UpdateGeneratedTemplateOutput(TypedDict, total=False):
+    GeneratedTemplateId: Optional[GeneratedTemplateId]
 
 
 class UpdateStackInput(ServiceRequest):
@@ -2358,6 +2685,17 @@ class CloudformationApi:
     ) -> CreateChangeSetOutput:
         raise NotImplementedError
 
+    @handler("CreateGeneratedTemplate")
+    def create_generated_template(
+        self,
+        context: RequestContext,
+        generated_template_name: GeneratedTemplateName,
+        resources: ResourceDefinitions = None,
+        stack_name: StackName = None,
+        template_configuration: TemplateConfiguration = None,
+    ) -> CreateGeneratedTemplateOutput:
+        raise NotImplementedError
+
     @handler("CreateStack")
     def create_stack(
         self,
@@ -2442,6 +2780,12 @@ class CloudformationApi:
     ) -> DeleteChangeSetOutput:
         raise NotImplementedError
 
+    @handler("DeleteGeneratedTemplate")
+    def delete_generated_template(
+        self, context: RequestContext, generated_template_name: GeneratedTemplateName
+    ) -> None:
+        raise NotImplementedError
+
     @handler("DeleteStack")
     def delete_stack(
         self,
@@ -2507,6 +2851,12 @@ class CloudformationApi:
     ) -> DescribeChangeSetHooksOutput:
         raise NotImplementedError
 
+    @handler("DescribeGeneratedTemplate")
+    def describe_generated_template(
+        self, context: RequestContext, generated_template_name: GeneratedTemplateName
+    ) -> DescribeGeneratedTemplateOutput:
+        raise NotImplementedError
+
     @handler("DescribeOrganizationsAccess")
     def describe_organizations_access(
         self, context: RequestContext, call_as: CallAs = None
@@ -2517,6 +2867,12 @@ class CloudformationApi:
     def describe_publisher(
         self, context: RequestContext, publisher_id: PublisherId = None
     ) -> DescribePublisherOutput:
+        raise NotImplementedError
+
+    @handler("DescribeResourceScan")
+    def describe_resource_scan(
+        self, context: RequestContext, resource_scan_id: ResourceScanId
+    ) -> DescribeResourceScanOutput:
         raise NotImplementedError
 
     @handler("DescribeStackDriftDetectionStatus")
@@ -2654,6 +3010,15 @@ class CloudformationApi:
     ) -> ExecuteChangeSetOutput:
         raise NotImplementedError
 
+    @handler("GetGeneratedTemplate")
+    def get_generated_template(
+        self,
+        context: RequestContext,
+        generated_template_name: GeneratedTemplateName,
+        format: TemplateFormat = None,
+    ) -> GetGeneratedTemplateOutput:
+        raise NotImplementedError
+
     @handler("GetStackPolicy")
     def get_stack_policy(
         self, context: RequestContext, stack_name: StackName
@@ -2709,10 +3074,50 @@ class CloudformationApi:
     ) -> ListExportsOutput:
         raise NotImplementedError
 
+    @handler("ListGeneratedTemplates")
+    def list_generated_templates(
+        self, context: RequestContext, next_token: NextToken = None, max_results: MaxResults = None
+    ) -> ListGeneratedTemplatesOutput:
+        raise NotImplementedError
+
     @handler("ListImports")
     def list_imports(
         self, context: RequestContext, export_name: ExportName, next_token: NextToken = None
     ) -> ListImportsOutput:
+        raise NotImplementedError
+
+    @handler("ListResourceScanRelatedResources")
+    def list_resource_scan_related_resources(
+        self,
+        context: RequestContext,
+        resource_scan_id: ResourceScanId,
+        resources: ScannedResourceIdentifiers,
+        next_token: NextToken = None,
+        max_results: BoxedMaxResults = None,
+    ) -> ListResourceScanRelatedResourcesOutput:
+        raise NotImplementedError
+
+    @handler("ListResourceScanResources")
+    def list_resource_scan_resources(
+        self,
+        context: RequestContext,
+        resource_scan_id: ResourceScanId,
+        resource_identifier: ResourceIdentifier = None,
+        resource_type_prefix: ResourceTypePrefix = None,
+        tag_key: TagKey = None,
+        tag_value: TagValue = None,
+        next_token: NextToken = None,
+        max_results: ResourceScannerMaxResults = None,
+    ) -> ListResourceScanResourcesOutput:
+        raise NotImplementedError
+
+    @handler("ListResourceScans")
+    def list_resource_scans(
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        max_results: ResourceScannerMaxResults = None,
+    ) -> ListResourceScansOutput:
         raise NotImplementedError
 
     @handler("ListStackInstanceResourceDrifts")
@@ -2887,6 +3292,12 @@ class CloudformationApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("StartResourceScan")
+    def start_resource_scan(
+        self, context: RequestContext, client_request_token: ClientRequestToken = None
+    ) -> StartResourceScanOutput:
+        raise NotImplementedError
+
     @handler("StopStackSetOperation")
     def stop_stack_set_operation(
         self,
@@ -2899,6 +3310,19 @@ class CloudformationApi:
 
     @handler("TestType", expand=False)
     def test_type(self, context: RequestContext, request: TestTypeInput) -> TestTypeOutput:
+        raise NotImplementedError
+
+    @handler("UpdateGeneratedTemplate")
+    def update_generated_template(
+        self,
+        context: RequestContext,
+        generated_template_name: GeneratedTemplateName,
+        new_generated_template_name: GeneratedTemplateName = None,
+        add_resources: ResourceDefinitions = None,
+        remove_resources: JazzLogicalResourceIds = None,
+        refresh_all_resources: RefreshAllResources = None,
+        template_configuration: TemplateConfiguration = None,
+    ) -> UpdateGeneratedTemplateOutput:
         raise NotImplementedError
 
     @handler("UpdateStack")
