@@ -1339,5 +1339,153 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution_2": {
+    "recorded-date": "05-02-2024, 11:29:16",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SetupVariables"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "SetupVariables",
+              "output": {
+                "Input": {
+                  "key": "value"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Input": {
+                  "key": "value"
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartTarget"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Input": {
+                  "key": "value"
+                }
+              },
+              "region": "<region>",
+              "resource": "startExecution",
+              "resourceType": "aws-sdk:sfn"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskStartedEventDetails": {
+              "resource": "startExecution",
+              "resourceType": "aws-sdk:sfn"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "<execution-arn:1>",
+                "StartDate": "date"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution",
+              "resourceType": "aws-sdk:sfn"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "StartTarget",
+              "output": {
+                "ExecutionArn": "<execution-arn:1>",
+                "StartDate": "date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "<execution-arn:1>",
+                "StartDate": "date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

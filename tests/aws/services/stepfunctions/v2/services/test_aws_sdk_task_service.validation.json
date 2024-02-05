@@ -10,5 +10,8 @@
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_list_secrets": {
     "last_validated_date": "2023-06-22T11:59:49+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution_2": {
+    "last_validated_date": "2024-02-05T11:29:16+00:00"
   }
 }

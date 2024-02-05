@@ -1,6 +1,7 @@
 import json
 
 from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer import JsonpathTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
@@ -160,6 +161,47 @@ class TestTaskServiceAwsSdk:
         exec_input = json.dumps(
             {"StateMachineArn": state_machine_arn_target, "Input": None, "Name": "TestStartTarget"}
         )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_sfn_start_execution_2(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..output.ExecutionArn",
+                replacement="execution-arn",
+                replace_reference=True,
+            )
+        )
+
+        template_target = BT.load_sfn_template(BT.BASE_PASS_RESULT)
+        definition_target = json.dumps(template_target)
+        state_machine_arn_target = create(
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition_target,
+        )
+
+        template = ST.load_sfn_template(ST.AWS_SDK_SFN_START_EXECUTION_2)
+        template["States"]["StartTarget"]["Parameters"][
+            "StateMachineArn"
+        ] = state_machine_arn_target
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
