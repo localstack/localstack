@@ -56,6 +56,13 @@ SHUTDOWN_INFRA = threading.Event()
 # can be set
 EXIT_CODE: objects.Value[int] = objects.Value(0)
 
+if not config.is_env_true("TEST_SKIP_LOCALSTACK_START"):
+    import pyroscope
+
+    pyroscope.configure(
+        application_name="localstack.python.app",  # replace this with some name for your application
+        server_address="http://localhost:4040",  # replace this with the address of your Pyroscope server
+    )
 
 # ---------------
 # HELPER METHODS
