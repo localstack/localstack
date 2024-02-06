@@ -54,7 +54,7 @@ upgrade-dev-types-reqs: pip-tools
 upgrade-s3-reqs: pip-tools
 	$(VENV_RUN); pip-compile --upgrade --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
 
-upgrade-all-reqs: upgrade-basic-reqs upgrade-runtime-reqs upgrade-test-only-reqs upgrade-test-reqs upgrade-dev-reqs upgrade-dev-types-reqs upgrade-s3-reqs
+upgrade-all-reqs: upgrade-basic-reqs upgrade-runtime-reqs upgrade-test-reqs upgrade-dev-reqs upgrade-dev-types-reqs upgrade-s3-reqs
 
 install-basic: venv       ## Install basic dependencies for CLI usage into venv
 	$(VENV_RUN); $(PIP_CMD) install -r requirements-basic.txt
