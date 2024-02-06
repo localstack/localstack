@@ -57,7 +57,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         self.server_manager.shutdown_all()
 
     def create_state_machine(
-        self, context: RequestContext, request: CreateStateMachineInput
+        self, context: RequestContext, request: CreateStateMachineInput, **kwargs
     ) -> CreateStateMachineOutput:
         # set default logging configuration
         if not request.get("loggingConfiguration"):
