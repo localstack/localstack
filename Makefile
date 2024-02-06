@@ -36,25 +36,13 @@ freeze:                   ## Run pip freeze -l in the virtual environment
 pip-tools: venv
 	$(VENV_RUN); $(PIP_CMD) install --upgrade pip-tools
 
-upgrade-basic-reqs: pip-tools
+upgrade-pinned-dependencies: pip-tools
 	$(VENV_RUN); pip-compile --upgrade --strip-extras -o requirements-basic.txt pyproject.toml
-
-upgrade-runtime-reqs: pip-tools
 	$(VENV_RUN); pip-compile --upgrade --extra runtime -o requirements-runtime.txt pyproject.toml
-
-upgrade-test-reqs: pip-tools
 	$(VENV_RUN); pip-compile --upgrade --extra test -o requirements-test.txt pyproject.toml
-
-upgrade-dev-reqs: pip-tools
-	$(VENV_RUN); pip-compile --upgrade --extra dev,test,runtime -o requirements-dev.txt pyproject.toml
-
-upgrade-dev-types-reqs: pip-tools
+	$(VENV_RUN); pip-compile --upgrade --extra dev -o requirements-dev.txt pyproject.toml
 	$(VENV_RUN); pip-compile --upgrade --extra typehint -o requirements-typehint.txt pyproject.toml
-
-upgrade-s3-reqs: pip-tools
 	$(VENV_RUN); pip-compile --upgrade --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
-
-upgrade-all-reqs: upgrade-basic-reqs upgrade-runtime-reqs upgrade-test-reqs upgrade-dev-reqs upgrade-dev-types-reqs upgrade-s3-reqs
 
 install-basic: venv       ## Install basic dependencies for CLI usage into venv
 	$(VENV_RUN); $(PIP_CMD) install -r requirements-basic.txt
@@ -248,14 +236,14 @@ test-docker-mount-code:
 	PACKAGES_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages | awk '{print $$NF}'); \
 		DOCKER_FLAGS="$(DOCKER_FLAGS) --entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/aws:/opt/code/localstack/localstack/aws -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$PACKAGES_DIR/moto:/opt/code/localstack/.venv/lib/python3.11/site-packages/moto/ -e TEST_PATH=\\'$(TEST_PATH)\\' -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
 
-lint:              		  ## Run code linter to check code style and check if formatter would make changes
+lint:              		  ## Run code linter to check code style, check if formatter would make changes and check if dependency pins need to be updated
 	($(VENV_RUN); python -m ruff check --show-source . && python -m black --check .)
-	$(VENV_RUN); pre-commit run upgrade-deps-if-changed --files $(git diff master --name-only)
+	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files setup.cfg # run pre-commit hook manually here to ensure that this check runs in CI as well
 
 
-lint-modified:     		  ## Run code linter to check code style and check if formatter would make changes on modified files
+lint-modified:     		  ## Run code linter to check code style, check if formatter would make changes on modified files, and check if dependency pins need to be updated because of modified files
 	($(VENV_RUN); python -m ruff check --show-source `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` && python -m black --check `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
-	$(VENV_RUN); pre-commit run upgrade-deps-if-changed --files $(git diff master --name-only)
+	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files $(git diff master --name-only) # run pre-commit hook manually here to ensure that this check runs in CI as well
 
 check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibilty markers set
 	($(VENV_RUN); python -m pytest --co tests/aws/)
@@ -280,4 +268,4 @@ clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-.PHONY: usage freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist pip-tools upgrade-all-reqs upgrade-runtime-reqs upgrade-test-reqs upgrade-dev-reqs upgrade-dev-types-reqs upgrade-s3-reqs
+.PHONY: usage freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist pip-tools upgrade-pinned-dependencies
