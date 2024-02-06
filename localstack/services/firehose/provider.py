@@ -320,7 +320,7 @@ class FirehoseProvider(FirehoseApi):
                         region_name=context.region,
                         listener_func=listener_function,
                         wait_until_started=True,
-                        ddb_lease_table_suffix="-firehose",
+                        ddb_lease_table_suffix=f"-firehose-{delivery_stream_name}",
                     )
 
                     self.kinesis_listeners[delivery_stream_arn] = process
