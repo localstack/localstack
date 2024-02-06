@@ -1617,12 +1617,13 @@ class ApigatewayApi:
         stage_keys: ListOfStageKeys = None,
         customer_id: String = None,
         tags: MapOfStringToString = None,
+        **kwargs
     ) -> ApiKey:
         raise NotImplementedError
 
     @handler("CreateAuthorizer", expand=False)
     def create_authorizer(
-        self, context: RequestContext, request: CreateAuthorizerRequest
+        self, context: RequestContext, request: CreateAuthorizerRequest, **kwargs
     ) -> Authorizer:
         raise NotImplementedError
 
@@ -1634,6 +1635,7 @@ class ApigatewayApi:
         rest_api_id: String,
         base_path: String = None,
         stage: String = None,
+        **kwargs
     ) -> BasePathMapping:
         raise NotImplementedError
 
@@ -1650,6 +1652,7 @@ class ApigatewayApi:
         variables: MapOfStringToString = None,
         canary_settings: DeploymentCanarySettings = None,
         tracing_enabled: NullableBoolean = None,
+        **kwargs
     ) -> Deployment:
         raise NotImplementedError
 
@@ -1660,6 +1663,7 @@ class ApigatewayApi:
         rest_api_id: String,
         location: DocumentationPartLocation,
         properties: String,
+        **kwargs
     ) -> DocumentationPart:
         raise NotImplementedError
 
@@ -1671,6 +1675,7 @@ class ApigatewayApi:
         documentation_version: String,
         stage_name: String = None,
         description: String = None,
+        **kwargs
     ) -> DocumentationVersion:
         raise NotImplementedError
 
@@ -1691,6 +1696,7 @@ class ApigatewayApi:
         security_policy: SecurityPolicy = None,
         mutual_tls_authentication: MutualTlsAuthenticationInput = None,
         ownership_verification_certificate_arn: String = None,
+        **kwargs
     ) -> DomainName:
         raise NotImplementedError
 
@@ -1703,6 +1709,7 @@ class ApigatewayApi:
         content_type: String,
         description: String = None,
         schema: String = None,
+        **kwargs
     ) -> Model:
         raise NotImplementedError
 
@@ -1714,12 +1721,18 @@ class ApigatewayApi:
         name: String = None,
         validate_request_body: Boolean = None,
         validate_request_parameters: Boolean = None,
+        **kwargs
     ) -> RequestValidator:
         raise NotImplementedError
 
     @handler("CreateResource")
     def create_resource(
-        self, context: RequestContext, rest_api_id: String, parent_id: String, path_part: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        parent_id: String,
+        path_part: String,
+        **kwargs
     ) -> Resource:
         raise NotImplementedError
 
@@ -1738,6 +1751,7 @@ class ApigatewayApi:
         policy: String = None,
         tags: MapOfStringToString = None,
         disable_execute_api_endpoint: Boolean = None,
+        **kwargs
     ) -> RestApi:
         raise NotImplementedError
 
@@ -1756,6 +1770,7 @@ class ApigatewayApi:
         canary_settings: CanarySettings = None,
         tracing_enabled: Boolean = None,
         tags: MapOfStringToString = None,
+        **kwargs
     ) -> Stage:
         raise NotImplementedError
 
@@ -1769,12 +1784,18 @@ class ApigatewayApi:
         throttle: ThrottleSettings = None,
         quota: QuotaSettings = None,
         tags: MapOfStringToString = None,
+        **kwargs
     ) -> UsagePlan:
         raise NotImplementedError
 
     @handler("CreateUsagePlanKey")
     def create_usage_plan_key(
-        self, context: RequestContext, usage_plan_id: String, key_id: String, key_type: String
+        self,
+        context: RequestContext,
+        usage_plan_id: String,
+        key_id: String,
+        key_type: String,
+        **kwargs
     ) -> UsagePlanKey:
         raise NotImplementedError
 
@@ -1786,62 +1807,72 @@ class ApigatewayApi:
         target_arns: ListOfString,
         description: String = None,
         tags: MapOfStringToString = None,
+        **kwargs
     ) -> VpcLink:
         raise NotImplementedError
 
     @handler("DeleteApiKey")
-    def delete_api_key(self, context: RequestContext, api_key: String) -> None:
+    def delete_api_key(self, context: RequestContext, api_key: String, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteAuthorizer")
     def delete_authorizer(
-        self, context: RequestContext, rest_api_id: String, authorizer_id: String
+        self, context: RequestContext, rest_api_id: String, authorizer_id: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBasePathMapping")
     def delete_base_path_mapping(
-        self, context: RequestContext, domain_name: String, base_path: String
+        self, context: RequestContext, domain_name: String, base_path: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteClientCertificate")
     def delete_client_certificate(
-        self, context: RequestContext, client_certificate_id: String
+        self, context: RequestContext, client_certificate_id: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDeployment")
     def delete_deployment(
-        self, context: RequestContext, rest_api_id: String, deployment_id: String
+        self, context: RequestContext, rest_api_id: String, deployment_id: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDocumentationPart")
     def delete_documentation_part(
-        self, context: RequestContext, rest_api_id: String, documentation_part_id: String
+        self, context: RequestContext, rest_api_id: String, documentation_part_id: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDocumentationVersion")
     def delete_documentation_version(
-        self, context: RequestContext, rest_api_id: String, documentation_version: String
+        self, context: RequestContext, rest_api_id: String, documentation_version: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDomainName")
-    def delete_domain_name(self, context: RequestContext, domain_name: String) -> None:
+    def delete_domain_name(self, context: RequestContext, domain_name: String, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteGatewayResponse")
     def delete_gateway_response(
-        self, context: RequestContext, rest_api_id: String, response_type: GatewayResponseType
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        response_type: GatewayResponseType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteIntegration")
     def delete_integration(
-        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1853,12 +1884,18 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteMethod")
     def delete_method(
-        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1870,79 +1907,85 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteModel")
     def delete_model(
-        self, context: RequestContext, rest_api_id: String, model_name: String
+        self, context: RequestContext, rest_api_id: String, model_name: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteRequestValidator")
     def delete_request_validator(
-        self, context: RequestContext, rest_api_id: String, request_validator_id: String
+        self, context: RequestContext, rest_api_id: String, request_validator_id: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteResource")
     def delete_resource(
-        self, context: RequestContext, rest_api_id: String, resource_id: String
+        self, context: RequestContext, rest_api_id: String, resource_id: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteRestApi")
-    def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
+    def delete_rest_api(self, context: RequestContext, rest_api_id: String, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteStage")
     def delete_stage(
-        self, context: RequestContext, rest_api_id: String, stage_name: String
+        self, context: RequestContext, rest_api_id: String, stage_name: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteUsagePlan")
-    def delete_usage_plan(self, context: RequestContext, usage_plan_id: String) -> None:
+    def delete_usage_plan(self, context: RequestContext, usage_plan_id: String, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteUsagePlanKey")
     def delete_usage_plan_key(
-        self, context: RequestContext, usage_plan_id: String, key_id: String
+        self, context: RequestContext, usage_plan_id: String, key_id: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteVpcLink")
-    def delete_vpc_link(self, context: RequestContext, vpc_link_id: String) -> None:
+    def delete_vpc_link(self, context: RequestContext, vpc_link_id: String, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("FlushStageAuthorizersCache")
     def flush_stage_authorizers_cache(
-        self, context: RequestContext, rest_api_id: String, stage_name: String
+        self, context: RequestContext, rest_api_id: String, stage_name: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("FlushStageCache")
     def flush_stage_cache(
-        self, context: RequestContext, rest_api_id: String, stage_name: String
+        self, context: RequestContext, rest_api_id: String, stage_name: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("GenerateClientCertificate")
     def generate_client_certificate(
-        self, context: RequestContext, description: String = None, tags: MapOfStringToString = None
+        self,
+        context: RequestContext,
+        description: String = None,
+        tags: MapOfStringToString = None,
+        **kwargs
     ) -> ClientCertificate:
         raise NotImplementedError
 
     @handler("GetAccount")
-    def get_account(
-        self,
-        context: RequestContext,
-    ) -> Account:
+    def get_account(self, context: RequestContext, **kwargs) -> Account:
         raise NotImplementedError
 
     @handler("GetApiKey")
     def get_api_key(
-        self, context: RequestContext, api_key: String, include_value: NullableBoolean = None
+        self,
+        context: RequestContext,
+        api_key: String,
+        include_value: NullableBoolean = None,
+        **kwargs
     ) -> ApiKey:
         raise NotImplementedError
 
@@ -1955,12 +1998,13 @@ class ApigatewayApi:
         name_query: String = None,
         customer_id: String = None,
         include_values: NullableBoolean = None,
+        **kwargs
     ) -> ApiKeys:
         raise NotImplementedError
 
     @handler("GetAuthorizer")
     def get_authorizer(
-        self, context: RequestContext, rest_api_id: String, authorizer_id: String
+        self, context: RequestContext, rest_api_id: String, authorizer_id: String, **kwargs
     ) -> Authorizer:
         raise NotImplementedError
 
@@ -1971,12 +2015,13 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> Authorizers:
         raise NotImplementedError
 
     @handler("GetBasePathMapping")
     def get_base_path_mapping(
-        self, context: RequestContext, domain_name: String, base_path: String
+        self, context: RequestContext, domain_name: String, base_path: String, **kwargs
     ) -> BasePathMapping:
         raise NotImplementedError
 
@@ -1987,18 +2032,23 @@ class ApigatewayApi:
         domain_name: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> BasePathMappings:
         raise NotImplementedError
 
     @handler("GetClientCertificate")
     def get_client_certificate(
-        self, context: RequestContext, client_certificate_id: String
+        self, context: RequestContext, client_certificate_id: String, **kwargs
     ) -> ClientCertificate:
         raise NotImplementedError
 
     @handler("GetClientCertificates")
     def get_client_certificates(
-        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs
     ) -> ClientCertificates:
         raise NotImplementedError
 
@@ -2009,6 +2059,7 @@ class ApigatewayApi:
         rest_api_id: String,
         deployment_id: String,
         embed: ListOfString = None,
+        **kwargs
     ) -> Deployment:
         raise NotImplementedError
 
@@ -2019,24 +2070,25 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> Deployments:
         raise NotImplementedError
 
     @handler("GetDocumentationPart")
     def get_documentation_part(
-        self, context: RequestContext, rest_api_id: String, documentation_part_id: String
+        self, context: RequestContext, rest_api_id: String, documentation_part_id: String, **kwargs
     ) -> DocumentationPart:
         raise NotImplementedError
 
     @handler("GetDocumentationParts", expand=False)
     def get_documentation_parts(
-        self, context: RequestContext, request: GetDocumentationPartsRequest
+        self, context: RequestContext, request: GetDocumentationPartsRequest, **kwargs
     ) -> DocumentationParts:
         raise NotImplementedError
 
     @handler("GetDocumentationVersion")
     def get_documentation_version(
-        self, context: RequestContext, rest_api_id: String, documentation_version: String
+        self, context: RequestContext, rest_api_id: String, documentation_version: String, **kwargs
     ) -> DocumentationVersion:
         raise NotImplementedError
 
@@ -2047,16 +2099,21 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> DocumentationVersions:
         raise NotImplementedError
 
     @handler("GetDomainName")
-    def get_domain_name(self, context: RequestContext, domain_name: String) -> DomainName:
+    def get_domain_name(self, context: RequestContext, domain_name: String, **kwargs) -> DomainName:
         raise NotImplementedError
 
     @handler("GetDomainNames")
     def get_domain_names(
-        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs
     ) -> DomainNames:
         raise NotImplementedError
 
@@ -2069,12 +2126,17 @@ class ApigatewayApi:
         export_type: String,
         parameters: MapOfStringToString = None,
         accepts: String = None,
+        **kwargs
     ) -> ExportResponse:
         raise NotImplementedError
 
     @handler("GetGatewayResponse")
     def get_gateway_response(
-        self, context: RequestContext, rest_api_id: String, response_type: GatewayResponseType
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        response_type: GatewayResponseType,
+        **kwargs
     ) -> GatewayResponse:
         raise NotImplementedError
 
@@ -2085,12 +2147,18 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> GatewayResponses:
         raise NotImplementedError
 
     @handler("GetIntegration")
     def get_integration(
-        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        **kwargs
     ) -> Integration:
         raise NotImplementedError
 
@@ -2102,12 +2170,18 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
+        **kwargs
     ) -> IntegrationResponse:
         raise NotImplementedError
 
     @handler("GetMethod")
     def get_method(
-        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        **kwargs
     ) -> Method:
         raise NotImplementedError
 
@@ -2119,6 +2193,7 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
+        **kwargs
     ) -> MethodResponse:
         raise NotImplementedError
 
@@ -2129,12 +2204,13 @@ class ApigatewayApi:
         rest_api_id: String,
         model_name: String,
         flatten: Boolean = None,
+        **kwargs
     ) -> Model:
         raise NotImplementedError
 
     @handler("GetModelTemplate")
     def get_model_template(
-        self, context: RequestContext, rest_api_id: String, model_name: String
+        self, context: RequestContext, rest_api_id: String, model_name: String, **kwargs
     ) -> Template:
         raise NotImplementedError
 
@@ -2145,12 +2221,13 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> Models:
         raise NotImplementedError
 
     @handler("GetRequestValidator")
     def get_request_validator(
-        self, context: RequestContext, rest_api_id: String, request_validator_id: String
+        self, context: RequestContext, rest_api_id: String, request_validator_id: String, **kwargs
     ) -> RequestValidator:
         raise NotImplementedError
 
@@ -2161,6 +2238,7 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> RequestValidators:
         raise NotImplementedError
 
@@ -2171,6 +2249,7 @@ class ApigatewayApi:
         rest_api_id: String,
         resource_id: String,
         embed: ListOfString = None,
+        **kwargs
     ) -> Resource:
         raise NotImplementedError
 
@@ -2182,16 +2261,21 @@ class ApigatewayApi:
         position: String = None,
         limit: NullableInteger = None,
         embed: ListOfString = None,
+        **kwargs
     ) -> Resources:
         raise NotImplementedError
 
     @handler("GetRestApi")
-    def get_rest_api(self, context: RequestContext, rest_api_id: String) -> RestApi:
+    def get_rest_api(self, context: RequestContext, rest_api_id: String, **kwargs) -> RestApi:
         raise NotImplementedError
 
     @handler("GetRestApis")
     def get_rest_apis(
-        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs
     ) -> RestApis:
         raise NotImplementedError
 
@@ -2203,26 +2287,33 @@ class ApigatewayApi:
         stage_name: String,
         sdk_type: String,
         parameters: MapOfStringToString = None,
+        **kwargs
     ) -> SdkResponse:
         raise NotImplementedError
 
     @handler("GetSdkType")
-    def get_sdk_type(self, context: RequestContext, id: String) -> SdkType:
+    def get_sdk_type(self, context: RequestContext, id: String, **kwargs) -> SdkType:
         raise NotImplementedError
 
     @handler("GetSdkTypes")
     def get_sdk_types(
-        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs
     ) -> SdkTypes:
         raise NotImplementedError
 
     @handler("GetStage")
-    def get_stage(self, context: RequestContext, rest_api_id: String, stage_name: String) -> Stage:
+    def get_stage(
+        self, context: RequestContext, rest_api_id: String, stage_name: String, **kwargs
+    ) -> Stage:
         raise NotImplementedError
 
     @handler("GetStages")
     def get_stages(
-        self, context: RequestContext, rest_api_id: String, deployment_id: String = None
+        self, context: RequestContext, rest_api_id: String, deployment_id: String = None, **kwargs
     ) -> Stages:
         raise NotImplementedError
 
@@ -2233,6 +2324,7 @@ class ApigatewayApi:
         resource_arn: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> Tags:
         raise NotImplementedError
 
@@ -2246,16 +2338,17 @@ class ApigatewayApi:
         key_id: String = None,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> Usage:
         raise NotImplementedError
 
     @handler("GetUsagePlan")
-    def get_usage_plan(self, context: RequestContext, usage_plan_id: String) -> UsagePlan:
+    def get_usage_plan(self, context: RequestContext, usage_plan_id: String, **kwargs) -> UsagePlan:
         raise NotImplementedError
 
     @handler("GetUsagePlanKey")
     def get_usage_plan_key(
-        self, context: RequestContext, usage_plan_id: String, key_id: String
+        self, context: RequestContext, usage_plan_id: String, key_id: String, **kwargs
     ) -> UsagePlanKey:
         raise NotImplementedError
 
@@ -2267,6 +2360,7 @@ class ApigatewayApi:
         position: String = None,
         limit: NullableInteger = None,
         name_query: String = None,
+        **kwargs
     ) -> UsagePlanKeys:
         raise NotImplementedError
 
@@ -2277,16 +2371,21 @@ class ApigatewayApi:
         position: String = None,
         key_id: String = None,
         limit: NullableInteger = None,
+        **kwargs
     ) -> UsagePlans:
         raise NotImplementedError
 
     @handler("GetVpcLink")
-    def get_vpc_link(self, context: RequestContext, vpc_link_id: String) -> VpcLink:
+    def get_vpc_link(self, context: RequestContext, vpc_link_id: String, **kwargs) -> VpcLink:
         raise NotImplementedError
 
     @handler("GetVpcLinks")
     def get_vpc_links(
-        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs
     ) -> VpcLinks:
         raise NotImplementedError
 
@@ -2297,6 +2396,7 @@ class ApigatewayApi:
         body: IO[Blob],
         format: ApiKeysFormat,
         fail_on_warnings: Boolean = None,
+        **kwargs
     ) -> ApiKeyIds:
         raise NotImplementedError
 
@@ -2308,6 +2408,7 @@ class ApigatewayApi:
         body: IO[Blob],
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
+        **kwargs
     ) -> DocumentationPartIds:
         raise NotImplementedError
 
@@ -2318,6 +2419,7 @@ class ApigatewayApi:
         body: IO[Blob],
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
+        **kwargs
     ) -> RestApi:
         raise NotImplementedError
 
@@ -2330,12 +2432,13 @@ class ApigatewayApi:
         status_code: StatusCode = None,
         response_parameters: MapOfStringToString = None,
         response_templates: MapOfStringToString = None,
+        **kwargs
     ) -> GatewayResponse:
         raise NotImplementedError
 
     @handler("PutIntegration", expand=False)
     def put_integration(
-        self, context: RequestContext, request: PutIntegrationRequest
+        self, context: RequestContext, request: PutIntegrationRequest, **kwargs
     ) -> Integration:
         raise NotImplementedError
 
@@ -2351,6 +2454,7 @@ class ApigatewayApi:
         response_parameters: MapOfStringToString = None,
         response_templates: MapOfStringToString = None,
         content_handling: ContentHandlingStrategy = None,
+        **kwargs
     ) -> IntegrationResponse:
         raise NotImplementedError
 
@@ -2369,6 +2473,7 @@ class ApigatewayApi:
         request_models: MapOfStringToString = None,
         request_validator_id: String = None,
         authorization_scopes: ListOfString = None,
+        **kwargs
     ) -> Method:
         raise NotImplementedError
 
@@ -2382,6 +2487,7 @@ class ApigatewayApi:
         status_code: StatusCode,
         response_parameters: MapOfStringToBoolean = None,
         response_models: MapOfStringToString = None,
+        **kwargs
     ) -> MethodResponse:
         raise NotImplementedError
 
@@ -2394,12 +2500,13 @@ class ApigatewayApi:
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
+        **kwargs
     ) -> RestApi:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: String, tags: MapOfStringToString
+        self, context: RequestContext, resource_arn: String, tags: MapOfStringToString, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2415,6 +2522,7 @@ class ApigatewayApi:
         body: String = None,
         stage_variables: MapOfStringToString = None,
         additional_context: MapOfStringToString = None,
+        **kwargs
     ) -> TestInvokeAuthorizerResponse:
         raise NotImplementedError
 
@@ -2431,18 +2539,19 @@ class ApigatewayApi:
         multi_value_headers: MapOfStringToList = None,
         client_certificate_id: String = None,
         stage_variables: MapOfStringToString = None,
+        **kwargs
     ) -> TestInvokeMethodResponse:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: String, tag_keys: ListOfString
+        self, context: RequestContext, resource_arn: String, tag_keys: ListOfString, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UpdateAccount")
     def update_account(
-        self, context: RequestContext, patch_operations: ListOfPatchOperation = None
+        self, context: RequestContext, patch_operations: ListOfPatchOperation = None, **kwargs
     ) -> Account:
         raise NotImplementedError
 
@@ -2452,6 +2561,7 @@ class ApigatewayApi:
         context: RequestContext,
         api_key: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> ApiKey:
         raise NotImplementedError
 
@@ -2462,6 +2572,7 @@ class ApigatewayApi:
         rest_api_id: String,
         authorizer_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> Authorizer:
         raise NotImplementedError
 
@@ -2472,6 +2583,7 @@ class ApigatewayApi:
         domain_name: String,
         base_path: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> BasePathMapping:
         raise NotImplementedError
 
@@ -2481,6 +2593,7 @@ class ApigatewayApi:
         context: RequestContext,
         client_certificate_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> ClientCertificate:
         raise NotImplementedError
 
@@ -2491,6 +2604,7 @@ class ApigatewayApi:
         rest_api_id: String,
         deployment_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> Deployment:
         raise NotImplementedError
 
@@ -2501,6 +2615,7 @@ class ApigatewayApi:
         rest_api_id: String,
         documentation_part_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> DocumentationPart:
         raise NotImplementedError
 
@@ -2511,6 +2626,7 @@ class ApigatewayApi:
         rest_api_id: String,
         documentation_version: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> DocumentationVersion:
         raise NotImplementedError
 
@@ -2520,6 +2636,7 @@ class ApigatewayApi:
         context: RequestContext,
         domain_name: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> DomainName:
         raise NotImplementedError
 
@@ -2530,6 +2647,7 @@ class ApigatewayApi:
         rest_api_id: String,
         response_type: GatewayResponseType,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> GatewayResponse:
         raise NotImplementedError
 
@@ -2541,6 +2659,7 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> Integration:
         raise NotImplementedError
 
@@ -2553,6 +2672,7 @@ class ApigatewayApi:
         http_method: String,
         status_code: StatusCode,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> IntegrationResponse:
         raise NotImplementedError
 
@@ -2564,6 +2684,7 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> Method:
         raise NotImplementedError
 
@@ -2576,6 +2697,7 @@ class ApigatewayApi:
         http_method: String,
         status_code: StatusCode,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> MethodResponse:
         raise NotImplementedError
 
@@ -2586,6 +2708,7 @@ class ApigatewayApi:
         rest_api_id: String,
         model_name: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> Model:
         raise NotImplementedError
 
@@ -2596,6 +2719,7 @@ class ApigatewayApi:
         rest_api_id: String,
         request_validator_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> RequestValidator:
         raise NotImplementedError
 
@@ -2606,6 +2730,7 @@ class ApigatewayApi:
         rest_api_id: String,
         resource_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> Resource:
         raise NotImplementedError
 
@@ -2615,6 +2740,7 @@ class ApigatewayApi:
         context: RequestContext,
         rest_api_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> RestApi:
         raise NotImplementedError
 
@@ -2625,6 +2751,7 @@ class ApigatewayApi:
         rest_api_id: String,
         stage_name: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> Stage:
         raise NotImplementedError
 
@@ -2635,6 +2762,7 @@ class ApigatewayApi:
         usage_plan_id: String,
         key_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> Usage:
         raise NotImplementedError
 
@@ -2644,6 +2772,7 @@ class ApigatewayApi:
         context: RequestContext,
         usage_plan_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> UsagePlan:
         raise NotImplementedError
 
@@ -2653,5 +2782,6 @@ class ApigatewayApi:
         context: RequestContext,
         vpc_link_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs
     ) -> VpcLink:
         raise NotImplementedError

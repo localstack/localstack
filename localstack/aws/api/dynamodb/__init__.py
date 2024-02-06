@@ -2179,6 +2179,7 @@ class DynamodbApi:
         context: RequestContext,
         statements: PartiQLBatchRequest,
         return_consumed_capacity: ReturnConsumedCapacity = None,
+        **kwargs
     ) -> BatchExecuteStatementOutput:
         raise NotImplementedError
 
@@ -2188,6 +2189,7 @@ class DynamodbApi:
         context: RequestContext,
         request_items: BatchGetRequestMap,
         return_consumed_capacity: ReturnConsumedCapacity = None,
+        **kwargs
     ) -> BatchGetItemOutput:
         raise NotImplementedError
 
@@ -2198,18 +2200,23 @@ class DynamodbApi:
         request_items: BatchWriteItemRequestMap,
         return_consumed_capacity: ReturnConsumedCapacity = None,
         return_item_collection_metrics: ReturnItemCollectionMetrics = None,
+        **kwargs
     ) -> BatchWriteItemOutput:
         raise NotImplementedError
 
     @handler("CreateBackup")
     def create_backup(
-        self, context: RequestContext, table_name: TableName, backup_name: BackupName
+        self, context: RequestContext, table_name: TableName, backup_name: BackupName, **kwargs
     ) -> CreateBackupOutput:
         raise NotImplementedError
 
     @handler("CreateGlobalTable")
     def create_global_table(
-        self, context: RequestContext, global_table_name: TableName, replication_group: ReplicaList
+        self,
+        context: RequestContext,
+        global_table_name: TableName,
+        replication_group: ReplicaList,
+        **kwargs
     ) -> CreateGlobalTableOutput:
         raise NotImplementedError
 
@@ -2229,11 +2236,14 @@ class DynamodbApi:
         tags: TagList = None,
         table_class: TableClass = None,
         deletion_protection_enabled: DeletionProtectionEnabled = None,
+        **kwargs
     ) -> CreateTableOutput:
         raise NotImplementedError
 
     @handler("DeleteBackup")
-    def delete_backup(self, context: RequestContext, backup_arn: BackupArn) -> DeleteBackupOutput:
+    def delete_backup(
+        self, context: RequestContext, backup_arn: BackupArn, **kwargs
+    ) -> DeleteBackupOutput:
         raise NotImplementedError
 
     @handler("DeleteItem")
@@ -2251,88 +2261,87 @@ class DynamodbApi:
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
         return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
+        **kwargs
     ) -> DeleteItemOutput:
         raise NotImplementedError
 
     @handler("DeleteTable")
-    def delete_table(self, context: RequestContext, table_name: TableName) -> DeleteTableOutput:
+    def delete_table(
+        self, context: RequestContext, table_name: TableName, **kwargs
+    ) -> DeleteTableOutput:
         raise NotImplementedError
 
     @handler("DescribeBackup")
     def describe_backup(
-        self, context: RequestContext, backup_arn: BackupArn
+        self, context: RequestContext, backup_arn: BackupArn, **kwargs
     ) -> DescribeBackupOutput:
         raise NotImplementedError
 
     @handler("DescribeContinuousBackups")
     def describe_continuous_backups(
-        self, context: RequestContext, table_name: TableName
+        self, context: RequestContext, table_name: TableName, **kwargs
     ) -> DescribeContinuousBackupsOutput:
         raise NotImplementedError
 
     @handler("DescribeContributorInsights")
     def describe_contributor_insights(
-        self, context: RequestContext, table_name: TableName, index_name: IndexName = None
+        self, context: RequestContext, table_name: TableName, index_name: IndexName = None, **kwargs
     ) -> DescribeContributorInsightsOutput:
         raise NotImplementedError
 
     @handler("DescribeEndpoints")
-    def describe_endpoints(
-        self,
-        context: RequestContext,
-    ) -> DescribeEndpointsResponse:
+    def describe_endpoints(self, context: RequestContext, **kwargs) -> DescribeEndpointsResponse:
         raise NotImplementedError
 
     @handler("DescribeExport")
     def describe_export(
-        self, context: RequestContext, export_arn: ExportArn
+        self, context: RequestContext, export_arn: ExportArn, **kwargs
     ) -> DescribeExportOutput:
         raise NotImplementedError
 
     @handler("DescribeGlobalTable")
     def describe_global_table(
-        self, context: RequestContext, global_table_name: TableName
+        self, context: RequestContext, global_table_name: TableName, **kwargs
     ) -> DescribeGlobalTableOutput:
         raise NotImplementedError
 
     @handler("DescribeGlobalTableSettings")
     def describe_global_table_settings(
-        self, context: RequestContext, global_table_name: TableName
+        self, context: RequestContext, global_table_name: TableName, **kwargs
     ) -> DescribeGlobalTableSettingsOutput:
         raise NotImplementedError
 
     @handler("DescribeImport")
     def describe_import(
-        self, context: RequestContext, import_arn: ImportArn
+        self, context: RequestContext, import_arn: ImportArn, **kwargs
     ) -> DescribeImportOutput:
         raise NotImplementedError
 
     @handler("DescribeKinesisStreamingDestination")
     def describe_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName
+        self, context: RequestContext, table_name: TableName, **kwargs
     ) -> DescribeKinesisStreamingDestinationOutput:
         raise NotImplementedError
 
     @handler("DescribeLimits")
-    def describe_limits(
-        self,
-        context: RequestContext,
-    ) -> DescribeLimitsOutput:
+    def describe_limits(self, context: RequestContext, **kwargs) -> DescribeLimitsOutput:
         raise NotImplementedError
 
     @handler("DescribeTable")
-    def describe_table(self, context: RequestContext, table_name: TableName) -> DescribeTableOutput:
+    def describe_table(
+        self, context: RequestContext, table_name: TableName, **kwargs
+    ) -> DescribeTableOutput:
         raise NotImplementedError
 
     @handler("DescribeTableReplicaAutoScaling")
     def describe_table_replica_auto_scaling(
-        self, context: RequestContext, table_name: TableName
+        self, context: RequestContext, table_name: TableName, **kwargs
     ) -> DescribeTableReplicaAutoScalingOutput:
         raise NotImplementedError
 
     @handler("DescribeTimeToLive")
     def describe_time_to_live(
-        self, context: RequestContext, table_name: TableName
+        self, context: RequestContext, table_name: TableName, **kwargs
     ) -> DescribeTimeToLiveOutput:
         raise NotImplementedError
 
@@ -2343,6 +2352,7 @@ class DynamodbApi:
         table_name: TableName,
         stream_arn: StreamArn,
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
+        **kwargs
     ) -> KinesisStreamingDestinationOutput:
         raise NotImplementedError
 
@@ -2353,6 +2363,7 @@ class DynamodbApi:
         table_name: TableName,
         stream_arn: StreamArn,
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
+        **kwargs
     ) -> KinesisStreamingDestinationOutput:
         raise NotImplementedError
 
@@ -2367,6 +2378,7 @@ class DynamodbApi:
         return_consumed_capacity: ReturnConsumedCapacity = None,
         limit: PositiveIntegerObject = None,
         return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
+        **kwargs
     ) -> ExecuteStatementOutput:
         raise NotImplementedError
 
@@ -2377,6 +2389,7 @@ class DynamodbApi:
         transact_statements: ParameterizedStatements,
         client_request_token: ClientRequestToken = None,
         return_consumed_capacity: ReturnConsumedCapacity = None,
+        **kwargs
     ) -> ExecuteTransactionOutput:
         raise NotImplementedError
 
@@ -2395,6 +2408,7 @@ class DynamodbApi:
         export_format: ExportFormat = None,
         export_type: ExportType = None,
         incremental_export_specification: IncrementalExportSpecification = None,
+        **kwargs
     ) -> ExportTableToPointInTimeOutput:
         raise NotImplementedError
 
@@ -2409,6 +2423,7 @@ class DynamodbApi:
         return_consumed_capacity: ReturnConsumedCapacity = None,
         projection_expression: ProjectionExpression = None,
         expression_attribute_names: ExpressionAttributeNameMap = None,
+        **kwargs
     ) -> GetItemOutput:
         raise NotImplementedError
 
@@ -2422,6 +2437,7 @@ class DynamodbApi:
         client_token: ClientToken = None,
         input_format_options: InputFormatOptions = None,
         input_compression_type: InputCompressionType = None,
+        **kwargs
     ) -> ImportTableOutput:
         raise NotImplementedError
 
@@ -2435,6 +2451,7 @@ class DynamodbApi:
         time_range_upper_bound: TimeRangeUpperBound = None,
         exclusive_start_backup_arn: BackupArn = None,
         backup_type: BackupTypeFilter = None,
+        **kwargs
     ) -> ListBackupsOutput:
         raise NotImplementedError
 
@@ -2445,6 +2462,7 @@ class DynamodbApi:
         table_name: TableName = None,
         next_token: NextTokenString = None,
         max_results: ListContributorInsightsLimit = None,
+        **kwargs
     ) -> ListContributorInsightsOutput:
         raise NotImplementedError
 
@@ -2455,6 +2473,7 @@ class DynamodbApi:
         table_arn: TableArn = None,
         max_results: ListExportsMaxLimit = None,
         next_token: ExportNextToken = None,
+        **kwargs
     ) -> ListExportsOutput:
         raise NotImplementedError
 
@@ -2465,6 +2484,7 @@ class DynamodbApi:
         exclusive_start_global_table_name: TableName = None,
         limit: PositiveIntegerObject = None,
         region_name: RegionName = None,
+        **kwargs
     ) -> ListGlobalTablesOutput:
         raise NotImplementedError
 
@@ -2475,6 +2495,7 @@ class DynamodbApi:
         table_arn: TableArn = None,
         page_size: ListImportsMaxLimit = None,
         next_token: ImportNextToken = None,
+        **kwargs
     ) -> ListImportsOutput:
         raise NotImplementedError
 
@@ -2484,6 +2505,7 @@ class DynamodbApi:
         context: RequestContext,
         exclusive_start_table_name: TableName = None,
         limit: ListTablesInputLimit = None,
+        **kwargs
     ) -> ListTablesOutput:
         raise NotImplementedError
 
@@ -2493,6 +2515,7 @@ class DynamodbApi:
         context: RequestContext,
         resource_arn: ResourceArnString,
         next_token: NextTokenString = None,
+        **kwargs
     ) -> ListTagsOfResourceOutput:
         raise NotImplementedError
 
@@ -2511,6 +2534,7 @@ class DynamodbApi:
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
         return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
+        **kwargs
     ) -> PutItemOutput:
         raise NotImplementedError
 
@@ -2535,6 +2559,7 @@ class DynamodbApi:
         key_condition_expression: KeyExpression = None,
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
+        **kwargs
     ) -> QueryOutput:
         raise NotImplementedError
 
@@ -2549,6 +2574,7 @@ class DynamodbApi:
         local_secondary_index_override: LocalSecondaryIndexList = None,
         provisioned_throughput_override: ProvisionedThroughput = None,
         sse_specification_override: SSESpecification = None,
+        **kwargs
     ) -> RestoreTableFromBackupOutput:
         raise NotImplementedError
 
@@ -2566,6 +2592,7 @@ class DynamodbApi:
         local_secondary_index_override: LocalSecondaryIndexList = None,
         provisioned_throughput_override: ProvisionedThroughput = None,
         sse_specification_override: SSESpecification = None,
+        **kwargs
     ) -> RestoreTableToPointInTimeOutput:
         raise NotImplementedError
 
@@ -2589,12 +2616,13 @@ class DynamodbApi:
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
         consistent_read: ConsistentRead = None,
+        **kwargs
     ) -> ScanOutput:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList
+        self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2604,6 +2632,7 @@ class DynamodbApi:
         context: RequestContext,
         transact_items: TransactGetItemList,
         return_consumed_capacity: ReturnConsumedCapacity = None,
+        **kwargs
     ) -> TransactGetItemsOutput:
         raise NotImplementedError
 
@@ -2615,12 +2644,17 @@ class DynamodbApi:
         return_consumed_capacity: ReturnConsumedCapacity = None,
         return_item_collection_metrics: ReturnItemCollectionMetrics = None,
         client_request_token: ClientRequestToken = None,
+        **kwargs
     ) -> TransactWriteItemsOutput:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: ResourceArnString, tag_keys: TagKeyList
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        tag_keys: TagKeyList,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2630,6 +2664,7 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableName,
         point_in_time_recovery_specification: PointInTimeRecoverySpecification,
+        **kwargs
     ) -> UpdateContinuousBackupsOutput:
         raise NotImplementedError
 
@@ -2640,6 +2675,7 @@ class DynamodbApi:
         table_name: TableName,
         contributor_insights_action: ContributorInsightsAction,
         index_name: IndexName = None,
+        **kwargs
     ) -> UpdateContributorInsightsOutput:
         raise NotImplementedError
 
@@ -2649,6 +2685,7 @@ class DynamodbApi:
         context: RequestContext,
         global_table_name: TableName,
         replica_updates: ReplicaUpdateList,
+        **kwargs
     ) -> UpdateGlobalTableOutput:
         raise NotImplementedError
 
@@ -2662,6 +2699,7 @@ class DynamodbApi:
         global_table_provisioned_write_capacity_auto_scaling_settings_update: AutoScalingSettingsUpdate = None,
         global_table_global_secondary_index_settings_update: GlobalTableGlobalSecondaryIndexSettingsUpdateList = None,
         replica_settings_update: ReplicaSettingsUpdateList = None,
+        **kwargs
     ) -> UpdateGlobalTableSettingsOutput:
         raise NotImplementedError
 
@@ -2682,6 +2720,7 @@ class DynamodbApi:
         expression_attribute_names: ExpressionAttributeNameMap = None,
         expression_attribute_values: ExpressionAttributeValueMap = None,
         return_values_on_condition_check_failure: ReturnValuesOnConditionCheckFailure = None,
+        **kwargs
     ) -> UpdateItemOutput:
         raise NotImplementedError
 
@@ -2692,6 +2731,7 @@ class DynamodbApi:
         table_name: TableName,
         stream_arn: StreamArn,
         update_kinesis_streaming_configuration: UpdateKinesisStreamingConfiguration = None,
+        **kwargs
     ) -> UpdateKinesisStreamingDestinationOutput:
         raise NotImplementedError
 
@@ -2709,6 +2749,7 @@ class DynamodbApi:
         replica_updates: ReplicationGroupUpdateList = None,
         table_class: TableClass = None,
         deletion_protection_enabled: DeletionProtectionEnabled = None,
+        **kwargs
     ) -> UpdateTableOutput:
         raise NotImplementedError
 
@@ -2720,6 +2761,7 @@ class DynamodbApi:
         global_secondary_index_updates: GlobalSecondaryIndexAutoScalingUpdateList = None,
         provisioned_write_capacity_auto_scaling_update: AutoScalingSettingsUpdate = None,
         replica_updates: ReplicaAutoScalingUpdateList = None,
+        **kwargs
     ) -> UpdateTableReplicaAutoScalingOutput:
         raise NotImplementedError
 
@@ -2729,5 +2771,6 @@ class DynamodbApi:
         context: RequestContext,
         table_name: TableName,
         time_to_live_specification: TimeToLiveSpecification,
+        **kwargs
     ) -> UpdateTimeToLiveOutput:
         raise NotImplementedError
