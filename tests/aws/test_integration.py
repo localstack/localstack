@@ -218,6 +218,9 @@ class TestIntegration:
         table_name = short_uid() + "lsbat" + ddb_lease_table_suffix
         lambda_ddb_name = f"lambda-ddb-{short_uid()}"
         stream_name = kinesis_create_stream()
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
 
         events = []
 
@@ -227,12 +230,12 @@ class TestIntegration:
 
         # start the KCL client process in the background
         process = kinesis_connector.listen_to_kinesis(
-            stream_name,
+            stream_name=stream_name,
+            stream_arn=stream_arn,
             account_id=TEST_AWS_ACCOUNT_ID,
             region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
-            wait_until_started=True,
-            ddb_lease_table_suffix=ddb_lease_table_suffix,
+            wait_for_client_ready=True,
         )
         cleanups.append(lambda: process.stop())
 
