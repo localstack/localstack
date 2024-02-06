@@ -52,6 +52,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         stream_arn: StreamArn,
         limit: PositiveIntegerObject = None,
         exclusive_start_shard_id: ShardId = None,
+        **kwargs,
     ) -> DescribeStreamOutput:
         store = get_dynamodbstreams_store(context.account_id, context.region)
         kinesis = connect_to(
@@ -122,6 +123,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         shard_id: ShardId,
         shard_iterator_type: ShardIteratorType,
         sequence_number: SequenceNumber = None,
+        **kwargs,
     ) -> GetShardIteratorOutput:
         stream_name = stream_name_from_stream_arn(stream_arn)
         stream_shard_id = kinesis_shard_id(shard_id)
@@ -147,6 +149,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         table_name: TableName = None,
         limit: PositiveIntegerObject = None,
         exclusive_start_stream_arn: StreamArn = None,
+        **kwargs,
     ) -> ListStreamsOutput:
         store = get_dynamodbstreams_store(context.account_id, context.region)
         result = [select_from_typed_dict(Stream, res) for res in store.ddb_streams.values()]
