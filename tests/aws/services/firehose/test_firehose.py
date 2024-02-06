@@ -426,6 +426,7 @@ class TestFirehoseIntegration:
         kinesis_create_stream,
         get_firehose_iam_documents,
         create_iam_role_with_policy,
+        wait_for_stream_ready,
         firehose_create_delivery_stream,
         read_s3_data,
         snapshot,
@@ -460,6 +461,7 @@ class TestFirehoseIntegration:
         # required for role propagation delay on aws
         if is_aws_cloud():
             time.sleep(10)
+        wait_for_stream_ready(stream_name)
 
         # create log groupe for firehose delivery stream error logging
         log_group_name = f"group-{short_uid()}"
