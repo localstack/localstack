@@ -612,12 +612,14 @@ def transcribe_create_job(s3_bucket, aws_client):
 
 
 @pytest.fixture
-def kinesis_create_stream(aws_client):
+def kinesis_create_stream(aws_client, wait_for_stream_ready):
     stream_names = []
 
     def _create_stream(**kwargs):
         if "StreamName" not in kwargs:
             kwargs["StreamName"] = f"test-stream-{short_uid()}"
+        if "ShardCount" not in kwargs:
+            kwargs["ShardCount"] = 2
         aws_client.kinesis.create_stream(**kwargs)
         stream_names.append(kwargs["StreamName"])
         return kwargs["StreamName"]
@@ -626,7 +628,16 @@ def kinesis_create_stream(aws_client):
 
     for stream_name in stream_names:
         try:
-            aws_client.kinesis.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
+            ready = wait_for_stream_ready(stream_name=stream_name)
+            if ready:
+                aws_client.kinesis.delete_stream(StreamName=stream_name)
+            else:
+                LOG.warning(
+                    f"Timed out while waiting on stream {stream_name} to become ready for deletion - attempting force delete"
+                )
+                aws_client.kinesis.delete_stream(
+                    StreamName=stream_name, EnforceConsumerDeletion=True
+                )
         except Exception as e:
             LOG.debug("error cleaning up kinesis stream %s: %s", stream_name, e)
 
