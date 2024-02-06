@@ -232,7 +232,7 @@ def execute_macro(
     if result.get("status") != "success":
         error_message = result.get("errorMessage")
         message = (
-            f"Transform {transformation_id} failed with: {error_message}.. Rollback requested by user."
+            f"Transform {transformation_id} failed with: {error_message}. Rollback requested by user."
             if error_message
             else f"Transform {transformation_id} failed without an error message.. Rollback requested by user."
         )
