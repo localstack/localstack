@@ -141,6 +141,8 @@ class ExecutionEnvironment:
             # 4) Internal LocalStack runtime API
             "LOCALSTACK_RUNTIME_ID": self.id,
             "LOCALSTACK_RUNTIME_ENDPOINT": self.runtime_executor.get_runtime_endpoint(),
+            # 5) Account of the function (necessary for extensions API)
+            "LOCALSTACK_FUNCTION_ACCOUNT_ID": self.function_version.id.account,
             # used by the init to spawn the x-ray daemon
             # LOCALSTACK_USER conditionally added below
         }
