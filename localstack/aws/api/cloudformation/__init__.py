@@ -2622,20 +2622,22 @@ class CloudformationApi:
 
     @handler("ActivateOrganizationsAccess")
     def activate_organizations_access(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> ActivateOrganizationsAccessOutput:
         raise NotImplementedError
 
     @handler("ActivateType", expand=False)
     def activate_type(
-        self, context: RequestContext, request: ActivateTypeInput
+        self, context: RequestContext, request: ActivateTypeInput, **kwargs
     ) -> ActivateTypeOutput:
         raise NotImplementedError
 
     @handler("BatchDescribeTypeConfigurations")
     def batch_describe_type_configurations(
-        self, context: RequestContext, type_configuration_identifiers: TypeConfigurationIdentifiers
+        self,
+        context: RequestContext,
+        type_configuration_identifiers: TypeConfigurationIdentifiers,
+        **kwargs
     ) -> BatchDescribeTypeConfigurationsOutput:
         raise NotImplementedError
 
@@ -2645,6 +2647,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackName,
         client_request_token: ClientRequestToken = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2656,6 +2659,7 @@ class CloudformationApi:
         role_arn: RoleARN = None,
         resources_to_skip: ResourcesToSkip = None,
         client_request_token: ClientRequestToken = None,
+        **kwargs
     ) -> ContinueUpdateRollbackOutput:
         raise NotImplementedError
 
@@ -2682,6 +2686,7 @@ class CloudformationApi:
         include_nested_stacks: IncludeNestedStacks = None,
         on_stack_failure: OnStackFailure = None,
         import_existing_resources: ImportExistingResources = None,
+        **kwargs
     ) -> CreateChangeSetOutput:
         raise NotImplementedError
 
@@ -2693,6 +2698,7 @@ class CloudformationApi:
         resources: ResourceDefinitions = None,
         stack_name: StackName = None,
         template_configuration: TemplateConfiguration = None,
+        **kwargs
     ) -> CreateGeneratedTemplateOutput:
         raise NotImplementedError
 
@@ -2718,6 +2724,7 @@ class CloudformationApi:
         client_request_token: ClientRequestToken = None,
         enable_termination_protection: EnableTerminationProtection = None,
         retain_except_on_create: RetainExceptOnCreate = None,
+        **kwargs
     ) -> CreateStackOutput:
         raise NotImplementedError
 
@@ -2733,6 +2740,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs
     ) -> CreateStackInstancesOutput:
         raise NotImplementedError
 
@@ -2755,19 +2763,19 @@ class CloudformationApi:
         call_as: CallAs = None,
         client_request_token: ClientRequestToken = None,
         managed_execution: ManagedExecution = None,
+        **kwargs
     ) -> CreateStackSetOutput:
         raise NotImplementedError
 
     @handler("DeactivateOrganizationsAccess")
     def deactivate_organizations_access(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> DeactivateOrganizationsAccessOutput:
         raise NotImplementedError
 
     @handler("DeactivateType", expand=False)
     def deactivate_type(
-        self, context: RequestContext, request: DeactivateTypeInput
+        self, context: RequestContext, request: DeactivateTypeInput, **kwargs
     ) -> DeactivateTypeOutput:
         raise NotImplementedError
 
@@ -2777,12 +2785,13 @@ class CloudformationApi:
         context: RequestContext,
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
+        **kwargs
     ) -> DeleteChangeSetOutput:
         raise NotImplementedError
 
     @handler("DeleteGeneratedTemplate")
     def delete_generated_template(
-        self, context: RequestContext, generated_template_name: GeneratedTemplateName
+        self, context: RequestContext, generated_template_name: GeneratedTemplateName, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2794,6 +2803,7 @@ class CloudformationApi:
         retain_resources: RetainResources = None,
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2809,24 +2819,29 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs
     ) -> DeleteStackInstancesOutput:
         raise NotImplementedError
 
     @handler("DeleteStackSet")
     def delete_stack_set(
-        self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetName,
+        call_as: CallAs = None,
+        **kwargs
     ) -> DeleteStackSetOutput:
         raise NotImplementedError
 
     @handler("DeregisterType", expand=False)
     def deregister_type(
-        self, context: RequestContext, request: DeregisterTypeInput
+        self, context: RequestContext, request: DeregisterTypeInput, **kwargs
     ) -> DeregisterTypeOutput:
         raise NotImplementedError
 
     @handler("DescribeAccountLimits")
     def describe_account_limits(
-        self, context: RequestContext, next_token: NextToken = None
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> DescribeAccountLimitsOutput:
         raise NotImplementedError
 
@@ -2837,6 +2852,7 @@ class CloudformationApi:
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeChangeSetOutput:
         raise NotImplementedError
 
@@ -2848,42 +2864,47 @@ class CloudformationApi:
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
         logical_resource_id: LogicalResourceId = None,
+        **kwargs
     ) -> DescribeChangeSetHooksOutput:
         raise NotImplementedError
 
     @handler("DescribeGeneratedTemplate")
     def describe_generated_template(
-        self, context: RequestContext, generated_template_name: GeneratedTemplateName
+        self, context: RequestContext, generated_template_name: GeneratedTemplateName, **kwargs
     ) -> DescribeGeneratedTemplateOutput:
         raise NotImplementedError
 
     @handler("DescribeOrganizationsAccess")
     def describe_organizations_access(
-        self, context: RequestContext, call_as: CallAs = None
+        self, context: RequestContext, call_as: CallAs = None, **kwargs
     ) -> DescribeOrganizationsAccessOutput:
         raise NotImplementedError
 
     @handler("DescribePublisher")
     def describe_publisher(
-        self, context: RequestContext, publisher_id: PublisherId = None
+        self, context: RequestContext, publisher_id: PublisherId = None, **kwargs
     ) -> DescribePublisherOutput:
         raise NotImplementedError
 
     @handler("DescribeResourceScan")
     def describe_resource_scan(
-        self, context: RequestContext, resource_scan_id: ResourceScanId
+        self, context: RequestContext, resource_scan_id: ResourceScanId, **kwargs
     ) -> DescribeResourceScanOutput:
         raise NotImplementedError
 
     @handler("DescribeStackDriftDetectionStatus")
     def describe_stack_drift_detection_status(
-        self, context: RequestContext, stack_drift_detection_id: StackDriftDetectionId
+        self, context: RequestContext, stack_drift_detection_id: StackDriftDetectionId, **kwargs
     ) -> DescribeStackDriftDetectionStatusOutput:
         raise NotImplementedError
 
     @handler("DescribeStackEvents")
     def describe_stack_events(
-        self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        next_token: NextToken = None,
+        **kwargs
     ) -> DescribeStackEventsOutput:
         raise NotImplementedError
 
@@ -2895,12 +2916,17 @@ class CloudformationApi:
         stack_instance_account: Account,
         stack_instance_region: Region,
         call_as: CallAs = None,
+        **kwargs
     ) -> DescribeStackInstanceOutput:
         raise NotImplementedError
 
     @handler("DescribeStackResource")
     def describe_stack_resource(
-        self, context: RequestContext, stack_name: StackName, logical_resource_id: LogicalResourceId
+        self,
+        context: RequestContext,
+        stack_name: StackName,
+        logical_resource_id: LogicalResourceId,
+        **kwargs
     ) -> DescribeStackResourceOutput:
         raise NotImplementedError
 
@@ -2912,6 +2938,7 @@ class CloudformationApi:
         stack_resource_drift_status_filters: StackResourceDriftStatusFilters = None,
         next_token: NextToken = None,
         max_results: BoxedMaxResults = None,
+        **kwargs
     ) -> DescribeStackResourceDriftsOutput:
         raise NotImplementedError
 
@@ -2922,12 +2949,17 @@ class CloudformationApi:
         stack_name: StackName = None,
         logical_resource_id: LogicalResourceId = None,
         physical_resource_id: PhysicalResourceId = None,
+        **kwargs
     ) -> DescribeStackResourcesOutput:
         raise NotImplementedError
 
     @handler("DescribeStackSet")
     def describe_stack_set(
-        self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetName,
+        call_as: CallAs = None,
+        **kwargs
     ) -> DescribeStackSetOutput:
         raise NotImplementedError
 
@@ -2938,24 +2970,29 @@ class CloudformationApi:
         stack_set_name: StackSetName,
         operation_id: ClientRequestToken,
         call_as: CallAs = None,
+        **kwargs
     ) -> DescribeStackSetOperationOutput:
         raise NotImplementedError
 
     @handler("DescribeStacks")
     def describe_stacks(
-        self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        next_token: NextToken = None,
+        **kwargs
     ) -> DescribeStacksOutput:
         raise NotImplementedError
 
     @handler("DescribeType", expand=False)
     def describe_type(
-        self, context: RequestContext, request: DescribeTypeInput
+        self, context: RequestContext, request: DescribeTypeInput, **kwargs
     ) -> DescribeTypeOutput:
         raise NotImplementedError
 
     @handler("DescribeTypeRegistration")
     def describe_type_registration(
-        self, context: RequestContext, registration_token: RegistrationToken
+        self, context: RequestContext, registration_token: RegistrationToken, **kwargs
     ) -> DescribeTypeRegistrationOutput:
         raise NotImplementedError
 
@@ -2965,6 +3002,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackNameOrId,
         logical_resource_ids: LogicalResourceIds = None,
+        **kwargs
     ) -> DetectStackDriftOutput:
         raise NotImplementedError
 
@@ -2974,6 +3012,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackNameOrId,
         logical_resource_id: LogicalResourceId,
+        **kwargs
     ) -> DetectStackResourceDriftOutput:
         raise NotImplementedError
 
@@ -2985,6 +3024,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs
     ) -> DetectStackSetDriftOutput:
         raise NotImplementedError
 
@@ -2995,6 +3035,7 @@ class CloudformationApi:
         template_body: TemplateBody = None,
         template_url: TemplateURL = None,
         parameters: Parameters = None,
+        **kwargs
     ) -> EstimateTemplateCostOutput:
         raise NotImplementedError
 
@@ -3007,6 +3048,7 @@ class CloudformationApi:
         client_request_token: ClientRequestToken = None,
         disable_rollback: DisableRollback = None,
         retain_except_on_create: RetainExceptOnCreate = None,
+        **kwargs
     ) -> ExecuteChangeSetOutput:
         raise NotImplementedError
 
@@ -3016,12 +3058,13 @@ class CloudformationApi:
         context: RequestContext,
         generated_template_name: GeneratedTemplateName,
         format: TemplateFormat = None,
+        **kwargs
     ) -> GetGeneratedTemplateOutput:
         raise NotImplementedError
 
     @handler("GetStackPolicy")
     def get_stack_policy(
-        self, context: RequestContext, stack_name: StackName
+        self, context: RequestContext, stack_name: StackName, **kwargs
     ) -> GetStackPolicyOutput:
         raise NotImplementedError
 
@@ -3032,6 +3075,7 @@ class CloudformationApi:
         stack_name: StackName = None,
         change_set_name: ChangeSetNameOrId = None,
         template_stage: TemplateStage = None,
+        **kwargs
     ) -> GetTemplateOutput:
         raise NotImplementedError
 
@@ -3045,6 +3089,7 @@ class CloudformationApi:
         stack_set_name: StackSetNameOrId = None,
         call_as: CallAs = None,
         template_summary_config: TemplateSummaryConfig = None,
+        **kwargs
     ) -> GetTemplateSummaryOutput:
         raise NotImplementedError
 
@@ -3059,30 +3104,43 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs
     ) -> ImportStacksToStackSetOutput:
         raise NotImplementedError
 
     @handler("ListChangeSets")
     def list_change_sets(
-        self, context: RequestContext, stack_name: StackNameOrId, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        stack_name: StackNameOrId,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListChangeSetsOutput:
         raise NotImplementedError
 
     @handler("ListExports")
     def list_exports(
-        self, context: RequestContext, next_token: NextToken = None
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListExportsOutput:
         raise NotImplementedError
 
     @handler("ListGeneratedTemplates")
     def list_generated_templates(
-        self, context: RequestContext, next_token: NextToken = None, max_results: MaxResults = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        **kwargs
     ) -> ListGeneratedTemplatesOutput:
         raise NotImplementedError
 
     @handler("ListImports")
     def list_imports(
-        self, context: RequestContext, export_name: ExportName, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        export_name: ExportName,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListImportsOutput:
         raise NotImplementedError
 
@@ -3094,6 +3152,7 @@ class CloudformationApi:
         resources: ScannedResourceIdentifiers,
         next_token: NextToken = None,
         max_results: BoxedMaxResults = None,
+        **kwargs
     ) -> ListResourceScanRelatedResourcesOutput:
         raise NotImplementedError
 
@@ -3108,6 +3167,7 @@ class CloudformationApi:
         tag_value: TagValue = None,
         next_token: NextToken = None,
         max_results: ResourceScannerMaxResults = None,
+        **kwargs
     ) -> ListResourceScanResourcesOutput:
         raise NotImplementedError
 
@@ -3117,6 +3177,7 @@ class CloudformationApi:
         context: RequestContext,
         next_token: NextToken = None,
         max_results: ResourceScannerMaxResults = None,
+        **kwargs
     ) -> ListResourceScansOutput:
         raise NotImplementedError
 
@@ -3132,6 +3193,7 @@ class CloudformationApi:
         max_results: MaxResults = None,
         stack_instance_resource_drift_statuses: StackResourceDriftStatusFilters = None,
         call_as: CallAs = None,
+        **kwargs
     ) -> ListStackInstanceResourceDriftsOutput:
         raise NotImplementedError
 
@@ -3146,12 +3208,13 @@ class CloudformationApi:
         stack_instance_account: Account = None,
         stack_instance_region: Region = None,
         call_as: CallAs = None,
+        **kwargs
     ) -> ListStackInstancesOutput:
         raise NotImplementedError
 
     @handler("ListStackResources")
     def list_stack_resources(
-        self, context: RequestContext, stack_name: StackName, next_token: NextToken = None
+        self, context: RequestContext, stack_name: StackName, next_token: NextToken = None, **kwargs
     ) -> ListStackResourcesOutput:
         raise NotImplementedError
 
@@ -3165,6 +3228,7 @@ class CloudformationApi:
         max_results: MaxResults = None,
         call_as: CallAs = None,
         filters: OperationResultFilters = None,
+        **kwargs
     ) -> ListStackSetOperationResultsOutput:
         raise NotImplementedError
 
@@ -3176,6 +3240,7 @@ class CloudformationApi:
         next_token: NextToken = None,
         max_results: MaxResults = None,
         call_as: CallAs = None,
+        **kwargs
     ) -> ListStackSetOperationsOutput:
         raise NotImplementedError
 
@@ -3187,6 +3252,7 @@ class CloudformationApi:
         max_results: MaxResults = None,
         status: StackSetStatus = None,
         call_as: CallAs = None,
+        **kwargs
     ) -> ListStackSetsOutput:
         raise NotImplementedError
 
@@ -3196,27 +3262,32 @@ class CloudformationApi:
         context: RequestContext,
         next_token: NextToken = None,
         stack_status_filter: StackStatusFilter = None,
+        **kwargs
     ) -> ListStacksOutput:
         raise NotImplementedError
 
     @handler("ListTypeRegistrations", expand=False)
     def list_type_registrations(
-        self, context: RequestContext, request: ListTypeRegistrationsInput
+        self, context: RequestContext, request: ListTypeRegistrationsInput, **kwargs
     ) -> ListTypeRegistrationsOutput:
         raise NotImplementedError
 
     @handler("ListTypeVersions", expand=False)
     def list_type_versions(
-        self, context: RequestContext, request: ListTypeVersionsInput
+        self, context: RequestContext, request: ListTypeVersionsInput, **kwargs
     ) -> ListTypeVersionsOutput:
         raise NotImplementedError
 
     @handler("ListTypes", expand=False)
-    def list_types(self, context: RequestContext, request: ListTypesInput) -> ListTypesOutput:
+    def list_types(
+        self, context: RequestContext, request: ListTypesInput, **kwargs
+    ) -> ListTypesOutput:
         raise NotImplementedError
 
     @handler("PublishType", expand=False)
-    def publish_type(self, context: RequestContext, request: PublishTypeInput) -> PublishTypeOutput:
+    def publish_type(
+        self, context: RequestContext, request: PublishTypeInput, **kwargs
+    ) -> PublishTypeOutput:
         raise NotImplementedError
 
     @handler("RecordHandlerProgress")
@@ -3230,6 +3301,7 @@ class CloudformationApi:
         error_code: HandlerErrorCode = None,
         resource_model: ResourceModel = None,
         client_request_token: ClientRequestToken = None,
+        **kwargs
     ) -> RecordHandlerProgressOutput:
         raise NotImplementedError
 
@@ -3239,12 +3311,13 @@ class CloudformationApi:
         context: RequestContext,
         accept_terms_and_conditions: AcceptTermsAndConditions = None,
         connection_arn: ConnectionArn = None,
+        **kwargs
     ) -> RegisterPublisherOutput:
         raise NotImplementedError
 
     @handler("RegisterType", expand=False)
     def register_type(
-        self, context: RequestContext, request: RegisterTypeInput
+        self, context: RequestContext, request: RegisterTypeInput, **kwargs
     ) -> RegisterTypeOutput:
         raise NotImplementedError
 
@@ -3256,6 +3329,7 @@ class CloudformationApi:
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
         retain_except_on_create: RetainExceptOnCreate = None,
+        **kwargs
     ) -> RollbackStackOutput:
         raise NotImplementedError
 
@@ -3266,18 +3340,19 @@ class CloudformationApi:
         stack_name: StackName,
         stack_policy_body: StackPolicyBody = None,
         stack_policy_url: StackPolicyURL = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("SetTypeConfiguration", expand=False)
     def set_type_configuration(
-        self, context: RequestContext, request: SetTypeConfigurationInput
+        self, context: RequestContext, request: SetTypeConfigurationInput, **kwargs
     ) -> SetTypeConfigurationOutput:
         raise NotImplementedError
 
     @handler("SetTypeDefaultVersion", expand=False)
     def set_type_default_version(
-        self, context: RequestContext, request: SetTypeDefaultVersionInput
+        self, context: RequestContext, request: SetTypeDefaultVersionInput, **kwargs
     ) -> SetTypeDefaultVersionOutput:
         raise NotImplementedError
 
@@ -3289,12 +3364,13 @@ class CloudformationApi:
         logical_resource_id: LogicalResourceId,
         unique_id: ResourceSignalUniqueId,
         status: ResourceSignalStatus,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("StartResourceScan")
     def start_resource_scan(
-        self, context: RequestContext, client_request_token: ClientRequestToken = None
+        self, context: RequestContext, client_request_token: ClientRequestToken = None, **kwargs
     ) -> StartResourceScanOutput:
         raise NotImplementedError
 
@@ -3305,11 +3381,14 @@ class CloudformationApi:
         stack_set_name: StackSetName,
         operation_id: ClientRequestToken,
         call_as: CallAs = None,
+        **kwargs
     ) -> StopStackSetOperationOutput:
         raise NotImplementedError
 
     @handler("TestType", expand=False)
-    def test_type(self, context: RequestContext, request: TestTypeInput) -> TestTypeOutput:
+    def test_type(
+        self, context: RequestContext, request: TestTypeInput, **kwargs
+    ) -> TestTypeOutput:
         raise NotImplementedError
 
     @handler("UpdateGeneratedTemplate")
@@ -3322,6 +3401,7 @@ class CloudformationApi:
         remove_resources: JazzLogicalResourceIds = None,
         refresh_all_resources: RefreshAllResources = None,
         template_configuration: TemplateConfiguration = None,
+        **kwargs
     ) -> UpdateGeneratedTemplateOutput:
         raise NotImplementedError
 
@@ -3347,6 +3427,7 @@ class CloudformationApi:
         disable_rollback: DisableRollback = None,
         client_request_token: ClientRequestToken = None,
         retain_except_on_create: RetainExceptOnCreate = None,
+        **kwargs
     ) -> UpdateStackOutput:
         raise NotImplementedError
 
@@ -3362,6 +3443,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs
     ) -> UpdateStackInstancesOutput:
         raise NotImplementedError
 
@@ -3388,6 +3470,7 @@ class CloudformationApi:
         regions: RegionList = None,
         call_as: CallAs = None,
         managed_execution: ManagedExecution = None,
+        **kwargs
     ) -> UpdateStackSetOutput:
         raise NotImplementedError
 
@@ -3397,6 +3480,7 @@ class CloudformationApi:
         context: RequestContext,
         enable_termination_protection: EnableTerminationProtection,
         stack_name: StackNameOrId,
+        **kwargs
     ) -> UpdateTerminationProtectionOutput:
         raise NotImplementedError
 
@@ -3406,5 +3490,6 @@ class CloudformationApi:
         context: RequestContext,
         template_body: TemplateBody = None,
         template_url: TemplateURL = None,
+        **kwargs
     ) -> ValidateTemplateOutput:
         raise NotImplementedError
