@@ -108,7 +108,7 @@ coveralls==3.3.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==41.0.7
+cryptography==42.0.0
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext

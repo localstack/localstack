@@ -34,7 +34,7 @@ click==8.1.7
     #   flask
     #   localstack-core (pyproject.toml)
     #   quart
-cryptography==41.0.7
+cryptography==42.0.0
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
