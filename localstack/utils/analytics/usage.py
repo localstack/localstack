@@ -1,4 +1,5 @@
 import datetime
+import logging
 import math
 from typing import Any
 
@@ -6,6 +7,8 @@ from localstack import config
 from localstack.utils.analytics import get_session_id
 from localstack.utils.analytics.events import Event, EventMetadata
 from localstack.utils.analytics.publisher import AnalyticsClientPublisher
+
+LOG = logging.getLogger(__name__)
 
 # Counters have to register with the registry
 collector_registry: dict[str, Any] = dict()
@@ -116,6 +119,9 @@ def aggregate_and_send():
     aggregated_payload = aggregate()
 
     publisher = AnalyticsClientPublisher()
-    publisher.publish(
-        [Event(name="ls:usage_analytics", metadata=metadata, payload=aggregated_payload)]
-    )
+    try:
+        publisher.publish(
+            [Event(name="ls:usage_analytics", metadata=metadata, payload=aggregated_payload)]
+        )
+    except Exception as e:
+        LOG.info("Unable to report analytics: %s", e)
