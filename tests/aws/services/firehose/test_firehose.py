@@ -14,6 +14,8 @@ from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
 
+from .conftest import get_firehose_iam_documents
+
 PROCESSOR_LAMBDA = """
 def handler(event, context):
     import base64
@@ -424,7 +426,6 @@ class TestFirehoseIntegration:
         self,
         s3_create_bucket,
         kinesis_create_stream,
-        get_firehose_iam_documents,
         create_iam_role_with_policy,
         wait_for_stream_ready,
         firehose_create_delivery_stream,
