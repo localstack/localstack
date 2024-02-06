@@ -124,4 +124,5 @@ def aggregate_and_send():
             [Event(name="ls:usage_analytics", metadata=metadata, payload=aggregated_payload)]
         )
     except Exception as e:
-        LOG.info("Unable to report analytics: %s", e)
+        if config.DEBUG_ANALYTICS:
+            LOG.exception("Error while publishing analytics")
