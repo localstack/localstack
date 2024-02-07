@@ -133,6 +133,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ElasticBeanstalk::Environment": "ResourceProvider",
     "AWS::ElastiCache::SubnetGroup": "ResourceProvider",
     "AWS::ElastiCache::ReplicationGroup": "ResourceProvider",
+    "AWS::ElastiCache::SecurityGroup": "ResourceProvider",
     "AWS::Events::Connection": "ResourceProvider",
     "AWS::Events::EventBus": "ResourceProvider",
     "AWS::Events::EventBusPolicy": "ResourceProvider",
