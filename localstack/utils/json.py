@@ -159,7 +159,7 @@ def canonical_json(obj):
     return json.dumps(obj, sort_keys=True)
 
 
-def extract_jsonpath(value, path):
+def extract_jsonpath(value: Any, path: str) -> Any | list[Any]:
     from jsonpath_rw import parse
 
     jsonpath_expr = parse(path)

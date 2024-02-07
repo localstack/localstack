@@ -126,11 +126,13 @@ class Scheduler:
 
     def schedule_task(self, task: ScheduledTask) -> None:
         """
-        Schedules the given task and sets the deadline of the task to either ``task.start`` or the current time.
+        Schedules the given task and, unless the task already has one, sets the deadline of the task to
+        either ``task.start`` or the current time.
 
         :param task: the task to schedule
         """
-        task.deadline = max(task.start or 0, time.time())
+        if task.deadline is None:
+            task.deadline = max(task.start or 0, time.time())
         self.add(task)
 
     def add(self, task: ScheduledTask) -> None:
@@ -140,12 +142,22 @@ class Scheduler:
         :param task: the task to schedule.
         """
         if task.deadline is None:
-            raise ValueError
+            raise ValueError("Task has no deadline. Run schedule_task instead or set a deadline.")
 
         task._cancelled = False
 
         with self._condition:
             self._queue.put((task.deadline, task))
+            self._condition.notify()
+
+    def cancel(self, task: ScheduledTask) -> None:
+        task._cancelled = True
+
+    def notify(self):
+        """
+        Notify the run loop that something in the schedule has happened.
+        """
+        with self._condition:
             self._condition.notify()
 
     def close(self) -> None:
