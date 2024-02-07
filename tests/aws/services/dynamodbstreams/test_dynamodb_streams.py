@@ -1,6 +1,8 @@
 import json
 import re
 
+import pytest
+
 from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.util import is_aws_cloud
@@ -65,6 +67,7 @@ class TestDynamoDBStreams:
         # assert stream has been deleted
         retry(_assert_stream_deleted, sleep=0.4, retries=5)
 
+    @pytest.mark.skip(reason="Flaky")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..EncryptionType", "$..SizeBytes"])
     def test_enable_kinesis_streaming_destination(

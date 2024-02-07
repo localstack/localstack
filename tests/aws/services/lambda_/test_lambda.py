@@ -14,6 +14,7 @@ from io import BytesIO
 from typing import Dict, TypeVar
 
 import pytest
+import requests
 from botocore.config import Config
 from botocore.response import StreamingBody
 
@@ -47,6 +48,7 @@ LOG = logging.getLogger(__name__)
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_ECHO_JSON_BODY = os.path.join(THIS_FOLDER, "functions/lambda_echo_json_body.py")
 TEST_LAMBDA_PYTHON_REQUEST_ID = os.path.join(THIS_FOLDER, "functions/lambda_request_id.py")
 TEST_LAMBDA_PYTHON_ECHO_VERSION_ENV = os.path.join(
     THIS_FOLDER, "functions/lambda_echo_version_env.py"
@@ -828,6 +830,55 @@ class TestLambdaURL:
         event = json.loads(result.content)["event"]
         assert "Body" not in event
         assert event["isBase64Encoded"] is False
+
+    @markers.aws.validated
+    def test_lambda_url_headers_and_status(self, create_lambda_function, aws_client):
+        function_name = f"test-fnurl-echo-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_PYTHON_ECHO_JSON_BODY, get_content=True),
+            runtime=Runtime.python3_10,
+            handler="lambda_echo_json_body.handler",
+        )
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+
+        url = f"{url_config['FunctionUrl']}custom_path/extend?test_param=test_value"
+
+        event = {
+            "statusCode": 201,
+            "headers": {
+                "Content-Type": "application/json",
+                "My-Custom-Header": "Custom Value",
+            },
+            "body": json.dumps({"message": "hello-world"}),
+            "isBase64Encoded": False,
+        }
+        result = requests.post(url, json=event)
+        assert result.json() == {"message": "hello-world"}
+        assert result.status_code == 201
+        assert "my-custom-header" in result.headers
+        assert result.headers["my-custom-header"] == "Custom Value"
+
+        # try with string status code
+        event = {
+            "statusCode": "418",
+            "body": "i'm a teapot",
+            "isBase64Encoded": False,
+        }
+        result = requests.post(url, json=event)
+        assert result.text == "i'm a teapot"
+        assert result.status_code == 418
 
     @markers.aws.validated
     def test_lambda_url_invocation_exception(self, create_lambda_function, snapshot, aws_client):

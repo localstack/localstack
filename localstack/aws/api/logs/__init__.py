@@ -1437,11 +1437,12 @@ class LogsApi:
         kms_key_id: KmsKeyId,
         log_group_name: LogGroupName = None,
         resource_identifier: ResourceIdentifier = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("CancelExportTask")
-    def cancel_export_task(self, context: RequestContext, task_id: ExportTaskId) -> None:
+    def cancel_export_task(self, context: RequestContext, task_id: ExportTaskId, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("CreateDelivery")
@@ -1451,12 +1452,13 @@ class LogsApi:
         delivery_source_name: DeliverySourceName,
         delivery_destination_arn: Arn,
         tags: Tags = None,
+        **kwargs
     ) -> CreateDeliveryResponse:
         raise NotImplementedError
 
     @handler("CreateExportTask", expand=False)
     def create_export_task(
-        self, context: RequestContext, request: CreateExportTaskRequest
+        self, context: RequestContext, request: CreateExportTaskRequest, **kwargs
     ) -> CreateExportTaskResponse:
         raise NotImplementedError
 
@@ -1471,6 +1473,7 @@ class LogsApi:
         kms_key_id: KmsKeyId = None,
         anomaly_visibility_time: AnomalyVisibilityTime = None,
         tags: Tags = None,
+        **kwargs
     ) -> CreateLogAnomalyDetectorResponse:
         raise NotImplementedError
 
@@ -1482,96 +1485,117 @@ class LogsApi:
         kms_key_id: KmsKeyId = None,
         tags: Tags = None,
         log_group_class: LogGroupClass = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("CreateLogStream")
     def create_log_stream(
-        self, context: RequestContext, log_group_name: LogGroupName, log_stream_name: LogStreamName
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        log_stream_name: LogStreamName,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccountPolicy")
     def delete_account_policy(
-        self, context: RequestContext, policy_name: PolicyName, policy_type: PolicyType
+        self, context: RequestContext, policy_name: PolicyName, policy_type: PolicyType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDataProtectionPolicy")
     def delete_data_protection_policy(
-        self, context: RequestContext, log_group_identifier: LogGroupIdentifier
+        self, context: RequestContext, log_group_identifier: LogGroupIdentifier, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDelivery")
-    def delete_delivery(self, context: RequestContext, id: DeliveryId) -> None:
+    def delete_delivery(self, context: RequestContext, id: DeliveryId, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteDeliveryDestination")
     def delete_delivery_destination(
-        self, context: RequestContext, name: DeliveryDestinationName
+        self, context: RequestContext, name: DeliveryDestinationName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDeliveryDestinationPolicy")
     def delete_delivery_destination_policy(
-        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName
+        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDeliverySource")
-    def delete_delivery_source(self, context: RequestContext, name: DeliverySourceName) -> None:
+    def delete_delivery_source(
+        self, context: RequestContext, name: DeliverySourceName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDestination")
     def delete_destination(
-        self, context: RequestContext, destination_name: DestinationName
+        self, context: RequestContext, destination_name: DestinationName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteLogAnomalyDetector")
     def delete_log_anomaly_detector(
-        self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn
+        self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteLogGroup")
-    def delete_log_group(self, context: RequestContext, log_group_name: LogGroupName) -> None:
+    def delete_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteLogStream")
     def delete_log_stream(
-        self, context: RequestContext, log_group_name: LogGroupName, log_stream_name: LogStreamName
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        log_stream_name: LogStreamName,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteMetricFilter")
     def delete_metric_filter(
-        self, context: RequestContext, log_group_name: LogGroupName, filter_name: FilterName
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteQueryDefinition")
     def delete_query_definition(
-        self, context: RequestContext, query_definition_id: QueryId
+        self, context: RequestContext, query_definition_id: QueryId, **kwargs
     ) -> DeleteQueryDefinitionResponse:
         raise NotImplementedError
 
     @handler("DeleteResourcePolicy")
     def delete_resource_policy(
-        self, context: RequestContext, policy_name: PolicyName = None
+        self, context: RequestContext, policy_name: PolicyName = None, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteRetentionPolicy")
     def delete_retention_policy(
-        self, context: RequestContext, log_group_name: LogGroupName
+        self, context: RequestContext, log_group_name: LogGroupName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteSubscriptionFilter")
     def delete_subscription_filter(
-        self, context: RequestContext, log_group_name: LogGroupName, filter_name: FilterName
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1582,24 +1606,37 @@ class LogsApi:
         policy_type: PolicyType,
         policy_name: PolicyName = None,
         account_identifiers: AccountIds = None,
+        **kwargs
     ) -> DescribeAccountPoliciesResponse:
         raise NotImplementedError
 
     @handler("DescribeDeliveries")
     def describe_deliveries(
-        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeDeliveriesResponse:
         raise NotImplementedError
 
     @handler("DescribeDeliveryDestinations")
     def describe_delivery_destinations(
-        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeDeliveryDestinationsResponse:
         raise NotImplementedError
 
     @handler("DescribeDeliverySources")
     def describe_delivery_sources(
-        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeDeliverySourcesResponse:
         raise NotImplementedError
 
@@ -1610,6 +1647,7 @@ class LogsApi:
         destination_name_prefix: DestinationName = None,
         next_token: NextToken = None,
         limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeDestinationsResponse:
         raise NotImplementedError
 
@@ -1621,6 +1659,7 @@ class LogsApi:
         status_code: ExportTaskStatusCode = None,
         next_token: NextToken = None,
         limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeExportTasksResponse:
         raise NotImplementedError
 
@@ -1635,6 +1674,7 @@ class LogsApi:
         limit: DescribeLimit = None,
         include_linked_accounts: IncludeLinkedAccounts = None,
         log_group_class: LogGroupClass = None,
+        **kwargs
     ) -> DescribeLogGroupsResponse:
         raise NotImplementedError
 
@@ -1649,6 +1689,7 @@ class LogsApi:
         descending: Descending = None,
         next_token: NextToken = None,
         limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeLogStreamsResponse:
         raise NotImplementedError
 
@@ -1662,6 +1703,7 @@ class LogsApi:
         limit: DescribeLimit = None,
         metric_name: MetricName = None,
         metric_namespace: MetricNamespace = None,
+        **kwargs
     ) -> DescribeMetricFiltersResponse:
         raise NotImplementedError
 
@@ -1673,6 +1715,7 @@ class LogsApi:
         status: QueryStatus = None,
         max_results: DescribeQueriesMaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeQueriesResponse:
         raise NotImplementedError
 
@@ -1683,12 +1726,17 @@ class LogsApi:
         query_definition_name_prefix: QueryDefinitionName = None,
         max_results: QueryListMaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeQueryDefinitionsResponse:
         raise NotImplementedError
 
     @handler("DescribeResourcePolicies")
     def describe_resource_policies(
-        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeResourcePoliciesResponse:
         raise NotImplementedError
 
@@ -1700,6 +1748,7 @@ class LogsApi:
         filter_name_prefix: FilterName = None,
         next_token: NextToken = None,
         limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeSubscriptionFiltersResponse:
         raise NotImplementedError
 
@@ -1709,6 +1758,7 @@ class LogsApi:
         context: RequestContext,
         log_group_name: LogGroupName = None,
         resource_identifier: ResourceIdentifier = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1727,40 +1777,43 @@ class LogsApi:
         limit: EventsLimit = None,
         interleaved: Interleaved = None,
         unmask: Unmask = None,
+        **kwargs
     ) -> FilterLogEventsResponse:
         raise NotImplementedError
 
     @handler("GetDataProtectionPolicy")
     def get_data_protection_policy(
-        self, context: RequestContext, log_group_identifier: LogGroupIdentifier
+        self, context: RequestContext, log_group_identifier: LogGroupIdentifier, **kwargs
     ) -> GetDataProtectionPolicyResponse:
         raise NotImplementedError
 
     @handler("GetDelivery")
-    def get_delivery(self, context: RequestContext, id: DeliveryId) -> GetDeliveryResponse:
+    def get_delivery(
+        self, context: RequestContext, id: DeliveryId, **kwargs
+    ) -> GetDeliveryResponse:
         raise NotImplementedError
 
     @handler("GetDeliveryDestination")
     def get_delivery_destination(
-        self, context: RequestContext, name: DeliveryDestinationName
+        self, context: RequestContext, name: DeliveryDestinationName, **kwargs
     ) -> GetDeliveryDestinationResponse:
         raise NotImplementedError
 
     @handler("GetDeliveryDestinationPolicy")
     def get_delivery_destination_policy(
-        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName
+        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName, **kwargs
     ) -> GetDeliveryDestinationPolicyResponse:
         raise NotImplementedError
 
     @handler("GetDeliverySource")
     def get_delivery_source(
-        self, context: RequestContext, name: DeliverySourceName
+        self, context: RequestContext, name: DeliverySourceName, **kwargs
     ) -> GetDeliverySourceResponse:
         raise NotImplementedError
 
     @handler("GetLogAnomalyDetector")
     def get_log_anomaly_detector(
-        self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn
+        self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn, **kwargs
     ) -> GetLogAnomalyDetectorResponse:
         raise NotImplementedError
 
@@ -1777,6 +1830,7 @@ class LogsApi:
         limit: EventsLimit = None,
         start_from_head: StartFromHead = None,
         unmask: Unmask = None,
+        **kwargs
     ) -> GetLogEventsResponse:
         raise NotImplementedError
 
@@ -1787,18 +1841,23 @@ class LogsApi:
         log_group_name: LogGroupName = None,
         time: Timestamp = None,
         log_group_identifier: LogGroupIdentifier = None,
+        **kwargs
     ) -> GetLogGroupFieldsResponse:
         raise NotImplementedError
 
     @handler("GetLogRecord")
     def get_log_record(
-        self, context: RequestContext, log_record_pointer: LogRecordPointer, unmask: Unmask = None
+        self,
+        context: RequestContext,
+        log_record_pointer: LogRecordPointer,
+        unmask: Unmask = None,
+        **kwargs
     ) -> GetLogRecordResponse:
         raise NotImplementedError
 
     @handler("GetQueryResults")
     def get_query_results(
-        self, context: RequestContext, query_id: QueryId
+        self, context: RequestContext, query_id: QueryId, **kwargs
     ) -> GetQueryResultsResponse:
         raise NotImplementedError
 
@@ -1810,6 +1869,7 @@ class LogsApi:
         suppression_state: SuppressionState = None,
         limit: ListAnomaliesLimit = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListAnomaliesResponse:
         raise NotImplementedError
 
@@ -1820,18 +1880,19 @@ class LogsApi:
         filter_log_group_arn: LogGroupArn = None,
         limit: ListLogAnomalyDetectorsLimit = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListLogAnomalyDetectorsResponse:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceResponse:
         raise NotImplementedError
 
     @handler("ListTagsLogGroup")
     def list_tags_log_group(
-        self, context: RequestContext, log_group_name: LogGroupName
+        self, context: RequestContext, log_group_name: LogGroupName, **kwargs
     ) -> ListTagsLogGroupResponse:
         raise NotImplementedError
 
@@ -1844,6 +1905,7 @@ class LogsApi:
         policy_type: PolicyType,
         scope: Scope = None,
         selection_criteria: SelectionCriteria = None,
+        **kwargs
     ) -> PutAccountPolicyResponse:
         raise NotImplementedError
 
@@ -1853,6 +1915,7 @@ class LogsApi:
         context: RequestContext,
         log_group_identifier: LogGroupIdentifier,
         policy_document: DataProtectionPolicyDocument,
+        **kwargs
     ) -> PutDataProtectionPolicyResponse:
         raise NotImplementedError
 
@@ -1864,6 +1927,7 @@ class LogsApi:
         delivery_destination_configuration: DeliveryDestinationConfiguration,
         output_format: OutputFormat = None,
         tags: Tags = None,
+        **kwargs
     ) -> PutDeliveryDestinationResponse:
         raise NotImplementedError
 
@@ -1873,6 +1937,7 @@ class LogsApi:
         context: RequestContext,
         delivery_destination_name: DeliveryDestinationName,
         delivery_destination_policy: DeliveryDestinationPolicy,
+        **kwargs
     ) -> PutDeliveryDestinationPolicyResponse:
         raise NotImplementedError
 
@@ -1884,6 +1949,7 @@ class LogsApi:
         resource_arn: Arn,
         log_type: LogType,
         tags: Tags = None,
+        **kwargs
     ) -> PutDeliverySourceResponse:
         raise NotImplementedError
 
@@ -1895,6 +1961,7 @@ class LogsApi:
         target_arn: TargetArn,
         role_arn: RoleArn,
         tags: Tags = None,
+        **kwargs
     ) -> PutDestinationResponse:
         raise NotImplementedError
 
@@ -1905,6 +1972,7 @@ class LogsApi:
         destination_name: DestinationName,
         access_policy: AccessPolicy,
         force_update: ForceUpdate = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1916,6 +1984,7 @@ class LogsApi:
         log_stream_name: LogStreamName,
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
+        **kwargs
     ) -> PutLogEventsResponse:
         raise NotImplementedError
 
@@ -1927,6 +1996,7 @@ class LogsApi:
         filter_name: FilterName,
         filter_pattern: FilterPattern,
         metric_transformations: MetricTransformations,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1939,6 +2009,7 @@ class LogsApi:
         query_definition_id: QueryId = None,
         log_group_names: LogGroupNames = None,
         client_token: ClientToken = None,
+        **kwargs
     ) -> PutQueryDefinitionResponse:
         raise NotImplementedError
 
@@ -1948,12 +2019,17 @@ class LogsApi:
         context: RequestContext,
         policy_name: PolicyName = None,
         policy_document: PolicyDocument = None,
+        **kwargs
     ) -> PutResourcePolicyResponse:
         raise NotImplementedError
 
     @handler("PutRetentionPolicy")
     def put_retention_policy(
-        self, context: RequestContext, log_group_name: LogGroupName, retention_in_days: Days
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        retention_in_days: Days,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1967,6 +2043,7 @@ class LogsApi:
         destination_arn: DestinationArn,
         role_arn: RoleArn = None,
         distribution: Distribution = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1978,6 +2055,7 @@ class LogsApi:
         log_stream_names: InputLogStreamNames = None,
         log_stream_name_prefixes: InputLogStreamNames = None,
         log_event_filter_pattern: FilterPattern = None,
+        **kwargs
     ) -> StartLiveTailResponse:
         raise NotImplementedError
 
@@ -1992,22 +2070,23 @@ class LogsApi:
         log_group_names: LogGroupNames = None,
         log_group_identifiers: LogGroupIdentifiers = None,
         limit: EventsLimit = None,
+        **kwargs
     ) -> StartQueryResponse:
         raise NotImplementedError
 
     @handler("StopQuery")
-    def stop_query(self, context: RequestContext, query_id: QueryId) -> StopQueryResponse:
+    def stop_query(self, context: RequestContext, query_id: QueryId, **kwargs) -> StopQueryResponse:
         raise NotImplementedError
 
     @handler("TagLogGroup")
     def tag_log_group(
-        self, context: RequestContext, log_group_name: LogGroupName, tags: Tags
+        self, context: RequestContext, log_group_name: LogGroupName, tags: Tags, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2017,18 +2096,23 @@ class LogsApi:
         context: RequestContext,
         filter_pattern: FilterPattern,
         log_event_messages: TestEventMessages,
+        **kwargs
     ) -> TestMetricFilterResponse:
         raise NotImplementedError
 
     @handler("UntagLogGroup")
     def untag_log_group(
-        self, context: RequestContext, log_group_name: LogGroupName, tags: TagList
+        self, context: RequestContext, log_group_name: LogGroupName, tags: TagList, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2041,6 +2125,7 @@ class LogsApi:
         pattern_id: PatternId = None,
         suppression_type: SuppressionType = None,
         suppression_period: SuppressionPeriod = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2053,5 +2138,6 @@ class LogsApi:
         evaluation_frequency: EvaluationFrequency = None,
         filter_pattern: FilterPattern = None,
         anomaly_visibility_time: AnomalyVisibilityTime = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
