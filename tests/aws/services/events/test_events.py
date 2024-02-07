@@ -25,6 +25,8 @@ from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
+from .conftest import assert_valid_event
+
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
 
@@ -484,7 +486,6 @@ class TestEvents:
         self,
         monkeypatch,
         sns_subscription,
-        assert_valid_event,
         aws_client,
         clean_up,
         strategy,
@@ -546,7 +547,7 @@ class TestEvents:
     @markers.aws.unknown
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_put_events_into_event_bus(
-        self, monkeypatch, sqs_get_queue_arn, assert_valid_event, aws_client, clean_up, strategy
+        self, monkeypatch, sqs_get_queue_arn, aws_client, clean_up, strategy
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
@@ -608,7 +609,7 @@ class TestEvents:
 
     @markers.aws.unknown
     def test_put_events_with_target_lambda(
-        self, create_lambda_function, cleanups, assert_valid_event, aws_client, clean_up
+        self, create_lambda_function, cleanups, aws_client, clean_up
     ):
         rule_name = f"rule-{short_uid()}"
         function_name = f"lambda-func-{short_uid()}"
@@ -1001,7 +1002,7 @@ class TestEvents:
         assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
 
     @markers.aws.unknown
-    def test_put_events_with_target_firehose(self, assert_valid_event, aws_client, clean_up):
+    def test_put_events_with_target_firehose(self, aws_client, clean_up):
         s3_bucket = "s3-{}".format(short_uid())
         s3_prefix = "testeventdata"
         stream_name = "firehose-{}".format(short_uid())
@@ -1108,7 +1109,7 @@ class TestEvents:
         assert "EventId" in response.get("Entries")[0]
 
     @markers.aws.unknown
-    def test_put_events_with_target_kinesis(self, assert_valid_event, aws_client):
+    def test_put_events_with_target_kinesis(self, aws_client):
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
@@ -1502,7 +1503,7 @@ class TestEvents:
 
     @markers.aws.validated
     @pytest.mark.xfail
-    def test_verify_rule_event_content(self, assert_valid_event, aws_client, clean_up):
+    def test_verify_rule_event_content(self, aws_client, clean_up):
         log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
         target_id = f"testRuleId-{short_uid()}"
@@ -1553,7 +1554,6 @@ class TestEvents:
         create_policy,
         s3_bucket,
         snapshot,
-        assert_valid_event,
         aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())

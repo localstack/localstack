@@ -222,14 +222,14 @@ def _put_entries_assert_results_sqs(
     if should_match:
         actual_event = json.loads(messages[0]["Body"])
         if "detail" in actual_event:
-            _assert_valid_event(actual_event)
+            assert_valid_event(actual_event)
         return messages
     else:
         assert not messages
         return None
 
 
-def _assert_valid_event(event):
+def assert_valid_event(event):
     expected_fields = (
         "version",
         "id",
@@ -243,8 +243,3 @@ def _assert_valid_event(event):
     )
     for field in expected_fields:
         assert field in event
-
-
-@pytest.fixture
-def assert_valid_event():
-    yield _assert_valid_event
