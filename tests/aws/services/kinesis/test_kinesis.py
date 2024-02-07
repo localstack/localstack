@@ -8,7 +8,7 @@ from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from localstack import config, constants
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.kinesis import provider as kinesis_provider
 from localstack.testing.pytest import markers
 from localstack.utils.aws import resources
@@ -465,7 +465,7 @@ class TestKinesisPythonClient:
         resources.create_kinesis_stream(kinesis, stream_name, delete=True)
         process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
-            account_id=TEST_AWS_ACCESS_KEY_ID,
+            account_id=TEST_AWS_ACCOUNT_ID,
             region_name=TEST_AWS_REGION_NAME,
             listener_func=process_records,
             wait_until_started=True,
