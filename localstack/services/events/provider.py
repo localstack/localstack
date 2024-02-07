@@ -164,7 +164,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     if target.get("InputPath"):
                         event = filter_event_with_target_input_path(target, event)
                     if target.get("InputTransformer"):
-                        event = filter_event_with_input_transformer(target, event)
+                        event = process_event_with_input_transformer(target, event)
 
                 attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
 
@@ -593,7 +593,12 @@ def filter_event_with_target_input_path(target: Dict, event: Dict) -> Dict:
     return event
 
 
-def filter_event_with_input_transformer(target: Dict, event: Dict) -> Dict:
+def process_event_with_input_transformer(target: Dict, event: Dict) -> Dict:
+    """
+    Process the event with the input transformer of the target event,
+    by replacing the message with the populated InputTemplate.
+    docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html
+    """
     input_transformer = target.get("InputTransformer")
     if not input_transformer:
         return event
@@ -610,7 +615,7 @@ def process_events(event: Dict, targets: list[Dict]):
     for target in targets:
         arn = target["Arn"]
         changed_event = filter_event_with_target_input_path(target, event)
-        changed_event = filter_event_with_input_transformer(target, changed_event)
+        changed_event = process_event_with_input_transformer(target, changed_event)
         if target.get("Input"):
             changed_event = json.loads(target.get("Input"))
         try:
