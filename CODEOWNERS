@@ -120,11 +120,11 @@
 /tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw
 
 # cloudwatch
-/localstack/aws/api/cloudwatch/ @steffyP @silv-io @pinzon
-/localstack/services/cloudwatch/ @steffyP @silv-io @pinzon
-/localstack/services/cloudformation/models/cloudwatch.py @steffyP @silv-io @pinzon
-/tests/aws/services/cloudwatch/ @steffyP @silv-io @pinzon
-/tests/unit/test_cloudwatch.py @steffyP @silv-io @pinzon
+/localstack/aws/api/cloudwatch/ @steffyP @pinzon
+/localstack/services/cloudwatch/ @steffyP @pinzon
+/localstack/services/cloudformation/models/cloudwatch.py @steffyP @pinzon
+/tests/aws/services/cloudwatch/ @steffyP @pinzon
+/tests/unit/test_cloudwatch.py @steffyP @pinzon
 
 # dynamodb
 /localstack/aws/api/dynamodb/ @viren-nadkarni @giograno
@@ -176,11 +176,11 @@
 /tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl
 
 # logs
-/localstack/aws/api/logs/ @steffyP @silv-io
-/localstack/services/logs/ @steffyP @silv-io
-/localstack/services/cloudformation/models/logs.py @steffyP @silv-io
-/tests/aws/services/logs/ @steffyP @silv-io
-/tests/unit/test_logs.py @steffyP @silv-io
+/localstack/aws/api/logs/ @steffyP
+/localstack/services/logs/ @steffyP
+/localstack/services/cloudformation/models/logs.py @steffyP
+/tests/aws/services/logs/ @steffyP
+/tests/unit/test_logs.py @steffyP
 
 # opensearch
 /localstack/aws/api/opensearch/ @alexrashed @silv-io

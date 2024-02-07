@@ -6,6 +6,7 @@ from localstack import config
 from localstack.aws.connect import connect_externally_to
 from localstack.aws.forwarder import AwsRequestProxy
 from localstack.config import is_env_true
+from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.functions import run_safe
@@ -165,16 +166,19 @@ class DynamodbServer(Server):
         t.start()
         return t
 
-    def check_dynamodb(self, expect_shutdown: bool = False, print_error: bool = False) -> None:
+    def check_dynamodb(self, expect_shutdown: bool = False) -> None:
         """Checks if DynamoDB server is up"""
         out = None
 
         try:
             self.wait_is_up()
-            out = connect_externally_to(endpoint_url=self.url).dynamodb.list_tables()
+            out = connect_externally_to(
+                endpoint_url=self.url,
+                aws_access_key_id=DEFAULT_AWS_ACCOUNT_ID,
+                aws_secret_access_key=DEFAULT_AWS_ACCOUNT_ID,
+            ).dynamodb.list_tables()
         except Exception:
-            if print_error:
-                LOG.exception("DynamoDB health check failed")
+            LOG.exception("DynamoDB health check failed")
         if expect_shutdown:
             assert out is None
         else:

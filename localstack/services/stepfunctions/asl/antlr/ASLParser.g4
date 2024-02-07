@@ -43,7 +43,9 @@ state_stmt
     | default_decl
     | choices_decl
     | error_decl
+    | error_path_decl
     | cause_decl
+    | cause_path_decl
     | seconds_decl
     | seconds_path_decl
     | timestamp_decl
@@ -130,9 +132,20 @@ error_decl
     : ERROR COLON keyword_or_string
     ;
 
+error_path_decl
+    : ERRORPATH COLON STRINGPATH      #error_path_decl_path
+    | ERRORPATH COLON intrinsic_func  #error_path_decl_intrinsic
+    ;
+
 cause_decl
     : CAUSE COLON keyword_or_string
     ;
+
+cause_path_decl
+    : CAUSEPATH COLON STRINGPATH      #cause_path_decl_path
+    | CAUSEPATH COLON intrinsic_func  #cause_path_decl_intrinsic
+    ;
+
 
 seconds_decl
     : SECONDS COLON INT

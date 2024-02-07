@@ -505,12 +505,13 @@ class SqsApi:
         label: String,
         aws_account_ids: AWSAccountIdList,
         actions: ActionNameList,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("CancelMessageMoveTask")
     def cancel_message_move_task(
-        self, context: RequestContext, task_handle: String
+        self, context: RequestContext, task_handle: String, **kwargs
     ) -> CancelMessageMoveTaskResult:
         raise NotImplementedError
 
@@ -521,6 +522,7 @@ class SqsApi:
         queue_url: String,
         receipt_handle: String,
         visibility_timeout: Integer,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -530,6 +532,7 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         entries: ChangeMessageVisibilityBatchRequestEntryList,
+        **kwargs
     ) -> ChangeMessageVisibilityBatchResult:
         raise NotImplementedError
 
@@ -540,12 +543,13 @@ class SqsApi:
         queue_name: String,
         attributes: QueueAttributeMap = None,
         tags: TagMap = None,
+        **kwargs
     ) -> CreateQueueResult:
         raise NotImplementedError
 
     @handler("DeleteMessage")
     def delete_message(
-        self, context: RequestContext, queue_url: String, receipt_handle: String
+        self, context: RequestContext, queue_url: String, receipt_handle: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -555,22 +559,31 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         entries: DeleteMessageBatchRequestEntryList,
+        **kwargs
     ) -> DeleteMessageBatchResult:
         raise NotImplementedError
 
     @handler("DeleteQueue")
-    def delete_queue(self, context: RequestContext, queue_url: String) -> None:
+    def delete_queue(self, context: RequestContext, queue_url: String, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("GetQueueAttributes")
     def get_queue_attributes(
-        self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None
+        self,
+        context: RequestContext,
+        queue_url: String,
+        attribute_names: AttributeNameList = None,
+        **kwargs
     ) -> GetQueueAttributesResult:
         raise NotImplementedError
 
     @handler("GetQueueUrl")
     def get_queue_url(
-        self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
+        self,
+        context: RequestContext,
+        queue_name: String,
+        queue_owner_aws_account_id: String = None,
+        **kwargs
     ) -> GetQueueUrlResult:
         raise NotImplementedError
 
@@ -581,17 +594,20 @@ class SqsApi:
         queue_url: String,
         next_token: Token = None,
         max_results: BoxedInteger = None,
+        **kwargs
     ) -> ListDeadLetterSourceQueuesResult:
         raise NotImplementedError
 
     @handler("ListMessageMoveTasks")
     def list_message_move_tasks(
-        self, context: RequestContext, source_arn: String, max_results: Integer = None
+        self, context: RequestContext, source_arn: String, max_results: Integer = None, **kwargs
     ) -> ListMessageMoveTasksResult:
         raise NotImplementedError
 
     @handler("ListQueueTags")
-    def list_queue_tags(self, context: RequestContext, queue_url: String) -> ListQueueTagsResult:
+    def list_queue_tags(
+        self, context: RequestContext, queue_url: String, **kwargs
+    ) -> ListQueueTagsResult:
         raise NotImplementedError
 
     @handler("ListQueues")
@@ -601,11 +617,12 @@ class SqsApi:
         queue_name_prefix: String = None,
         next_token: Token = None,
         max_results: BoxedInteger = None,
+        **kwargs
     ) -> ListQueuesResult:
         raise NotImplementedError
 
     @handler("PurgeQueue")
-    def purge_queue(self, context: RequestContext, queue_url: String) -> None:
+    def purge_queue(self, context: RequestContext, queue_url: String, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("ReceiveMessage")
@@ -619,11 +636,14 @@ class SqsApi:
         visibility_timeout: Integer = None,
         wait_time_seconds: Integer = None,
         receive_request_attempt_id: String = None,
+        **kwargs
     ) -> ReceiveMessageResult:
         raise NotImplementedError
 
     @handler("RemovePermission")
-    def remove_permission(self, context: RequestContext, queue_url: String, label: String) -> None:
+    def remove_permission(
+        self, context: RequestContext, queue_url: String, label: String, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("SendMessage")
@@ -637,18 +657,23 @@ class SqsApi:
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
         message_group_id: String = None,
+        **kwargs
     ) -> SendMessageResult:
         raise NotImplementedError
 
     @handler("SendMessageBatch")
     def send_message_batch(
-        self, context: RequestContext, queue_url: String, entries: SendMessageBatchRequestEntryList
+        self,
+        context: RequestContext,
+        queue_url: String,
+        entries: SendMessageBatchRequestEntryList,
+        **kwargs
     ) -> SendMessageBatchResult:
         raise NotImplementedError
 
     @handler("SetQueueAttributes")
     def set_queue_attributes(
-        self, context: RequestContext, queue_url: String, attributes: QueueAttributeMap
+        self, context: RequestContext, queue_url: String, attributes: QueueAttributeMap, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -659,13 +684,16 @@ class SqsApi:
         source_arn: String,
         destination_arn: String = None,
         max_number_of_messages_per_second: Integer = None,
+        **kwargs
     ) -> StartMessageMoveTaskResult:
         raise NotImplementedError
 
     @handler("TagQueue")
-    def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap) -> None:
+    def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("UntagQueue")
-    def untag_queue(self, context: RequestContext, queue_url: String, tag_keys: TagKeyList) -> None:
+    def untag_queue(
+        self, context: RequestContext, queue_url: String, tag_keys: TagKeyList, **kwargs
+    ) -> None:
         raise NotImplementedError

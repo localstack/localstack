@@ -185,7 +185,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             raise invalid_definition
 
     def create_state_machine(
-        self, context: RequestContext, request: CreateStateMachineInput
+        self, context: RequestContext, request: CreateStateMachineInput, **kwargs
     ) -> CreateStateMachineOutput:
         if not request.get("publish", False) and request.get("versionDescription"):
             raise ValidationException("Version description can only be set when publish is true")
@@ -253,7 +253,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return create_output
 
     def describe_state_machine(
-        self, context: RequestContext, state_machine_arn: Arn
+        self, context: RequestContext, state_machine_arn: Arn, **kwargs
     ) -> DescribeStateMachineOutput:
         # TODO: add arn validation.
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
@@ -262,7 +262,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return state_machine.describe()
 
     def describe_state_machine_for_execution(
-        self, context: RequestContext, execution_arn: Arn
+        self, context: RequestContext, execution_arn: Arn, **kwargs
     ) -> DescribeStateMachineForExecutionOutput:
         # TODO: add arn validation.
         execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
@@ -271,7 +271,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return execution.to_describe_state_machine_for_execution_output()
 
     def send_task_heartbeat(
-        self, context: RequestContext, task_token: TaskToken
+        self, context: RequestContext, task_token: TaskToken, **kwargs
     ) -> SendTaskHeartbeatOutput:
         running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
         for execution in running_executions:
@@ -288,7 +288,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         raise InvalidToken()
 
     def send_task_success(
-        self, context: RequestContext, task_token: TaskToken, output: SensitiveData
+        self, context: RequestContext, task_token: TaskToken, output: SensitiveData, **kwargs
     ) -> SendTaskSuccessOutput:
         outcome = CallbackOutcomeSuccess(callback_id=task_token, output=output)
         running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
@@ -311,6 +311,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         task_token: TaskToken,
         error: SensitiveError = None,
         cause: SensitiveCause = None,
+        **kwargs,
     ) -> SendTaskFailureOutput:
         outcome = CallbackOutcomeFailure(callback_id=task_token, error=error, cause=cause)
         store = self.get_store(context)
@@ -334,6 +335,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         name: Name = None,
         input: SensitiveData = None,
         trace_header: TraceHeader = None,
+        **kwargs,
     ) -> StartExecutionOutput:
         state_machine: Optional[StateMachineInstance] = self.get_store(context).state_machines.get(
             state_machine_arn
@@ -391,7 +393,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return execution.to_start_output()
 
     def describe_execution(
-        self, context: RequestContext, execution_arn: Arn
+        self, context: RequestContext, execution_arn: Arn, **kwargs
     ) -> DescribeExecutionOutput:
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
         return execution.to_describe_output()
@@ -405,6 +407,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         next_token: ListExecutionsPageToken = None,
         map_run_arn: LongArn = None,
         redrive_filter: ExecutionRedriveFilter = None,
+        **kwargs,
     ) -> ListExecutionsOutput:
         # TODO: add support for paging and filtering.
         executions: ExecutionList = [
@@ -415,7 +418,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return ListExecutionsOutput(executions=executions)
 
     def list_state_machines(
-        self, context: RequestContext, max_results: PageSize = None, next_token: PageToken = None
+        self,
+        context: RequestContext,
+        max_results: PageSize = None,
+        next_token: PageToken = None,
+        **kwargs,
     ) -> ListStateMachinesOutput:
         # TODO: add paging support.
         state_machines: StateMachineList = [
@@ -432,6 +439,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_machine_arn: Arn,
         next_token: PageToken = None,
         max_results: PageSize = None,
+        **kwargs,
     ) -> ListStateMachineVersionsOutput:
         # TODO: add paging support.
         state_machines = self.get_store(context).state_machines
@@ -460,14 +468,17 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         reverse_order: ReverseOrder = None,
         next_token: PageToken = None,
         include_execution_data: IncludeExecutionDataGetExecutionHistory = None,
+        **kwargs,
     ) -> GetExecutionHistoryOutput:
         # TODO: add support for paging, ordering, and other manipulations.
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
         history: GetExecutionHistoryOutput = execution.to_history_output()
+        if reverse_order:
+            history["events"].reverse()
         return history
 
     def delete_state_machine(
-        self, context: RequestContext, state_machine_arn: Arn
+        self, context: RequestContext, state_machine_arn: Arn, **kwargs
     ) -> DeleteStateMachineOutput:
         # TODO: halt executions?
         state_machines = self.get_store(context).state_machines
@@ -479,7 +490,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return DeleteStateMachineOutput()
 
     def delete_state_machine_version(
-        self, context: RequestContext, state_machine_version_arn: LongArn
+        self, context: RequestContext, state_machine_version_arn: LongArn, **kwargs
     ) -> DeleteStateMachineVersionOutput:
         state_machines = self.get_store(context).state_machines
         state_machine_version = state_machines.get(state_machine_version_arn)
@@ -497,6 +508,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         execution_arn: Arn,
         error: SensitiveError = None,
         cause: SensitiveCause = None,
+        **kwargs,
     ) -> StopExecutionOutput:
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
         stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -513,6 +525,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         tracing_configuration: TracingConfiguration = None,
         publish: Publish = None,
         version_description: VersionDescription = None,
+        **kwargs,
     ) -> UpdateStateMachineOutput:
         state_machines = self.get_store(context).state_machines
 
@@ -555,6 +568,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_machine_arn: Arn,
         revision_id: RevisionId = None,
         description: VersionDescription = None,
+        **kwargs,
     ) -> PublishStateMachineVersionOutput:
         state_machines = self.get_store(context).state_machines
 
@@ -582,7 +596,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
 
     def tag_resource(
-        self, context: RequestContext, resource_arn: Arn, tags: TagList
+        self, context: RequestContext, resource_arn: Arn, tags: TagList, **kwargs
     ) -> TagResourceOutput:
         # TODO: add tagging for activities.
         state_machines = self.get_store(context).state_machines
@@ -594,7 +608,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return TagResourceOutput()
 
     def untag_resource(
-        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList
+        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceOutput:
         # TODO: add untagging for activities.
         state_machines = self.get_store(context).state_machines
@@ -606,7 +620,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return UntagResourceOutput()
 
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: Arn
+        self, context: RequestContext, resource_arn: Arn, **kwargs
     ) -> ListTagsForResourceOutput:
         # TODO: add untagging for activities.
         state_machines = self.get_store(context).state_machines
@@ -618,7 +632,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return ListTagsForResourceOutput(tags=tags)
 
     def describe_map_run(
-        self, context: RequestContext, map_run_arn: LongArn
+        self, context: RequestContext, map_run_arn: LongArn, **kwargs
     ) -> DescribeMapRunOutput:
         store = self.get_store(context)
         for execution in store.executions.values():
@@ -635,6 +649,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         execution_arn: Arn,
         max_results: PageSize = None,
         next_token: PageToken = None,
+        **kwargs,
     ) -> ListMapRunsOutput:
         # TODO: add support for paging.
         execution = self._get_execution(context=context, execution_arn=execution_arn)
@@ -652,6 +667,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         max_concurrency: MaxConcurrency = None,
         tolerated_failure_percentage: ToleratedFailurePercentage = None,
         tolerated_failure_count: ToleratedFailureCount = None,
+        **kwargs,
     ) -> UpdateMapRunOutput:
         if tolerated_failure_percentage is not None or tolerated_failure_count is not None:
             raise NotImplementedError(

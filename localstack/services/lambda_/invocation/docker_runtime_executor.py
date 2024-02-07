@@ -260,7 +260,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     def __init__(self, id: str, function_version: FunctionVersion) -> None:
         super(DockerRuntimeExecutor, self).__init__(id=id, function_version=function_version)
         self.ip = None
-        self.executor_endpoint = self._build_executor_endpoint()
+        self.executor_endpoint = ExecutorEndpoint(self.id)
         self.container_name = self._generate_container_name()
         LOG.debug("Assigning container name of %s to executor %s", self.container_name, self.id)
 
@@ -272,20 +272,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             if config.LAMBDA_PREBUILD_IMAGES
             else resolver.get_image_for_runtime(self.function_version.config.runtime)
         )
-
-    def _build_executor_endpoint(self) -> ExecutorEndpoint:
-        LOG.debug(
-            "Creating service endpoint for function %s executor %s",
-            self.function_version.qualified_arn,
-            self.id,
-        )
-        executor_endpoint = ExecutorEndpoint(self.id)
-        LOG.debug(
-            "Finished creating service endpoint for function %s executor %s",
-            self.function_version.qualified_arn,
-            self.id,
-        )
-        return executor_endpoint
 
     def _generate_container_name(self):
         """
