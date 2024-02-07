@@ -201,6 +201,19 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
 def _put_entries_assert_results_sqs(
     events_client, sqs_client, queue_url: str, entries: list[dict], should_match: bool
 ):
+    """
+    Put events to the event bus, receives the messages resulting from the event in the sqs queue and deletes them out of the queue.
+    If should_match is True, the content of the messages is asserted to be the same as the events put to the event bus.
+
+    :param events_client: boto3.client("events")
+    :param sqs_client: boto3.client("sqs")
+    :param queue_url: URL of the sqs queue
+    :param entries: List of entries to put to the event bus, each entry must
+                    be a dict that contains the keys: "Source", "DetailType", "Detail"
+    :param should_match:
+
+    :return: Messages from the queue if should_match is True, otherwise None
+    """
     response = events_client.put_events(Entries=entries)
     assert not response.get("FailedEntryCount")
 
