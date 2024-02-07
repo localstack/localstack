@@ -24,16 +24,21 @@ on:
         type: string
   pull_request:
     paths:
-      - ".github/workflows/tests-pro-integration.yml"
-      - "localstack/**"
-      - "tests/**"
-      - "setup.py"
-      - "pyproject.toml"
-      - "setup.cfg"
-      - "Dockerfile"
-      - "Dockerfile.rh"
-      - "docker-compose.yml"
-      - "bin/**"
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-pro-integration.yml'
+      - '!doc/**'
+      - '!scripts/**'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
     branches:
       - master
       - 'v[0-9]+'
@@ -42,12 +47,21 @@ on:
     - cron: '0 4 * * *'  # run once a day at 4 AM UTC
   push:
     paths:
-      - ".github/workflows/tests-pro-integration.yml"
-      - "localstack/**/packages.py"
-      - "localstack/packages/*.py"
-      - "setup.py"
-      - "pyproject.toml"
-      - "setup.cfg"
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-pro-integration.yml'
+      - '!doc/**'
+      - '!scripts/**'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
     branches:
       - master
 
