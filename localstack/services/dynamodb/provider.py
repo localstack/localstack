@@ -655,7 +655,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         return result
 
-    def delete_table(self, context: RequestContext, table_name: TableName) -> DeleteTableOutput:
+    def delete_table(
+        self, context: RequestContext, table_name: TableName, **kwargs
+    ) -> DeleteTableOutput:
         global_table_region = self.get_global_table_region(context, table_name)
 
         # Limitation note: On AWS, for a replicated table, if the source table is deleted, the replicated tables continue to exist.
@@ -673,7 +675,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         return result
 
-    def describe_table(self, context: RequestContext, table_name: TableName) -> DescribeTableOutput:
+    def describe_table(
+        self, context: RequestContext, table_name: TableName, **kwargs
+    ) -> DescribeTableOutput:
         global_table_region = self.get_global_table_region(context, table_name)
 
         result = self._forward_request(context=context, region=global_table_region)
@@ -819,6 +823,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         exclusive_start_table_name: TableName = None,
         limit: ListTablesInputLimit = None,
+        **kwargs,
     ) -> ListTablesOutput:
         response = self.forward_request(context)
 
@@ -1099,6 +1104,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         request_items: BatchGetRequestMap,
         return_consumed_capacity: ReturnConsumedCapacity = None,
+        **kwargs,
     ) -> BatchGetItemOutput:
         # TODO: add global table support
         return self.forward_request(context)
@@ -1206,7 +1212,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     #
 
     def tag_resource(
-        self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList
+        self, context: RequestContext, resource_arn: ResourceArnString, tags: TagList, **kwargs
     ) -> None:
         table_tags = get_store(context.account_id, context.region).TABLE_TAGS
         if resource_arn not in table_tags:
@@ -1214,7 +1220,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_tags[resource_arn].update({tag["Key"]: tag["Value"] for tag in tags})
 
     def untag_resource(
-        self, context: RequestContext, resource_arn: ResourceArnString, tag_keys: TagKeyList
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        tag_keys: TagKeyList,
+        **kwargs,
     ) -> None:
         for tag_key in tag_keys or []:
             get_store(context.account_id, context.region).TABLE_TAGS.get(resource_arn, {}).pop(
@@ -1226,6 +1236,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         resource_arn: ResourceArnString,
         next_token: NextTokenString = None,
+        **kwargs,
     ) -> ListTagsOfResourceOutput:
         result = [
             {"Key": k, "Value": v}
@@ -1240,7 +1251,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     #
 
     def describe_time_to_live(
-        self, context: RequestContext, table_name: TableName
+        self, context: RequestContext, table_name: TableName, **kwargs
     ) -> DescribeTimeToLiveOutput:
         if not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException(
@@ -1268,6 +1279,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         table_name: TableName,
         time_to_live_specification: TimeToLiveSpecification,
+        **kwargs,
     ) -> UpdateTimeToLiveOutput:
         if not self.table_exists(context.account_id, context.region, table_name):
             raise ResourceNotFoundException(
@@ -1284,7 +1296,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     #
 
     def create_global_table(
-        self, context: RequestContext, global_table_name: TableName, replication_group: ReplicaList
+        self,
+        context: RequestContext,
+        global_table_name: TableName,
+        replication_group: ReplicaList,
+        **kwargs,
     ) -> CreateGlobalTableOutput:
         global_tables: Dict = get_store(context.account_id, context.region).GLOBAL_TABLES
         if global_table_name in global_tables:
@@ -1298,7 +1314,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return CreateGlobalTableOutput(GlobalTableDescription=data)
 
     def describe_global_table(
-        self, context: RequestContext, global_table_name: TableName
+        self, context: RequestContext, global_table_name: TableName, **kwargs
     ) -> DescribeGlobalTableOutput:
         details = get_store(context.account_id, context.region).GLOBAL_TABLES.get(global_table_name)
         if not details:
@@ -1311,6 +1327,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         exclusive_start_global_table_name: TableName = None,
         limit: PositiveIntegerObject = None,
         region_name: RegionName = None,
+        **kwargs,
     ) -> ListGlobalTablesOutput:
         # TODO: add paging support
         result = [
@@ -1324,6 +1341,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         global_table_name: TableName,
         replica_updates: ReplicaUpdateList,
+        **kwargs,
     ) -> UpdateGlobalTableOutput:
         details = get_store(context.account_id, context.region).GLOBAL_TABLES.get(global_table_name)
         if not details:
@@ -1360,6 +1378,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_name: TableName,
         stream_arn: StreamArn,
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
+        **kwargs,
     ) -> KinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
@@ -1405,6 +1424,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_name: TableName,
         stream_arn: StreamArn,
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
+        **kwargs,
     ) -> KinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
@@ -1440,7 +1460,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
     def describe_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName
+        self, context: RequestContext, table_name: TableName, **kwargs
     ) -> DescribeKinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
@@ -1458,7 +1478,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     #
 
     def describe_continuous_backups(
-        self, context: RequestContext, table_name: TableName
+        self, context: RequestContext, table_name: TableName, **kwargs
     ) -> DescribeContinuousBackupsOutput:
         self.get_global_table_region(context, table_name)
         store = get_store(context.account_id, context.region)
@@ -1480,6 +1500,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         table_name: TableName,
         point_in_time_recovery_specification: PointInTimeRecoverySpecification,
+        **kwargs,
     ) -> UpdateContinuousBackupsOutput:
         self.get_global_table_region(context, table_name)
 
@@ -1714,6 +1735,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         statements: PartiQLBatchRequest,
         return_consumed_capacity: ReturnConsumedCapacity = None,
+        **kwargs,
     ) -> BatchExecuteStatementOutput:
         result = self.forward_request(context)
         return result

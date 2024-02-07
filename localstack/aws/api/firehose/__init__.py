@@ -1248,6 +1248,7 @@ class FirehoseApi:
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
         snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
+        **kwargs
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1257,6 +1258,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         allow_force_delete: BooleanObject = None,
+        **kwargs
     ) -> DeleteDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1267,6 +1269,7 @@ class FirehoseApi:
         delivery_stream_name: DeliveryStreamName,
         limit: DescribeDeliveryStreamInputLimit = None,
         exclusive_start_destination_id: DestinationId = None,
+        **kwargs
     ) -> DescribeDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1277,6 +1280,7 @@ class FirehoseApi:
         limit: ListDeliveryStreamsInputLimit = None,
         delivery_stream_type: DeliveryStreamType = None,
         exclusive_start_delivery_stream_name: DeliveryStreamName = None,
+        **kwargs
     ) -> ListDeliveryStreamsOutput:
         raise NotImplementedError
 
@@ -1287,12 +1291,17 @@ class FirehoseApi:
         delivery_stream_name: DeliveryStreamName,
         exclusive_start_tag_key: TagKey = None,
         limit: ListTagsForDeliveryStreamInputLimit = None,
+        **kwargs
     ) -> ListTagsForDeliveryStreamOutput:
         raise NotImplementedError
 
     @handler("PutRecord")
     def put_record(
-        self, context: RequestContext, delivery_stream_name: DeliveryStreamName, record: Record
+        self,
+        context: RequestContext,
+        delivery_stream_name: DeliveryStreamName,
+        record: Record,
+        **kwargs
     ) -> PutRecordOutput:
         raise NotImplementedError
 
@@ -1302,6 +1311,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         records: PutRecordBatchRequestEntryList,
+        **kwargs
     ) -> PutRecordBatchOutput:
         raise NotImplementedError
 
@@ -1311,12 +1321,13 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
+        **kwargs
     ) -> StartDeliveryStreamEncryptionOutput:
         raise NotImplementedError
 
     @handler("StopDeliveryStreamEncryption")
     def stop_delivery_stream_encryption(
-        self, context: RequestContext, delivery_stream_name: DeliveryStreamName
+        self, context: RequestContext, delivery_stream_name: DeliveryStreamName, **kwargs
     ) -> StopDeliveryStreamEncryptionOutput:
         raise NotImplementedError
 
@@ -1326,6 +1337,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tags: TagDeliveryStreamInputTagList,
+        **kwargs
     ) -> TagDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1335,6 +1347,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tag_keys: TagKeyList,
+        **kwargs
     ) -> UntagDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1354,5 +1367,6 @@ class FirehoseApi:
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
         snowflake_destination_update: SnowflakeDestinationUpdate = None,
+        **kwargs
     ) -> UpdateDestinationOutput:
         raise NotImplementedError

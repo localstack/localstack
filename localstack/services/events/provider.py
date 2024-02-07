@@ -106,7 +106,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return events_stores[context.account_id][context.region]
 
     def test_event_pattern(
-        self, context: RequestContext, event_pattern: EventPattern, event: String
+        self, context: RequestContext, event_pattern: EventPattern, event: String, **kwargs
     ) -> TestEventPatternResponse:
         # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
         # Test event pattern uses event pattern to match against event.
@@ -258,6 +258,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         role_arn: RoleArn = None,
         tags: TagList = None,
         event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> PutRuleResponse:
         store = self.get_store(context)
         self.put_rule_job_scheduler(
@@ -271,6 +272,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         name: RuleName,
         event_bus_name: EventBusNameOrArn = None,
         force: Boolean = None,
+        **kwargs,
     ) -> None:
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
@@ -280,7 +282,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         call_moto(context)
 
     def disable_rule(
-        self, context: RequestContext, name: RuleName, event_bus_name: EventBusNameOrArn = None
+        self,
+        context: RequestContext,
+        name: RuleName,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> None:
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
@@ -296,6 +302,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
+        **kwargs,
     ) -> CreateConnectionResponse:
         errors = []
 
@@ -326,6 +333,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule: RuleName,
         targets: TargetList,
         event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> PutTargetsResponse:
         validation_errors = []
 
