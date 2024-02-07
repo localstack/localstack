@@ -9,20 +9,18 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.parse.intrinsic.intrinsic_parser import IntrinsicParser
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 
-_STRING_RETURN_FUNCTIONS: Final[set[str]] = set(
-    map(
-        lambda typ: typ.name(),
-        [
-            StatesFunctionNameType.Format,
-            StatesFunctionNameType.JsonToString,
-            StatesFunctionNameType.ArrayGetItem,
-            StatesFunctionNameType.Base64Decode,
-            StatesFunctionNameType.Base64Encode,
-            StatesFunctionNameType.Hash,
-            StatesFunctionNameType.UUID,
-        ],
-    )
-)
+_STRING_RETURN_FUNCTIONS: Final[set[str]] = {
+    typ.name()
+    for typ in [
+        StatesFunctionNameType.Format,
+        StatesFunctionNameType.JsonToString,
+        StatesFunctionNameType.ArrayGetItem,
+        StatesFunctionNameType.Base64Decode,
+        StatesFunctionNameType.Base64Encode,
+        StatesFunctionNameType.Hash,
+        StatesFunctionNameType.UUID,
+    ]
+}
 
 
 class CausePath(CauseDecl):
