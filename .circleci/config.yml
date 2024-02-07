@@ -38,7 +38,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: python-requirements-{{ checksum "setup.cfg" }}
+          key: python-requirements-{{ checksum "requirements-dev.txt" }}
       - run:
           name: Setup environment
           command: |
@@ -46,7 +46,7 @@ jobs:
             mkdir -p target/reports
             mkdir -p target/coverage
       - save_cache:
-          key: python-requirements-{{ checksum "setup.cfg" }}
+          key: python-requirements-{{ checksum "requirements-dev.txt" }}
           paths:
             - "~/.cache/pip"
       - persist_to_workspace:

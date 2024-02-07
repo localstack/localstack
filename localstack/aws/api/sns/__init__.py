@@ -757,12 +757,13 @@ class SnsApi:
         label: label,
         aws_account_id: DelegatesList,
         action_name: ActionsList,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("CheckIfPhoneNumberIsOptedOut")
     def check_if_phone_number_is_opted_out(
-        self, context: RequestContext, phone_number: PhoneNumber
+        self, context: RequestContext, phone_number: PhoneNumber, **kwargs
     ) -> CheckIfPhoneNumberIsOptedOutResponse:
         raise NotImplementedError
 
@@ -773,12 +774,18 @@ class SnsApi:
         topic_arn: topicARN,
         token: token,
         authenticate_on_unsubscribe: authenticateOnUnsubscribe = None,
+        **kwargs
     ) -> ConfirmSubscriptionResponse:
         raise NotImplementedError
 
     @handler("CreatePlatformApplication")
     def create_platform_application(
-        self, context: RequestContext, name: String, platform: String, attributes: MapStringToString
+        self,
+        context: RequestContext,
+        name: String,
+        platform: String,
+        attributes: MapStringToString,
+        **kwargs
     ) -> CreatePlatformApplicationResponse:
         raise NotImplementedError
 
@@ -790,6 +797,7 @@ class SnsApi:
         token: String,
         custom_user_data: String = None,
         attributes: MapStringToString = None,
+        **kwargs
     ) -> CreateEndpointResponse:
         raise NotImplementedError
 
@@ -799,6 +807,7 @@ class SnsApi:
         context: RequestContext,
         phone_number: PhoneNumberString,
         language_code: LanguageCodeString = None,
+        **kwargs
     ) -> CreateSMSSandboxPhoneNumberResult:
         raise NotImplementedError
 
@@ -810,75 +819,79 @@ class SnsApi:
         attributes: TopicAttributesMap = None,
         tags: TagList = None,
         data_protection_policy: attributeValue = None,
+        **kwargs
     ) -> CreateTopicResponse:
         raise NotImplementedError
 
     @handler("DeleteEndpoint")
-    def delete_endpoint(self, context: RequestContext, endpoint_arn: String) -> None:
+    def delete_endpoint(self, context: RequestContext, endpoint_arn: String, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeletePlatformApplication")
     def delete_platform_application(
-        self, context: RequestContext, platform_application_arn: String
+        self, context: RequestContext, platform_application_arn: String, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteSMSSandboxPhoneNumber")
     def delete_sms_sandbox_phone_number(
-        self, context: RequestContext, phone_number: PhoneNumberString
+        self, context: RequestContext, phone_number: PhoneNumberString, **kwargs
     ) -> DeleteSMSSandboxPhoneNumberResult:
         raise NotImplementedError
 
     @handler("DeleteTopic")
-    def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
+    def delete_topic(self, context: RequestContext, topic_arn: topicARN, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("GetDataProtectionPolicy")
     def get_data_protection_policy(
-        self, context: RequestContext, resource_arn: topicARN
+        self, context: RequestContext, resource_arn: topicARN, **kwargs
     ) -> GetDataProtectionPolicyResponse:
         raise NotImplementedError
 
     @handler("GetEndpointAttributes")
     def get_endpoint_attributes(
-        self, context: RequestContext, endpoint_arn: String
+        self, context: RequestContext, endpoint_arn: String, **kwargs
     ) -> GetEndpointAttributesResponse:
         raise NotImplementedError
 
     @handler("GetPlatformApplicationAttributes")
     def get_platform_application_attributes(
-        self, context: RequestContext, platform_application_arn: String
+        self, context: RequestContext, platform_application_arn: String, **kwargs
     ) -> GetPlatformApplicationAttributesResponse:
         raise NotImplementedError
 
     @handler("GetSMSAttributes")
     def get_sms_attributes(
-        self, context: RequestContext, attributes: ListString = None
+        self, context: RequestContext, attributes: ListString = None, **kwargs
     ) -> GetSMSAttributesResponse:
         raise NotImplementedError
 
     @handler("GetSMSSandboxAccountStatus")
     def get_sms_sandbox_account_status(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> GetSMSSandboxAccountStatusResult:
         raise NotImplementedError
 
     @handler("GetSubscriptionAttributes")
     def get_subscription_attributes(
-        self, context: RequestContext, subscription_arn: subscriptionARN
+        self, context: RequestContext, subscription_arn: subscriptionARN, **kwargs
     ) -> GetSubscriptionAttributesResponse:
         raise NotImplementedError
 
     @handler("GetTopicAttributes")
     def get_topic_attributes(
-        self, context: RequestContext, topic_arn: topicARN
+        self, context: RequestContext, topic_arn: topicARN, **kwargs
     ) -> GetTopicAttributesResponse:
         raise NotImplementedError
 
     @handler("ListEndpointsByPlatformApplication")
     def list_endpoints_by_platform_application(
-        self, context: RequestContext, platform_application_arn: String, next_token: String = None
+        self,
+        context: RequestContext,
+        platform_application_arn: String,
+        next_token: String = None,
+        **kwargs
     ) -> ListEndpointsByPlatformApplicationResponse:
         raise NotImplementedError
 
@@ -888,54 +901,59 @@ class SnsApi:
         context: RequestContext,
         next_token: nextToken = None,
         max_results: MaxItemsListOriginationNumbers = None,
+        **kwargs
     ) -> ListOriginationNumbersResult:
         raise NotImplementedError
 
     @handler("ListPhoneNumbersOptedOut")
     def list_phone_numbers_opted_out(
-        self, context: RequestContext, next_token: string = None
+        self, context: RequestContext, next_token: string = None, **kwargs
     ) -> ListPhoneNumbersOptedOutResponse:
         raise NotImplementedError
 
     @handler("ListPlatformApplications")
     def list_platform_applications(
-        self, context: RequestContext, next_token: String = None
+        self, context: RequestContext, next_token: String = None, **kwargs
     ) -> ListPlatformApplicationsResponse:
         raise NotImplementedError
 
     @handler("ListSMSSandboxPhoneNumbers")
     def list_sms_sandbox_phone_numbers(
-        self, context: RequestContext, next_token: nextToken = None, max_results: MaxItems = None
+        self,
+        context: RequestContext,
+        next_token: nextToken = None,
+        max_results: MaxItems = None,
+        **kwargs
     ) -> ListSMSSandboxPhoneNumbersResult:
         raise NotImplementedError
 
     @handler("ListSubscriptions")
     def list_subscriptions(
-        self, context: RequestContext, next_token: nextToken = None
+        self, context: RequestContext, next_token: nextToken = None, **kwargs
     ) -> ListSubscriptionsResponse:
         raise NotImplementedError
 
     @handler("ListSubscriptionsByTopic")
     def list_subscriptions_by_topic(
-        self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None
+        self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
     ) -> ListSubscriptionsByTopicResponse:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceResponse:
         raise NotImplementedError
 
     @handler("ListTopics")
     def list_topics(
-        self, context: RequestContext, next_token: nextToken = None
+        self, context: RequestContext, next_token: nextToken = None, **kwargs
     ) -> ListTopicsResponse:
         raise NotImplementedError
 
     @handler("OptInPhoneNumber")
     def opt_in_phone_number(
-        self, context: RequestContext, phone_number: PhoneNumber
+        self, context: RequestContext, phone_number: PhoneNumber, **kwargs
     ) -> OptInPhoneNumberResponse:
         raise NotImplementedError
 
@@ -952,6 +970,7 @@ class SnsApi:
         message_attributes: MessageAttributeMap = None,
         message_deduplication_id: String = None,
         message_group_id: String = None,
+        **kwargs
     ) -> PublishResponse:
         raise NotImplementedError
 
@@ -961,6 +980,7 @@ class SnsApi:
         context: RequestContext,
         topic_arn: topicARN,
         publish_batch_request_entries: PublishBatchRequestEntryList,
+        **kwargs
     ) -> PublishBatchResponse:
         raise NotImplementedError
 
@@ -970,16 +990,19 @@ class SnsApi:
         context: RequestContext,
         resource_arn: topicARN,
         data_protection_policy: attributeValue,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("RemovePermission")
-    def remove_permission(self, context: RequestContext, topic_arn: topicARN, label: label) -> None:
+    def remove_permission(
+        self, context: RequestContext, topic_arn: topicARN, label: label, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("SetEndpointAttributes")
     def set_endpoint_attributes(
-        self, context: RequestContext, endpoint_arn: String, attributes: MapStringToString
+        self, context: RequestContext, endpoint_arn: String, attributes: MapStringToString, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -989,12 +1012,13 @@ class SnsApi:
         context: RequestContext,
         platform_application_arn: String,
         attributes: MapStringToString,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("SetSMSAttributes")
     def set_sms_attributes(
-        self, context: RequestContext, attributes: MapStringToString
+        self, context: RequestContext, attributes: MapStringToString, **kwargs
     ) -> SetSMSAttributesResponse:
         raise NotImplementedError
 
@@ -1005,6 +1029,7 @@ class SnsApi:
         subscription_arn: subscriptionARN,
         attribute_name: attributeName,
         attribute_value: attributeValue = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1015,6 +1040,7 @@ class SnsApi:
         topic_arn: topicARN,
         attribute_name: attributeName,
         attribute_value: attributeValue = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1027,27 +1053,38 @@ class SnsApi:
         endpoint: endpoint = None,
         attributes: SubscriptionAttributesMap = None,
         return_subscription_arn: boolean = None,
+        **kwargs
     ) -> SubscribeResponse:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
     ) -> TagResourceResponse:
         raise NotImplementedError
 
     @handler("Unsubscribe")
-    def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
+    def unsubscribe(
+        self, context: RequestContext, subscription_arn: subscriptionARN, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs
     ) -> UntagResourceResponse:
         raise NotImplementedError
 
     @handler("VerifySMSSandboxPhoneNumber")
     def verify_sms_sandbox_phone_number(
-        self, context: RequestContext, phone_number: PhoneNumberString, one_time_password: OTPCode
+        self,
+        context: RequestContext,
+        phone_number: PhoneNumberString,
+        one_time_password: OTPCode,
+        **kwargs
     ) -> VerifySMSSandboxPhoneNumberResult:
         raise NotImplementedError

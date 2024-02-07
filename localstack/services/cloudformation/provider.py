@@ -297,6 +297,7 @@ class CloudformationProvider(CloudformationApi):
         retain_resources: RetainResources = None,
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
+        **kwargs,
     ) -> None:
         stack = find_stack(context.account_id, context.region, stack_name)
         deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
@@ -385,7 +386,11 @@ class CloudformationProvider(CloudformationApi):
 
     @handler("DescribeStacks")
     def describe_stacks(
-        self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeStacksOutput:
         # TODO: test & implement pagination
         state = get_cloudformation_store(context.account_id, context.region)
@@ -422,6 +427,7 @@ class CloudformationProvider(CloudformationApi):
         context: RequestContext,
         next_token: NextToken = None,
         stack_status_filter: StackStatusFilter = None,
+        **kwargs,
     ) -> ListStacksOutput:
         state = get_cloudformation_store(context.account_id, context.region)
 
@@ -454,6 +460,7 @@ class CloudformationProvider(CloudformationApi):
         stack_name: StackName = None,
         change_set_name: ChangeSetNameOrId = None,
         template_stage: TemplateStage = None,
+        **kwargs,
     ) -> GetTemplateOutput:
         if change_set_name:
             stack = find_change_set(
@@ -517,6 +524,7 @@ class CloudformationProvider(CloudformationApi):
         context: RequestContext,
         enable_termination_protection: EnableTerminationProtection,
         stack_name: StackNameOrId,
+        **kwargs,
     ) -> UpdateTerminationProtectionOutput:
         stack = find_stack(context.account_id, context.region, stack_name)
         if not stack:
@@ -712,6 +720,7 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeChangeSetOutput:
         # only relevant if change_set_name isn't an ARN
         if not ARN_CHANGESET_REGEX.match(change_set_name):
@@ -749,6 +758,7 @@ class CloudformationProvider(CloudformationApi):
         context: RequestContext,
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
+        **kwargs,
     ) -> DeleteChangeSetOutput:
         # only relevant if change_set_name isn't an ARN
         if not ARN_CHANGESET_REGEX.match(change_set_name):
@@ -782,6 +792,7 @@ class CloudformationProvider(CloudformationApi):
         client_request_token: ClientRequestToken = None,
         disable_rollback: DisableRollback = None,
         retain_except_on_create: RetainExceptOnCreate = None,
+        **kwargs,
     ) -> ExecuteChangeSetOutput:
         change_set = find_change_set(
             context.account_id, context.region, change_set_name, stack_name=stack_name
@@ -814,7 +825,11 @@ class CloudformationProvider(CloudformationApi):
 
     @handler("ListChangeSets")
     def list_change_sets(
-        self, context: RequestContext, stack_name: StackNameOrId, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        stack_name: StackNameOrId,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> ListChangeSetsOutput:
         stack = find_stack(context.account_id, context.region, stack_name)
         if not stack:
@@ -824,14 +839,18 @@ class CloudformationProvider(CloudformationApi):
 
     @handler("ListExports")
     def list_exports(
-        self, context: RequestContext, next_token: NextToken = None
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListExportsOutput:
         state = get_cloudformation_store(context.account_id, context.region)
         return ListExportsOutput(Exports=state.exports)
 
     @handler("ListImports")
     def list_imports(
-        self, context: RequestContext, export_name: ExportName, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        export_name: ExportName,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> ListImportsOutput:
         state = get_cloudformation_store(context.account_id, context.region)
 
@@ -844,7 +863,11 @@ class CloudformationProvider(CloudformationApi):
 
     @handler("DescribeStackEvents")
     def describe_stack_events(
-        self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeStackEventsOutput:
         state = get_cloudformation_store(context.account_id, context.region)
 
@@ -857,7 +880,11 @@ class CloudformationProvider(CloudformationApi):
 
     @handler("DescribeStackResource")
     def describe_stack_resource(
-        self, context: RequestContext, stack_name: StackName, logical_resource_id: LogicalResourceId
+        self,
+        context: RequestContext,
+        stack_name: StackName,
+        logical_resource_id: LogicalResourceId,
+        **kwargs,
     ) -> DescribeStackResourceOutput:
         stack = find_stack(context.account_id, context.region, stack_name)
 
@@ -874,6 +901,7 @@ class CloudformationProvider(CloudformationApi):
         stack_name: StackName = None,
         logical_resource_id: LogicalResourceId = None,
         physical_resource_id: PhysicalResourceId = None,
+        **kwargs,
     ) -> DescribeStackResourcesOutput:
         if physical_resource_id and stack_name:
             raise ValidationError("Cannot specify both StackName and PhysicalResourceId")
@@ -892,7 +920,7 @@ class CloudformationProvider(CloudformationApi):
 
     @handler("ListStackResources")
     def list_stack_resources(
-        self, context: RequestContext, stack_name: StackName, next_token: NextToken = None
+        self, context: RequestContext, stack_name: StackName, next_token: NextToken = None, **kwargs
     ) -> ListStackResourcesOutput:
         result = self.describe_stack_resources(context, stack_name)
 
@@ -952,6 +980,7 @@ class CloudformationProvider(CloudformationApi):
         stack_set_name: StackSetName,
         operation_id: ClientRequestToken,
         call_as: CallAs = None,
+        **kwargs,
     ) -> DescribeStackSetOperationOutput:
         state = get_cloudformation_store(context.account_id, context.region)
 
@@ -977,7 +1006,11 @@ class CloudformationProvider(CloudformationApi):
 
     @handler("DescribeStackSet")
     def describe_stack_set(
-        self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetName,
+        call_as: CallAs = None,
+        **kwargs,
     ) -> DescribeStackSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
         result = [
@@ -1021,7 +1054,11 @@ class CloudformationProvider(CloudformationApi):
 
     @handler("DeleteStackSet")
     def delete_stack_set(
-        self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetName,
+        call_as: CallAs = None,
+        **kwargs,
     ) -> DeleteStackSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
         stack_set = [

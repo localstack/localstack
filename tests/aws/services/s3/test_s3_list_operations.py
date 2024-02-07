@@ -84,6 +84,7 @@ class TestS3ListObjects:
         condition=is_v2_provider,
         paths=[
             "$..Prefix",
+            "$..Marker",
             "$..NextMarker",
         ],
     )

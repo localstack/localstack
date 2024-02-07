@@ -140,6 +140,9 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke": {
     "last_validated_date": "2023-11-20T21:05:40+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_headers_and_status": {
+    "last_validated_date": "2024-02-04T16:00:29+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[boolean]": {
     "last_validated_date": "2023-11-20T21:05:35+00:00"
   },

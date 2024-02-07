@@ -1,8 +1,10 @@
 import json
+import threading
 
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
 from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
     CallbackTemplates as CT,
@@ -11,6 +13,7 @@ from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates impor
     TimeoutTemplates as TT,
 )
 from tests.aws.services.stepfunctions.utils import create, create_and_record_execution
+from tests.aws.test_notifications import PUBLICATION_RETRIES, PUBLICATION_TIMEOUT
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -184,6 +187,71 @@ class TestCallback:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    def test_sns_publish_wait_for_task_token(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_create_queue,
+        sqs_receive_num_messages,
+        sns_create_topic,
+        sns_allow_topic_sqs_queue,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..TaskToken",
+                replacement="task_token",
+                replace_reference=True,
+            )
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sns_api())
+
+        topic_info = sns_create_topic()
+        topic_arn = topic_info["TopicArn"]
+        queue_url = sqs_create_queue()
+        queue_arn = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+        )
+        sns_allow_topic_sqs_queue(queue_url, queue_arn, topic_arn)
+
+        template = CT.load_sfn_template(CT.SNS_PUBLIC_WAIT_FOR_TASK_TOKEN)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"TopicArn": topic_arn, "body": {"arg1": "Hello", "arg2": "World"}})
+
+        messages = []
+
+        def record_messages_and_send_task_success():
+            messages.clear()
+            messages.extend(sqs_receive_num_messages(queue_url, expected_messages=1))
+            task_token = json.loads(messages[0]["Message"])["TaskToken"]
+            aws_client.stepfunctions.send_task_success(taskToken=task_token, output=json.dumps({}))
+
+        threading.Thread(
+            target=retry,
+            args=(record_messages_and_send_task_success,),
+            kwargs={"retries": PUBLICATION_RETRIES, "sleep": PUBLICATION_TIMEOUT},
+        ).start()
+
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+        sfn_snapshot.match("messages", messages)
 
     @markers.aws.validated
     def test_start_execution_sync(

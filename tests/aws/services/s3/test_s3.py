@@ -3825,7 +3825,13 @@ class TestS3:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_provider, paths=["$..ServerSideEncryption", "$..Prefix"]
+        condition=is_v2_provider,
+        paths=[
+            "$..ServerSideEncryption",
+            "$..Prefix",
+            "$..Marker",
+            "$..NextMarker",
+        ],
     )
     def test_s3_put_more_than_1000_items(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())

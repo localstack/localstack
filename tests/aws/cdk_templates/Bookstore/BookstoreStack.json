@@ -1,5 +1,183 @@
 {
   "Resources": {
+    "BooksApiLambdaRole6305A178": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/AmazonS3FullAccess"
+              ]
+            ]
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/AmazonDynamoDBFullAccess"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "BooksApiLambdaRoleDefaultPolicyCB8FFCFD": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:ListStreams",
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": [
+                "dynamodb:DescribeStream",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "BooksTable9DF4AE31",
+                  "StreamArn"
+                ]
+              }
+            },
+            {
+              "Action": [
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "BooksTable9DF4AE31",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "BooksTable9DF4AE31",
+                          "Arn"
+                        ]
+                      },
+                      "/index/*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:DescribeTable"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "BooksTable9DF4AE31",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "BooksTable9DF4AE31",
+                          "Arn"
+                        ]
+                      },
+                      "/index/*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": [
+                "es:ESHttpGet",
+                "es:ESHttpHead",
+                "es:ESHttpDelete",
+                "es:ESHttpPost",
+                "es:ESHttpPut",
+                "es:ESHttpPatch"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "Domain66AC69E0",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "Domain66AC69E0",
+                          "Arn"
+                        ]
+                      },
+                      "/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "BooksApiLambdaRoleDefaultPolicyCB8FFCFD",
+        "Roles": [
+          {
+            "Ref": "BooksApiLambdaRole6305A178"
+          }
+        ]
+      }
+    },
     "Domain66AC69E0": {
       "Type": "AWS::OpenSearchService::Domain",
       "Properties": {
@@ -81,90 +259,11 @@
       "UpdateReplacePolicy": "Delete",
       "DeletionPolicy": "Delete"
     },
-    "LoadBooksLambdaServiceRole5B377AF8": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition"
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-              ]
-            ]
-          }
-        ]
-      }
-    },
-    "LoadBooksLambdaServiceRoleDefaultPolicy3AB4051A": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "dynamodb:BatchWriteItem",
-                "dynamodb:PutItem",
-                "dynamodb:UpdateItem",
-                "dynamodb:DeleteItem",
-                "dynamodb:DescribeTable"
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "BooksTable9DF4AE31",
-                    "Arn"
-                  ]
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "BooksTable9DF4AE31",
-                          "Arn"
-                        ]
-                      },
-                      "/index/*"
-                    ]
-                  ]
-                }
-              ]
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "LoadBooksLambdaServiceRoleDefaultPolicy3AB4051A",
-        "Roles": [
-          {
-            "Ref": "LoadBooksLambdaServiceRole5B377AF8"
-          }
-        ]
-      }
-    },
     "LoadBooksLambda89A2744D": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "ZipFile": "// source: https://github.com/aws-samples/aws-bookstore-demo-app/blob/master/functions/setup/uploadBooks.js\n\"use strict\";\n\nconst https = require(\"https\");\nconst url = require(\"url\");\n\nvar AWS = require(\"aws-sdk\");\nlet documentClient;\nlet s3Client;\nif (process.env.AWS_ENDPOINT_URL) {\n  const localStackS3Config = {\n      endpoint: process.env.AWS_ENDPOINT_URL,\n      s3ForcePathStyle: true,\n      accessKeyId: 'test',\n      secretAccessKey: 'test',\n      region: 'us-east-1',\n  };\n  s3Client = new AWS.S3(localStackS3Config);\n\n  documentClient = new AWS.DynamoDB.DocumentClient({\n        endpoint: process.env.AWS_ENDPOINT_URL,\n        region: 'us-east-1', // Change the region as per your setup\n      }\n  );\n} else {\n  // Use the default AWS configuration\n  s3Client = new AWS.S3();\n  documentClient = new AWS.DynamoDB.DocumentClient();\n}\n\n// UploadBooks - Upload sample set of books to DynamoDB\nexports.handler = function(event, context, callback) {\n    getBooksData().then(function(data) {\n      var booksString = data.Body.toString(\"utf-8\");\n      console.log(\"received booksString\");\n      var booksList = JSON.parse(booksString);\n      console.log(\"parsing bookslist\");\n      uploadBooksData(booksList);\n      console.log(\"uploaded books\");\n    }).catch(function(err) {\n      console.log(err);\n      var responseData = { Error: \"Upload books failed\" };\n      console.log(responseData.Error);\n    });\n\n    return;\n};\nfunction uploadBooksData(book_items) {\n  var items_array = [];\n  for (var i in book_items) {\n    var book = book_items[i];\n    console.log(book.id)\n    var item = {\n      PutRequest: {\n       Item: book\n      }\n    };\n    items_array.push(item);\n  }\n\n  // Batch items into arrays of 25 for BatchWriteItem limit\n  var split_arrays = [], size = 25;\n    while (items_array.length > 0) {\n        split_arrays.push(items_array.splice(0, size));\n    }\n\n  split_arrays.forEach( function(item_data) {\n    putItem(item_data)\n  });\n}\n\n// Retrieve sample books from aws-bookstore-demo S3 Bucket\nfunction getBooksData() {\n  var params = {\n    Bucket: process.env.S3_BUCKET, // aws-bookstore-demo\n    Key: process.env.FILE_NAME // data/books.json\n };\n return s3Client.getObject(params).promise();\n}\n\n\nfunction putItem(items_array) {\n  var tableName = process.env.TABLE_NAME;\n  var params = {\n    RequestItems: {\n      [tableName]: items_array\n    }\n  };\n  documentClient.batchWrite(params, function(err, data) {\n      if (err) console.log(err);\n      else console.log(data);\n   });\n}\n"
+          "ZipFile": "// source: https://github.com/aws-samples/aws-bookstore-demo-app/blob/master/functions/setup/uploadBooks.js\n\n\"use strict\";\n\nconst https = require(\"https\");\nconst url = require(\"url\");\nconst AWS = require(\"aws-sdk\");\n\nvar config = {\n    's3ForcePathStyle': true,\n};\nif (process.env.AWS_ENDPOINT_URL) {\n    config.endpoint = process.env.AWS_ENDPOINT_URL;\n}\n\nlet documentClient = new AWS.DynamoDB.DocumentClient(config);\nlet s3Client = new AWS.S3(config);\n\n// UploadBooks - Upload sample set of books to DynamoDB\nexports.handler = function(event, context, callback) {\n    getBooksData().then(function(data) {\n      var booksString = data.Body.toString(\"utf-8\");\n      console.log(\"received booksString\");\n      var booksList = JSON.parse(booksString);\n      console.log(\"parsing bookslist\");\n      uploadBooksData(booksList);\n      console.log(\"uploaded books\");\n    }).catch(function(err) {\n      console.log(err);\n      var responseData = { Error: \"Upload books failed\" };\n      console.log(responseData.Error);\n    });\n\n    return;\n};\nfunction uploadBooksData(book_items) {\n  var items_array = [];\n  for (var i in book_items) {\n    var book = book_items[i];\n    console.log(book.id)\n    var item = {\n      PutRequest: {\n       Item: book\n      }\n    };\n    items_array.push(item);\n  }\n\n  // Batch items into arrays of 25 for BatchWriteItem limit\n  var split_arrays = [], size = 25;\n    while (items_array.length > 0) {\n        split_arrays.push(items_array.splice(0, size));\n    }\n\n  split_arrays.forEach( function(item_data) {\n    putItem(item_data)\n  });\n}\n\n// Retrieve sample books from aws-bookstore-demo S3 Bucket\nfunction getBooksData() {\n  var params = {\n    Bucket: process.env.S3_BUCKET, // aws-bookstore-demo\n    Key: process.env.FILE_NAME // data/books.json\n };\n return s3Client.getObject(params).promise();\n}\n\n\nfunction putItem(items_array) {\n  var tableName = process.env.TABLE_NAME;\n  var params = {\n    RequestItems: {\n      [tableName]: items_array\n    }\n  };\n  documentClient.batchWrite(params, function(err, data) {\n      if (err) console.log(err);\n      else console.log(data);\n   });\n}\n"
         },
         "Environment": {
           "Variables": {
@@ -178,125 +277,22 @@
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
-            "LoadBooksLambdaServiceRole5B377AF8",
+            "BooksApiLambdaRole6305A178",
             "Arn"
           ]
         },
         "Runtime": "nodejs16.x"
       },
       "DependsOn": [
-        "LoadBooksLambdaServiceRoleDefaultPolicy3AB4051A",
-        "LoadBooksLambdaServiceRole5B377AF8"
+        "BooksApiLambdaRoleDefaultPolicyCB8FFCFD",
+        "BooksApiLambdaRole6305A178"
       ]
-    },
-    "BooksS3Policy90EAFBF2": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": "s3:GetObject",
-              "Effect": "Allow",
-              "Resource": "arn:aws:s3:::*/*"
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "BooksS3Policy90EAFBF2",
-        "Roles": [
-          {
-            "Ref": "LoadBooksLambdaServiceRole5B377AF8"
-          }
-        ]
-      }
-    },
-    "GetBookLambdaServiceRole2A5B6F70": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition"
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-              ]
-            ]
-          }
-        ]
-      }
-    },
-    "GetBookLambdaServiceRoleDefaultPolicy0B493826": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "dynamodb:BatchGetItem",
-                "dynamodb:GetRecords",
-                "dynamodb:GetShardIterator",
-                "dynamodb:Query",
-                "dynamodb:GetItem",
-                "dynamodb:Scan",
-                "dynamodb:ConditionCheckItem",
-                "dynamodb:DescribeTable"
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "BooksTable9DF4AE31",
-                    "Arn"
-                  ]
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "BooksTable9DF4AE31",
-                          "Arn"
-                        ]
-                      },
-                      "/index/*"
-                    ]
-                  ]
-                }
-              ]
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "GetBookLambdaServiceRoleDefaultPolicy0B493826",
-        "Roles": [
-          {
-            "Ref": "GetBookLambdaServiceRole2A5B6F70"
-          }
-        ]
-      }
     },
     "GetBookLambda6188143D": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "ZipFile": "// source adapted from https://github.com/aws-samples/aws-bookstore-demo-app\n\n\"use strict\";\n\nconst AWS = require(\"aws-sdk\");\nlet dynamoDb;\nif (process.env.AWS_ENDPOINT_URL) {\n  dynamoDb = new AWS.DynamoDB.DocumentClient({\n        endpoint: process.env.AWS_ENDPOINT_URL,\n        region: 'us-east-1', // Change the region as per your setup\n      }\n  );\n} else {\n  dynamoDb = new AWS.DynamoDB.DocumentClient();\n}\n// GetBook - Get book informaton for a given book id\nexports.handler = (event, context, callback) => {\n\n  // Return immediately if being called by warmer\n  if (event.source === \"warmer\") {\n    return callback(null, \"Lambda is warm\");\n  }\n\n  const params = {\n    TableName: process.env.TABLE_NAME, // [ProjectName]-Books\n    // 'Key' defines the partition key of the item to be retrieved\n    // - 'id': a unique identifier for the book (uuid)\n    Key: {\n      id: event.pathParameters.id\n    }\n  };\n  dynamoDb.get(params, (error, data) => {\n    // Set response headers to enable CORS (Cross-Origin Resource Sharing)\n    const headers = {\n      \"Access-Control-Allow-Origin\": \"*\",\n      \"Access-Control-Allow-Credentials\" : true\n    };\n\n    // Return status code 500 on error\n    if (error) {\n      const response = {\n         statusCode: 500,\n         headers: headers,\n         body: error\n      };\n      callback(null, response);\n      return;\n    }\n\n    // Return status code 200 and the retrieved item on success\n    const response = {\n      statusCode: 200,\n      headers: headers,\n      body: JSON.stringify(data.Item)\n    };\n    callback(null, response);\n  });\n}\n"
+          "ZipFile": "// source adapted from https://github.com/aws-samples/aws-bookstore-demo-app\n\n\"use strict\";\n\nconst AWS = require(\"aws-sdk\");\n\nvar config = {};\nif (process.env.AWS_ENDPOINT_URL) {\n    config.endpoint = process.env.AWS_ENDPOINT_URL;\n}\n\nlet dynamoDb = new AWS.DynamoDB.DocumentClient(config);\n\n// GetBook - Get book informaton for a given book id\nexports.handler = (event, context, callback) => {\n\n  // Return immediately if being called by warmer\n  if (event.source === \"warmer\") {\n    return callback(null, \"Lambda is warm\");\n  }\n\n  const params = {\n    TableName: process.env.TABLE_NAME, // [ProjectName]-Books\n    // 'Key' defines the partition key of the item to be retrieved\n    // - 'id': a unique identifier for the book (uuid)\n    Key: {\n      id: event.pathParameters.id\n    }\n  };\n  dynamoDb.get(params, (error, data) => {\n    // Set response headers to enable CORS (Cross-Origin Resource Sharing)\n    const headers = {\n      \"Access-Control-Allow-Origin\": \"*\",\n      \"Access-Control-Allow-Credentials\" : true\n    };\n\n    // Return status code 500 on error\n    if (error) {\n      const response = {\n         statusCode: 500,\n         headers: headers,\n         body: error\n      };\n      callback(null, response);\n      return;\n    }\n\n    // Return status code 200 and the retrieved item on success\n    const response = {\n      statusCode: 200,\n      headers: headers,\n      body: JSON.stringify(data.Item)\n    };\n    callback(null, response);\n  });\n}\n"
         },
         "Environment": {
           "Variables": {
@@ -308,104 +304,22 @@
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
-            "GetBookLambdaServiceRole2A5B6F70",
+            "BooksApiLambdaRole6305A178",
             "Arn"
           ]
         },
         "Runtime": "nodejs16.x"
       },
       "DependsOn": [
-        "GetBookLambdaServiceRoleDefaultPolicy0B493826",
-        "GetBookLambdaServiceRole2A5B6F70"
+        "BooksApiLambdaRoleDefaultPolicyCB8FFCFD",
+        "BooksApiLambdaRole6305A178"
       ]
-    },
-    "ListBooksLambdaServiceRoleB3A92402": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition"
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-              ]
-            ]
-          }
-        ]
-      }
-    },
-    "ListBooksLambdaServiceRoleDefaultPolicyE7CEFA1B": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "dynamodb:BatchGetItem",
-                "dynamodb:GetRecords",
-                "dynamodb:GetShardIterator",
-                "dynamodb:Query",
-                "dynamodb:GetItem",
-                "dynamodb:Scan",
-                "dynamodb:ConditionCheckItem",
-                "dynamodb:DescribeTable"
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "BooksTable9DF4AE31",
-                    "Arn"
-                  ]
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "BooksTable9DF4AE31",
-                          "Arn"
-                        ]
-                      },
-                      "/index/*"
-                    ]
-                  ]
-                }
-              ]
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "ListBooksLambdaServiceRoleDefaultPolicyE7CEFA1B",
-        "Roles": [
-          {
-            "Ref": "ListBooksLambdaServiceRoleB3A92402"
-          }
-        ]
-      }
     },
     "ListBooksLambda272803E4": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "ZipFile": "// source adapted from https://github.com/aws-samples/aws-bookstore-demo-app\n\n\"use strict\";\n\nconst AWS = require(\"aws-sdk\");\nlet dynamoDb;\nif (process.env.AWS_ENDPOINT_URL) {\n  dynamoDb = new AWS.DynamoDB.DocumentClient({\n        endpoint: process.env.AWS_ENDPOINT_URL,\n        region: 'us-east-1', // Change the region as per your setup\n      }\n  );\n} else {\n  dynamoDb = new AWS.DynamoDB.DocumentClient();\n}\n// ListBooks - List all books or list all books in a particular category\nexports.handler = (event, context, callback) => {\n\n  // Return immediately if being called by warmer\n  if (event.source === \"warmer\") {\n    return callback(null, \"Lambda is warm\");\n  }\n\n  // Set response headers to enable CORS (Cross-Origin Resource Sharing)\n  const headers = {\n    \"Access-Control-Allow-Origin\": \"*\",\n    \"Access-Control-Allow-Credentials\" : true\n  };\n\n  // Query books for a particular category\n  if (event.queryStringParameters) {\n    const params = {\n      TableName: process.env.TABLE_NAME, // [ProjectName]-Books\n      IndexName: \"category-index\",\n      // 'KeyConditionExpression' defines the condition for the query\n      // - 'category = :category': only return items with matching 'category' index\n      // 'ExpressionAttributeValues' defines the value in the condition\n      // - ':category': defines 'category' to be the query string parameter\n      KeyConditionExpression: \"category = :category\",\n      ExpressionAttributeValues: {\n        \":category\": event.queryStringParameters.category\n      }\n    };\n    dynamoDb.query(params, (error, data) => {\n      // Return status code 500 on error\n      if (error) {\n        const response = {\n           statusCode: 500,\n           headers: headers,\n           body: error\n        };\n        callback(null, response);\n        return;\n      }\n\n      // Return status code 200 and the retrieved items on success\n      const response = {\n        statusCode: 200,\n        headers: headers,\n        body: JSON.stringify(data.Items)\n      };\n      callback(null, response);\n    });\n  }\n\n  // List all books in bookstore\n  else {\n    const params = {\n      TableName: process.env.TABLE_NAME // [ProjectName]-Books\n    };\n\n    dynamoDb.scan(params, (error, data) => {\n      // Return status code 500 on error\n      if (error) {\n        const response = {\n          statusCode: 500,\n          headers: headers,\n          body: error\n        };\n        callback(null, response);\n        return;\n      }\n\n      // Return status code 200 and the retrieved items on success\n      const response = {\n        statusCode: 200,\n        headers: headers,\n        body: JSON.stringify(data.Items)\n      };\n      callback(null, response);\n    });\n  }\n}\n"
+          "ZipFile": "// source adapted from https://github.com/aws-samples/aws-bookstore-demo-app\n\n\"use strict\";\n\nconst AWS = require(\"aws-sdk\");\n\nvar config = {};\nif (process.env.AWS_ENDPOINT_URL) {\n    config.endpoint = process.env.AWS_ENDPOINT_URL;\n}\n\nlet dynamoDb = new AWS.DynamoDB.DocumentClient(config);\n\n// ListBooks - List all books or list all books in a particular category\nexports.handler = (event, context, callback) => {\n\n  // Return immediately if being called by warmer\n  if (event.source === \"warmer\") {\n    return callback(null, \"Lambda is warm\");\n  }\n\n  // Set response headers to enable CORS (Cross-Origin Resource Sharing)\n  const headers = {\n    \"Access-Control-Allow-Origin\": \"*\",\n    \"Access-Control-Allow-Credentials\" : true\n  };\n\n  // Query books for a particular category\n  if (event.queryStringParameters) {\n    const params = {\n      TableName: process.env.TABLE_NAME, // [ProjectName]-Books\n      IndexName: \"category-index\",\n      // 'KeyConditionExpression' defines the condition for the query\n      // - 'category = :category': only return items with matching 'category' index\n      // 'ExpressionAttributeValues' defines the value in the condition\n      // - ':category': defines 'category' to be the query string parameter\n      KeyConditionExpression: \"category = :category\",\n      ExpressionAttributeValues: {\n        \":category\": event.queryStringParameters.category\n      }\n    };\n    dynamoDb.query(params, (error, data) => {\n      // Return status code 500 on error\n      if (error) {\n        const response = {\n           statusCode: 500,\n           headers: headers,\n           body: error\n        };\n        callback(null, response);\n        return;\n      }\n\n      // Return status code 200 and the retrieved items on success\n      const response = {\n        statusCode: 200,\n        headers: headers,\n        body: JSON.stringify(data.Items)\n      };\n      callback(null, response);\n    });\n  }\n\n  // List all books in bookstore\n  else {\n    const params = {\n      TableName: process.env.TABLE_NAME // [ProjectName]-Books\n    };\n\n    dynamoDb.scan(params, (error, data) => {\n      // Return status code 500 on error\n      if (error) {\n        const response = {\n          statusCode: 500,\n          headers: headers,\n          body: error\n        };\n        callback(null, response);\n        return;\n      }\n\n      // Return status code 200 and the retrieved items on success\n      const response = {\n        statusCode: 200,\n        headers: headers,\n        body: JSON.stringify(data.Items)\n      };\n      callback(null, response);\n    });\n  }\n}\n"
         },
         "Environment": {
           "Variables": {
@@ -417,96 +331,16 @@
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
-            "ListBooksLambdaServiceRoleB3A92402",
+            "BooksApiLambdaRole6305A178",
             "Arn"
           ]
         },
         "Runtime": "nodejs16.x"
       },
       "DependsOn": [
-        "ListBooksLambdaServiceRoleDefaultPolicyE7CEFA1B",
-        "ListBooksLambdaServiceRoleB3A92402"
+        "BooksApiLambdaRoleDefaultPolicyCB8FFCFD",
+        "BooksApiLambdaRole6305A178"
       ]
-    },
-    "SearchBookLambdaServiceRole5AD030B7": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition"
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-              ]
-            ]
-          }
-        ]
-      }
-    },
-    "SearchBookLambdaServiceRoleDefaultPolicy68B2E5F3": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "es:ESHttpGet",
-                "es:ESHttpHead",
-                "es:ESHttpDelete",
-                "es:ESHttpPost",
-                "es:ESHttpPut",
-                "es:ESHttpPatch"
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "Domain66AC69E0",
-                    "Arn"
-                  ]
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "Domain66AC69E0",
-                          "Arn"
-                        ]
-                      },
-                      "/*"
-                    ]
-                  ]
-                }
-              ]
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "SearchBookLambdaServiceRoleDefaultPolicy68B2E5F3",
-        "Roles": [
-          {
-            "Ref": "SearchBookLambdaServiceRole5AD030B7"
-          }
-        ]
-      }
     },
     "SearchBookLambdaC4A03CAC": {
       "Type": "AWS::Lambda::Function",
@@ -535,124 +369,22 @@
                 "Domain66AC69E0",
                 "DomainEndpoint"
               ]
-            },
-            "REGION": {
-              "Ref": "AWS::Region"
             }
           }
         },
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
-            "SearchBookLambdaServiceRole5AD030B7",
+            "BooksApiLambdaRole6305A178",
             "Arn"
           ]
         },
         "Runtime": "python3.10"
       },
       "DependsOn": [
-        "SearchBookLambdaServiceRoleDefaultPolicy68B2E5F3",
-        "SearchBookLambdaServiceRole5AD030B7"
+        "BooksApiLambdaRoleDefaultPolicyCB8FFCFD",
+        "BooksApiLambdaRole6305A178"
       ]
-    },
-    "UpdateSearchLambdaServiceRole50DCABB8": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com"
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition"
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-              ]
-            ]
-          }
-        ]
-      }
-    },
-    "UpdateSearchLambdaServiceRoleDefaultPolicy3F121BF7": {
-      "Type": "AWS::IAM::Policy",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": "dynamodb:ListStreams",
-              "Effect": "Allow",
-              "Resource": "*"
-            },
-            {
-              "Action": [
-                "dynamodb:DescribeStream",
-                "dynamodb:GetRecords",
-                "dynamodb:GetShardIterator"
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "BooksTable9DF4AE31",
-                  "StreamArn"
-                ]
-              }
-            },
-            {
-              "Action": [
-                "es:ESHttpGet",
-                "es:ESHttpHead",
-                "es:ESHttpDelete",
-                "es:ESHttpPost",
-                "es:ESHttpPut",
-                "es:ESHttpPatch"
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "Domain66AC69E0",
-                    "Arn"
-                  ]
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "Domain66AC69E0",
-                          "Arn"
-                        ]
-                      },
-                      "/*"
-                    ]
-                  ]
-                }
-              ]
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "PolicyName": "UpdateSearchLambdaServiceRoleDefaultPolicy3F121BF7",
-        "Roles": [
-          {
-            "Ref": "UpdateSearchLambdaServiceRole50DCABB8"
-          }
-        ]
-      }
     },
     "UpdateSearchLambda87F5CBC4": {
       "Type": "AWS::Lambda::Function",
@@ -681,24 +413,21 @@
                 "Domain66AC69E0",
                 "DomainEndpoint"
               ]
-            },
-            "REGION": {
-              "Ref": "AWS::Region"
             }
           }
         },
         "Handler": "index.handler",
         "Role": {
           "Fn::GetAtt": [
-            "UpdateSearchLambdaServiceRole50DCABB8",
+            "BooksApiLambdaRole6305A178",
             "Arn"
           ]
         },
         "Runtime": "python3.10"
       },
       "DependsOn": [
-        "UpdateSearchLambdaServiceRoleDefaultPolicy3F121BF7",
-        "UpdateSearchLambdaServiceRole50DCABB8"
+        "BooksApiLambdaRoleDefaultPolicyCB8FFCFD",
+        "BooksApiLambdaRole6305A178"
       ]
     },
     "UpdateSearchLambdaDynamoDBEventSourceBookstoreStackBooksTable5CD0B9B677451E3B": {
