@@ -120,6 +120,11 @@ def clean_up(aws_client):
 
 @pytest.fixture
 def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
+    queue_urls = []
+    event_bus_names = []
+    rule_names = []
+    target_ids = []
+
     def _put_events_with_filter_to_sqs(
         pattern: dict,
         entries_asserts: list[Tuple[list[dict], bool]],
@@ -133,6 +138,7 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
 
         sqs_client = aws_client.sqs
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        queue_urls.append(queue_url)
         queue_arn = sqs_get_queue_arn(queue_url)
         policy = {
             "Version": "2012-10-17",
@@ -153,11 +159,14 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
 
         events_client = aws_client.events
         events_client.create_event_bus(Name=bus_name)
+        event_bus_names.append(bus_name)
+
         events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(pattern),
         )
+        rule_names.append(rule_name)
         kwargs = {"InputPath": input_path} if input_path else {}
         if input_transformer:
             kwargs["InputTransformer"] = input_transformer
@@ -166,36 +175,39 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
             EventBusName=bus_name,
             Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
         )
+        target_ids.append(target_id)
 
         assert response["FailedEntryCount"] == 0
         assert response["FailedEntries"] == []
 
-        try:
-            messages = []
-            for entry_asserts in entries_asserts:
-                entries = entry_asserts[0]
-                for entry in entries:
-                    entry["EventBusName"] = bus_name
-                message = _put_entries_assert_results_sqs(
-                    events_client,
-                    sqs_client,
-                    queue_url,
-                    entries=entries,
-                    should_match=entry_asserts[1],
-                )
-                if message is not None:
-                    messages.extend(message)
-        finally:
-            clean_up(
-                bus_name=bus_name,
-                rule_name=rule_name,
-                target_ids=target_id,
-                queue_url=queue_url,
+        messages = []
+        for entry_asserts in entries_asserts:
+            entries = entry_asserts[0]
+            for entry in entries:
+                entry["EventBusName"] = bus_name
+            message = _put_entries_assert_results_sqs(
+                events_client,
+                sqs_client,
+                queue_url,
+                entries=entries,
+                should_match=entry_asserts[1],
             )
+            if message is not None:
+                messages.extend(message)
 
         return messages
 
     yield _put_events_with_filter_to_sqs
+
+    for queue_url, event_bus_name, rule_name, target_id in zip(
+        queue_urls, event_bus_names, rule_names, target_ids
+    ):
+        clean_up(
+            bus_name=event_bus_name,
+            rule_name=rule_name,
+            target_ids=target_id,
+            queue_url=queue_url,
+        )
 
 
 def _put_entries_assert_results_sqs(
