@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from localstack import constants
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.config import in_docker
+from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.container import ContainerFactory, LogStreamFactory
 from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_s3
@@ -125,7 +126,9 @@ class TestLocalStackHost:
     def infrastructure(
         self, aws_client_factory, infrastructure_setup, port, chosen_localstack_host
     ):
-        aws_client = aws_client_factory(endpoint_url=f"http://localhost:{port}")
+        aws_client = aws_client_factory(
+            endpoint_url=f"http://localhost:{port}", region_name=TEST_AWS_REGION_NAME
+        )
 
         infra: InfraProvisioner = infrastructure_setup(
             namespace="LocalStackHostBootstrap",
@@ -137,6 +140,9 @@ class TestLocalStackHost:
         # results bucket
         results_bucket = cdk.aws_s3.Bucket(stack, "ResultsBucket")
         cdk.CfnOutput(stack, "ResultsBucketName", value=results_bucket.bucket_name)
+
+        # assets bucket
+        assets_bucket_name = "bootstrap-bucket"
 
         # OpenSearch domain
         domain_name = f"domain-{short_uid()}"
@@ -164,7 +170,7 @@ class TestLocalStackHost:
             infra.add_custom_setup(
                 lambda: load_python_lambda_to_s3(
                     s3_client=aws_client.s3,
-                    bucket_name=infra.get_asset_bucket(),
+                    bucket_name=assets_bucket_name,
                     key_name=key_name,
                     code_path=resources_path,
                     additional_python_packages=additional_packages or [],
@@ -195,7 +201,7 @@ class TestLocalStackHost:
         asset_bucket = cdk.aws_s3.Bucket.from_bucket_name(
             stack,
             "BucketName",
-            bucket_name=infra.get_asset_bucket(),
+            bucket_name=assets_bucket_name,
         )
         apigw_handler_fn = create_lambda_function(
             stack,
@@ -243,6 +249,7 @@ class TestLocalStackHost:
 
         aws_client = aws_client_factory(
             endpoint_url=f"http://localhost:{port}",
+            region_name=TEST_AWS_REGION_NAME,
         )
 
         stack_outputs = infrastructure.get_stack_outputs(STACK_NAME)

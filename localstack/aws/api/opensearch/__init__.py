@@ -2080,7 +2080,7 @@ class OpensearchApi:
 
     @handler("AcceptInboundConnection")
     def accept_inbound_connection(
-        self, context: RequestContext, connection_id: ConnectionId
+        self, context: RequestContext, connection_id: ConnectionId, **kwargs
     ) -> AcceptInboundConnectionResponse:
         raise NotImplementedError
 
@@ -2092,28 +2092,29 @@ class OpensearchApi:
         name: DataSourceName,
         data_source_type: DataSourceType,
         description: DataSourceDescription = None,
+        **kwargs
     ) -> AddDataSourceResponse:
         raise NotImplementedError
 
     @handler("AddTags")
-    def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
+    def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("AssociatePackage")
     def associate_package(
-        self, context: RequestContext, package_id: PackageID, domain_name: DomainName
+        self, context: RequestContext, package_id: PackageID, domain_name: DomainName, **kwargs
     ) -> AssociatePackageResponse:
         raise NotImplementedError
 
     @handler("AuthorizeVpcEndpointAccess")
     def authorize_vpc_endpoint_access(
-        self, context: RequestContext, domain_name: DomainName, account: AWSAccount
+        self, context: RequestContext, domain_name: DomainName, account: AWSAccount, **kwargs
     ) -> AuthorizeVpcEndpointAccessResponse:
         raise NotImplementedError
 
     @handler("CancelServiceSoftwareUpdate")
     def cancel_service_software_update(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> CancelServiceSoftwareUpdateResponse:
         raise NotImplementedError
 
@@ -2140,6 +2141,7 @@ class OpensearchApi:
         auto_tune_options: AutoTuneOptionsInput = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
+        **kwargs
     ) -> CreateDomainResponse:
         raise NotImplementedError
 
@@ -2152,6 +2154,7 @@ class OpensearchApi:
         connection_alias: ConnectionAlias,
         connection_mode: ConnectionMode = None,
         connection_properties: ConnectionProperties = None,
+        **kwargs
     ) -> CreateOutboundConnectionResponse:
         raise NotImplementedError
 
@@ -2163,6 +2166,7 @@ class OpensearchApi:
         package_type: PackageType,
         package_source: PackageSource,
         package_description: PackageDescription = None,
+        **kwargs
     ) -> CreatePackageResponse:
         raise NotImplementedError
 
@@ -2173,48 +2177,49 @@ class OpensearchApi:
         domain_arn: DomainArn,
         vpc_options: VPCOptions,
         client_token: ClientToken = None,
+        **kwargs
     ) -> CreateVpcEndpointResponse:
         raise NotImplementedError
 
     @handler("DeleteDataSource")
     def delete_data_source(
-        self, context: RequestContext, domain_name: DomainName, name: DataSourceName
+        self, context: RequestContext, domain_name: DomainName, name: DataSourceName, **kwargs
     ) -> DeleteDataSourceResponse:
         raise NotImplementedError
 
     @handler("DeleteDomain")
     def delete_domain(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DeleteDomainResponse:
         raise NotImplementedError
 
     @handler("DeleteInboundConnection")
     def delete_inbound_connection(
-        self, context: RequestContext, connection_id: ConnectionId
+        self, context: RequestContext, connection_id: ConnectionId, **kwargs
     ) -> DeleteInboundConnectionResponse:
         raise NotImplementedError
 
     @handler("DeleteOutboundConnection")
     def delete_outbound_connection(
-        self, context: RequestContext, connection_id: ConnectionId
+        self, context: RequestContext, connection_id: ConnectionId, **kwargs
     ) -> DeleteOutboundConnectionResponse:
         raise NotImplementedError
 
     @handler("DeletePackage")
     def delete_package(
-        self, context: RequestContext, package_id: PackageID
+        self, context: RequestContext, package_id: PackageID, **kwargs
     ) -> DeletePackageResponse:
         raise NotImplementedError
 
     @handler("DeleteVpcEndpoint")
     def delete_vpc_endpoint(
-        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId
+        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId, **kwargs
     ) -> DeleteVpcEndpointResponse:
         raise NotImplementedError
 
     @handler("DescribeDomain")
     def describe_domain(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DescribeDomainResponse:
         raise NotImplementedError
 
@@ -2225,36 +2230,37 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeDomainAutoTunesResponse:
         raise NotImplementedError
 
     @handler("DescribeDomainChangeProgress")
     def describe_domain_change_progress(
-        self, context: RequestContext, domain_name: DomainName, change_id: GUID = None
+        self, context: RequestContext, domain_name: DomainName, change_id: GUID = None, **kwargs
     ) -> DescribeDomainChangeProgressResponse:
         raise NotImplementedError
 
     @handler("DescribeDomainConfig")
     def describe_domain_config(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DescribeDomainConfigResponse:
         raise NotImplementedError
 
     @handler("DescribeDomainHealth")
     def describe_domain_health(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DescribeDomainHealthResponse:
         raise NotImplementedError
 
     @handler("DescribeDomainNodes")
     def describe_domain_nodes(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DescribeDomainNodesResponse:
         raise NotImplementedError
 
     @handler("DescribeDomains")
     def describe_domains(
-        self, context: RequestContext, domain_names: DomainNameList
+        self, context: RequestContext, domain_names: DomainNameList, **kwargs
     ) -> DescribeDomainsResponse:
         raise NotImplementedError
 
@@ -2265,6 +2271,7 @@ class OpensearchApi:
         domain_name: DomainName,
         dry_run_id: GUID = None,
         load_dry_run_config: Boolean = None,
+        **kwargs
     ) -> DescribeDryRunProgressResponse:
         raise NotImplementedError
 
@@ -2275,6 +2282,7 @@ class OpensearchApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeInboundConnectionsResponse:
         raise NotImplementedError
 
@@ -2285,6 +2293,7 @@ class OpensearchApi:
         instance_type: OpenSearchPartitionInstanceType,
         engine_version: VersionString,
         domain_name: DomainName = None,
+        **kwargs
     ) -> DescribeInstanceTypeLimitsResponse:
         raise NotImplementedError
 
@@ -2295,6 +2304,7 @@ class OpensearchApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeOutboundConnectionsResponse:
         raise NotImplementedError
 
@@ -2305,6 +2315,7 @@ class OpensearchApi:
         filters: DescribePackagesFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribePackagesResponse:
         raise NotImplementedError
 
@@ -2315,6 +2326,7 @@ class OpensearchApi:
         reserved_instance_offering_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeReservedInstanceOfferingsResponse:
         raise NotImplementedError
 
@@ -2325,36 +2337,37 @@ class OpensearchApi:
         reserved_instance_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeReservedInstancesResponse:
         raise NotImplementedError
 
     @handler("DescribeVpcEndpoints")
     def describe_vpc_endpoints(
-        self, context: RequestContext, vpc_endpoint_ids: VpcEndpointIdList
+        self, context: RequestContext, vpc_endpoint_ids: VpcEndpointIdList, **kwargs
     ) -> DescribeVpcEndpointsResponse:
         raise NotImplementedError
 
     @handler("DissociatePackage")
     def dissociate_package(
-        self, context: RequestContext, package_id: PackageID, domain_name: DomainName
+        self, context: RequestContext, package_id: PackageID, domain_name: DomainName, **kwargs
     ) -> DissociatePackageResponse:
         raise NotImplementedError
 
     @handler("GetCompatibleVersions")
     def get_compatible_versions(
-        self, context: RequestContext, domain_name: DomainName = None
+        self, context: RequestContext, domain_name: DomainName = None, **kwargs
     ) -> GetCompatibleVersionsResponse:
         raise NotImplementedError
 
     @handler("GetDataSource")
     def get_data_source(
-        self, context: RequestContext, domain_name: DomainName, name: DataSourceName
+        self, context: RequestContext, domain_name: DomainName, name: DataSourceName, **kwargs
     ) -> GetDataSourceResponse:
         raise NotImplementedError
 
     @handler("GetDomainMaintenanceStatus")
     def get_domain_maintenance_status(
-        self, context: RequestContext, domain_name: DomainName, maintenance_id: RequestId
+        self, context: RequestContext, domain_name: DomainName, maintenance_id: RequestId, **kwargs
     ) -> GetDomainMaintenanceStatusResponse:
         raise NotImplementedError
 
@@ -2365,6 +2378,7 @@ class OpensearchApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> GetPackageVersionHistoryResponse:
         raise NotImplementedError
 
@@ -2375,18 +2389,19 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> GetUpgradeHistoryResponse:
         raise NotImplementedError
 
     @handler("GetUpgradeStatus")
     def get_upgrade_status(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> GetUpgradeStatusResponse:
         raise NotImplementedError
 
     @handler("ListDataSources")
     def list_data_sources(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> ListDataSourcesResponse:
         raise NotImplementedError
 
@@ -2399,12 +2414,13 @@ class OpensearchApi:
         status: MaintenanceStatus = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListDomainMaintenancesResponse:
         raise NotImplementedError
 
     @handler("ListDomainNames")
     def list_domain_names(
-        self, context: RequestContext, engine_type: EngineType = None
+        self, context: RequestContext, engine_type: EngineType = None, **kwargs
     ) -> ListDomainNamesResponse:
         raise NotImplementedError
 
@@ -2415,6 +2431,7 @@ class OpensearchApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListDomainsForPackageResponse:
         raise NotImplementedError
 
@@ -2428,6 +2445,7 @@ class OpensearchApi:
         next_token: NextToken = None,
         retrieve_azs: Boolean = None,
         instance_type: InstanceTypeString = None,
+        **kwargs
     ) -> ListInstanceTypeDetailsResponse:
         raise NotImplementedError
 
@@ -2438,6 +2456,7 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListPackagesForDomainResponse:
         raise NotImplementedError
 
@@ -2448,34 +2467,47 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListScheduledActionsResponse:
         raise NotImplementedError
 
     @handler("ListTags")
-    def list_tags(self, context: RequestContext, arn: ARN) -> ListTagsResponse:
+    def list_tags(self, context: RequestContext, arn: ARN, **kwargs) -> ListTagsResponse:
         raise NotImplementedError
 
     @handler("ListVersions")
     def list_versions(
-        self, context: RequestContext, max_results: MaxResults = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListVersionsResponse:
         raise NotImplementedError
 
     @handler("ListVpcEndpointAccess")
     def list_vpc_endpoint_access(
-        self, context: RequestContext, domain_name: DomainName, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListVpcEndpointAccessResponse:
         raise NotImplementedError
 
     @handler("ListVpcEndpoints")
     def list_vpc_endpoints(
-        self, context: RequestContext, next_token: NextToken = None
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListVpcEndpointsResponse:
         raise NotImplementedError
 
     @handler("ListVpcEndpointsForDomain")
     def list_vpc_endpoints_for_domain(
-        self, context: RequestContext, domain_name: DomainName, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListVpcEndpointsForDomainResponse:
         raise NotImplementedError
 
@@ -2486,22 +2518,25 @@ class OpensearchApi:
         reserved_instance_offering_id: GUID,
         reservation_name: ReservationToken,
         instance_count: InstanceCount = None,
+        **kwargs
     ) -> PurchaseReservedInstanceOfferingResponse:
         raise NotImplementedError
 
     @handler("RejectInboundConnection")
     def reject_inbound_connection(
-        self, context: RequestContext, connection_id: ConnectionId
+        self, context: RequestContext, connection_id: ConnectionId, **kwargs
     ) -> RejectInboundConnectionResponse:
         raise NotImplementedError
 
     @handler("RemoveTags")
-    def remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
+    def remove_tags(
+        self, context: RequestContext, arn: ARN, tag_keys: StringList, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("RevokeVpcEndpointAccess")
     def revoke_vpc_endpoint_access(
-        self, context: RequestContext, domain_name: DomainName, account: AWSAccount
+        self, context: RequestContext, domain_name: DomainName, account: AWSAccount, **kwargs
     ) -> RevokeVpcEndpointAccessResponse:
         raise NotImplementedError
 
@@ -2512,6 +2547,7 @@ class OpensearchApi:
         domain_name: DomainName,
         action: MaintenanceType,
         node_id: NodeId = None,
+        **kwargs
     ) -> StartDomainMaintenanceResponse:
         raise NotImplementedError
 
@@ -2522,6 +2558,7 @@ class OpensearchApi:
         domain_name: DomainName,
         schedule_at: ScheduleAt = None,
         desired_start_time: Long = None,
+        **kwargs
     ) -> StartServiceSoftwareUpdateResponse:
         raise NotImplementedError
 
@@ -2533,6 +2570,7 @@ class OpensearchApi:
         name: DataSourceName,
         data_source_type: DataSourceType,
         description: DataSourceDescription = None,
+        **kwargs
     ) -> UpdateDataSourceResponse:
         raise NotImplementedError
 
@@ -2559,6 +2597,7 @@ class OpensearchApi:
         dry_run_mode: DryRunMode = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
+        **kwargs
     ) -> UpdateDomainConfigResponse:
         raise NotImplementedError
 
@@ -2570,6 +2609,7 @@ class OpensearchApi:
         package_source: PackageSource,
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
+        **kwargs
     ) -> UpdatePackageResponse:
         raise NotImplementedError
 
@@ -2582,12 +2622,17 @@ class OpensearchApi:
         action_type: ActionType,
         schedule_at: ScheduleAt,
         desired_start_time: Long = None,
+        **kwargs
     ) -> UpdateScheduledActionResponse:
         raise NotImplementedError
 
     @handler("UpdateVpcEndpoint")
     def update_vpc_endpoint(
-        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId, vpc_options: VPCOptions
+        self,
+        context: RequestContext,
+        vpc_endpoint_id: VpcEndpointId,
+        vpc_options: VPCOptions,
+        **kwargs
     ) -> UpdateVpcEndpointResponse:
         raise NotImplementedError
 
@@ -2599,5 +2644,6 @@ class OpensearchApi:
         target_version: VersionString,
         perform_check_only: Boolean = None,
         advanced_options: AdvancedOptions = None,
+        **kwargs
     ) -> UpgradeDomainResponse:
         raise NotImplementedError
