@@ -1981,8 +1981,12 @@ class TestEventsInputTransformers:
         ]
         entries_asserts = [(entries, True)]
         input_transformer = {
-            "InputPathsMap": {"detail-type": "$.detail-type"},
-            "InputTemplate": '"This event was of <detail-type> type."',
+            "InputPathsMap": {
+                "detail-type": "$.detail-type",
+                "timestamp": "$.time",
+                "command": "$.detail.command",
+            },
+            "InputTemplate": '"This event was of <detail-type> type, at time <timestamp>, with info extracted from detail <command>"',
         }
         messages = put_events_with_filter_to_sqs(
             pattern=pattern,
