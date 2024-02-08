@@ -245,3 +245,43 @@ def _assert_valid_event(event):
 @pytest.fixture
 def assert_valid_event():
     yield _assert_valid_event
+
+
+@pytest.fixture
+def sqs_collect_messages(aws_client):
+    def _sqs_collect_messages(
+        queue_url: str,
+        min_events: int,
+        wait_time: int = 1,
+        retries: int = 3,
+    ) -> list[dict]:
+        """
+        Polls the given queue for the given amount of time and extracts and flattens from the received messages all
+        events (messages that have a "Records" field in their body, and where the records can be json-deserialized).
+
+        :param queue_url: the queue URL to listen from
+        :param min_events: the minimum number of events to receive to wait for
+        :param wait_time: the number of seconds to wait between retries
+        :param retries: the number of retries before raising an assert error
+        :return: a list with the deserialized records from the SQS messages
+        """
+
+        events = []
+
+        def collect_events() -> None:
+            _response = aws_client.sqs.receive_message(
+                QueueUrl=queue_url, WaitTimeSeconds=wait_time
+            )
+            messages = _response.get("Messages", [])
+
+            for m in messages:
+                events.append(m)
+                aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"])
+
+            assert len(events) >= min_events
+
+        retry(collect_events, retries=retries, sleep=0.01)
+
+        return events
+
+    yield _sqs_collect_messages
