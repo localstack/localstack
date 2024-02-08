@@ -14,7 +14,7 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 LOG = logging.getLogger(__name__)
 
 
-class IteratorWorker(IterationWorker):
+class InlineIteratorWorker(IterationWorker):
     _parameters: Final[Optional[Parameters]]
 
     def __init__(

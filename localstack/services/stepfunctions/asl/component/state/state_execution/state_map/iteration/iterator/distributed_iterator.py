@@ -8,26 +8,26 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     DistributedIterationComponent,
     DistributedIterationComponentEvalInput,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.distributed_item_processor_worker import (
-    DistributedItemProcessorWorker,
-)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.processor_config import (
     ProcessorConfig,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.distributed_iterator_worker import (
+    DistributedIteratorWorker,
 )
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
 
-class DistributedItemProcessorEvalInput(DistributedIterationComponentEvalInput):
+class DistributedIteratorEvalInput(DistributedIterationComponentEvalInput):
     pass
 
 
-class DistributedItemProcessor(DistributedIterationComponent):
-    _eval_input: Optional[DistributedItemProcessorEvalInput]
+class DistributedIterator(DistributedIterationComponent):
+    _eval_input: Optional[DistributedIteratorEvalInput]
 
     @classmethod
-    def from_props(cls, props: TypedProps) -> DistributedItemProcessor:
+    def from_props(cls, props: TypedProps) -> DistributedIterator:
         item_processor = cls(
             start_at=props.get(
                 typ=StartAt,
@@ -38,16 +38,15 @@ class DistributedItemProcessor(DistributedIterationComponent):
                 raise_on_missing=ValueError(f"Missing States declaration in props '{props}'."),
             ),
             comment=props.get(Comment),
-            processor_config=props.get(ProcessorConfig) or ProcessorConfig(),
+            processor_config=props.get(ProcessorConfig),
         )
         return item_processor
 
-    def _create_worker(self, env: Environment) -> DistributedItemProcessorWorker:
-        return DistributedItemProcessorWorker(
+    def _create_worker(self, env: Environment) -> DistributedIteratorWorker:
+        return DistributedIteratorWorker(
             work_name=self._eval_input.state_name,
             job_pool=self._job_pool,
             env=env,
-            item_reader=self._eval_input.item_reader,
-            item_selector=self._eval_input.item_selector,
+            parameters=self._eval_input.parameters,
             map_run_record=self._map_run_record,
         )

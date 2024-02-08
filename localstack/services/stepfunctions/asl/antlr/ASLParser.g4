@@ -353,6 +353,7 @@ iterator_decl_item
     : startat_decl
     | states_decl
     | comment_decl
+    | processor_config_decl
     ;
 
 item_selector_decl

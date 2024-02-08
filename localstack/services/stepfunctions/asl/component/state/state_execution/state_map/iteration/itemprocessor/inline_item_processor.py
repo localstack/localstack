@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-import json
 import logging
-from typing import Final, Optional
+from typing import Optional
 
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
-    ItemSelector,
-)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.inline_iteration_component import (
     InlineIterationComponent,
     InlineIterationComponentEvalInput,
@@ -27,34 +23,11 @@ LOG = logging.getLogger(__name__)
 
 
 class InlineItemProcessorEvalInput(InlineIterationComponentEvalInput):
-    item_selector: Final[Optional[ItemSelector]]
-
-    def __init__(
-        self,
-        state_name: str,
-        max_concurrency: int,
-        input_items: list[json],
-        item_selector: Optional[ItemSelector],
-    ):
-        super().__init__(
-            state_name=state_name, max_concurrency=max_concurrency, input_items=input_items
-        )
-        self.item_selector = item_selector
+    pass
 
 
 class InlineItemProcessor(InlineIterationComponent):
-    _processor_config: Final[ProcessorConfig]
     _eval_input: Optional[InlineItemProcessorEvalInput]
-
-    def __init__(
-        self,
-        start_at: StartAt,
-        states: States,
-        comment: Optional[Comment],
-        processor_config: ProcessorConfig,
-    ):
-        super().__init__(start_at=start_at, states=states, comment=comment)
-        self._processor_config = processor_config
 
     @classmethod
     def from_props(cls, props: TypedProps) -> InlineItemProcessor:
@@ -66,7 +39,7 @@ class InlineItemProcessor(InlineIterationComponent):
             start_at=props.get(StartAt),
             states=props.get(States),
             comment=props.get(Comment),
-            processor_config=props.get(ProcessorConfig),
+            processor_config=props.get(ProcessorConfig) or ProcessorConfig(),
         )
         return item_processor
 

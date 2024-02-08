@@ -28,6 +28,12 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_legacy.json5"
     )
+    MAP_STATE_LEGACY_CONFIG_INLINE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_config_inline.json5"
+    )
+    MAP_STATE_LEGACY_CONFIG_DISTRIBUTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_config_distributed.json5"
+    )
     MAP_STATE_NO_PROCESSOR_CONFIG: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_no_processor_config.json5"
     )

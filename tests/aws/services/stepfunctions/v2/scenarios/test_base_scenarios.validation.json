@@ -83,6 +83,12 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy": {
     "last_validated_date": "2023-07-23T18:46:31+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_distributed": {
+    "last_validated_date": "2024-02-08T11:27:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_inline": {
+    "last_validated_date": "2024-02-08T11:26:05+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_no_processor_config": {
     "last_validated_date": "2023-12-15T21:25:27+00:00"
   },
