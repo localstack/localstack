@@ -62,8 +62,8 @@ class TestKinesis:
         self,
         kinesis_create_stream,
         wait_for_stream_ready,
-        register_kinesis_consumer,
-        wait_for_consumer_ready,
+        kinesis_register_consumer,
+        wait_for_kinesis_consumer_ready,
         snapshot,
         aws_client,
     ):
@@ -82,9 +82,9 @@ class TestKinesis:
 
         # create consumer and snapshot 1 consumer by list_stream_consumers
         consumer_name = "consumer"
-        response = register_kinesis_consumer(stream_arn, consumer_name)
+        response = kinesis_register_consumer(stream_arn, consumer_name)
         consumer_arn = response["Consumer"]["ConsumerARN"]
-        wait_for_consumer_ready(consumer_arn=consumer_arn)
+        wait_for_kinesis_consumer_ready(consumer_arn=consumer_arn)
 
         consumer_list = aws_client.kinesis.list_stream_consumers(StreamARN=stream_arn).get(
             "Consumers"
@@ -104,8 +104,8 @@ class TestKinesis:
         self,
         kinesis_create_stream,
         wait_for_stream_ready,
-        register_kinesis_consumer,
-        wait_for_consumer_ready,
+        kinesis_register_consumer,
+        wait_for_kinesis_consumer_ready,
         snapshot,
         aws_client,
     ):
@@ -116,9 +116,9 @@ class TestKinesis:
         ]["StreamARN"]
         wait_for_stream_ready(stream_name)
         consumer_name = "c1"
-        response = register_kinesis_consumer(stream_arn, consumer_name)
+        response = kinesis_register_consumer(stream_arn, consumer_name)
         consumer_arn = response["Consumer"]["ConsumerARN"]
-        wait_for_consumer_ready(consumer_arn=consumer_arn)
+        wait_for_kinesis_consumer_ready(consumer_arn=consumer_arn)
 
         # subscribe to shard
         response = aws_client.kinesis.describe_stream(StreamName=stream_name)
@@ -156,8 +156,8 @@ class TestKinesis:
         self,
         kinesis_create_stream,
         wait_for_stream_ready,
-        register_kinesis_consumer,
-        wait_for_consumer_ready,
+        kinesis_register_consumer,
+        wait_for_kinesis_consumer_ready,
         snapshot,
         aws_client,
     ):
@@ -169,9 +169,9 @@ class TestKinesis:
         wait_for_stream_ready(stream_name)
 
         consumer_name = "c1"
-        response = register_kinesis_consumer(stream_arn, consumer_name)
+        response = kinesis_register_consumer(stream_arn, consumer_name)
         consumer_arn = response["Consumer"]["ConsumerARN"]
-        wait_for_consumer_ready(consumer_arn=consumer_arn)
+        wait_for_kinesis_consumer_ready(consumer_arn=consumer_arn)
 
         # get starting sequence number
         response = aws_client.kinesis.describe_stream(StreamName=stream_name)
@@ -313,8 +313,8 @@ class TestKinesis:
         self,
         kinesis_create_stream,
         wait_for_stream_ready,
-        register_kinesis_consumer,
-        wait_for_consumer_ready,
+        kinesis_register_consumer,
+        wait_for_kinesis_consumer_ready,
         aws_client,
     ):
         # create stream and consumer
@@ -326,9 +326,9 @@ class TestKinesis:
 
         # create consumer
         consumer_name = "c1"
-        response = register_kinesis_consumer(stream_arn, consumer_name)
+        response = kinesis_register_consumer(stream_arn, consumer_name)
         consumer_arn = response["Consumer"]["ConsumerARN"]
-        wait_for_consumer_ready(consumer_arn=consumer_arn)
+        wait_for_kinesis_consumer_ready(consumer_arn=consumer_arn)
 
         # subscribe to shard
         response = aws_client.kinesis.describe_stream(StreamName=stream_name)

@@ -8,11 +8,11 @@ LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def register_kinesis_consumer(aws_client):
+def kinesis_register_consumer(aws_client):
     kinesis = aws_client.kinesis
     consumer_arns = []
 
-    def _register_kinesis_consumer(stream_arn: str, consumer_name: str):
+    def _kinesis_register_consumer(stream_arn: str, consumer_name: str):
         response = kinesis.register_stream_consumer(
             StreamARN=stream_arn, ConsumerName=consumer_name
         )
@@ -21,7 +21,7 @@ def register_kinesis_consumer(aws_client):
 
         return response
 
-    yield _register_kinesis_consumer
+    yield _kinesis_register_consumer
 
     for consumer_arn in consumer_arns:
         try:
@@ -36,8 +36,8 @@ def kinesis_snapshot_transformer(snapshot):
 
 
 @pytest.fixture
-def wait_for_consumer_ready(aws_client):
-    def _wait_for_consumer_ready(consumer_arn: str):
+def wait_for_kinesis_consumer_ready(aws_client):
+    def _wait_for_kinesis_consumer_ready(consumer_arn: str):
         def is_consumer_ready():
             describe_response = aws_client.kinesis.describe_stream_consumer(
                 ConsumerARN=consumer_arn
@@ -46,4 +46,4 @@ def wait_for_consumer_ready(aws_client):
 
         poll_condition(is_consumer_ready)
 
-    return _wait_for_consumer_ready
+    return _wait_for_kinesis_consumer_ready
