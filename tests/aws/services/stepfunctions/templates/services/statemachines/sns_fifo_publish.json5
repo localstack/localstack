@@ -1,5 +1,5 @@
 {
-  "Comment": "SNS_PUBLISH",
+  "Comment": "SNS_FIFO_PUBLISH",
   "StartAt": "Publish",
   "States": {
     "Publish": {
@@ -8,8 +8,10 @@
       "Parameters": {
         "TopicArn.$": "$.TopicArn",
         "Message.$": "$.Message",
+        "MessageGroupId.$": "$.MessageGroupId",
+        "MessageDeduplicationId.$": "$.MessageDeduplicationId"
       },
       "End": true
     }
-  }
+  },
 }
