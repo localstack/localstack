@@ -703,6 +703,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         input: SensitiveData = None,
         inspection_level: InspectionLevel = None,
         reveal_secrets: RevealSecrets = None,
+        **kwargs,
     ) -> TestStateOutput:
         StepFunctionsProvider._validate_definition(
             derivation=definition, static_analysers=[TestStateStaticAnalyser()]
