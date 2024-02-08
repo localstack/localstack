@@ -4,6 +4,7 @@ import threading
 import pytest
 
 from localstack.testing.pytest import markers
+from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
@@ -22,6 +23,40 @@ from tests.aws.test_notifications import PUBLICATION_RETRIES, PUBLICATION_TIMEOU
     ]
 )
 class TestTaskServiceSns:
+    @markers.aws.validated
+    def test_fifo_message_attribute(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sns_create_topic,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        fifo_topic_name = f"topic-{short_uid()}.fifo"
+        sns_topic = sns_create_topic(Name=fifo_topic_name, Attributes={"FifoTopic": "true"})
+        topic_arn = sns_topic["TopicArn"]
+
+        template = ST.load_sfn_template(ST.SNS_FIFO_PUBLISH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {
+                "TopicArn": topic_arn,
+                "Message": {"Message": "HelloWorld!"},
+                "MessageGroupId": "a-group",
+                "MessageDeduplicationId": "dedup-1",
+            }
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @markers.aws.validated
     @pytest.mark.parametrize(
         "message", ["HelloWorld", {"message": "HelloWorld"}, 1, True, None, ""]
