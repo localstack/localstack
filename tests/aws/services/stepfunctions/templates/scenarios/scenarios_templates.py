@@ -46,6 +46,18 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_LEGACY_CONFIG_INLINE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_legacy_config_inline_item_selector.json5"
     )
+    MAP_STATE_CONFIG_DISTRIBUTED_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_parameters.json5"
+    )
+    MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector.json5"
+    )
+    MAP_STATE_CONFIG_INLINE_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_inline_parameters.json5"
+    )
+    MAP_STATE_CONFIG_INLINE_ITEM_SELECTOR: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_inline_item_selector.json5"
+    )
     MAP_STATE_NO_PROCESSOR_CONFIG: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_no_processor_config.json5"
     )

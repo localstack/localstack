@@ -430,6 +430,118 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS appears to have changed json encoding to include spaces after separators,
+            #  other v2 test suite snapshots need to be re-recorded
+            "$..events..stateEnteredEventDetails.input"
+        ]
+    )
+    def test_map_state_config_distributed_item_selector(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(["Hello", "World"])
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS appears to have changed json encoding to include spaces after separators,
+            #  other v2 test suite snapshots need to be re-recorded
+            "$..events..stateEnteredEventDetails.input"
+        ]
+    )
+    def test_map_state_config_distributed_parameters(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_DISTRIBUTED_PARAMETERS)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(["Hello", "World"])
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS appears to have changed json encoding to include spaces after separators,
+            #  other v2 test suite snapshots need to be re-recorded
+            "$..events..stateEnteredEventDetails.input"
+        ]
+    )
+    def test_map_state_config_inline_item_selector(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(["Hello", "World"])
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS appears to have changed json encoding to include spaces after separators,
+            #  other v2 test suite snapshots need to be re-recorded
+            "$..events..stateEnteredEventDetails.input"
+        ]
+    )
+    def test_map_state_config_inline_parameters(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_INLINE_PARAMETERS)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(["Hello", "World"])
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_map_state_item_selector(
         self,
         aws_client,
