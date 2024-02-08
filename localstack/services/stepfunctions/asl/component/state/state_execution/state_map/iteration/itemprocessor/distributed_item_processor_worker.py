@@ -3,6 +3,7 @@ from typing import Final, Optional
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEventException,
 )
+from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import EvalTimeoutError
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import (
     ItemReader,
@@ -39,11 +40,16 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
         job_pool: JobPool,
         env: Environment,
         item_reader: ItemReader,
+        parameters: Optional[Parameters],
         item_selector: Optional[ItemSelector],
         map_run_record: MapRunRecord,
     ):
         super().__init__(
-            work_name=work_name, job_pool=job_pool, env=env, item_selector=item_selector
+            work_name=work_name,
+            job_pool=job_pool,
+            env=env,
+            parameters=parameters,
+            item_selector=item_selector,
         )
         self._item_reader = item_reader
         self._map_run_record = map_run_record

@@ -5,6 +5,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
 )
 from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.common.timeouts.timeout import EvalTimeoutError
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
+    ItemSelector,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
     MapRunRecord,
 )
@@ -34,8 +37,15 @@ class DistributedIteratorWorker(InlineIteratorWorker):
         env: Environment,
         parameters: Optional[Parameters],
         map_run_record: MapRunRecord,
+        item_selector: Optional[ItemSelector],
     ):
-        super().__init__(work_name=work_name, job_pool=job_pool, env=env, parameters=parameters)
+        super().__init__(
+            work_name=work_name,
+            job_pool=job_pool,
+            env=env,
+            parameters=parameters,
+            item_selector=item_selector,
+        )
         self._map_run_record = map_run_record
 
     def _eval_job(self, env: Environment, job: Job) -> None:

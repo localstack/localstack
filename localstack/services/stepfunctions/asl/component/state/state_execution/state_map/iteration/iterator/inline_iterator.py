@@ -31,6 +31,7 @@ class InlineIterator(InlineIterationComponent):
             job_pool=self._job_pool,
             env=env,
             parameters=self._eval_input.parameters,
+            item_selector=self._eval_input.item_selector,
         )
 
     @classmethod

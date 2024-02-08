@@ -49,4 +49,5 @@ class InlineItemProcessor(InlineIterationComponent):
             job_pool=self._job_pool,
             env=env,
             item_selector=self._eval_input.item_selector,
+            parameters=self._eval_input.parameters,
         )

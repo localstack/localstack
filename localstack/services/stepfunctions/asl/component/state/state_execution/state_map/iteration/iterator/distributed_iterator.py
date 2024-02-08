@@ -49,4 +49,5 @@ class DistributedIterator(DistributedIterationComponent):
             env=env,
             parameters=self._eval_input.parameters,
             map_run_record=self._map_run_record,
+            item_selector=self._eval_input.item_selector,
         )

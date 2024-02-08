@@ -48,6 +48,7 @@ class DistributedItemProcessor(DistributedIterationComponent):
             job_pool=self._job_pool,
             env=env,
             item_reader=self._eval_input.item_reader,
+            parameters=self._eval_input.parameters,
             item_selector=self._eval_input.item_selector,
             map_run_record=self._map_run_record,
         )
