@@ -134,6 +134,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ElastiCache::SubnetGroup": "ResourceProvider",
     "AWS::ElastiCache::ReplicationGroup": "ResourceProvider",
     "AWS::ElastiCache::SecurityGroup": "ResourceProvider",
+    "AWS::ElastiCache::ParameterGroup": "ResourceProvider",
     "AWS::Events::Connection": "ResourceProvider",
     "AWS::Events::EventBus": "ResourceProvider",
     "AWS::Events::EventBusPolicy": "ResourceProvider",
