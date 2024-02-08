@@ -246,7 +246,7 @@ def _put_entries_assert_results_sqs(
 
     if should_match:
         actual_event = json.loads(messages[0]["Body"])
-        if "detail" in actual_event:
+        if isinstance(actual_event, dict) and "detail" in actual_event:
             assert_valid_event(actual_event)
         return messages
     else:
