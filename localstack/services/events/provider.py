@@ -610,6 +610,8 @@ def process_event_with_input_transformer(target: Dict, event: Dict) -> Dict:
         raise e
     for key, path in input_paths.items():
         value = extract_jsonpath(event, path)
+        if not value:
+            value = ""
         input_template = input_template.replace(f"<{key}>", value)
     templated_event = re.sub('"', "", input_template)
     return templated_event

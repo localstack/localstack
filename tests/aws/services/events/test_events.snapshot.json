@@ -346,14 +346,22 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventsInputTransformers::test_put_events_with_input_transformation_to_sqs": {
-    "recorded-date": "08-02-2024, 11:39:04",
+    "recorded-date": "08-02-2024, 12:06:09",
     "recorded-content": {
-      "custom-variable": [
+      "custom-variables-match-all": [
         {
           "MessageId": "<uuid:1>",
           "ReceiptHandle": "<receipt-handle:1>",
           "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": "\"This event was of customerCreated type, at time date, with info extracted from detail display-message\""
+          "Body": "\"Event of customerCreated type, at time date, info extracted from detail display-message\""
+        }
+      ],
+      "custom-variables-not-match-all": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": "\"Event of customerCreated type, at time date, info extracted from detail \""
         }
       ]
     }

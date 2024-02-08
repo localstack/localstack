@@ -1980,18 +1980,38 @@ class TestEventsInputTransformers:
             }
         ]
         entries_asserts = [(entries, True)]
-        input_transformer = {
-            "InputPathsMap": {
-                "detail-type": "$.detail-type",
-                "timestamp": "$.time",
-                "command": "$.detail.command",
-            },
-            "InputTemplate": '"This event was of <detail-type> type, at time <timestamp>, with info extracted from detail <command>"',
+
+        # input transformer with all keys in template present in message
+        input_path_map = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.command",
         }
-        messages = put_events_with_filter_to_sqs(
+        input_template = '"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>"'
+        input_transformer_match_all = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+        messages_match_all = put_events_with_filter_to_sqs(
             pattern=pattern,
             entries_asserts=entries_asserts,
-            input_transformer=input_transformer,
+            input_transformer=input_transformer_match_all,
+        )
+
+        # input transformer with keys in template missing from message
+        input_path_map_missing_key = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.notinmessage",
+        }
+        input_transformer_not_match_all = {
+            "InputPathsMap": input_path_map_missing_key,
+            "InputTemplate": input_template,
+        }
+        messages_not_match_all = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer_not_match_all,
         )
 
         snapshot.add_transformer(
@@ -2000,4 +2020,5 @@ class TestEventsInputTransformers:
                 snapshot.transform.key_value("ReceiptHandle"),
             ]
         )
-        snapshot.match("custom-variable", messages)
+        snapshot.match("custom-variables-match-all", messages_match_all)
+        snapshot.match("custom-variables-not-match-all", messages_not_match_all)
