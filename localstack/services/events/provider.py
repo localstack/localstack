@@ -602,8 +602,12 @@ def process_event_with_input_transformer(target: Dict, event: Dict) -> Dict:
     input_transformer = target.get("InputTransformer")
     if not input_transformer:
         return event
-    input_paths = input_transformer["InputPathsMap"]
-    input_template = input_transformer["InputTemplate"]
+    try:
+        input_paths = input_transformer["InputPathsMap"]
+        input_template = input_transformer["InputTemplate"]
+    except KeyError as e:
+        LOG.error("%s key does not exist in input_transformer.", e)
+        raise e
     for key, path in input_paths.items():
         value = extract_jsonpath(event, path)
         input_template = input_template.replace(f"<{key}>", value)
