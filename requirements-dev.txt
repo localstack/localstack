@@ -44,7 +44,7 @@ awscli==1.32.34
     # via localstack-core (pyproject.toml)
 awscrt==0.20.3
     # via localstack-core (pyproject.toml)
-black==24.1.1
+black==23.12.1
     # via localstack-core (pyproject.toml)
 blinker==1.7.0
     # via
