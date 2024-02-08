@@ -1,0 +1,77 @@
+{
+  "tests/aws/services/events/test_events_rules.py::test_create_rule_with_one_unit_in_singular_should_succeed[rate(1 day)]": {
+    "last_validated_date": "2024-02-08T20:45:19+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_create_rule_with_one_unit_in_singular_should_succeed[rate(1 hour)]": {
+    "last_validated_date": "2024-02-08T20:45:20+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_create_rule_with_one_unit_in_singular_should_succeed[rate(1 minute)]": {
+    "last_validated_date": "2024-02-08T20:45:19+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_events_with_rule_anything_but_to_sqs": {
+    "last_validated_date": "2024-02-08T20:45:02+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_events_with_rule_exists_false_to_sqs": {
+    "last_validated_date": "2024-02-08T20:45:17+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_events_with_rule_exists_true_to_sqs": {
+    "last_validated_date": "2024-02-08T20:45:09+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule": {
+    "last_validated_date": "2024-02-08T20:44:43+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[ rate(10 minutes)]": {
+    "last_validated_date": "2024-02-08T20:44:53+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate( 10 minutes )]": {
+    "last_validated_date": "2024-02-08T20:44:53+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate()]": {
+    "last_validated_date": "2024-02-08T20:44:49+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(-10 minutes)]": {
+    "last_validated_date": "2024-02-08T20:44:51+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(0 minutes)]": {
+    "last_validated_date": "2024-02-08T20:44:51+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(1 days)]": {
+    "last_validated_date": "2024-02-08T20:44:47+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(1 hours)]": {
+    "last_validated_date": "2024-02-08T20:44:46+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(1 minutes)]": {
+    "last_validated_date": "2024-02-08T20:44:46+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(10 MINUTES)]": {
+    "last_validated_date": "2024-02-08T20:44:52+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(10 day)]": {
+    "last_validated_date": "2024-02-08T20:44:48+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(10 hour)]": {
+    "last_validated_date": "2024-02-08T20:44:48+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(10 minute)]": {
+    "last_validated_date": "2024-02-08T20:44:47+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(10 minutess)]": {
+    "last_validated_date": "2024-02-08T20:44:50+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(10 seconds)]": {
+    "last_validated_date": "2024-02-08T20:44:44+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(10 years)]": {
+    "last_validated_date": "2024-02-08T20:44:45+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(10)]": {
+    "last_validated_date": "2024-02-08T20:44:49+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_put_rule_invalid_rate_schedule_expression[rate(foo minutes)]": {
+    "last_validated_date": "2024-02-08T20:44:50+00:00"
+  },
+  "tests/aws/services/events/test_events_rules.py::test_rule_disable": {
+    "last_validated_date": "2024-02-08T20:44:44+00:00"
+  }
+}
