@@ -24,11 +24,32 @@ from tests.aws.test_notifications import PUBLICATION_RETRIES, PUBLICATION_TIMEOU
 )
 class TestTaskServiceSns:
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "input_params, fail_template",
+        [
+            (
+                {
+                    "Message": {"Message": "HelloWorld!"},
+                },
+                True,
+            ),
+            (
+                {
+                    "Message": {"Message": "HelloWorld!"},
+                    "MessageGroupId": "a-group",
+                    "MessageDeduplicationId": "dedup-1",
+                },
+                False,
+            ),
+        ],
+    )
     def test_fifo_message_attribute(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
+        input_params,
+        fail_template,
         sns_create_topic,
         sfn_snapshot,
     ):
@@ -37,17 +58,14 @@ class TestTaskServiceSns:
         sns_topic = sns_create_topic(Name=fifo_topic_name, Attributes={"FifoTopic": "true"})
         topic_arn = sns_topic["TopicArn"]
 
-        template = ST.load_sfn_template(ST.SNS_FIFO_PUBLISH)
-        definition = json.dumps(template)
-
-        exec_input = json.dumps(
-            {
-                "TopicArn": topic_arn,
-                "Message": {"Message": "HelloWorld!"},
-                "MessageGroupId": "a-group",
-                "MessageDeduplicationId": "dedup-1",
-            }
+        template = ST.load_sfn_template(
+            ST.SNS_FIFO_PUBLISH_FAIL if fail_template else ST.SNS_FIFO_PUBLISH
         )
+
+        definition = json.dumps(template)
+        input_params["TopicArn"] = topic_arn
+
+        exec_input = json.dumps(input_params)
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

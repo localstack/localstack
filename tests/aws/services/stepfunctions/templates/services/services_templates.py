@@ -40,6 +40,9 @@ class ServicesTemplates(TemplateLoader):
     SNS_FIFO_PUBLISH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sns_fifo_publish.json5"
     )
+    SNS_FIFO_PUBLISH_FAIL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sns_fifo_publish_fail.json5"
+    )
     SNS_PUBLISH_MESSAGE_ATTRIBUTES: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sns_publish_message_attributes.json5"
     )
