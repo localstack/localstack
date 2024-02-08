@@ -19,7 +19,7 @@ def register_kinesis_consumer(aws_client):
         consumer_arn = response["Consumer"]["ConsumerARN"]
         consumer_arns.append(consumer_arn)
 
-        return consumer_arn
+        return response
 
     yield _register_kinesis_consumer
 
