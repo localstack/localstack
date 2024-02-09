@@ -11,6 +11,7 @@ from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
 from pluggy import Result
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 from localstack.testing.snapshots.report import render_report
 from localstack.testing.snapshots.transformer import RegexTransformer
@@ -18,11 +19,6 @@ from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER,
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
 )
-
-
-# TODO: replace with .util.is_aws_cloud
-def is_aws():
-    return os.environ.get("TEST_TARGET", "") == "AWS_CLOUD"
 
 
 @pytest.hookimpl
@@ -73,7 +69,7 @@ def pytest_runtest_call(item: Item) -> None:
         verify = True
         paths = []
 
-        if not is_aws():  # only skip for local tests
+        if not is_aws_cloud():  # only skip for local tests
             for m in item.iter_markers(name="skip_snapshot_verify"):
                 skip_paths = m.kwargs.get("paths", [])
 

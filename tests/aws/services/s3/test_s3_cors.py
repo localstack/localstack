@@ -1,5 +1,3 @@
-import os
-
 import pytest
 import requests
 import xmltodict
@@ -13,6 +11,7 @@ from localstack.constants import (
     LOCALHOST_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
 )
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import short_uid
@@ -21,7 +20,7 @@ from localstack.utils.strings import short_uid
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
         region = AWS_REGION_US_EAST_1
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+    if is_aws_cloud():
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"
         else:

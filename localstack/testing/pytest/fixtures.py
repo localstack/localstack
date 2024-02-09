@@ -92,7 +92,7 @@ def aws_http_client_factory(aws_session):
         creds = credentials.get_frozen_credentials()
 
         if not endpoint_url:
-            if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":
+            if is_aws_cloud():
                 # FIXME: this is a bit raw. we should probably re-use boto in a better way
                 resolver: EndpointResolver = aws_session._session.get_component("endpoint_resolver")
                 endpoint_url = "https://" + resolver.construct_endpoint(service, region)["hostname"]
@@ -1571,7 +1571,7 @@ def lambda_su_role(aws_client):
     )["Policy"]["Arn"]
     aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
 
-    if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":  # dirty but necessary
+    if is_aws_cloud():  # dirty but necessary
         time.sleep(10)
 
     yield role["Arn"]
@@ -1820,7 +1820,7 @@ def secondary_account_id(secondary_aws_client):
 @pytest.hookimpl
 def pytest_collection_modifyitems(config: Config, items: list[Item]):
     only_localstack = pytest.mark.skipif(
-        os.environ.get("TEST_TARGET") == "AWS_CLOUD",
+        is_aws_cloud(),
         reason="test only applicable if run against localstack",
     )
     for item in items:

@@ -2,8 +2,8 @@ import json
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.pytest.snapshot import is_aws
 from localstack.utils.aws.arns import extract_resource_from_arn
 from localstack.utils.strings import short_uid
 from tests.aws.services.cloudwatch.test_cloudwatch import get_sqs_policy
@@ -53,8 +53,8 @@ class TestCloudWatchLambdaMetrics:
                 metric_name="Invocations",
                 expected_return=[1.0],
             ),
-            retries=200 if is_aws() else 20,
-            sleep=10 if is_aws() else 1,
+            retries=200 if is_aws_cloud() else 20,
+            sleep=10 if is_aws_cloud() else 1,
         )
         snapshot.match("get-metric-data", result)
 
@@ -81,8 +81,8 @@ class TestCloudWatchLambdaMetrics:
                 metric_name="Invocations",
                 expected_return=[1.0],
             ),
-            retries=200 if is_aws() else 20,
-            sleep=10 if is_aws() else 1,
+            retries=200 if is_aws_cloud() else 20,
+            sleep=10 if is_aws_cloud() else 1,
         )
         snapshot.match("get-metric-data-invocations", invocation_res)
 
@@ -94,8 +94,8 @@ class TestCloudWatchLambdaMetrics:
                 metric_name="Errors",
                 expected_return=[1.0],
             ),
-            retries=200 if is_aws() else 20,
-            sleep=10 if is_aws() else 1,
+            retries=200 if is_aws_cloud() else 20,
+            sleep=10 if is_aws_cloud() else 1,
         )
         snapshot.match("get-metric-data-errors", error_res)
 
@@ -144,7 +144,7 @@ class TestSqsApproximateMetrics:
                     aws_client.cloudwatch, queue_name=queue
                 ),
                 retries=70,  # should be reported every 60 seconds on LS
-                sleep=10 if is_aws() else 1,
+                sleep=10 if is_aws_cloud() else 1,
             )
 
     def _assert_approximate_metrics_for_queue(
@@ -242,7 +242,7 @@ class TestSQSMetrics:
         retry(
             self._verify_alarm_triggered,
             retries=60,
-            sleep=3 if is_aws() else 1,
+            sleep=3 if is_aws_cloud() else 1,
             cloudwatch_client=aws_client.cloudwatch,
             sqs_client=aws_client.sqs,
             alarm_name=alarm_name,

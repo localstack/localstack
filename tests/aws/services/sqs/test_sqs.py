@@ -1,5 +1,4 @@
 import json
-import os
 import re
 import threading
 import time
@@ -1898,7 +1897,7 @@ class TestSqsProvider:
             QueueUrl=queue_url, MaxNumberOfMessages=4, WaitTimeSeconds=1
         )
 
-        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        if is_aws_cloud():
             time.sleep(5)
 
         assert get_qsize(aws_sqs_client, queue_url) == 1
@@ -1908,7 +1907,7 @@ class TestSqsProvider:
                 QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
             )
 
-        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        if is_aws_cloud():
             time.sleep(5)
 
         assert get_qsize(aws_sqs_client, queue_url) == 1
@@ -3059,7 +3058,7 @@ class TestSqsProvider:
     def test_get_list_queues_with_query_auth(self, aws_http_client_factory):
         client = aws_http_client_factory("sqs", region="us-east-1")
 
-        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        if is_aws_cloud():
             endpoint_url = "https://queue.amazonaws.com"
         else:
             endpoint_url = config.internal_service_url()
