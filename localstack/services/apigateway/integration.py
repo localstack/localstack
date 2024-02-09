@@ -219,7 +219,8 @@ class LambdaProxyIntegration(BackendIntegration):
         keys = parsed_result.keys()
         if "statusCode" not in keys or "body" not in keys:
             LOG.warning(
-                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
+                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}\n Lambda output: %s',
+                parsed_result,
             )
             response.status_code = 502
             response._content = json.dumps({"message": "Internal server error"})
@@ -369,7 +370,8 @@ class LambdaProxyIntegration(BackendIntegration):
 
         if not ("statusCode" in keys and "body" in keys):
             LOG.warning(
-                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
+                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}\n Lambda output: %s',
+                parsed_result,
             )
             response.status_code = 502
             response._content = json.dumps({"message": "Internal server error"})
