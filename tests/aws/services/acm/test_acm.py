@@ -2,7 +2,7 @@ import pytest
 from moto import settings as moto_settings
 from moto.ec2 import utils as ec2_utils
 
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry

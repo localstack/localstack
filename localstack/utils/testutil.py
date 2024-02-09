@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_externally_to, connect_to
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_utils
 from localstack.utils.aws.request_context import mock_aws_request_headers

@@ -9,7 +9,7 @@ import aws_cdk as cdk
 from botocore.exceptions import WaiterError
 
 from localstack.config import is_env_true
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file

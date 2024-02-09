@@ -47,7 +47,7 @@ from localstack.services.s3.utils import (
     parse_expiration_header,
     rfc_1123_datetime,
 )
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import TransformerUtility

@@ -15,8 +15,8 @@ from localstack import config
 from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil

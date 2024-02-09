@@ -3,7 +3,7 @@ import json
 import pytest
 
 from localstack.aws.connect import ServiceLevelClientFactory
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 
 

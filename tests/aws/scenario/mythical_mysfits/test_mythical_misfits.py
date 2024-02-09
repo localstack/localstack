@@ -11,7 +11,7 @@ import json
 import pytest
 import requests
 
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.scenario.provisioning import InfraProvisioner
 from localstack.utils.strings import to_str

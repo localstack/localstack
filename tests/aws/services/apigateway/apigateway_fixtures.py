@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Dict
 
 from localstack.services.apigateway.helpers import host_based_url, path_based_url
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.utils.aws import aws_stack
 
 # TODO convert the test util functions in this file to pytest fixtures

@@ -11,7 +11,7 @@ from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
 from pluggy import Result
 
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 from localstack.testing.snapshots.report import render_report
 from localstack.testing.snapshots.transformer import RegexTransformer

@@ -13,7 +13,7 @@ from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.lambda_.networking import get_main_endpoint_from_container
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import PUBLIC_HTTP_ECHO_SERVER_URL
 from localstack.utils.strings import short_uid, to_bytes, to_str

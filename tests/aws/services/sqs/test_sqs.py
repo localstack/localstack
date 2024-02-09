@@ -22,7 +22,7 @@ from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.models import sqs_stores
 from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
 from localstack.services.sqs.utils import parse_queue_url
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import GenericTransformer
 from localstack.utils.aws import arns

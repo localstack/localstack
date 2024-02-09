@@ -8,7 +8,7 @@ import requests
 from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid

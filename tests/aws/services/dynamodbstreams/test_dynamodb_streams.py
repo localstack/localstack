@@ -4,7 +4,7 @@ import re
 import pytest
 
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import resources
 from localstack.utils.aws.arns import kinesis_stream_arn

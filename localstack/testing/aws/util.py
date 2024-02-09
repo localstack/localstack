@@ -22,11 +22,8 @@ from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.proxy import get_account_id_from_request
 from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH, load_service
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.utils.sync import poll_condition
-
-
-def is_aws_cloud() -> bool:
-    return os.environ.get("TEST_TARGET", "") == "AWS_CLOUD"
 
 
 def get_lambda_logs(func_name, logs_client):

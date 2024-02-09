@@ -6,6 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
@@ -13,7 +14,6 @@ from localstack.testing.aws.lambda_utils import (
     lambda_role,
     s3_lambda_permission,
 )
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid

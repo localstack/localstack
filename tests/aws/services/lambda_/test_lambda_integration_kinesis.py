@@ -7,6 +7,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
     _await_event_source_mapping_state,
@@ -14,7 +15,6 @@ from localstack.testing.aws.lambda_utils import (
     lambda_role,
     s3_lambda_permission,
 )
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils.strings import short_uid, to_bytes
