@@ -1,10 +1,10 @@
 import os
 import pwd
 from multiprocessing import Process, ProcessError
-from typing import Callable
+from typing import Callable, Union
 
 
-def run_as_os_user(target: Callable, uid: str | int, gid: str | int = None):
+def run_as_os_user(target: Callable, uid: Union[str, int], gid: Union[str, int] = None):
     """
     Run the given callable under a different OS user and (optionally) group, in a forked subprocess.
     :param target: the function to call in the subprocess
