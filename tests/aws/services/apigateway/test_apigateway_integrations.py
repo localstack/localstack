@@ -16,7 +16,7 @@ from localstack.services.lambda_.networking import get_main_endpoint_from_contai
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import PUBLIC_HTTP_ECHO_SERVER_URL
-from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.strings import short_uid, to_bytes
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import (
     api_invoke_url,
@@ -632,9 +632,9 @@ def test_create_execute_api_vpc_endpoint(
     )
 
     def _invoke_api():
-        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload="{}")
-        result = json.loads(to_str(result["Payload"].read()))
-        items = json.loads(result["content"])["Items"]
+        invoke_response = aws_client.lambda_.invoke(FunctionName=func_name, Payload="{}")
+        payload = json.load(invoke_response["Payload"])
+        items = json.loads(payload["content"])["Items"]
         assert len(items) == len(item_ids)
 
     # invoke Lambda and assert result
