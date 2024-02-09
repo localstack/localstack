@@ -1,11 +1,8 @@
 import logging
 
+from localstack import constants
 from localstack.aws.accounts import (
     get_account_id_from_access_key_id,
-)
-from localstack.constants import (
-    AWS_REGION_US_EAST_1,
-    TEST_AWS_ACCESS_KEY_ID,
 )
 from localstack.http import Response
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
@@ -30,7 +27,9 @@ class MissingAuthHeaderInjector(Handler):
 
         if not headers.get("Authorization"):
             headers["Authorization"] = mock_aws_request_headers(
-                api, aws_access_key_id="injectedaccesskey", region_name=AWS_REGION_US_EAST_1
+                api,
+                aws_access_key_id="injectedaccesskey",
+                region_name=constants.AWS_REGION_US_EAST_1,
             )["Authorization"]
 
 
@@ -43,7 +42,7 @@ class AccountIdEnricher(Handler):
         # Obtain the access key ID
         access_key_id = (
             extract_access_key_id_from_auth_header(context.request.headers)
-            or TEST_AWS_ACCESS_KEY_ID
+            or constants.TEST_AWS_ACCESS_KEY_ID
         )
 
         # Obtain the account ID from access key ID

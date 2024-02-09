@@ -18,7 +18,7 @@ from botocore.model import ServiceModel
 from botocore.utils import percent_encode_sequence
 from werkzeug.datastructures import Headers, ImmutableMultiDict
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import (
     AccessDenied,
@@ -30,7 +30,6 @@ from localstack.aws.api.s3 import (
 from localstack.aws.chain import HandlerChain
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.protocol.service_router import get_service_catalog
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response
 from localstack.http.request import get_raw_path
 from localstack.services.s3.constants import SIGNATURE_V2_PARAMS, SIGNATURE_V4_PARAMS
@@ -134,7 +133,9 @@ def create_signature_does_not_match_sig_v2(
     ex = SignatureDoesNotMatch(
         "The request signature we calculated does not match the signature you provided. Check your key and signing method."
     )
-    ex.AWSAccessKeyId = TEST_AWS_ACCESS_KEY_ID  # todo maybe return access key used for the request
+    ex.AWSAccessKeyId = (
+        constants.TEST_AWS_ACCESS_KEY_ID
+    )  # todo maybe return access key used for the request
     ex.HostId = FAKE_HOST_ID
     ex.SignatureProvided = request_signature
     ex.StringToSign = string_to_sign
@@ -256,8 +257,8 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
     method = context.request.method
     # todo: use the current User credentials instead? so it would not be set in stone??
     credentials = Credentials(
-        access_key=TEST_AWS_ACCESS_KEY_ID,
-        secret_key=TEST_AWS_SECRET_ACCESS_KEY,
+        access_key=constants.TEST_AWS_ACCESS_KEY_ID,
+        secret_key=constants.TEST_AWS_SECRET_ACCESS_KEY,
         token=query_parameters.get("X-Amz-Security-Token", None),
     )
     try:
@@ -468,8 +469,8 @@ class S3SigV4SignatureContext:
         self.missing_signed_headers = []
 
         credentials = ReadOnlyCredentials(
-            TEST_AWS_ACCESS_KEY_ID,
-            TEST_AWS_SECRET_ACCESS_KEY,
+            constants.TEST_AWS_ACCESS_KEY_ID,
+            constants.TEST_AWS_SECRET_ACCESS_KEY,
             self._query_parameters.get("X-Amz-Security-Token", None),
         )
         region = self._query_parameters["X-Amz-Credential"].split("/")[2]
