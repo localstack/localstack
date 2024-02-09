@@ -10,3 +10,6 @@ class CommentTemplates(TemplateLoader):
     COMMENTS_AS_PER_DOCS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/comments_as_per_docs.json5"
     )
+    COMMENT_IN_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/comment_in_parameters.json5"
+    )

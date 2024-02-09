@@ -46,3 +46,24 @@ class TestComments:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    def test_comment_in_parameters(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = CT.load_sfn_template(CT.COMMENT_IN_PARAMETERS)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
