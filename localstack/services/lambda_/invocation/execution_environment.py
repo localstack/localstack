@@ -156,7 +156,7 @@ class ExecutionEnvironment:
             env_vars["_HANDLER"] = self.function_version.config.handler
         # Not defined for custom runtimes (e.g., provided, provided.al2)
         if self.function_version.config.runtime:
-            env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.config.runtime}"
+            env_vars["AWS_EXECUTION_ENV"] = "AWS_Lambda_rapid"
         if self.function_version.config.environment:
             env_vars.update(self.function_version.config.environment)
         if config.LAMBDA_INIT_DEBUG:
