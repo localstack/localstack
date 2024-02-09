@@ -12,7 +12,6 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_REGION_NAME,
 )
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -168,7 +167,7 @@ class TestS3Cors:
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
     @markers.aws.only_localstack
-    def test_cors_list_buckets(self):
+    def test_cors_list_buckets(self, region_name):
         # ListBuckets is an operation outside S3 CORS configuration management
         # it should follow the default rules of LocalStack
 
@@ -177,7 +176,9 @@ class TestS3Cors:
         # we need to "sign" the request so that our service name parser recognize ListBuckets as an S3 operation
         # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
         headers = mock_aws_request_headers(
-            "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "s3",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         headers["Origin"] = origin
         response = requests.options(

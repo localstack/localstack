@@ -8,7 +8,7 @@ import pytest
 import yaml
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
 from localstack.testing.pytest import markers
@@ -267,7 +267,7 @@ class TestIntrinsicFunctions:
 class TestImports:
     @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
     @markers.aws.unknown
-    def test_stack_imports(self, deploy_cfn_template, aws_client):
+    def test_stack_imports(self, deploy_cfn_template, aws_client, region_name):
         result = aws_client.cloudformation.list_imports(ExportName="_unknown_")
         assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert result["Imports"] == []  # TODO: create test with actual import values!
@@ -292,9 +292,7 @@ class TestImports:
         output = [out["OutputValue"] for out in outputs if out["OutputKey"] == "MessageQueueUrl1"][
             0
         ]
-        assert (
-            arns.sqs_queue_arn(queue_url1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME) == output
-        )  # TODO
+        assert arns.sqs_queue_arn(queue_url1, TEST_AWS_ACCOUNT_ID, region_name) == output  # TODO
         output = [out["OutputValue"] for out in outputs if out["OutputKey"] == "MessageQueueUrl2"][
             0
         ]

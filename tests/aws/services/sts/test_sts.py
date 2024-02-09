@@ -5,7 +5,7 @@ import pytest
 import requests
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.aws.util import create_client_with_keys
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -174,11 +174,13 @@ class TestSTSIntegrations:
         assert f"arn:aws:iam::{account_id}:root" == response["Arn"]
 
     @markers.aws.only_localstack
-    def test_expiration_date_format(self):
+    def test_expiration_date_format(self, region_name):
         url = config.internal_service_url()
         data = {"Action": "GetSessionToken", "Version": "2011-06-15"}
         headers = mock_aws_request_headers(
-            "sts", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "sts",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         headers["Accept"] = APPLICATION_JSON
         response = requests.post(url, data=data, headers=headers)

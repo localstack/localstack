@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
@@ -30,7 +30,7 @@ class TestServerless:
         mkypatch.undo()
 
     @pytest.fixture(scope="class")
-    def setup_and_teardown(self, aws_client, delenv):
+    def setup_and_teardown(self, aws_client, region_name, delenv):
         if not is_aws_cloud():
             delenv("AWS_PROFILE", raising=False)
         base_dir = get_base_dir()
@@ -44,7 +44,7 @@ class TestServerless:
 
         # deploy serverless app
         run(
-            ["npm", "run", "deploy", "--", f"--region={TEST_AWS_REGION_NAME}"],
+            ["npm", "run", "deploy", "--", f"--region={region_name}"],
             cwd=base_dir,
             env_vars={"AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID},
         )
@@ -53,7 +53,7 @@ class TestServerless:
 
         try:
             # TODO the cleanup still fails due to inability to find ECR service in community
-            run(["npm", "run", "undeploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir)
+            run(["npm", "run", "undeploy", "--", f"--region={region_name}"], cwd=base_dir)
         except Exception:
             LOG.error("Unable to clean up serverless stack")
 
@@ -128,7 +128,7 @@ class TestServerless:
 
     @markers.skip_offline
     @markers.aws.unknown
-    def test_queue_handler_deployed(self, aws_client, setup_and_teardown):
+    def test_queue_handler_deployed(self, aws_client, region_name, setup_and_teardown):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
 
@@ -145,7 +145,7 @@ class TestServerless:
         event_source_arn = events[0]["EventSourceArn"]
 
         queue_arn = arns.sqs_queue_arn(
-            queue_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+            queue_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=region_name
         )
 
         assert event_source_arn == queue_arn
@@ -178,7 +178,7 @@ class TestServerless:
 
     @markers.skip_offline
     @markers.aws.unknown
-    def test_apigateway_deployed(self, aws_client, setup_and_teardown):
+    def test_apigateway_deployed(self, aws_client, region_name, setup_and_teardown):
         function_name = "sls-test-local-router"
         existing_api_ids = setup_and_teardown
 
@@ -202,7 +202,7 @@ class TestServerless:
             assert method in proxy_resource["resourceMethods"]
             resource_method = proxy_resource["resourceMethods"][method]
             assert (
-                arns.lambda_function_arn(function_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+                arns.lambda_function_arn(function_name, TEST_AWS_ACCOUNT_ID, region_name)
                 in resource_method["methodIntegration"]["uri"]
             )
 

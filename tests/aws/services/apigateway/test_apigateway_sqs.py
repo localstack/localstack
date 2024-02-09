@@ -4,7 +4,7 @@ import re
 
 import requests
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs, path_based_url
 from localstack.testing.pytest import markers
 from localstack.utils.aws import queries
@@ -17,7 +17,7 @@ from tests.aws.services.apigateway.test_apigateway_basic import TEST_STAGE_NAME
 
 
 @markers.aws.unknown
-def test_api_gateway_sqs_integration(aws_client, sqs_create_queue, sqs_get_queue_arn):
+def test_api_gateway_sqs_integration(aws_client, region_name, sqs_create_queue, sqs_get_queue_arn):
     # create target SQS stream
     queue_name = f"queue-{short_uid()}"
     sqs_create_queue(QueueName=queue_name)
@@ -29,7 +29,7 @@ def test_api_gateway_sqs_integration(aws_client, sqs_create_queue, sqs_get_queue
         queue_arn=queue_name,
         path="/data",
         account_id=TEST_AWS_ACCOUNT_ID,
-        region_name=TEST_AWS_REGION_NAME,
+        region_name=region_name,
     )
 
     # generate test data

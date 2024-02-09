@@ -13,7 +13,7 @@ import pytest
 import requests
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -76,7 +76,7 @@ class TestCloudwatch:
         snapshot.match("get_metric_statistics", stats)
 
     @markers.aws.only_localstack
-    def test_put_metric_data_gzip(self, aws_client):
+    def test_put_metric_data_gzip(self, aws_client, region_name):
         metric_name = "test-metric"
         namespace = "namespace"
         data = (
@@ -90,11 +90,11 @@ class TestCloudwatch:
         headers = mock_aws_request_headers(
             "cloudwatch",
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            region_name=TEST_AWS_REGION_NAME,
+            region_name=region_name,
             internal=True,
         )
         authorization = mock_aws_request_headers(
-            "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
         )["Authorization"]
 
         headers.update(
@@ -523,7 +523,7 @@ class TestCloudwatch:
 
     @markers.aws.only_localstack
     # this feature was a customer request and added with https://github.com/localstack/localstack/pull/3535
-    def test_raw_metric_data(self, aws_client):
+    def test_raw_metric_data(self, aws_client, region_name):
         """
         tests internal endpoint at "/_aws/cloudwatch/metrics/raw"
         """
@@ -533,7 +533,7 @@ class TestCloudwatch:
         )
         # the new v2 provider doesn't need the headers, will return results for all accounts/regions
         headers = mock_aws_request_headers(
-            "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
         )
         url = f"{config.external_service_url()}{PATH_GET_RAW_METRICS}"
         result = requests.get(url, headers=headers)
@@ -1394,7 +1394,7 @@ class TestCloudwatch:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..DashboardArn"], condition=is_old_provider
     )  # ARN has a typo in moto
-    def test_dashboard_lifecycle(self, aws_client, snapshot):
+    def test_dashboard_lifecycle(self, aws_client, region_name, snapshot):
         dashboard_name = f"test-{short_uid()}"
         dashboard_body = {
             "widgets": [
@@ -1406,7 +1406,7 @@ class TestCloudwatch:
                     "height": 6,
                     "properties": {
                         "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "i-12345678"]],
-                        "region": TEST_AWS_REGION_NAME,
+                        "region": region_name,
                         "view": "timeSeries",
                         "stacked": False,
                     },

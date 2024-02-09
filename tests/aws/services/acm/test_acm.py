@@ -2,7 +2,7 @@ import pytest
 from moto import settings as moto_settings
 from moto.ec2 import utils as ec2_utils
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -29,7 +29,7 @@ JjZ91eQ0hjkCMHw2U/Aw5WJjOpnitqM7mzT6HtoQknFekROn3aRukswy1vUhZscv
 
 class TestACM:
     @markers.aws.unknown
-    def test_import_certificate(self, aws_client):
+    def test_import_certificate(self, aws_client, region_name):
         certs_before = aws_client.acm.list_certificates().get("CertificateSummaryList", [])
 
         with pytest.raises(Exception) as exec_info:
@@ -44,7 +44,7 @@ class TestACM:
             )
             assert "CertificateArn" in result
 
-            expected_arn = f"arn:aws:acm:{TEST_AWS_REGION_NAME}:{TEST_AWS_ACCOUNT_ID}:certificate"
+            expected_arn = f"arn:aws:acm:{region_name}:{TEST_AWS_ACCOUNT_ID}:certificate"
             acm_cert_arn = result["CertificateArn"].split("/")[0]
             assert expected_arn == acm_cert_arn
 

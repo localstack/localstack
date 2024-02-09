@@ -5,7 +5,7 @@ import pytest
 import requests
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -39,7 +39,11 @@ class TestCdkInit:
 
     @markers.aws.unknown
     def test_cdk_bootstrap_redeploy(
-        self, is_change_set_finished, cleanup_stacks, cleanup_changesets
+        self,
+        is_change_set_finished,
+        cleanup_stacks,
+        cleanup_changesets,
+        region_name,
     ):
         """Test that simulates a sequence of commands executed by CDK when running 'cdk bootstrap' twice"""
 
@@ -51,7 +55,9 @@ class TestCdkInit:
         stack_name = "CDKToolkit-a4b98b18"
         try:
             headers = mock_aws_request_headers(
-                "cloudformation", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+                "cloudformation",
+                TEST_AWS_ACCESS_KEY_ID,
+                region_name,
             )
             base_url = config.internal_service_url()
             for op in operations:

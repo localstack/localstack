@@ -1,6 +1,6 @@
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
@@ -78,7 +78,7 @@ class TestRoute53:
         snapshot.match("get_hosted_zone", response)
 
     @markers.aws.unknown
-    def test_associate_vpc_with_hosted_zone(self, cleanups, hosted_zone, aws_client):
+    def test_associate_vpc_with_hosted_zone(self, cleanups, hosted_zone, aws_client, region_name):
         name = "zone123"
         response = hosted_zone(
             Name=name,
@@ -96,7 +96,7 @@ class TestRoute53:
         vpc2_id = vpc2["Vpc"]["VpcId"]
 
         # associate zone with VPC
-        vpc_region = TEST_AWS_REGION_NAME
+        vpc_region = region_name
         for vpc_id in [vpc1_id, vpc2_id]:
             result = aws_client.route53.associate_vpc_with_hosted_zone(
                 HostedZoneId=zone_id,

@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
@@ -151,7 +151,9 @@ class TestIntegration:
             assert re.match(r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*-\d{4}-\d{2}-\d{2}-\d{2}.*", key)
 
     @markers.aws.unknown
-    def test_firehose_kinesis_to_s3(self, kinesis_create_stream, s3_create_bucket, aws_client):
+    def test_firehose_kinesis_to_s3(
+        self, kinesis_create_stream, s3_create_bucket, aws_client, region_name
+    ):
         stream_name = f"fh-stream-{short_uid()}"
 
         kinesis_stream_name = kinesis_create_stream()
@@ -165,7 +167,7 @@ class TestIntegration:
             KinesisStreamSourceConfiguration={
                 "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
                 "KinesisStreamARN": arns.kinesis_stream_arn(
-                    kinesis_stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+                    kinesis_stream_name, TEST_AWS_ACCOUNT_ID, region_name
                 ),
             },
             DeliveryStreamName=stream_name,
@@ -213,6 +215,7 @@ class TestIntegration:
         create_lambda_function,
         cleanups,
         aws_client,
+        region_name,
     ):
         ddb_lease_table_suffix = "-kclapp2"
         table_name = short_uid() + "lsbat" + ddb_lease_table_suffix
@@ -229,7 +232,7 @@ class TestIntegration:
         process = kinesis_connector.listen_to_kinesis(
             stream_name,
             account_id=TEST_AWS_ACCOUNT_ID,
-            region_name=TEST_AWS_REGION_NAME,
+            region_name=region_name,
             listener_func=process_records,
             wait_until_started=True,
             ddb_lease_table_suffix=ddb_lease_table_suffix,

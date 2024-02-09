@@ -39,7 +39,6 @@ from localstack.constants import (
     SECONDARY_TEST_AWS_REGION_NAME,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.s3 import constants as s3_constants
@@ -128,7 +127,7 @@ def is_v2_provider():
 
 
 @pytest.fixture
-def anonymous_client(aws_client_factory):
+def anonymous_client(aws_client_factory, region_name):
     """
     This fixture returns a factory that creates a client for a given service. This client is configured with credentials
     that can be effectively be treated as anonymous.
@@ -137,7 +136,7 @@ def anonymous_client(aws_client_factory):
     def _anonymous_client(service_name: str):
         return aws_client_factory.get_client(
             service_name=service_name,
-            region_name=TEST_AWS_REGION_NAME,
+            region_name=region_name,
             aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
             config=Config(signature_version=UNSIGNED),
@@ -2689,7 +2688,7 @@ class TestS3:
         assert "content-encoding" not in resp_headers
 
     @markers.aws.only_localstack
-    def test_put_object_chunked_newlines(self, s3_bucket, aws_client):
+    def test_put_object_chunked_newlines(self, s3_bucket, aws_client, region_name):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
         # Test for https://github.com/localstack/localstack/issues/1571
@@ -2697,7 +2696,9 @@ class TestS3:
         body = "Hello\r\n\r\n\r\n\r\n"
         headers = {
             "Authorization": mock_aws_request_headers(
-                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+                "s3",
+                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                region_name=region_name,
             )["Authorization"],
             "Content-Type": "audio/mpeg",
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
@@ -2723,7 +2724,7 @@ class TestS3:
         reason="Not implemented in other providers than stream",
         condition=LEGACY_V2_S3_PROVIDER,
     )
-    def test_put_object_chunked_newlines_with_checksum(self, s3_bucket, aws_client):
+    def test_put_object_chunked_newlines_with_checksum(self, s3_bucket, aws_client, region_name):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
         # Test for https://github.com/localstack/localstack/issues/6659
@@ -2732,7 +2733,9 @@ class TestS3:
         valid_checksum = hash_sha256(body)
         headers = {
             "Authorization": mock_aws_request_headers(
-                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+                "s3",
+                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                region_name=region_name,
             )["Authorization"],
             "Content-Type": "audio/mpeg",
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
@@ -2776,7 +2779,7 @@ class TestS3:
         assert body == str(download_file_object)
 
     @markers.aws.only_localstack
-    def test_upload_part_chunked_newlines_valid_etag(self, s3_bucket, aws_client):
+    def test_upload_part_chunked_newlines_valid_etag(self, s3_bucket, aws_client, region_name):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
         # Test for https://github.com/localstack/localstack/issues/8703
@@ -2784,7 +2787,9 @@ class TestS3:
         precalculated_etag = hashlib.md5(body.encode()).hexdigest()
         headers = {
             "Authorization": mock_aws_request_headers(
-                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+                "s3",
+                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                region_name=region_name,
             )["Authorization"],
             "Content-Type": "audio/mpeg",
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
@@ -2834,7 +2839,7 @@ class TestS3:
         assert completed_object["Body"].read() == to_bytes(body)
 
     @markers.aws.only_localstack
-    def test_upload_part_chunked_cancelled_valid_etag(self, s3_bucket, aws_client):
+    def test_upload_part_chunked_cancelled_valid_etag(self, s3_bucket, aws_client, region_name):
         """
         When using async-type requests, it's possible to cancel them inflight. This will make the request body
         incomplete, and will fail during the stream decoding. We can simulate this with body by passing an incomplete
@@ -2845,7 +2850,9 @@ class TestS3:
         precalculated_etag = hashlib.md5(body.encode()).hexdigest()
         headers = {
             "Authorization": mock_aws_request_headers(
-                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+                "s3",
+                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                region_name=region_name,
             )["Authorization"],
             "Content-Type": "audio/mpeg",
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
@@ -2909,12 +2916,12 @@ class TestS3:
         reason="Not implemented in other providers than v3, moto fails at decoding",
         condition=LEGACY_V2_S3_PROVIDER,
     )
-    def test_put_object_chunked_newlines_no_sig(self, s3_bucket, aws_client):
+    def test_put_object_chunked_newlines_no_sig(self, s3_bucket, aws_client, region_name):
         object_key = "data"
         body = "test;test;test\r\ntest1;test1;test1\r\n"
         headers = {
             "Authorization": mock_aws_request_headers(
-                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
             )["Authorization"],
             "Content-Type": "audio/mpeg",
             "X-Amz-Date": "20190918T051509Z",
@@ -8020,7 +8027,7 @@ class TestS3Routing:
         ],
     )
     def test_access_favicon_via_aws_endpoints(
-        self, s3_bucket, domain, use_virtual_address, aws_client
+        self, s3_bucket, domain, use_virtual_address, aws_client, region_name
     ):
         """Assert that /favicon.ico objects can be created/accessed/deleted using amazonaws host headers"""
 
@@ -8032,7 +8039,9 @@ class TestS3Routing:
         path = s3_key if use_virtual_address else f"{s3_bucket}/{s3_key}"
         url = f"{config.internal_service_url()}/{path}"
         headers = mock_aws_request_headers(
-            "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "s3",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         headers["host"] = f"{s3_bucket}.{domain}" if use_virtual_address else domain
 
@@ -9997,7 +10006,9 @@ class TestS3PresignedPost:
     @pytest.mark.xfail(
         reason="sporadically failing in CI: presigned-post does not set the body, and then etag is wrong",
     )
-    def test_s3_presigned_post_success_action_status_201_response(self, s3_bucket, aws_client):
+    def test_s3_presigned_post_success_action_status_201_response(
+        self, s3_bucket, aws_client, region_name
+    ):
         # a security policy is required if the bucket is not publicly writable
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html#RESTObjectPOST-requests-form-fields
         body = "something body"
@@ -10023,7 +10034,7 @@ class TestS3PresignedPost:
         assert "PostResponse" in json_response
         json_response = json_response["PostResponse"]
 
-        location = f"{_bucket_url_vhost(s3_bucket, TEST_AWS_REGION_NAME)}/key-my-file"
+        location = f"{_bucket_url_vhost(s3_bucket, region_name)}/key-my-file"
         etag = '"43281e21fce675ac3bcb3524b38ca4ed"'
         assert response.headers["ETag"] == etag
         assert response.headers["Location"] == location

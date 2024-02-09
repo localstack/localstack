@@ -11,7 +11,7 @@ from botocore.exceptions import ClientError
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME, TEST_AWS_REGION_NAME
+from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_str
@@ -78,14 +78,14 @@ class TestKMS:
 
     @markers.aws.validated
     def test_create_key(
-        self, kms_client_for_region, kms_create_key, snapshot, aws_client, account_id
+        self, kms_client_for_region, kms_create_key, snapshot, aws_client, account_id, region_name
     ):
-        kms_client = kms_client_for_region(TEST_AWS_REGION_NAME)
+        kms_client = kms_client_for_region(region_name)
 
         key_ids_before = _get_all_key_ids(kms_client)
 
         key_id = kms_create_key(
-            region_name=TEST_AWS_REGION_NAME, Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
+            region_name=region_name, Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
         )["KeyId"]
         assert key_id not in key_ids_before
 
@@ -96,7 +96,7 @@ class TestKMS:
         snapshot.match("describe-key", response)
 
         assert response["KeyId"] == key_id
-        assert f":{TEST_AWS_REGION_NAME}:" in response["Arn"]
+        assert f":{region_name}:" in response["Arn"]
         assert f":{account_id}:" in response["Arn"]
 
     @markers.aws.only_localstack
@@ -109,8 +109,10 @@ class TestKMS:
         assert result["Arn"].endswith(f":key/{key_id}")
 
     @markers.aws.validated
-    def test_get_key_in_different_region(self, kms_client_for_region, kms_create_key, snapshot):
-        client_region = TEST_AWS_REGION_NAME
+    def test_get_key_in_different_region(
+        self, kms_client_for_region, kms_create_key, snapshot, region_name
+    ):
+        client_region = region_name
         key_region = SECONDARY_TEST_AWS_REGION_NAME
         us_east_1_kms_client = kms_client_for_region(client_region)
         us_west_2_kms_client = kms_client_for_region(key_region)
@@ -678,9 +680,9 @@ class TestKMS:
         ],
     )
     def test_replicate_key(
-        self, kms_client_for_region, kms_create_key, kms_replicate_key, snapshot
+        self, kms_client_for_region, kms_create_key, kms_replicate_key, snapshot, region_name
     ):
-        region_to_replicate_from = TEST_AWS_REGION_NAME
+        region_to_replicate_from = region_name
         region_to_replicate_to = SECONDARY_TEST_AWS_REGION_NAME
         us_east_1_kms_client = kms_client_for_region(region_to_replicate_from)
         us_west_1_kms_client = kms_client_for_region(region_to_replicate_to)
@@ -869,12 +871,12 @@ class TestKMS:
         e.match("KMSInvalidStateException")
 
     @markers.aws.validated
-    def test_hmac_create_key(self, kms_client_for_region, kms_create_key, snapshot):
-        kms_client = kms_client_for_region(TEST_AWS_REGION_NAME)
+    def test_hmac_create_key(self, kms_client_for_region, kms_create_key, snapshot, region_name):
+        kms_client = kms_client_for_region(region_name)
         key_ids_before = _get_all_key_ids(kms_client)
 
         response = kms_create_key(
-            region_name=TEST_AWS_REGION_NAME,
+            region_name=region_name,
             Description="test key",
             KeySpec="HMAC_256",
             KeyUsage="GENERATE_VERIFY_MAC",
@@ -890,7 +892,7 @@ class TestKMS:
         snapshot.match("describe-key", response)
 
     @markers.aws.validated
-    def test_hmac_create_key_invalid_operations(self, kms_create_key, snapshot):
+    def test_hmac_create_key_invalid_operations(self, kms_create_key, snapshot, region_name):
         with pytest.raises(ClientError) as e:
             kms_create_key(Description="test HMAC key without key usage", KeySpec="HMAC_256")
         snapshot.match("create-hmac-key-without-key-usage", e.value.response)
@@ -901,7 +903,7 @@ class TestKMS:
 
         with pytest.raises(ClientError) as e:
             kms_create_key(
-                region_name=TEST_AWS_REGION_NAME,
+                region_name=region_name,
                 Description="test invalid HMAC spec",
                 KeySpec="HMAC_256",
                 KeyUsage="RANDOM",
