@@ -23,7 +23,6 @@ from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
-    SECONDARY_TEST_AWS_ACCOUNT_ID,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
@@ -4381,6 +4380,7 @@ class TestSNSMultiAccounts:
     @markers.aws.only_localstack
     def test_cross_account_publish_to_sqs(
         self,
+        secondary_account_id,
         region_name,
         sns_primary_client,
         sns_secondary_client,
@@ -4412,7 +4412,7 @@ class TestSNSMultiAccounts:
         # test that we get the right queue URL at the same time, even if we use the primary client
         queue_2_arn = sqs_queue_arn(
             queue_2_url,
-            SECONDARY_TEST_AWS_ACCOUNT_ID,
+            secondary_account_id,
             region_name,
         )
 

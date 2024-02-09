@@ -14,7 +14,6 @@ from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-    SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
@@ -4532,6 +4531,7 @@ class TestSQSMultiAccounts:
         aws_http_client_factory,
         cleanups,
         account_id,
+        secondary_account_id,
         region_name,
     ):
         # set up regular boto clients for creating the queues
@@ -4548,7 +4548,7 @@ class TestSQSMultiAccounts:
 
         response = client2.create_queue(QueueName=queue2_name)
         queue2_url = response["QueueUrl"]
-        assert parse_queue_url(queue2_url)[0] == SECONDARY_TEST_AWS_ACCOUNT_ID
+        assert parse_queue_url(queue2_url)[0] == secondary_account_id
 
         # now prepare the query api clients
         client1_http = aws_http_client_factory(
