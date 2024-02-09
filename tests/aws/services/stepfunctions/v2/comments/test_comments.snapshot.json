@@ -1,14 +1,6 @@
 {
-  "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestTaskLambda::test_comments_as_per_docs[{\"status\": \"complete\"}]": {
-    "recorded-date": "09-02-2024, 10:06:04",
-    "recorded-content": {}
-  },
-  "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestTaskLambda::test_comments_as_per_docs[{\"status\": \"incomplete\"}]": {
-    "recorded-date": "09-02-2024, 10:06:19",
-    "recorded-content": {}
-  },
-  "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestTaskLambda::test_comments_as_per_docs": {
-    "recorded-date": "09-02-2024, 11:20:40",
+  "tests/aws/services/stepfunctions/v2/comments/test_comments.py::TestComments::test_comments_as_per_docs": {
+    "recorded-date": "09-02-2024, 11:23:55",
     "recorded-content": {
       "get_execution_history": {
         "events": [

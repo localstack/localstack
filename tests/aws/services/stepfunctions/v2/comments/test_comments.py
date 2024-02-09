@@ -13,7 +13,7 @@ from tests.aws.services.stepfunctions.utils import create_and_record_execution
 
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
-class TestTaskLambda:
+class TestComments:
     @markers.aws.validated
     def test_comments_as_per_docs(
         self,
