@@ -124,6 +124,68 @@ class TestKinesisSource:
         assert int(math.log10(timestamp)) == 9
 
     @markers.aws.validated
+    def test_create_kinesis_event_source_mapping_multiple_lambdas_single_kinesis_event_stream(
+        self,
+        create_lambda_function,
+        kinesis_create_stream,
+        lambda_su_role,
+        wait_for_stream_ready,
+        create_event_source_mapping,
+        snapshot,
+        aws_client,
+    ):
+        # create kinesis event stream
+        stream_name = f"test-stream-{short_uid()}"
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name=stream_name)
+        stream_summary = aws_client.kinesis.describe_stream_summary(StreamName=stream_name)
+        assert stream_summary["StreamDescriptionSummary"]["OpenShardCount"] == 1
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        # create event source mapping for two lambda functions
+        function_a_name = f"lambda_func-{short_uid()}"
+        function_b_name = f"lambda_func-{short_uid()}"
+        functions = [(function_a_name, "a"), (function_b_name, "b")]
+        for function_name, function_id in functions:
+            create_lambda_function(
+                func_name=function_name,
+                handler_file=TEST_LAMBDA_PYTHON_ECHO,
+                runtime=Runtime.python3_9,
+                role=lambda_su_role,
+            )
+            create_event_source_mapping_response = create_event_source_mapping(
+                EventSourceArn=stream_arn,
+                FunctionName=function_name,
+                StartingPosition="TRIM_HORIZON",  # TODO: test with different starting positions
+            )
+            snapshot.match(
+                f"create_event_source_mapping_response-{function_id}",
+                create_event_source_mapping_response,
+            )
+
+        # send messages to kinesis
+        record_data = "hello"
+        aws_client.kinesis.put_records(
+            Records=[{"Data": record_data, "PartitionKey": "test_1"}],
+            StreamName=stream_name,
+        )
+
+        # verify that both lambdas are invoked
+        for function_name, function_id in functions:
+            events = _get_lambda_invocation_events(
+                aws_client.logs, function_name, expected_num_events=1, retries=5
+            )
+            records = events[0]
+            snapshot.match(f"kinesis_records-{function_id}", records)
+            # check if the timestamp has the correct format
+            timestamp = events[0]["Records"][0]["kinesis"]["approximateArrivalTimestamp"]
+            # check if the timestamp has same amount of numbers before the comma as the current timestamp
+            # this will fail in november 2286, if this code is still around by then, read this comment and update to 10
+            assert int(math.log10(timestamp)) == 9
+
+    @markers.aws.validated
     def test_duplicate_event_source_mappings(
         self,
         create_lambda_function,
@@ -133,7 +195,6 @@ class TestKinesisSource:
         wait_for_stream_ready,
         snapshot,
         aws_client,
-        cleanups,
     ):
         function_name_1 = f"lambda_func-{short_uid()}"
         function_name_2 = f"lambda_func-{short_uid()}"
