@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Final
+from typing import Final, Optional
 
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_outcome import (
     CatcherOutcomeCaught,
     CatcherOutcomeNotCaught,
 )
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_props import CatcherProps
+from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.error_name.error_equals_decl import (
     ErrorEqualsDecl,
 )
@@ -22,15 +23,22 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 class CatcherDecl(EvalComponent):
     _DEFAULT_RESULT_PATH: Final[ResultPath] = ResultPath(result_path_src="$")
 
+    error_equals: Final[ErrorEqualsDecl]
+    result_path: Final[ResultPath]
+    comment: Final[Optional[Comment]]
+    next_decl: Final[Next]
+
     def __init__(
         self,
         error_equals: ErrorEqualsDecl,
         next_decl: Next,
+        comment: Optional[Comment],
         result_path: ResultPath = _DEFAULT_RESULT_PATH,
     ):
-        self.error_equals: Final[ErrorEqualsDecl] = error_equals
-        self.result_path: Final[ResultPath] = result_path or CatcherDecl._DEFAULT_RESULT_PATH
-        self.next_decl: Final[Next] = next_decl
+        self.error_equals = error_equals
+        self.result_path = result_path or CatcherDecl._DEFAULT_RESULT_PATH
+        self.comment = comment
+        self.next_decl = next_decl
 
     @classmethod
     def from_catcher_props(cls, props: CatcherProps) -> CatcherDecl:
@@ -48,6 +56,7 @@ class CatcherDecl(EvalComponent):
                 ),
             ),
             result_path=props.get(typ=ResultPath),
+            comment=props.get(typ=Comment),
         )
 
     @staticmethod
