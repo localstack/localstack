@@ -110,6 +110,7 @@ TEST_LAMBDA_ULIMITS = os.path.join(THIS_FOLDER, "functions/lambda_ulimits.py")
 TEST_LAMBDA_INVOCATION_TYPE = os.path.join(THIS_FOLDER, "functions/lambda_invocation_type.py")
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
+TEST_LAMBDA_PROCESS_INSPECTION = os.path.join(THIS_FOLDER, "functions/lambda_process_inspection.py")
 
 TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
 TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
@@ -694,6 +695,66 @@ class TestLambdaBehavior:
             FunctionName=func_name, Payload=json.dumps({"read-number": True})
         )
         snapshot.match("invoke-result-read-number-after-timeout", result)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Payload.environment.AWS_ACCESS_KEY_ID",
+            "$..Payload.environment.AWS_ENDPOINT_URL",
+            "$..Payload.environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
+            "$..Payload.environment.AWS_SECRET_ACCESS_KEY",
+            "$..Payload.environment.AWS_SESSION_TOKEN",
+            "$..Payload.environment.AWS_XRAY_DAEMON_ADDRESS",
+            "$..Payload.environment.EDGE_PORT",
+            "$..Payload.environment.HOME",
+            "$..Payload.environment.HOSTNAME",
+            "$..Payload.environment.LOCALSTACK_FUNCTION_ACCOUNT_ID",
+            "$..Payload.environment.LOCALSTACK_HOSTNAME",
+            "$..Payload.environment.LOCALSTACK_INIT_LOG_LEVEL",
+            "$..Payload.environment.LOCALSTACK_RUNTIME_ENDPOINT",
+            "$..Payload.environment.LOCALSTACK_RUNTIME_ID",
+            "$..Payload.environment.LOCALSTACK_USER",
+            "$..Payload.environment._AWS_XRAY_DAEMON_ADDRESS",
+            "$..Payload.environment._LAMBDA_CONSOLE_SOCKET",
+            "$..Payload.environment._LAMBDA_CONTROL_SOCKET",
+            "$..Payload.environment._LAMBDA_DIRECT_INVOKE_SOCKET",
+            "$..Payload.environment._LAMBDA_LOG_FD",
+            "$..Payload.environment._LAMBDA_RUNTIME_LOAD_TIME",
+            "$..Payload.environment._LAMBDA_SB_ID",
+            "$..Payload.environment._LAMBDA_SHARED_MEM_FD",
+            "$..Payload.environment._LAMBDA_TELEMETRY_API_PASSPHRASE",
+            "$..Payload.environment._X_AMZN_TRACE_ID",
+        ]
+    )
+    def test_lambda_init_environment(
+        self, aws_client, create_lambda_function, snapshot, monkeypatch
+    ):
+        if not is_aws_cloud():
+            # needed to be able to read /proc/1/environ
+            monkeypatch.setattr(config, "LAMBDA_INIT_USER", "root")
+        func_name = f"test_lambda_{short_uid()}"
+        # The file descriptors might change, and might have to be added to the transformers at some point
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value(
+                    "_LAMBDA_TELEMETRY_API_PASSPHRASE", "telemetry-passphrase"
+                ),
+                snapshot.transform.key_value("AWS_LAMBDA_LOG_STREAM_NAME", "log-stream-name"),
+                snapshot.transform.key_value("_X_AMZN_TRACE_ID", "xray-trace-id"),
+                snapshot.transform.key_value("_LAMBDA_RUNTIME_LOAD_TIME", "runtime-load-time"),
+            ]
+        )
+        create_result = create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_PROCESS_INSPECTION,
+            runtime=Runtime.python3_11,
+            client=aws_client.lambda_,
+            timeout=1,
+        )
+        snapshot.match("create-result", create_result)
+
+        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=json.dumps({"pid": 1}))
+        snapshot.match("lambda-init-inspection", result)
 
 
 URL_HANDLER_CODE = """
