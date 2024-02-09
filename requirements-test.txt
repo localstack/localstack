@@ -96,7 +96,7 @@ coverage[toml]==7.4.1
     #   localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==41.0.7
+cryptography==42.0.2
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
@@ -176,7 +176,7 @@ jsii==1.94.0
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-lib
     #   constructs
-json5==0.9.11
+json5==0.9.14
     # via localstack-core (pyproject.toml)
 jsondiff==2.0.0
     # via moto-ext
@@ -290,7 +290,7 @@ pyopenssl==24.0.0
     # via localstack-core (pyproject.toml)
 pyparsing==3.1.1
     # via moto-ext
-pytest==7.4.2
+pytest==8.0.0
     # via
     #   localstack-core (pyproject.toml)
     #   pytest-rerunfailures
@@ -298,7 +298,7 @@ pytest==7.4.2
     #   pytest-tinybird
 pytest-httpserver==1.0.8
     # via localstack-core (pyproject.toml)
-pytest-rerunfailures==12.0
+pytest-rerunfailures==13.0
     # via localstack-core (pyproject.toml)
 pytest-split==0.8.2
     # via localstack-core (pyproject.toml)

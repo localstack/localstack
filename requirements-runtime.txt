@@ -78,7 +78,7 @@ colorama==0.4.4
     # via awscli
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==41.0.7
+cryptography==42.0.2
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
@@ -145,7 +145,7 @@ jmespath==1.0.1
     #   botocore
 jschema-to-python==1.2.3
     # via cfn-lint
-json5==0.9.11
+json5==0.9.14
     # via localstack-core (pyproject.toml)
 jsondiff==2.0.0
     # via moto-ext
