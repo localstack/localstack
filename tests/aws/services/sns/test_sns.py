@@ -24,7 +24,6 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
-    SECONDARY_TEST_AWS_REGION_NAME,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
@@ -392,14 +391,15 @@ class TestSNSPublishCrud:
 
     @markers.aws.validated
     def test_topic_publish_another_region(
-        self, sns_create_topic, snapshot, aws_client, aws_client_factory
+        self, sns_create_topic, snapshot, aws_client, aws_client_factory, secondary_region_name
     ):
         # create the topic in the default region, so that it's easier to clean up with the fixture
         topic_arn = sns_create_topic()["TopicArn"]
 
         # create a client in another region
         sns_client_region_2 = aws_client_factory.get_client(
-            service_name="sns", region_name=SECONDARY_TEST_AWS_REGION_NAME
+            service_name="sns",
+            region_name=secondary_region_name,
         )
 
         message = "This is a test message"
@@ -4645,6 +4645,7 @@ class TestSNSRetrospectionEndpoints:
         aws_client,
         account_id,
         region_name,
+        secondary_region_name,
     ):
         sns_backend = SnsProvider.get_store(account_id, region_name)
         # clean up the saved messages
@@ -4737,10 +4738,10 @@ class TestSNSRetrospectionEndpoints:
         # Ensure you can select the region
         msg_with_region = requests.get(
             msgs_url,
-            params={"region": SECONDARY_TEST_AWS_REGION_NAME, "accountId": account_id},
+            params={"region": secondary_region_name, "accountId": account_id},
         ).json()
         assert len(msg_with_region["platform_endpoint_messages"]) == 0
-        assert msg_with_region["region"] == SECONDARY_TEST_AWS_REGION_NAME
+        assert msg_with_region["region"] == secondary_region_name
 
         # Ensure default region is us-east-1
         msg_with_region = requests.get(msgs_url).json()
@@ -4787,7 +4788,13 @@ class TestSNSRetrospectionEndpoints:
 
     @markers.aws.only_localstack
     def test_publish_sms_can_retrospect(
-        self, sns_create_topic, sns_subscription, aws_client, account_id, region_name
+        self,
+        sns_create_topic,
+        sns_subscription,
+        aws_client,
+        account_id,
+        region_name,
+        secondary_region_name,
     ):
         sns_store = SnsProvider.get_store(account_id, region_name)
 
@@ -4836,11 +4843,9 @@ class TestSNSRetrospectionEndpoints:
         assert api_sms_msgs[phone_number_1][0]["Message"] == "Good news everyone!"
 
         # Ensure you can select the region
-        msg_with_region = requests.get(
-            msgs_url, params={"region": SECONDARY_TEST_AWS_REGION_NAME}
-        ).json()
+        msg_with_region = requests.get(msgs_url, params={"region": secondary_region_name}).json()
         assert len(msg_with_region["sms_messages"]) == 0
-        assert msg_with_region["region"] == SECONDARY_TEST_AWS_REGION_NAME
+        assert msg_with_region["region"] == secondary_region_name
 
         # Ensure default region is us-east-1
         msg_with_region = requests.get(msgs_url).json()

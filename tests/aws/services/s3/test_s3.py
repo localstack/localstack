@@ -36,7 +36,6 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-    SECONDARY_TEST_AWS_REGION_NAME,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
@@ -3725,7 +3724,9 @@ class TestS3:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..x-amz-access-point-alias", "$..x-amz-id-2", "$..AccessPointAlias"],
     )
-    def test_create_bucket_head_bucket(self, aws_client_factory, snapshot, aws_client):
+    def test_create_bucket_head_bucket(
+        self, aws_client_factory, snapshot, aws_client, secondary_region_name
+    ):
         snapshot.add_transformer(snapshot.transform.s3_api())
 
         bucket_1 = f"my-bucket-1{short_uid()}"
@@ -3752,7 +3753,7 @@ class TestS3:
             response = aws_client.s3.create_bucket(
                 Bucket=bucket_2,
                 CreateBucketConfiguration={
-                    "LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME,
+                    "LocationConstraint": secondary_region_name,
                 },
             )
             snapshot.match("create_bucket_location_constraint", response)

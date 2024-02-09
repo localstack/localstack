@@ -11,7 +11,6 @@ from botocore.exceptions import ClientError
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_str
@@ -110,10 +109,10 @@ class TestKMS:
 
     @markers.aws.validated
     def test_get_key_in_different_region(
-        self, kms_client_for_region, kms_create_key, snapshot, region_name
+        self, kms_client_for_region, kms_create_key, snapshot, region_name, secondary_region_name
     ):
         client_region = region_name
-        key_region = SECONDARY_TEST_AWS_REGION_NAME
+        key_region = secondary_region_name
         us_east_1_kms_client = kms_client_for_region(client_region)
         us_west_2_kms_client = kms_client_for_region(key_region)
 
@@ -680,10 +679,16 @@ class TestKMS:
         ],
     )
     def test_replicate_key(
-        self, kms_client_for_region, kms_create_key, kms_replicate_key, snapshot, region_name
+        self,
+        kms_client_for_region,
+        kms_create_key,
+        kms_replicate_key,
+        snapshot,
+        region_name,
+        secondary_region_name,
     ):
         region_to_replicate_from = region_name
-        region_to_replicate_to = SECONDARY_TEST_AWS_REGION_NAME
+        region_to_replicate_to = secondary_region_name
         us_east_1_kms_client = kms_client_for_region(region_to_replicate_from)
         us_west_1_kms_client = kms_client_for_region(region_to_replicate_to)
 

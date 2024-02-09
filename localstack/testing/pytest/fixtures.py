@@ -1817,6 +1817,14 @@ def secondary_account_id(secondary_aws_client):
         return constants.SECONDARY_TEST_AWS_ACCOUNT_ID
 
 
+@pytest.fixture(scope="session")
+def secondary_region_name(secondary_aws_client):
+    if is_aws_cloud() or is_api_enabled("sts"):
+        return secondary_aws_client.sts.meta.region_name
+    else:
+        return constants.SECONDARY_TEST_AWS_REGION_NAME
+
+
 @pytest.hookimpl
 def pytest_collection_modifyitems(config: Config, items: list[Item]):
     only_localstack = pytest.mark.skipif(

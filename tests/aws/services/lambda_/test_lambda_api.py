@@ -24,7 +24,6 @@ from botocore.exceptions import ClientError, ParamValidationError
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
-from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.services.lambda_.api_utils import ARCHITECTURES
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
@@ -4750,7 +4749,14 @@ class TestLambdaLayer:
 
     @markers.aws.validated
     def test_layer_function_exceptions(
-        self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client_factory, aws_client
+        self,
+        create_lambda_function,
+        snapshot,
+        dummylayer,
+        cleanups,
+        aws_client_factory,
+        aws_client,
+        secondary_region_name,
     ):
         """Test interaction of layers when adding them to the function"""
         function_name = f"fn-layer-{short_uid()}"
@@ -4858,9 +4864,7 @@ class TestLambdaLayer:
             )
         snapshot.match("add_layer_arn_without_version_exc", e.value.response)
 
-        other_region_lambda_client = aws_client_factory(
-            region_name=SECONDARY_TEST_AWS_REGION_NAME
-        ).lambda_
+        other_region_lambda_client = aws_client_factory(region_name=secondary_region_name).lambda_
         other_region_layer_result = other_region_lambda_client.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[],
