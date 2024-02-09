@@ -754,10 +754,10 @@ class TestAPIGateway:
 
     @markers.aws.unknown
     def test_apigateway_with_custom_authorization_method(
-        self, create_rest_apigw, aws_client, region_name, integration_lambda
+        self, create_rest_apigw, aws_client, account_id, region_name, integration_lambda
     ):
         # create Lambda function
-        lambda_uri = arns.lambda_function_arn(integration_lambda, TEST_AWS_ACCOUNT_ID, region_name)
+        lambda_uri = arns.lambda_function_arn(integration_lambda, account_id, region_name)
 
         # create REST API
         api_id, _, _ = create_rest_apigw(name="test-api")
@@ -1654,7 +1654,7 @@ class TestAPIGateway:
 
 class TestTagging:
     @markers.aws.unknown
-    def test_tag_api(self, create_rest_apigw, aws_client, region_name):
+    def test_tag_api(self, create_rest_apigw, aws_client, account_id, region_name):
         api_name = f"api-{short_uid()}"
         tags = {"foo": "bar"}
 
@@ -1662,7 +1662,7 @@ class TestTagging:
         api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
         assert api_id == "c0stIOm1d"
 
-        api_arn = arns.apigateway_restapi_arn(api_id, TEST_AWS_ACCOUNT_ID, region_name)
+        api_arn = arns.apigateway_restapi_arn(api_id, account_id, region_name)
         aws_client.apigateway.tag_resource(resourceArn=api_arn, tags=tags)
 
         # receive and assert tags
@@ -2057,7 +2057,7 @@ class TestIntegrations:
 
     @markers.aws.unknown
     def test_api_gateway_sqs_integration_with_event_source(
-        self, aws_client, region_name, integration_lambda, sqs_queue
+        self, aws_client, account_id, region_name, integration_lambda, sqs_queue
     ):
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
@@ -2065,7 +2065,7 @@ class TestIntegrations:
             stage_name=TEST_STAGE_NAME,
             queue_arn=sqs_queue,
             path="/data",
-            account_id=TEST_AWS_ACCOUNT_ID,
+            account_id=account_id,
             region_name=region_name,
         )
 

@@ -18,7 +18,6 @@ from localstack.constants import (
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_ACCOUNT_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
@@ -85,7 +84,11 @@ def aws_sqs_client(aws_client, request: str) -> "SQSClient":
 class TestSqsProvider:
     @markers.aws.only_localstack
     def test_get_queue_url_contains_localstack_host(
-        self, sqs_create_queue, monkeypatch, aws_sqs_client
+        self,
+        sqs_create_queue,
+        monkeypatch,
+        aws_sqs_client,
+        account_id,
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
@@ -97,10 +100,7 @@ class TestSqsProvider:
 
         host_definition = localstack_host()
         # our current queue pattern looks like this, but may change going forward, or may be configurable
-        assert (
-            queue_url
-            == f"http://{host_definition.host_and_port()}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
-        )
+        assert queue_url == f"http://{host_definition.host_and_port()}/{account_id}/{queue_name}"
 
     @markers.aws.validated
     def test_list_queues(self, sqs_create_queue, aws_client):
@@ -179,6 +179,7 @@ class TestSqsProvider:
         sqs_create_queue,
         monkeypatch,
         aws_sqs_client,
+        account_id,
         region_name,
     ):
         # this is a white-box test for the QueueDeletedRecently timeout behavior
@@ -200,7 +201,7 @@ class TestSqsProvider:
         )
 
         time.sleep(1.5)
-        store = sqs_stores[TEST_AWS_ACCOUNT_ID][region_name]
+        store = sqs_stores[account_id][region_name]
         assert name in store.deleted
         assert queue_url == sqs_create_queue(QueueName=name)
         assert name not in store.deleted
@@ -1295,7 +1296,9 @@ class TestSqsProvider:
         assert re.match(rf".*<QueueUrl>\s*{url}/[^<]+</QueueUrl>.*", content, **kwargs)
 
     @markers.aws.only_localstack
-    def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch, region_name):
+    def test_external_host_via_header_complete_message_lifecycle(
+        self, monkeypatch, account_id, region_name
+    ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
         queue_name = f"queue-{short_uid()}"
@@ -1314,7 +1317,7 @@ class TestSqsProvider:
         result = requests.post(edge_url, data=payload, headers=headers)
         assert result.status_code == 200
 
-        queue_url = f"http://{url}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        queue_url = f"http://{url}/{account_id}/{queue_name}"
         message_body = f"test message {short_uid()}"
         payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
         result = requests.post(edge_url, data=payload, headers=headers)
@@ -1327,14 +1330,14 @@ class TestSqsProvider:
         assert message_body in result.text
 
         # the customer said that he used to be able to access it via "127.0.0.1" instead of "aws-local" as well
-        queue_url = f"http://127.0.0.1/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        queue_url = f"http://127.0.0.1/{account_id}/{queue_name}"
 
         payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
         result = requests.post(edge_url, data=payload, headers=headers)
         assert result.status_code == 200
         assert "MD5" in result.text
 
-        queue_url = f"http://127.0.0.1/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        queue_url = f"http://127.0.0.1/{account_id}/{queue_name}"
 
         payload = f"Action=ReceiveMessage&QueueUrl={queue_url}&VisibilityTimeout=0"
         result = requests.post(edge_url, data=payload, headers=headers)
@@ -2763,7 +2766,9 @@ class TestSqsProvider:
         )
 
     @markers.aws.needs_fixing
-    def test_dead_letter_queue_chain(self, sqs_create_queue, aws_sqs_client, region_name):
+    def test_dead_letter_queue_chain(
+        self, sqs_create_queue, aws_sqs_client, account_id, region_name
+    ):
         # test a chain of 3 queues, with DLQ flow q1 -> q2 -> q3
 
         # create queues
@@ -2779,7 +2784,7 @@ class TestSqsProvider:
             policy = {
                 "deadLetterTargetArn": arns.sqs_queue_arn(
                     queue_names[idx + 1],
-                    account_id=TEST_AWS_ACCOUNT_ID,
+                    account_id=account_id,
                     region_name=region_name,
                 ),
                 "maxReceiveCount": 1,
@@ -4258,6 +4263,7 @@ class TestSqsQueryApi:
         monkeypatch,
         sqs_create_queue,
         sqs_http_client,
+        account_id,
         strategy,
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
@@ -4269,7 +4275,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue_url.split("/")[-1],
-                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
+                "QueueOwnerAWSAccountId": account_id,
             },
         )
         assert f"<QueueUrl>{queue_url}</QueueUrl>" in response.text
@@ -4278,7 +4284,7 @@ class TestSqsQueryApi:
     @markers.aws.validated
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_get_queue_url_work_for_different_queue(
-        self, monkeypatch, sqs_create_queue, sqs_http_client, strategy
+        self, monkeypatch, sqs_create_queue, sqs_http_client, account_id, strategy
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
@@ -4291,7 +4297,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue2_url.split("/")[-1],
-                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
+                "QueueOwnerAWSAccountId": account_id,
             },
         )
         assert f"<QueueUrl>{queue2_url}</QueueUrl>" in response.text
@@ -4353,12 +4359,14 @@ class TestSqsQueryApi:
         assert "foobar" in response.text
 
     @markers.aws.only_localstack
-    def test_queue_url_format_path_strategy(self, sqs_create_queue, region_name, monkeypatch):
+    def test_queue_url_format_path_strategy(
+        self, sqs_create_queue, account_id, region_name, monkeypatch
+    ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
         queue_name = f"path_queue_{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         assert (
-            f"localhost.localstack.cloud:4566/queue/{region_name}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+            f"localhost.localstack.cloud:4566/queue/{region_name}/{account_id}/{queue_name}"
             in queue_url
         )
 
@@ -4498,13 +4506,13 @@ class TestSQSMultiAccounts:
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     @markers.aws.only_localstack
     def test_cross_account_get_queue_url(
-        self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy, region_name
+        self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy, account_id, region_name
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
         queue_name = f"test-queue-cross-account-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        account_id, actual_region_name, queue_name_from_url = parse_queue_url(queue_url)
-        assert account_id == TEST_AWS_ACCOUNT_ID
+        actual_account_id, actual_region_name, queue_name_from_url = parse_queue_url(queue_url)
+        assert actual_account_id == account_id
         assert actual_region_name == region_name
         assert queue_name_from_url == queue_name
 
@@ -4519,7 +4527,13 @@ class TestSQSMultiAccounts:
 
     @markers.aws.only_localstack
     def test_delete_queue_multi_account(
-        self, aws_sqs_client, secondary_aws_client, aws_http_client_factory, cleanups, region_name
+        self,
+        aws_sqs_client,
+        secondary_aws_client,
+        aws_http_client_factory,
+        cleanups,
+        account_id,
+        region_name,
     ):
         # set up regular boto clients for creating the queues
         client1 = aws_sqs_client
@@ -4531,7 +4545,7 @@ class TestSQSMultiAccounts:
         queue2_name = f"{prefix}-queue-{short_uid()}"
         response = client1.create_queue(QueueName=queue1_name)
         queue1_url = response["QueueUrl"]
-        assert parse_queue_url(queue1_url)[0] == TEST_AWS_ACCOUNT_ID
+        assert parse_queue_url(queue1_url)[0] == account_id
 
         response = client2.create_queue(QueueName=queue2_name)
         queue2_url = response["QueueUrl"]

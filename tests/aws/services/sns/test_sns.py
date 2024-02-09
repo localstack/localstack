@@ -26,7 +26,6 @@ from localstack.constants import (
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_ACCOUNT_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.sns.constants import (
@@ -171,7 +170,7 @@ class TestSNSTopicCrud:
             # SNS:Receive is added by moto but not returned in AWS
         ]
     )
-    def test_create_topic_test_arn(self, sns_create_topic, snapshot, aws_client):
+    def test_create_topic_test_arn(self, sns_create_topic, snapshot, aws_client, account_id):
         topic_name = "topic-test-create"
         response = sns_create_topic(Name=topic_name)
         snapshot.match("create-topic", response)
@@ -182,7 +181,7 @@ class TestSNSTopicCrud:
         assert topic_arn_params[5] == topic_name
 
         if not is_aws_cloud():
-            assert topic_arn_params[4] == TEST_AWS_ACCOUNT_ID
+            assert topic_arn_params[4] == account_id
 
         topic_attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
         snapshot.match("get-topic-attrs", topic_attrs)
@@ -3511,9 +3510,10 @@ class TestSNSPlatformEndpoint:
         sns_subscription,
         sns_create_platform_application,
         aws_client,
+        account_id,
         region_name,
     ):
-        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, region_name)
+        sns_backend = SnsProvider.get_store(account_id, region_name)
         topic_arn = sns_create_topic()["TopicArn"]
 
         app_arn = sns_create_platform_application(Name="app1", Platform="p1", Attributes={})[
@@ -3664,6 +3664,7 @@ class TestSNSPlatformEndpoint:
         sns_subscription,
         sns_create_platform_application,
         aws_client,
+        account_id,
         region_name,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
@@ -3704,7 +3705,7 @@ class TestSNSPlatformEndpoint:
             MessageStructure="json",
         )
 
-        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, region_name)
+        sns_backend = SnsProvider.get_store(account_id, region_name)
         platform_endpoint_msgs = sns_backend.platform_endpoint_messages
 
         # assert that message has been received
@@ -3720,14 +3721,14 @@ class TestSNSPlatformEndpoint:
 
 class TestSNSSMS:
     @markers.aws.only_localstack
-    def test_publish_sms(self, aws_client, region_name):
+    def test_publish_sms(self, aws_client, account_id, region_name):
         phone_number = "+33000000000"
         response = aws_client.sns.publish(PhoneNumber=phone_number, Message="This is a SMS")
         assert "MessageId" in response
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         sns_backend = SnsProvider.get_store(
-            account_id=TEST_AWS_ACCOUNT_ID,
+            account_id=account_id,
             region_name=region_name,
         )
 
@@ -3756,7 +3757,7 @@ class TestSNSSMS:
 
     @markers.aws.only_localstack
     def test_publish_sms_endpoint(
-        self, sns_create_topic, sns_subscription, aws_client, region_name
+        self, sns_create_topic, sns_subscription, aws_client, account_id, region_name
     ):
         list_of_contacts = [
             f"+{random.randint(100000000, 9999999999)}",
@@ -3770,7 +3771,7 @@ class TestSNSSMS:
 
         aws_client.sns.publish(Message=message, TopicArn=topic_arn)
 
-        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, region_name)
+        sns_backend = SnsProvider.get_store(account_id, region_name)
 
         def check_messages():
             sms_messages = sns_backend.sms_messages
@@ -4642,9 +4643,10 @@ class TestSNSRetrospectionEndpoints:
         sns_subscription,
         sns_create_platform_application,
         aws_client,
+        account_id,
         region_name,
     ):
-        sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, region_name)
+        sns_backend = SnsProvider.get_store(account_id, region_name)
         # clean up the saved messages
         sns_backend_endpoint_arns = list(sns_backend.platform_endpoint_messages.keys())
         for saved_endpoint_arn in sns_backend_endpoint_arns:
@@ -4716,7 +4718,7 @@ class TestSNSRetrospectionEndpoints:
 
         msgs_url = config.internal_service_url() + PLATFORM_ENDPOINT_MSGS_ENDPOINT
         api_contents = requests.get(
-            msgs_url, params={"region": region_name, "accountId": TEST_AWS_ACCOUNT_ID}
+            msgs_url, params={"region": region_name, "accountId": account_id}
         ).json()
         api_platform_endpoints_msgs = api_contents["platform_endpoint_messages"]
 
@@ -4735,7 +4737,7 @@ class TestSNSRetrospectionEndpoints:
         # Ensure you can select the region
         msg_with_region = requests.get(
             msgs_url,
-            params={"region": SECONDARY_TEST_AWS_REGION_NAME, "accountId": TEST_AWS_ACCOUNT_ID},
+            params={"region": SECONDARY_TEST_AWS_REGION_NAME, "accountId": account_id},
         ).json()
         assert len(msg_with_region["platform_endpoint_messages"]) == 0
         assert msg_with_region["region"] == SECONDARY_TEST_AWS_REGION_NAME
@@ -4775,19 +4777,19 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure you can reset the saved messages by region
         delete_res = requests.delete(
-            msgs_url, params={"region": region_name, "accountId": TEST_AWS_ACCOUNT_ID}
+            msgs_url, params={"region": region_name, "accountId": account_id}
         )
         assert delete_res.status_code == 204
         msg_with_region = requests.get(
-            msgs_url, params={"region": region_name, "accountId": TEST_AWS_ACCOUNT_ID}
+            msgs_url, params={"region": region_name, "accountId": account_id}
         ).json()
         assert not msg_with_region["platform_endpoint_messages"]
 
     @markers.aws.only_localstack
     def test_publish_sms_can_retrospect(
-        self, sns_create_topic, sns_subscription, aws_client, region_name
+        self, sns_create_topic, sns_subscription, aws_client, account_id, region_name
     ):
-        sns_store = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, region_name)
+        sns_store = SnsProvider.get_store(account_id, region_name)
 
         list_of_contacts = [
             f"+{random.randint(100000000, 9999999999)}",
@@ -4820,7 +4822,7 @@ class TestSNSRetrospectionEndpoints:
 
         msgs_url = config.internal_service_url() + SMS_MSGS_ENDPOINT
         api_contents = requests.get(
-            msgs_url, params={"region": region_name, "accountId": TEST_AWS_ACCOUNT_ID}
+            msgs_url, params={"region": region_name, "accountId": account_id}
         ).json()
         api_sms_msgs = api_contents["sms_messages"]
 
@@ -4849,7 +4851,7 @@ class TestSNSRetrospectionEndpoints:
             msgs_url,
             params={
                 "phoneNumber": phone_number_1,
-                "accountId": TEST_AWS_ACCOUNT_ID,
+                "accountId": account_id,
                 "region": region_name,
             },
         ).json()
@@ -4863,7 +4865,7 @@ class TestSNSRetrospectionEndpoints:
             msgs_url,
             params={
                 "phoneNumber": phone_number_1,
-                "accountId": TEST_AWS_ACCOUNT_ID,
+                "accountId": account_id,
                 "region": region_name,
             },
         )
@@ -4876,7 +4878,7 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure you can reset the saved messages by region
         delete_res = requests.delete(
-            msgs_url, params={"region": region_name, "accountId": TEST_AWS_ACCOUNT_ID}
+            msgs_url, params={"region": region_name, "accountId": account_id}
         )
         assert delete_res.status_code == 204
         msg_with_region = requests.get(msgs_url, params={"region": region_name}).json()
@@ -4884,9 +4886,15 @@ class TestSNSRetrospectionEndpoints:
 
     @markers.aws.only_localstack
     def test_subscription_tokens_can_retrospect(
-        self, sns_create_topic, sns_subscription, sns_create_http_endpoint, aws_client, region_name
+        self,
+        sns_create_topic,
+        sns_subscription,
+        sns_create_http_endpoint,
+        aws_client,
+        account_id,
+        region_name,
     ):
-        sns_store = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, region_name)
+        sns_store = SnsProvider.get_store(account_id, region_name)
         # clean up the saved tokens
         sns_store.subscription_tokens.clear()
 

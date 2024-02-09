@@ -6,7 +6,6 @@ import time
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.aws.util import get_lambda_logs
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
@@ -80,7 +79,9 @@ def scheduled_test_lambda(aws_client):
 
 class TestIntegration:
     @markers.aws.unknown
-    def test_firehose_s3(self, firehose_create_delivery_stream, s3_create_bucket, aws_client):
+    def test_firehose_s3(
+        self, firehose_create_delivery_stream, s3_create_bucket, aws_client, account_id
+    ):
         stream_name = f"fh-stream-{short_uid()}"
         bucket_name = s3_create_bucket()
 
@@ -90,7 +91,7 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
+                "RoleARN": arns.iam_resource_arn("firehose", account_id),
                 "BucketARN": arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
@@ -115,7 +116,7 @@ class TestIntegration:
 
     @markers.aws.unknown
     def test_firehose_extended_s3(
-        self, firehose_create_delivery_stream, s3_create_bucket, aws_client
+        self, firehose_create_delivery_stream, s3_create_bucket, aws_client, account_id
     ):
         stream_name = f"fh-stream-{short_uid()}"
         bucket_name = s3_create_bucket()
@@ -126,7 +127,7 @@ class TestIntegration:
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
             ExtendedS3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
+                "RoleARN": arns.iam_resource_arn("firehose", account_id),
                 "BucketARN": arns.s3_bucket_arn(bucket_name),
                 "Prefix": s3_prefix,
             },
@@ -152,7 +153,7 @@ class TestIntegration:
 
     @markers.aws.unknown
     def test_firehose_kinesis_to_s3(
-        self, kinesis_create_stream, s3_create_bucket, aws_client, region_name
+        self, kinesis_create_stream, s3_create_bucket, aws_client, account_id, region_name
     ):
         stream_name = f"fh-stream-{short_uid()}"
 
@@ -165,14 +166,14 @@ class TestIntegration:
         stream = aws_client.firehose.create_delivery_stream(
             DeliveryStreamType="KinesisStreamAsSource",
             KinesisStreamSourceConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
+                "RoleARN": arns.iam_resource_arn("firehose", account_id),
                 "KinesisStreamARN": arns.kinesis_stream_arn(
-                    kinesis_stream_name, TEST_AWS_ACCOUNT_ID, region_name
+                    kinesis_stream_name, account_id, region_name
                 ),
             },
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
+                "RoleARN": arns.iam_resource_arn("firehose", account_id),
                 "BucketARN": arns.s3_bucket_arn(TEST_BUCKET_NAME),
                 "Prefix": s3_prefix,
             },
@@ -215,6 +216,7 @@ class TestIntegration:
         create_lambda_function,
         cleanups,
         aws_client,
+        account_id,
         region_name,
     ):
         ddb_lease_table_suffix = "-kclapp2"
@@ -231,7 +233,7 @@ class TestIntegration:
         # start the KCL client process in the background
         process = kinesis_connector.listen_to_kinesis(
             stream_name,
-            account_id=TEST_AWS_ACCOUNT_ID,
+            account_id=account_id,
             region_name=region_name,
             listener_func=process_records,
             wait_until_started=True,

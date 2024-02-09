@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
@@ -128,7 +128,7 @@ class TestServerless:
 
     @markers.skip_offline
     @markers.aws.unknown
-    def test_queue_handler_deployed(self, aws_client, region_name, setup_and_teardown):
+    def test_queue_handler_deployed(self, aws_client, account_id, region_name, setup_and_teardown):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
 
@@ -144,9 +144,7 @@ class TestServerless:
         assert 1 == len(events)
         event_source_arn = events[0]["EventSourceArn"]
 
-        queue_arn = arns.sqs_queue_arn(
-            queue_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=region_name
-        )
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id=account_id, region_name=region_name)
 
         assert event_source_arn == queue_arn
         result = sqs_client.get_queue_attributes(
@@ -178,7 +176,7 @@ class TestServerless:
 
     @markers.skip_offline
     @markers.aws.unknown
-    def test_apigateway_deployed(self, aws_client, region_name, setup_and_teardown):
+    def test_apigateway_deployed(self, aws_client, account_id, region_name, setup_and_teardown):
         function_name = "sls-test-local-router"
         existing_api_ids = setup_and_teardown
 
@@ -202,7 +200,7 @@ class TestServerless:
             assert method in proxy_resource["resourceMethods"]
             resource_method = proxy_resource["resourceMethods"][method]
             assert (
-                arns.lambda_function_arn(function_name, TEST_AWS_ACCOUNT_ID, region_name)
+                arns.lambda_function_arn(function_name, account_id, region_name)
                 in resource_method["methodIntegration"]["uri"]
             )
 

@@ -1,6 +1,5 @@
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
@@ -78,7 +77,9 @@ class TestRoute53:
         snapshot.match("get_hosted_zone", response)
 
     @markers.aws.unknown
-    def test_associate_vpc_with_hosted_zone(self, cleanups, hosted_zone, aws_client, region_name):
+    def test_associate_vpc_with_hosted_zone(
+        self, cleanups, hosted_zone, aws_client, account_id, region_name
+    ):
         name = "zone123"
         response = hosted_zone(
             Name=name,
@@ -118,7 +119,7 @@ class TestRoute53:
         expected = {
             "HostedZoneId": zone_id,
             "Name": "%s." % name,
-            "Owner": {"OwningAccount": TEST_AWS_ACCOUNT_ID},
+            "Owner": {"OwningAccount": account_id},
         }
         assert expected in result
 

@@ -320,12 +320,12 @@ class TestCloudFormation:
     )
     @markers.aws.unknown
     def test_cfn_handle_s3_notification_configuration(
-        self, region_name, aws_client_factory, deploy_cfn_template, create_bucket_first
+        self, account_id, region_name, aws_client_factory, deploy_cfn_template, create_bucket_first
     ):
         s3_client = aws_client_factory(region_name=region_name).s3
         bucket_name = f"target-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, region_name)
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
         if create_bucket_first:
             s3_client.create_bucket(
                 Bucket=bucket_name,
@@ -347,7 +347,9 @@ class TestCloudFormation:
         exc.match("NoSuchBucket")
 
     @markers.aws.unknown
-    def test_cfn_handle_serverless_api_resource(self, deploy_cfn_template, aws_client, region_name):
+    def test_cfn_handle_serverless_api_resource(
+        self, deploy_cfn_template, aws_client, account_id, region_name
+    ):
         stack = deploy_cfn_template(template=TEST_TEMPLATE_22)
 
         res = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
@@ -369,7 +371,7 @@ class TestCloudFormation:
 
         uri = resource["resourceMethods"]["GET"]["methodIntegration"]["uri"]
         lambda_arn = arns.lambda_function_arn(
-            lambda_func_names[0], account_id=TEST_AWS_ACCOUNT_ID, region_name=region_name
+            lambda_func_names[0], account_id=account_id, region_name=region_name
         )
         assert lambda_arn in uri
 
@@ -542,7 +544,9 @@ class TestCloudFormation:
         assert [g for g in groups if g["Name"] == rg_name]
 
     @markers.aws.unknown
-    def test_functions_in_output_export_name(self, deploy_cfn_template, aws_client, region_name):
+    def test_functions_in_output_export_name(
+        self, deploy_cfn_template, aws_client, account_id, region_name
+    ):
         environment = f"env-{short_uid()}"
 
         stack = deploy_cfn_template(
@@ -564,9 +568,7 @@ class TestCloudFormation:
         assert "VpcId" in outputs
         assert outputs["VpcId"].get("export") == f"{environment}-vpc-id"
 
-        topic_arn = arns.sns_topic_arn(
-            f"{environment}-slack-sns-topic", TEST_AWS_ACCOUNT_ID, region_name
-        )
+        topic_arn = arns.sns_topic_arn(f"{environment}-slack-sns-topic", account_id, region_name)
         assert "TopicArn" in outputs
         assert outputs["TopicArn"].get("export") == topic_arn
 
@@ -583,7 +585,7 @@ class TestCloudFormation:
     @pytest.mark.xfail(reason="fails due to / depending on other tests")
     @markers.aws.unknown
     def test_deploy_stack_with_sub_select_and_sub_getaz(
-        self, deploy_cfn_template, cleanups, aws_client, region_name
+        self, deploy_cfn_template, cleanups, aws_client, account_id, region_name
     ):
         key_name = f"key-pair-foo123-{short_uid()}"
         key_pair = aws_client.ec2.create_key_pair(KeyName=key_name)
@@ -624,10 +626,7 @@ class TestCloudFormation:
         # assert creation of further resources
         resp = aws_client.sns.list_topics()
         topic_arns = [tp["TopicArn"] for tp in resp["Topics"]]
-        assert (
-            arns.sns_topic_arn("companyname-slack-topic", TEST_AWS_ACCOUNT_ID, region_name)
-            in topic_arns
-        )
+        assert arns.sns_topic_arn("companyname-slack-topic", account_id, region_name) in topic_arns
         # TODO: fix assertions, to make tests parallelizable!
         metric_alarms_after = aws_client.cloudwatch.describe_alarms().get("MetricAlarms", [])
         composite_alarms_after = aws_client.cloudwatch.describe_alarms().get("CompositeAlarms", [])

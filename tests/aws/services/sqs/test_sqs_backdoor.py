@@ -4,7 +4,6 @@ import xmltodict
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.sqs.utils import parse_queue_url
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -145,7 +144,9 @@ class TestSqsDeveloperEndpoints:
 
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
-    def test_list_messages_as_json(self, sqs_create_queue, monkeypatch, aws_client, strategy):
+    def test_list_messages_as_json(
+        self, sqs_create_queue, monkeypatch, aws_client, account_id, strategy
+    ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
         queue_url = sqs_create_queue()
@@ -171,7 +172,7 @@ class TestSqsDeveloperEndpoints:
 
         # make sure attributes are returned
         attributes = {a["Name"]: a["Value"] for a in messages[0]["Attribute"]}
-        assert attributes["SenderId"] == TEST_AWS_ACCOUNT_ID
+        assert attributes["SenderId"] == account_id
         assert "ApproximateReceiveCount" in attributes
         assert "ApproximateFirstReceiveTimestamp" in attributes
         assert "SentTimestamp" in attributes
