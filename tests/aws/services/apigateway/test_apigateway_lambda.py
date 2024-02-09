@@ -438,7 +438,12 @@ def test_lambda_aws_integration_with_request_template(
 
 @markers.aws.validated
 def test_lambda_aws_integration_response_with_mapping_templates(
-    create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client, region
+    create_rest_apigw,
+    create_lambda_function,
+    create_role_with_policy,
+    snapshot,
+    aws_client,
+    region_name,
 ):
     function_name = f"test-{short_uid()}"
     stage_name = "api"
@@ -454,7 +459,7 @@ def test_lambda_aws_integration_response_with_mapping_templates(
     )
 
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-    target_uri = arns.apigateway_invocations_arn(lambda_arn, region)
+    target_uri = arns.apigateway_invocations_arn(lambda_arn, region_name)
 
     api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
     resource_id, _ = create_rest_resource(

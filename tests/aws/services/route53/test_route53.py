@@ -51,7 +51,9 @@ class TestRoute53:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..HostedZone.CallerReference"])
-    def test_create_private_hosted_zone(self, region, aws_client, cleanups, snapshot, hosted_zone):
+    def test_create_private_hosted_zone(
+        self, region_name, aws_client, cleanups, snapshot, hosted_zone
+    ):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.113.0.0/24")
         cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
         vpc_id = vpc["Vpc"]["VpcId"]
@@ -66,7 +68,7 @@ class TestRoute53:
             },
             VPC={
                 "VPCId": vpc_id,
-                "VPCRegion": region,
+                "VPCRegion": region_name,
             },
         )
         snapshot.match("create-hosted-zone-response", response)

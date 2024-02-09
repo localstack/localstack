@@ -11,7 +11,6 @@ from _pytest.reports import TestReport
 from _pytest.runner import CallInfo
 from pluggy import Result
 
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.snapshots import SnapshotAssertionError, SnapshotSession
 from localstack.testing.snapshots.report import render_report
 from localstack.testing.snapshots.transformer import RegexTransformer
@@ -19,9 +18,9 @@ from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER,
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
 )
-from localstack.utils.bootstrap import is_api_enabled
 
 
+# TODO: replace with .util.is_aws_cloud
 def is_aws():
     return os.environ.get("TEST_TARGET", "") == "AWS_CLOUD"
 
@@ -103,16 +102,8 @@ def pytest_runtest_call(item: Item) -> None:
         sm._assert_all(verify, paths)
 
 
-@pytest.fixture(name="region", scope="session")
-def fixture_region(aws_client):
-    if is_aws() or is_api_enabled("sts"):
-        return aws_client.sts.meta.region_name
-    else:
-        return TEST_AWS_REGION_NAME
-
-
 @pytest.fixture(scope="function")
-def _snapshot_session(request: SubRequest, account_id, region):
+def _snapshot_session(request: SubRequest, account_id, region_name):
     update_overwrite = os.environ.get("SNAPSHOT_UPDATE") == "1"
     raw_overwrite = os.environ.get("SNAPSHOT_RAW") == "1"
 
@@ -124,7 +115,7 @@ def _snapshot_session(request: SubRequest, account_id, region):
         verify=False if request.config.option.snapshot_skip_all else True,
     )
     sm.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)
-    sm.add_transformer(RegexTransformer(region, "<region>"), priority=2)
+    sm.add_transformer(RegexTransformer(region_name, "<region>"), priority=2)
 
     # TODO: temporary to migrate to new default transformers.
     #   remove this after all exemptions are gone

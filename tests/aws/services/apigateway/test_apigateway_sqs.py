@@ -55,7 +55,7 @@ def test_sqs_aws_integration(
     sqs_create_queue,
     aws_client,
     create_role_with_policy,
-    region,
+    region_name,
     account_id,
     snapshot,
 ):
@@ -92,7 +92,7 @@ def test_sqs_aws_integration(
         httpMethod="POST",
         type="AWS",
         integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{region}:sqs:path/{account_id}/{queue_name}",
+        uri=f"arn:aws:apigateway:{region_name}:sqs:path/{account_id}/{queue_name}",
         credentials=role_arn,
         requestParameters={
             "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"
@@ -145,7 +145,7 @@ def test_sqs_request_and_response_xml_templates_integration(
     sqs_create_queue,
     aws_client,
     create_role_with_policy,
-    region,
+    region_name,
     account_id,
     snapshot,
 ):
@@ -180,7 +180,7 @@ def test_sqs_request_and_response_xml_templates_integration(
         httpMethod="POST",
         type="AWS",
         integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{region}:sqs:path/{account_id}/{queue_name}",
+        uri=f"arn:aws:apigateway:{region_name}:sqs:path/{account_id}/{queue_name}",
         credentials=role_arn,
         requestParameters={
             "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"

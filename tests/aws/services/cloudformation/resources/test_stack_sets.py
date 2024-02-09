@@ -26,7 +26,7 @@ def wait_stack_set_operation(aws_client):
 @markers.aws.validated
 def test_create_stack_set_with_stack_instances(
     account_id,
-    region,
+    region_name,
     aws_client,
     snapshot,
     wait_stack_set_operation,
@@ -49,7 +49,7 @@ def test_create_stack_set_with_stack_instances(
     create_instances_result = aws_client.cloudformation.create_stack_instances(
         StackSetName=stack_set_name,
         Accounts=[account_id],
-        Regions=[region],
+        Regions=[region_name],
     )
 
     snapshot.match("create_stack_instances", create_instances_result)
@@ -61,7 +61,7 @@ def test_create_stack_set_with_stack_instances(
     create_instances_result = aws_client.cloudformation.create_stack_instances(
         StackSetName=stack_set_name,
         Accounts=[account_id],
-        Regions=[region],
+        Regions=[region_name],
     )
 
     assert "OperationId" in create_instances_result
@@ -71,7 +71,7 @@ def test_create_stack_set_with_stack_instances(
     delete_instances_result = aws_client.cloudformation.delete_stack_instances(
         StackSetName=stack_set_name,
         Accounts=[account_id],
-        Regions=[region],
+        Regions=[region_name],
         RetainStacks=False,
     )
     wait_stack_set_operation(stack_set_name, delete_instances_result["OperationId"])

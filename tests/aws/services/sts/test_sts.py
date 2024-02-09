@@ -191,13 +191,13 @@ class TestSTSIntegrations:
     @markers.aws.only_localstack
     @pytest.mark.parametrize("use_aws_creds", [True, False])
     def test_get_caller_identity_user_access_key(
-        self, cleanups, use_aws_creds, monkeypatch, region
+        self, cleanups, use_aws_creds, monkeypatch, region_name
     ):
         """Check whether the correct account id is returned for requests by other users access keys"""
         monkeypatch.setattr(config, "PARITY_AWS_ACCESS_KEY_ID", use_aws_creds)
         account_id = "123123123123"
         account_creds = {"AccessKeyId": account_id, "SecretAccessKey": "test"}
-        iam_account_client = create_client_with_keys("iam", account_creds, region_name=region)
+        iam_account_client = create_client_with_keys("iam", account_creds, region_name=region_name)
         user = iam_account_client.create_user(UserName=f"test-user-{short_uid()}")["User"]
         user_name = user["UserName"]
         user_arn = user["Arn"]
@@ -209,7 +209,9 @@ class TestSTSIntegrations:
             )
         )
 
-        sts_user_client = create_client_with_keys("sts", access_key_response, region_name=region)
+        sts_user_client = create_client_with_keys(
+            "sts", access_key_response, region_name=region_name
+        )
         response = sts_user_client.get_caller_identity()
         assert account_id == response["Account"]
         assert user_arn == response["Arn"]
@@ -217,14 +219,14 @@ class TestSTSIntegrations:
     @markers.aws.only_localstack
     @pytest.mark.parametrize("use_aws_creds", [True, False])
     def test_get_caller_identity_role_access_key(
-        self, aws_client, account_id, cleanups, use_aws_creds, monkeypatch, region
+        self, aws_client, account_id, cleanups, use_aws_creds, monkeypatch, region_name
     ):
         """Check whether the correct account id is returned for roles for other accounts"""
         monkeypatch.setattr(config, "PARITY_AWS_ACCESS_KEY_ID", use_aws_creds)
         fake_account_id = "123123123123"
         account_creds = {"AccessKeyId": fake_account_id, "SecretAccessKey": "test"}
-        iam_account_client = create_client_with_keys("iam", account_creds, region_name=region)
-        sts_account_client = create_client_with_keys("sts", account_creds, region_name=region)
+        iam_account_client = create_client_with_keys("iam", account_creds, region_name=region_name)
+        sts_account_client = create_client_with_keys("sts", account_creds, region_name=region_name)
         assume_policy_doc = {
             "Version": "2012-10-17",
             "Statement": [
@@ -246,7 +248,7 @@ class TestSTSIntegrations:
             RoleArn=role_arn, RoleSessionName=f"test-session-{short_uid()}"
         )
         credentials = assume_role_response["Credentials"]
-        sts_role_client = create_client_with_keys("sts", credentials, region_name=region)
+        sts_role_client = create_client_with_keys("sts", credentials, region_name=region_name)
         response = sts_role_client.get_caller_identity()
         assert fake_account_id == response["Account"]
         assert assume_role_response["AssumedRoleUser"]["Arn"] == response["Arn"]
@@ -257,7 +259,7 @@ class TestSTSIntegrations:
         )
         credentials_other_account = assume_role_response_other_account["Credentials"]
         sts_role_client_2 = create_client_with_keys(
-            "sts", credentials_other_account, region_name=region
+            "sts", credentials_other_account, region_name=region_name
         )
         response = sts_role_client_2.get_caller_identity()
         assert fake_account_id == response["Account"]

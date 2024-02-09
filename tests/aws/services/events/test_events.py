@@ -1853,7 +1853,7 @@ class TestEvents:
         snapshot.match("non-existent-bus", e.value.response)
 
     @markers.aws.validated
-    def test_test_event_pattern(self, aws_client, snapshot, account_id, region):
+    def test_test_event_pattern(self, aws_client, snapshot, account_id, region_name):
         response = aws_client.events.test_event_pattern(
             Event=json.dumps(
                 {
@@ -1861,7 +1861,7 @@ class TestEvents:
                     "source": "order",
                     "detail-type": "Test",
                     "account": account_id,
-                    "region": region,
+                    "region": region_name,
                     "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
             ),
@@ -1882,7 +1882,7 @@ class TestEvents:
                     "source": "order",
                     "detail-type": "Test",
                     "account": account_id,
-                    "region": region,
+                    "region": region_name,
                     "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
             ),

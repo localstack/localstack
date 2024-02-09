@@ -397,19 +397,19 @@ class TestCloudFormationConditions:
 
     @markers.aws.validated
     @pytest.mark.parametrize("env,region", [("dev", "us-west-2"), ("production", "us-east-1")])
-    def test_conditional_in_conditional(self, env, region, deploy_cfn_template, aws_client):
+    def test_conditional_in_conditional(self, env, region_name, deploy_cfn_template, aws_client):
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
                 "../../../templates/conditions/conditional-in-conditional.yml",
             ),
             parameters={
-                "SelectedRegion": region,
+                "SelectedRegion": region_name,
                 "Environment": env,
             },
         )
 
-        if env == "production" and region == "us-east-1":
+        if env == "production" and region_name == "us-east-1":
             assert stack.outputs["Result"] == "true"
         else:
             assert stack.outputs["Result"] == "false"
