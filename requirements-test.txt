@@ -104,9 +104,7 @@ cryptography==42.0.2
     #   python-jose
     #   sshpubkeys
 decorator==5.1.1
-    # via
-    #   jsonpath-ng
-    #   jsonpath-rw
+    # via jsonpath-rw
 deepdiff==6.7.1
     # via localstack-core (pyproject.toml)
 dill==0.3.6
@@ -184,7 +182,7 @@ jsonpatch==1.33
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
-jsonpath-ng==1.5.3
+jsonpath-ng==1.6.1
     # via localstack-core (pyproject.toml)
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
@@ -376,7 +374,6 @@ six==1.16.0
     # via
     #   airspeed-ext
     #   ecdsa
-    #   jsonpath-ng
     #   jsonpath-rw
     #   junit-xml
     #   opensearch-py
