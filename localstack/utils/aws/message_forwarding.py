@@ -5,10 +5,10 @@ import re
 import uuid
 from typing import Dict, Optional
 
-from localstack_ext.config import ENFORCE_IAM
 from moto.events.models import events_backends
 
 from localstack.aws.connect import connect_to
+from localstack.config import is_env_true
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
@@ -49,7 +49,7 @@ def send_event_to_target(
             role_arn=role, service_principal=source_service, region_name=region
         )
     else:
-        if ENFORCE_IAM:
+        if is_env_true("ENFORCE_IAM"):
             clients = connect_to(region_name=region)
         else:
             clients = connect_to(aws_access_key_id=account_id, region_name=region)
