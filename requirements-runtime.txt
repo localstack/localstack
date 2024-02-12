@@ -30,7 +30,7 @@ aws-sam-translator==1.84.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.12.1
     # via moto-ext
-awscli==1.32.34
+awscli==1.32.39
     # via localstack-core (pyproject.toml)
 awscrt==0.20.3
     # via localstack-core (pyproject.toml)
@@ -40,12 +40,12 @@ blinker==1.7.0
     #   quart
 boto==2.49.0
     # via amazon-kclpy
-boto3==1.34.34
+boto3==1.34.39
     # via
     #   aws-sam-translator
     #   localstack-core (pyproject.toml)
     #   moto-ext
-botocore==1.34.34
+botocore==1.34.39
     # via
     #   aws-xray-sdk
     #   awscli
@@ -65,7 +65,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.85.0
+cfn-lint==0.85.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -86,9 +86,7 @@ cryptography==42.0.2
     #   python-jose
     #   sshpubkeys
 decorator==5.1.1
-    # via
-    #   jsonpath-ng
-    #   jsonpath-rw
+    # via jsonpath-rw
 dill==0.3.6
     # via localstack-core (pyproject.toml)
 dnslib==0.9.24
@@ -153,7 +151,7 @@ jsonpatch==1.33
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
-jsonpath-ng==1.5.3
+jsonpath-ng==1.6.1
     # via localstack-core (pyproject.toml)
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
@@ -313,7 +311,6 @@ six==1.16.0
     # via
     #   airspeed-ext
     #   ecdsa
-    #   jsonpath-ng
     #   jsonpath-rw
     #   junit-xml
     #   opensearch-py

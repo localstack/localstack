@@ -17,7 +17,6 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import arns
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -2327,8 +2326,8 @@ class TestCloudwatch:
 
         invocation_res = retry(
             lambda: _get_lambda_logs(aws_client.logs, fn_name=fn_name),
-            retries=200 if is_aws() else 20,
-            sleep=10 if is_aws() else 1,
+            retries=200 if is_aws_cloud() else 20,
+            sleep=10 if is_aws_cloud() else 1,
         )
         snapshot.match("lambda-alarm-invocations", invocation_res)
 

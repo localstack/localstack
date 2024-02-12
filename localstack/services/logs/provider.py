@@ -263,7 +263,9 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
 
     if role_arn:
         factory = connect_to.with_assumed_role(
-            role_arn=role_arn, service_principal=ServicePrincipal.logs
+            role_arn=role_arn,
+            service_principal=ServicePrincipal.logs,
+            region_name=arn_data["region"],
         )
     else:
         factory = connect_to(aws_access_key_id=arn_data["account"], region_name=arn_data["region"])
@@ -369,7 +371,9 @@ def moto_put_log_events(self: "MotoLogStream", log_events):
 
             if subscription_filter.role_arn:
                 factory = connect_to.with_assumed_role(
-                    role_arn=subscription_filter.role_arn, service_principal=ServicePrincipal.logs
+                    role_arn=subscription_filter.role_arn,
+                    service_principal=ServicePrincipal.logs,
+                    region_name=arn_data["region"],
                 )
             else:
                 factory = connect_to(

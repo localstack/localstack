@@ -4,7 +4,7 @@ import os
 import time
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import TYPE_CHECKING, Dict, List
 
 import pytest
 from botocore.exceptions import ClientError
@@ -24,6 +24,8 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+
+from .conftest import assert_valid_event
 
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
@@ -113,21 +115,6 @@ def sqs_collect_messages(
 
 
 class TestEvents:
-    def assert_valid_event(self, event):
-        expected_fields = (
-            "version",
-            "id",
-            "detail-type",
-            "source",
-            "account",
-            "time",
-            "region",
-            "resources",
-            "detail",
-        )
-        for field in expected_fields:
-            assert field in event
-
     @markers.aws.validated
     def test_put_rule(self, aws_client, snapshot, clean_up):
         rule_name = f"rule-{short_uid()}"
@@ -343,112 +330,6 @@ class TestEvents:
             input_path="$.detail",
         )
 
-    @pytest.fixture
-    def put_events_with_filter_to_sqs(self, aws_client, sqs_get_queue_arn, clean_up):
-        def _put_events_with_filter_to_sqs(
-            pattern: Dict,
-            entries_asserts: List[Tuple[List[Dict], bool]],
-            input_path: str = None,
-        ):
-            queue_name = f"queue-{short_uid()}"
-            rule_name = f"rule-{short_uid()}"
-            target_id = f"target-{short_uid()}"
-            bus_name = f"bus-{short_uid()}"
-
-            sqs_client = aws_client.sqs
-            queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-            queue_arn = sqs_get_queue_arn(queue_url)
-            policy = {
-                "Version": "2012-10-17",
-                "Id": f"sqs-eventbridge-{short_uid()}",
-                "Statement": [
-                    {
-                        "Sid": f"SendMessage-{short_uid()}",
-                        "Effect": "Allow",
-                        "Principal": {"Service": "events.amazonaws.com"},
-                        "Action": "sqs:SendMessage",
-                        "Resource": queue_arn,
-                    }
-                ],
-            }
-            sqs_client.set_queue_attributes(
-                QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
-            )
-
-            events_client = aws_client.events
-            events_client.create_event_bus(Name=bus_name)
-            events_client.put_rule(
-                Name=rule_name,
-                EventBusName=bus_name,
-                EventPattern=json.dumps(pattern),
-            )
-            kwargs = {"InputPath": input_path} if input_path else {}
-            rs = events_client.put_targets(
-                Rule=rule_name,
-                EventBusName=bus_name,
-                Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
-            )
-
-            assert rs["FailedEntryCount"] == 0
-            assert rs["FailedEntries"] == []
-
-            try:
-                messages = []
-                for entry_asserts in entries_asserts:
-                    entries = entry_asserts[0]
-                    for entry in entries:
-                        entry["EventBusName"] = bus_name
-                    message = self._put_entries_assert_results_sqs(
-                        events_client,
-                        sqs_client,
-                        queue_url,
-                        entries=entries,
-                        should_match=entry_asserts[1],
-                    )
-                    if message is not None:
-                        messages.extend(message)
-            finally:
-                clean_up(
-                    bus_name=bus_name,
-                    rule_name=rule_name,
-                    target_ids=target_id,
-                    queue_url=queue_url,
-                )
-
-            return messages
-
-        yield _put_events_with_filter_to_sqs
-
-    def _put_entries_assert_results_sqs(
-        self, events_client, sqs_client, queue_url: str, entries: List[Dict], should_match: bool
-    ):
-        response = events_client.put_events(Entries=entries)
-        assert not response.get("FailedEntryCount")
-
-        def get_message(queue_url):
-            resp = sqs_client.receive_message(
-                QueueUrl=queue_url, WaitTimeSeconds=5, MaxNumberOfMessages=1
-            )
-            messages = resp.get("Messages")
-            if messages:
-                for message in messages:
-                    receipt_handle = message["ReceiptHandle"]
-                    sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
-            if should_match:
-                assert len(messages) == 1
-            return messages
-
-        messages = retry(get_message, retries=5, queue_url=queue_url)
-
-        if should_match:
-            actual_event = json.loads(messages[0]["Body"])
-            if "detail" in actual_event:
-                self.assert_valid_event(actual_event)
-            return messages
-        else:
-            assert not messages
-            return None
-
     @markers.aws.validated
     def test_put_events_with_rule_anything_but_to_sqs(
         self, put_events_with_filter_to_sqs, snapshot
@@ -656,7 +537,7 @@ class TestEvents:
         assert len(messages) == 1
 
         actual_event = json.loads(messages[0]["Body"]).get("Message")
-        self.assert_valid_event(actual_event)
+        assert_valid_event(actual_event)
         assert json.loads(actual_event).get("detail") == EVENT_DETAIL
 
         # clean up
@@ -718,7 +599,7 @@ class TestEvents:
         assert len(messages) == 1
 
         actual_event = json.loads(messages[0]["Body"])
-        self.assert_valid_event(actual_event)
+        assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
         # clean up
@@ -787,7 +668,7 @@ class TestEvents:
             logs_client=aws_client.logs,
         )
         actual_event = events[0]
-        self.assert_valid_event(actual_event)
+        assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
     @markers.aws.validated
@@ -1177,7 +1058,7 @@ class TestEvents:
         key = bucket_contents[0]["Key"]
         s3_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
         actual_event = json.loads(s3_object["Body"].read().decode())
-        self.assert_valid_event(actual_event)
+        assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
         # clean up
@@ -1296,7 +1177,7 @@ class TestEvents:
 
         assert partition_key == TEST_EVENT_PATTERN["detail-type"][0]
         assert data["detail"] == EVENT_DETAIL
-        self.assert_valid_event(data)
+        assert_valid_event(data)
 
     @markers.aws.unknown
     def test_put_events_with_input_path(self, aws_client, clean_up):
@@ -1654,7 +1535,7 @@ class TestEvents:
         assert len(events) == 1
         event = events[0]
 
-        self.assert_valid_event(event["message"])
+        assert_valid_event(event["message"])
 
         clean_up(
             rule_name=rule_name,
@@ -1792,7 +1673,7 @@ class TestEvents:
 
         received_event = json.loads(messages[0]["Body"])
 
-        self.assert_valid_event(received_event)
+        assert_valid_event(received_event)
 
     @markers.aws.validated
     def test_put_target_id_validation(
@@ -2082,3 +1963,62 @@ class TestEvents:
 
         message_body = json.loads(messages[0]["Body"])
         assert message_body["time"] == "2022-01-01T00:00:00Z"
+
+
+class TestEventsInputTransformers:
+    @markers.aws.validated
+    def test_put_events_with_input_transformation_to_sqs(
+        self, put_events_with_filter_to_sqs, snapshot
+    ):
+        pattern = {"detail-type": ["customerCreated"]}
+        event_detail = {"command": "display-message", "payload": "baz"}
+        entries = [
+            {
+                "Source": "com.mycompany.myapp",
+                "DetailType": "customerCreated",
+                "Detail": json.dumps(event_detail),
+            }
+        ]
+        entries_asserts = [(entries, True)]
+
+        # input transformer with all keys in template present in message
+        input_path_map = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.command",
+        }
+        input_template = '"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>"'
+        input_transformer_match_all = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+        messages_match_all = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer_match_all,
+        )
+
+        # input transformer with keys in template missing from message
+        input_path_map_missing_key = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.notinmessage",
+        }
+        input_transformer_not_match_all = {
+            "InputPathsMap": input_path_map_missing_key,
+            "InputTemplate": input_template,
+        }
+        messages_not_match_all = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer_not_match_all,
+        )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("custom-variables-match-all", messages_match_all)
+        snapshot.match("custom-variables-not-match-all", messages_not_match_all)
