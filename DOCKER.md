@@ -9,23 +9,46 @@
   <a href="https://docs.localstack.cloud/references/coverage/" target="_blank">☑️ LocalStack coverage</a>
 </p>
 
-**Where to get help?**
+### Where to get help 
 
 Get in touch with the LocalStack Team to report 🐞 [issues](https://github.com/localstack/localstack/issues/new/choose),upvote 👍 [feature requests](https://github.com/localstack/localstack/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+),🙋🏽 ask [support questions](https://docs.localstack.cloud/getting-started/help-and-support/),or 🗣️ discuss local cloud development:
 
 - [LocalStack Slack Community](https://localstack.cloud/contact/)
 - [LocalStack Discussion Page](https://discuss.localstack.cloud/)
 - [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
+- [Getting Started - FAQ](https://docs.localstack.cloud/getting-started/faq/)
 
-**Supported base image tags:** 
+##Base Image Tags
 
-- `latest-` , `stable-` and `3.xx-` tags. Versioned tags contain their version, the `latest-` tags contain the latest release and `stable-` tags contain  stable  release.
+We do push a set of different image tags for the LocalStack Docker images. When using LocalStack, you can decide which tag you want to use.These tags have different semantics and will be updated on different occasions:
+
+- `latest` (default)
+  - This is our default tag.
+    It refers to the latest commit which has been fully tested using our extensive integration test suite.
+  - This also entails changes that are part of major releases, which means that this tag can contain breaking changes.
+  - This tag should be used if you want to stay up-to-date with the latest changes.
+- `stable`
+  - This tag refers to the latest tagged release.
+    It will be updated with every release of LocalStack.
+  - This also entails major releases, which means that this tag can contain breaking changes.
+  - This tag should be used if you want to stay up-to-date with releases, but don't necessarily need the latest and greatest changes right away.
+- `<major>` (e.g. `3`)
+  - These tags can be used to refer to the latest release of a specific major release.
+    It will be updated with every minor and patch release within this major release.
+  - This tag should be used if you want to avoid any potential breaking changes.
+- `<major>.<minor>` (e.g. `3.0`)
+  - These tags can be used to refer to the latest release of a specific minor release.
+    It will be updated with every patch release within this minor release.
+  - This tag can be used if you want to avoid any bigger changes, like new features, but still want to update to the latest bugfix release.
+- `<major>.<minor>.<patch>` (e.g. `3.0.2`)
+  - These tags can be used if you want to use a very specific release.
+    It will not be updated.
+  - This tag can be used if you really want to avoid any changes to the image (not even minimal bug fixes).
 
 **Supported Architectures:** [[more info](https://docs.localstack.cloud/references/arm64-support/)]
 - [`amd64`](https://hub.docker.com/r/localstack/localstack/tags?page=1&name=amd64), [`arm64v8`](https://hub.docker.com/r/localstack/localstack/tags?page=1&name=arm64) 
   
-**Source of this description:**  
- [github.com/localstack/localstack](https://github.com/localstack/localstack) 
+**Source of this description:**  [github.com/localstack/localstack](https://github.com/localstack/localstack) 
 
 # What is LocalStack?
 
@@ -42,7 +65,8 @@ LocalStack also provides additional features to make your life as a cloud develo
 ## How to use this image
 Please make sure that you have a working [docker environment](https://docs.docker.com/get-docker/) on your machine before moving on. You can check if docker is correctly configured on your machine by executing `docker info` in your terminal. If it does not report an error (but shows information on your Docker system), you’re good to go.
 
-###Starting LocalStack with Docker 
+###Running Containers
+ 
 
 You can directly start the LocalStack container using the Docker CLI. This method requires more manual steps and configuration, but it gives you more control over the container settings.
 
@@ -52,6 +76,7 @@ You can start the Docker container simply by executing the following docker run 
 ```console
 $ docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
 ```
+
 **For the pro version:**
 
 ```console
