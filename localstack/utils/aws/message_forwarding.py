@@ -8,7 +8,6 @@ from typing import Dict, Optional
 from moto.events.models import events_backends
 
 from localstack.aws.connect import connect_to
-from localstack.config import is_env_true
 from localstack.services.apigateway.helpers import extract_query_string_params
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
@@ -49,10 +48,14 @@ def send_event_to_target(
             role_arn=role, service_principal=source_service, region_name=region
         )
     else:
-        if is_env_true("ENFORCE_IAM"):
-            clients = connect_to(region_name=region)
-        else:
-            clients = connect_to(aws_access_key_id=account_id, region_name=region)
+        client1 = connect_to(aws_access_key_id=account_id, region_name=region)
+        client2 = connect_to(region_name=region)
+        try:
+            from localstack_ext.config import ENFORCE_IAM
+
+            clients = client2 if ENFORCE_IAM else client1
+        except ImportError:
+            clients = client1
 
     if ":lambda:" in target_arn:
         lambda_client = clients.lambda_.request_metadata(
