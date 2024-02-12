@@ -32,7 +32,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.126.0
+aws-cdk-lib==2.127.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.84.0
     # via
@@ -77,7 +77,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.85.0
+cfn-lint==0.85.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -208,6 +208,8 @@ junit-xml==1.9
     # via cfn-lint
 lazy-object-proxy==1.10.0
     # via openapi-spec-validator
+localstack-cfn-resource-providers==0.1.0
+    # via localstack-core (pyproject.toml)
 markdown-it-py==3.0.0
     # via rich
 markupsafe==2.1.5
@@ -339,6 +341,7 @@ requests==2.31.0
     # via
     #   docker
     #   jsonschema-path
+    #   localstack-cfn-resource-providers
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   opensearch-py
