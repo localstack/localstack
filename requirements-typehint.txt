@@ -40,7 +40,7 @@ aws-sam-translator==1.84.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.12.1
     # via moto-ext
-awscli==1.32.34
+awscli==1.32.39
     # via localstack-core (pyproject.toml)
 awscrt==0.20.3
     # via localstack-core (pyproject.toml)
@@ -52,14 +52,14 @@ blinker==1.7.0
     #   quart
 boto==2.49.0
     # via amazon-kclpy
-boto3==1.34.34
+boto3==1.34.39
     # via
     #   aws-sam-translator
     #   localstack-core (pyproject.toml)
     #   moto-ext
 boto3-stubs[acm,acm-pca,acm_pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.37
     # via localstack-core (pyproject.toml)
-botocore==1.34.34
+botocore==1.34.39
     # via
     #   aws-xray-sdk
     #   awscli
