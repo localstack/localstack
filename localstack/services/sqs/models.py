@@ -1018,14 +1018,11 @@ class FifoQueue(SqsQueue):
         message_group = self.get_message_group(message.message_group_id)
 
         with self.mutex:
-            previously_empty = message_group.empty()
             # put the message into the group
             message_group.push(message)
 
-            # if an older message becomes visible again in the queue, that message's group becomes visible also.
-            # The current implementation potentially removes an empty message group from the queue.
-            # Therefor the group also becomes visible if it was previously empty
-            if message.receive_count < 1 and not previously_empty:
+            # if an older message becomes visible again in the queue
+            if message.receive_count < 1:
                 return
             if message_group in self.inflight_groups:
                 self.inflight_groups.remove(message_group)
@@ -1075,6 +1072,7 @@ class FifoQueue(SqsQueue):
         start = time.time()
 
         received_groups: Set[MessageGroup] = set()
+        empty_groups: Set[MessageGroup] = set()
 
         # collect messages over potentially multiple groups
         while True:
@@ -1083,8 +1081,6 @@ class FifoQueue(SqsQueue):
             except Empty:
                 break
 
-            self.inflight_groups.add(group)
-
             if group.empty():
                 # this can be the case if all messages in the group are still invisible or
                 # if all messages of a group have been processed.
@@ -1092,10 +1088,13 @@ class FifoQueue(SqsQueue):
                 #  want to block the group
                 # TODO: check behavior in case it happens if all messages were removed from a group due to message
                 #  retention period.
+                empty_groups.add(group)
                 timeout -= time.time() - start
                 if timeout < 0:
                     timeout = 0
                 continue
+
+            self.inflight_groups.add(group)
 
             received_groups.add(group)
 
@@ -1157,6 +1156,11 @@ class FifoQueue(SqsQueue):
                     self._put_message(message)
                 else:
                     self.inflight.add(message)
+
+        # finally, add all empty groups back to the queue since there are potentially no inflight messages
+        # to put them back
+        for group in empty_groups:
+            self.message_group_queue.put_nowait(group)
 
         return result
 
