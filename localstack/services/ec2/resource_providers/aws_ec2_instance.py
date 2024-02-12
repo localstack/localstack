@@ -222,12 +222,15 @@ class EC2InstanceProvider(ResourceProvider[EC2InstanceProperties]):
 
         if not request.custom_context.get(REPEATED_INVOCATION):
             # this is the first time this callback is invoked
-            # TODO: defaults
             # TODO: idempotency
             params = util.select_attributes(
                 model,
                 ["InstanceType", "SecurityGroups", "KeyName", "ImageId", "MaxCount", "MinCount"],
             )
+
+            # This Parameters are not defined in the schema but are required by the API
+            params["MaxCount"] = 1
+            params["MinCount"] = 1
 
             if model.get("UserData"):
                 model["UserData"] = to_str(base64.b64decode(model["UserData"]))

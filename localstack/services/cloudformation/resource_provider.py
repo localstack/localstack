@@ -113,6 +113,7 @@ PROVIDER_DEFAULTS = {
     "AWS::EC2::DHCPOptions": "ResourceProvider",
     "AWS::EC2::Instance": "ResourceProvider",
     "AWS::EC2::InternetGateway": "ResourceProvider",
+    "AWS::EC2::KeyPair": "ResourceProvider",
     "AWS::EC2::NatGateway": "ResourceProvider",
     "AWS::EC2::NetworkAcl": "ResourceProvider",
     "AWS::EC2::Route": "ResourceProvider",

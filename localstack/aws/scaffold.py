@@ -420,6 +420,12 @@ def generate_service_api(output, service: ServiceModel, doc=True):
             param_list = ", ".join([f"{k}: {v}" for k, v in parameters.items()])
             output.write(f'    @handler("{operation.name}")\n')
 
+        # add the **kwargs in the end
+        if param_list:
+            param_list += ", **kwargs"
+        else:
+            param_list = "**kwargs"
+
         output.write(
             f"    def {fn_name}(self, context: RequestContext, {param_list}) -> {output_shape}:\n"
         )

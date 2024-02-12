@@ -35,6 +35,7 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
         vpc: VPC = None,
         hosted_zone_config: HostedZoneConfig = None,
         delegation_set_id: ResourceId = None,
+        **kwargs,
     ) -> CreateHostedZoneResponse:
         response = call_moto(context)
 
@@ -50,12 +51,12 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
 
         return response
 
-    def get_change(self, context: RequestContext, id: ResourceId) -> GetChangeResponse:
+    def get_change(self, context: RequestContext, id: ResourceId, **kwargs) -> GetChangeResponse:
         change_info = ChangeInfo(Id=id, Status=ChangeStatus.INSYNC, SubmittedAt=datetime.now())
         return GetChangeResponse(ChangeInfo=change_info)
 
     def get_health_check(
-        self, context: RequestContext, health_check_id: HealthCheckId
+        self, context: RequestContext, health_check_id: HealthCheckId, **kwargs
     ) -> GetHealthCheckResponse:
         health_check: Optional[route53_models.HealthCheck] = route53_backends[context.account_id][
             "global"
@@ -87,7 +88,7 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
         )
 
     def delete_health_check(
-        self, context: RequestContext, health_check_id: HealthCheckId
+        self, context: RequestContext, health_check_id: HealthCheckId, **kwargs
     ) -> DeleteHealthCheckResponse:
         if health_check_id not in route53_backends[context.account_id]["global"].health_checks:
             raise NoSuchHealthCheck(

@@ -1,5 +1,7 @@
+import dataclasses
 import logging
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Type
 
 from plugin import PluginManager
@@ -117,6 +119,13 @@ class RuntimeExecutor(ABC):
 class LambdaRuntimeException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
+
+
+@dataclasses.dataclass
+class LambdaPrebuildContext:
+    docker_file_content: str
+    context_path: Path
+    function_version: FunctionVersion
 
 
 EXECUTOR_PLUGIN_MANAGER: PluginManager[Type[RuntimeExecutor]] = PluginManager(

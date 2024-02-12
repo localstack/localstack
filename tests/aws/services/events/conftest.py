@@ -1,9 +1,11 @@
 import json
+from typing import Tuple
 
 import pytest
 
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 
 
 @pytest.fixture
@@ -114,3 +116,155 @@ def clean_up(aws_client):
             call_safe(_delete_log_group)
 
     yield _clean_up
+
+
+@pytest.fixture
+def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
+    queue_urls = []
+    event_bus_names = []
+    rule_names = []
+    target_ids = []
+
+    def _put_events_with_filter_to_sqs(
+        pattern: dict,
+        entries_asserts: list[Tuple[list[dict], bool]],
+        input_path: str = None,
+        input_transformer: dict[dict, str] = None,
+    ):
+        queue_name = f"queue-{short_uid()}"
+        rule_name = f"rule-{short_uid()}"
+        target_id = f"target-{short_uid()}"
+        bus_name = f"bus-{short_uid()}"
+
+        sqs_client = aws_client.sqs
+        queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        queue_urls.append(queue_url)
+        queue_arn = sqs_get_queue_arn(queue_url)
+        policy = {
+            "Version": "2012-10-17",
+            "Id": f"sqs-eventbridge-{short_uid()}",
+            "Statement": [
+                {
+                    "Sid": f"SendMessage-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sqs:SendMessage",
+                    "Resource": queue_arn,
+                }
+            ],
+        }
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
+        )
+
+        events_client = aws_client.events
+        events_client.create_event_bus(Name=bus_name)
+        event_bus_names.append(bus_name)
+
+        events_client.put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps(pattern),
+        )
+        rule_names.append(rule_name)
+        kwargs = {"InputPath": input_path} if input_path else {}
+        if input_transformer:
+            kwargs["InputTransformer"] = input_transformer
+        response = events_client.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
+        )
+        target_ids.append(target_id)
+
+        assert response["FailedEntryCount"] == 0
+        assert response["FailedEntries"] == []
+
+        messages = []
+        for entry_asserts in entries_asserts:
+            entries = entry_asserts[0]
+            for entry in entries:
+                entry["EventBusName"] = bus_name
+            message = _put_entries_assert_results_sqs(
+                events_client,
+                sqs_client,
+                queue_url,
+                entries=entries,
+                should_match=entry_asserts[1],
+            )
+            if message is not None:
+                messages.extend(message)
+
+        return messages
+
+    yield _put_events_with_filter_to_sqs
+
+    for queue_url, event_bus_name, rule_name, target_id in zip(
+        queue_urls, event_bus_names, rule_names, target_ids
+    ):
+        clean_up(
+            bus_name=event_bus_name,
+            rule_name=rule_name,
+            target_ids=target_id,
+            queue_url=queue_url,
+        )
+
+
+def _put_entries_assert_results_sqs(
+    events_client, sqs_client, queue_url: str, entries: list[dict], should_match: bool
+):
+    """
+    Put events to the event bus, receives the messages resulting from the event in the sqs queue and deletes them out of the queue.
+    If should_match is True, the content of the messages is asserted to be the same as the events put to the event bus.
+
+    :param events_client: boto3.client("events")
+    :param sqs_client: boto3.client("sqs")
+    :param queue_url: URL of the sqs queue
+    :param entries: List of entries to put to the event bus, each entry must
+                    be a dict that contains the keys: "Source", "DetailType", "Detail"
+    :param should_match:
+
+    :return: Messages from the queue if should_match is True, otherwise None
+    """
+    response = events_client.put_events(Entries=entries)
+    assert not response.get("FailedEntryCount")
+
+    def get_message(queue_url):
+        resp = sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=5, MaxNumberOfMessages=1
+        )
+        messages = resp.get("Messages")
+        if messages:
+            for message in messages:
+                receipt_handle = message["ReceiptHandle"]
+                sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+        if should_match:
+            assert len(messages) == 1
+        return messages
+
+    messages = retry(get_message, retries=5, queue_url=queue_url)
+
+    if should_match:
+        actual_event = json.loads(messages[0]["Body"])
+        if isinstance(actual_event, dict) and "detail" in actual_event:
+            assert_valid_event(actual_event)
+        return messages
+    else:
+        assert not messages
+        return None
+
+
+def assert_valid_event(event):
+    expected_fields = (
+        "version",
+        "id",
+        "detail-type",
+        "source",
+        "account",
+        "time",
+        "region",
+        "resources",
+        "detail",
+    )
+    for field in expected_fields:
+        assert field in event

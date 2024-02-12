@@ -606,6 +606,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: KeyIdType,
         grant_id: GrantIdType,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> None:
         # TODO add support for "dry_run"
         key_account_id, key_region_name, key_id = self._parse_key_id(key_id, context)
@@ -626,6 +627,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: KeyIdType = None,
         grant_id: GrantIdType = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> None:
         # TODO add support for "dry_run"
         if not grant_token and (not grant_id or not key_id):
@@ -660,6 +662,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         retiring_principal: PrincipalIdType,
         limit: LimitType = None,
         marker: MarkerType = None,
+        **kwargs,
     ) -> ListGrantsResponse:
         if not retiring_principal:
             raise ValidationError("Required input parameter 'RetiringPrincipal' not specified")
@@ -681,7 +684,11 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return ListGrantsResponse(Grants=page, **kwargs)
 
     def get_public_key(
-        self, context: RequestContext, key_id: KeyIdType, grant_tokens: GrantTokenList = None
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        grant_tokens: GrantTokenList = None,
+        **kwargs,
     ) -> GetPublicKeyResponse:
         # According to https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html, GetPublicKey is supposed
         # to fail for disabled keys. But it actually doesn't fail in AWS.
@@ -733,6 +740,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         grant_tokens: GrantTokenList = None,
         recipient: RecipientInfo = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> GenerateDataKeyPairResponse:
         # TODO add support for "dry_run"
         result = self._generate_data_key_pair(context, key_id, key_pair_spec, encryption_context)
@@ -769,6 +777,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         encryption_context: EncryptionContextType = None,
         grant_tokens: GrantTokenList = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> GenerateDataKeyPairWithoutPlaintextResponse:
         # TODO add support for "dry_run"
         result = self._generate_data_key_pair(context, key_id, key_pair_spec, encryption_context)
@@ -911,6 +920,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         destination_encryption_algorithm: EncryptionAlgorithmSpec = None,
         grant_tokens: GrantTokenList = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> ReEncryptResponse:
         # TODO: when implementing, ensure cross-account support for source_key_id and destination_key_id
         raise NotImplementedError
@@ -924,6 +934,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         grant_tokens: GrantTokenList = None,
         encryption_algorithm: EncryptionAlgorithmSpec = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> EncryptResponse:
         # TODO add support for "dry_run"
         account_id, region_name, key_id = self._parse_key_id(key_id, context)
@@ -953,6 +964,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         encryption_algorithm: EncryptionAlgorithmSpec = None,
         recipient: RecipientInfo = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> DecryptResponse:
         # In AWS, key_id is only supplied for data encrypted with an asymmetrical algorithm. For symmetrical
         # encryption, key_id is taken from the encrypted data itself.
@@ -1000,6 +1012,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: KeyIdType,
         wrapping_algorithm: AlgorithmSpec,
         wrapping_key_spec: WrappingKeySpec,
+        **kwargs,
     ) -> GetParametersForImportResponse:
         store = self._get_store(context.account_id, context.region)
         # KeyId can potentially hold one of multiple different types of key identifiers. get_key finds a key no
@@ -1046,6 +1059,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         encrypted_key_material: CiphertextType,
         valid_to: DateType = None,
         expiration_model: ExpirationModelType = None,
+        **kwargs,
     ) -> ImportKeyMaterialResponse:
         store = self._get_store(context.account_id, context.region)
         import_token = to_str(import_token)
@@ -1097,7 +1111,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
         return ImportKeyMaterialResponse()
 
-    def delete_imported_key_material(self, context: RequestContext, key_id: KeyIdType) -> None:
+    def delete_imported_key_material(
+        self, context: RequestContext, key_id: KeyIdType, **kwargs
+    ) -> None:
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1175,6 +1191,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: KeyIdType = None,
         limit: LimitType = None,
         marker: MarkerType = None,
+        **kwargs,
     ) -> ListAliasesResponse:
         store = self._get_store(context.account_id, context.region)
         if key_id:

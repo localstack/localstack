@@ -10,6 +10,8 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
 )
+from localstack.services.stepfunctions.asl.component.state.state_fail.cause_decl import CauseDecl
+from localstack.services.stepfunctions.asl.component.state.state_fail.error_decl import ErrorDecl
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
     WaitFunction,
 )
@@ -23,6 +25,8 @@ class StateProps(TypedProps):
         Timeout,
         Heartbeat,
         MaxItemsDecl,
+        ErrorDecl,
+        CauseDecl,
     }
     name: str
 

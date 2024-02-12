@@ -40,6 +40,48 @@ class TestSnfBase:
         )
 
     @markers.aws.validated
+    def test_state_fail_path(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_RAISE_FAILURE_PATH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Error": "error string", "Cause": "cause string"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_state_fail_intrinsic(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_RAISE_FAILURE_INTRINSIC)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Error": "error string", "Cause": "cause string"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_state_fail_empty(
         self,
         aws_client,

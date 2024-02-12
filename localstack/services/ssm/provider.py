@@ -121,6 +121,7 @@ class SsmProvider(SsmApi, ABC):
         context: RequestContext,
         names: ParameterNameList,
         with_decryption: Boolean = None,
+        **kwargs,
     ) -> GetParametersResult:
         if SsmProvider._has_secrets(names):
             return SsmProvider._get_params_and_secrets(context.account_id, context.region, names)
@@ -137,7 +138,7 @@ class SsmProvider(SsmApi, ABC):
         return GetParametersResult(**res)
 
     def put_parameter(
-        self, context: RequestContext, request: PutParameterRequest
+        self, context: RequestContext, request: PutParameterRequest, **kwargs
     ) -> PutParameterResult:
         name = request["Name"]
         nname = SsmProvider._normalize_name(name)
@@ -154,6 +155,7 @@ class SsmProvider(SsmApi, ABC):
         context: RequestContext,
         name: PSParameterName,
         with_decryption: Boolean = None,
+        **kwargs,
     ) -> GetParameterResult:
         result = None
 
@@ -177,7 +179,7 @@ class SsmProvider(SsmApi, ABC):
         return GetParameterResult(**result)
 
     def delete_parameter(
-        self, context: RequestContext, name: PSParameterName
+        self, context: RequestContext, name: PSParameterName, **kwargs
     ) -> DeleteParameterResult:
         SsmProvider._notify_event_subscribers(context.account_id, context.region, name, "Delete")
         call_moto(context)  # Return type is an emtpy type.
@@ -189,6 +191,7 @@ class SsmProvider(SsmApi, ABC):
         name: PSParameterName,
         labels: ParameterLabelList,
         parameter_version: PSParameterVersion = None,
+        **kwargs,
     ) -> LabelParameterVersionResult:
         SsmProvider._notify_event_subscribers(
             context.account_id, context.region, name, "LabelParameterVersion"
@@ -211,13 +214,12 @@ class SsmProvider(SsmApi, ABC):
         sources: PatchSourceList = None,
         client_token: ClientToken = None,
         tags: TagList = None,
+        **kwargs,
     ) -> CreatePatchBaselineResult:
         return CreatePatchBaselineResult(**call_moto(context))
 
     def delete_patch_baseline(
-        self,
-        context: RequestContext,
-        baseline_id: BaselineId,
+        self, context: RequestContext, baseline_id: BaselineId, **kwargs
     ) -> DeletePatchBaselineResult:
         return DeletePatchBaselineResult(**call_moto(context))
 
@@ -227,6 +229,7 @@ class SsmProvider(SsmApi, ABC):
         filters: PatchOrchestratorFilterList = None,
         max_results: PatchBaselineMaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> DescribePatchBaselinesResult:
         return DescribePatchBaselinesResult(**call_moto(context))
 
@@ -240,6 +243,7 @@ class SsmProvider(SsmApi, ABC):
         name: MaintenanceWindowName = None,
         description: MaintenanceWindowDescription = None,
         client_token: ClientToken = None,
+        **kwargs,
     ) -> RegisterTargetWithMaintenanceWindowResult:
         return RegisterTargetWithMaintenanceWindowResult(**call_moto(context))
 
@@ -249,6 +253,7 @@ class SsmProvider(SsmApi, ABC):
         window_id: MaintenanceWindowId,
         window_target_id: MaintenanceWindowTargetId,
         safe: Boolean = None,
+        **kwargs,
     ) -> DeregisterTargetFromMaintenanceWindowResult:
         return DeregisterTargetFromMaintenanceWindowResult(**call_moto(context))
 
@@ -259,6 +264,7 @@ class SsmProvider(SsmApi, ABC):
         filters: MaintenanceWindowFilterList = None,
         max_results: MaintenanceWindowMaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeMaintenanceWindowTargetsResult:
         return DescribeMaintenanceWindowTargetsResult(**call_moto(context))
 
@@ -277,11 +283,12 @@ class SsmProvider(SsmApi, ABC):
         schedule_offset: MaintenanceWindowOffset = None,
         client_token: ClientToken = None,
         tags: TagList = None,
+        **kwargs,
     ) -> CreateMaintenanceWindowResult:
         return CreateMaintenanceWindowResult(**call_moto(context))
 
     def delete_maintenance_window(
-        self, context: RequestContext, window_id: MaintenanceWindowId
+        self, context: RequestContext, window_id: MaintenanceWindowId, **kwargs
     ) -> DeleteMaintenanceWindowResult:
         return DeleteMaintenanceWindowResult(**call_moto(context))
 
@@ -291,6 +298,7 @@ class SsmProvider(SsmApi, ABC):
         filters: MaintenanceWindowFilterList = None,
         max_results: MaintenanceWindowMaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeMaintenanceWindowsResult:
         return DescribeMaintenanceWindowsResult(**call_moto(context))
 
@@ -313,6 +321,7 @@ class SsmProvider(SsmApi, ABC):
         client_token: ClientToken = None,
         cutoff_behavior: MaintenanceWindowTaskCutoffBehavior = None,
         alarm_configuration: AlarmConfiguration = None,
+        **kwargs,
     ) -> RegisterTaskWithMaintenanceWindowResult:
         return RegisterTaskWithMaintenanceWindowResult(**call_moto(context))
 
@@ -321,6 +330,7 @@ class SsmProvider(SsmApi, ABC):
         context: RequestContext,
         window_id: MaintenanceWindowId,
         window_task_id: MaintenanceWindowTaskId,
+        **kwargs,
     ) -> DeregisterTaskFromMaintenanceWindowResult:
         return DeregisterTaskFromMaintenanceWindowResult(**call_moto(context))
 
@@ -331,6 +341,7 @@ class SsmProvider(SsmApi, ABC):
         filters: MaintenanceWindowFilterList = None,
         max_results: MaintenanceWindowMaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeMaintenanceWindowTasksResult:
         return DescribeMaintenanceWindowTasksResult(**call_moto(context))
 
@@ -438,7 +449,7 @@ class SsmProvider(SsmApi, ABC):
 
 
 @patch(SimpleSystemManagerBackend.get_maintenance_window)
-def get_maintenance_window(fn, self, window_id):
+def get_maintenance_window(fn, self, window_id, **kwargs):
     """Get a maintenance window by ID."""
     store = ssm_backends[self.account_id][self.region_name]
     if not store.windows.get(window_id):
@@ -447,7 +458,7 @@ def get_maintenance_window(fn, self, window_id):
 
 
 @patch(SimpleSystemManagerBackend.delete_maintenance_window)
-def delete_maintenance_window(fn, self, window_id):
+def delete_maintenance_window(fn, self, window_id, **kwargs):
     """Delete a maintenance window by ID."""
     store = ssm_backends[self.account_id][self.region_name]
     if not store.windows.get(window_id):
