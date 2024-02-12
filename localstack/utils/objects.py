@@ -207,3 +207,28 @@ def singleton_factory(factory: Callable[[], _T]) -> Callable[[], _T]:
     _singleton_factory.clear = instance.clear
 
     return _singleton_factory
+
+
+def get_value_from_path(data, path):
+    keys = path.split(".")
+    try:
+        result = functools.reduce(dict.__getitem__, keys, data)
+        return result
+    except KeyError:
+        # Handle the case where the path is not valid for the given dictionary
+        return None
+
+
+def set_value_at_path(data, path, new_value):
+    keys = path.split(".")
+    last_key = keys[-1]
+
+    # Traverse the dictionary to the second-to-last level
+    nested_dict = functools.reduce(dict.__getitem__, keys[:-1], data)
+
+    try:
+        # Set the new value
+        nested_dict[last_key] = new_value
+    except KeyError:
+        # Handle the case where the path is not valid for the given dictionary
+        raise ValueError(f"Invalid path: {path}")
