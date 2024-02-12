@@ -134,6 +134,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ElasticLoadBalancingV2::TargetGroup": "ResourceProvider",
     "AWS::ElasticLoadBalancingV2::ListenerRule": "ResourceProvider",
     "AWS::ElasticLoadBalancingV2::Listener": "ResourceProvider",
+    "AWS::ElasticLoadBalancingV2::LoadBalancer": "ResourceProvider",
     "AWS::Events::Connection": "ResourceProvider",
     "AWS::Events::EventBus": "ResourceProvider",
     "AWS::Events::EventBusPolicy": "ResourceProvider",
