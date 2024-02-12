@@ -1179,7 +1179,7 @@ class TestSqsProvider:
             QueueUrl=queue_url, ReceiptHandle=resp["Messages"][0]["ReceiptHandle"]
         )
 
-        # call receive on an empty message group, removing it from the message group queue
+        # call receive on the now empty message group
         resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
         snapshot.match("empty-fifo-receive", resp)
 
