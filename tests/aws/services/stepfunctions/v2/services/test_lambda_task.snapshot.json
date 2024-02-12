@@ -549,7 +549,7 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[00]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[0_0]": {
     "recorded-date": "04-08-2023, 16:13:53",
     "recorded-content": {
       "get_execution_history": {
@@ -644,7 +644,7 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[01]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task.py::TestTaskLambda::test_invoke_json_values[0_1]": {
     "recorded-date": "04-08-2023, 16:14:12",
     "recorded-content": {
       "get_execution_history": {

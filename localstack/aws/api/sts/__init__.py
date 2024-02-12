@@ -271,6 +271,7 @@ class StsApi:
         token_code: tokenCodeType = None,
         source_identity: sourceIdentityType = None,
         provided_contexts: ProvidedContextsListType = None,
+        **kwargs
     ) -> AssumeRoleResponse:
         raise NotImplementedError
 
@@ -284,6 +285,7 @@ class StsApi:
         policy_arns: policyDescriptorListType = None,
         policy: sessionPolicyDocumentType = None,
         duration_seconds: roleDurationSecondsType = None,
+        **kwargs
     ) -> AssumeRoleWithSAMLResponse:
         raise NotImplementedError
 
@@ -298,26 +300,24 @@ class StsApi:
         policy_arns: policyDescriptorListType = None,
         policy: sessionPolicyDocumentType = None,
         duration_seconds: roleDurationSecondsType = None,
+        **kwargs
     ) -> AssumeRoleWithWebIdentityResponse:
         raise NotImplementedError
 
     @handler("DecodeAuthorizationMessage")
     def decode_authorization_message(
-        self, context: RequestContext, encoded_message: encodedMessageType
+        self, context: RequestContext, encoded_message: encodedMessageType, **kwargs
     ) -> DecodeAuthorizationMessageResponse:
         raise NotImplementedError
 
     @handler("GetAccessKeyInfo")
     def get_access_key_info(
-        self, context: RequestContext, access_key_id: accessKeyIdType
+        self, context: RequestContext, access_key_id: accessKeyIdType, **kwargs
     ) -> GetAccessKeyInfoResponse:
         raise NotImplementedError
 
     @handler("GetCallerIdentity")
-    def get_caller_identity(
-        self,
-        context: RequestContext,
-    ) -> GetCallerIdentityResponse:
+    def get_caller_identity(self, context: RequestContext, **kwargs) -> GetCallerIdentityResponse:
         raise NotImplementedError
 
     @handler("GetFederationToken")
@@ -329,6 +329,7 @@ class StsApi:
         policy_arns: policyDescriptorListType = None,
         duration_seconds: durationSecondsType = None,
         tags: tagListType = None,
+        **kwargs
     ) -> GetFederationTokenResponse:
         raise NotImplementedError
 
@@ -339,5 +340,6 @@ class StsApi:
         duration_seconds: durationSecondsType = None,
         serial_number: serialNumberType = None,
         token_code: tokenCodeType = None,
+        **kwargs
     ) -> GetSessionTokenResponse:
         raise NotImplementedError

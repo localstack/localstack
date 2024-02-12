@@ -163,6 +163,7 @@ class IamProvider(IamApi):
         resource_handling_option: ResourceHandlingOptionType = None,
         max_items: maxItemsType = None,
         marker: markerType = None,
+        **kwargs,
     ) -> SimulatePolicyResponse:
         backend = get_iam_backend(context)
         policy = backend.get_policy(policy_source_arn)
@@ -183,7 +184,7 @@ class IamProvider(IamApi):
         response["EvaluationResults"] = evaluations
         return response
 
-    def delete_policy(self, context: RequestContext, policy_arn: arnType) -> None:
+    def delete_policy(self, context: RequestContext, policy_arn: arnType, **kwargs) -> None:
         backend = get_iam_backend(context)
         if backend.managed_policies.get(policy_arn):
             backend.managed_policies.pop(policy_arn, None)
@@ -191,7 +192,7 @@ class IamProvider(IamApi):
             raise NoSuchEntityException("Policy {0} was not found.".format(policy_arn))
 
     def detach_role_policy(
-        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
+        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
     ) -> None:
         backend = get_iam_backend(context)
         try:
@@ -228,6 +229,7 @@ class IamProvider(IamApi):
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs,
     ) -> ListRolesResponse:
         backend = get_iam_backend(context)
         moto_roles = backend.roles.values()
@@ -256,6 +258,7 @@ class IamProvider(IamApi):
         group_name: groupNameType,
         new_path: pathType = None,
         new_group_name: groupNameType = None,
+        **kwargs,
     ) -> None:
         new_group_name = new_group_name or group_name
         backend = get_iam_backend(context)
@@ -270,6 +273,7 @@ class IamProvider(IamApi):
         instance_profile_name: instanceProfileNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs,
     ) -> ListInstanceProfileTagsResponse:
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
@@ -282,6 +286,7 @@ class IamProvider(IamApi):
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         tags: tagListType,
+        **kwargs,
     ) -> None:
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
@@ -293,6 +298,7 @@ class IamProvider(IamApi):
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         tag_keys: tagKeyListType,
+        **kwargs,
     ) -> None:
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
@@ -305,6 +311,7 @@ class IamProvider(IamApi):
         aws_service_name: groupNameType,
         description: roleDescriptionType = None,
         custom_suffix: customSuffixType = None,
+        **kwargs,
     ) -> CreateServiceLinkedRoleResponse:
         # TODO: test
         # TODO: how to support "CustomSuffix" API request parameter?
@@ -340,7 +347,7 @@ class IamProvider(IamApi):
         return CreateServiceLinkedRoleResponse(Role=res_role)
 
     def delete_service_linked_role(
-        self, context: RequestContext, role_name: roleNameType
+        self, context: RequestContext, role_name: roleNameType, **kwargs
     ) -> DeleteServiceLinkedRoleResponse:
         # TODO: test
         backend = get_iam_backend(context)
@@ -348,13 +355,17 @@ class IamProvider(IamApi):
         return DeleteServiceLinkedRoleResponse(DeletionTaskId=short_uid())
 
     def get_service_linked_role_deletion_status(
-        self, context: RequestContext, deletion_task_id: DeletionTaskIdType
+        self, context: RequestContext, deletion_task_id: DeletionTaskIdType, **kwargs
     ) -> GetServiceLinkedRoleDeletionStatusResponse:
         # TODO: test
         return GetServiceLinkedRoleDeletionStatusResponse(Status=DeletionTaskStatusType.SUCCEEDED)
 
     def put_user_permissions_boundary(
-        self, context: RequestContext, user_name: userNameType, permissions_boundary: arnType
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        permissions_boundary: arnType,
+        **kwargs,
     ) -> None:
         if user := get_iam_backend(context).users.get(user_name):
             user.permissions_boundary = permissions_boundary
@@ -362,7 +373,7 @@ class IamProvider(IamApi):
             raise NoSuchEntityException()
 
     def delete_user_permissions_boundary(
-        self, context: RequestContext, user_name: userNameType
+        self, context: RequestContext, user_name: userNameType, **kwargs
     ) -> None:
         if user := get_iam_backend(context).users.get(user_name):
             if hasattr(user, "permissions_boundary"):
@@ -377,6 +388,7 @@ class IamProvider(IamApi):
         path: pathType = None,
         permissions_boundary: arnType = None,
         tags: tagListType = None,
+        **kwargs,
     ) -> CreateUserResponse:
         response = call_moto(context=context)
         user = get_iam_backend(context).get_user(user_name)
@@ -389,7 +401,7 @@ class IamProvider(IamApi):
         return response
 
     def get_user(
-        self, context: RequestContext, user_name: existingUserNameType = None
+        self, context: RequestContext, user_name: existingUserNameType = None, **kwargs
     ) -> GetUserResponse:
         response = call_moto(context=context)
         moto_user_name = response["User"]["UserName"]
@@ -427,14 +439,14 @@ class IamProvider(IamApi):
         return response
 
     def attach_role_policy(
-        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
+        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
     ) -> None:
         if not POLICY_ARN_REGEX.match(policy_arn):
             raise InvalidInputException(f"ARN {policy_arn} is not valid.")
         return call_moto(context=context)
 
     def attach_user_policy(
-        self, context: RequestContext, user_name: userNameType, policy_arn: arnType
+        self, context: RequestContext, user_name: userNameType, policy_arn: arnType, **kwargs
     ) -> None:
         if not POLICY_ARN_REGEX.match(policy_arn):
             raise InvalidInputException(f"ARN {policy_arn} is not valid.")

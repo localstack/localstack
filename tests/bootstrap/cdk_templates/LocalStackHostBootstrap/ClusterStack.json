@@ -18,7 +18,7 @@
           "EnforceHTTPS": false,
           "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07"
         },
-        "DomainName": "domain-cf686810",
+        "DomainName": "domain-938a03ea",
         "EBSOptions": {
           "EBSEnabled": true,
           "VolumeSize": 10,
@@ -132,7 +132,7 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "S3Bucket": "localstack-testing-000000000000-us-east-1",
+          "S3Bucket": "bootstrap-bucket",
           "S3Key": "fn-apihandlerfn"
         },
         "Environment": {
@@ -439,7 +439,7 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
-          "S3Bucket": "localstack-testing-000000000000-us-east-1",
+          "S3Bucket": "bootstrap-bucket",
           "S3Key": "fn-eventhandlerfn"
         },
         "Environment": {
