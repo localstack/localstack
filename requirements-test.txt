@@ -105,9 +105,7 @@ cryptography==42.0.2
     #   python-jose
     #   sshpubkeys
 decorator==5.1.1
-    # via
-    #   jsonpath-ng
-    #   jsonpath-rw
+    # via jsonpath-rw
 deepdiff==6.7.1
     # via
     #   localstack-core (pyproject.toml)
@@ -187,7 +185,7 @@ jsonpatch==1.33
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
-jsonpath-ng==1.5.3
+jsonpath-ng==1.6.1
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-snapshot
@@ -213,7 +211,7 @@ junit-xml==1.9
     # via cfn-lint
 lazy-object-proxy==1.10.0
     # via openapi-spec-validator
-localstack-snapshot==0.1.0
+localstack-snapshot==0.1.1
     # via localstack-core (pyproject.toml)
 markdown-it-py==3.0.0
     # via rich
@@ -383,7 +381,6 @@ six==1.16.0
     # via
     #   airspeed-ext
     #   ecdsa
-    #   jsonpath-ng
     #   jsonpath-rw
     #   junit-xml
     #   opensearch-py
