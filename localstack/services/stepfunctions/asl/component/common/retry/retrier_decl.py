@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 from typing import Final, Optional
 
+from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.error_name.error_equals_decl import (
     ErrorEqualsDecl,
 )
@@ -24,19 +25,25 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 
 class RetrierDecl(EvalComponent):
+    error_equals: Final[ErrorEqualsDecl]
+    interval_seconds: Final[IntervalSecondsDecl]
+    max_attempts: Final[MaxAttemptsDecl]
+    backoff_rate: Final[BackoffRateDecl]
+    comment: Final[Optional[Comment]]
+
     def __init__(
         self,
         error_equals: ErrorEqualsDecl,
         interval_seconds: Optional[IntervalSecondsDecl] = None,
         max_attempts: Optional[MaxAttemptsDecl] = None,
         backoff_rate: Optional[BackoffRateDecl] = None,
+        comment: Optional[Comment] = None,
     ):
-        self.error_equals: Final[ErrorEqualsDecl] = error_equals
-        self.interval_seconds: Final[IntervalSecondsDecl] = (
-            interval_seconds or IntervalSecondsDecl()
-        )
-        self.max_attempts: Final[MaxAttemptsDecl] = max_attempts or MaxAttemptsDecl()
-        self.backoff_rate: Final[BackoffRateDecl] = backoff_rate or BackoffRateDecl()
+        self.error_equals = error_equals
+        self.interval_seconds = interval_seconds or IntervalSecondsDecl()
+        self.max_attempts = max_attempts or MaxAttemptsDecl()
+        self.backoff_rate = backoff_rate or BackoffRateDecl()
+        self.comment = comment
 
         self._attempts_counter: int = 0
         self._next_interval_seconds: float = self.interval_seconds.seconds
@@ -53,6 +60,7 @@ class RetrierDecl(EvalComponent):
             interval_seconds=props.get(IntervalSecondsDecl),
             max_attempts=props.get(MaxAttemptsDecl),
             backoff_rate=props.get(BackoffRateDecl),
+            comment=props.get(Comment),
         )
 
     def _eval_body(self, env: Environment) -> None:

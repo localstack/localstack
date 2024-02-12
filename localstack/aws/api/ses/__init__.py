@@ -1381,12 +1381,13 @@ class SesApi:
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         original_rule_set_name: ReceiptRuleSetName,
+        **kwargs
     ) -> CloneReceiptRuleSetResponse:
         raise NotImplementedError
 
     @handler("CreateConfigurationSet")
     def create_configuration_set(
-        self, context: RequestContext, configuration_set: ConfigurationSet
+        self, context: RequestContext, configuration_set: ConfigurationSet, **kwargs
     ) -> CreateConfigurationSetResponse:
         raise NotImplementedError
 
@@ -1396,6 +1397,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         event_destination: EventDestination,
+        **kwargs
     ) -> CreateConfigurationSetEventDestinationResponse:
         raise NotImplementedError
 
@@ -1405,6 +1407,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         tracking_options: TrackingOptions,
+        **kwargs
     ) -> CreateConfigurationSetTrackingOptionsResponse:
         raise NotImplementedError
 
@@ -1418,12 +1421,13 @@ class SesApi:
         template_content: TemplateContent,
         success_redirection_url: SuccessRedirectionURL,
         failure_redirection_url: FailureRedirectionURL,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("CreateReceiptFilter")
     def create_receipt_filter(
-        self, context: RequestContext, filter: ReceiptFilter
+        self, context: RequestContext, filter: ReceiptFilter, **kwargs
     ) -> CreateReceiptFilterResponse:
         raise NotImplementedError
 
@@ -1434,24 +1438,25 @@ class SesApi:
         rule_set_name: ReceiptRuleSetName,
         rule: ReceiptRule,
         after: ReceiptRuleName = None,
+        **kwargs
     ) -> CreateReceiptRuleResponse:
         raise NotImplementedError
 
     @handler("CreateReceiptRuleSet")
     def create_receipt_rule_set(
-        self, context: RequestContext, rule_set_name: ReceiptRuleSetName
+        self, context: RequestContext, rule_set_name: ReceiptRuleSetName, **kwargs
     ) -> CreateReceiptRuleSetResponse:
         raise NotImplementedError
 
     @handler("CreateTemplate")
     def create_template(
-        self, context: RequestContext, template: Template
+        self, context: RequestContext, template: Template, **kwargs
     ) -> CreateTemplateResponse:
         raise NotImplementedError
 
     @handler("DeleteConfigurationSet")
     def delete_configuration_set(
-        self, context: RequestContext, configuration_set_name: ConfigurationSetName
+        self, context: RequestContext, configuration_set_name: ConfigurationSetName, **kwargs
     ) -> DeleteConfigurationSetResponse:
         raise NotImplementedError
 
@@ -1461,67 +1466,71 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         event_destination_name: EventDestinationName,
+        **kwargs
     ) -> DeleteConfigurationSetEventDestinationResponse:
         raise NotImplementedError
 
     @handler("DeleteConfigurationSetTrackingOptions")
     def delete_configuration_set_tracking_options(
-        self, context: RequestContext, configuration_set_name: ConfigurationSetName
+        self, context: RequestContext, configuration_set_name: ConfigurationSetName, **kwargs
     ) -> DeleteConfigurationSetTrackingOptionsResponse:
         raise NotImplementedError
 
     @handler("DeleteCustomVerificationEmailTemplate")
     def delete_custom_verification_email_template(
-        self, context: RequestContext, template_name: TemplateName
+        self, context: RequestContext, template_name: TemplateName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteIdentity")
     def delete_identity(
-        self, context: RequestContext, identity: Identity
+        self, context: RequestContext, identity: Identity, **kwargs
     ) -> DeleteIdentityResponse:
         raise NotImplementedError
 
     @handler("DeleteIdentityPolicy")
     def delete_identity_policy(
-        self, context: RequestContext, identity: Identity, policy_name: PolicyName
+        self, context: RequestContext, identity: Identity, policy_name: PolicyName, **kwargs
     ) -> DeleteIdentityPolicyResponse:
         raise NotImplementedError
 
     @handler("DeleteReceiptFilter")
     def delete_receipt_filter(
-        self, context: RequestContext, filter_name: ReceiptFilterName
+        self, context: RequestContext, filter_name: ReceiptFilterName, **kwargs
     ) -> DeleteReceiptFilterResponse:
         raise NotImplementedError
 
     @handler("DeleteReceiptRule")
     def delete_receipt_rule(
-        self, context: RequestContext, rule_set_name: ReceiptRuleSetName, rule_name: ReceiptRuleName
+        self,
+        context: RequestContext,
+        rule_set_name: ReceiptRuleSetName,
+        rule_name: ReceiptRuleName,
+        **kwargs
     ) -> DeleteReceiptRuleResponse:
         raise NotImplementedError
 
     @handler("DeleteReceiptRuleSet")
     def delete_receipt_rule_set(
-        self, context: RequestContext, rule_set_name: ReceiptRuleSetName
+        self, context: RequestContext, rule_set_name: ReceiptRuleSetName, **kwargs
     ) -> DeleteReceiptRuleSetResponse:
         raise NotImplementedError
 
     @handler("DeleteTemplate")
     def delete_template(
-        self, context: RequestContext, template_name: TemplateName
+        self, context: RequestContext, template_name: TemplateName, **kwargs
     ) -> DeleteTemplateResponse:
         raise NotImplementedError
 
     @handler("DeleteVerifiedEmailAddress")
     def delete_verified_email_address(
-        self, context: RequestContext, email_address: Address
+        self, context: RequestContext, email_address: Address, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DescribeActiveReceiptRuleSet")
     def describe_active_receipt_rule_set(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> DescribeActiveReceiptRuleSetResponse:
         raise NotImplementedError
 
@@ -1531,93 +1540,99 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         configuration_set_attribute_names: ConfigurationSetAttributeList = None,
+        **kwargs
     ) -> DescribeConfigurationSetResponse:
         raise NotImplementedError
 
     @handler("DescribeReceiptRule")
     def describe_receipt_rule(
-        self, context: RequestContext, rule_set_name: ReceiptRuleSetName, rule_name: ReceiptRuleName
+        self,
+        context: RequestContext,
+        rule_set_name: ReceiptRuleSetName,
+        rule_name: ReceiptRuleName,
+        **kwargs
     ) -> DescribeReceiptRuleResponse:
         raise NotImplementedError
 
     @handler("DescribeReceiptRuleSet")
     def describe_receipt_rule_set(
-        self, context: RequestContext, rule_set_name: ReceiptRuleSetName
+        self, context: RequestContext, rule_set_name: ReceiptRuleSetName, **kwargs
     ) -> DescribeReceiptRuleSetResponse:
         raise NotImplementedError
 
     @handler("GetAccountSendingEnabled")
     def get_account_sending_enabled(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> GetAccountSendingEnabledResponse:
         raise NotImplementedError
 
     @handler("GetCustomVerificationEmailTemplate")
     def get_custom_verification_email_template(
-        self, context: RequestContext, template_name: TemplateName
+        self, context: RequestContext, template_name: TemplateName, **kwargs
     ) -> GetCustomVerificationEmailTemplateResponse:
         raise NotImplementedError
 
     @handler("GetIdentityDkimAttributes")
     def get_identity_dkim_attributes(
-        self, context: RequestContext, identities: IdentityList
+        self, context: RequestContext, identities: IdentityList, **kwargs
     ) -> GetIdentityDkimAttributesResponse:
         raise NotImplementedError
 
     @handler("GetIdentityMailFromDomainAttributes")
     def get_identity_mail_from_domain_attributes(
-        self, context: RequestContext, identities: IdentityList
+        self, context: RequestContext, identities: IdentityList, **kwargs
     ) -> GetIdentityMailFromDomainAttributesResponse:
         raise NotImplementedError
 
     @handler("GetIdentityNotificationAttributes")
     def get_identity_notification_attributes(
-        self, context: RequestContext, identities: IdentityList
+        self, context: RequestContext, identities: IdentityList, **kwargs
     ) -> GetIdentityNotificationAttributesResponse:
         raise NotImplementedError
 
     @handler("GetIdentityPolicies")
     def get_identity_policies(
-        self, context: RequestContext, identity: Identity, policy_names: PolicyNameList
+        self, context: RequestContext, identity: Identity, policy_names: PolicyNameList, **kwargs
     ) -> GetIdentityPoliciesResponse:
         raise NotImplementedError
 
     @handler("GetIdentityVerificationAttributes")
     def get_identity_verification_attributes(
-        self, context: RequestContext, identities: IdentityList
+        self, context: RequestContext, identities: IdentityList, **kwargs
     ) -> GetIdentityVerificationAttributesResponse:
         raise NotImplementedError
 
     @handler("GetSendQuota")
-    def get_send_quota(
-        self,
-        context: RequestContext,
-    ) -> GetSendQuotaResponse:
+    def get_send_quota(self, context: RequestContext, **kwargs) -> GetSendQuotaResponse:
         raise NotImplementedError
 
     @handler("GetSendStatistics")
-    def get_send_statistics(
-        self,
-        context: RequestContext,
-    ) -> GetSendStatisticsResponse:
+    def get_send_statistics(self, context: RequestContext, **kwargs) -> GetSendStatisticsResponse:
         raise NotImplementedError
 
     @handler("GetTemplate")
     def get_template(
-        self, context: RequestContext, template_name: TemplateName
+        self, context: RequestContext, template_name: TemplateName, **kwargs
     ) -> GetTemplateResponse:
         raise NotImplementedError
 
     @handler("ListConfigurationSets")
     def list_configuration_sets(
-        self, context: RequestContext, next_token: NextToken = None, max_items: MaxItems = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        max_items: MaxItems = None,
+        **kwargs
     ) -> ListConfigurationSetsResponse:
         raise NotImplementedError
 
     @handler("ListCustomVerificationEmailTemplates")
     def list_custom_verification_email_templates(
-        self, context: RequestContext, next_token: NextToken = None, max_results: MaxResults = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        **kwargs
     ) -> ListCustomVerificationEmailTemplatesResponse:
         raise NotImplementedError
 
@@ -1628,38 +1643,39 @@ class SesApi:
         identity_type: IdentityType = None,
         next_token: NextToken = None,
         max_items: MaxItems = None,
+        **kwargs
     ) -> ListIdentitiesResponse:
         raise NotImplementedError
 
     @handler("ListIdentityPolicies")
     def list_identity_policies(
-        self, context: RequestContext, identity: Identity
+        self, context: RequestContext, identity: Identity, **kwargs
     ) -> ListIdentityPoliciesResponse:
         raise NotImplementedError
 
     @handler("ListReceiptFilters")
-    def list_receipt_filters(
-        self,
-        context: RequestContext,
-    ) -> ListReceiptFiltersResponse:
+    def list_receipt_filters(self, context: RequestContext, **kwargs) -> ListReceiptFiltersResponse:
         raise NotImplementedError
 
     @handler("ListReceiptRuleSets")
     def list_receipt_rule_sets(
-        self, context: RequestContext, next_token: NextToken = None
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListReceiptRuleSetsResponse:
         raise NotImplementedError
 
     @handler("ListTemplates")
     def list_templates(
-        self, context: RequestContext, next_token: NextToken = None, max_items: MaxItems = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        max_items: MaxItems = None,
+        **kwargs
     ) -> ListTemplatesResponse:
         raise NotImplementedError
 
     @handler("ListVerifiedEmailAddresses")
     def list_verified_email_addresses(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> ListVerifiedEmailAddressesResponse:
         raise NotImplementedError
 
@@ -1669,12 +1685,18 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         delivery_options: DeliveryOptions = None,
+        **kwargs
     ) -> PutConfigurationSetDeliveryOptionsResponse:
         raise NotImplementedError
 
     @handler("PutIdentityPolicy")
     def put_identity_policy(
-        self, context: RequestContext, identity: Identity, policy_name: PolicyName, policy: Policy
+        self,
+        context: RequestContext,
+        identity: Identity,
+        policy_name: PolicyName,
+        policy: Policy,
+        **kwargs
     ) -> PutIdentityPolicyResponse:
         raise NotImplementedError
 
@@ -1684,6 +1706,7 @@ class SesApi:
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         rule_names: ReceiptRuleNamesList,
+        **kwargs
     ) -> ReorderReceiptRuleSetResponse:
         raise NotImplementedError
 
@@ -1697,6 +1720,7 @@ class SesApi:
         explanation: Explanation = None,
         message_dsn: MessageDsn = None,
         bounce_sender_arn: AmazonResourceName = None,
+        **kwargs
     ) -> SendBounceResponse:
         raise NotImplementedError
 
@@ -1715,6 +1739,7 @@ class SesApi:
         default_tags: MessageTagList = None,
         template_arn: AmazonResourceName = None,
         default_template_data: TemplateData = None,
+        **kwargs
     ) -> SendBulkTemplatedEmailResponse:
         raise NotImplementedError
 
@@ -1725,6 +1750,7 @@ class SesApi:
         email_address: Address,
         template_name: TemplateName,
         configuration_set_name: ConfigurationSetName = None,
+        **kwargs
     ) -> SendCustomVerificationEmailResponse:
         raise NotImplementedError
 
@@ -1741,6 +1767,7 @@ class SesApi:
         return_path_arn: AmazonResourceName = None,
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
+        **kwargs
     ) -> SendEmailResponse:
         raise NotImplementedError
 
@@ -1756,6 +1783,7 @@ class SesApi:
         return_path_arn: AmazonResourceName = None,
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
+        **kwargs
     ) -> SendRawEmailResponse:
         raise NotImplementedError
 
@@ -1774,24 +1802,25 @@ class SesApi:
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
         template_arn: AmazonResourceName = None,
+        **kwargs
     ) -> SendTemplatedEmailResponse:
         raise NotImplementedError
 
     @handler("SetActiveReceiptRuleSet")
     def set_active_receipt_rule_set(
-        self, context: RequestContext, rule_set_name: ReceiptRuleSetName = None
+        self, context: RequestContext, rule_set_name: ReceiptRuleSetName = None, **kwargs
     ) -> SetActiveReceiptRuleSetResponse:
         raise NotImplementedError
 
     @handler("SetIdentityDkimEnabled")
     def set_identity_dkim_enabled(
-        self, context: RequestContext, identity: Identity, dkim_enabled: Enabled
+        self, context: RequestContext, identity: Identity, dkim_enabled: Enabled, **kwargs
     ) -> SetIdentityDkimEnabledResponse:
         raise NotImplementedError
 
     @handler("SetIdentityFeedbackForwardingEnabled")
     def set_identity_feedback_forwarding_enabled(
-        self, context: RequestContext, identity: Identity, forwarding_enabled: Enabled
+        self, context: RequestContext, identity: Identity, forwarding_enabled: Enabled, **kwargs
     ) -> SetIdentityFeedbackForwardingEnabledResponse:
         raise NotImplementedError
 
@@ -1802,6 +1831,7 @@ class SesApi:
         identity: Identity,
         notification_type: NotificationType,
         enabled: Enabled,
+        **kwargs
     ) -> SetIdentityHeadersInNotificationsEnabledResponse:
         raise NotImplementedError
 
@@ -1812,6 +1842,7 @@ class SesApi:
         identity: Identity,
         mail_from_domain: MailFromDomainName = None,
         behavior_on_mx_failure: BehaviorOnMXFailure = None,
+        **kwargs
     ) -> SetIdentityMailFromDomainResponse:
         raise NotImplementedError
 
@@ -1822,6 +1853,7 @@ class SesApi:
         identity: Identity,
         notification_type: NotificationType,
         sns_topic: NotificationTopic = None,
+        **kwargs
     ) -> SetIdentityNotificationTopicResponse:
         raise NotImplementedError
 
@@ -1832,18 +1864,23 @@ class SesApi:
         rule_set_name: ReceiptRuleSetName,
         rule_name: ReceiptRuleName,
         after: ReceiptRuleName = None,
+        **kwargs
     ) -> SetReceiptRulePositionResponse:
         raise NotImplementedError
 
     @handler("TestRenderTemplate")
     def test_render_template(
-        self, context: RequestContext, template_name: TemplateName, template_data: TemplateData
+        self,
+        context: RequestContext,
+        template_name: TemplateName,
+        template_data: TemplateData,
+        **kwargs
     ) -> TestRenderTemplateResponse:
         raise NotImplementedError
 
     @handler("UpdateAccountSendingEnabled")
     def update_account_sending_enabled(
-        self, context: RequestContext, enabled: Enabled = None
+        self, context: RequestContext, enabled: Enabled = None, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1853,6 +1890,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         event_destination: EventDestination,
+        **kwargs
     ) -> UpdateConfigurationSetEventDestinationResponse:
         raise NotImplementedError
 
@@ -1862,6 +1900,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         enabled: Enabled,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1871,6 +1910,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         enabled: Enabled,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1880,6 +1920,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         tracking_options: TrackingOptions,
+        **kwargs
     ) -> UpdateConfigurationSetTrackingOptionsResponse:
         raise NotImplementedError
 
@@ -1893,39 +1934,46 @@ class SesApi:
         template_content: TemplateContent = None,
         success_redirection_url: SuccessRedirectionURL = None,
         failure_redirection_url: FailureRedirectionURL = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UpdateReceiptRule")
     def update_receipt_rule(
-        self, context: RequestContext, rule_set_name: ReceiptRuleSetName, rule: ReceiptRule
+        self,
+        context: RequestContext,
+        rule_set_name: ReceiptRuleSetName,
+        rule: ReceiptRule,
+        **kwargs
     ) -> UpdateReceiptRuleResponse:
         raise NotImplementedError
 
     @handler("UpdateTemplate")
     def update_template(
-        self, context: RequestContext, template: Template
+        self, context: RequestContext, template: Template, **kwargs
     ) -> UpdateTemplateResponse:
         raise NotImplementedError
 
     @handler("VerifyDomainDkim")
     def verify_domain_dkim(
-        self, context: RequestContext, domain: Domain
+        self, context: RequestContext, domain: Domain, **kwargs
     ) -> VerifyDomainDkimResponse:
         raise NotImplementedError
 
     @handler("VerifyDomainIdentity")
     def verify_domain_identity(
-        self, context: RequestContext, domain: Domain
+        self, context: RequestContext, domain: Domain, **kwargs
     ) -> VerifyDomainIdentityResponse:
         raise NotImplementedError
 
     @handler("VerifyEmailAddress")
-    def verify_email_address(self, context: RequestContext, email_address: Address) -> None:
+    def verify_email_address(
+        self, context: RequestContext, email_address: Address, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("VerifyEmailIdentity")
     def verify_email_identity(
-        self, context: RequestContext, email_address: Address
+        self, context: RequestContext, email_address: Address, **kwargs
     ) -> VerifyEmailIdentityResponse:
         raise NotImplementedError

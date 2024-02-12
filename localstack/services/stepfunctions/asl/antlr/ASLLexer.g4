@@ -122,7 +122,9 @@ NEXT: '"Next"';
 END: '"End"';
 
 CAUSE: '"Cause"';
+CAUSEPATH: '"CausePath"';
 ERROR: '"Error"';
+ERRORPATH: '"ErrorPath"';
 
 // Retry.
 RETRY: '"Retry"';

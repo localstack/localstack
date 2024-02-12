@@ -1,8 +1,10 @@
+import json
 import os
 
 import pytest
 
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
@@ -53,3 +55,42 @@ class TestFnSub:
         )
 
         snapshot.match("outputs", deployment.outputs)
+
+
+@markers.aws.only_localstack
+def test_useful_error_when_invalid_ref(deploy_cfn_template):
+    """
+    When trying to resolve a non-existent !Ref, make sure the error message includes the name of the !Ref
+    to clarify which !Ref cannot be resolved.
+    """
+    logical_resource_id = "Topic"
+    ref_name = "InvalidRef"
+
+    template = json.dumps(
+        {
+            "Resources": {
+                logical_resource_id: {
+                    "Type": "AWS::SNS::Topic",
+                    "Properties": {
+                        "Name": {
+                            "Ref": ref_name,
+                        },
+                    },
+                }
+            }
+        }
+    )
+
+    with pytest.raises(StackDeployError) as exc_info:
+        deploy_cfn_template(template=template)
+
+    # get the exception error message from the events list
+    message = None
+    for event in exc_info.value.events:
+        if (
+            event["LogicalResourceId"] == logical_resource_id
+            and event["ResourceStatus"] == "CREATE_FAILED"
+        ):
+            message = event["ResourceStatusReason"]
+
+    assert ref_name in message

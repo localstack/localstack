@@ -206,6 +206,7 @@ class Ec2Provider(Ec2Api, ABC):
         dns_options: DnsOptionsSpecification = None,
         private_dns_enabled: Boolean = None,
         subnet_configurations: SubnetConfigurationsList = None,
+        **kwargs,
     ) -> ModifyVpcEndpointResult:
         backend = get_ec2_backend(context.account_id, context.region)
 
@@ -491,7 +492,7 @@ def get_filter_value(fn, self, filter_name):
 
 
 @patch(TransitGatewayAttachmentBackend.delete_transit_gateway_vpc_attachment)
-def delete_transit_gateway_vpc_attachment(fn, self, transit_gateway_attachment_id):
+def delete_transit_gateway_vpc_attachment(fn, self, transit_gateway_attachment_id, **kwargs):
     transit_gateway_attachment = self.transit_gateway_attachments.get(transit_gateway_attachment_id)
     transit_gateway_attachment.state = "deleted"
     return transit_gateway_attachment
