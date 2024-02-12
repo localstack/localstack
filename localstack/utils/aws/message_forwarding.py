@@ -5,6 +5,7 @@ import re
 import uuid
 from typing import Dict, Optional
 
+from localstack_ext.config import ENFORCE_IAM
 from moto.events.models import events_backends
 
 from localstack.aws.connect import connect_to
@@ -48,7 +49,10 @@ def send_event_to_target(
             role_arn=role, service_principal=source_service, region_name=region
         )
     else:
-        clients = connect_to(aws_access_key_id=account_id, region_name=region)
+        if ENFORCE_IAM:
+            clients = connect_to(region_name=region)
+        else:
+            clients = connect_to(aws_access_key_id=account_id, region_name=region)
 
     if ":lambda:" in target_arn:
         lambda_client = clients.lambda_.request_metadata(
