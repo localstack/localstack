@@ -133,6 +133,7 @@ PROVIDER_DEFAULTS = {
     "AWS::ElasticBeanstalk::Environment": "ResourceProvider",
     "AWS::ElasticLoadBalancingV2::TargetGroup": "ResourceProvider",
     "AWS::ElasticLoadBalancingV2::ListenerRule": "ResourceProvider",
+    "AWS::ElasticLoadBalancingV2::Listener": "ResourceProvider",
     "AWS::Events::Connection": "ResourceProvider",
     "AWS::Events::EventBus": "ResourceProvider",
     "AWS::Events::EventBusPolicy": "ResourceProvider",
