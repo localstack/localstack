@@ -1086,7 +1086,8 @@ class FifoQueue(SqsQueue):
             self.inflight_groups.add(group)
 
             if group.empty():
-                # this can be the case if all messages of a group have been processed.
+                # this can be the case if all messages in the group are still invisible or
+                # if all messages of a group have been processed.
                 # TODO: it should be blocking until at least one message is in the queue, but we don't
                 #  want to block the group
                 # TODO: check behavior in case it happens if all messages were removed from a group due to message
