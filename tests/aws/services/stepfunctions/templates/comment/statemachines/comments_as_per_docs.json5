@@ -1,0 +1,83 @@
+{
+  "Comment": "A state machine that initially fails a condition and then succeeds upon retry.",
+  "StartAt": "SetupInitialCondition",
+  "States": {
+    "SetupInitialCondition": {
+      "Type": "Pass",
+      "Comment": "Setup an initial failing condition for the HelloWorld task.",
+      "Result": {
+        "status": "incomplete"
+      },
+      "ResultPath": "$",
+      "Next": "TaskStateCatchRetry"
+    },
+    "TaskStateCatchRetry": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:your-region:your-account-id:function:yourHelloWorldFunction",
+      "Comment": "Invoke a Lambda function that returns its input. Initially set to fail.",
+      "Next": "IsComplete",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.TaskFailed"
+          ],
+          "Next": "FailState",
+          "Comment": "Catch task failures and move to the FailState."
+        }
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 3,
+          "MaxAttempts": 1,
+          "BackoffRate": 1.0,
+          "Comment": "Retry policy for any error. Adjusted for demonstration."
+        }
+      ]
+    },
+    "IsComplete": {
+      "Type": "Choice",
+      "Comment": "Decide the next state based on the Lambda function's output.",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.status",
+              "StringEquals": "complete",
+              "Comment": "If task is complete, move to the SuccessState."
+            }
+          ],
+          "Next": "SuccessState"
+        }
+      ],
+      "Default": "WaitState"
+    },
+    "WaitState": {
+      "Type": "Wait",
+      "Seconds": 5,
+      "Comment": "Wait for a few seconds before correcting the condition and retrying.",
+      "Next": "CorrectCondition"
+    },
+    "CorrectCondition": {
+      "Type": "Pass",
+      "Comment": "Correct the condition to ensure success in the next HelloWorld task attempt.",
+      "Result": {
+        "status": "complete"
+      },
+      "ResultPath": "$",
+      "Next": "TaskStateCatchRetry"
+    },
+    "SuccessState": {
+      "Type": "Succeed",
+      "Comment": "The state machine completes successfully."
+    },
+    "FailState": {
+      "Type": "Fail",
+      "Error": "TaskFailed",
+      "Cause": "The Lambda function task failed.",
+      "Comment": "The state machine fails due to a task failure."
+    }
+  }
+}
