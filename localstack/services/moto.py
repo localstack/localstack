@@ -7,7 +7,7 @@ from functools import lru_cache
 from typing import Callable, Optional, Union
 
 import moto.backends as moto_backends
-from moto.core import BackendDict
+from moto.core.base_backend import BackendDict
 from moto.core.exceptions import RESTError
 from moto.moto_server.utilities import RegexConverter
 from werkzeug.exceptions import NotFound

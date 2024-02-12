@@ -192,6 +192,8 @@ def lambda_result_to_response(result: InvocationResult):
         # if it's a dict it might be a proper response
         if isinstance(parsed_result.get("headers"), dict):
             response.headers.update(parsed_result.get("headers"))
+        if "statusCode" in parsed_result:
+            response.status_code = int(parsed_result["statusCode"])
         if "body" not in parsed_result:
             # TODO: test if providing a status code but no body actually works
             response.data = original_payload

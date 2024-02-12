@@ -3,16 +3,14 @@
 "use strict";
 
 const AWS = require("aws-sdk");
-let dynamoDb;
+
+var config = {};
 if (process.env.AWS_ENDPOINT_URL) {
-  dynamoDb = new AWS.DynamoDB.DocumentClient({
-        endpoint: process.env.AWS_ENDPOINT_URL,
-        region: 'us-east-1', // Change the region as per your setup
-      }
-  );
-} else {
-  dynamoDb = new AWS.DynamoDB.DocumentClient();
+    config.endpoint = process.env.AWS_ENDPOINT_URL;
 }
+
+let dynamoDb = new AWS.DynamoDB.DocumentClient(config);
+
 // GetBook - Get book informaton for a given book id
 exports.handler = (event, context, callback) => {
 

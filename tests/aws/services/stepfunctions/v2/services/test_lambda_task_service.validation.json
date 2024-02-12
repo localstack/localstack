@@ -8,10 +8,10 @@
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[0.0]": {
     "last_validated_date": "2023-08-04T14:04:46+00:00"
   },
-  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[00]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[0_0]": {
     "last_validated_date": "2023-08-04T14:05:04+00:00"
   },
-  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[01]": {
+  "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[0_1]": {
     "last_validated_date": "2023-08-04T14:05:23+00:00"
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[HelloWorld]": {

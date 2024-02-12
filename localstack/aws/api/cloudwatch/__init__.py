@@ -1102,7 +1102,7 @@ class CloudwatchApi:
     version = "2010-08-01"
 
     @handler("DeleteAlarms")
-    def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+    def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteAnomalyDetector")
@@ -1115,24 +1115,25 @@ class CloudwatchApi:
         stat: AnomalyDetectorMetricStat = None,
         single_metric_anomaly_detector: SingleMetricAnomalyDetector = None,
         metric_math_anomaly_detector: MetricMathAnomalyDetector = None,
+        **kwargs
     ) -> DeleteAnomalyDetectorOutput:
         raise NotImplementedError
 
     @handler("DeleteDashboards")
     def delete_dashboards(
-        self, context: RequestContext, dashboard_names: DashboardNames
+        self, context: RequestContext, dashboard_names: DashboardNames, **kwargs
     ) -> DeleteDashboardsOutput:
         raise NotImplementedError
 
     @handler("DeleteInsightRules")
     def delete_insight_rules(
-        self, context: RequestContext, rule_names: InsightRuleNames
+        self, context: RequestContext, rule_names: InsightRuleNames, **kwargs
     ) -> DeleteInsightRulesOutput:
         raise NotImplementedError
 
     @handler("DeleteMetricStream")
     def delete_metric_stream(
-        self, context: RequestContext, name: MetricStreamName
+        self, context: RequestContext, name: MetricStreamName, **kwargs
     ) -> DeleteMetricStreamOutput:
         raise NotImplementedError
 
@@ -1148,6 +1149,7 @@ class CloudwatchApi:
         max_records: MaxRecords = None,
         next_token: NextToken = None,
         scan_by: ScanBy = None,
+        **kwargs
     ) -> DescribeAlarmHistoryOutput:
         raise NotImplementedError
 
@@ -1164,6 +1166,7 @@ class CloudwatchApi:
         action_prefix: ActionPrefix = None,
         max_records: MaxRecords = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeAlarmsOutput:
         raise NotImplementedError
 
@@ -1178,6 +1181,7 @@ class CloudwatchApi:
         dimensions: Dimensions = None,
         period: Period = None,
         unit: StandardUnit = None,
+        **kwargs
     ) -> DescribeAlarmsForMetricOutput:
         raise NotImplementedError
 
@@ -1191,6 +1195,7 @@ class CloudwatchApi:
         metric_name: MetricName = None,
         dimensions: Dimensions = None,
         anomaly_detector_types: AnomalyDetectorTypes = None,
+        **kwargs
     ) -> DescribeAnomalyDetectorsOutput:
         raise NotImplementedError
 
@@ -1200,32 +1205,37 @@ class CloudwatchApi:
         context: RequestContext,
         next_token: NextToken = None,
         max_results: InsightRuleMaxResults = None,
+        **kwargs
     ) -> DescribeInsightRulesOutput:
         raise NotImplementedError
 
     @handler("DisableAlarmActions")
-    def disable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+    def disable_alarm_actions(
+        self, context: RequestContext, alarm_names: AlarmNames, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DisableInsightRules")
     def disable_insight_rules(
-        self, context: RequestContext, rule_names: InsightRuleNames
+        self, context: RequestContext, rule_names: InsightRuleNames, **kwargs
     ) -> DisableInsightRulesOutput:
         raise NotImplementedError
 
     @handler("EnableAlarmActions")
-    def enable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+    def enable_alarm_actions(
+        self, context: RequestContext, alarm_names: AlarmNames, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("EnableInsightRules")
     def enable_insight_rules(
-        self, context: RequestContext, rule_names: InsightRuleNames
+        self, context: RequestContext, rule_names: InsightRuleNames, **kwargs
     ) -> EnableInsightRulesOutput:
         raise NotImplementedError
 
     @handler("GetDashboard")
     def get_dashboard(
-        self, context: RequestContext, dashboard_name: DashboardName
+        self, context: RequestContext, dashboard_name: DashboardName, **kwargs
     ) -> GetDashboardOutput:
         raise NotImplementedError
 
@@ -1240,6 +1250,7 @@ class CloudwatchApi:
         max_contributor_count: InsightRuleUnboundInteger = None,
         metrics: InsightRuleMetricList = None,
         order_by: InsightRuleOrderBy = None,
+        **kwargs
     ) -> GetInsightRuleReportOutput:
         raise NotImplementedError
 
@@ -1254,6 +1265,7 @@ class CloudwatchApi:
         scan_by: ScanBy = None,
         max_datapoints: GetMetricDataMaxDatapoints = None,
         label_options: LabelOptions = None,
+        **kwargs
     ) -> GetMetricDataOutput:
         raise NotImplementedError
 
@@ -1270,12 +1282,13 @@ class CloudwatchApi:
         statistics: Statistics = None,
         extended_statistics: ExtendedStatistics = None,
         unit: StandardUnit = None,
+        **kwargs
     ) -> GetMetricStatisticsOutput:
         raise NotImplementedError
 
     @handler("GetMetricStream")
     def get_metric_stream(
-        self, context: RequestContext, name: MetricStreamName
+        self, context: RequestContext, name: MetricStreamName, **kwargs
     ) -> GetMetricStreamOutput:
         raise NotImplementedError
 
@@ -1285,6 +1298,7 @@ class CloudwatchApi:
         context: RequestContext,
         metric_widget: MetricWidget,
         output_format: OutputFormat = None,
+        **kwargs
     ) -> GetMetricWidgetImageOutput:
         raise NotImplementedError
 
@@ -1294,6 +1308,7 @@ class CloudwatchApi:
         context: RequestContext,
         dashboard_name_prefix: DashboardNamePrefix = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListDashboardsOutput:
         raise NotImplementedError
 
@@ -1304,6 +1319,7 @@ class CloudwatchApi:
         resource_arn: AmazonResourceName,
         next_token: NextToken = None,
         max_results: InsightRuleMaxResults = None,
+        **kwargs
     ) -> ListManagedInsightRulesOutput:
         raise NotImplementedError
 
@@ -1313,6 +1329,7 @@ class CloudwatchApi:
         context: RequestContext,
         next_token: NextToken = None,
         max_results: ListMetricStreamsMaxResults = None,
+        **kwargs
     ) -> ListMetricStreamsOutput:
         raise NotImplementedError
 
@@ -1327,12 +1344,13 @@ class CloudwatchApi:
         recently_active: RecentlyActive = None,
         include_linked_accounts: IncludeLinkedAccounts = None,
         owning_account: AccountId = None,
+        **kwargs
     ) -> ListMetricsOutput:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceOutput:
         raise NotImplementedError
 
@@ -1347,6 +1365,7 @@ class CloudwatchApi:
         configuration: AnomalyDetectorConfiguration = None,
         single_metric_anomaly_detector: SingleMetricAnomalyDetector = None,
         metric_math_anomaly_detector: MetricMathAnomalyDetector = None,
+        **kwargs
     ) -> PutAnomalyDetectorOutput:
         raise NotImplementedError
 
@@ -1365,12 +1384,17 @@ class CloudwatchApi:
         actions_suppressor: AlarmArn = None,
         actions_suppressor_wait_period: SuppressorPeriod = None,
         actions_suppressor_extension_period: SuppressorPeriod = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("PutDashboard")
     def put_dashboard(
-        self, context: RequestContext, dashboard_name: DashboardName, dashboard_body: DashboardBody
+        self,
+        context: RequestContext,
+        dashboard_name: DashboardName,
+        dashboard_body: DashboardBody,
+        **kwargs
     ) -> PutDashboardOutput:
         raise NotImplementedError
 
@@ -1382,12 +1406,13 @@ class CloudwatchApi:
         rule_definition: InsightRuleDefinition,
         rule_state: InsightRuleState = None,
         tags: TagList = None,
+        **kwargs
     ) -> PutInsightRuleOutput:
         raise NotImplementedError
 
     @handler("PutManagedInsightRules")
     def put_managed_insight_rules(
-        self, context: RequestContext, managed_rules: ManagedRules
+        self, context: RequestContext, managed_rules: ManagedRules, **kwargs
     ) -> PutManagedInsightRulesOutput:
         raise NotImplementedError
 
@@ -1417,12 +1442,13 @@ class CloudwatchApi:
         metrics: MetricDataQueries = None,
         tags: TagList = None,
         threshold_metric_id: MetricId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("PutMetricData")
     def put_metric_data(
-        self, context: RequestContext, namespace: Namespace, metric_data: MetricData
+        self, context: RequestContext, namespace: Namespace, metric_data: MetricData, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1439,6 +1465,7 @@ class CloudwatchApi:
         tags: TagList = None,
         statistics_configurations: MetricStreamStatisticsConfigurations = None,
         include_linked_accounts_metrics: IncludeLinkedAccountsMetrics = None,
+        **kwargs
     ) -> PutMetricStreamOutput:
         raise NotImplementedError
 
@@ -1450,29 +1477,34 @@ class CloudwatchApi:
         state_value: StateValue,
         state_reason: StateReason,
         state_reason_data: StateReasonData = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("StartMetricStreams")
     def start_metric_streams(
-        self, context: RequestContext, names: MetricStreamNames
+        self, context: RequestContext, names: MetricStreamNames, **kwargs
     ) -> StartMetricStreamsOutput:
         raise NotImplementedError
 
     @handler("StopMetricStreams")
     def stop_metric_streams(
-        self, context: RequestContext, names: MetricStreamNames
+        self, context: RequestContext, names: MetricStreamNames, **kwargs
     ) -> StopMetricStreamsOutput:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
     ) -> TagResourceOutput:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs
     ) -> UntagResourceOutput:
         raise NotImplementedError

@@ -326,7 +326,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return response
 
     def delete_bucket(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
@@ -339,7 +343,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._cors_handler.invalidate_cache()
 
     def get_bucket_location(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketLocationOutput:
         """
         When implementing the ASF provider, this operation is implemented because:
@@ -712,6 +720,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
+        **kwargs,
     ) -> DeleteObjectsOutput:
         # TODO: implement DeleteMarker response
         if bypass_governance_retention is not None:
@@ -956,6 +965,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
         token: ObjectLockToken = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
@@ -987,7 +997,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.bucket_replication[bucket] = replication_configuration
 
     def get_bucket_replication(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketReplicationOutput:
         # test if bucket exists in moto
         moto_backend = get_moto_s3_backend(context)
@@ -1005,14 +1019,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return GetBucketReplicationOutput(ReplicationConfiguration=replication)
 
     def get_bucket_lifecycle(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketLifecycleOutput:
         # deprecated for older rules created. Not sure what to do with this?
         response = self.get_bucket_lifecycle_configuration(context, bucket, expected_bucket_owner)
         return GetBucketLifecycleOutput(**response)
 
     def get_bucket_lifecycle_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketLifecycleConfigurationOutput:
         # test if bucket exists in moto
         moto_backend = get_moto_s3_backend(context)
@@ -1064,7 +1086,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._expiration_cache[bucket].clear()
 
     def delete_bucket_lifecycle(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         # test if bucket exists in moto
         moto_backend = get_moto_s3_backend(context)
@@ -1082,6 +1108,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         response = call_moto(context)
         moto_backend = get_moto_s3_backend(context)
@@ -1093,7 +1120,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return response
 
     def get_bucket_cors(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketCorsOutput:
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
@@ -1109,7 +1140,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return GetBucketCorsOutput(CORSRules=cors_rules["CORSRules"])
 
     def delete_bucket_cors(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         response = call_moto(context)
         moto_backend = get_moto_s3_backend(context)
@@ -1120,7 +1155,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return response
 
     def get_bucket_acl(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketAclOutput:
         response: GetBucketAclOutput = call_moto(context)
 
@@ -1140,6 +1179,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetObjectRetentionOutput:
         moto_backend = get_moto_s3_backend(context)
         key = get_key_from_moto_bucket(
@@ -1167,6 +1207,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> PutObjectRetentionOutput:
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
@@ -1245,6 +1286,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetObjectAclOutput:
         response: GetObjectAclOutput = call_moto(context)
 
@@ -1319,6 +1361,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         notification_configuration: NotificationConfiguration,
         expected_bucket_owner: AccountId = None,
         skip_destination_validation: SkipValidation = None,
+        **kwargs,
     ) -> None:
         # TODO implement put_bucket_notification as well? ->  no longer used https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketNotificationConfiguration.html
         # TODO expected_bucket_owner
@@ -1334,7 +1377,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.bucket_notification_configs[bucket] = notification_configuration
 
     def get_bucket_notification_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> NotificationConfiguration:
         # TODO how to verify expected_bucket_owner
         # check if the bucket exists
@@ -1343,7 +1390,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return store.bucket_notification_configs.get(bucket, NotificationConfiguration())
 
     def get_bucket_website(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketWebsiteOutput:
         # to check if the bucket exists
         # TODO: simplify this when we don't use moto
@@ -1366,6 +1417,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         # to check if the bucket exists
         # TODO: simplify this when we don't use moto
@@ -1376,7 +1428,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.bucket_website_configuration[bucket] = website_configuration
 
     def delete_bucket_website(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         # to check if the bucket exists
         # TODO: simplify this when we don't use moto
@@ -1386,7 +1442,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.bucket_website_configuration.pop(bucket, None)
 
     def post_object(
-        self, context: RequestContext, bucket: BucketName, body: IO[Body] = None
+        self, context: RequestContext, bucket: BucketName, body: IO[Body] = None, **kwargs
     ) -> PostResponse:
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
         # TODO: signature validation is not implemented for pre-signed POST
@@ -1498,6 +1554,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         id: AnalyticsId,
         analytics_configuration: AnalyticsConfiguration,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
@@ -1517,6 +1574,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: AnalyticsId,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketAnalyticsConfigurationOutput:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
@@ -1534,6 +1592,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> ListBucketAnalyticsConfigurationsOutput:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
@@ -1554,6 +1613,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: AnalyticsId,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
@@ -1568,6 +1628,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: IntelligentTieringId,
         intelligent_tiering_configuration: IntelligentTieringConfiguration,
+        **kwargs,
     ) -> None:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
 
@@ -1579,7 +1640,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket_intelligent_tiering_configurations[id] = intelligent_tiering_configuration
 
     def get_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
     ) -> GetBucketIntelligentTieringConfigurationOutput:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
@@ -1594,7 +1655,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
     def delete_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
     ) -> None:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
@@ -1606,7 +1667,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchConfiguration("The specified configuration does not exist.")
 
     def list_bucket_intelligent_tiering_configurations(
-        self, context: RequestContext, bucket: BucketName, continuation_token: Token = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+        **kwargs,
     ) -> ListBucketIntelligentTieringConfigurationsOutput:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
@@ -1631,6 +1696,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         moto_backend = get_moto_s3_backend(context)
         moto_bucket = get_bucket_from_moto(moto_backend, bucket=bucket)
@@ -1668,7 +1734,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_bucket.logging = logging_config
 
     def get_bucket_logging(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketLoggingOutput:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         if not moto_bucket.logging:
@@ -1691,6 +1761,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_progress: RequestProgress = None,
         scan_range: ScanRange = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> SelectObjectContentOutput:
         # this operation is currently implemented by moto, but raises a 500 error because of the format necessary,
         # and streaming capability.
@@ -1724,6 +1795,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         id: InventoryId,
         inventory_configuration: InventoryConfiguration,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
 
@@ -1741,6 +1813,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: InventoryId,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketInventoryConfigurationOutput:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
@@ -1756,6 +1829,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> ListBucketInventoryConfigurationsOutput:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
@@ -1775,6 +1849,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: InventoryId,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)

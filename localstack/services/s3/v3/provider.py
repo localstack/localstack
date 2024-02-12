@@ -480,7 +480,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return response
 
     def delete_bucket(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -501,10 +505,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # clean up the storage backend
         self._storage_backend.delete_bucket(bucket)
 
-    def list_buckets(
-        self,
-        context: RequestContext,
-    ) -> ListBucketsOutput:
+    def list_buckets(self, context: RequestContext, **kwargs) -> ListBucketsOutput:
         owner = get_owner_for_account_id(context.account_id)
         store = self.get_store(context.account_id, context.region)
         buckets = [
@@ -514,7 +515,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return ListBucketsOutput(Owner=owner, Buckets=buckets)
 
     def head_bucket(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> HeadBucketOutput:
         store = self.get_store(context.account_id, context.region)
         if not (s3_bucket := store.buckets.get(bucket)):
@@ -532,7 +537,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return HeadBucketOutput(BucketRegion=s3_bucket.bucket_region)
 
     def get_bucket_location(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketLocationOutput:
         """
         When implementing the ASF provider, this operation is implemented because:
@@ -910,6 +919,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> DeleteObjectOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -981,6 +991,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
+        **kwargs,
     ) -> DeleteObjectsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -1286,6 +1297,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
+        **kwargs,
     ) -> ListObjectsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -1395,6 +1407,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
+        **kwargs,
     ) -> ListObjectsV2Output:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -1526,6 +1539,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
+        **kwargs,
     ) -> ListObjectVersionsOutput:
         if version_id_marker and not key_marker:
             raise InvalidArgument(
@@ -1710,6 +1724,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request_payer: RequestPayer = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> RestoreObjectOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2025,6 +2040,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
+        **kwargs,
     ) -> CompleteMultipartUploadOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2113,6 +2129,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         upload_id: MultipartUploadId,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> AbortMultipartUploadOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2145,6 +2162,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
+        **kwargs,
     ) -> ListPartsOutput:
         # TODO: implement MaxParts
         # TODO: implements PartNumberMarker
@@ -2224,6 +2242,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         upload_id_marker: UploadIdMarker = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
+        **kwargs,
     ) -> ListMultipartUploadsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2348,6 +2367,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
         mfa: MFA = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         if not (versioning_status := versioning_configuration.get("Status")):
@@ -2370,7 +2390,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.versioning_status = versioning_status
 
     def get_bucket_versioning(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketVersioningOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2380,7 +2404,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return GetBucketVersioningOutput(Status=s3_bucket.versioning_status)
 
     def get_bucket_encryption(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketEncryptionOutput:
         # AWS now encrypts bucket by default with AES256, see:
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-bucket-encryption.html
@@ -2401,6 +2429,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2433,7 +2462,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.encryption_rule = rules[0]
 
     def delete_bucket_encryption(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2446,6 +2479,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         notification_configuration: NotificationConfiguration,
         expected_bucket_owner: AccountId = None,
         skip_destination_validation: SkipValidation = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2455,7 +2489,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.notification_configuration = notification_configuration
 
     def get_bucket_notification_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> NotificationConfiguration:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2469,6 +2507,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2482,7 +2521,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.TAGS.tag_resource(s3_bucket.bucket_arn, tags=tagging["TagSet"])
 
     def get_bucket_tagging(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         tag_set = store.TAGS.list_tags_for_resource(s3_bucket.bucket_arn, root_name="Tags")["Tags"]
@@ -2495,7 +2538,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return GetBucketTaggingOutput(TagSet=tag_set)
 
     def delete_bucket_tagging(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2512,6 +2559,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
+        **kwargs,
     ) -> PutObjectTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2546,6 +2594,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
+        **kwargs,
     ) -> GetObjectTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2577,6 +2626,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         key: ObjectKey,
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> DeleteObjectTaggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2603,6 +2653,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         validate_cors_configuration(cors_configuration)
@@ -2610,7 +2661,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._cors_handler.invalidate_cache()
 
     def get_bucket_cors(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketCorsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2622,7 +2677,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return GetBucketCorsOutput(CORSRules=s3_bucket.cors_rules["CORSRules"])
 
     def delete_bucket_cors(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2631,7 +2690,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             s3_bucket.cors_rules = None
 
     def get_bucket_lifecycle_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketLifecycleConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2650,6 +2713,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: BucketLifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2661,7 +2725,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._expiration_cache[bucket].clear()
 
     def delete_bucket_lifecycle(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2675,6 +2743,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         id: AnalyticsId,
         analytics_configuration: AnalyticsConfiguration,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2690,6 +2759,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: AnalyticsId,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketAnalyticsConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2704,6 +2774,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> ListBucketAnalyticsConfigurationsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2721,6 +2792,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: AnalyticsId,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2733,6 +2805,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: IntelligentTieringId,
         intelligent_tiering_configuration: IntelligentTieringConfiguration,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2741,7 +2814,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.intelligent_tiering_configurations[id] = intelligent_tiering_configuration
 
     def get_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
     ) -> GetBucketIntelligentTieringConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2753,7 +2826,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
     def delete_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2761,7 +2834,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchConfiguration("The specified configuration does not exist.")
 
     def list_bucket_intelligent_tiering_configurations(
-        self, context: RequestContext, bucket: BucketName, continuation_token: Token = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+        **kwargs,
     ) -> ListBucketIntelligentTieringConfigurationsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2780,6 +2857,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         id: InventoryId,
         inventory_configuration: InventoryConfiguration,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2794,6 +2872,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: InventoryId,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketInventoryConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2807,6 +2886,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> ListBucketInventoryConfigurationsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2823,6 +2903,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: InventoryId,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2830,7 +2911,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise NoSuchConfiguration("The specified configuration does not exist.")
 
     def get_bucket_website(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketWebsiteOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2849,6 +2934,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2856,14 +2942,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.website_configuration = website_configuration
 
     def delete_bucket_website(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         # does not raise error if the bucket did not have a config, will simply return
         s3_bucket.website_configuration = None
 
     def get_object_lock_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetObjectLockConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         if not s3_bucket.object_lock_enabled:
@@ -2894,6 +2988,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> PutObjectLockConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         if s3_bucket.versioning_status != "Enabled":
@@ -2938,6 +3033,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetObjectLegalHoldOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         if not s3_bucket.object_lock_enabled:
@@ -2968,6 +3064,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> PutObjectLegalHoldOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -2999,6 +3096,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetObjectRetentionOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         if not s3_bucket.object_lock_enabled:
@@ -3033,6 +3131,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> PutObjectRetentionOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         if not s3_bucket.object_lock_enabled:
@@ -3071,6 +3170,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         # TODO: this currently only mock the operation, but its actual effect is not emulated
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
@@ -3082,7 +3182,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.payer = payer
 
     def get_bucket_request_payment(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketRequestPaymentOutput:
         # TODO: this currently only mock the operation, but its actual effect is not emulated
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
@@ -3090,7 +3194,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return GetBucketRequestPaymentOutput(Payer=s3_bucket.payer)
 
     def get_bucket_ownership_controls(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketOwnershipControlsOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3111,6 +3219,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         ownership_controls: OwnershipControls,
         content_md5: ContentMD5 = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         # TODO: this currently only mock the operation, but its actual effect is not emulated
         #  it for example almost forbid ACL usage when set to BucketOwnerEnforced
@@ -3126,14 +3235,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.object_ownership = object_ownership
 
     def delete_bucket_ownership_controls(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         s3_bucket.object_ownership = None
 
     def get_public_access_block(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetPublicAccessBlockOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3154,6 +3271,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         # TODO: this currently only mock the operation, but its actual effect is not emulated
         #  as we do not enforce ACL directly. Also, this should take the most restrictive between S3Control and the
@@ -3180,14 +3298,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.public_access_block = public_access_block_configuration
 
     def delete_public_access_block(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         s3_bucket.public_access_block = None
 
     def get_bucket_policy(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketPolicyOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         if not s3_bucket.policy:
@@ -3206,6 +3332,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
         confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3222,7 +3349,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.policy = policy
 
     def delete_bucket_policy(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3234,6 +3365,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
+        **kwargs,
     ) -> GetBucketAccelerateConfigurationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3250,6 +3382,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         accelerate_configuration: AccelerateConfiguration,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3274,6 +3407,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3310,7 +3444,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.logging = logging_config
 
     def get_bucket_logging(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketLoggingOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3328,6 +3466,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         checksum_algorithm: ChecksumAlgorithm = None,
         token: ObjectLockToken = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
         if not s3_bucket.versioning_status == BucketVersioningStatus.Enabled:
@@ -3356,7 +3495,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.replication = replication_configuration
 
     def get_bucket_replication(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketReplicationOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3369,7 +3512,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return GetBucketReplicationOutput(ReplicationConfiguration=s3_bucket.replication)
 
     def delete_bucket_replication(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> None:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3389,7 +3536,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.acl = acp
 
     def get_bucket_acl(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketAclOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3429,6 +3580,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetObjectAclOutput:
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
@@ -3440,7 +3592,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         return GetObjectAclOutput(Owner=s3_object.acl["Owner"], Grants=s3_object.acl["Grants"])
 
     def get_bucket_policy_status(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetBucketPolicyStatusOutput:
         raise NotImplementedError
 
@@ -3451,11 +3607,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         key: ObjectKey,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs,
     ) -> GetObjectTorrentOutput:
         raise NotImplementedError
 
     def post_object(
-        self, context: RequestContext, bucket: BucketName, body: IO[Body] = None
+        self, context: RequestContext, bucket: BucketName, body: IO[Body] = None, **kwargs
     ) -> PostResponse:
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
         # TODO: signature validation is not implemented for pre-signed POST
