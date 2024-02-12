@@ -1,0 +1,15 @@
+{
+  "Comment": "SNS_FIFO_PUBLISH",
+  "StartAt": "Publish",
+  "States": {
+    "Publish": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn.$": "$.TopicArn",
+        "Message.$": "$.Message",
+      },
+      "End": true
+    }
+  }
+}

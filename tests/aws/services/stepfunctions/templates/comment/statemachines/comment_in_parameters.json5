@@ -1,0 +1,15 @@
+{
+  "Comment": "COMMENTS_IN_PARAMETERS",
+  "StartAt": "StartState",
+  "States": {
+    "StartState": {
+      "Type": "Pass",
+      "Parameters": {
+        "Comment": "Comment text",
+        "comment" : "comment text",
+        "constant": "constant text"
+      },
+      "End": true
+    }
+  }
+}

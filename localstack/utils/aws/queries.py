@@ -52,7 +52,9 @@ def get_apigateway_path_for_resource(
     )
 
 
-def kinesis_get_latest_records(stream_name, shard_id, count=10, client=None):
+def kinesis_get_latest_records(
+    stream_name: str, shard_id: str, count: int = 10, client=None
+) -> list[dict]:
     kinesis = client or connect_to().kinesis
     result = []
     response = kinesis.get_shard_iterator(

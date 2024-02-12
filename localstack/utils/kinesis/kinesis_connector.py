@@ -245,6 +245,7 @@ def _start_kcl_client_process(
     env_vars = {
         "AWS_CBOR_DISABLE": "true",
         "AWS_ACCESS_KEY_ID": account_id,
+        "AWS_SECRET_ACCESS_KEY": account_id,
     }
 
     events_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.fifo")
