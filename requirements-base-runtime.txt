@@ -12,9 +12,9 @@ blinker==1.7.0
     # via
     #   flask
     #   quart
-boto3==1.34.34
+boto3==1.34.39
     # via localstack-core (pyproject.toml)
-botocore==1.34.34
+botocore==1.34.39
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -34,7 +34,7 @@ click==8.1.7
     #   flask
     #   localstack-core (pyproject.toml)
     #   quart
-cryptography==41.0.7
+cryptography==42.0.2
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl

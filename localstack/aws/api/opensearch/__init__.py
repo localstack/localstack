@@ -132,6 +132,17 @@ class AutoTuneType(str):
     SCHEDULED_ACTION = "SCHEDULED_ACTION"
 
 
+class ConfigChangeStatus(str):
+    Pending = "Pending"
+    Initializing = "Initializing"
+    Validating = "Validating"
+    ValidationFailed = "ValidationFailed"
+    ApplyingChanges = "ApplyingChanges"
+    Completed = "Completed"
+    PendingUserInput = "PendingUserInput"
+    Cancelled = "Cancelled"
+
+
 class ConnectionMode(str):
     DIRECT = "DIRECT"
     VPC_ENDPOINT = "VPC_ENDPOINT"
@@ -168,6 +179,16 @@ class DomainPackageStatus(str):
     DISSOCIATION_FAILED = "DISSOCIATION_FAILED"
 
 
+class DomainProcessingStatusType(str):
+    Creating = "Creating"
+    Active = "Active"
+    Modifying = "Modifying"
+    UpgradingEngineVersion = "UpgradingEngineVersion"
+    UpdatingServiceSoftware = "UpdatingServiceSoftware"
+    Isolated = "Isolated"
+    Deleting = "Deleting"
+
+
 class DomainState(str):
     Active = "Active"
     Processing = "Processing"
@@ -198,6 +219,11 @@ class InboundConnectionStatusCode(str):
     REJECTED = "REJECTED"
     DELETING = "DELETING"
     DELETED = "DELETED"
+
+
+class InitiatedBy(str):
+    CUSTOMER = "CUSTOMER"
+    SERVICE = "SERVICE"
 
 
 class LogType(str):
@@ -387,6 +413,11 @@ class PackageType(str):
 class PrincipalType(str):
     AWS_ACCOUNT = "AWS_ACCOUNT"
     AWS_SERVICE = "AWS_SERVICE"
+
+
+class PropertyValueType(str):
+    PLAIN_TEXT = "PLAIN_TEXT"
+    STRINGIFIED_JSON = "STRINGIFIED_JSON"
 
 
 class ReservedInstancePaymentOption(str):
@@ -840,6 +871,27 @@ AvailabilityZoneInfoList = List[AvailabilityZoneInfo]
 AvailabilityZoneList = List[AvailabilityZone]
 
 
+class CancelDomainConfigChangeRequest(ServiceRequest):
+    DomainName: DomainName
+    DryRun: Optional[DryRun]
+
+
+class CancelledChangeProperty(TypedDict, total=False):
+    PropertyName: Optional[String]
+    CancelledValue: Optional[String]
+    ActiveValue: Optional[String]
+
+
+CancelledChangePropertyList = List[CancelledChangeProperty]
+GUIDList = List[GUID]
+
+
+class CancelDomainConfigChangeResponse(TypedDict, total=False):
+    CancelledChangeIds: Optional[GUIDList]
+    CancelledChangeProperties: Optional[CancelledChangePropertyList]
+    DryRun: Optional[DryRun]
+
+
 class CancelServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
 
@@ -865,6 +917,10 @@ class CancelServiceSoftwareUpdateResponse(TypedDict, total=False):
 class ChangeProgressDetails(TypedDict, total=False):
     ChangeId: Optional[GUID]
     Message: Optional[Message]
+    ConfigChangeStatus: Optional[ConfigChangeStatus]
+    InitiatedBy: Optional[InitiatedBy]
+    StartTime: Optional[UpdateTimestamp]
+    LastUpdatedTime: Optional[UpdateTimestamp]
 
 
 class ChangeProgressStage(TypedDict, total=False):
@@ -886,6 +942,9 @@ class ChangeProgressStatusDetails(TypedDict, total=False):
     CompletedProperties: Optional[StringList]
     TotalNumberOfStages: Optional[TotalNumberOfStages]
     ChangeProgressStages: Optional[ChangeProgressStageList]
+    LastUpdatedTime: Optional[UpdateTimestamp]
+    ConfigChangeStatus: Optional[ConfigChangeStatus]
+    InitiatedBy: Optional[InitiatedBy]
 
 
 class ColdStorageOptions(TypedDict, total=False):
@@ -1034,6 +1093,16 @@ class CreateDomainRequest(ServiceRequest):
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
 
 
+class ModifyingProperties(TypedDict, total=False):
+    Name: Optional[String]
+    ActiveValue: Optional[String]
+    PendingValue: Optional[String]
+    ValueType: Optional[PropertyValueType]
+
+
+ModifyingPropertiesList = List[ModifyingProperties]
+
+
 class VPCDerivedInfo(TypedDict, total=False):
     VPCId: Optional[String]
     SubnetIds: Optional[StringList]
@@ -1074,6 +1143,8 @@ class DomainStatus(TypedDict, total=False):
     ChangeProgressDetails: Optional[ChangeProgressDetails]
     OffPeakWindowOptions: Optional[OffPeakWindowOptions]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
+    DomainProcessingStatus: Optional[DomainProcessingStatusType]
+    ModifyingProperties: Optional[ModifyingPropertiesList]
 
 
 class CreateDomainResponse(TypedDict, total=False):
@@ -1339,6 +1410,7 @@ class DomainConfig(TypedDict, total=False):
     ChangeProgressDetails: Optional[ChangeProgressDetails]
     OffPeakWindowOptions: Optional[OffPeakWindowOptionsStatus]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptionsStatus]
+    ModifyingProperties: Optional[ModifyingPropertiesList]
 
 
 class DescribeDomainConfigResponse(TypedDict, total=False):
@@ -2110,6 +2182,12 @@ class OpensearchApi:
     def authorize_vpc_endpoint_access(
         self, context: RequestContext, domain_name: DomainName, account: AWSAccount, **kwargs
     ) -> AuthorizeVpcEndpointAccessResponse:
+        raise NotImplementedError
+
+    @handler("CancelDomainConfigChange")
+    def cancel_domain_config_change(
+        self, context: RequestContext, domain_name: DomainName, dry_run: DryRun = None, **kwargs
+    ) -> CancelDomainConfigChangeResponse:
         raise NotImplementedError
 
     @handler("CancelServiceSoftwareUpdate")

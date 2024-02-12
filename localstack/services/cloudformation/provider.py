@@ -89,10 +89,10 @@ from localstack.services.cloudformation.engine.entities import (
 )
 from localstack.services.cloudformation.engine.parameters import strip_parameter_type
 from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
-from localstack.services.cloudformation.engine.template_preparer import (
+from localstack.services.cloudformation.engine.template_utils import resolve_stack_conditions
+from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
 )
-from localstack.services.cloudformation.engine.template_utils import resolve_stack_conditions
 from localstack.services.cloudformation.stores import (
     cloudformation_stores,
     find_change_set,
@@ -238,7 +238,6 @@ class CloudformationProvider(CloudformationApi):
                 context.account_id,
                 context.region,
                 template,
-                list(resolved_parameters.values()),
                 stack.stack_name,
                 stack.resources,
                 stack.mappings,
@@ -351,7 +350,6 @@ class CloudformationProvider(CloudformationApi):
                 context.account_id,
                 context.region,
                 template,
-                list(resolved_parameters.values()),
                 stack.stack_name,
                 stack.resources,
                 stack.mappings,
@@ -471,8 +469,18 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return stack_not_found_error(stack_name)
 
+        if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
+            copy_template = clone(stack.template_original)
+            copy_template.pop("ChangeSetName", None)
+            copy_template.pop("StackName", None)
+            for resource in copy_template.get("Resources", {}).values():
+                resource.pop("LogicalResourceId", None)
+            template_body = json.dumps(copy_template)
+        else:
+            template_body = stack.template_body
+
         return GetTemplateOutput(
-            TemplateBody=stack.template_body,
+            TemplateBody=template_body,
             StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
         )
 
@@ -644,8 +652,6 @@ class CloudformationProvider(CloudformationApi):
             old_parameters=old_parameters,
         )
 
-        parameters = list(resolved_parameters.values())
-
         # TODO: remove this when fixing Stack.resources and transformation order
         #   currently we need to create a stack with existing resources + parameters so that resolve refs recursively in here will work.
         #   The correct way to do it would be at a later stage anyway just like a normal intrinsic function
@@ -659,7 +665,6 @@ class CloudformationProvider(CloudformationApi):
             context.account_id,
             context.region,
             template,
-            parameters,
             stack_name=temp_stack.stack_name,
             resources=temp_stack.resources,
             mappings=temp_stack.mappings,

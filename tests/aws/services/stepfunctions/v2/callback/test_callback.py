@@ -1,8 +1,9 @@
 import json
 import threading
 
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
+
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT

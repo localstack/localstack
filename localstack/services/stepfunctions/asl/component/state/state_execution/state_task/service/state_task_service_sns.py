@@ -27,6 +27,8 @@ class StateTaskServiceSns(StateTaskServiceCallback):
             "Message",
             "MessageAttributes",
             "MessageStructure",
+            "MessageDeduplicationId",
+            "MessageGroupId",
             "PhoneNumber",
             "Subject",
             "TargetArn",
