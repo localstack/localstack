@@ -5,7 +5,6 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
 
@@ -191,11 +190,16 @@ PROVIDER_DEFAULTS = {
 }
 
 
-class OperationStatus(Enum):
-    PENDING = auto()
-    IN_PROGRESS = auto()
-    SUCCESS = auto()
-    FAILED = auto()
+# since we're doing equality checks on the OperationStatus
+import localstack_cfn_resource_providers.resource_provider as cfn_provider
+
+OperationStatus = cfn_provider.OperationStatus
+
+# class OperationStatus(Enum):
+#     PENDING = auto()
+#     IN_PROGRESS = auto()
+#     SUCCESS = auto()
+#     FAILED = auto()
 
 
 @dataclass
