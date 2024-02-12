@@ -32,7 +32,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.126.0
+aws-cdk-lib==2.127.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.84.0
     # via
@@ -40,11 +40,11 @@ aws-sam-translator==1.84.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.12.1
     # via moto-ext
-awscli==1.32.34
+awscli==1.32.39
     # via localstack-core (pyproject.toml)
 awscrt==0.20.3
     # via localstack-core (pyproject.toml)
-black==23.10.0
+black==23.12.1
     # via localstack-core (pyproject.toml)
 blinker==1.7.0
     # via
@@ -52,14 +52,14 @@ blinker==1.7.0
     #   quart
 boto==2.49.0
     # via amazon-kclpy
-boto3==1.34.34
+boto3==1.34.39
     # via
     #   aws-sam-translator
     #   localstack-core (pyproject.toml)
     #   moto-ext
-boto3-stubs[acm,acm-pca,acm_pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.35
+boto3-stubs[acm,acm-pca,acm_pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.39
     # via localstack-core (pyproject.toml)
-botocore==1.34.34
+botocore==1.34.39
     # via
     #   aws-xray-sdk
     #   awscli
@@ -67,7 +67,7 @@ botocore==1.34.34
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.34.35
+botocore-stubs==1.34.39
     # via boto3-stubs
 cachetools==5.3.2
     # via
@@ -85,7 +85,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==0.85.0
+cfn-lint==0.85.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -108,7 +108,7 @@ coveralls==3.3.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==41.0.7
+cryptography==42.0.2
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
@@ -168,7 +168,7 @@ hypercorn==0.16.0
     #   quart
 hyperframe==6.0.1
     # via h2
-identify==2.5.33
+identify==2.5.34
     # via pre-commit
 idna==3.6
     # via requests
@@ -198,7 +198,7 @@ jsii==1.94.0
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-lib
     #   constructs
-json5==0.9.11
+json5==0.9.14
     # via localstack-core (pyproject.toml)
 jsondiff==2.0.0
     # via moto-ext
@@ -261,7 +261,7 @@ mypy-boto3-appconfig==1.34.0
     # via boto3-stubs
 mypy-boto3-appconfigdata==1.34.24
     # via boto3-stubs
-mypy-boto3-appsync==1.34.4
+mypy-boto3-appsync==1.34.36
     # via boto3-stubs
 mypy-boto3-athena==1.34.23
     # via boto3-stubs
@@ -269,7 +269,7 @@ mypy-boto3-autoscaling==1.34.30
     # via boto3-stubs
 mypy-boto3-backup==1.34.0
     # via boto3-stubs
-mypy-boto3-batch==1.34.0
+mypy-boto3-batch==1.34.39
     # via boto3-stubs
 mypy-boto3-ce==1.34.0
     # via boto3-stubs
@@ -301,7 +301,7 @@ mypy-boto3-ec2==1.34.30
     # via boto3-stubs
 mypy-boto3-ecr==1.34.0
     # via boto3-stubs
-mypy-boto3-ecs==1.34.27
+mypy-boto3-ecs==1.34.39
     # via boto3-stubs
 mypy-boto3-efs==1.34.0
     # via boto3-stubs
@@ -317,7 +317,7 @@ mypy-boto3-emr==1.34.9
     # via boto3-stubs
 mypy-boto3-emr-serverless==1.34.0
     # via boto3-stubs
-mypy-boto3-es==1.34.13
+mypy-boto3-es==1.34.36
     # via boto3-stubs
 mypy-boto3-events==1.34.17
     # via boto3-stubs
@@ -333,7 +333,7 @@ mypy-boto3-iam==1.34.8
     # via boto3-stubs
 mypy-boto3-identitystore==1.34.0
     # via boto3-stubs
-mypy-boto3-iot==1.34.20
+mypy-boto3-iot==1.34.39
     # via boto3-stubs
 mypy-boto3-iot-data==1.34.0
     # via boto3-stubs
@@ -355,7 +355,7 @@ mypy-boto3-lakeformation==1.34.7
     # via boto3-stubs
 mypy-boto3-lambda==1.34.0
     # via boto3-stubs
-mypy-boto3-logs==1.34.16
+mypy-boto3-logs==1.34.36
     # via boto3-stubs
 mypy-boto3-managedblockchain==1.34.0
     # via boto3-stubs
@@ -369,7 +369,7 @@ mypy-boto3-mwaa==1.34.30
     # via boto3-stubs
 mypy-boto3-neptune==1.34.0
     # via boto3-stubs
-mypy-boto3-opensearch==1.34.13
+mypy-boto3-opensearch==1.34.36
     # via boto3-stubs
 mypy-boto3-organizations==1.34.24
     # via boto3-stubs
@@ -383,7 +383,7 @@ mypy-boto3-rds==1.34.30
     # via boto3-stubs
 mypy-boto3-rds-data==1.34.6
     # via boto3-stubs
-mypy-boto3-redshift==1.34.0
+mypy-boto3-redshift==1.34.37
     # via boto3-stubs
 mypy-boto3-redshift-data==1.34.0
     # via boto3-stubs
@@ -429,7 +429,7 @@ mypy-boto3-timestream-write==1.34.0
     # via boto3-stubs
 mypy-boto3-transcribe==1.34.0
     # via boto3-stubs
-mypy-boto3-wafv2==1.34.0
+mypy-boto3-wafv2==1.34.36
     # via boto3-stubs
 mypy-boto3-xray==1.34.0
     # via boto3-stubs
@@ -484,7 +484,7 @@ ply==3.11
     #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
-pre-commit==3.5.0
+pre-commit==3.6.1
     # via localstack-core (pyproject.toml)
 priority==2.0.0
     # via hypercorn
@@ -520,7 +520,7 @@ pypandoc==1.12
     # via localstack-core (pyproject.toml)
 pyparsing==3.1.1
     # via moto-ext
-pytest==7.4.2
+pytest==8.0.0
     # via
     #   localstack-core (pyproject.toml)
     #   pytest-rerunfailures
@@ -528,7 +528,7 @@ pytest==7.4.2
     #   pytest-tinybird
 pytest-httpserver==1.0.8
     # via localstack-core (pyproject.toml)
-pytest-rerunfailures==12.0
+pytest-rerunfailures==13.0
     # via localstack-core (pyproject.toml)
 pytest-split==0.8.2
     # via localstack-core (pyproject.toml)
@@ -598,7 +598,7 @@ rsa==4.7.2
     #   python-jose
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.1.0
+ruff==0.2.1
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.0
     # via

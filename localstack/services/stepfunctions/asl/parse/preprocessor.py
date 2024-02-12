@@ -455,6 +455,7 @@ class Preprocessor(ASLParserVisitor):
                 ),
             ),
             next_stmt=composite_stmts.get(Next),
+            comment=composite_stmts.get(Comment),
         )
 
     def visitChoice_rule_comparison_variable(
@@ -475,7 +476,11 @@ class Preprocessor(ASLParserVisitor):
             ),
         )
         comparison_variable = ComparisonVariable(variable=variable, func=comparison_func)
-        return ChoiceRule(comparison=comparison_variable, next_stmt=comparison_stmts.get(Next))
+        return ChoiceRule(
+            comparison=comparison_variable,
+            next_stmt=comparison_stmts.get(Next),
+            comment=comparison_stmts.get(Comment),
+        )
 
     def visitChoices_decl(self, ctx: ASLParser.Choices_declContext) -> ChoicesDecl:
         rules: list[ChoiceRule] = list()
