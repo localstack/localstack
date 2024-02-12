@@ -12,6 +12,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_dynamodb import (
     StateTaskServiceDynamoDB,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_ecs import (
+    StateTaskServiceEcs,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_events import (
     StateTaskServiceEvents,
 )
@@ -48,5 +51,7 @@ def state_task_service_for(service_name: str) -> StateTaskService:
             return StateTaskServiceSns()
         case "events":
             return StateTaskServiceEvents()
+        case "ecs":
+            return StateTaskServiceEcs()
         case unknown:
             raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa
