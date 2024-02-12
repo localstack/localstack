@@ -48,14 +48,16 @@ def send_event_to_target(
             role_arn=role, service_principal=source_service, region_name=region
         )
     else:
-        client1 = connect_to(aws_access_key_id=account_id, region_name=region)
-        client2 = connect_to(region_name=region)
         try:
             from localstack_ext.config import ENFORCE_IAM
 
-            clients = client2 if ENFORCE_IAM else client1
+            clients = (
+                connect_to(region_name=region)
+                if ENFORCE_IAM
+                else connect_to(aws_access_key_id=account_id, region_name=region)
+            )
         except ImportError:
-            clients = client1
+            clients = connect_to(aws_access_key_id=account_id, region_name=region)
 
     if ":lambda:" in target_arn:
         lambda_client = clients.lambda_.request_metadata(
