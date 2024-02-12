@@ -3,11 +3,11 @@ import json
 import pytest
 
 from localstack.aws.connect import ServiceLevelClientFactory
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.pytest.snapshot import is_aws
 
 
-@pytest.mark.skipif(not is_aws(), reason="Test only works on AWS")
+@pytest.mark.skipif(not is_aws_cloud(), reason="Test only works on AWS")
 @markers.aws.unknown
 def test_cloudtrail_trace_example(
     cfn_store_events_role_arn, aws_client: ServiceLevelClientFactory, deploy_cfn_template

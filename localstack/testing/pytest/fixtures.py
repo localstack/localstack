@@ -24,6 +24,7 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
 )
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -1796,6 +1797,14 @@ def cleanups():
             cleanup_callback()
         except Exception as e:
             LOG.warning("Failed to execute cleanup", exc_info=e)
+
+
+@pytest.fixture(scope="session")
+def region(aws_client):
+    if is_aws_cloud() or is_api_enabled("sts"):
+        return aws_client.sts.meta.region_name
+    else:
+        return TEST_AWS_REGION_NAME
 
 
 @pytest.fixture(scope="session")
