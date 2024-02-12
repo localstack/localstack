@@ -1018,11 +1018,14 @@ class FifoQueue(SqsQueue):
         message_group = self.get_message_group(message.message_group_id)
 
         with self.mutex:
+            previously_empty = message_group.empty()
             # put the message into the group
             message_group.push(message)
 
             # if an older message becomes visible again in the queue, that message's group becomes visible also.
-            if message.receive_count < 1:
+            # The current implementation potentially removes an empty message group from the queue.
+            # Therefor the group also becomes visible if it was previously empty
+            if message.receive_count < 1 and not previously_empty:
                 return
             if message_group in self.inflight_groups:
                 self.inflight_groups.remove(message_group)
@@ -1083,7 +1086,7 @@ class FifoQueue(SqsQueue):
             self.inflight_groups.add(group)
 
             if group.empty():
-                # this can be the case if all messages in the group are still invisible
+                # this can be the case if all messages of a group have been processed.
                 # TODO: it should be blocking until at least one message is in the queue, but we don't
                 #  want to block the group
                 # TODO: check behavior in case it happens if all messages were removed from a group due to message

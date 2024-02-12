@@ -34,7 +34,7 @@ from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
+from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
 
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
@@ -1153,6 +1153,63 @@ class TestSqsProvider:
 
         # try to delete the expired message
         aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+    @markers.aws.unknown
+    def test_fifo_lambda_message_group_staying_hidden(
+        self,
+        sqs_create_queue,
+        create_lambda_function,
+        aws_client,
+        sns_create_topic,
+        sns_create_sqs_subscription,
+        create_event_source_mapping,
+        sqs_get_queue_arn,
+    ):
+        topic_name = f"topic-{short_uid()}.fifo"
+        topic_arn = sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "True"})["TopicArn"]
+        queue_name = f"queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "FifoQueue": "True",
+            },
+        )
+
+        sns_create_sqs_subscription(topic_arn, queue_url)
+        function_name = f"lambda-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_10,
+        )
+        event_source_mapping = create_event_source_mapping(
+            EventSourceArn=sqs_get_queue_arn(queue_url),
+            FunctionName=function_name,
+        )["UUID"]
+        aws_client.sns.publish(
+            TopicArn=topic_arn, MessageDeduplicationId="1", MessageGroupId="g1", Message="Message 1"
+        )
+        time.sleep(5)
+
+        # aws_client.sns.publish(TopicArn=topic_arn, MessageDeduplicationId="3", MessageGroupId="g1", Message="Message 3")
+        def assert_no_approx_messages():
+            approx_messages = aws_client.sqs.get_queue_attributes(
+                QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
+            )
+            approx_messages = approx_messages["Attributes"]["ApproximateNumberOfMessages"]
+            assert int(approx_messages) == 0
+
+        retry(assert_no_approx_messages, sleep_before=1.5)
+        aws_client.lambda_.update_event_source_mapping(Enabled=False, UUID=event_source_mapping)
+        aws_client.sns.publish(
+            TopicArn=topic_arn, MessageDeduplicationId="2", MessageGroupId="g1", Message="Message 2"
+        )
+
+        def get_message():
+            response = aws_client.sqs.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+            assert response.get("Messages")
+
+        retry(get_message)
 
     @markers.aws.needs_fixing
     @pytest.mark.skip("Needs AWS fixing and is now failing against LocalStack")
