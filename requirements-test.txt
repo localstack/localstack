@@ -208,7 +208,7 @@ junit-xml==1.9
     # via cfn-lint
 lazy-object-proxy==1.10.0
     # via openapi-spec-validator
-localstack-cfn-resource-providers==0.1.0
+localstack-cfn-resource-providers==0.1.1
     # via localstack-core (pyproject.toml)
 markdown-it-py==3.0.0
     # via rich
