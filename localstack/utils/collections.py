@@ -29,6 +29,9 @@ import cachetools
 
 LOG = logging.getLogger(__name__)
 
+# default regex to match an item in a comma-separated list string
+DEFAULT_REGEX_LIST_ITEM = r"[\w-]+"
+
 
 class AccessTrackingDict(dict):
     """
@@ -519,9 +522,14 @@ def split_list_by(
     return truthy, falsy
 
 
-def is_comma_delimited_list(string: str) -> bool:
-    """Checks is a string is comma-delimited"""
-    pattern = re.compile(r"^(\w+)(,\s*\w+)*$")
+def is_comma_delimited_list(string: str, item_regex: Optional[str] = None) -> bool:
+    """
+    Checks if the given string is a comma-delimited list of items.
+    The optional `item_regex` parameter specifies the regex pattern for each item in the list.
+    """
+    item_regex = item_regex or DEFAULT_REGEX_LIST_ITEM
+
+    pattern = re.compile(rf"^\s*({item_regex})(\s*,\s*{item_regex})*\s*$")
     if pattern.match(string) is None:
         return False
     return True

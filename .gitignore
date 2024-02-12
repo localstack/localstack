@@ -52,8 +52,6 @@ requirements.copy.txt
 *tfplan
 *.terraform.lock.hcl
 
-.python-version
-
 venv
 api_states
 

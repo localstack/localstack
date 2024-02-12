@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sns_publish_wait_for_task_token": {
+    "last_validated_date": "2024-02-01T20:51:35+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_failure_in_wait_for_task_token": {
     "last_validated_date": "2023-06-25T12:31:14+00:00"
   },

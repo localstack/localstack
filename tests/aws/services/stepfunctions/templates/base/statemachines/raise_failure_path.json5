@@ -1,0 +1,11 @@
+{
+  "Comment": "RAISE_FAILURE_PATH",
+  "StartAt": "FailState",
+  "States": {
+    "FailState": {
+      "Type": "Fail",
+      "ErrorPath": "$.Error",
+      "CausePath": "$.Cause"
+    },
+  },
+}

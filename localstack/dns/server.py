@@ -69,6 +69,7 @@ VERIFICATION_DOMAIN = config.DNS_VERIFICATION_DOMAIN
 RCODE_REFUSED = 5
 
 DNS_SERVER: "DnsServerProtocol" = None
+PREVIOUS_RESOLV_CONF_FILE: str | None = None
 
 REQUEST_TIMEOUT_SECS = 7
 
@@ -791,6 +792,7 @@ def get_available_dns_server():
 
 # ###### LEGACY METHODS ######
 def add_resolv_entry(file_path: Path | str = Path("/etc/resolv.conf")):
+    global PREVIOUS_RESOLV_CONF_FILE
     # never overwrite the host configuration without the user's permission
     if not in_docker():
         LOG.warning("Incorrectly attempted to alter host networking config")
@@ -805,11 +807,35 @@ def add_resolv_entry(file_path: Path | str = Path("/etc/resolv.conf")):
     )
     file_path = Path(file_path)
     try:
-        with file_path.open("w") as outfile:
-            print(content, file=outfile)
+        with file_path.open("r+") as outfile:
+            PREVIOUS_RESOLV_CONF_FILE = outfile.read()
+            outfile.seek(0)
+            outfile.write(content)
+            outfile.truncate()
     except Exception:
         LOG.warning(
             "Could not update container DNS settings", exc_info=LOG.isEnabledFor(logging.DEBUG)
+        )
+
+
+def revert_resolv_entry(file_path: Path | str = Path("/etc/resolv.conf")):
+    # never overwrite the host configuration without the user's permission
+    if not in_docker():
+        LOG.warning("Incorrectly attempted to alter host networking config")
+        return
+
+    if not PREVIOUS_RESOLV_CONF_FILE:
+        LOG.warning("resolv.conf file to restore not found.")
+        return
+
+    LOG.debug("Reverting container DNS config")
+    file_path = Path(file_path)
+    try:
+        with file_path.open("w") as outfile:
+            outfile.write(PREVIOUS_RESOLV_CONF_FILE)
+    except Exception:
+        LOG.warning(
+            "Could not revert container DNS settings", exc_info=LOG.isEnabledFor(logging.DEBUG)
         )
 
 
@@ -821,6 +847,16 @@ def setup_network_configuration():
     # add entry to /etc/resolv.conf
     if in_docker():
         add_resolv_entry()
+
+
+def revert_network_configuration():
+    # check if DNS is disabled
+    if not config.use_custom_dns():
+        return
+
+    # add entry to /etc/resolv.conf
+    if in_docker():
+        revert_resolv_entry()
 
 
 def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):

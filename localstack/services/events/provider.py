@@ -106,7 +106,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return events_stores[context.account_id][context.region]
 
     def test_event_pattern(
-        self, context: RequestContext, event_pattern: EventPattern, event: String
+        self, context: RequestContext, event_pattern: EventPattern, event: String, **kwargs
     ) -> TestEventPatternResponse:
         # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
         # Test event pattern uses event pattern to match against event.
@@ -163,10 +163,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     event = default_event
                     if target.get("InputPath"):
                         event = filter_event_with_target_input_path(target, event)
-                    if target.get("InputTransformer"):
-                        LOG.warning(
-                            "InputTransformer is currently not supported for scheduled rules"
-                        )
+                    if input_transformer := target.get("InputTransformer"):
+                        event = process_event_with_input_transformer(input_transformer, event)
 
                 attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
 
@@ -258,6 +256,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         role_arn: RoleArn = None,
         tags: TagList = None,
         event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> PutRuleResponse:
         store = self.get_store(context)
         self.put_rule_job_scheduler(
@@ -271,6 +270,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         name: RuleName,
         event_bus_name: EventBusNameOrArn = None,
         force: Boolean = None,
+        **kwargs,
     ) -> None:
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
@@ -280,7 +280,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         call_moto(context)
 
     def disable_rule(
-        self, context: RequestContext, name: RuleName, event_bus_name: EventBusNameOrArn = None
+        self,
+        context: RequestContext,
+        name: RuleName,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> None:
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
@@ -296,6 +300,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
+        **kwargs,
     ) -> CreateConnectionResponse:
         errors = []
 
@@ -326,6 +331,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule: RuleName,
         targets: TargetList,
         event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> PutTargetsResponse:
         validation_errors = []
 
@@ -595,10 +601,33 @@ def filter_event_with_target_input_path(target: Dict, event: Dict) -> Dict:
     return event
 
 
+def process_event_with_input_transformer(input_transformer: Dict, event: Dict) -> Dict:
+    """
+    Process the event with the input transformer of the target event,
+    by replacing the message with the populated InputTemplate.
+    docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html
+    """
+    try:
+        input_paths = input_transformer["InputPathsMap"]
+        input_template = input_transformer["InputTemplate"]
+    except KeyError as e:
+        LOG.error("%s key does not exist in input_transformer.", e)
+        raise e
+    for key, path in input_paths.items():
+        value = extract_jsonpath(event, path)
+        if not value:
+            value = ""
+        input_template = input_template.replace(f"<{key}>", value)
+    templated_event = re.sub('"', "", input_template)
+    return templated_event
+
+
 def process_events(event: Dict, targets: list[Dict]):
     for target in targets:
         arn = target["Arn"]
         changed_event = filter_event_with_target_input_path(target, event)
+        if input_transformer := target.get("InputTransformer"):
+            changed_event = process_event_with_input_transformer(input_transformer, changed_event)
         if target.get("Input"):
             changed_event = json.loads(target.get("Input"))
         try:
@@ -680,7 +709,6 @@ def events_handler_put_events(self):
                 ).get("Targets", [])
 
                 targets.extend([{"RuleArn": rule.arn} | target for target in rule_targets])
-
         # process event
         process_events(formatted_event, targets)
 
