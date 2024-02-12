@@ -1154,7 +1154,7 @@ class TestSqsProvider:
         # try to delete the expired message
         aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_fifo_empty_message_groups_added_back_to_queue(
         self, sqs_create_queue, aws_sqs_client, snapshot
     ):
