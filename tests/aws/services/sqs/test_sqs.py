@@ -34,7 +34,7 @@ from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
@@ -1155,18 +1155,10 @@ class TestSqsProvider:
         aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
     @markers.aws.unknown
-    def test_fifo_lambda_message_group_staying_hidden(
-        self,
-        sqs_create_queue,
-        create_lambda_function,
-        aws_client,
-        sns_create_topic,
-        sns_create_sqs_subscription,
-        create_event_source_mapping,
-        sqs_get_queue_arn,
+    def test_fifo_empty_message_groups_added_back_to_queue(
+        self, sqs_create_queue, aws_sqs_client, snapshot
     ):
-        topic_name = f"topic-{short_uid()}.fifo"
-        topic_arn = sns_create_topic(Name=topic_name, Attributes={"FifoTopic": "True"})["TopicArn"]
+        # https://github.com/localstack/localstack/issues/10107
         queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(
             QueueName=queue_name,
@@ -1174,42 +1166,32 @@ class TestSqsProvider:
                 "FifoQueue": "True",
             },
         )
-
-        sns_create_sqs_subscription(topic_arn, queue_url)
-        function_name = f"lambda-{short_uid()}"
-        create_lambda_function(
-            func_name=function_name,
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_10,
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageDeduplicationId="1",
+            MessageGroupId="g1",
+            MessageBody="Message 1",
         )
-        event_source_mapping = create_event_source_mapping(
-            EventSourceArn=sqs_get_queue_arn(queue_url),
-            FunctionName=function_name,
-        )["UUID"]
-        aws_client.sns.publish(
-            TopicArn=topic_arn, MessageDeduplicationId="1", MessageGroupId="g1", Message="Message 1"
-        )
-        time.sleep(5)
+        resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("inital-fifo-receive", resp)
 
-        # aws_client.sns.publish(TopicArn=topic_arn, MessageDeduplicationId="3", MessageGroupId="g1", Message="Message 3")
-        def assert_no_approx_messages():
-            approx_messages = aws_client.sqs.get_queue_attributes(
-                QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
-            )
-            approx_messages = approx_messages["Attributes"]["ApproximateNumberOfMessages"]
-            assert int(approx_messages) == 0
-
-        retry(assert_no_approx_messages, sleep_before=1.5)
-        aws_client.lambda_.update_event_source_mapping(Enabled=False, UUID=event_source_mapping)
-        aws_client.sns.publish(
-            TopicArn=topic_arn, MessageDeduplicationId="2", MessageGroupId="g1", Message="Message 2"
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=resp["Messages"][0]["ReceiptHandle"]
         )
 
-        def get_message():
-            response = aws_client.sqs.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
-            assert response.get("Messages")
+        # call receive on an empty message group, removing it from the message group queue
+        resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("empty-fifo-receive", resp)
 
-        retry(get_message)
+        # ensure FIFO queue stays functional
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageDeduplicationId="2",
+            MessageGroupId="g1",
+            MessageBody="Message 2",
+        )
+        resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("final-fifo-receive", resp)
 
     @markers.aws.needs_fixing
     @pytest.mark.skip("Needs AWS fixing and is now failing against LocalStack")
