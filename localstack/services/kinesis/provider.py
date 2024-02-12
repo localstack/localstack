@@ -87,6 +87,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         consumer_arn: ConsumerARN,
         shard_id: ShardId,
         starting_position: StartingPosition,
+        **kwargs,
     ) -> SubscribeToShardOutput:
         kinesis = connect_to(
             aws_access_key_id=context.account_id, region_name=context.region
@@ -150,6 +151,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         explicit_hash_key: HashKey = None,
         sequence_number_for_ordering: SequenceNumber = None,
         stream_arn: StreamARN = None,
+        **kwargs,
     ) -> PutRecordOutput:
         # TODO: Ensure use of `stream_arn` works. Currently kinesis-mock only works with ctx request account ID and region
         if random() < config.KINESIS_ERROR_PROBABILITY:
@@ -166,6 +168,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         records: PutRecordsRequestEntryList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs,
     ) -> PutRecordsOutput:
         # TODO: Ensure use of `stream_arn` works. Currently kinesis-mock only works with ctx request account ID and region
         if random() < config.KINESIS_ERROR_PROBABILITY:

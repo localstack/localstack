@@ -185,7 +185,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self.alarm_scheduler.shutdown_scheduler()
         self.alarm_scheduler = None
 
-    def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+    def delete_alarms(self, context: RequestContext, alarm_names: AlarmNames, **kwargs) -> None:
         """
         Delete alarms.
         """
@@ -199,7 +199,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 store.alarms.pop(alarm_arn, None)
 
     def put_metric_data(
-        self, context: RequestContext, namespace: Namespace, metric_data: MetricData
+        self, context: RequestContext, namespace: Namespace, metric_data: MetricData, **kwargs
     ) -> None:
         _validate_parameters_for_put_metric_data(metric_data)
 
@@ -217,6 +217,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         scan_by: ScanBy = None,
         max_datapoints: GetMetricDataMaxDatapoints = None,
         label_options: LabelOptions = None,
+        **kwargs,
     ) -> GetMetricDataOutput:
         results: List[MetricDataResult] = []
         limit = max_datapoints or 100_800
@@ -288,6 +289,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         state_value: StateValue,
         state_reason: StateReason,
         state_reason_data: StateReasonData = None,
+        **kwargs,
     ) -> None:
         try:
             if state_reason_data:
@@ -461,6 +463,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         action_prefix: ActionPrefix = None,
         max_records: MaxRecords = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeAlarmsOutput:
         store = self.get_store(context.account_id, context.region)
         alarms = list(store.alarms.values())
@@ -490,6 +493,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         dimensions: Dimensions = None,
         period: Period = None,
         unit: StandardUnit = None,
+        **kwargs,
     ) -> DescribeAlarmsForMetricOutput:
         store = self.get_store(context.account_id, context.region)
         alarms = [
@@ -511,25 +515,33 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         return DescribeAlarmsForMetricOutput(MetricAlarms=alarms)
 
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceOutput:
         tags = self.tags.list_tags_for_resource(resource_arn)
         return ListTagsForResourceOutput(Tags=tags.get("Tags", []))
 
     def untag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs,
     ) -> UntagResourceOutput:
         self.tags.untag_resource(resource_arn, tag_keys)
         return UntagResourceOutput()
 
     def tag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
     ) -> TagResourceOutput:
         self.tags.tag_resource(resource_arn, tags)
         return TagResourceOutput()
 
     def put_dashboard(
-        self, context: RequestContext, dashboard_name: DashboardName, dashboard_body: DashboardBody
+        self,
+        context: RequestContext,
+        dashboard_name: DashboardName,
+        dashboard_body: DashboardBody,
+        **kwargs,
     ) -> PutDashboardOutput:
         store = self.get_store(context.account_id, context.region)
         store.dashboards[dashboard_name] = LocalStackDashboard(
@@ -538,7 +550,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         return PutDashboardOutput()
 
     def get_dashboard(
-        self, context: RequestContext, dashboard_name: DashboardName
+        self, context: RequestContext, dashboard_name: DashboardName, **kwargs
     ) -> GetDashboardOutput:
         store = self.get_store(context.account_id, context.region)
         dashboard = store.dashboards.get(dashboard_name)
@@ -552,7 +564,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         )
 
     def delete_dashboards(
-        self, context: RequestContext, dashboard_names: DashboardNames
+        self, context: RequestContext, dashboard_names: DashboardNames, **kwargs
     ) -> DeleteDashboardsOutput:
         store = self.get_store(context.account_id, context.region)
         for dashboard_name in dashboard_names:
@@ -564,6 +576,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         context: RequestContext,
         dashboard_name_prefix: DashboardNamePrefix = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> ListDashboardsOutput:
         store = self.get_store(context.account_id, context.region)
         dashboard_names = list(store.dashboards.keys())
@@ -594,6 +607,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         recently_active: RecentlyActive = None,
         include_linked_accounts: IncludeLinkedAccounts = None,
         owning_account: AccountId = None,
+        **kwargs,
     ) -> ListMetricsOutput:
         result = self.cloudwatch_database.list_metrics(
             context.account_id,
@@ -631,6 +645,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         statistics: Statistics = None,
         extended_statistics: ExtendedStatistics = None,
         unit: StandardUnit = None,
+        **kwargs,
     ) -> GetMetricStatisticsOutput:
         stat_datapoints = {}
 
@@ -735,10 +750,14 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             alarm.alarm["StateReasonData"] = json.dumps(state_reason_data)
         alarm.alarm["StateUpdatedTimestamp"] = current_time
 
-    def disable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+    def disable_alarm_actions(
+        self, context: RequestContext, alarm_names: AlarmNames, **kwargs
+    ) -> None:
         self._set_alarm_actions(context, alarm_names, enabled=False)
 
-    def enable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+    def enable_alarm_actions(
+        self, context: RequestContext, alarm_names: AlarmNames, **kwargs
+    ) -> None:
         self._set_alarm_actions(context, alarm_names, enabled=True)
 
     def _set_alarm_actions(self, context, alarm_names, enabled):
@@ -762,6 +781,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         max_records: MaxRecords = None,
         next_token: NextToken = None,
         scan_by: ScanBy = None,
+        **kwargs,
     ) -> DescribeAlarmHistoryOutput:
         store = self.get_store(context.account_id, context.region)
         history = store.histories

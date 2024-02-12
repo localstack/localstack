@@ -50,6 +50,9 @@
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_state_machine_for_execution": {
     "last_validated_date": "2023-08-21T15:20:20+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_get_execution_history_reversed": {
+    "last_validated_date": "2024-01-28T19:44:43+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_invalid_start_execution_arn": {
     "last_validated_date": "2023-06-22T11:52:53+00:00"
   },

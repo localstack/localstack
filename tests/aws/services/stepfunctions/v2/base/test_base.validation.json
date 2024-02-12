@@ -14,6 +14,12 @@
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_empty": {
     "last_validated_date": "2023-09-05T17:17:14+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_intrinsic": {
+    "last_validated_date": "2024-01-26T18:40:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_fail_path": {
+    "last_validated_date": "2024-01-26T18:39:53+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/base/test_base.py::TestSnfBase::test_state_pass_result": {
     "last_validated_date": "2023-09-12T11:48:48+00:00"
   },

@@ -13,6 +13,7 @@ from tests.aws.services.stepfunctions.utils import (
     await_execution_aborted,
     await_execution_started,
     await_execution_success,
+    await_execution_terminated,
     await_state_machine_listed,
     await_state_machine_not_listed,
 )
@@ -310,6 +311,36 @@ class TestSnfApi:
 
         exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
         sfn_snapshot.match("exec_hist_resp", exec_hist_resp)
+
+    @markers.aws.validated
+    def test_get_execution_history_reversed(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        sm_name: str = f"statemachine_{short_uid()}"
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        exec_resp = aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn)
+        execution_arn = exec_resp["executionArn"]
+
+        await_execution_terminated(aws_client.stepfunctions, execution_arn)
+
+        exec_hist_resp = aws_client.stepfunctions.get_execution_history(executionArn=execution_arn)
+        sfn_snapshot.match("get_execution_history_reverseOrder[False]", exec_hist_resp)
+
+        exec_hist_rev_resp = aws_client.stepfunctions.get_execution_history(
+            executionArn=execution_arn, reverseOrder=True
+        )
+        sfn_snapshot.match("get_execution_history_reverseOrder[True]", exec_hist_rev_resp)
 
     @markers.aws.validated
     def test_invalid_start_execution_arn(

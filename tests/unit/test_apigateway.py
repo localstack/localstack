@@ -795,6 +795,7 @@ class TestRequestParameterResolver:
                 "integration.request.querystring.env": "stageVariables.enviroment",
                 "integration.request.header.Content-Type": "'application/json'",
                 "integration.request.header.body-header": "method.request.body",
+                "integration.request.header.testContext": "context.authorizer.myvalue",
             }
         }
 
@@ -808,13 +809,18 @@ class TestRequestParameterResolver:
         context.path_params = {"id": "bar"}
         context.integration = integration
         context.stage_variables = {"enviroment": "dev"}
+        context.auth_context["authorizer"] = {"MyValue": 1}
         resolver = RequestParametersResolver()
         result = resolver.resolve(context)
 
         assert result == {
             "path": {"pathParam": "bar"},
             "querystring": {"baz": "test", "token": "Bearer 1234", "env": "dev"},
-            "headers": {"Content-Type": "application/json", "body-header": "spam_eggs"},
+            "headers": {
+                "Content-Type": "application/json",
+                "body-header": "spam_eggs",
+                "testContext": "1",
+            },
         }
 
 

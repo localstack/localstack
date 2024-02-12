@@ -4,7 +4,7 @@ import logging
 from functools import singledispatchmethod
 from typing import Any, Dict, Optional, TypedDict
 
-from moto.core import BackendDict
+from moto.core.base_backend import BackendDict
 
 from localstack.services.stores import AccountRegionBundle
 from localstack.state.core import StateVisitor

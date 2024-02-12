@@ -584,6 +584,7 @@ class TestSNSSubscriptionCrud:
             Attributes={
                 "RawMessageDelivery": "true",
                 "FilterPolicyScope": "MessageBody",
+                "FilterPolicy": "",
             },
             ReturnSubscriptionArn=True,
         )
@@ -2864,6 +2865,33 @@ class TestSNSFilter:
         )
         snapshot.match("messages-3", response_3)
         assert "Messages" not in response_3 or response_3["Messages"] == []
+
+        # unset the filter policy
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue="",
+        )
+
+        def check_no_filter_policy():
+            subscription_attrs = aws_client.sns.get_subscription_attributes(
+                SubscriptionArn=subscription_arn
+            )
+            return "FilterPolicy" not in subscription_attrs["Attributes"]
+
+        poll_condition(check_no_filter_policy, timeout=4)
+
+        # publish message that does not satisfy the previous filter policy, but assert that the message is received now
+        message = "This the test message for null"
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=message,
+        )
+
+        response_4 = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        snapshot.match("messages-4", response_4)
 
     @markers.aws.validated
     def test_exists_filter_policy(

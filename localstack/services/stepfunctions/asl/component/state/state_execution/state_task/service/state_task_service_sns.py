@@ -18,6 +18,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 
 
 class StateTaskServiceSns(StateTaskServiceCallback):
@@ -26,6 +27,8 @@ class StateTaskServiceSns(StateTaskServiceCallback):
             "Message",
             "MessageAttributes",
             "MessageStructure",
+            "MessageDeduplicationId",
+            "MessageGroupId",
             "PhoneNumber",
             "Subject",
             "TargetArn",
@@ -84,6 +87,13 @@ class StateTaskServiceSns(StateTaskServiceCallback):
             account=resource_runtime_part.account,
             service=service_name,
         )
+
+        # Optimised integration automatically stringifies
+        if "Message" in normalised_parameters and not isinstance(
+            message := normalised_parameters["Message"], str
+        ):
+            normalised_parameters["Message"] = to_json_str(message)
+
         response = getattr(sns_client, api_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)

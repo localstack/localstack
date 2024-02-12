@@ -346,6 +346,12 @@ class SqsQueue:
         elif config.SQS_ENDPOINT_STRATEGY == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
             host_url = f"{scheme}://{host_definition.host_and_port()}/queue/{self.region}"
+        elif config.SQS_ENDPOINT_STRATEGY == "dynamic":
+            # undocumented strategy to help unblock folks who depended on the feature previously,
+            # especially when running localstack in the container on a different port than the one exposed
+            # by docker (let's say :<random-port>->:4566/tcp.). however, this should be handled in a more
+            # fundamental way in localstack.
+            host_url = f"{context.request.host_url.rstrip('/')}/queue/{self.region}"
         else:
             host_url = f"{scheme}://{host_definition.host_and_port()}"
 

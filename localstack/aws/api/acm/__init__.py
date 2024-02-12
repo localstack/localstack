@@ -520,36 +520,35 @@ class AcmApi:
 
     @handler("AddTagsToCertificate")
     def add_tags_to_certificate(
-        self, context: RequestContext, certificate_arn: Arn, tags: TagList
+        self, context: RequestContext, certificate_arn: Arn, tags: TagList, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteCertificate")
-    def delete_certificate(self, context: RequestContext, certificate_arn: Arn) -> None:
+    def delete_certificate(self, context: RequestContext, certificate_arn: Arn, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DescribeCertificate")
     def describe_certificate(
-        self, context: RequestContext, certificate_arn: Arn
+        self, context: RequestContext, certificate_arn: Arn, **kwargs
     ) -> DescribeCertificateResponse:
         raise NotImplementedError
 
     @handler("ExportCertificate")
     def export_certificate(
-        self, context: RequestContext, certificate_arn: Arn, passphrase: PassphraseBlob
+        self, context: RequestContext, certificate_arn: Arn, passphrase: PassphraseBlob, **kwargs
     ) -> ExportCertificateResponse:
         raise NotImplementedError
 
     @handler("GetAccountConfiguration")
     def get_account_configuration(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> GetAccountConfigurationResponse:
         raise NotImplementedError
 
     @handler("GetCertificate")
     def get_certificate(
-        self, context: RequestContext, certificate_arn: Arn
+        self, context: RequestContext, certificate_arn: Arn, **kwargs
     ) -> GetCertificateResponse:
         raise NotImplementedError
 
@@ -562,6 +561,7 @@ class AcmApi:
         certificate_arn: Arn = None,
         certificate_chain: CertificateChainBlob = None,
         tags: TagList = None,
+        **kwargs
     ) -> ImportCertificateResponse:
         raise NotImplementedError
 
@@ -575,12 +575,13 @@ class AcmApi:
         max_items: MaxItems = None,
         sort_by: SortBy = None,
         sort_order: SortOrder = None,
+        **kwargs
     ) -> ListCertificatesResponse:
         raise NotImplementedError
 
     @handler("ListTagsForCertificate")
     def list_tags_for_certificate(
-        self, context: RequestContext, certificate_arn: Arn
+        self, context: RequestContext, certificate_arn: Arn, **kwargs
     ) -> ListTagsForCertificateResponse:
         raise NotImplementedError
 
@@ -590,17 +591,18 @@ class AcmApi:
         context: RequestContext,
         idempotency_token: IdempotencyToken,
         expiry_events: ExpiryEventsConfiguration = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("RemoveTagsFromCertificate")
     def remove_tags_from_certificate(
-        self, context: RequestContext, certificate_arn: Arn, tags: TagList
+        self, context: RequestContext, certificate_arn: Arn, tags: TagList, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("RenewCertificate")
-    def renew_certificate(self, context: RequestContext, certificate_arn: Arn) -> None:
+    def renew_certificate(self, context: RequestContext, certificate_arn: Arn, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("RequestCertificate")
@@ -616,6 +618,7 @@ class AcmApi:
         certificate_authority_arn: PcaArn = None,
         tags: TagList = None,
         key_algorithm: KeyAlgorithm = None,
+        **kwargs
     ) -> RequestCertificateResponse:
         raise NotImplementedError
 
@@ -626,11 +629,12 @@ class AcmApi:
         certificate_arn: Arn,
         domain: DomainNameString,
         validation_domain: DomainNameString,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UpdateCertificateOptions")
     def update_certificate_options(
-        self, context: RequestContext, certificate_arn: Arn, options: CertificateOptions
+        self, context: RequestContext, certificate_arn: Arn, options: CertificateOptions, **kwargs
     ) -> None:
         raise NotImplementedError

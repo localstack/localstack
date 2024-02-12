@@ -2288,6 +2288,7 @@ class IamApi:
         context: RequestContext,
         open_id_connect_provider_arn: arnType,
         client_id: clientIDType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2297,54 +2298,63 @@ class IamApi:
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         role_name: roleNameType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("AddUserToGroup")
     def add_user_to_group(
-        self, context: RequestContext, group_name: groupNameType, user_name: existingUserNameType
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        user_name: existingUserNameType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("AttachGroupPolicy")
     def attach_group_policy(
-        self, context: RequestContext, group_name: groupNameType, policy_arn: arnType
+        self, context: RequestContext, group_name: groupNameType, policy_arn: arnType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("AttachRolePolicy")
     def attach_role_policy(
-        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
+        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("AttachUserPolicy")
     def attach_user_policy(
-        self, context: RequestContext, user_name: userNameType, policy_arn: arnType
+        self, context: RequestContext, user_name: userNameType, policy_arn: arnType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("ChangePassword")
     def change_password(
-        self, context: RequestContext, old_password: passwordType, new_password: passwordType
+        self,
+        context: RequestContext,
+        old_password: passwordType,
+        new_password: passwordType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("CreateAccessKey")
     def create_access_key(
-        self, context: RequestContext, user_name: existingUserNameType = None
+        self, context: RequestContext, user_name: existingUserNameType = None, **kwargs
     ) -> CreateAccessKeyResponse:
         raise NotImplementedError
 
     @handler("CreateAccountAlias")
     def create_account_alias(
-        self, context: RequestContext, account_alias: accountAliasType
+        self, context: RequestContext, account_alias: accountAliasType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("CreateGroup")
     def create_group(
-        self, context: RequestContext, group_name: groupNameType, path: pathType = None
+        self, context: RequestContext, group_name: groupNameType, path: pathType = None, **kwargs
     ) -> CreateGroupResponse:
         raise NotImplementedError
 
@@ -2355,6 +2365,7 @@ class IamApi:
         instance_profile_name: instanceProfileNameType,
         path: pathType = None,
         tags: tagListType = None,
+        **kwargs
     ) -> CreateInstanceProfileResponse:
         raise NotImplementedError
 
@@ -2365,6 +2376,7 @@ class IamApi:
         user_name: userNameType,
         password: passwordType,
         password_reset_required: booleanType = None,
+        **kwargs
     ) -> CreateLoginProfileResponse:
         raise NotImplementedError
 
@@ -2376,6 +2388,7 @@ class IamApi:
         thumbprint_list: thumbprintListType,
         client_id_list: clientIDListType = None,
         tags: tagListType = None,
+        **kwargs
     ) -> CreateOpenIDConnectProviderResponse:
         raise NotImplementedError
 
@@ -2388,6 +2401,7 @@ class IamApi:
         path: policyPathType = None,
         description: policyDescriptionType = None,
         tags: tagListType = None,
+        **kwargs
     ) -> CreatePolicyResponse:
         raise NotImplementedError
 
@@ -2398,6 +2412,7 @@ class IamApi:
         policy_arn: arnType,
         policy_document: policyDocumentType,
         set_as_default: booleanType = None,
+        **kwargs
     ) -> CreatePolicyVersionResponse:
         raise NotImplementedError
 
@@ -2412,6 +2427,7 @@ class IamApi:
         max_session_duration: roleMaxSessionDurationType = None,
         permissions_boundary: arnType = None,
         tags: tagListType = None,
+        **kwargs
     ) -> CreateRoleResponse:
         raise NotImplementedError
 
@@ -2422,6 +2438,7 @@ class IamApi:
         saml_metadata_document: SAMLMetadataDocumentType,
         name: SAMLProviderNameType,
         tags: tagListType = None,
+        **kwargs
     ) -> CreateSAMLProviderResponse:
         raise NotImplementedError
 
@@ -2432,12 +2449,13 @@ class IamApi:
         aws_service_name: groupNameType,
         description: roleDescriptionType = None,
         custom_suffix: customSuffixType = None,
+        **kwargs
     ) -> CreateServiceLinkedRoleResponse:
         raise NotImplementedError
 
     @handler("CreateServiceSpecificCredential")
     def create_service_specific_credential(
-        self, context: RequestContext, user_name: userNameType, service_name: serviceName
+        self, context: RequestContext, user_name: userNameType, service_name: serviceName, **kwargs
     ) -> CreateServiceSpecificCredentialResponse:
         raise NotImplementedError
 
@@ -2449,6 +2467,7 @@ class IamApi:
         path: pathType = None,
         permissions_boundary: arnType = None,
         tags: tagListType = None,
+        **kwargs
     ) -> CreateUserResponse:
         raise NotImplementedError
 
@@ -2459,6 +2478,7 @@ class IamApi:
         virtual_mfa_device_name: virtualMFADeviceName,
         path: pathType = None,
         tags: tagListType = None,
+        **kwargs
     ) -> CreateVirtualMFADeviceResponse:
         raise NotImplementedError
 
@@ -2468,6 +2488,7 @@ class IamApi:
         context: RequestContext,
         user_name: existingUserNameType,
         serial_number: serialNumberType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2477,93 +2498,111 @@ class IamApi:
         context: RequestContext,
         access_key_id: accessKeyIdType,
         user_name: existingUserNameType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccountAlias")
     def delete_account_alias(
-        self, context: RequestContext, account_alias: accountAliasType
+        self, context: RequestContext, account_alias: accountAliasType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccountPasswordPolicy")
-    def delete_account_password_policy(
-        self,
-        context: RequestContext,
-    ) -> None:
+    def delete_account_password_policy(self, context: RequestContext, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteGroup")
-    def delete_group(self, context: RequestContext, group_name: groupNameType) -> None:
+    def delete_group(self, context: RequestContext, group_name: groupNameType, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteGroupPolicy")
     def delete_group_policy(
-        self, context: RequestContext, group_name: groupNameType, policy_name: policyNameType
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_name: policyNameType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteInstanceProfile")
     def delete_instance_profile(
-        self, context: RequestContext, instance_profile_name: instanceProfileNameType
+        self, context: RequestContext, instance_profile_name: instanceProfileNameType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteLoginProfile")
-    def delete_login_profile(self, context: RequestContext, user_name: userNameType) -> None:
+    def delete_login_profile(
+        self, context: RequestContext, user_name: userNameType, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteOpenIDConnectProvider")
     def delete_open_id_connect_provider(
-        self, context: RequestContext, open_id_connect_provider_arn: arnType
+        self, context: RequestContext, open_id_connect_provider_arn: arnType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeletePolicy")
-    def delete_policy(self, context: RequestContext, policy_arn: arnType) -> None:
+    def delete_policy(self, context: RequestContext, policy_arn: arnType, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeletePolicyVersion")
     def delete_policy_version(
-        self, context: RequestContext, policy_arn: arnType, version_id: policyVersionIdType
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        version_id: policyVersionIdType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteRole")
-    def delete_role(self, context: RequestContext, role_name: roleNameType) -> None:
+    def delete_role(self, context: RequestContext, role_name: roleNameType, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteRolePermissionsBoundary")
     def delete_role_permissions_boundary(
-        self, context: RequestContext, role_name: roleNameType
+        self, context: RequestContext, role_name: roleNameType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteRolePolicy")
     def delete_role_policy(
-        self, context: RequestContext, role_name: roleNameType, policy_name: policyNameType
+        self,
+        context: RequestContext,
+        role_name: roleNameType,
+        policy_name: policyNameType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteSAMLProvider")
-    def delete_saml_provider(self, context: RequestContext, saml_provider_arn: arnType) -> None:
+    def delete_saml_provider(
+        self, context: RequestContext, saml_provider_arn: arnType, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteSSHPublicKey")
     def delete_ssh_public_key(
-        self, context: RequestContext, user_name: userNameType, ssh_public_key_id: publicKeyIdType
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        ssh_public_key_id: publicKeyIdType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteServerCertificate")
     def delete_server_certificate(
-        self, context: RequestContext, server_certificate_name: serverCertificateNameType
+        self, context: RequestContext, server_certificate_name: serverCertificateNameType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteServiceLinkedRole")
     def delete_service_linked_role(
-        self, context: RequestContext, role_name: roleNameType
+        self, context: RequestContext, role_name: roleNameType, **kwargs
     ) -> DeleteServiceLinkedRoleResponse:
         raise NotImplementedError
 
@@ -2573,6 +2612,7 @@ class IamApi:
         context: RequestContext,
         service_specific_credential_id: serviceSpecificCredentialId,
         user_name: userNameType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2582,46 +2622,53 @@ class IamApi:
         context: RequestContext,
         certificate_id: certificateIdType,
         user_name: existingUserNameType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteUser")
-    def delete_user(self, context: RequestContext, user_name: existingUserNameType) -> None:
+    def delete_user(
+        self, context: RequestContext, user_name: existingUserNameType, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteUserPermissionsBoundary")
     def delete_user_permissions_boundary(
-        self, context: RequestContext, user_name: userNameType
+        self, context: RequestContext, user_name: userNameType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteUserPolicy")
     def delete_user_policy(
-        self, context: RequestContext, user_name: existingUserNameType, policy_name: policyNameType
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        policy_name: policyNameType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteVirtualMFADevice")
     def delete_virtual_mfa_device(
-        self, context: RequestContext, serial_number: serialNumberType
+        self, context: RequestContext, serial_number: serialNumberType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DetachGroupPolicy")
     def detach_group_policy(
-        self, context: RequestContext, group_name: groupNameType, policy_arn: arnType
+        self, context: RequestContext, group_name: groupNameType, policy_arn: arnType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DetachRolePolicy")
     def detach_role_policy(
-        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType
+        self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DetachUserPolicy")
     def detach_user_policy(
-        self, context: RequestContext, user_name: userNameType, policy_arn: arnType
+        self, context: RequestContext, user_name: userNameType, policy_arn: arnType, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2633,13 +2680,13 @@ class IamApi:
         serial_number: serialNumberType,
         authentication_code1: authenticationCodeType,
         authentication_code2: authenticationCodeType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("GenerateCredentialReport")
     def generate_credential_report(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> GenerateCredentialReportResponse:
         raise NotImplementedError
 
@@ -2649,6 +2696,7 @@ class IamApi:
         context: RequestContext,
         entity_path: organizationsEntityPathType,
         organizations_policy_id: organizationsPolicyIdType = None,
+        **kwargs
     ) -> GenerateOrganizationsAccessReportResponse:
         raise NotImplementedError
 
@@ -2658,12 +2706,13 @@ class IamApi:
         context: RequestContext,
         arn: arnType,
         granularity: AccessAdvisorUsageGranularityType = None,
+        **kwargs
     ) -> GenerateServiceLastAccessedDetailsResponse:
         raise NotImplementedError
 
     @handler("GetAccessKeyLastUsed")
     def get_access_key_last_used(
-        self, context: RequestContext, access_key_id: accessKeyIdType
+        self, context: RequestContext, access_key_id: accessKeyIdType, **kwargs
     ) -> GetAccessKeyLastUsedResponse:
         raise NotImplementedError
 
@@ -2674,26 +2723,23 @@ class IamApi:
         filter: entityListType = None,
         max_items: maxItemsType = None,
         marker: markerType = None,
+        **kwargs
     ) -> GetAccountAuthorizationDetailsResponse:
         raise NotImplementedError
 
     @handler("GetAccountPasswordPolicy")
     def get_account_password_policy(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> GetAccountPasswordPolicyResponse:
         raise NotImplementedError
 
     @handler("GetAccountSummary")
-    def get_account_summary(
-        self,
-        context: RequestContext,
-    ) -> GetAccountSummaryResponse:
+    def get_account_summary(self, context: RequestContext, **kwargs) -> GetAccountSummaryResponse:
         raise NotImplementedError
 
     @handler("GetContextKeysForCustomPolicy")
     def get_context_keys_for_custom_policy(
-        self, context: RequestContext, policy_input_list: SimulationPolicyListType
+        self, context: RequestContext, policy_input_list: SimulationPolicyListType, **kwargs
     ) -> GetContextKeysForPolicyResponse:
         raise NotImplementedError
 
@@ -2703,13 +2749,13 @@ class IamApi:
         context: RequestContext,
         policy_source_arn: arnType,
         policy_input_list: SimulationPolicyListType = None,
+        **kwargs
     ) -> GetContextKeysForPolicyResponse:
         raise NotImplementedError
 
     @handler("GetCredentialReport")
     def get_credential_report(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> GetCredentialReportResponse:
         raise NotImplementedError
 
@@ -2720,24 +2766,29 @@ class IamApi:
         group_name: groupNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> GetGroupResponse:
         raise NotImplementedError
 
     @handler("GetGroupPolicy")
     def get_group_policy(
-        self, context: RequestContext, group_name: groupNameType, policy_name: policyNameType
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        policy_name: policyNameType,
+        **kwargs
     ) -> GetGroupPolicyResponse:
         raise NotImplementedError
 
     @handler("GetInstanceProfile")
     def get_instance_profile(
-        self, context: RequestContext, instance_profile_name: instanceProfileNameType
+        self, context: RequestContext, instance_profile_name: instanceProfileNameType, **kwargs
     ) -> GetInstanceProfileResponse:
         raise NotImplementedError
 
     @handler("GetLoginProfile")
     def get_login_profile(
-        self, context: RequestContext, user_name: userNameType
+        self, context: RequestContext, user_name: userNameType, **kwargs
     ) -> GetLoginProfileResponse:
         raise NotImplementedError
 
@@ -2747,12 +2798,13 @@ class IamApi:
         context: RequestContext,
         serial_number: serialNumberType,
         user_name: userNameType = None,
+        **kwargs
     ) -> GetMFADeviceResponse:
         raise NotImplementedError
 
     @handler("GetOpenIDConnectProvider")
     def get_open_id_connect_provider(
-        self, context: RequestContext, open_id_connect_provider_arn: arnType
+        self, context: RequestContext, open_id_connect_provider_arn: arnType, **kwargs
     ) -> GetOpenIDConnectProviderResponse:
         raise NotImplementedError
 
@@ -2764,32 +2816,45 @@ class IamApi:
         max_items: maxItemsType = None,
         marker: markerType = None,
         sort_key: sortKeyType = None,
+        **kwargs
     ) -> GetOrganizationsAccessReportResponse:
         raise NotImplementedError
 
     @handler("GetPolicy")
-    def get_policy(self, context: RequestContext, policy_arn: arnType) -> GetPolicyResponse:
+    def get_policy(
+        self, context: RequestContext, policy_arn: arnType, **kwargs
+    ) -> GetPolicyResponse:
         raise NotImplementedError
 
     @handler("GetPolicyVersion")
     def get_policy_version(
-        self, context: RequestContext, policy_arn: arnType, version_id: policyVersionIdType
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        version_id: policyVersionIdType,
+        **kwargs
     ) -> GetPolicyVersionResponse:
         raise NotImplementedError
 
     @handler("GetRole")
-    def get_role(self, context: RequestContext, role_name: roleNameType) -> GetRoleResponse:
+    def get_role(
+        self, context: RequestContext, role_name: roleNameType, **kwargs
+    ) -> GetRoleResponse:
         raise NotImplementedError
 
     @handler("GetRolePolicy")
     def get_role_policy(
-        self, context: RequestContext, role_name: roleNameType, policy_name: policyNameType
+        self,
+        context: RequestContext,
+        role_name: roleNameType,
+        policy_name: policyNameType,
+        **kwargs
     ) -> GetRolePolicyResponse:
         raise NotImplementedError
 
     @handler("GetSAMLProvider")
     def get_saml_provider(
-        self, context: RequestContext, saml_provider_arn: arnType
+        self, context: RequestContext, saml_provider_arn: arnType, **kwargs
     ) -> GetSAMLProviderResponse:
         raise NotImplementedError
 
@@ -2800,12 +2865,13 @@ class IamApi:
         user_name: userNameType,
         ssh_public_key_id: publicKeyIdType,
         encoding: encodingType,
+        **kwargs
     ) -> GetSSHPublicKeyResponse:
         raise NotImplementedError
 
     @handler("GetServerCertificate")
     def get_server_certificate(
-        self, context: RequestContext, server_certificate_name: serverCertificateNameType
+        self, context: RequestContext, server_certificate_name: serverCertificateNameType, **kwargs
     ) -> GetServerCertificateResponse:
         raise NotImplementedError
 
@@ -2816,6 +2882,7 @@ class IamApi:
         job_id: jobIDType,
         max_items: maxItemsType = None,
         marker: markerType = None,
+        **kwargs
     ) -> GetServiceLastAccessedDetailsResponse:
         raise NotImplementedError
 
@@ -2827,24 +2894,29 @@ class IamApi:
         service_namespace: serviceNamespaceType,
         max_items: maxItemsType = None,
         marker: markerType = None,
+        **kwargs
     ) -> GetServiceLastAccessedDetailsWithEntitiesResponse:
         raise NotImplementedError
 
     @handler("GetServiceLinkedRoleDeletionStatus")
     def get_service_linked_role_deletion_status(
-        self, context: RequestContext, deletion_task_id: DeletionTaskIdType
+        self, context: RequestContext, deletion_task_id: DeletionTaskIdType, **kwargs
     ) -> GetServiceLinkedRoleDeletionStatusResponse:
         raise NotImplementedError
 
     @handler("GetUser")
     def get_user(
-        self, context: RequestContext, user_name: existingUserNameType = None
+        self, context: RequestContext, user_name: existingUserNameType = None, **kwargs
     ) -> GetUserResponse:
         raise NotImplementedError
 
     @handler("GetUserPolicy")
     def get_user_policy(
-        self, context: RequestContext, user_name: existingUserNameType, policy_name: policyNameType
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        policy_name: policyNameType,
+        **kwargs
     ) -> GetUserPolicyResponse:
         raise NotImplementedError
 
@@ -2855,12 +2927,17 @@ class IamApi:
         user_name: existingUserNameType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListAccessKeysResponse:
         raise NotImplementedError
 
     @handler("ListAccountAliases")
     def list_account_aliases(
-        self, context: RequestContext, marker: markerType = None, max_items: maxItemsType = None
+        self,
+        context: RequestContext,
+        marker: markerType = None,
+        max_items: maxItemsType = None,
+        **kwargs
     ) -> ListAccountAliasesResponse:
         raise NotImplementedError
 
@@ -2872,6 +2949,7 @@ class IamApi:
         path_prefix: policyPathType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListAttachedGroupPoliciesResponse:
         raise NotImplementedError
 
@@ -2883,6 +2961,7 @@ class IamApi:
         path_prefix: policyPathType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListAttachedRolePoliciesResponse:
         raise NotImplementedError
 
@@ -2894,6 +2973,7 @@ class IamApi:
         path_prefix: policyPathType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListAttachedUserPoliciesResponse:
         raise NotImplementedError
 
@@ -2907,6 +2987,7 @@ class IamApi:
         policy_usage_filter: PolicyUsageType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListEntitiesForPolicyResponse:
         raise NotImplementedError
 
@@ -2917,6 +2998,7 @@ class IamApi:
         group_name: groupNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListGroupPoliciesResponse:
         raise NotImplementedError
 
@@ -2927,6 +3009,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListGroupsResponse:
         raise NotImplementedError
 
@@ -2937,6 +3020,7 @@ class IamApi:
         user_name: existingUserNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListGroupsForUserResponse:
         raise NotImplementedError
 
@@ -2947,6 +3031,7 @@ class IamApi:
         instance_profile_name: instanceProfileNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListInstanceProfileTagsResponse:
         raise NotImplementedError
 
@@ -2957,6 +3042,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListInstanceProfilesResponse:
         raise NotImplementedError
 
@@ -2967,6 +3053,7 @@ class IamApi:
         role_name: roleNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListInstanceProfilesForRoleResponse:
         raise NotImplementedError
 
@@ -2977,6 +3064,7 @@ class IamApi:
         serial_number: serialNumberType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListMFADeviceTagsResponse:
         raise NotImplementedError
 
@@ -2987,6 +3075,7 @@ class IamApi:
         user_name: existingUserNameType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListMFADevicesResponse:
         raise NotImplementedError
 
@@ -2997,13 +3086,13 @@ class IamApi:
         open_id_connect_provider_arn: arnType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListOpenIDConnectProviderTagsResponse:
         raise NotImplementedError
 
     @handler("ListOpenIDConnectProviders")
     def list_open_id_connect_providers(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> ListOpenIDConnectProvidersResponse:
         raise NotImplementedError
 
@@ -3017,6 +3106,7 @@ class IamApi:
         policy_usage_filter: PolicyUsageType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListPoliciesResponse:
         raise NotImplementedError
 
@@ -3027,6 +3117,7 @@ class IamApi:
         arn: arnType,
         service_namespaces: serviceNamespaceListType,
         marker: markerType = None,
+        **kwargs
     ) -> ListPoliciesGrantingServiceAccessResponse:
         raise NotImplementedError
 
@@ -3037,6 +3128,7 @@ class IamApi:
         policy_arn: arnType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListPolicyTagsResponse:
         raise NotImplementedError
 
@@ -3047,6 +3139,7 @@ class IamApi:
         policy_arn: arnType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListPolicyVersionsResponse:
         raise NotImplementedError
 
@@ -3057,6 +3150,7 @@ class IamApi:
         role_name: roleNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListRolePoliciesResponse:
         raise NotImplementedError
 
@@ -3067,6 +3161,7 @@ class IamApi:
         role_name: roleNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListRoleTagsResponse:
         raise NotImplementedError
 
@@ -3077,6 +3172,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListRolesResponse:
         raise NotImplementedError
 
@@ -3087,14 +3183,12 @@ class IamApi:
         saml_provider_arn: arnType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListSAMLProviderTagsResponse:
         raise NotImplementedError
 
     @handler("ListSAMLProviders")
-    def list_saml_providers(
-        self,
-        context: RequestContext,
-    ) -> ListSAMLProvidersResponse:
+    def list_saml_providers(self, context: RequestContext, **kwargs) -> ListSAMLProvidersResponse:
         raise NotImplementedError
 
     @handler("ListSSHPublicKeys")
@@ -3104,6 +3198,7 @@ class IamApi:
         user_name: userNameType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListSSHPublicKeysResponse:
         raise NotImplementedError
 
@@ -3114,6 +3209,7 @@ class IamApi:
         server_certificate_name: serverCertificateNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListServerCertificateTagsResponse:
         raise NotImplementedError
 
@@ -3124,6 +3220,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListServerCertificatesResponse:
         raise NotImplementedError
 
@@ -3133,6 +3230,7 @@ class IamApi:
         context: RequestContext,
         user_name: userNameType = None,
         service_name: serviceName = None,
+        **kwargs
     ) -> ListServiceSpecificCredentialsResponse:
         raise NotImplementedError
 
@@ -3143,6 +3241,7 @@ class IamApi:
         user_name: existingUserNameType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListSigningCertificatesResponse:
         raise NotImplementedError
 
@@ -3153,6 +3252,7 @@ class IamApi:
         user_name: existingUserNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListUserPoliciesResponse:
         raise NotImplementedError
 
@@ -3163,6 +3263,7 @@ class IamApi:
         user_name: existingUserNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListUserTagsResponse:
         raise NotImplementedError
 
@@ -3173,6 +3274,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListUsersResponse:
         raise NotImplementedError
 
@@ -3183,6 +3285,7 @@ class IamApi:
         assignment_status: assignmentStatusType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
+        **kwargs
     ) -> ListVirtualMFADevicesResponse:
         raise NotImplementedError
 
@@ -3193,12 +3296,17 @@ class IamApi:
         group_name: groupNameType,
         policy_name: policyNameType,
         policy_document: policyDocumentType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("PutRolePermissionsBoundary")
     def put_role_permissions_boundary(
-        self, context: RequestContext, role_name: roleNameType, permissions_boundary: arnType
+        self,
+        context: RequestContext,
+        role_name: roleNameType,
+        permissions_boundary: arnType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3209,12 +3317,17 @@ class IamApi:
         role_name: roleNameType,
         policy_name: policyNameType,
         policy_document: policyDocumentType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("PutUserPermissionsBoundary")
     def put_user_permissions_boundary(
-        self, context: RequestContext, user_name: userNameType, permissions_boundary: arnType
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        permissions_boundary: arnType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3225,6 +3338,7 @@ class IamApi:
         user_name: existingUserNameType,
         policy_name: policyNameType,
         policy_document: policyDocumentType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3234,6 +3348,7 @@ class IamApi:
         context: RequestContext,
         open_id_connect_provider_arn: arnType,
         client_id: clientIDType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3243,12 +3358,17 @@ class IamApi:
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         role_name: roleNameType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("RemoveUserFromGroup")
     def remove_user_from_group(
-        self, context: RequestContext, group_name: groupNameType, user_name: existingUserNameType
+        self,
+        context: RequestContext,
+        group_name: groupNameType,
+        user_name: existingUserNameType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3258,6 +3378,7 @@ class IamApi:
         context: RequestContext,
         service_specific_credential_id: serviceSpecificCredentialId,
         user_name: userNameType = None,
+        **kwargs
     ) -> ResetServiceSpecificCredentialResponse:
         raise NotImplementedError
 
@@ -3269,18 +3390,26 @@ class IamApi:
         serial_number: serialNumberType,
         authentication_code1: authenticationCodeType,
         authentication_code2: authenticationCodeType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("SetDefaultPolicyVersion")
     def set_default_policy_version(
-        self, context: RequestContext, policy_arn: arnType, version_id: policyVersionIdType
+        self,
+        context: RequestContext,
+        policy_arn: arnType,
+        version_id: policyVersionIdType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("SetSecurityTokenServicePreferences")
     def set_security_token_service_preferences(
-        self, context: RequestContext, global_endpoint_token_version: globalEndpointTokenVersion
+        self,
+        context: RequestContext,
+        global_endpoint_token_version: globalEndpointTokenVersion,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3299,6 +3428,7 @@ class IamApi:
         resource_handling_option: ResourceHandlingOptionType = None,
         max_items: maxItemsType = None,
         marker: markerType = None,
+        **kwargs
     ) -> SimulatePolicyResponse:
         raise NotImplementedError
 
@@ -3318,6 +3448,7 @@ class IamApi:
         resource_handling_option: ResourceHandlingOptionType = None,
         max_items: maxItemsType = None,
         marker: markerType = None,
+        **kwargs
     ) -> SimulatePolicyResponse:
         raise NotImplementedError
 
@@ -3327,32 +3458,41 @@ class IamApi:
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         tags: tagListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("TagMFADevice")
     def tag_mfa_device(
-        self, context: RequestContext, serial_number: serialNumberType, tags: tagListType
+        self, context: RequestContext, serial_number: serialNumberType, tags: tagListType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("TagOpenIDConnectProvider")
     def tag_open_id_connect_provider(
-        self, context: RequestContext, open_id_connect_provider_arn: arnType, tags: tagListType
+        self,
+        context: RequestContext,
+        open_id_connect_provider_arn: arnType,
+        tags: tagListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("TagPolicy")
-    def tag_policy(self, context: RequestContext, policy_arn: arnType, tags: tagListType) -> None:
+    def tag_policy(
+        self, context: RequestContext, policy_arn: arnType, tags: tagListType, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("TagRole")
-    def tag_role(self, context: RequestContext, role_name: roleNameType, tags: tagListType) -> None:
+    def tag_role(
+        self, context: RequestContext, role_name: roleNameType, tags: tagListType, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("TagSAMLProvider")
     def tag_saml_provider(
-        self, context: RequestContext, saml_provider_arn: arnType, tags: tagListType
+        self, context: RequestContext, saml_provider_arn: arnType, tags: tagListType, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3362,12 +3502,13 @@ class IamApi:
         context: RequestContext,
         server_certificate_name: serverCertificateNameType,
         tags: tagListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("TagUser")
     def tag_user(
-        self, context: RequestContext, user_name: existingUserNameType, tags: tagListType
+        self, context: RequestContext, user_name: existingUserNameType, tags: tagListType, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3377,12 +3518,17 @@ class IamApi:
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         tag_keys: tagKeyListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagMFADevice")
     def untag_mfa_device(
-        self, context: RequestContext, serial_number: serialNumberType, tag_keys: tagKeyListType
+        self,
+        context: RequestContext,
+        serial_number: serialNumberType,
+        tag_keys: tagKeyListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3392,24 +3538,29 @@ class IamApi:
         context: RequestContext,
         open_id_connect_provider_arn: arnType,
         tag_keys: tagKeyListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagPolicy")
     def untag_policy(
-        self, context: RequestContext, policy_arn: arnType, tag_keys: tagKeyListType
+        self, context: RequestContext, policy_arn: arnType, tag_keys: tagKeyListType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagRole")
     def untag_role(
-        self, context: RequestContext, role_name: roleNameType, tag_keys: tagKeyListType
+        self, context: RequestContext, role_name: roleNameType, tag_keys: tagKeyListType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagSAMLProvider")
     def untag_saml_provider(
-        self, context: RequestContext, saml_provider_arn: arnType, tag_keys: tagKeyListType
+        self,
+        context: RequestContext,
+        saml_provider_arn: arnType,
+        tag_keys: tagKeyListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3419,12 +3570,17 @@ class IamApi:
         context: RequestContext,
         server_certificate_name: serverCertificateNameType,
         tag_keys: tagKeyListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagUser")
     def untag_user(
-        self, context: RequestContext, user_name: existingUserNameType, tag_keys: tagKeyListType
+        self,
+        context: RequestContext,
+        user_name: existingUserNameType,
+        tag_keys: tagKeyListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3435,6 +3591,7 @@ class IamApi:
         access_key_id: accessKeyIdType,
         status: statusType,
         user_name: existingUserNameType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3451,12 +3608,17 @@ class IamApi:
         max_password_age: maxPasswordAgeType = None,
         password_reuse_prevention: passwordReusePreventionType = None,
         hard_expiry: booleanObjectType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UpdateAssumeRolePolicy")
     def update_assume_role_policy(
-        self, context: RequestContext, role_name: roleNameType, policy_document: policyDocumentType
+        self,
+        context: RequestContext,
+        role_name: roleNameType,
+        policy_document: policyDocumentType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3467,6 +3629,7 @@ class IamApi:
         group_name: groupNameType,
         new_path: pathType = None,
         new_group_name: groupNameType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3477,6 +3640,7 @@ class IamApi:
         user_name: userNameType,
         password: passwordType = None,
         password_reset_required: booleanObjectType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3486,6 +3650,7 @@ class IamApi:
         context: RequestContext,
         open_id_connect_provider_arn: arnType,
         thumbprint_list: thumbprintListType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3496,12 +3661,17 @@ class IamApi:
         role_name: roleNameType,
         description: roleDescriptionType = None,
         max_session_duration: roleMaxSessionDurationType = None,
+        **kwargs
     ) -> UpdateRoleResponse:
         raise NotImplementedError
 
     @handler("UpdateRoleDescription")
     def update_role_description(
-        self, context: RequestContext, role_name: roleNameType, description: roleDescriptionType
+        self,
+        context: RequestContext,
+        role_name: roleNameType,
+        description: roleDescriptionType,
+        **kwargs
     ) -> UpdateRoleDescriptionResponse:
         raise NotImplementedError
 
@@ -3511,6 +3681,7 @@ class IamApi:
         context: RequestContext,
         saml_metadata_document: SAMLMetadataDocumentType,
         saml_provider_arn: arnType,
+        **kwargs
     ) -> UpdateSAMLProviderResponse:
         raise NotImplementedError
 
@@ -3521,6 +3692,7 @@ class IamApi:
         user_name: userNameType,
         ssh_public_key_id: publicKeyIdType,
         status: statusType,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3531,6 +3703,7 @@ class IamApi:
         server_certificate_name: serverCertificateNameType,
         new_path: pathType = None,
         new_server_certificate_name: serverCertificateNameType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3541,6 +3714,7 @@ class IamApi:
         service_specific_credential_id: serviceSpecificCredentialId,
         status: statusType,
         user_name: userNameType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3551,6 +3725,7 @@ class IamApi:
         certificate_id: certificateIdType,
         status: statusType,
         user_name: existingUserNameType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3561,6 +3736,7 @@ class IamApi:
         user_name: existingUserNameType,
         new_path: pathType = None,
         new_user_name: userNameType = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3570,6 +3746,7 @@ class IamApi:
         context: RequestContext,
         user_name: userNameType,
         ssh_public_key_body: publicKeyMaterialType,
+        **kwargs
     ) -> UploadSSHPublicKeyResponse:
         raise NotImplementedError
 
@@ -3583,6 +3760,7 @@ class IamApi:
         path: pathType = None,
         certificate_chain: certificateChainType = None,
         tags: tagListType = None,
+        **kwargs
     ) -> UploadServerCertificateResponse:
         raise NotImplementedError
 
@@ -3592,5 +3770,6 @@ class IamApi:
         context: RequestContext,
         certificate_body: certificateBodyType,
         user_name: existingUserNameType = None,
+        **kwargs
     ) -> UploadSigningCertificateResponse:
         raise NotImplementedError
