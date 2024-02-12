@@ -316,16 +316,22 @@ class TestCloudFormation:
         assert dev_bucket
 
     @pytest.mark.parametrize(
-        "create_bucket_first, region", [(True, "eu-west-1"), (False, "us-east-1")]
+        "create_bucket_first,bucket_region", [(True, "eu-west-1"), (False, "us-east-1")]
     )
     @markers.aws.unknown
     def test_cfn_handle_s3_notification_configuration(
-        self, account_id, region, aws_client_factory, deploy_cfn_template, create_bucket_first
+        self,
+        account_id,
+        region_name,
+        bucket_region,
+        aws_client_factory,
+        deploy_cfn_template,
+        create_bucket_first,
     ):
-        s3_client = aws_client_factory(region_name=region).s3
+        s3_client = aws_client_factory(region_name=bucket_region).s3
         bucket_name = f"target-{short_uid()}"
         queue_name = f"queue-{short_uid()}"
-        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region)
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
         if create_bucket_first:
             s3_client.create_bucket(
                 Bucket=bucket_name,
