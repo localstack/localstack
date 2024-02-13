@@ -219,7 +219,7 @@ class TestLambdaBaseFeatures:
             FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
         )
         assert "FunctionError" not in result
-        assert "a" * response_size == json.loads(to_str(result["Payload"].read()))
+        assert "a" * response_size == json.load(result["Payload"])
 
     @markers.aws.validated
     def test_lambda_too_large_reponse(self, create_lambda_function, aws_client, snapshot):
@@ -235,6 +235,23 @@ class TestLambdaBaseFeatures:
             FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
         )
         snapshot.match("invoke_result", result)
+
+        # second invoke to make sure we didn't break further invocations
+        result2 = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        snapshot.match("invoke_result_2", result2)
+
+        # check that our manual log/print statement ends up in CW
+        def _check_print_in_logs():
+            log_events = (
+                aws_client.logs.get_paginator("filter_log_events")
+                .paginate(logGroupName=f"/aws/lambda/{function_name}")
+                .build_full_result()
+            )
+            assert any(["generating bytes" in e["message"] for e in log_events["events"]])
+
+        retry(_check_print_in_logs, retries=10)
 
     @markers.aws.only_localstack
     def test_lambda_too_large_reponse_but_with_custom_limit(

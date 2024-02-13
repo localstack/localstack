@@ -21,7 +21,7 @@
     "last_validated_date": "2024-02-13T09:12:01+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_too_large_reponse": {
-    "last_validated_date": "2024-02-13T09:16:04+00:00"
+    "last_validated_date": "2024-02-13T15:50:25+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_large_payloads": {
     "last_validated_date": "2023-11-20T22:16:40+00:00"
