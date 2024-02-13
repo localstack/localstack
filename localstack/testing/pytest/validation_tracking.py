@@ -14,7 +14,7 @@ from typing import Optional
 import pluggy
 import pytest
 
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 
 
 def find_snapshot_for_item(item: pytest.Item) -> Optional[dict]:

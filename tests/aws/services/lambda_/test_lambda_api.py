@@ -30,11 +30,11 @@ from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     SNAP_START_SUPPORTED_RUNTIMES,
 )
-from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
 )
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns

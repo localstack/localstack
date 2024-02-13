@@ -47,7 +47,7 @@ def pytest_runtestloop(session: Session):
     if not session.config.option.start_localstack:
         return
 
-    from localstack.testing.aws.core import is_aws_cloud
+    from localstack.testing.aws.util import is_aws_cloud
 
     if is_env_true("TEST_SKIP_LOCALSTACK_START") or is_aws_cloud():
         LOG.info("TEST_SKIP_LOCALSTACK_START is set, not starting localstack")

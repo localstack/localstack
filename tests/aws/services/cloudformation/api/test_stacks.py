@@ -9,7 +9,7 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.cloudformation import Capability
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid

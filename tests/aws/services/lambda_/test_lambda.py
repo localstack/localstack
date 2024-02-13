@@ -23,13 +23,12 @@ from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
-from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.aws.lambda_utils import (
     concurrency_update_done,
     get_invoke_init_type,
     update_done,
 )
-from localstack.testing.aws.util import create_client_with_keys
+from localstack.testing.aws.util import create_client_with_keys, is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil

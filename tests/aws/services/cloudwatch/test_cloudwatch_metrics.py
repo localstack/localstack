@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import extract_resource_from_arn
 from localstack.utils.strings import short_uid

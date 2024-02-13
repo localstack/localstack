@@ -8,7 +8,7 @@ from localstack_snapshot.snapshots.transformer import TransformContext
 
 from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
     CallbackTemplates,

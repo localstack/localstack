@@ -1,11 +1,11 @@
 import json
 import logging
+import os
 import time
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from localstack.testing.aws.core import is_aws_cloud
 from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def cfn_store_events_role_arn(request, create_iam_role_with_policy, aws_client):
     This JSON file contains the events that CloudTrail captured during this
     test execution.
     """
-    if not is_aws_cloud():
+    if os.getenv("TEST_TARGET") != "AWS_CLOUD":
         LOG.error("cfn_store_events_role fixture does nothing unless targeting AWS")
         yield None
         return

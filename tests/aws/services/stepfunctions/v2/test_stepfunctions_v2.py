@@ -9,7 +9,7 @@ from localstack.constants import (
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.events.provider import TEST_EVENTS_CACHE
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns

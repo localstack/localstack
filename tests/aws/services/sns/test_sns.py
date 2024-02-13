@@ -27,7 +27,7 @@ from localstack.services.sns.constants import (
     SUBSCRIPTION_TOKENS_ENDPOINT,
 )
 from localstack.services.sns.provider import SnsProvider
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws.arns import parse_arn, sqs_queue_arn

@@ -14,7 +14,7 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.config import LEGACY_V2_S3_PROVIDER, S3_VIRTUAL_HOSTNAME
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST_HOSTNAME
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 
 

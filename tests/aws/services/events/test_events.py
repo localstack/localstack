@@ -14,8 +14,8 @@ from werkzeug import Request, Response
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.events.provider import _get_events_tmp_dir
-from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns, resources
 from localstack.utils.files import load_file

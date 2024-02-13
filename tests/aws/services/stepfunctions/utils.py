@@ -13,7 +13,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventType,
 )
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 

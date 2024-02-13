@@ -5,7 +5,7 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 from localstack.utils.sync import retry

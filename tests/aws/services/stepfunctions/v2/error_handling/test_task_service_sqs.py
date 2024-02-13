@@ -3,7 +3,7 @@ import json
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_templates import (

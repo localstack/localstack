@@ -16,7 +16,7 @@ from aws_cdk.aws_lambda_event_sources import SqsEventSource
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until

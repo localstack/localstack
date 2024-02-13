@@ -28,8 +28,7 @@ from localstack.services.stores import (
     LocalAttribute,
 )
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
-from localstack.testing.aws.core import is_aws_cloud
-from localstack.testing.aws.util import get_lambda_logs
+from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.utils import testutil
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table

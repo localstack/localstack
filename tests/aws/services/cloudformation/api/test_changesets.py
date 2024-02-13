@@ -8,7 +8,7 @@ from localstack.testing.aws.cloudformation_utils import (
     load_template_raw,
     render_template,
 )
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until

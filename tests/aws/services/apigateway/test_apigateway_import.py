@@ -12,7 +12,7 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 from localstack import config
 from localstack.aws.api.apigateway import Resources
 from localstack.aws.api.lambda_ import Runtime
-from localstack.testing.aws.core import is_aws_cloud
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
