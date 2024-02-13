@@ -3,6 +3,6 @@ def handler(event, context):
     with open(f"/proc/{pid}/environ", mode="rt") as f:
         environment = f.read()
     environment = environment.split("\x00")
-    environment = [env.partition("=") for env in environment if env]
-    environment = dict((env[0], env[2]) for env in environment)
-    return {"environment": environment}
+    env_partition = [env.partition("=") for env in environment if env]
+    env_dict = dict((env[0], env[2]) for env in env_partition)
+    return {"environment": env_dict}

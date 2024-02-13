@@ -699,21 +699,27 @@ class TestLambdaBehavior:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            "$..CreateFunctionResponse.LoggingConfig",
+            # not set directly on init in lambda, but only on runtime processes
             "$..Payload.environment.AWS_ACCESS_KEY_ID",
-            "$..Payload.environment.AWS_ENDPOINT_URL",
-            "$..Payload.environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
             "$..Payload.environment.AWS_SECRET_ACCESS_KEY",
             "$..Payload.environment.AWS_SESSION_TOKEN",
             "$..Payload.environment.AWS_XRAY_DAEMON_ADDRESS",
-            "$..Payload.environment.EDGE_PORT",
+            # variables set by default in the image/docker
             "$..Payload.environment.HOME",
             "$..Payload.environment.HOSTNAME",
+            # LocalStack specific variables
+            "$..Payload.environment.AWS_ENDPOINT_URL",
+            "$..Payload.environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
+            "$..Payload.environment.EDGE_PORT",
             "$..Payload.environment.LOCALSTACK_FUNCTION_ACCOUNT_ID",
             "$..Payload.environment.LOCALSTACK_HOSTNAME",
             "$..Payload.environment.LOCALSTACK_INIT_LOG_LEVEL",
             "$..Payload.environment.LOCALSTACK_RUNTIME_ENDPOINT",
             "$..Payload.environment.LOCALSTACK_RUNTIME_ID",
             "$..Payload.environment.LOCALSTACK_USER",
+            "$..Payload.environment.LOCALSTACK_POST_INVOKE_WAIT_MS",
+            # internal AWS lambda functionality
             "$..Payload.environment._AWS_XRAY_DAEMON_ADDRESS",
             "$..Payload.environment._LAMBDA_CONSOLE_SOCKET",
             "$..Payload.environment._LAMBDA_CONTROL_SOCKET",
@@ -747,9 +753,8 @@ class TestLambdaBehavior:
         create_result = create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_PROCESS_INSPECTION,
-            runtime=Runtime.python3_11,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
-            timeout=1,
         )
         snapshot.match("create-result", create_result)
 

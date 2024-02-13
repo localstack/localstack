@@ -27,7 +27,7 @@
     "last_validated_date": "2023-11-20T21:57:14+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
-    "last_validated_date": "2024-02-09T12:23:31+00:00"
+    "last_validated_date": "2024-02-13T12:42:58+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_no_timeout": {
     "last_validated_date": "2023-11-20T21:04:53+00:00"

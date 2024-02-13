@@ -3492,7 +3492,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
-    "recorded-date": "09-02-2024, 12:22:23",
+    "recorded-date": "13-02-2024, 12:42:59",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -3513,11 +3513,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.11",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -3528,7 +3532,7 @@
           "State": "Pending",
           "StateReason": "The function is being created.",
           "StateReasonCode": "Creating",
-          "Timeout": 1,
+          "Timeout": 30,
           "TracingConfig": {
             "Mode": "PassThrough"
           },

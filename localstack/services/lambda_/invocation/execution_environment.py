@@ -154,7 +154,7 @@ class ExecutionEnvironment:
         # config.handler is None for image lambdas and will be populated at runtime (e.g., by RIE)
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler
-        # Not defined for custom runtimes (e.g., provided, provided.al2)
+        # Will be overriden by the runtime itself unless it is a provided runtime
         if self.function_version.config.runtime:
             env_vars["AWS_EXECUTION_ENV"] = "AWS_Lambda_rapid"
         if self.function_version.config.environment:
