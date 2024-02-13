@@ -9,7 +9,6 @@ import boto3
 from localstack import config
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
-    AWS_REGION_US_EAST_1,
     LOCALHOST,
 )
 from localstack.utils.strings import is_string_or_bytes, to_str
@@ -96,16 +95,6 @@ def inject_test_credentials_into_env(env):
     if "AWS_ACCESS_KEY_ID" not in env and "AWS_SECRET_ACCESS_KEY" not in env:
         env["AWS_ACCESS_KEY_ID"] = "test"
         env["AWS_SECRET_ACCESS_KEY"] = "test"
-
-
-def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -> str:
-    auth = headers.get("Authorization") or ""
-    region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
-    if region == auth:
-        region = None
-    if use_default:
-        region = region or AWS_REGION_US_EAST_1
-    return region
 
 
 # TODO: move to `localstack.utils.aws.request_context`
