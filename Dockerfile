@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.11-slim-bookworm@sha256:370c586a6ffc8c619e6d652f81c094b34b14b8f2fb9251f092de23f16e299b78 AS base
+FROM python:3.12.8-slim-bookworm@sha256:2b0079146a74e23bf4ae8f6a28e1b484c6292f6fb904cbb51825b4a19812fcd8 AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -158,9 +158,9 @@ RUN --mount=type=cache,target=/root/.cache \
     chmod -R 777 /usr/lib/localstack
 
 # link the python package installer virtual environments into the localstack venv
-RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \
+RUN echo /var/lib/localstack/lib/python-packages/lib/python3.12/site-packages > localstack-var-python-packages-venv.pth && \
     mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
-RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
+RUN echo /usr/lib/localstack/python-packages/lib/python3.12/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
 
 # expose edge service, external service ports, and debugpy
