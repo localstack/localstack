@@ -18,7 +18,7 @@ Get in touch with the LocalStack Team to report 🐞 [issues](https://github.com
 - [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
 - [Getting Started - FAQ](https://docs.localstack.cloud/getting-started/faq/)
 
-##Base Image Tags
+## Base Image Tags
 
 We do push a set of different image tags for the LocalStack Docker images. When using LocalStack, you can decide which tag you want to use.These tags have different semantics and will be updated on different occasions:
 
@@ -63,10 +63,10 @@ LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynam
 LocalStack also provides additional features to make your life as a cloud developer easier! Check out LocalStack's [User Guides](https://docs.localstack.cloud/user-guide/) for more information.
 
 ## How to use this image
+
 Please make sure that you have a working [docker environment](https://docs.docker.com/get-docker/) on your machine before moving on. You can check if docker is correctly configured on your machine by executing `docker info` in your terminal. If it does not report an error (but shows information on your Docker system), you’re good to go.
 
-###Running Containers
- 
+### Running Containers
 
 You can directly start the LocalStack container using the Docker CLI. This method requires more manual steps and configuration, but it gives you more control over the container settings.
 
@@ -84,7 +84,8 @@ $ docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 -e LOCALSTACK_AUTH_TOK
 ```
 
 **Notes**
-  - This command pulls the current nightly build from the master branch (if you don’t have the image locally) and not the latest supported version. If you want to use a specific version of LocalStack, use the appropriate tag: `docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack:<tag>`. Check-out the [LocalStack releases](https://github.com/localstack/localstack/releases) to know more about specific LocalStack versions.
+
+- This command pulls the current nightly build from the master branch (if you don’t have the image locally) and not the latest supported version. If you want to use a specific version of LocalStack, use the appropriate tag: `docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack:<tag>`. Check-out the [LocalStack releases](https://github.com/localstack/localstack/releases) to know more about specific LocalStack versions.
 
 - If you are using LocalStack with an [auth token](https://docs.localstack.cloud/getting-started/auth-token/), you need to specify the image tag as `localstack/localstack-pro` in your Docker setup. Going forward, `localstack/localstack-pro` image will contain our Pro-supported services and APIs.
 
@@ -96,7 +97,7 @@ $ docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 -e LOCALSTACK_AUTH_TOK
 
 - To configure an auth token, refer to the [auth token](https://docs.localstack.cloud/getting-started/auth-token/) documentation.
 
-###Starting LocalStack with Docker-Compose
+### Starting LocalStack with Docker-Compose
 
 You can start LocalStack with [Docker Compose](https://docs.docker.com/compose/) by configuring a `docker-compose.yml file`. Currently, docker-compose version 1.9.0+ is supported.
 
@@ -153,6 +154,7 @@ $ docker-compose up
 ```
 
 **Notes**
+
 - This command pulls the current nightly build from the `master` branch (if you don’t have the image locally) and **not** the latest supported version. If you want to use a specific version, set the appropriate localstack image tag at `services.localstack.image` in the `docker-compose.yml` file (for example `localstack/localstack:<version>`).
 
 - If you are using LocalStack with an [auth token](https://docs.localstack.cloud/getting-started/auth-token/), you need to specify the image tag as `localstack/localstack-pro` in the `docker-compose.yml` file. Going forward, `localstack/localstack-pro` image will contain our Pro-supported services and APIs.
@@ -172,6 +174,7 @@ Please note that there are a few pitfalls when configuring your stack manually v
 ```console
 $ localstack config validate
 ```
+
 ## License
 
 Copyright (c) 2017-2024 LocalStack maintainers and contributors.
