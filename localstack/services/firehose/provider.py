@@ -735,8 +735,7 @@ class FirehoseProvider(FirehoseApi):
             client = connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_
 
             response = client.invoke(FunctionName=lambda_arn, Payload=event)
-            result = response.get("Payload").read()
-            result = json.loads(to_str(result))
+            result = json.load(response["Payload"])
             records = result.get("records", []) if result else []
         else:
             LOG.warning("Unsupported Firehose processor type '%s'", proc_type)

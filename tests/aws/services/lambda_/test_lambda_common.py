@@ -19,7 +19,7 @@ from localstack.services.lambda_.runtimes import TESTED_RUNTIMES
 from localstack.testing.pytest import markers
 from localstack.utils.files import cp_r
 from localstack.utils.platform import Arch, get_arch
-from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.strings import short_uid, to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ class TestLambdaRuntimesCommon:
             )
 
             assert invoke_result["StatusCode"] == 200
-            assert json.loads(invoke_result["Payload"].read()) == payload
+            assert json.load(invoke_result["Payload"]) == payload
             assert not invoke_result.get("FunctionError")
 
         # simple payload
@@ -121,7 +121,7 @@ class TestLambdaRuntimesCommon:
             FunctionName=create_function_result["FunctionName"]
         )
         assert invoke_result["StatusCode"] == 200
-        assert json.loads(invoke_result["Payload"].read()) == {}
+        assert json.load(invoke_result["Payload"]) == {}
         assert not invoke_result.get("FunctionError")
 
     # skip snapshots of LS specific env variables
@@ -169,8 +169,7 @@ class TestLambdaRuntimesCommon:
         )
 
         assert invoke_result["StatusCode"] == 200
-        invocation_result_payload = to_str(invoke_result["Payload"].read())
-        invocation_result_payload = json.loads(invocation_result_payload)
+        invocation_result_payload = json.load(invoke_result["Payload"])
         assert "environment" in invocation_result_payload
         assert "ctx" in invocation_result_payload
         assert "packages" in invocation_result_payload
@@ -183,8 +182,7 @@ class TestLambdaRuntimesCommon:
         )
 
         assert invoke_result["StatusCode"] == 200
-        invocation_result_payload_qualified = to_str(invoke_result_qualified["Payload"].read())
-        invocation_result_payload_qualified = json.loads(invocation_result_payload_qualified)
+        invocation_result_payload_qualified = json.load(invoke_result_qualified["Payload"])
         snapshot.match("invocation_result_payload_qualified", invocation_result_payload_qualified)
 
     @markers.snapshot.skip_snapshot_verify(
@@ -262,8 +260,7 @@ class TestLambdaRuntimesCommon:
         )
 
         assert invoke_result["StatusCode"] == 200
-        invocation_result_payload = to_str(invoke_result["Payload"].read())
-        invocation_result_payload = json.loads(invocation_result_payload)
+        invocation_result_payload = json.load(invoke_result["Payload"])
         assert "environment" in invocation_result_payload
         assert "ctx" in invocation_result_payload
         assert "packages" in invocation_result_payload
