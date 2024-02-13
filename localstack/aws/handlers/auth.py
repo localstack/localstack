@@ -5,7 +5,7 @@ from localstack.aws.accounts import (
 )
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
-    TEST_AWS_ACCESS_KEY_ID,
+    DEFAULT_AWS_ACCOUNT_ID,
 )
 from localstack.http import Response
 from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
@@ -43,7 +43,7 @@ class AccountIdEnricher(Handler):
         # Obtain the access key ID
         access_key_id = (
             extract_access_key_id_from_auth_header(context.request.headers)
-            or TEST_AWS_ACCESS_KEY_ID
+            or DEFAULT_AWS_ACCOUNT_ID
         )
 
         # Obtain the account ID from access key ID
