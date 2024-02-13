@@ -12,15 +12,9 @@ from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
 from requests.structures import CaseInsensitiveDict
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
-from localstack.constants import (
-    APPLICATION_JSON,
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
-)
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
@@ -475,9 +469,11 @@ class TestAPIGateway:
           data dictionary before sending it off to the lambda.
         """
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = arns.lambda_function_arn(fn_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        lambda_uri = arns.lambda_function_arn(
+            fn_name, constants.TEST_AWS_ACCOUNT_ID, constants.TEST_AWS_REGION_NAME
+        )
         invocation_uri = "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations"
-        target_uri = invocation_uri % (TEST_AWS_REGION_NAME, lambda_uri)
+        target_uri = invocation_uri % (constants.TEST_AWS_REGION_NAME, lambda_uri)
 
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway2",
@@ -490,7 +486,9 @@ class TestAPIGateway:
 
         api_id = result["id"]
         path_map = get_rest_api_paths(
-            account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME, rest_api_id=api_id
+            account_id=constants.TEST_AWS_ACCOUNT_ID,
+            region_name=constants.TEST_AWS_REGION_NAME,
+            rest_api_id=api_id,
         )
         _, resource = get_resource_for_path(path, method="POST", path_map=path_map)
 
@@ -553,7 +551,7 @@ class TestAPIGateway:
         expected_path = f"/{TEST_STAGE_NAME}/lambda/foo1"
         assert expected_path == request_context["path"]
         assert request_context.get("stageVariables") is None
-        assert TEST_AWS_ACCOUNT_ID == request_context["accountId"]
+        assert constants.TEST_AWS_ACCOUNT_ID == request_context["accountId"]
         assert resource.get("id") == request_context["resourceId"]
         assert request_context["stage"] == TEST_STAGE_NAME
         assert "python-requests/testing" == request_context["identity"]["userAgent"]
@@ -726,8 +724,10 @@ class TestAPIGateway:
 
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = arns.lambda_function_arn(fn_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
-        target_uri = arns.apigateway_invocations_arn(lambda_uri, TEST_AWS_REGION_NAME)
+        lambda_uri = arns.lambda_function_arn(
+            fn_name, constants.TEST_AWS_ACCOUNT_ID, constants.TEST_AWS_REGION_NAME
+        )
+        target_uri = arns.apigateway_invocations_arn(lambda_uri, constants.TEST_AWS_REGION_NAME)
 
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway3",
@@ -1183,7 +1183,7 @@ class TestAPIGateway:
                 snapshot.match("start_execution_response", body)
 
             case "StartSyncExecution":
-                resp_template = {APPLICATION_JSON: "$input.path('$.output')"}
+                resp_template = {constants.APPLICATION_JSON: "$input.path('$.output')"}
                 _prepare_integration(req_template, resp_template)
                 aws_client.apigateway.create_deployment(restApiId=rest_api, stageName="dev")
                 input_data = {"input": json.dumps(test_data), "name": "MyExecution"}
@@ -1728,7 +1728,7 @@ def test_apigateway_rust_lambda(
 
 @markers.aws.unknown
 def test_apigw_call_api_with_aws_endpoint_url(aws_client, region_name):
-    headers = mock_aws_request_headers("apigateway", TEST_AWS_ACCESS_KEY_ID, region_name)
+    headers = mock_aws_request_headers("apigateway", constants.TEST_AWS_ACCESS_KEY_ID, region_name)
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
     url = f"{config.internal_service_url()}/apikeys?includeValues=true&name=test%40example.org"
     response = requests.get(url, headers=headers)
@@ -2011,7 +2011,7 @@ class TestIntegrations:
         # create API Gateway and connect it to the target stream
         api_name = f"test-gw-kinesis-{short_uid()}"
         client = aws_client_factory(
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID, region_name=region_name
         ).apigateway
 
         role_arn = create_iam_role_with_policy(
@@ -2112,7 +2112,7 @@ class TestIntegrations:
     ):
         """Connects the root resource of an api gateway to the given object of an s3 bucket."""
         s3_uri = "arn:aws:apigateway:{}:s3:path/{}/{{proxy}}".format(
-            TEST_AWS_REGION_NAME, bucket_name
+            constants.TEST_AWS_REGION_NAME, bucket_name
         )
 
         resources = apigw_client.get_resources(restApiId=api_id)

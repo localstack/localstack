@@ -5,8 +5,7 @@ import pytest
 import requests
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
-from localstack import config
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
+from localstack import config, constants
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.files import load_file
@@ -56,7 +55,7 @@ class TestCdkInit:
         try:
             headers = mock_aws_request_headers(
                 "cloudformation",
-                TEST_AWS_ACCESS_KEY_ID,
+                constants.TEST_AWS_ACCESS_KEY_ID,
                 region_name,
             )
             base_url = config.internal_service_url()

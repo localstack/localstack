@@ -11,6 +11,7 @@ import requests
 from botocore.auth import SigV4Auth
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
+from localstack import constants
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
     CreateSecretRequest,
@@ -19,7 +20,6 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     ListSecretsResponse,
 )
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -36,7 +36,7 @@ RESOURCE_POLICY = {
     "Statement": [
         {
             "Effect": "Allow",
-            "Principal": {"AWS": f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:root"},
+            "Principal": {"AWS": f"arn:aws:iam::{constants.TEST_AWS_ACCOUNT_ID}:root"},
             "Action": "secretsmanager:GetSecretValue",
             "Resource": "*",
         }
@@ -1152,8 +1152,8 @@ class TestSecretsManager:
     def secretsmanager_http_json_headers(amz_target: str) -> dict:
         headers = mock_aws_request_headers(
             "secretsmanager",
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            region_name=TEST_AWS_REGION_NAME,
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
+            region_name=constants.TEST_AWS_REGION_NAME,
         )
         headers["X-Amz-Target"] = amz_target
         return headers

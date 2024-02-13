@@ -12,8 +12,7 @@ from urllib.request import Request, urlopen
 import pytest
 import requests
 
-from localstack import config
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
+from localstack import config, constants
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -88,12 +87,14 @@ class TestCloudwatch:
 
         headers = mock_aws_request_headers(
             "cloudwatch",
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
             region_name=region_name,
             internal=True,
         )
         authorization = mock_aws_request_headers(
-            "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
+            "monitoring",
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )["Authorization"]
 
         headers.update(
@@ -532,7 +533,9 @@ class TestCloudwatch:
         )
         # the new v2 provider doesn't need the headers, will return results for all accounts/regions
         headers = mock_aws_request_headers(
-            "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
+            "cloudwatch",
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         url = f"{config.external_service_url()}{PATH_GET_RAW_METRICS}"
         result = requests.get(url, headers=headers)

@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
+from localstack import constants
 from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
@@ -46,7 +46,7 @@ class TestServerless:
         run(
             ["npm", "run", "deploy", "--", f"--region={region_name}"],
             cwd=base_dir,
-            env_vars={"AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID},
+            env_vars={"AWS_ACCESS_KEY_ID": constants.TEST_AWS_ACCESS_KEY_ID},
         )
 
         yield existing_api_ids

@@ -3,14 +3,9 @@ import requests
 import xmltodict
 from botocore.exceptions import ClientError
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.handlers.cors import ALLOWED_CORS_ORIGINS
 from localstack.config import S3_VIRTUAL_HOSTNAME
-from localstack.constants import (
-    AWS_REGION_US_EAST_1,
-    LOCALHOST_HOSTNAME,
-    TEST_AWS_ACCESS_KEY_ID,
-)
 from localstack.testing.aws.core import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -19,14 +14,16 @@ from localstack.utils.strings import short_uid
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = AWS_REGION_US_EAST_1
+        region = constants.AWS_REGION_US_EAST_1
     if is_aws_cloud():
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"
         else:
             return f"https://{bucket_name}.s3.{region}.amazonaws.com"
     host = localstack_host or (
-        f"s3.{region}.{LOCALHOST_HOSTNAME}" if region != "us-east-1" else S3_VIRTUAL_HOSTNAME
+        f"s3.{region}.{constants.LOCALHOST_HOSTNAME}"
+        if region != "us-east-1"
+        else S3_VIRTUAL_HOSTNAME
     )
     s3_edge_url = config.external_service_url(host=host)
     # TODO might add the region here
@@ -176,7 +173,7 @@ class TestS3Cors:
         # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
         headers = mock_aws_request_headers(
             "s3",
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
             region_name=region_name,
         )
         headers["Origin"] = origin

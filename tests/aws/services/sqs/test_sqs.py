@@ -11,14 +11,8 @@ import requests
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import GenericTransformer
 
-from localstack import config
+from localstack import config, constants
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import (
-    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_SECRET_ACCESS_KEY,
-)
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.models import sqs_stores
 from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
@@ -1280,7 +1274,7 @@ class TestSqsProvider:
 
         headers = mock_aws_request_headers(
             "sqs",
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
             region_name=region_name,
         )
         payload = f"Action=GetQueueUrl&QueueName={queue_name}"
@@ -1304,7 +1298,7 @@ class TestSqsProvider:
         edge_url = config.internal_service_url()
         headers = mock_aws_request_headers(
             "sqs",
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
             region_name=region_name,
         )
         port = 12345
@@ -4554,15 +4548,15 @@ class TestSQSMultiAccounts:
         client1_http = aws_http_client_factory(
             service="sqs",
             region=region_name,
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=constants.TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         client2_http = aws_http_client_factory(
             service="sqs",
             region=region_name,  # Use the same region for both clients
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+            aws_access_key_id=constants.SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=constants.SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         # try and delete the queue from one account using the query API and make sure a) it works, and b) it's not deleting the queue from the other account

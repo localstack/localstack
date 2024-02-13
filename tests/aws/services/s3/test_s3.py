@@ -29,18 +29,10 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 from zoneinfo import ZoneInfo
 
 import localstack.config
-from localstack import config
+from localstack import config, constants
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.s3 import StorageClass
 from localstack.config import LEGACY_V2_S3_PROVIDER, S3_VIRTUAL_HOSTNAME
-from localstack.constants import (
-    AWS_REGION_US_EAST_1,
-    LOCALHOST_HOSTNAME,
-    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_SECRET_ACCESS_KEY,
-)
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.utils import (
     RFC1123,
@@ -136,8 +128,8 @@ def anonymous_client(aws_client_factory, region_name):
         return aws_client_factory.get_client(
             service_name=service_name,
             region_name=region_name,
-            aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+            aws_access_key_id=constants.SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=constants.SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
             config=Config(signature_version=UNSIGNED),
         )
 
@@ -2696,7 +2688,7 @@ class TestS3:
         headers = {
             "Authorization": mock_aws_request_headers(
                 "s3",
-                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
                 region_name=region_name,
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2733,7 +2725,7 @@ class TestS3:
         headers = {
             "Authorization": mock_aws_request_headers(
                 "s3",
-                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
                 region_name=region_name,
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2787,7 +2779,7 @@ class TestS3:
         headers = {
             "Authorization": mock_aws_request_headers(
                 "s3",
-                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
                 region_name=region_name,
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2850,7 +2842,7 @@ class TestS3:
         headers = {
             "Authorization": mock_aws_request_headers(
                 "s3",
-                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
                 region_name=region_name,
             )["Authorization"],
             "Content-Type": "audio/mpeg",
@@ -2920,7 +2912,7 @@ class TestS3:
         body = "test;test;test\r\ntest1;test1;test1\r\n"
         headers = {
             "Authorization": mock_aws_request_headers(
-                "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
+                "s3", aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID, region_name=region_name
             )["Authorization"],
             "Content-Type": "audio/mpeg",
             "X-Amz-Date": "20190918T051509Z",
@@ -6519,8 +6511,8 @@ class TestS3PresignedUrl:
         if not is_aws_cloud():
             # moto does not respect credentials passed, and will always set hard coded values from a template here
             # until this can be used, we are hardcoding the AccessKeyId and SecretAccessKey
-            response["Credentials"]["AccessKeyId"] = TEST_AWS_ACCESS_KEY_ID
-            response["Credentials"]["SecretAccessKey"] = TEST_AWS_SECRET_ACCESS_KEY
+            response["Credentials"]["AccessKeyId"] = constants.TEST_AWS_ACCESS_KEY_ID
+            response["Credentials"]["SecretAccessKey"] = constants.TEST_AWS_SECRET_ACCESS_KEY
 
         client = boto3.client(
             "s3",
@@ -6917,8 +6909,8 @@ class TestS3PresignedUrl:
             handler="lambda_s3_integration_presign.handler",
             role=lambda_su_role,
             envvars={
-                "ACCESS_KEY": TEST_AWS_ACCESS_KEY_ID,
-                "SECRET_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                "ACCESS_KEY": constants.TEST_AWS_ACCESS_KEY_ID,
+                "SECRET_KEY": constants.TEST_AWS_SECRET_ACCESS_KEY,
             },
         )
         s3_create_bucket(Bucket=function_name)
@@ -6988,8 +6980,8 @@ class TestS3PresignedUrl:
             handler="lambda_s3_integration_sdk_v2.handler",
             role=lambda_su_role,
             envvars={
-                "ACCESS_KEY": TEST_AWS_ACCESS_KEY_ID,
-                "SECRET_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                "ACCESS_KEY": constants.TEST_AWS_ACCESS_KEY_ID,
+                "SECRET_KEY": constants.TEST_AWS_SECRET_ACCESS_KEY,
             },
         )
         s3_create_bucket(Bucket=function_name)
@@ -8041,7 +8033,7 @@ class TestS3Routing:
         url = f"{config.internal_service_url()}/{path}"
         headers = mock_aws_request_headers(
             "s3",
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
             region_name=region_name,
         )
         headers["host"] = f"{s3_bucket}.{domain}" if use_virtual_address else domain
@@ -10285,14 +10277,14 @@ def _s3_client_custom_config(conf: Config, endpoint_url: str = None):
         "s3",
         endpoint_url=endpoint_url,
         config=conf,
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=constants.TEST_AWS_SECRET_ACCESS_KEY,
     )
 
 
 def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = AWS_REGION_US_EAST_1
+        region = constants.AWS_REGION_US_EAST_1
     if is_aws_cloud():
         if region == "us-east-1":
             return "https://s3.amazonaws.com"
@@ -10300,7 +10292,7 @@ def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
             return f"http://s3.{region}.amazonaws.com"
     if region == "us-east-1":
         return f"{config.internal_service_url(host=localstack_host or S3_VIRTUAL_HOSTNAME)}"
-    return config.internal_service_url(host=f"s3.{region}.{LOCALHOST_HOSTNAME}")
+    return config.internal_service_url(host=f"s3.{region}.{constants.LOCALHOST_HOSTNAME}")
 
 
 def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
@@ -10310,7 +10302,7 @@ def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None)
 def _website_bucket_url(bucket_name: str):
     # TODO depending on region the syntax of the website vary (dot vs dash before region)
     if is_aws_cloud():
-        region = AWS_REGION_US_EAST_1
+        region = constants.AWS_REGION_US_EAST_1
         return f"http://{bucket_name}.s3-website-{region}.amazonaws.com"
     return _bucket_url_vhost(
         bucket_name, localstack_host=localstack.config.S3_STATIC_WEBSITE_HOSTNAME
@@ -10319,7 +10311,7 @@ def _website_bucket_url(bucket_name: str):
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
-        region = AWS_REGION_US_EAST_1
+        region = constants.AWS_REGION_US_EAST_1
     if is_aws_cloud():
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"

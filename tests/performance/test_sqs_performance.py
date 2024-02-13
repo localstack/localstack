@@ -1,11 +1,7 @@
 from datetime import datetime
 
+from localstack import constants
 from localstack.aws.connect import connect_externally_to
-from localstack.constants import (
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_REGION_NAME,
-    TEST_AWS_SECRET_ACCESS_KEY,
-)
 from localstack.utils.aws.arns import sqs_queue_url_for_arn
 
 QUEUE_NAME = "test-perf-3610"
@@ -23,9 +19,9 @@ def print_duration(start, num_msgs, action):
 
 def send_messages():
     sqs = connect_externally_to(
-        region_name=TEST_AWS_REGION_NAME,
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        region_name=constants.TEST_AWS_REGION_NAME,
+        aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=constants.TEST_AWS_SECRET_ACCESS_KEY,
     ).sqs
     queue_url = sqs.create_queue(QueueName=QUEUE_NAME)["QueueUrl"]
 
@@ -38,9 +34,9 @@ def send_messages():
 
 def receive_messages():
     sqs = connect_externally_to(
-        region_name=TEST_AWS_REGION_NAME,
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        region_name=constants.TEST_AWS_REGION_NAME,
+        aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=constants.TEST_AWS_SECRET_ACCESS_KEY,
     ).sqs
     queue_url = sqs_queue_url_for_arn(QUEUE_NAME)
     messages = []
