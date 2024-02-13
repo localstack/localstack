@@ -1636,7 +1636,8 @@ class TestLambdaAlias:
             )
         snapshot.match("alias_does_not_exist_esc", e.value.response)
 
-    @markers.aws.unknown
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
+    @markers.aws.validated
     def test_alias_naming(self, aws_client, snapshot, create_lambda_function_aws, lambda_su_role):
         """
         numbers can be included and can even start the alias name, but it can't be purely a number
