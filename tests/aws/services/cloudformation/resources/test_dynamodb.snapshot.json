@@ -186,5 +186,20 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_ttl_cdk": {
+    "recorded-date": "13-02-2024, 22:58:14",
+    "recorded-content": {
+      "table": {
+        "TimeToLiveDescription": {
+          "AttributeName": "expire_at",
+          "TimeToLiveStatus": "ENABLED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
