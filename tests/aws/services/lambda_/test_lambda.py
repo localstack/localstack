@@ -274,7 +274,7 @@ class TestLambdaBaseFeatures:
         result = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
         )
-        assert "a" * response_size == json.loads(to_str(result["Payload"].read()))
+        assert "a" * response_size == json.load(result["Payload"])
 
     @markers.aws.validated
     def test_function_state(self, lambda_su_role, snapshot, create_lambda_function_aws, aws_client):
