@@ -111,6 +111,7 @@ TEST_LAMBDA_INVOCATION_TYPE = os.path.join(THIS_FOLDER, "functions/lambda_invoca
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
 TEST_LAMBDA_PROCESS_INSPECTION = os.path.join(THIS_FOLDER, "functions/lambda_process_inspection.py")
+TEST_LAMBDA_CUSTOM_RESPONSE_SIZE = os.path.join(THIS_FOLDER, "functions/lambda_response_size.py")
 
 TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
 TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
@@ -200,6 +201,80 @@ class TestLambdaBaseFeatures:
         # do not use snapshots here - loading 5MB json takes ~14 sec
         assert "FunctionError" not in result
         assert payload == json.load(result["Payload"])
+
+    @markers.aws.validated
+    def test_lambda_large_response(self, caplog, create_lambda_function, aws_client):
+        # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
+        caplog.set_level(logging.INFO)
+
+        function_name = f"large_response-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
+            func_name=function_name,
+            runtime=Runtime.python3_10,
+        )
+        response_size = 6 * 1024 * 1024  # actually + 100 is the upper limit
+        payload = {"bytenum": response_size}  # 6MB response size
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        assert "FunctionError" not in result
+        assert "a" * response_size == json.load(result["Payload"])
+
+    @markers.aws.validated
+    def test_lambda_too_large_response(self, create_lambda_function, aws_client, snapshot):
+        function_name = f"large_payload-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
+            func_name=function_name,
+            runtime=Runtime.python3_10,
+        )
+        response_size = 7 * 1024 * 1024  # 7MB response size (i.e. over 6MB limit)
+        payload = {"bytenum": response_size}
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        snapshot.match("invoke_result", result)
+
+        # second invoke to make sure we didn't break further invocations
+        result2 = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        snapshot.match("invoke_result_2", result2)
+
+        # check that our manual log/print statement ends up in CW
+        def _check_print_in_logs():
+            log_events = (
+                aws_client.logs.get_paginator("filter_log_events")
+                .paginate(logGroupName=f"/aws/lambda/{function_name}")
+                .build_full_result()
+            )
+            assert any(["generating bytes" in e["message"] for e in log_events["events"]])
+
+        retry(_check_print_in_logs, retries=10)
+
+    @markers.aws.only_localstack
+    def test_lambda_too_large_response_but_with_custom_limit(
+        self, caplog, create_lambda_function, aws_client, monkeypatch
+    ):
+        # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
+        caplog.set_level(logging.INFO)
+        monkeypatch.setattr(
+            config, "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES", str(7 * 1024 * 1024 + 100)
+        )
+
+        function_name = f"large_payload-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
+            func_name=function_name,
+            runtime=Runtime.python3_10,
+        )
+        response_size = 7 * 1024 * 1024  # 7MB response size (i.e. over 6MB limit)
+        payload = {"bytenum": response_size}
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        assert "a" * response_size == json.load(result["Payload"])
 
     @markers.aws.validated
     def test_function_state(self, lambda_su_role, snapshot, create_lambda_function_aws, aws_client):
@@ -719,6 +794,7 @@ class TestLambdaBehavior:
             "$..Payload.environment.LOCALSTACK_RUNTIME_ID",
             "$..Payload.environment.LOCALSTACK_USER",
             "$..Payload.environment.LOCALSTACK_POST_INVOKE_WAIT_MS",
+            "$..Payload.environment.LOCALSTACK_MAX_PAYLOAD_SIZE",
             # internal AWS lambda functionality
             "$..Payload.environment._AWS_XRAY_DAEMON_ADDRESS",
             "$..Payload.environment._LAMBDA_CONSOLE_SOCKET",
