@@ -1154,6 +1154,45 @@ class TestSqsProvider:
         # try to delete the expired message
         aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
+    @markers.aws.validated
+    def test_fifo_empty_message_groups_added_back_to_queue(
+        self, sqs_create_queue, aws_sqs_client, snapshot
+    ):
+        # https://github.com/localstack/localstack/issues/10107
+        queue_name = f"queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "FifoQueue": "True",
+            },
+        )
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageDeduplicationId="1",
+            MessageGroupId="g1",
+            MessageBody="Message 1",
+        )
+        resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("inital-fifo-receive", resp)
+
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=resp["Messages"][0]["ReceiptHandle"]
+        )
+
+        # call receive on the now empty message group
+        resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("empty-fifo-receive", resp)
+
+        # ensure FIFO queue stays functional
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageDeduplicationId="2",
+            MessageGroupId="g1",
+            MessageBody="Message 2",
+        )
+        resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("final-fifo-receive", resp)
+
     @markers.aws.needs_fixing
     @pytest.mark.skip("Needs AWS fixing and is now failing against LocalStack")
     def test_delete_message_batch_from_lambda(
