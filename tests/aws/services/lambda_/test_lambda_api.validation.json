@@ -17,6 +17,9 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
     "last_validated_date": "2023-11-20T15:57:06+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_naming": {
+    "last_validated_date": "2024-02-13T08:47:11+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
     "last_validated_date": "2023-11-20T15:57:21+00:00"
   },
