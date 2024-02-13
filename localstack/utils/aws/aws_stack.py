@@ -2,7 +2,7 @@ import logging
 import re
 import socket
 from functools import lru_cache
-from typing import Dict, List, Optional, Union
+from typing import List, Union
 
 import boto3
 
@@ -95,20 +95,3 @@ def inject_test_credentials_into_env(env):
     if "AWS_ACCESS_KEY_ID" not in env and "AWS_SECRET_ACCESS_KEY" not in env:
         env["AWS_ACCESS_KEY_ID"] = "test"
         env["AWS_SECRET_ACCESS_KEY"] = "test"
-
-
-# TODO: move to `localstack.utils.aws.request_context`
-def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[str]:
-    auth = headers.get("Authorization") or ""
-
-    if auth.startswith("AWS4-"):
-        # For Signature Version 4
-        access_id = re.findall(r".*Credential=([^/]+)/[^/]+/[^/]+/.*", auth)
-        if len(access_id):
-            return access_id[0]
-
-    elif auth.startswith("AWS "):
-        # For Signature Version 2
-        access_id = auth.removeprefix("AWS ").split(":")
-        if len(access_id):
-            return access_id[0]

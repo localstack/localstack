@@ -25,7 +25,6 @@ from localstack.utils.aws.aws_responses import (
     requests_error_response,
     requests_to_flask_response,
 )
-from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.coverage_docs import get_coverage_link_for_service
 from localstack.utils.patch import patch
 from localstack.utils.strings import snake_to_camel_case
@@ -86,6 +85,22 @@ def extract_region_from_auth_header(headers) -> Optional[str]:
 def extract_account_id_from_auth_header(headers) -> Optional[str]:
     if access_key_id := extract_access_key_id_from_auth_header(headers):
         return get_account_id_from_access_key_id(access_key_id)
+
+
+def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[str]:
+    auth = headers.get("Authorization") or ""
+
+    if auth.startswith("AWS4-"):
+        # For Signature Version 4
+        access_id = re.findall(r".*Credential=([^/]+)/[^/]+/[^/]+/.*", auth)
+        if len(access_id):
+            return access_id[0]
+
+    elif auth.startswith("AWS "):
+        # For Signature Version 2
+        access_id = auth.removeprefix("AWS ").split(":")
+        if len(access_id):
+            return access_id[0]
 
 
 def extract_account_id_from_headers(headers) -> str:

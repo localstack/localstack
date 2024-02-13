@@ -36,8 +36,10 @@ from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_account_id_from_arn, lambda_function_name
-from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
-from localstack.utils.aws.request_context import extract_region_from_auth_header
+from localstack.utils.aws.request_context import (
+    extract_access_key_id_from_auth_header,
+    extract_region_from_auth_header,
+)
 from localstack.utils.patch import patch
 from localstack.utils.strings import camel_to_snake_case
 from localstack.utils.sync import poll_condition

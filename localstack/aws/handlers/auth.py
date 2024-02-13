@@ -8,8 +8,10 @@ from localstack.constants import (
     DEFAULT_AWS_ACCOUNT_ID,
 )
 from localstack.http import Response
-from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
-from localstack.utils.aws.request_context import mock_aws_request_headers
+from localstack.utils.aws.request_context import (
+    extract_access_key_id_from_auth_header,
+    mock_aws_request_headers,
+)
 
 from ..api import RequestContext
 from ..chain import Handler, HandlerChain
