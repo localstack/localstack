@@ -601,7 +601,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
 
-    @pytest.mark.skip(reason="Snippet macros not yet supported")
     @markers.aws.validated
     @pytest.mark.parametrize(
         "template_to_transform",
@@ -633,7 +632,9 @@ class TestMacros:
         )
 
         macro_name = "ConvertTopicToFifo"
+        stack_name = f"stake-macro-{short_uid()}"
         deploy_cfn_template(
+            stack_name=stack_name,
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../templates/macro_resource.yml"
             ),
@@ -652,16 +653,50 @@ class TestMacros:
         original_template = aws_client.cloudformation.get_template(
             StackName=stack.stack_name, TemplateStage="Original"
         )
-        snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
-        snapshot.match("original_template", original_template)
-
         processed_template = aws_client.cloudformation.get_template(
             StackName=stack.stack_name, TemplateStage="Processed"
         )
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "topic-name"))
+
+        snapshot.match("original_template", original_template)
         snapshot.match("processed_template", processed_template)
 
-    @pytest.mark.skip(reason="Snippet macros not yet supported")
     @markers.aws.validated
+    def test_attribute_uses_macro(self, deploy_cfn_template, create_lambda_function, aws_client):
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../../templates/macros/return_random_string.py"
+        )
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=macro_function_path,
+            runtime=Runtime.python3_10,
+            client=aws_client.lambda_,
+        )
+
+        macro_name = "GenerateRandom"
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/macro_resource.yml"
+            ),
+            parameters={"FunctionName": func_name, "MacroName": macro_name},
+        )
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../templates",
+                "transformation_resource_att.yml",
+            ),
+            parameters={"Input": "test"},
+        )
+
+        resulting_value = stack.outputs["Parameter"]
+        assert "test-" in resulting_value
+
+    @markers.aws.validated
+    @pytest.mark.skip(reason="Fn::Transform does not support array of transformations")
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):

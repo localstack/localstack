@@ -39,6 +39,7 @@ def stop_server():
     try:
         from localstack.dns import server
 
+        server.revert_network_configuration()
         server.stop_servers()
     except Exception as e:
         LOG.warning("Unable to stop DNS servers: %s", e)

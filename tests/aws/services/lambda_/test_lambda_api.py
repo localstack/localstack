@@ -21,6 +21,7 @@ import pytest
 import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError, ParamValidationError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
@@ -35,7 +36,6 @@ from localstack.testing.aws.lambda_utils import (
     _await_event_source_mapping_enabled,
 )
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.docker_utils import DOCKER_CLIENT

@@ -17,6 +17,7 @@ import pytest
 import requests
 from botocore.config import Config
 from botocore.response import StreamingBody
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
@@ -30,7 +31,6 @@ from localstack.testing.aws.lambda_utils import (
 )
 from localstack.testing.aws.util import create_client_with_keys
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil
 from localstack.utils.aws import arns

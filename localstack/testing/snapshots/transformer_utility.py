@@ -5,9 +5,7 @@ from datetime import datetime
 from json import JSONDecodeError
 from typing import Optional, Pattern
 
-from localstack.aws.api.secretsmanager import CreateSecretResponse
-from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
-from localstack.testing.snapshots.transformer import (
+from localstack_snapshot.snapshots.transformer import (
     PATTERN_ISO8601,
     JsonpathTransformer,
     KeyValueBasedTransformer,
@@ -16,6 +14,9 @@ from localstack.testing.snapshots.transformer import (
     SortingTransformer,
     TimestampTransformer,
 )
+
+from localstack.aws.api.secretsmanager import CreateSecretResponse
+from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
 from localstack.utils.net import IP_REGEX
 
 LOG = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ PATTERN_KEY_ARN = re.compile(
 )
 
 
+# TODO: split into generic/aws and put into lib
 class TransformerUtility:
     @staticmethod
     def key_value(

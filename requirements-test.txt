@@ -32,7 +32,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.126.0
+aws-cdk-lib==2.127.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.84.0
     # via
@@ -61,6 +61,7 @@ botocore==1.34.39
     #   awscli
     #   boto3
     #   localstack-core (pyproject.toml)
+    #   localstack-snapshot
     #   moto-ext
     #   s3transfer
 cachetools==5.3.2
@@ -77,7 +78,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.85.0
+cfn-lint==0.85.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -104,11 +105,11 @@ cryptography==42.0.2
     #   python-jose
     #   sshpubkeys
 decorator==5.1.1
-    # via
-    #   jsonpath-ng
-    #   jsonpath-rw
+    # via jsonpath-rw
 deepdiff==6.7.1
-    # via localstack-core (pyproject.toml)
+    # via
+    #   localstack-core (pyproject.toml)
+    #   localstack-snapshot
 dill==0.3.6
     # via localstack-core (pyproject.toml)
 dnslib==0.9.24
@@ -184,8 +185,10 @@ jsonpatch==1.33
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
-jsonpath-ng==1.5.3
-    # via localstack-core (pyproject.toml)
+jsonpath-ng==1.6.1
+    # via
+    #   localstack-core (pyproject.toml)
+    #   localstack-snapshot
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
 jsonpickle==3.0.2
@@ -208,6 +211,8 @@ junit-xml==1.9
     # via cfn-lint
 lazy-object-proxy==1.10.0
     # via openapi-spec-validator
+localstack-snapshot==0.1.1
+    # via localstack-core (pyproject.toml)
 markdown-it-py==3.0.0
     # via rich
 markupsafe==2.1.5
@@ -376,7 +381,6 @@ six==1.16.0
     # via
     #   airspeed-ext
     #   ecdsa
-    #   jsonpath-ng
     #   jsonpath-rw
     #   junit-xml
     #   opensearch-py

@@ -74,8 +74,8 @@ jobs:
 
           # upgrade the requirements files only for the botocore package
           pip install pip-tools
+          pip-compile --upgrade-package botocore --upgrade-package boto3 --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
           pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra runtime -o requirements-runtime.txt pyproject.toml
-          pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
           pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra test -o requirements-test.txt pyproject.toml
           pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra dev -o requirements-dev.txt pyproject.toml
           pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra typehint -o requirements-typehint.txt pyproject.toml
