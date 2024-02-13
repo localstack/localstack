@@ -203,7 +203,7 @@ class TestLambdaBaseFeatures:
         assert payload == json.load(result["Payload"])
 
     @markers.aws.validated
-    def test_lambda_large_reponse(self, caplog, create_lambda_function, aws_client):
+    def test_lambda_large_response(self, caplog, create_lambda_function, aws_client):
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         caplog.set_level(logging.INFO)
 
@@ -222,7 +222,7 @@ class TestLambdaBaseFeatures:
         assert "a" * response_size == json.load(result["Payload"])
 
     @markers.aws.validated
-    def test_lambda_too_large_reponse(self, create_lambda_function, aws_client, snapshot):
+    def test_lambda_too_large_response(self, create_lambda_function, aws_client, snapshot):
         function_name = f"large_payload-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
@@ -254,7 +254,7 @@ class TestLambdaBaseFeatures:
         retry(_check_print_in_logs, retries=10)
 
     @markers.aws.only_localstack
-    def test_lambda_too_large_reponse_but_with_custom_limit(
+    def test_lambda_too_large_response_but_with_custom_limit(
         self, caplog, create_lambda_function, aws_client, monkeypatch
     ):
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)

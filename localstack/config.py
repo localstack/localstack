@@ -935,7 +935,9 @@ LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = int(
 )
 # SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES = int(
-    os.environ.get("LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES", 6 * 1024 * 1024 + 100)
+    os.environ.get(
+        "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES", 6 * 1024 * 1024 + 100
+    )  # the 100 comes from the init defaults
 )
 
 LAMBDA_EVENTS_INTERNAL_SQS = is_env_not_false("LAMBDA_EVENTS_INTERNAL_SQS")
