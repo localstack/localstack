@@ -3621,8 +3621,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # parsing here, as no specs are present for this, as no client directly implements this operation.
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
+        validate_post_policy(context)
         form = context.request.form
-        validate_post_policy(form)
 
         fileobj = context.request.files["file"]
         object_key = context.request.form.get("key")

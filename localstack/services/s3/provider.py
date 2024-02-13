@@ -1447,7 +1447,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
         # TODO: signature validation is not implemented for pre-signed POST
         # policy validation is not implemented either, except expiration and mandatory fields
-        validate_post_policy(context.request.form)
+        validate_post_policy(context)
 
         # Botocore has trouble parsing responses with status code in the 3XX range, it interprets them as exception
         # it then raises a nonsense one with a wrong code
