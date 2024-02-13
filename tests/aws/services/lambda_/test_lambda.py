@@ -236,6 +236,29 @@ class TestLambdaBaseFeatures:
         )
         snapshot.match("invoke_result", result)
 
+    @markers.aws.only_localstack
+    def test_lambda_too_large_reponse_but_with_custom_limit(
+        self, caplog, create_lambda_function, aws_client, monkeypatch
+    ):
+        # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
+        caplog.set_level(logging.INFO)
+        monkeypatch.setattr(
+            config, "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES", str(7 * 1024 * 1024 + 100)
+        )
+
+        function_name = f"large_payload-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
+            func_name=function_name,
+            runtime=Runtime.python3_10,
+        )
+        response_size = 7 * 1024 * 1024  # 7MB response size (i.e. over 6MB limit)
+        payload = {"bytenum": response_size}
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        assert "a" * response_size == json.loads(to_str(result["Payload"].read()))
+
     @markers.aws.validated
     def test_function_state(self, lambda_su_role, snapshot, create_lambda_function_aws, aws_client):
         """Tests if a lambda starts in state "Pending" but moves to "Active" at some point"""
