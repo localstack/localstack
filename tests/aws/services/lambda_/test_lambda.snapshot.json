@@ -3585,5 +3585,23 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_too_large_reponse": {
+    "recorded-date": "13-02-2024, 09:16:05",
+    "recorded-content": {
+      "invoke_result": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Response payload size exceeded maximum allowed payload size (6291556 bytes).",
+          "errorType": "Function.ResponseSizeTooLarge"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
