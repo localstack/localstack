@@ -84,7 +84,7 @@ jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
     # This job needs secrets and cannot be executed on forks, skip it in this case
-    if: github.event.repository.fork == false
+    if: github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
