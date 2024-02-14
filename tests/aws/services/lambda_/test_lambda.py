@@ -1596,14 +1596,14 @@ class TestLambdaMultiAccounts:
 
         assert secondary_client.delete_function_concurrency(FunctionName=func_arn)
 
-        alias_name = short_uid()
+        alias_name = f"alias-{short_uid()}"
         assert secondary_client.create_alias(
             FunctionName=func_arn, FunctionVersion="$LATEST", Name=alias_name
         )
 
         assert secondary_client.get_alias(FunctionName=func_arn, Name=alias_name)
 
-        alias_description = "blyat"
+        alias_description = f"alias-description-{short_uid()}"
         assert secondary_client.update_alias(
             FunctionName=func_arn, Name=alias_name, Description=alias_description
         )
