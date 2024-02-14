@@ -2,14 +2,13 @@ import logging
 import re
 import socket
 from functools import lru_cache
-from typing import Dict, List, Optional, Union
+from typing import List, Union
 
 import boto3
 
 from localstack import config
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
-    AWS_REGION_US_EAST_1,
     LOCALHOST,
 )
 from localstack.utils.strings import is_string_or_bytes, to_str
@@ -96,30 +95,3 @@ def inject_test_credentials_into_env(env):
     if "AWS_ACCESS_KEY_ID" not in env and "AWS_SECRET_ACCESS_KEY" not in env:
         env["AWS_ACCESS_KEY_ID"] = "test"
         env["AWS_SECRET_ACCESS_KEY"] = "test"
-
-
-def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -> str:
-    auth = headers.get("Authorization") or ""
-    region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
-    if region == auth:
-        region = None
-    if use_default:
-        region = region or AWS_REGION_US_EAST_1
-    return region
-
-
-# TODO: move to `localstack.utils.aws.request_context`
-def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[str]:
-    auth = headers.get("Authorization") or ""
-
-    if auth.startswith("AWS4-"):
-        # For Signature Version 4
-        access_id = re.findall(r".*Credential=([^/]+)/[^/]+/[^/]+/.*", auth)
-        if len(access_id):
-            return access_id[0]
-
-    elif auth.startswith("AWS "):
-        # For Signature Version 2
-        access_id = auth.removeprefix("AWS ").split(":")
-        if len(access_id):
-            return access_id[0]
