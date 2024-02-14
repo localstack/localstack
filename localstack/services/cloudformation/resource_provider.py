@@ -734,6 +734,13 @@ class ResourceProviderExecutor:
         # 1. try to load pro resource provider
         # prioritise pro resource providers
         if PRO_RESOURCE_PROVIDERS:
+            # temporary patch until this has equivalent resource providers in -ext
+            if resource_type in {
+                "AWS::ECR::Repository",
+                "AWS::SecretsManager::SecretTargetAttachment",
+                "AWS::EC2::SubnetRouteTableAssociation",
+            }:
+                return self._load_legacy_resource_provider(resource_type)
             try:
                 plugin = pro_plugin_manager.load(resource_type)
                 return plugin.factory()
