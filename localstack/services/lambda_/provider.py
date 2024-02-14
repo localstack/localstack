@@ -619,7 +619,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
             )
 
-    def _validate_layers(self, new_layers: list[str], region: str, account_id: int):
+    def _validate_layers(self, new_layers: list[str], region: str, account_id: str):
         if len(new_layers) > LAMBDA_LAYERS_LIMIT_PER_FUNCTION:
             raise InvalidParameterValueException(
                 "Cannot reference more than 5 layers.", Type="User"
@@ -997,6 +997,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             replace_kwargs["vpc_config"] = self._build_vpc_config(
                 context.account_id, context.region, vpc_config
             )
+
+        if "Handler" in request:
+            replace_kwargs["handler"] = request["Handler"]
 
         if "Runtime" in request:
             runtime = request["Runtime"]
