@@ -231,12 +231,6 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                     **self.get_ddb_kinesis_stream_specification(model)
                 )
 
-            if model.get("TimeToLiveSpecification"):
-                request.aws_client_factory.dynamodb.update_time_to_live(
-                    TableName=model["TableName"],
-                    TimeToLiveSpecification=model["TimeToLiveSpecification"],
-                )
-
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
                 resource_model=model,
@@ -252,6 +246,12 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                 status=OperationStatus.IN_PROGRESS,
                 resource_model=model,
                 custom_context=request.custom_context,
+            )
+
+        if model.get("TimeToLiveSpecification"):
+            request.aws_client_factory.dynamodb.update_time_to_live(
+                TableName=model["TableName"],
+                TimeToLiveSpecification=model["TimeToLiveSpecification"],
             )
 
         if description["Table"].get("LatestStreamArn"):

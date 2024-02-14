@@ -188,7 +188,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_ttl_cdk": {
-    "recorded-date": "13-02-2024, 22:58:14",
+    "recorded-date": "14-02-2024, 13:29:07",
     "recorded-content": {
       "table": {
         "TimeToLiveDescription": {
