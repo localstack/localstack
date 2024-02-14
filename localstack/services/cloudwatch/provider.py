@@ -34,9 +34,12 @@ from localstack.services import moto
 from localstack.services.cloudwatch.alarm_scheduler import AlarmScheduler
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceLifecycleHook
-from localstack.utils.aws import arns, aws_stack
+from localstack.utils.aws import arns
 from localstack.utils.aws.arns import extract_account_id_from_arn, lambda_function_name
-from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
+from localstack.utils.aws.request_context import (
+    extract_access_key_id_from_auth_header,
+    extract_region_from_auth_header,
+)
 from localstack.utils.patch import patch
 from localstack.utils.strings import camel_to_snake_case
 from localstack.utils.sync import poll_condition
@@ -337,7 +340,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             self.alarm_scheduler.delete_scheduler_for_alarm(arn)
 
     def get_raw_metrics(self, request: Request):
-        region = aws_stack.extract_region_from_auth_header(request.headers)
+        region = extract_region_from_auth_header(request.headers)
         account_id = (
             get_account_id_from_access_key_id(
                 extract_access_key_id_from_auth_header(request.headers)

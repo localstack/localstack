@@ -3490,5 +3490,131 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
+    "recorded-date": "13-02-2024, 12:42:59",
+    "recorded-content": {
+      "create-result": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha256",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.12",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "lambda-init-inspection": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "environment": {
+            "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+            "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+            "_LAMBDA_TELEMETRY_API_PASSPHRASE": "<telemetry-passphrase:1>",
+            "LANG": "en_US.UTF-8",
+            "TZ": ":UTC",
+            "_HANDLER": "handler.handler",
+            "_LAMBDA_DIRECT_INVOKE_SOCKET": "9",
+            "_LAMBDA_CONTROL_SOCKET": "11",
+            "_LAMBDA_CONSOLE_SOCKET": "12",
+            "LAMBDA_TASK_ROOT": "/var/task",
+            "LAMBDA_RUNTIME_DIR": "/var/runtime",
+            "_LAMBDA_LOG_FD": "18",
+            "_LAMBDA_SB_ID": "0",
+            "_LAMBDA_SHARED_MEM_FD": "8",
+            "AWS_REGION": "<region>",
+            "AWS_DEFAULT_REGION": "<region>",
+            "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+            "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+            "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "128",
+            "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+            "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+            "_AWS_XRAY_DAEMON_PORT": "2000",
+            "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+            "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+            "_X_AMZN_TRACE_ID": "<xray-trace-id:1>",
+            "AWS_EXECUTION_ENV": "AWS_Lambda_rapid",
+            "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+            "_LAMBDA_RUNTIME_LOAD_TIME": "<runtime-load-time:1>"
+          }
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_too_large_response": {
+    "recorded-date": "13-02-2024, 15:49:49",
+    "recorded-content": {
+      "invoke_result": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Response payload size exceeded maximum allowed payload size (6291556 bytes).",
+          "errorType": "Function.ResponseSizeTooLarge"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke_result_2": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Response payload size exceeded maximum allowed payload size (6291556 bytes).",
+          "errorType": "Function.ResponseSizeTooLarge"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -41,6 +41,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_message_with_expired_receipt_handle": {
     "last_validated_date": "2023-11-14T10:58:50+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs]": {
+    "last_validated_date": "2024-02-12T16:08:11+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs_json]": {
+    "last_validated_date": "2024-02-12T16:08:14+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_attributes": {
     "last_validated_date": "2023-11-14T10:58:35+00:00"
   },

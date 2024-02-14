@@ -15,6 +15,7 @@ on:
       - localstack/*.py
       - tests/aws/services/s3/**
       - Dockerfile.s3
+      - requirements-*.txt
       - setup.cfg
       - Makefile
     branches:
@@ -33,6 +34,7 @@ on:
       - localstack/*.py
       - tests/aws/services/s3/**
       - Dockerfile.s3
+      - requirements-*.txt
       - setup.cfg
       - Makefile
   workflow_dispatch:

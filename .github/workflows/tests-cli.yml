@@ -3,31 +3,41 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - ".github/workflows/tests-cli.yml"
-      - "localstack/**"
-      - "tests/**"
-      - "setup.py"
-      - "pyproject.toml"
-      - "setup.cfg"
-      - "Dockerfile"
-      - "Dockerfile.rh"
-      - "docker-compose.yml"
-      - "bin/**"
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-cli.yml'
+      - '!doc/**'
+      - '!scripts/**'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
     branches:
       - master
       - release/*
   push:
     paths:
-      - ".github/workflows/tests-cli.yml"
-      - "localstack/**"
-      - "tests/**"
-      - "setup.py"
-      - "pyproject.toml"
-      - "setup.cfg"
-      - "Dockerfile"
-      - "Dockerfile.rh"
-      - "docker-compose.yml"
-      - "bin/**"
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-cli.yml'
+      - '!doc/**'
+      - '!scripts/**'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
     branches:
       - master
       - release/*

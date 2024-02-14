@@ -154,9 +154,9 @@ class ExecutionEnvironment:
         # config.handler is None for image lambdas and will be populated at runtime (e.g., by RIE)
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler
-        # Not defined for custom runtimes (e.g., provided, provided.al2)
+        # Will be overriden by the runtime itself unless it is a provided runtime
         if self.function_version.config.runtime:
-            env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.config.runtime}"
+            env_vars["AWS_EXECUTION_ENV"] = "AWS_Lambda_rapid"
         if self.function_version.config.environment:
             env_vars.update(self.function_version.config.environment)
         if config.LAMBDA_INIT_DEBUG:
@@ -169,6 +169,10 @@ class ExecutionEnvironment:
             env_vars["LOCALSTACK_INIT_LOG_LEVEL"] = "debug"
         if config.LAMBDA_INIT_POST_INVOKE_WAIT_MS:
             env_vars["LOCALSTACK_POST_INVOKE_WAIT_MS"] = int(config.LAMBDA_INIT_POST_INVOKE_WAIT_MS)
+        if config.LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES:
+            env_vars["LOCALSTACK_MAX_PAYLOAD_SIZE"] = int(
+                config.LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES
+            )
         return env_vars
 
     # Lifecycle methods

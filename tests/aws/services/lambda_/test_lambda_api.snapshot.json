@@ -13630,5 +13630,137 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_naming": {
+    "recorded-date": "13-02-2024, 08:44:31",
+    "recorded-content": {
+      "create_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "testenv": "staging"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "publish_v1": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "testenv": "staging"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
+        "FunctionName": "<function-name:1>",
+        "Handler": "index.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:2>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.9",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create_alias_date": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2024-01-02",
+        "Description": "custom-alias",
+        "FunctionVersion": "1",
+        "Name": "2024-01-02",
+        "RevisionId": "<uuid:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_alias_date": {
+        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:2024-01-02",
+        "Description": "custom-alias",
+        "FunctionVersion": "1",
+        "Name": "2024-01-02",
+        "RevisionId": "<uuid:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_alias_number_exception": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '2024' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: (?!^[0-9]+$)([a-zA-Z0-9-_]+)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

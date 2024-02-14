@@ -19,7 +19,7 @@ from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_
 from localstack.testing.scenario.provisioning import InfraProvisioner, cleanup_s3_bucket
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
-from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.strings import to_bytes
 from localstack.utils.sync import retry
 
 """
@@ -190,7 +190,7 @@ class TestBookstoreApplication:
             FunctionName=list_books_fn,
             Payload=to_bytes(json.dumps(payload_category)),
         )
-        result = json.loads(to_str(result["Payload"].read()))
+        result = json.load(result["Payload"])
         snapshot.match("list_books_cat_woodwork", result)
 
         # test another category
@@ -199,12 +199,12 @@ class TestBookstoreApplication:
             FunctionName=list_books_fn,
             Payload=to_bytes(json.dumps(payload_category)),
         )
-        result = json.loads(to_str(result["Payload"].read()))
+        result = json.load(result["Payload"])
         snapshot.match("list_books_cat_home", result)
 
         # without category it should return all books
         result = aws_client.lambda_.invoke(FunctionName=list_books_fn)
-        result = json.loads(to_str(result["Payload"].read()))
+        result = json.load(result["Payload"])
         assert len(json.loads(result["body"])) == 56
 
     @markers.aws.validated
@@ -236,7 +236,7 @@ class TestBookstoreApplication:
                 FunctionName=search_fn,
                 Payload=to_bytes(json.dumps({"queryStringParameters": {"q": category}})),
             )
-            res = json.loads(to_str(res["Payload"].read()))
+            res = json.load(res["Payload"])
             search_res = json.loads(res["body"])["hits"]["total"]["value"]
             assert search_res == expected_amount
             return res
@@ -252,7 +252,7 @@ class TestBookstoreApplication:
             FunctionName=search_fn,
             Payload=to_bytes(json.dumps(search_payload)),
         )
-        result = json.loads(to_str(result["Payload"].read()))
+        result = json.load(result["Payload"])
         search_result = json.loads(result["body"])
         snapshot.match("search_name_spaghetti", search_result)
 
@@ -274,7 +274,7 @@ class TestBookstoreApplication:
             FunctionName=search_fn,
             Payload=to_bytes(json.dumps(search_payload)),
         )
-        result = json.loads(to_str(result["Payload"].read()))
+        result = json.load(result["Payload"])
         search_result = json.loads(result["body"])
         snapshot.match("search_no_result", search_result)
 
@@ -287,6 +287,7 @@ class TestBookstoreApplication:
             "$..ClusterConfig.Options.DedicatedMasterCount",  # added in LS
             "$..ClusterConfig.Options.DedicatedMasterType",  # added in LS
             "$..DomainStatusList..EBSOptions.Iops",  # added in LS
+            "$..DomainStatusList..IPAddressType",  # missing
             "$..SoftwareUpdateOptions",  # missing
             "$..OffPeakWindowOptions",  # missing
             "$..ChangeProgressDetails",  # missing
@@ -296,6 +297,7 @@ class TestBookstoreApplication:
             "$..AdvancedSecurityOptions.AnonymousAuthEnabled",  # missing
             "$..AdvancedSecurityOptions.Options.AnonymousAuthEnabled",  # missing
             "$..DomainConfig.ClusterConfig.Options.WarmEnabled",  # missing
+            "$..DomainConfig.IPAddressType",  # missing
             "$..ClusterConfig.Options.ColdStorageOptions",  # missing
             "$..ClusterConfig.Options.MultiAZWithStandbyEnabled",  # missing
             # TODO different values:

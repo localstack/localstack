@@ -1635,6 +1635,55 @@ class TestLambdaAlias:
             )
         snapshot.match("alias_does_not_exist_esc", e.value.response)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
+    @markers.aws.validated
+    def test_alias_naming(self, aws_client, snapshot, create_lambda_function_aws, lambda_su_role):
+        """
+        numbers can be included and can even start the alias name, but it can't be purely a number
+        """
+        function_name = f"alias-fn-{short_uid()}"
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        snapshot.match("create_response", create_response)
+
+        publish_v1 = aws_client.lambda_.publish_version(FunctionName=function_name)
+        snapshot.match("publish_v1", publish_v1)
+
+        # alias in date format
+        alias_name = "2024-01-02"
+        create_alias_date = aws_client.lambda_.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion="1",
+            Description="custom-alias",
+        )
+        snapshot.match("create_alias_date", create_alias_date)
+        get_alias_date = aws_client.lambda_.get_alias(FunctionName=function_name, Name=alias_name)
+        snapshot.match("get_alias_date", get_alias_date)
+        aws_client.lambda_.invoke(FunctionName=f"{function_name}:{alias_name}")
+
+        # alias as a number should fail
+        alias_name_number = "2024"
+        with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
+            aws_client.lambda_.create_alias(
+                FunctionName=function_name,
+                Name=alias_name_number,
+                FunctionVersion="1",
+                Description="custom-alias",
+            )
+        snapshot.match("create_alias_number_exception", e.value.response)
+
 
 class TestLambdaRevisions:
     @markers.snapshot.skip_snapshot_verify(
