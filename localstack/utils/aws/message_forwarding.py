@@ -38,7 +38,7 @@ def send_event_to_target(
     source_arn: str = None,
     source_service: str = None,
 ):
-    region = extract_region_from_arn(source_arn)
+    region = extract_region_from_arn(target_arn)
     account_id = extract_account_id_from_arn(source_arn)
 
     if target is None:
