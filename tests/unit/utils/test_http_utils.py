@@ -1,3 +1,5 @@
+import os
+import re
 import time
 
 import pytest
@@ -63,6 +65,51 @@ def test_add_query_params_to_url():
     for t in tt:
         result = add_query_params_to_url(t["uri"], t["query_params"])
         assert result == t["expected"]
+
+
+@pytest.mark.parametrize("total_size_known", [True, False])
+def test_download_progress(httpserver, caplog, total_size_known):
+    # test that the progress is shown in percent if the total size (content length) can be determined
+    def _generate_x(x: int, content: bytes):
+        for i in range(0, x):
+            yield content
+
+    def _handler(_: Request) -> Response:
+        content = bytes(
+            list(os.urandom(1024 * 246) * 40)
+        )  # 0.25 MB of random bytes, 40 times -> 10 MB, nicely compressable
+        import gzip
+
+        compressed_content = gzip.compress(content)
+        headers = {"Content-Encoding": "gzip"}
+        if total_size_known:
+            headers["Content-Length"] = len(compressed_content)
+            body = compressed_content
+        else:
+
+            def _generator():
+                yield compressed_content
+
+            body = _generator()
+        return Response(body, status=200, headers=headers)
+
+    httpserver.expect_request("/").respond_with_handler(_handler)
+    http_endpoint = httpserver.url_for("/")
+    tmp_file = new_tmp_file()
+    download(http_endpoint, tmp_file)
+
+    # clean up
+    rm_rf(tmp_file)
+
+    if total_size_known:
+        # check for percentage logs in case the total size is set by the server
+        assert re.search(r"Downloaded \d+% \(total \d+K of \d+K\) to ", caplog.text)
+    else:
+        # otherwise check for generic logs
+        assert re.search(r"Downloaded \d+K \(total \d+K\) to ", caplog.text)
+
+    # check that the final message has been logged
+    assert "Done downloading " in caplog.text
 
 
 def test_download_with_timeout():

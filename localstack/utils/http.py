@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import re
 import traceback
@@ -210,10 +211,16 @@ def download(
         LOG.debug("Starting download from %s to %s", url, path)
         with open(path, "wb") as f:
             iter_length = 0
-            iter_limit = 1000000  # print a log line for every 1MB chunk
+            percentage_limit = next_percentage_record = 10  # print a log line for every 10%
+            iter_limit = (
+                1000000  # if we can't tell the percentage, print a log line for every 1MB chunk
+            )
             for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
-                total_written += len(chunk)
-                iter_length += len(chunk)
+                # explicitly check the raw stream, since the size from the chunk can be bigger than the amount of
+                # bytes transferred over the wire due to transparent decompression (f.e. GZIP)
+                new_total_written = r.raw.tell()
+                iter_length += new_total_written - total_written
+                total_written = new_total_written
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
                 else:
@@ -224,12 +231,30 @@ def download(
                         total_size / 1024,
                         url,
                     )
-                if iter_length >= iter_limit:
+
+                if total_size > 0 and (
+                    (current_percent := total_written / total_size * 100) >= next_percentage_record
+                ):
+                    # increment the limit for the next log output (ensure that there is max 1 log message per block)
+                    # f.e. percentage_limit is 10, current percentage is 71: next log is earliest at 80%
+                    next_percentage_record = (
+                        math.floor(current_percent / percentage_limit) * percentage_limit
+                        + percentage_limit
+                    )
                     LOG.debug(
-                        "Written %dK (total %dK of %dK) to %s",
-                        iter_length / 1024,
+                        "Downloaded %d%% (total %dK of %dK) to %s",
+                        current_percent,
                         total_written / 1024,
                         total_size / 1024,
+                        path,
+                    )
+                    iter_length = 0
+                elif total_size <= 0 and iter_length >= iter_limit:
+                    # print log message every x K if the total size is not known
+                    LOG.debug(
+                        "Downloaded %dK (total %dK) to %s",
+                        iter_length / 1024,
+                        total_written / 1024,
                         path,
                     )
                     iter_length = 0
