@@ -1,3 +1,5 @@
+import json
+
 import aws_cdk as cdk
 import aws_cdk.aws_iam as iam
 import aws_cdk.aws_kinesis as kinesis
@@ -5,6 +7,8 @@ import aws_cdk.aws_kinesisfirehose as firehose
 import aws_cdk.aws_logs as logs
 import aws_cdk.aws_s3 as s3
 import pytest
+
+from localstack.testing.pytest import markers
 
 STACK_NAME = "FirehoseStack"
 TEST_MESSAGE = "Test-message-2948294kdlsie"
@@ -149,3 +153,40 @@ class TestKinesisFirehoseScenario:
 
         with infra.provisioner() as prov:
             yield prov
+
+    @markers.aws.validated
+    def test_kinesis_firehose_s3(
+        self,
+        infrastructure,
+        get_all_messages_from_s3,
+        cleanups,
+        s3_empty_bucket,
+        aws_client,
+        snapshot,
+    ):
+        outputs = infrastructure.get_stack_outputs(STACK_NAME)
+        kinesis_stream_name = outputs["KinesisStreamName"]
+        bucket_name = outputs["BucketName"]
+
+        # put message to kinesis stream
+        message_count = 10
+        for message_id in range(message_count):
+            aws_client.kinesis.put_record(
+                StreamName=kinesis_stream_name,
+                Data=json.dumps(
+                    {
+                        "Id": message_id,
+                        "Data": TEST_MESSAGE,
+                    }
+                ),
+                PartitionKey="1",
+            )
+        # delete messages from bucket after read
+        cleanups.append(s3_empty_bucket(bucket_name))
+
+        bucket_data = get_all_messages_from_s3(
+            bucket_name,
+            timeout=300,
+            assert_message_count=message_count,
+        )
+        snapshot.match("s3", bucket_data)
