@@ -50,6 +50,8 @@ Properties = TypeVar("Properties")
 
 PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 
+PROVIDER_DEFAULTS = {}  # TODO: remove this after removing patching in -ext
+
 
 class OperationStatus(Enum):
     PENDING = auto()
