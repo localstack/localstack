@@ -68,7 +68,7 @@ class TestClientFactory:
         mock.meta.events.register.assert_not_called()
 
     @patch.object(ExternalClientFactory, "_get_client")
-    def test_external_client_credentials_origin(self, mock, monkeypatch):
+    def test_external_client_credentials_origin(self, mock, monkeypatch, region_name):
         connect_to = ExternalClientFactory(use_ssl=True)
         connect_to.get_client(
             "abc", region_name="xx-south-1", aws_access_key_id="foo", aws_secret_access_key="bar"
@@ -92,7 +92,7 @@ class TestClientFactory:
         )
         mock.assert_called_once_with(
             service_name="def",
-            region_name="us-east-1",
+            region_name=region_name,
             use_ssl=True,
             verify=False,
             endpoint_url="http://localhost:4566",
@@ -107,7 +107,7 @@ class TestClientFactory:
         connect_to.get_client("def", region_name=None, aws_access_key_id=TEST_AWS_ACCESS_KEY_ID)
         mock.assert_called_once_with(
             service_name="def",
-            region_name="us-east-1",
+            region_name=region_name,
             use_ssl=True,
             verify=False,
             endpoint_url="http://localhost:4566",
@@ -119,7 +119,7 @@ class TestClientFactory:
 
     @patch.object(ExternalAwsClientFactory, "_get_client")
     def test_external_aws_client_credentials_loaded_from_env_if_set_to_none(
-        self, mock, monkeypatch
+        self, mock, monkeypatch, region_name
     ):
         session = boto3.Session()
         connect_to = ExternalAwsClientFactory(use_ssl=True, session=session)
@@ -147,7 +147,7 @@ class TestClientFactory:
         )
         mock.assert_called_once_with(
             service_name="def",
-            region_name="us-east-1",
+            region_name=region_name,
             use_ssl=True,
             verify=True,
             endpoint_url=None,
