@@ -128,6 +128,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_fifo": {
     "last_validated_date": "2023-11-14T11:15:03+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_same_dedup_id_different_message_groups[sqs]": {
+    "last_validated_date": "2024-02-15T13:49:46+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_same_dedup_id_different_message_groups[sqs_json]": {
+    "last_validated_date": "2024-02-15T13:49:44+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle": {
     "last_validated_date": "2023-11-14T11:00:19+00:00"
   },
