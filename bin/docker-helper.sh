@@ -74,9 +74,9 @@ function docker_build_multiarch() {
 }
 
 function docker_push_main() {
-    # Push a single platform-specific Docker image to registry IF we are currently on the master branch
-    (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$' | sed 's/[* ]//g' || true`; \
-      test "$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
+    ## Push a single platform-specific Docker image to registry, if we are currently on the main branch
+    (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^'$MAIN_BRANCH'$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*'$MAIN_BRANCH'$' | sed 's/[* ]//g' || true`; \
+      test "$CURRENT_BRANCH" != "$MAIN_BRANCH" && echo "Not on main branch.") || \
     ((test "$DOCKER_USERNAME" = '' || test "$DOCKER_PASSWORD" = '' ) && \
       echo "Skipping docker push as no credentials are provided.") || \
     (REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $2}'`"; \
@@ -103,6 +103,45 @@ function docker_push_main() {
     )
 }
 
+function docker_push_manifests_main() {
+    ## Create and push manifests for the multi-arch Docker image, if we are currently on the main branch
+    (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^'$MAIN_BRANCH'$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*'$MAIN_BRANCH'$' | sed 's/[* ]//g' || true`; \
+      test "$CURRENT_BRANCH" != "$MAIN_BRANCH" && echo "Not on main branch.") || \
+    ((test "$DOCKER_USERNAME" = '' || test "$DOCKER_PASSWORD" = '' ) && \
+      echo "Skipping docker manifest push as no credentials are provided.") || \
+    (REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $2}'`"; \
+      test "$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
+      test "$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
+      echo "This is a fork and not the main repo.") || \
+    ( \
+      docker info | grep Username || docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; \
+        docker manifest create $MANIFEST_IMAGE_NAME:latest --amend $MANIFEST_IMAGE_NAME:latest-amd64 --amend $MANIFEST_IMAGE_NAME:latest-arm64 && \
+      ((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
+          echo "Only pushing tag 'latest' as version has not changed.") || \
+        (docker manifest create $MANIFEST_IMAGE_NAME:$IMAGE_TAG \
+        --amend $MANIFEST_IMAGE_NAME:$IMAGE_TAG-amd64 \
+        --amend $MANIFEST_IMAGE_NAME:$IMAGE_TAG-arm64 && \
+        docker manifest create $MANIFEST_IMAGE_NAME:stable \
+        --amend $MANIFEST_IMAGE_NAME:stable-amd64 \
+        --amend $MANIFEST_IMAGE_NAME:stable-arm64 && \
+        docker manifest create $MANIFEST_IMAGE_NAME:$MAJOR_VERSION \
+        --amend $MANIFEST_IMAGE_NAME:$MAJOR_VERSION-amd64 \
+        --amend $MANIFEST_IMAGE_NAME:$MAJOR_VERSION-arm64 && \
+        docker manifest create $MANIFEST_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION \
+        --amend $MANIFEST_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION-amd64 \
+        --amend $MANIFEST_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION-arm64 && \
+        docker manifest create $MANIFEST_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION \
+        --amend $MANIFEST_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION-amd64 \
+        --amend $MANIFEST_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION-arm64 && \
+          docker manifest push $MANIFEST_IMAGE_NAME:stable && \
+          docker manifest push $MANIFEST_IMAGE_NAME:$IMAGE_TAG && \
+          docker manifest push $MANIFEST_IMAGE_NAME:$MAJOR_VERSION && \
+          docker manifest push $MANIFEST_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION && \
+          docker manifest push $MANIFEST_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION)) && \
+      docker manifest push $MANIFEST_IMAGE_NAME:latest \
+    )
+}
+
 
 # commands
 
@@ -116,14 +155,14 @@ function cmd-build-multiarch() {
     docker_build_multiarch
 }
 
-function cmd-push() {
-    set_defaults
-    docker_push
-}
-
 function cmd-push-main() {
     set_defaults
     docker_push_main
+}
+
+function cmd-push-manifests-main() {
+    set_defaults
+    docker_push_manifests_main
 }
 
 function main() {
@@ -134,12 +173,13 @@ function main() {
 
     # invoke command
     case $command_name in
-        "build")             cmd-build "$@" ;;
-        "build-multiarch")   cmd-build-multiarch "$@" ;;
-        "push")              cmd-push "$@" ;;
-        "push-main")         cmd-push-main "$@" ;;
-        "help")              usage && exit 0 ;;
-        *)                   usage && exit 1 ;;
+        "build")               cmd-build "$@" ;;
+        "build-multiarch")     cmd-build-multiarch "$@" ;;
+        "push")                cmd-push "$@" ;;
+        "push-main")           cmd-push-main "$@" ;;
+        "push-manifests-main") cmd-push-manifests-main "$@" ;;
+        "help")                usage && exit 0 ;;
+        *)                     usage && exit 1 ;;
     esac
 }
 
