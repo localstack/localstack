@@ -9,6 +9,7 @@ import aws_cdk.aws_s3 as s3
 import pytest
 
 from localstack.testing.pytest import markers
+from tests.aws.scenario.kinesis_firehose.conftest import get_all_messages_from_s3
 
 STACK_NAME = "FirehoseStack"
 TEST_MESSAGE = "Test-message-2948294kdlsie"
@@ -158,7 +159,6 @@ class TestKinesisFirehoseScenario:
     def test_kinesis_firehose_s3(
         self,
         infrastructure,
-        get_all_messages_from_s3,
         cleanups,
         s3_empty_bucket,
         aws_client,
@@ -185,8 +185,9 @@ class TestKinesisFirehoseScenario:
         cleanups.append(s3_empty_bucket(bucket_name))
 
         bucket_data = get_all_messages_from_s3(
+            aws_client,
             bucket_name,
             timeout=300,
-            assert_message_count=message_count,
+            expected_message_count=message_count,
         )
         snapshot.match("s3", bucket_data)
