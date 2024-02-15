@@ -2454,11 +2454,6 @@ class TestLambdaVersions:
         get_function_result = aws_client.lambda_.get_function(FunctionName=func_name)
         snapshot.match("get_function_result", get_function_result)
 
-        # TODO: fix the race condition in lambda_service.update_version_state that causes invokes to be sent
-        #  to an old Lambda version until the old version is stopped **asynchronously** in version_manager.stop via
-        #  assignment_service.stop_environments_for_version
-        time.sleep(1)
-
         invoke_result_handler_two = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_result_handler_two", invoke_result_handler_two)
 
