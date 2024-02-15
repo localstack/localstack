@@ -118,7 +118,7 @@ TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-
 
 # TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
 PYTHON_TEST_RUNTIMES = (
-    RUNTIMES_AGGREGATED["python"] if (get_arch() != Arch.arm64) else [Runtime.python3_11]
+    RUNTIMES_AGGREGATED["python"] if (get_arch() != Arch.arm64) else [Runtime.python3_12]
 )
 NODE_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["nodejs"] if (get_arch() != Arch.arm64) else [Runtime.nodejs16_x]
