@@ -19,7 +19,14 @@ from botocore.regions import EndpointResolver
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
-from localstack import config, constants
+from localstack import config
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    SECONDARY_TEST_AWS_ACCOUNT_ID,
+    SECONDARY_TEST_AWS_REGION_NAME,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -80,7 +87,7 @@ def aws_http_client_factory(aws_session):
         aws_access_key_id: str = None,
         aws_secret_access_key: str = None,
     ):
-        region = region or aws_session.region_name or constants.AWS_REGION_US_EAST_1
+        region = region or aws_session.region_name or AWS_REGION_US_EAST_1
 
         if aws_access_key_id or aws_secret_access_key:
             credentials = botocore.credentials.Credentials(
@@ -1798,7 +1805,7 @@ def account_id(aws_client):
     if is_aws_cloud() or is_api_enabled("sts"):
         return aws_client.sts.get_caller_identity()["Account"]
     else:
-        return constants.TEST_AWS_ACCOUNT_ID
+        return TEST_AWS_ACCOUNT_ID
 
 
 @pytest.fixture(scope="session")
@@ -1806,7 +1813,7 @@ def region_name(aws_client):
     if is_aws_cloud() or is_api_enabled("sts"):
         return aws_client.sts.meta.region_name
     else:
-        return constants.TEST_AWS_REGION_NAME
+        return TEST_AWS_REGION_NAME
 
 
 @pytest.fixture(scope="session")
@@ -1814,12 +1821,12 @@ def secondary_account_id(secondary_aws_client):
     if is_aws_cloud() or is_api_enabled("sts"):
         return secondary_aws_client.sts.get_caller_identity()["Account"]
     else:
-        return constants.SECONDARY_TEST_AWS_ACCOUNT_ID
+        return SECONDARY_TEST_AWS_ACCOUNT_ID
 
 
 @pytest.fixture(scope="session")
 def secondary_region_name():
-    return constants.SECONDARY_TEST_AWS_REGION_NAME
+    return SECONDARY_TEST_AWS_REGION_NAME
 
 
 @pytest.hookimpl

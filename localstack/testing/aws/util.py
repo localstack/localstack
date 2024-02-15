@@ -10,7 +10,7 @@ from botocore.compat import HTTPHeaders
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-from localstack import config, constants
+from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.connect import (
     ClientFactory,
@@ -21,6 +21,13 @@ from localstack.aws.connect import (
 from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH, load_service
+from localstack.constants import (
+    SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.utils.aws.request_context import get_account_id_from_request
 from localstack.utils.sync import poll_condition
 
@@ -178,8 +185,8 @@ def base_aws_session() -> boto3.Session:
     # Otherwise, when running against LS, use primary test credentials to start with
     # This set here in the session so that both `aws_client` and `aws_client_factory` can work without explicit creds.
     session = boto3.Session(
-        aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=constants.TEST_AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
     )
     # make sure we consider our custom data paths for legacy specs (like SQS query protocol)
     session._loader.search_paths.append(LOCALSTACK_BUILTIN_DATA_PATH)
@@ -202,7 +209,7 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
             config = botocore.config.Config()
 
         # Prevent this fixture from using the region configured in system config
-        config = config.merge(botocore.config.Config(region_name=constants.TEST_AWS_REGION_NAME))
+        config = config.merge(botocore.config.Config(region_name=TEST_AWS_REGION_NAME))
         return ExternalClientFactory(session=session, config=config)
 
 
@@ -214,6 +221,6 @@ def primary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelCli
 def secondary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
     # Setting secondary creds here, overriding the ones from the session
     return client_factory(
-        aws_access_key_id=constants.SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=constants.SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     )

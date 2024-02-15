@@ -26,7 +26,14 @@ except ImportError:
 import boto3
 import requests
 
-from localstack import config, constants
+from localstack import config
+from localstack.constants import (
+    LOCALSTACK_ROOT_FOLDER,
+    LOCALSTACK_VENV_FOLDER,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.services.lambda_.lambda_utils import (
     get_handler_file_from_name,
 )
@@ -95,12 +102,10 @@ def create_lambda_archive(
             except Exception:
                 pass
             target_dir = tmp_dir
-            root_folder = os.path.join(
-                constants.LOCALSTACK_VENV_FOLDER, "lib/python*/site-packages"
-            )
+            root_folder = os.path.join(LOCALSTACK_VENV_FOLDER, "lib/python*/site-packages")
             if lib == "localstack":
                 paths = ["localstack/*.py", "localstack/utils"]
-                root_folder = constants.LOCALSTACK_ROOT_FOLDER
+                root_folder = LOCALSTACK_ROOT_FOLDER
                 target_dir = os.path.join(tmp_dir, lib)
                 mkdir(target_dir)
             for path in paths:
@@ -248,7 +253,7 @@ def create_lambda_function(
         "FunctionName": func_name,
         "Runtime": runtime,
         "Handler": handler,
-        "Role": role or LAMBDA_TEST_ROLE.format(account_id=constants.TEST_AWS_ACCOUNT_ID),
+        "Role": role or LAMBDA_TEST_ROLE.format(account_id=TEST_AWS_ACCOUNT_ID),
         "Code": lambda_code,
         "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
@@ -344,7 +349,7 @@ def create_lambda_api_gateway_integration(
     func_arn = create_lambda_function(
         func_name=func_name, zip_file=zip_file, runtime=runtime, client=lambda_client
     )["CreateFunctionResponse"]["FunctionArn"]
-    target_arn = arns.apigateway_invocations_arn(func_arn, constants.TEST_AWS_REGION_NAME)
+    target_arn = arns.apigateway_invocations_arn(func_arn, TEST_AWS_REGION_NAME)
 
     # connect API GW to Lambda
     result = connect_api_gateway_to_http_with_lambda_proxy(
@@ -498,9 +503,7 @@ def send_dynamodb_request(path, action, request_body):
         "Host": "dynamodb.amazonaws.com",
         "x-amz-target": "DynamoDB_20120810.{}".format(action),
         "Authorization": mock_aws_request_headers(
-            "dynamodb",
-            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
-            region_name=constants.TEST_AWS_REGION_NAME,
+            "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )["Authorization"],
     }
     url = f"{config.internal_service_url()}/{path}"
