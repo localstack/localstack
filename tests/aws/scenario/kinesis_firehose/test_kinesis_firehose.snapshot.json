@@ -1,46 +1,46 @@
 {
   "tests/aws/scenario/kinesis_firehose/test_kinesis_firehose.py::TestKinesisFirehoseScenario::test_kinesis_firehose_s3": {
-    "recorded-date": "14-02-2024, 15:02:06",
+    "recorded-date": "15-02-2024, 19:31:48",
     "recorded-content": {
       "s3": [
         {
-          "Id": 1,
+          "Id": "message_id_0",
           "Data": "Test-message-2948294kdlsie"
         },
         {
-          "Id": 2,
+          "Id": "message_id_1",
           "Data": "Test-message-2948294kdlsie"
         },
         {
-          "Id": 3,
+          "Id": "message_id_2",
           "Data": "Test-message-2948294kdlsie"
         },
         {
-          "Id": 4,
+          "Id": "message_id_3",
           "Data": "Test-message-2948294kdlsie"
         },
         {
-          "Id": 5,
+          "Id": "message_id_4",
           "Data": "Test-message-2948294kdlsie"
         },
         {
-          "Id": 6,
+          "Id": "message_id_5",
           "Data": "Test-message-2948294kdlsie"
         },
         {
-          "Id": 7,
+          "Id": "message_id_6",
           "Data": "Test-message-2948294kdlsie"
         },
         {
-          "Id": 8,
+          "Id": "message_id_7",
           "Data": "Test-message-2948294kdlsie"
         },
         {
-          "Id": 9,
+          "Id": "message_id_8",
           "Data": "Test-message-2948294kdlsie"
         },
         {
-          "Id": 0,
+          "Id": "message_id_9",
           "Data": "Test-message-2948294kdlsie"
         }
       ]

@@ -175,7 +175,7 @@ class TestKinesisFirehoseScenario:
                 StreamName=kinesis_stream_name,
                 Data=json.dumps(
                     {
-                        "Id": message_id,
+                        "Id": f"message_id_{message_id}",
                         "Data": TEST_MESSAGE,
                     }
                 ),
