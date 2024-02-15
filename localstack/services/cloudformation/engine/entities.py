@@ -164,9 +164,24 @@ class Stack:
         self.metadata["StackStatus"] = status
         if "FAILED" in status:
             self.metadata["StackStatusReason"] = status_reason or "Deployment failed"
+        self.log_stack_errors()
         self.add_stack_event(
             self.stack_name, self.stack_id, status, status_reason=status_reason or ""
         )
+
+    def log_stack_errors(self, level=logging.WARNING):
+        for event in self.events:
+            if event["ResourceStatus"].endswith("FAILED"):
+                if reason := event.get("ResourceStatusReason"):
+                    reason = reason.replace("\n", "; ")
+                    LOG.log(
+                        level,
+                        "CFn resource failed to deploy: %s (%s)",
+                        event["LogicalResourceId"],
+                        reason,
+                    )
+                else:
+                    LOG.warning("CFn resource failed to deploy: %s", event["LogicalResourceId"])
 
     def set_time_attribute(self, attribute, new_time=None):
         self.metadata[attribute] = new_time or timestamp_millis()
