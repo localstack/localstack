@@ -217,7 +217,7 @@ class Stack:
 
         self.events.insert(0, event)
 
-    def set_resource_status(self, resource_id: str, status: str):
+    def set_resource_status(self, resource_id: str, status: str, status_reason: str = ""):
         """Update the deployment status of the given resource ID and publish a corresponding stack event."""
         physical_res_id = self.resources.get(resource_id, {}).get("PhysicalResourceId")
         self._set_resource_status_details(resource_id, physical_res_id=physical_res_id)
@@ -225,7 +225,7 @@ class Stack:
         state["PreviousResourceStatus"] = state.get("ResourceStatus")
         state["ResourceStatus"] = status
         state["LastUpdatedTimestamp"] = timestamp_millis()
-        self.add_stack_event(resource_id, physical_res_id, status)
+        self.add_stack_event(resource_id, physical_res_id, status, status_reason=status_reason)
 
     def _set_resource_status_details(self, resource_id: str, physical_res_id: str = None):
         """Helper function to ensure that the status details for the given resource ID are up-to-date."""

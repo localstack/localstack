@@ -937,10 +937,8 @@ class StackDeployError(Exception):
 
         chronological_events = sorted(events, key=lambda event: event["Timestamp"])
         for event in chronological_events:
-            if not event["ResourceStatus"].endswith("FAILED") and not config.CFN_VERBOSE_ERRORS:
-                continue
-
-            formatted_events.append(self.format_event(event))
+            if event["ResourceStatus"].endswith("FAILED") or config.CFN_VERBOSE_ERRORS:
+                formatted_events.append(self.format_event(event))
 
         return "\n".join(formatted_events)
 
