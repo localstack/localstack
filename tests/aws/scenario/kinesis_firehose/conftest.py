@@ -38,7 +38,7 @@ def get_all_messages_from_s3(read_s3_data):
         timeout: int = 300,
         sleep: int = 5,
         retries: int = 3,
-        assert_message_count: int = 4,
+        expected_message_count: int = 4,
     ) -> list[str]:
         # poll file from s3 buckets
         def get_all_messages():
@@ -48,7 +48,7 @@ def get_all_messages_from_s3(read_s3_data):
                 json_array_string = "[" + input_string.replace("}{", "},{") + "]"
                 message = json.loads(json_array_string)
                 messages.extend(message)
-            if len(messages) != assert_message_count:
+            if len(messages) != expected_message_count:
                 raise Exception(f"Failed to receive all sent messages: {messages}")
             else:
                 return messages
