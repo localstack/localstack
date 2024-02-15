@@ -76,8 +76,8 @@ def test_download_progress(httpserver, caplog, total_size_known):
 
     def _handler(_: Request) -> Response:
         content = bytes(
-            list(os.urandom(1024 * 246) * 40)
-        )  # 0.25 MB of random bytes, 40 times -> 10 MB, nicely compressable
+            list(os.urandom(1024 * 246) * 100)
+        )  # 0.25 MB of random bytes, 100 times -> 25 MB, nicely compressable
         import gzip
 
         compressed_content = gzip.compress(content)
