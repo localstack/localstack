@@ -67,7 +67,7 @@ def test_add_query_params_to_url():
         assert result == t["expected"]
 
 
-@pytest.mark.parametrize("total_size_known", [True, False])
+@pytest.mark.parametrize("total_size_known", [False, True])
 def test_download_progress(httpserver, caplog, total_size_known):
     # test that the progress is shown in percent if the total size (content length) can be determined
     def _generate_x(x: int, content: bytes):

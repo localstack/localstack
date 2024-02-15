@@ -205,7 +205,7 @@ def download(
         if r.headers.get("Content-Length"):
             total_size = int(r.headers.get("Content-Length"))
 
-        total_written = 0
+        total_downloaded = 0
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         LOG.debug("Starting download from %s to %s", url, path)
@@ -218,22 +218,23 @@ def download(
             for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
                 # explicitly check the raw stream, since the size from the chunk can be bigger than the amount of
                 # bytes transferred over the wire due to transparent decompression (f.e. GZIP)
-                new_total_written = r.raw.tell()
-                iter_length += new_total_written - total_written
-                total_written = new_total_written
+                new_total_downloaded = r.raw.tell()
+                iter_length += new_total_downloaded - total_downloaded
+                total_downloaded = new_total_downloaded
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
                 else:
                     LOG.debug(
                         "Empty chunk %s (total %dK of %dK) from %s",
                         chunk,
-                        total_written / 1024,
+                        total_downloaded / 1024,
                         total_size / 1024,
                         url,
                     )
 
                 if total_size > 0 and (
-                    (current_percent := total_written / total_size * 100) >= next_percentage_record
+                    (current_percent := total_downloaded / total_size * 100)
+                    >= next_percentage_record
                 ):
                     # increment the limit for the next log output (ensure that there is max 1 log message per block)
                     # f.e. percentage_limit is 10, current percentage is 71: next log is earliest at 80%
@@ -244,7 +245,7 @@ def download(
                     LOG.debug(
                         "Downloaded %d%% (total %dK of %dK) to %s",
                         current_percent,
-                        total_written / 1024,
+                        total_downloaded / 1024,
                         total_size / 1024,
                         path,
                     )
@@ -254,7 +255,7 @@ def download(
                     LOG.debug(
                         "Downloaded %dK (total %dK) to %s",
                         iter_length / 1024,
-                        total_written / 1024,
+                        total_downloaded / 1024,
                         path,
                     )
                     iter_length = 0
@@ -268,7 +269,7 @@ def download(
             "Done downloading %s, response code %s, total %dK",
             url,
             r.status_code,
-            total_written / 1024,
+            total_downloaded / 1024,
         )
     except requests.exceptions.ReadTimeout as e:
         raise TimeoutError(f"Timeout ({timeout}) reached on download: {url} - {e}")
