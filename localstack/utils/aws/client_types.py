@@ -2,9 +2,11 @@ import abc
 from typing import TYPE_CHECKING, Union
 
 """
-If some of the clients are missing we will need to install appropriate boto3stubs for them
-run for example if application_autoscaling is missing we need to run
+Installing additional types locally:
+
 pip install "boto3-stubs[application-autoscaling]"
+
+Ideally please add them to the list below and in our setup.cfg typehint dependencies as well
 
 """
 if TYPE_CHECKING:
@@ -73,6 +75,7 @@ if TYPE_CHECKING:
     from mypy_boto3_opensearch import OpenSearchServiceClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_pi import PIClient
+    from mypy_boto3_pipes import EventBridgePipesClient
     from mypy_boto3_qldb import QLDBClient
     from mypy_boto3_qldb_session import QLDBSessionClient
     from mypy_boto3_rds import RDSClient
@@ -121,7 +124,6 @@ class TypedServiceClientFactory(abc.ABC):
     ]
     athena: Union["AthenaClient", "MetadataRequestInjector[AthenaClient]"]
     autoscaling: Union["AutoScalingClient", "MetadataRequestInjector[AutoScalingClient]"]
-    # application_autoscaling: Union["AutoScalingClient", "MetadataRequestInjector[AutoScalingClient]"]
     backup: Union["BackupClient", "MetadataRequestInjector[BackupClient]"]
     batch: Union["BatchClient", "MetadataRequestInjector[BatchClient]"]
     ce: Union["CostExplorerClient", "MetadataRequestInjector[CostExplorerClient]"]
@@ -194,6 +196,7 @@ class TypedServiceClientFactory(abc.ABC):
     opensearch: Union["OpenSearchServiceClient", "MetadataRequestInjector[OpenSearchServiceClient]"]
     organizations: Union["OrganizationsClient", "MetadataRequestInjector[OrganizationsClient]"]
     pi: Union["PIClient", "MetadataRequestInjector[PIClient]"]
+    pipes: Union["EventBridgePipesClient", "MetadataRequestInjector[EventBridgePipesClient]"]
     qldb: Union["QLDBClient", "MetadataRequestInjector[QLDBClient]"]
     qldb_session: Union["QLDBSessionClient", "MetadataRequestInjector[QLDBSessionClient]"]
     rds: Union["RDSClient", "MetadataRequestInjector[RDSClient]"]
