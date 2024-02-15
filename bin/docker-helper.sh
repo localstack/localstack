@@ -24,37 +24,46 @@ function get_current_version() {
 }
 
 function set_defaults() {
-    if [ "$PYTHON_CODE_DIR" = "" ]; then
+    # assert required variables are defined
+    if [ -z "$IMAGE_NAME" ]; then echo "Please define Docker image name via IMAGE_NAME"; exit 1; fi
+
+    # set defaults
+
+    if [ -z "$PYTHON_CODE_DIR" ]; then
         # try to determine the main Python code directory
         entries=$(find . -name '*.py' | grep -v .venv | xargs grep -R '^__version__ =' | wc -l)
-        if [[ $entries -gt 1 ]]; then
+        if [[ $entries -ne 1 ]]; then
             echo "Unable to find __version__ in project Python files."
             echo "Please configure PYTHON_CODE_DIR with the path to the main Python code directory"
             exit 1
         fi
-        entry=$(find . -name '*.py' | grep -v .venv | xargs grep -R '^__version__ =' | sed -ne 's/\(.*\):.*/\1/')
-        PYTHON_CODE_DIR=$(dirname entry)
+        entry=$(find . -name '*.py' | grep -v .venv | xargs grep -R '^__version__ =' | sed -e 's/\(.*\):.*/\1/')
+        PYTHON_CODE_DIR=$(dirname $entry)
     fi
 
-    # set defaults
-    if [ "$DOCKERFILE" = "" ]; then DOCKERFILE=Dockerfile; fi
-    if [ "$SOURCE_IMAGE_NAME" = "" ]; then SOURCE_IMAGE_NAME=$IMAGE_NAME; fi
-    if [ "$TARGET_IMAGE_NAME" = "" ]; then TARGET_IMAGE_NAME=$IMAGE_NAME; fi
+    if [ -z "$DOCKERFILE" ]; then DOCKERFILE=Dockerfile; fi
+    if [ -z "$SOURCE_IMAGE_NAME" ]; then SOURCE_IMAGE_NAME=$IMAGE_NAME; fi
+    if [ -z "$TARGET_IMAGE_NAME" ]; then TARGET_IMAGE_NAME=$IMAGE_NAME; fi
+    if [ -z "$TAG" ]; then TAG=$IMAGE_NAME; fi
+    if [ -z "$MAIN_BRANCH" ]; then MAIN_BRANCH=master; fi
 }
 
 function docker_build() {
     # start build
+
+    # by default we load the result to the docker daemon
+    if [ "$DOCKER_BUILD_FLAGS" = "" ]; then DOCKER_BUILD_FLAGS="--load"; fi
     # --add-host: Fix for Centos host OS
     # --build-arg BUILDKIT_INLINE_CACHE=1: Instruct buildkit to inline the caching information into the image
     # --cache-from: Use the inlined caching information when building the image
     DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
-      --cache-from $TAG --build-arg BUILDKIT_INLINE_CACHE=1 \
+      --cache-from "$TAG" --build-arg BUILDKIT_INLINE_CACHE=1 \
       --build-arg LOCALSTACK_PRE_RELEASE=$(cat $PYTHON_CODE_DIR/__init__.py | grep '^__version__ =' | grep -v '.dev' >> /dev/null && echo "0" || echo "1") \
       --build-arg LOCALSTACK_BUILD_GIT_HASH=$(git rev-parse --short HEAD) \
       --build-arg=LOCALSTACK_BUILD_DATE=$(date -u +"%Y-%m-%d") \
       --build-arg=LOCALSTACK_BUILD_VERSION=$IMAGE_TAG \
       --add-host="localhost.localdomain:127.0.0.1" \
-      -t $TAG $DOCKER_BUILD_FLAGS . -f $DOCKERFILE
+      -t "$TAG" $DOCKER_BUILD_FLAGS . -f $DOCKERFILE
 }
 
 function docker_build_multiarch() {
@@ -66,16 +75,16 @@ function docker_build_multiarch() {
 
 function docker_push_main() {
     # Push a single platform-specific Docker image to registry IF we are currently on the master branch
-    (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
-      test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
-    ((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
+    (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$' | sed 's/[* ]//g' || true`; \
+      test "$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
+    ((test "$DOCKER_USERNAME" = '' || test "$DOCKER_PASSWORD" = '' ) && \
       echo "Skipping docker push as no credentials are provided.") || \
-    (REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
-      test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/'* && \
-      test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/'* && \
+    (REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $2}'`"; \
+      test "$REMOTE_ORIGIN" != 'https://github.com/localstack/'* && \
+      test "$REMOTE_ORIGIN" != 'git@github.com:localstack/'* && \
       echo "This is a fork and not the main repo.") || \
     ( \
-      docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
+      docker info | grep Username || docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; \
         docker tag $SOURCE_IMAGE_NAME:latest $TARGET_IMAGE_NAME:latest-$PLATFORM && \
       ((! (git diff HEAD~1 $PYTHON_CODE_DIR/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
         echo "Only pushing tag 'latest' as version has not changed.") || \
