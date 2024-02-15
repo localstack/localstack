@@ -32,7 +32,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.127.0
+aws-cdk-lib==2.128.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.84.0
     # via
@@ -301,7 +301,7 @@ pytest==8.0.0
     #   pytest-rerunfailures
     #   pytest-split
     #   pytest-tinybird
-pytest-httpserver==1.0.8
+pytest-httpserver==1.0.9
     # via localstack-core (pyproject.toml)
 pytest-rerunfailures==13.0
     # via localstack-core (pyproject.toml)
@@ -353,7 +353,7 @@ requests==2.31.0
     #   rolo
 requests-aws4auth==1.2.3
     # via localstack-core (pyproject.toml)
-responses==0.24.1
+responses==0.25.0
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
@@ -361,7 +361,7 @@ rich==13.7.0
     # via localstack-core (pyproject.toml)
 rolo==0.3.0
     # via localstack-core (pyproject.toml)
-rpds-py==0.17.1
+rpds-py==0.18.0
     # via
     #   jsonschema
     #   referencing

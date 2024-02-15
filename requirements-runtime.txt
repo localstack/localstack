@@ -283,7 +283,7 @@ requests==2.31.0
     #   rolo
 requests-aws4auth==1.2.3
     # via localstack-core (pyproject.toml)
-responses==0.24.1
+responses==0.25.0
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
@@ -291,7 +291,7 @@ rich==13.7.0
     # via localstack-core (pyproject.toml)
 rolo==0.3.0
     # via localstack-core (pyproject.toml)
-rpds-py==0.17.1
+rpds-py==0.18.0
     # via
     #   jsonschema
     #   referencing
