@@ -24,6 +24,19 @@ function get_current_version() {
 }
 
 function set_defaults() {
+    if [ "$PYTHON_CODE_DIR" = "" ]; then
+        # try to determine the main Python code directory
+        entries=$(find . -name '*.py' | grep -v .venv | xargs grep -R '^__version__ =' | wc -l)
+        if [[ $entries -gt 1 ]]; then
+            echo "Unable to find __version__ in project Python files."
+            echo "Please configure PYTHON_CODE_DIR with the path to the main Python code directory"
+            exit 1
+        fi
+        entry=$(find . -name '*.py' | grep -v .venv | xargs grep -R '^__version__ =' | sed -ne 's/\(.*\):.*/\1/')
+        PYTHON_CODE_DIR=$(dirname entry)
+    fi
+
+    # set defaults
     if [ "$DOCKERFILE" = "" ]; then DOCKERFILE=Dockerfile; fi
     if [ "$SOURCE_IMAGE_NAME" = "" ]; then SOURCE_IMAGE_NAME=$IMAGE_NAME; fi
     if [ "$TARGET_IMAGE_NAME" = "" ]; then TARGET_IMAGE_NAME=$IMAGE_NAME; fi
@@ -36,7 +49,7 @@ function docker_build() {
     # --cache-from: Use the inlined caching information when building the image
     DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
       --cache-from $TAG --build-arg BUILDKIT_INLINE_CACHE=1 \
-      --build-arg LOCALSTACK_PRE_RELEASE=$(cat localstack/__init__.py | grep '^__version__ =' | grep -v '.dev' >> /dev/null && echo "0" || echo "1") \
+      --build-arg LOCALSTACK_PRE_RELEASE=$(cat $PYTHON_CODE_DIR/__init__.py | grep '^__version__ =' | grep -v '.dev' >> /dev/null && echo "0" || echo "1") \
       --build-arg LOCALSTACK_BUILD_GIT_HASH=$(git rev-parse --short HEAD) \
       --build-arg=LOCALSTACK_BUILD_DATE=$(date -u +"%Y-%m-%d") \
       --build-arg=LOCALSTACK_BUILD_VERSION=$IMAGE_TAG \
@@ -58,13 +71,13 @@ function docker_push_main() {
     ((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
       echo "Skipping docker push as no credentials are provided.") || \
     (REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
-      test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
-      test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
+      test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/'* && \
+      test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/'* && \
       echo "This is a fork and not the main repo.") || \
     ( \
       docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
         docker tag $SOURCE_IMAGE_NAME:latest $TARGET_IMAGE_NAME:latest-$PLATFORM && \
-      ((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
+      ((! (git diff HEAD~1 $PYTHON_CODE_DIR/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
         echo "Only pushing tag 'latest' as version has not changed.") || \
         (docker tag $TARGET_IMAGE_NAME:latest-$PLATFORM $TARGET_IMAGE_NAME:stable-$PLATFORM && \
           docker tag $TARGET_IMAGE_NAME:latest-$PLATFORM $TARGET_IMAGE_NAME:$IMAGE_TAG-$PLATFORM && \
