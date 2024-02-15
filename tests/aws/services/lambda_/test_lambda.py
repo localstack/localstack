@@ -1652,6 +1652,14 @@ class TestLambdaMultiAccounts:
     def test_cross_account_access(
         self, primary_client, secondary_client, create_lambda_function, dummylayer
     ):
+        # TODO: AWS validate this test
+        # As of 2024-02, AWS restricts the input for adding resource-based policy to layer versions via AddLayerVersionPermission.
+        # Only 'lambda:GetLayerVersion' is accepted for Action.
+        # https://github.com/boto/botocore/blob/cf7b8449643187670620ab699596ca785e3ec889/botocore/data/lambda/2015-03-31/service-2.json#L3906-L3909
+        # This appears to have been the case atleast since 2021-06.
+        # Furthermore this contradicts with what its docs on valid IAM actions for layer versions:
+        # https://docs.aws.amazon.com/lambda/latest/dg/lambda-api-permissions-ref.html#permissions-resources-layers
+
         # Create resources using primary test credentials
         func_name = f"func-{short_uid()}"
         func_arn = create_lambda_function(
@@ -1738,14 +1746,14 @@ class TestLambdaMultiAccounts:
 
         assert secondary_client.delete_function_concurrency(FunctionName=func_arn)
 
-        alias_name = short_uid()
+        alias_name = f"alias-{short_uid()}"
         assert secondary_client.create_alias(
             FunctionName=func_arn, FunctionVersion="$LATEST", Name=alias_name
         )
 
         assert secondary_client.get_alias(FunctionName=func_arn, Name=alias_name)
 
-        alias_description = "blyat"
+        alias_description = f"alias-description-{short_uid()}"
         assert secondary_client.update_alias(
             FunctionName=func_arn, Name=alias_name, Description=alias_description
         )
