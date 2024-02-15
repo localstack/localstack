@@ -1,7 +1,11 @@
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack import config, constants
+from localstack import config
+from localstack.constants import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.testing.pytest import markers
 
 remote_endpoint = config.external_service_url(protocol="https")
@@ -10,8 +14,8 @@ remote_endpoint = config.external_service_url(protocol="https")
 @pytest.fixture
 def s3control_client(aws_client_factory):
     return aws_client_factory(
-        aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=constants.TEST_AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         endpoint_url=remote_endpoint,
     ).s3control
 

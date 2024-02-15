@@ -4,7 +4,8 @@ from base64 import b64encode
 import pytest
 import requests
 
-from localstack import config, constants
+from localstack import config
+from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.aws.util import create_client_with_keys
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -178,10 +179,10 @@ class TestSTSIntegrations:
         data = {"Action": "GetSessionToken", "Version": "2011-06-15"}
         headers = mock_aws_request_headers(
             "sts",
-            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             region_name=region_name,
         )
-        headers["Accept"] = constants.APPLICATION_JSON
+        headers["Accept"] = APPLICATION_JSON
         response = requests.post(url, data=data, headers=headers)
         assert response
         content = json.loads(to_str(response.content))

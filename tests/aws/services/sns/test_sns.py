@@ -19,8 +19,13 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from pytest_httpserver import HTTPServer
 from werkzeug import Response
 
-from localstack import config, constants
+from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import (
+    AWS_REGION_US_EAST_1,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.services.sns.constants import (
     PLATFORM_ENDPOINT_MSGS_ENDPOINT,
     SMS_MSGS_ENDPOINT,
@@ -251,8 +256,8 @@ class TestSNSPublishCrud:
             "sns",
             signer_factory=SigV4Auth,
             region=region_name,
-            aws_access_key_id=constants.TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=constants.TEST_AWS_SECRET_ACCESS_KEY,
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         if is_aws_cloud():
@@ -4740,7 +4745,7 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure default region is us-east-1
         msg_with_region = requests.get(msgs_url).json()
-        assert msg_with_region["region"] == constants.AWS_REGION_US_EAST_1
+        assert msg_with_region["region"] == AWS_REGION_US_EAST_1
 
         # Ensure messages can be filtered by EndpointArn
         api_contents_with_endpoint = requests.get(
@@ -4844,7 +4849,7 @@ class TestSNSRetrospectionEndpoints:
 
         # Ensure default region is us-east-1
         msg_with_region = requests.get(msgs_url).json()
-        assert msg_with_region["region"] == constants.AWS_REGION_US_EAST_1
+        assert msg_with_region["region"] == AWS_REGION_US_EAST_1
 
         # Ensure messages can be filtered by EndpointArn
         api_contents_with_number = requests.get(
