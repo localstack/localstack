@@ -69,15 +69,10 @@ def test_add_query_params_to_url():
 
 @pytest.mark.parametrize("total_size_known", [False, True])
 def test_download_progress(httpserver, caplog, total_size_known):
-    # test that the progress is shown in percent if the total size (content length) can be determined
-    def _generate_x(x: int, content: bytes):
-        for i in range(0, x):
-            yield content
-
     def _handler(_: Request) -> Response:
         content = bytes(
-            list(os.urandom(1024 * 246) * 100)
-        )  # 0.25 MB of random bytes, 100 times -> 25 MB, nicely compressable
+            list(os.urandom(1024 * 246) * 40)
+        )  # 0.25 MB of random bytes, 40 times -> 10 MB, nicely compressable
         import gzip
 
         compressed_content = gzip.compress(content)
@@ -90,12 +85,17 @@ def test_download_progress(httpserver, caplog, total_size_known):
             def _generator():
                 yield compressed_content
 
+            # use a generator to avoid werkzeug determining / setting the content length
             body = _generator()
         return Response(body, status=200, headers=headers)
 
     httpserver.expect_request("/").respond_with_handler(_handler)
     http_endpoint = httpserver.url_for("/")
     tmp_file = new_tmp_file()
+
+    # wait 200 ms to make sure the server is ready
+    time.sleep(0.1)
+
     download(http_endpoint, tmp_file)
 
     # clean up
