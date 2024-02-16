@@ -728,8 +728,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"Request must be smaller than {config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE} bytes for the CreateFunction operation"
             )
 
-        architectures = request.get("Architectures")
-        if architectures:
+        if architectures := request.get("Architectures"):
             if len(architectures) != 1:
                 raise ValidationException(
                     f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
@@ -1136,6 +1135,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         old_function_version = function.versions.get("$LATEST")
         replace_kwargs = {"code": code} if code else {"image": image}
+
+        if architectures := request.get("Architectures"):
+            if len(architectures) != 1:
+                raise ValidationException(
+                    f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
+                    f"satisfy constraint: Member must have length less than or equal to 1",
+                )
+            if architectures[0] not in ARCHITECTURES:
+                raise ValidationException(
+                    f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
+                    f"satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: "
+                    f"[x86_64, arm64], Member must not be null]",
+                )
+            replace_kwargs["architectures"] = architectures
+
         config = dataclasses.replace(
             old_function_version.config,
             internal_revision=short_uid(),
