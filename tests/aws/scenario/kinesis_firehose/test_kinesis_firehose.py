@@ -182,7 +182,7 @@ class TestKinesisFirehoseScenario:
                 PartitionKey="1",
             )
         # delete messages from bucket after read
-        cleanups.append(s3_empty_bucket(bucket_name))
+        cleanups.append(lambda: s3_empty_bucket(bucket_name))
 
         bucket_data = get_all_messages_from_s3(
             aws_client,
