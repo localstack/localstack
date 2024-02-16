@@ -47,9 +47,8 @@ from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import event_bus_arn, parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
-from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.collections import pick_attributes
-from localstack.utils.common import TMP_FILES, mkdir, save_file, truncate
+from localstack.utils.common import TMP_FILES, mkdir, save_file
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
@@ -109,7 +108,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return events_stores[context.account_id][context.region]
 
     def test_event_pattern(
-            self, context: RequestContext, event_pattern: EventPattern, event: String, **kwargs
+        self, context: RequestContext, event_pattern: EventPattern, event: String, **kwargs
     ) -> TestEventPatternResponse:
         # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
         # Test event pattern uses event pattern to match against event.
@@ -123,10 +122,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return TestEventPatternResponse(Result=True)
 
     def get_scheduled_rule_func(
-            self,
-            store: EventsStore,
-            rule_name: RuleName,
-            event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
+        self,
+        store: EventsStore,
+        rule_name: RuleName,
+        event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
     ):
         def func(*args, **kwargs):
             account_id = store._account_id
@@ -214,12 +213,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return schedule
 
     def put_rule_job_scheduler(
-            self,
-            store: EventsStore,
-            name: Optional[RuleName],
-            state: Optional[RuleState],
-            schedule_expression: Optional[ScheduleExpression],
-            event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
+        self,
+        store: EventsStore,
+        name: Optional[RuleName],
+        state: Optional[RuleState],
+        schedule_expression: Optional[ScheduleExpression],
+        event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
     ):
         if not schedule_expression:
             return
@@ -241,17 +240,17 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule_scheduled_jobs[name] = job_id
 
     def put_rule(
-            self,
-            context: RequestContext,
-            name: RuleName,
-            schedule_expression: ScheduleExpression = None,
-            event_pattern: EventPattern = None,
-            state: RuleState = None,
-            description: RuleDescription = None,
-            role_arn: RoleArn = None,
-            tags: TagList = None,
-            event_bus_name: EventBusNameOrArn = None,
-            **kwargs,
+        self,
+        context: RequestContext,
+        name: RuleName,
+        schedule_expression: ScheduleExpression = None,
+        event_pattern: EventPattern = None,
+        state: RuleState = None,
+        description: RuleDescription = None,
+        role_arn: RoleArn = None,
+        tags: TagList = None,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> PutRuleResponse:
         store = self.get_store(context)
         self.put_rule_job_scheduler(
@@ -260,12 +259,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return call_moto(context)
 
     def delete_rule(
-            self,
-            context: RequestContext,
-            name: RuleName,
-            event_bus_name: EventBusNameOrArn = None,
-            force: Boolean = None,
-            **kwargs,
+        self,
+        context: RequestContext,
+        name: RuleName,
+        event_bus_name: EventBusNameOrArn = None,
+        force: Boolean = None,
+        **kwargs,
     ) -> None:
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
@@ -275,11 +274,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         call_moto(context)
 
     def disable_rule(
-            self,
-            context: RequestContext,
-            name: RuleName,
-            event_bus_name: EventBusNameOrArn = None,
-            **kwargs,
+        self,
+        context: RequestContext,
+        name: RuleName,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> None:
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
@@ -289,13 +288,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         call_moto(context)
 
     def create_connection(
-            self,
-            context: RequestContext,
-            name: ConnectionName,
-            authorization_type: ConnectionAuthorizationType,
-            auth_parameters: CreateConnectionAuthRequestParameters,
-            description: ConnectionDescription = None,
-            **kwargs,
+        self,
+        context: RequestContext,
+        name: ConnectionName,
+        authorization_type: ConnectionAuthorizationType,
+        auth_parameters: CreateConnectionAuthRequestParameters,
+        description: ConnectionDescription = None,
+        **kwargs,
     ) -> CreateConnectionResponse:
         errors = []
 
@@ -321,12 +320,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return call_moto(context)
 
     def put_targets(
-            self,
-            context: RequestContext,
-            rule: RuleName,
-            targets: TargetList,
-            event_bus_name: EventBusNameOrArn = None,
-            **kwargs,
+        self,
+        context: RequestContext,
+        rule: RuleName,
+        targets: TargetList,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> PutTargetsResponse:
         validation_errors = []
 
@@ -436,27 +435,27 @@ def filter_event_with_content_base_parameter(pattern_value: list, event_value: s
                         if isinstance(element_value[index], int):
                             continue
                         if (
-                                element_value[index] == ">"
-                                and isinstance(element_value[index + 1], int)
-                                and event_value <= element_value[index + 1]
+                            element_value[index] == ">"
+                            and isinstance(element_value[index + 1], int)
+                            and event_value <= element_value[index + 1]
                         ):
                             break
                         elif (
-                                element_value[index] == ">="
-                                and isinstance(element_value[index + 1], int)
-                                and event_value < element_value[index + 1]
+                            element_value[index] == ">="
+                            and isinstance(element_value[index + 1], int)
+                            and event_value < element_value[index + 1]
                         ):
                             break
                         elif (
-                                element_value[index] == "<"
-                                and isinstance(element_value[index + 1], int)
-                                and event_value >= element_value[index + 1]
+                            element_value[index] == "<"
+                            and isinstance(element_value[index + 1], int)
+                            and event_value >= element_value[index + 1]
                         ):
                             break
                         elif (
-                                element_value[index] == "<="
-                                and isinstance(element_value[index + 1], int)
-                                and event_value > element_value[index + 1]
+                            element_value[index] == "<="
+                            and isinstance(element_value[index + 1], int)
+                            and event_value > element_value[index + 1]
                         ):
                             break
                     else:
@@ -470,7 +469,7 @@ def filter_event_with_content_base_parameter(pattern_value: list, event_value: s
                 elif isinstance(element_value, dict):
                     nested_key = list(element_value)[0]
                     if nested_key == "prefix" and not re.match(
-                            r"^{}".format(element_value.get(nested_key)), event_value
+                        r"^{}".format(element_value.get(nested_key)), event_value
                     ):
                         return True
     return False
@@ -524,7 +523,7 @@ def event_pattern_prefix_bool_filter(event_pattern_filter_value_list: list[dict[
 
 # TODO: refactor/simplify!
 def filter_event_based_on_event_format(
-        self, rule_name: str, event_bus_name: str, event: dict[str, Any]
+    self, rule_name: str, event_bus_name: str, event: dict[str, Any]
 ):
     def filter_event(event_pattern_filter: dict[str, Any], event: dict[str, Any]):
         for key, value in event_pattern_filter.items():
@@ -553,14 +552,14 @@ def filter_event_based_on_event_format(
                         return False
                 else:
                     if (
-                            isinstance(event_value, list)
-                            and get_two_lists_intersection(value, event_value) == []
+                        isinstance(event_value, list)
+                        and get_two_lists_intersection(value, event_value) == []
                     ):
                         return False
                     if (
-                            not isinstance(event_value, list)
-                            and isinstance(event_value, (str, int))
-                            and event_value not in value
+                        not isinstance(event_value, list)
+                        and isinstance(event_value, (str, int))
+                        and event_value not in value
                     ):
                         return False
 
@@ -631,7 +630,9 @@ class PutEventsHandler:
             arn = target["Arn"]
             changed_event = filter_event_with_target_input_path(target, event)
             if input_transformer := target.get("InputTransformer"):
-                changed_event = process_event_with_input_transformer(input_transformer, changed_event)
+                changed_event = process_event_with_input_transformer(
+                    input_transformer, changed_event
+                )
             if target.get("Input"):
                 changed_event = json.loads(target.get("Input"))
 
@@ -699,7 +700,9 @@ class PutEventsHandler:
 
             targets = []
             for rule in matching_rules:
-                if filter_event_based_on_event_format(self, rule.name, event_bus_name, formatted_event):
+                if filter_event_based_on_event_format(
+                    self, rule.name, event_bus_name, formatted_event
+                ):
                     rule_targets = self.events_backend.list_targets_by_rule(
                         rule.name, event_bus_arn(event_bus_name, self.current_account, self.region)
                     ).get("Targets", [])
