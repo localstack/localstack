@@ -23,6 +23,7 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::ApiGateway::Resource": "/properties/ResourceId",
     "AWS::ApiGateway::Stage": "/properties/StageName",
     "AWS::Cognito::UserPoolClient": "/properties/ClientId",
+    "AWS::ECS::Service": "/properties/ServiceArn",
     "AWS::EKS::FargateProfile": "</properties/ClusterName>|</properties/FargateProfileName>",  # composite
     "AWS::Events::EventBus": "/properties/Name",
     "AWS::Logs::LogStream": "/properties/LogStreamName",
