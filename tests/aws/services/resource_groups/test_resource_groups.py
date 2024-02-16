@@ -5,7 +5,6 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
@@ -191,10 +190,15 @@ class TestResourceGroups:
         condition=not is_aws_cloud(), reason="Not implemented in moto (ListGroupResources)"
     )
     def test_resource_groups_different_region(
-        self, aws_client_factory, snapshot, resourcegroups_create_group, sqs_create_queue_in_region
+        self,
+        aws_client_factory,
+        snapshot,
+        resourcegroups_create_group,
+        sqs_create_queue_in_region,
+        region_name,
     ):
         """Resource groups can only have resources from the same Region, the one of the group"""
-        region_1 = TEST_AWS_REGION_NAME
+        region_1 = region_name
         region_2 = "us-east-2"
         resourcegroups_client = aws_client_factory(region_name=region_1).resource_groups
         snapshot.add_transformer(snapshot.transform.resource_name())

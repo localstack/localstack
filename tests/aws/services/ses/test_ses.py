@@ -95,7 +95,7 @@ def setup_email_addresses(ses_verify_identity):
     def inner(
         sender_email_address: Optional[str] = None, recipient_email_address: Optional[str] = None
     ) -> Tuple[str, str]:
-        if os.getenv("TEST_TARGET") == "AWS_CLOUD":
+        if is_aws_cloud():
             if sender_email_address is None:
                 raise ValueError(
                     "sender_email_address must be specified to run this test against AWS"
@@ -125,7 +125,7 @@ def setup_sender_email_address(ses_verify_identity):
     """
 
     def inner(sender_email_address: Optional[str] = None) -> str:
-        if os.getenv("TEST_TARGET") == "AWS_CLOUD":
+        if is_aws_cloud():
             if sender_email_address is None:
                 raise ValueError(
                     "sender_email_address must be specified to run this test against AWS"

@@ -10,7 +10,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.lambda_.networking import get_main_endpoint_from_container
 from localstack.testing.aws.util import is_aws_cloud
@@ -316,7 +316,9 @@ def test_put_integration_response_with_response_template(aws_client, echo_http_s
 
 # TODO: add snapshot test!
 @markers.aws.unknown
-def test_put_integration_validation(aws_client, echo_http_server, echo_http_server_post):
+def test_put_integration_validation(
+    aws_client, account_id, echo_http_server, echo_http_server_post
+):
     response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
     api_id = response["id"]
     resources = aws_client.apigateway.get_resources(restApiId=api_id)
@@ -375,7 +377,7 @@ def test_put_integration_validation(aws_client, echo_http_server, echo_http_serv
             restApiId=api_id,
             resourceId=root_id,
             credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
-                TEST_AWS_ACCOUNT_ID,
+                account_id,
             ),
             httpMethod="GET",
             type=_type,
@@ -400,7 +402,7 @@ def test_put_integration_validation(aws_client, echo_http_server, echo_http_serv
                 restApiId=api_id,
                 resourceId=root_id,
                 credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
-                    TEST_AWS_ACCOUNT_ID,
+                    account_id,
                 ),
                 httpMethod="GET",
                 type=_type,

@@ -8,7 +8,7 @@ from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from localstack import config, constants
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.services.kinesis import provider as kinesis_provider
 from localstack.testing.pytest import markers
 from localstack.utils.aws import resources
@@ -215,7 +215,9 @@ class TestKinesis:
         snapshot.match("Records", results)
 
     @markers.aws.unknown
-    def test_get_records(self, kinesis_create_stream, wait_for_stream_ready, aws_client):
+    def test_get_records(
+        self, kinesis_create_stream, wait_for_stream_ready, aws_client, region_name
+    ):
         # create stream
         stream_name = kinesis_create_stream(ShardCount=1)
         wait_for_stream_ready(stream_name)
@@ -236,7 +238,9 @@ class TestKinesis:
         iterator = get_shard_iterator(stream_name, aws_client.kinesis)
         url = config.internal_service_url()
         headers = mock_aws_request_headers(
-            "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "kinesis",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
@@ -256,7 +260,11 @@ class TestKinesis:
 
     @markers.aws.unknown
     def test_get_records_empty_stream(
-        self, kinesis_create_stream, wait_for_stream_ready, aws_client
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        aws_client,
+        region_name,
     ):
         stream_name = kinesis_create_stream(ShardCount=1)
         wait_for_stream_ready(stream_name)
@@ -270,7 +278,9 @@ class TestKinesis:
         # empty get records with CBOR encoding
         url = config.internal_service_url()
         headers = mock_aws_request_headers(
-            "kinesis", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "kinesis",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
@@ -425,7 +435,7 @@ class TestKinesis:
 class TestKinesisPythonClient:
     @markers.skip_offline
     @markers.aws.unknown
-    def test_run_kcl(self, aws_client):
+    def test_run_kcl(self, aws_client, account_id, region_name):
         result = []
 
         def process_records(records):
@@ -437,8 +447,8 @@ class TestKinesisPythonClient:
         resources.create_kinesis_stream(kinesis, stream_name, delete=True)
         process = kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
-            account_id=TEST_AWS_ACCOUNT_ID,
-            region_name=TEST_AWS_REGION_NAME,
+            account_id=account_id,
+            region_name=region_name,
             listener_func=process_records,
             wait_until_started=True,
         )
