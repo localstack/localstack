@@ -1,6 +1,9 @@
 import json
+import logging
 
 from localstack.utils.sync import retry
+
+LOG = logging.getLogger(__name__)
 
 
 def read_s3_data(aws_client, bucket_name: str) -> dict[str, str]:
@@ -31,6 +34,7 @@ def get_all_expected_messages_from_s3(
         for input_string in bucket_data.values():
             json_array_string = "[" + input_string.replace("}{", "},{") + "]"
             message = json.loads(json_array_string)
+            LOG.debug(f"Received messages: {message}")
             messages.extend(message)
         if not expected_message_count and len(messages) != expected_message_count:
             raise Exception(f"Failed to receive all sent messages: {messages}")
