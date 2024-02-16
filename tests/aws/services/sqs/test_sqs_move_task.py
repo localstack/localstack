@@ -5,7 +5,6 @@ import uuid
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.services.sqs.utils import decode_move_task_handle, encode_move_task_handle
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
@@ -78,7 +77,7 @@ def sqs_snapshot_transformer(snapshot):
 
 
 @pytest.fixture()
-def sqs_create_dlq_pipe(sqs_create_queue):
+def sqs_create_dlq_pipe(sqs_create_queue, region_name):
     def _factory(max_receive_count: int = 1) -> tuple[QueueUrl, QueueUrl]:
         dl_queue_url = sqs_create_queue()
 
@@ -87,7 +86,7 @@ def sqs_create_dlq_pipe(sqs_create_queue):
         dl_target_arn = arns.sqs_queue_arn(
             url_parts[-1],
             account_id=url_parts[len(url_parts) - 2],
-            region_name=TEST_AWS_REGION_NAME,
+            region_name=region_name,
         )
         queue_url = sqs_create_queue(
             Attributes={

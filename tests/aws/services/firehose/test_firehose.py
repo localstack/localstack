@@ -7,7 +7,6 @@ import requests
 from pytest_httpserver import HTTPServer
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
@@ -139,11 +138,16 @@ class TestFirehoseIntegration:
     @markers.skip_offline
     @markers.aws.unknown
     def test_kinesis_firehose_elasticsearch_s3_backup(
-        self, s3_bucket, kinesis_create_stream, cleanups, aws_client
+        self,
+        s3_bucket,
+        kinesis_create_stream,
+        cleanups,
+        aws_client,
+        account_id,
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
-        role_arn = f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:role/Firehose-Role"
+        role_arn = f"arn:aws:iam::{account_id}:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         es_create_response = aws_client.es.create_elasticsearch_domain(DomainName=domain_name)
         cleanups.append(lambda: aws_client.es.delete_elasticsearch_domain(DomainName=domain_name))
@@ -249,10 +253,11 @@ class TestFirehoseIntegration:
         monkeypatch,
         opensearch_endpoint_strategy,
         aws_client,
+        account_id,
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
-        role_arn = f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:role/Firehose-Role"
+        role_arn = f"arn:aws:iam::{account_id}:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
         try:
@@ -355,12 +360,12 @@ class TestFirehoseIntegration:
 
     @markers.aws.unknown
     def test_kinesis_firehose_kinesis_as_source(
-        self, s3_bucket, kinesis_create_stream, cleanups, aws_client
+        self, s3_bucket, kinesis_create_stream, cleanups, aws_client, account_id
     ):
         bucket_arn = arns.s3_bucket_arn(s3_bucket)
         stream_name = f"test-stream-{short_uid()}"
         log_group_name = f"group{short_uid()}"
-        role_arn = f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:role/Firehose-Role"
+        role_arn = f"arn:aws:iam::{account_id}:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
 
         kinesis_create_stream(StreamName=stream_name, ShardCount=2)

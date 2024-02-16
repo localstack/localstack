@@ -25,7 +25,6 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
-from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.services.lambda_.api_utils import ARCHITECTURES
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
@@ -413,11 +412,11 @@ class TestLambdaFunction:
     )
     @markers.aws.validated
     def test_function_arns(
-        self, create_lambda_function, region, account_id, aws_client, lambda_su_role, snapshot
+        self, create_lambda_function, region_name, account_id, aws_client, lambda_su_role, snapshot
     ):
         # create_function
         function_name_1 = f"test-function-arn-{short_uid()}"
-        function_arn = f"arn:aws:lambda:{region}:{account_id}:function:{function_name_1}"
+        function_arn = f"arn:aws:lambda:{region_name}:{account_id}:function:{function_name_1}"
         function_arn_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_arn,
@@ -462,7 +461,7 @@ class TestLambdaFunction:
 
         # test too long function arn
         max_function_arn_length = 140
-        function_arn_prefix = f"arn:aws:lambda:{region}:{account_id}:function:"
+        function_arn_prefix = f"arn:aws:lambda:{region_name}:{account_id}:function:"
         suffix_length = max_function_arn_length - len(function_arn_prefix) + 1
         long_function_arn = function_arn_prefix + "a" * suffix_length
         with pytest.raises(ClientError) as e:
@@ -480,7 +479,7 @@ class TestLambdaFunction:
         function_name_1 = f"test-function-arn-{short_uid()}"
         other_region = "ap-southeast-1"
         assert (
-            region != other_region
+            region_name != other_region
         ), "This test assumes that the region in the function arn differs from the client region"
         function_arn_other_region = (
             f"arn:aws:lambda:{other_region}:{account_id}:function:{function_name_1}"
@@ -503,7 +502,7 @@ class TestLambdaFunction:
             account_id != other_account
         ), "This test assumes that the account in the function arn differs from the client region"
         function_arn_other_account = (
-            f"arn:aws:lambda:{region}:{other_account}:function:{function_name_1}"
+            f"arn:aws:lambda:{region_name}:{other_account}:function:{function_name_1}"
         )
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
@@ -4799,7 +4798,14 @@ class TestLambdaLayer:
 
     @markers.aws.validated
     def test_layer_function_exceptions(
-        self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client_factory, aws_client
+        self,
+        create_lambda_function,
+        snapshot,
+        dummylayer,
+        cleanups,
+        aws_client_factory,
+        aws_client,
+        secondary_region_name,
     ):
         """Test interaction of layers when adding them to the function"""
         function_name = f"fn-layer-{short_uid()}"
@@ -4907,9 +4913,7 @@ class TestLambdaLayer:
             )
         snapshot.match("add_layer_arn_without_version_exc", e.value.response)
 
-        other_region_lambda_client = aws_client_factory(
-            region_name=SECONDARY_TEST_AWS_REGION_NAME
-        ).lambda_
+        other_region_lambda_client = aws_client_factory(region_name=secondary_region_name).lambda_
         other_region_layer_result = other_region_lambda_client.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[],
