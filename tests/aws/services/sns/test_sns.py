@@ -4624,7 +4624,13 @@ class TestSNSPublishDelivery:
 class TestSNSRetrospectionEndpoints:
     @markers.aws.only_localstack
     def test_publish_to_platform_endpoint_can_retrospect(
-        self, sns_create_topic, sns_subscription, sns_create_platform_application, aws_client
+        self,
+        sns_create_topic,
+        sns_subscription,
+        sns_create_platform_application,
+        aws_client,
+        account_id,
+        region_name,
     ):
         sns_backend = SnsProvider.get_store(TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
         # clean up the saved messages
@@ -4731,6 +4737,8 @@ class TestSNSRetrospectionEndpoints:
             msgs_url,
             params={
                 "endpointArn": endpoint_arn,
+                "region": region_name,
+                "accountId": account_id,
             },
         ).json()
         msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
@@ -4743,6 +4751,8 @@ class TestSNSRetrospectionEndpoints:
             msgs_url,
             params={
                 "endpointArn": endpoint_arn,
+                "region": region_name,
+                "accountId": account_id,
             },
         )
         assert delete_res.status_code == 204
@@ -4750,6 +4760,8 @@ class TestSNSRetrospectionEndpoints:
             msgs_url,
             params={
                 "endpointArn": endpoint_arn,
+                "region": region_name,
+                "accountId": account_id,
             },
         ).json()
         msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
