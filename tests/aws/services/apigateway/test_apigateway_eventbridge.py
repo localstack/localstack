@@ -19,7 +19,7 @@ from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 
 @markers.aws.validated
 def test_apigateway_to_eventbridge(
-    aws_client, create_rest_apigw, create_role_with_policy, region, account_id, snapshot
+    aws_client, create_rest_apigw, create_role_with_policy, region_name, account_id, snapshot
 ):
     api_id, _, root = create_rest_apigw(name=f"{short_uid()}-eventbridge")
 
@@ -50,7 +50,7 @@ def test_apigateway_to_eventbridge(
         httpMethod="POST",
         integrationHttpMethod="POST",
         type="AWS",
-        uri=f"arn:aws:apigateway:{region}:events:action/PutEvents",
+        uri=f"arn:aws:apigateway:{region_name}:events:action/PutEvents",
         passthroughBehavior="WHEN_NO_TEMPLATES",
         credentials=role_arn,
         requestParameters={},

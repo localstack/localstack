@@ -23,6 +23,7 @@ from localstack import config
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
+    SECONDARY_TEST_AWS_REGION_NAME,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
@@ -98,7 +99,7 @@ def aws_http_client_factory(aws_session):
         creds = credentials.get_frozen_credentials()
 
         if not endpoint_url:
-            if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":
+            if is_aws_cloud():
                 # FIXME: this is a bit raw. we should probably re-use boto in a better way
                 resolver: EndpointResolver = aws_session._session.get_component("endpoint_resolver")
                 endpoint_url = "https://" + resolver.construct_endpoint(service, region)["hostname"]
@@ -1577,7 +1578,7 @@ def lambda_su_role(aws_client):
     )["Policy"]["Arn"]
     aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
 
-    if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":  # dirty but necessary
+    if is_aws_cloud():  # dirty but necessary
         time.sleep(10)
 
     yield role["Arn"]
@@ -1800,19 +1801,19 @@ def cleanups():
 
 
 @pytest.fixture(scope="session")
-def region(aws_client):
-    if is_aws_cloud() or is_api_enabled("sts"):
-        return aws_client.sts.meta.region_name
-    else:
-        return TEST_AWS_REGION_NAME
-
-
-@pytest.fixture(scope="session")
 def account_id(aws_client):
     if is_aws_cloud() or is_api_enabled("sts"):
         return aws_client.sts.get_caller_identity()["Account"]
     else:
         return TEST_AWS_ACCOUNT_ID
+
+
+@pytest.fixture(scope="session")
+def region_name(aws_client):
+    if is_aws_cloud() or is_api_enabled("sts"):
+        return aws_client.sts.meta.region_name
+    else:
+        return TEST_AWS_REGION_NAME
 
 
 @pytest.fixture(scope="session")
@@ -1823,10 +1824,15 @@ def secondary_account_id(secondary_aws_client):
         return SECONDARY_TEST_AWS_ACCOUNT_ID
 
 
+@pytest.fixture(scope="session")
+def secondary_region_name():
+    return SECONDARY_TEST_AWS_REGION_NAME
+
+
 @pytest.hookimpl
 def pytest_collection_modifyitems(config: Config, items: list[Item]):
     only_localstack = pytest.mark.skipif(
-        os.environ.get("TEST_TARGET") == "AWS_CLOUD",
+        is_aws_cloud(),
         reason="test only applicable if run against localstack",
     )
     for item in items:

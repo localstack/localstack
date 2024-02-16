@@ -3,7 +3,6 @@ import re
 
 import pytest
 
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -19,7 +18,7 @@ PARTITION_KEY = "id"
 
 class TestDynamoDBStreams:
     @markers.aws.only_localstack
-    def test_stream_spec_and_region_replacement(self, aws_client):
+    def test_stream_spec_and_region_replacement(self, aws_client, region_name):
         ddbstreams = aws_client.dynamodbstreams
         kinesis = aws_client.kinesis
         table_name = f"ddb-{short_uid()}"
@@ -33,7 +32,7 @@ class TestDynamoDBStreams:
         table = aws_client.dynamodb.describe_table(TableName=table_name)["Table"]
 
         # assert ARN formats
-        expected_arn_prefix = f"arn:aws:dynamodb:{TEST_AWS_REGION_NAME}"
+        expected_arn_prefix = f"arn:aws:dynamodb:{region_name}"
         assert table["TableArn"].startswith(expected_arn_prefix)
         assert table["LatestStreamArn"].startswith(expected_arn_prefix)
 

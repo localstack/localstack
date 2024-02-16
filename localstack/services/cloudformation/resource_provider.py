@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -792,7 +793,19 @@ class ResourceProviderExecutor:
     ) -> str:
         if resource_type in PHYSICAL_RESOURCE_ID_SPECIAL_CASES:
             primary_id_path = PHYSICAL_RESOURCE_ID_SPECIAL_CASES[resource_type]
-            physical_resource_id = resolve_json_pointer(resource_model, primary_id_path)
+
+            if "<" in primary_id_path:
+                # composite quirk, e.g. something like MyRef|MyName
+                # try to extract parts
+                physical_resource_id = primary_id_path
+                find_results = re.findall("<([^>]+)>", primary_id_path)
+                for found_part in find_results:
+                    resolved_part = resolve_json_pointer(resource_model, found_part)
+                    physical_resource_id = physical_resource_id.replace(
+                        f"<{found_part}>", resolved_part
+                    )
+            else:
+                physical_resource_id = resolve_json_pointer(resource_model, primary_id_path)
         else:
             primary_id_paths = resource_type_schema["primaryIdentifier"]
             if len(primary_id_paths) > 1:

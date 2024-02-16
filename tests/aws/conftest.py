@@ -97,12 +97,12 @@ def infrastructure_setup(cdk_template_path, aws_client):
 
 
 @pytest.fixture(scope="function")
-def snapshot(request, _snapshot_session: SnapshotSession, account_id, region):
+def snapshot(request, _snapshot_session: SnapshotSession, account_id, region_name):
     # Overwrite utility with our own => Will be refactored in the future
     _snapshot_session.transform = TransformerUtility
 
     _snapshot_session.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)
-    _snapshot_session.add_transformer(RegexTransformer(region, "<region>"), priority=2)
+    _snapshot_session.add_transformer(RegexTransformer(region_name, "<region>"), priority=2)
 
     # TODO: temporary to migrate to new default transformers.
     #   remove this after all exemptions are gone
