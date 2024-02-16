@@ -1376,7 +1376,11 @@ class TemplateDeployer:
         stack_action = get_action_name_for_resource_change(action)
         match progress_event.status:
             case OperationStatus.FAILED:
-                stack.set_resource_status(resource_id, f"{stack_action}_FAILED")
+                stack.set_resource_status(
+                    resource_id,
+                    f"{stack_action}_FAILED",
+                    status_reason=progress_event.message or "",
+                )
                 # TODO: remove exception raising here?
                 # TODO: fix request token
                 raise Exception(
