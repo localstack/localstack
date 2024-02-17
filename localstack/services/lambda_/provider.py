@@ -1142,6 +1142,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
                     f"satisfy constraint: Member must have length less than or equal to 1",
                 )
+            # An empty list of architectures is also forbidden. Further exceptions are tested here for create_function:
+            # tests.aws.services.lambda_.test_lambda_api.TestLambdaFunction.test_create_lambda_exceptions
             if architectures[0] not in ARCHITECTURES:
                 raise ValidationException(
                     f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
