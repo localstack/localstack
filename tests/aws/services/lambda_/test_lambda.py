@@ -526,64 +526,47 @@ class TestLambdaBehavior:
         assert lambda_arch == native_arch
 
     @pytest.mark.skip  # TODO remove once is_arch_compatible checks work properly
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..LoggingConfig",
+            "$..CreateFunctionResponse.LoggingConfig",
+            "$..RuntimeVersionConfig.RuntimeVersionArn",
+        ]
+    )
     @markers.aws.validated
-    def test_mixed_architecture(self, create_lambda_function, aws_client):
-        """Test emulation and interaction of lambda functions with different architectures.
-        Limitation: only works on ARM hosts that support x86 emulation.
+    def test_mixed_architecture(self, create_lambda_function, aws_client, snapshot):
+        """Test emulation of a lambda function changing architectures.
+        Limitation: only works on hosts that support both ARM and AMD64 architectures.
         """
-        func_name = f"test_lambda_x86_{short_uid()}"
-        create_lambda_function(
+        func_name = f"test_lambda_mixed_arch_{short_uid()}"
+        zip_file = create_lambda_archive(load_file(TEST_LAMBDA_INTROSPECT_PYTHON), get_content=True)
+        create_function_response = create_lambda_function(
             func_name=func_name,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
+            zip_file=zip_file,
+            runtime=Runtime.python3_12,
             Architectures=[Architecture.x86_64],
         )
+        snapshot.match("create_function_response", create_function_response)
 
-        invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
-        assert "FunctionError" not in invoke_result
-        payload = json.load(invoke_result["Payload"])
+        invoke_result_x86 = aws_client.lambda_.invoke(FunctionName=func_name)
+        assert "FunctionError" not in invoke_result_x86
+        payload = json.load(invoke_result_x86["Payload"])
         assert payload.get("platform_machine") == "x86_64"
 
-        func_name_arm = f"test_lambda_arm_{short_uid()}"
-        create_lambda_function(
-            func_name=func_name_arm,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
-            Architectures=[Architecture.arm64],
+        update_function_configuration_response = aws_client.lambda_.update_function_code(
+            FunctionName=func_name, ZipFile=zip_file, Architectures=[Architecture.arm64]
+        )
+        snapshot.match(
+            "update_function_configuration_response", update_function_configuration_response
+        )
+        aws_client.lambda_.get_waiter(waiter_name="function_updated_v2").wait(
+            FunctionName=func_name
         )
 
-        invoke_result_arm = aws_client.lambda_.invoke(FunctionName=func_name_arm)
+        invoke_result_arm = aws_client.lambda_.invoke(FunctionName=func_name)
         assert "FunctionError" not in invoke_result_arm
         payload_arm = json.load(invoke_result_arm["Payload"])
         assert payload_arm.get("platform_machine") == "aarch64"
-
-        v1_result = aws_client.lambda_.publish_version(FunctionName=func_name)
-        v1 = v1_result["Version"]
-
-        # assert version is available(!)
-        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
-            FunctionName=func_name, Qualifier=v1
-        )
-
-        arm_v1_result = aws_client.lambda_.publish_version(FunctionName=func_name_arm)
-        arm_v1 = arm_v1_result["Version"]
-
-        # assert version is available(!)
-        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
-            FunctionName=func_name_arm, Qualifier=arm_v1
-        )
-
-        invoke_result_2 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier=v1)
-        assert "FunctionError" not in invoke_result_2
-        payload_2 = json.load(invoke_result_2["Payload"])
-        assert payload_2.get("platform_machine") == "x86_64"
-
-        invoke_result_arm_2 = aws_client.lambda_.invoke(
-            FunctionName=func_name_arm, Qualifier=arm_v1
-        )
-        assert "FunctionError" not in invoke_result_arm_2
-        payload_arm_2 = json.load(invoke_result_arm_2["Payload"])
-        assert payload_arm_2.get("platform_machine") == "aarch64"
 
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],

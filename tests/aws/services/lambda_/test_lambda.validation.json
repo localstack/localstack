@@ -45,7 +45,7 @@
     "last_validated_date": "2023-11-20T21:04:37+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_mixed_architecture": {
-    "last_validated_date": "2023-11-20T22:14:17+00:00"
+    "last_validated_date": "2024-02-16T11:16:43+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_arm": {
     "last_validated_date": "2023-11-20T21:04:08+00:00"
