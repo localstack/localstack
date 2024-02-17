@@ -16,6 +16,10 @@ S3_UPLOAD_PART_MIN_SIZE = 5242880
 This is minimum size allowed by S3 when uploading more than one part for a Multipart Upload, except for the last part
 """
 
+# These 2 values have been the historical hardcoded values for S3 credentials if needing to validate S3 pre-signed URLs
+DEFAULT_PRE_SIGNED_ACCESS_KEY_ID = "test"
+DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY = "test"
+
 AUTHENTICATED_USERS_ACL_GROUP = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
 ALL_USERS_ACL_GROUP = "http://acs.amazonaws.com/groups/global/AllUsers"
 LOG_DELIVERY_ACL_GROUP = "http://acs.amazonaws.com/groups/s3/LogDelivery"
