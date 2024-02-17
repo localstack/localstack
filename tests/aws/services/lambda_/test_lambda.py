@@ -112,6 +112,9 @@ TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
 TEST_LAMBDA_PROCESS_INSPECTION = os.path.join(THIS_FOLDER, "functions/lambda_process_inspection.py")
 TEST_LAMBDA_CUSTOM_RESPONSE_SIZE = os.path.join(THIS_FOLDER, "functions/lambda_response_size.py")
+TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
+    THIS_FOLDER, "functions/lambda_multiple_handlers.py"
+)
 
 TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
 TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
@@ -2425,6 +2428,42 @@ class TestLambdaVersions:
             FunctionName=function_name, Qualifier=first_publish_response["Version"], Payload=b"{}"
         )
         snapshot.match("invocation_result_v1_end", invocation_result_v1)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
+    @markers.aws.validated
+    def test_lambda_handler_update(self, aws_client, create_lambda_function, snapshot):
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            # handler.handler by convention
+            handler_file=TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS,
+            runtime=Runtime.python3_12,
+            client=aws_client.lambda_,
+        )
+
+        invoke_result_handler_one = aws_client.lambda_.invoke(FunctionName=func_name)
+        snapshot.match("invoke_result_handler_one", invoke_result_handler_one)
+
+        update_function_configuration_result = aws_client.lambda_.update_function_configuration(
+            FunctionName=func_name, Handler="handler.handler_two"
+        )
+        snapshot.match("update_function_configuration_result", update_function_configuration_result)
+        waiter = aws_client.lambda_.get_waiter("function_updated_v2")
+        waiter.wait(FunctionName=func_name)
+
+        get_function_result = aws_client.lambda_.get_function(FunctionName=func_name)
+        snapshot.match("get_function_result", get_function_result)
+
+        invoke_result_handler_two = aws_client.lambda_.invoke(FunctionName=func_name)
+        snapshot.match("invoke_result_handler_two", invoke_result_handler_two)
+
+        publish_version_result = aws_client.lambda_.publish_version(FunctionName=func_name)
+        waiter.wait(FunctionName=func_name, Qualifier=publish_version_result["Version"])
+
+        invoke_result_handler_two_postpublish = aws_client.lambda_.invoke(FunctionName=func_name)
+        snapshot.match(
+            "invoke_result_handler_two_postpublish", invoke_result_handler_two_postpublish
+        )
 
 
 # TODO: test if routing is static for a single invocation:

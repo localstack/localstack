@@ -64,12 +64,14 @@ class ExecutionEnvironment:
     last_returned: datetime
     startup_timer: Optional[Timer]
     keepalive_timer: Optional[Timer]
+    on_timeout: Callable[[str, str], None]
 
     def __init__(
         self,
         function_version: FunctionVersion,
         initialization_type: InitializationType,
         on_timeout: Callable[[str, str], None],
+        version_manager_id: str,
     ):
         self.id = generate_runtime_id()
         self.status = RuntimeStatus.INACTIVE
@@ -82,6 +84,7 @@ class ExecutionEnvironment:
         self.startup_timer = None
         self.keepalive_timer = Timer(0, lambda *args, **kwargs: None)
         self.on_timeout = on_timeout
+        self.version_manager_id = version_manager_id
 
     def get_log_group_name(self) -> str:
         return f"/aws/lambda/{self.function_version.id.function_name}"
@@ -270,7 +273,7 @@ class ExecutionEnvironment:
         )
         self.stop()
         # Notify assignment service via callback to remove from environments list
-        self.on_timeout(self.function_version.qualified_arn, self.id)
+        self.on_timeout(self.version_manager_id, self.id)
 
     def timed_out(self) -> None:
         """Handle status updates if the startup of an execution environment times out.
