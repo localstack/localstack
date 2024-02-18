@@ -292,7 +292,7 @@ pluggy==1.4.0
     #   pytest
 plumbum==1.8.2
     # via pandoc
-plux==1.5.0
+plux==1.7.0
     # via localstack-core (pyproject.toml)
 ply==3.11
     # via

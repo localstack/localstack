@@ -257,7 +257,7 @@ pluggy==1.4.0
     # via
     #   localstack-core (pyproject.toml)
     #   pytest
-plux==1.5.0
+plux==1.7.0
     # via localstack-core (pyproject.toml)
 ply==3.11
     # via

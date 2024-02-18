@@ -95,7 +95,7 @@ packaging==23.2
     # via docker
 pbr==6.0.0
     # via stevedore
-plux==1.5.0
+plux==1.7.0
     # via localstack-core (pyproject.toml)
 priority==2.0.0
     # via hypercorn

@@ -1116,7 +1116,7 @@ def configure_container(container: Container):
     else:
         container.config.additional_flags = f"{container.config.additional_flags} {user_flags}"
 
-    # get additional parameters from plugins
+    # get additional parameters from pluxs
     hooks.configure_localstack_container.run(container)
 
     if config.DEVELOP:

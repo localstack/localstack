@@ -211,7 +211,7 @@ pbr==6.0.0
     #   jschema-to-python
     #   sarif-om
     #   stevedore
-plux==1.5.0
+plux==1.7.0
     # via localstack-core (pyproject.toml)
 ply==3.11
     # via
