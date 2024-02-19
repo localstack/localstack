@@ -40,7 +40,7 @@ aws-sam-translator==1.84.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.12.1
     # via moto-ext
-awscli==1.32.39
+awscli==1.32.44
     # via localstack-core (pyproject.toml)
 awscrt==0.20.3
     # via localstack-core (pyproject.toml)
@@ -52,14 +52,14 @@ blinker==1.7.0
     #   quart
 boto==2.49.0
     # via amazon-kclpy
-boto3==1.34.39
+boto3==1.34.44
     # via
     #   aws-sam-translator
     #   localstack-core (pyproject.toml)
     #   moto-ext
 boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.42
     # via localstack-core (pyproject.toml)
-botocore==1.34.39
+botocore==1.34.44
     # via
     #   aws-xray-sdk
     #   awscli
@@ -102,7 +102,6 @@ constructs==10.3.0
     # via aws-cdk-lib
 coverage[toml]==6.5.0
     # via
-    #   coverage
     #   coveralls
     #   localstack-core (pyproject.toml)
 coveralls==3.3.1
@@ -245,9 +244,7 @@ markupsafe==2.1.5
 mdurl==0.1.2
     # via markdown-it-py
 moto-ext[all]==5.0.0.post1
-    # via
-    #   localstack-core (pyproject.toml)
-    #   moto-ext
+    # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
 multipart==0.2.4
@@ -554,9 +551,7 @@ python-dateutil==2.8.2
 python-dotenv==1.0.1
     # via localstack-core (pyproject.toml)
 python-jose[cryptography]==3.3.0
-    # via
-    #   moto-ext
-    #   python-jose
+    # via moto-ext
 pyyaml==6.0.1
     # via
     #   awscli

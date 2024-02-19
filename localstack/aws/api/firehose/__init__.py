@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, TypedDict
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 AWSKMSKeyARN = str
+AccessKeyId = str
 AmazonOpenSearchServerlessBufferingIntervalInSeconds = int
 AmazonOpenSearchServerlessBufferingSizeInMBs = int
 AmazonOpenSearchServerlessCollectionEndpoint = str
@@ -21,6 +22,7 @@ BooleanObject = bool
 BucketARN = str
 ClusterJDBCURL = str
 CopyOptions = str
+CustomTimeZone = str
 DataTableColumns = str
 DataTableName = str
 DeliveryStreamARN = str
@@ -38,6 +40,8 @@ ElasticsearchTypeName = str
 ErrorCode = str
 ErrorMessage = str
 ErrorOutputPrefix = str
+FileExtension = str
+FirehoseSource = str
 HECAcknowledgmentTimeoutInSeconds = int
 HECEndpoint = str
 HECToken = str
@@ -70,6 +74,8 @@ PutResponseRecordId = str
 RedshiftRetryDurationInSeconds = int
 RetryDurationInSeconds = int
 RoleARN = str
+SecretAccessKey = str
+SessionToken = str
 SizeInMBs = int
 SnowflakeAccountUrl = str
 SnowflakeContentColumnName = str
@@ -88,6 +94,10 @@ SplunkBufferingSizeInMBs = int
 SplunkRetryDurationInSeconds = int
 TagKey = str
 TagValue = str
+TagrisAccountId = str
+TagrisAmazonResourceName = str
+TagrisExceptionMessage = str
+TagrisInternalId = str
 TopicName = str
 Username = str
 
@@ -239,11 +249,13 @@ class ProcessorParameterName(str):
     SubRecordType = "SubRecordType"
     Delimiter = "Delimiter"
     CompressionFormat = "CompressionFormat"
+    DataMessageExtraction = "DataMessageExtraction"
 
 
 class ProcessorType(str):
     RecordDeAggregation = "RecordDeAggregation"
     Decompression = "Decompression"
+    CloudWatchLogProcessing = "CloudWatchLogProcessing"
     Lambda = "Lambda"
     MetadataExtraction = "MetadataExtraction"
     AppendDelimiterToRecord = "AppendDelimiterToRecord"
@@ -275,6 +287,11 @@ class SplunkS3BackupMode(str):
     AllEvents = "AllEvents"
 
 
+class TagrisStatus(str):
+    ACTIVE = "ACTIVE"
+    NOT_ACTIVE = "NOT_ACTIVE"
+
+
 class ConcurrentModificationException(ServiceException):
     code: str = "ConcurrentModificationException"
     sender_fault: bool = False
@@ -299,6 +316,13 @@ class InvalidSourceException(ServiceException):
     status_code: int = 400
 
 
+class InvalidStreamTypeException(ServiceException):
+    code: str = "InvalidStreamTypeException"
+    sender_fault: bool = False
+    status_code: int = 400
+    source: Optional[FirehoseSource]
+
+
 class LimitExceededException(ServiceException):
     code: str = "LimitExceededException"
     sender_fault: bool = False
@@ -319,6 +343,57 @@ class ResourceNotFoundException(ServiceException):
 
 class ServiceUnavailableException(ServiceException):
     code: str = "ServiceUnavailableException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class TagrisAccessDeniedException(ServiceException):
+    code: str = "TagrisAccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class TagrisInternalServiceException(ServiceException):
+    code: str = "TagrisInternalServiceException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+TagrisVersion = int
+
+
+class TagrisSweepListItem(TypedDict, total=False):
+    TagrisAccountId: Optional[TagrisAccountId]
+    TagrisAmazonResourceName: Optional[TagrisAmazonResourceName]
+    TagrisInternalId: Optional[TagrisInternalId]
+    TagrisVersion: Optional[TagrisVersion]
+
+
+class TagrisInvalidArnException(ServiceException):
+    code: str = "TagrisInvalidArnException"
+    sender_fault: bool = False
+    status_code: int = 400
+    sweepListItem: Optional[TagrisSweepListItem]
+
+
+class TagrisInvalidParameterException(ServiceException):
+    code: str = "TagrisInvalidParameterException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+TagrisSweepListResult = Dict[TagrisAmazonResourceName, TagrisStatus]
+
+
+class TagrisPartialResourcesExistResultsException(ServiceException):
+    code: str = "TagrisPartialResourcesExistResultsException"
+    sender_fault: bool = False
+    status_code: int = 400
+    resourceExistenceInformation: Optional[TagrisSweepListResult]
+
+
+class TagrisThrottledException(ServiceException):
+    code: str = "TagrisThrottledException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -785,6 +860,8 @@ class ExtendedS3DestinationConfiguration(TypedDict, total=False):
     S3BackupConfiguration: Optional[S3DestinationConfiguration]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DeliveryStreamEncryptionConfigurationInput(TypedDict, total=False):
@@ -931,6 +1008,8 @@ class ExtendedS3DestinationDescription(TypedDict, total=False):
     S3BackupDescription: Optional[S3DestinationDescription]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DestinationDescription(TypedDict, total=False):
@@ -1043,6 +1122,24 @@ class ExtendedS3DestinationUpdate(TypedDict, total=False):
     S3BackupUpdate: Optional[S3DestinationUpdate]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
+
+
+class GetKinesisStreamInput(ServiceRequest):
+    DeliveryStreamARN: DeliveryStreamARN
+
+
+class SessionCredentials(TypedDict, total=False):
+    AccessKeyId: AccessKeyId
+    SecretAccessKey: SecretAccessKey
+    SessionToken: SessionToken
+    Expiration: Timestamp
+
+
+class GetKinesisStreamOutput(TypedDict, total=False):
+    KinesisStreamARN: Optional[KinesisStreamARN]
+    CredentialsForReadingKinesisStream: Optional[SessionCredentials]
 
 
 class HttpEndpointDestinationUpdate(TypedDict, total=False):
@@ -1193,6 +1290,15 @@ class TagDeliveryStreamOutput(TypedDict, total=False):
 
 
 TagKeyList = List[TagKey]
+TagrisSweepList = List[TagrisSweepListItem]
+
+
+class TagrisVerifyResourcesExistInput(ServiceRequest):
+    TagrisSweepList: TagrisSweepList
+
+
+class TagrisVerifyResourcesExistOutput(TypedDict, total=False):
+    TagrisSweepListResult: TagrisSweepListResult
 
 
 class UntagDeliveryStreamInput(ServiceRequest):
@@ -1271,6 +1377,12 @@ class FirehoseApi:
         exclusive_start_destination_id: DestinationId = None,
         **kwargs
     ) -> DescribeDeliveryStreamOutput:
+        raise NotImplementedError
+
+    @handler("GetKinesisStream")
+    def get_kinesis_stream(
+        self, context: RequestContext, delivery_stream_arn: DeliveryStreamARN, **kwargs
+    ) -> GetKinesisStreamOutput:
         raise NotImplementedError
 
     @handler("ListDeliveryStreams")
@@ -1369,4 +1481,10 @@ class FirehoseApi:
         snowflake_destination_update: SnowflakeDestinationUpdate = None,
         **kwargs
     ) -> UpdateDestinationOutput:
+        raise NotImplementedError
+
+    @handler("VerifyResourcesExistForTagris")
+    def verify_resources_exist_for_tagris(
+        self, context: RequestContext, tagris_sweep_list: TagrisSweepList, **kwargs
+    ) -> TagrisVerifyResourcesExistOutput:
         raise NotImplementedError
