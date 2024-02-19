@@ -1340,7 +1340,7 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution_2": {
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution_implicit_json_serialisation": {
     "recorded-date": "05-02-2024, 11:29:16",
     "recorded-content": {
       "get_execution_history": {

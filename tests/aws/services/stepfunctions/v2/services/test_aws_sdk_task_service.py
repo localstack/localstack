@@ -1,7 +1,8 @@
 import json
 
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer
+
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import JsonpathTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
@@ -171,7 +172,7 @@ class TestTaskServiceAwsSdk:
         )
 
     @markers.aws.validated
-    def test_sfn_start_execution_2(
+    def test_sfn_start_execution_implicit_json_serialisation(
         self,
         aws_client,
         create_iam_role_for_sfn,
@@ -195,7 +196,7 @@ class TestTaskServiceAwsSdk:
             definition_target,
         )
 
-        template = ST.load_sfn_template(ST.AWS_SDK_SFN_START_EXECUTION_2)
+        template = ST.load_sfn_template(ST.AWS_SDK_SFN_START_EXECUTION_IMPLICIT_JSON_SERIALISATION)
         template["States"]["StartTarget"]["Parameters"][
             "StateMachineArn"
         ] = state_machine_arn_target
