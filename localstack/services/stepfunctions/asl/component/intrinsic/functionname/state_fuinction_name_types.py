@@ -24,4 +24,4 @@ class StatesFunctionNameType(Enum):
     UUID = ASLIntrinsicLexer.UUID
 
     def name(self) -> str:
-        return ASLIntrinsicLexer.literalNames[self.value][1:-1]
+        return ASLIntrinsicLexer.symbolicNames[self.value][1:-1]

@@ -2,7 +2,6 @@ import json
 
 import pytest
 
-from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -235,14 +234,19 @@ class TestS3NotificationsToEventBridge:
 
     @markers.aws.validated
     def test_object_created_put_in_different_region(
-        self, basic_event_bridge_rule_to_sqs_queue, snapshot, aws_client_factory, aws_client
+        self,
+        basic_event_bridge_rule_to_sqs_queue,
+        snapshot,
+        aws_client_factory,
+        aws_client,
+        secondary_region_name,
     ):
         snapshot.add_transformer(snapshot.transform.key_value("region"), priority=-1)
         # create the bucket and the queue URL in the default region
         bucket_name, queue_url = basic_event_bridge_rule_to_sqs_queue
 
         # create an S3 client in another region, to verify the region in the event
-        s3_client = aws_client_factory(region_name=SECONDARY_TEST_AWS_REGION_NAME).s3
+        s3_client = aws_client_factory(region_name=secondary_region_name).s3
         test_key = "test-key"
         s3_client.put_object(Bucket=bucket_name, Key=test_key, Body=b"data")
         aws_client.s3.put_object(Bucket=bucket_name, Key=test_key, Body=b"data")

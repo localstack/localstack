@@ -263,6 +263,7 @@ comparison_variable_stmt
     : variable_decl
     | comparison_func
     | next_decl
+    | comment_decl
     ;
 
 comparison_composite_stmt
@@ -432,6 +433,7 @@ retrier_stmt
     | interval_seconds_decl
     | max_attempts_decl
     | backoff_rate_decl
+    | comment_decl
     ;
 
 error_equals_decl
@@ -472,6 +474,7 @@ catcher_stmt
     : error_equals_decl
     | result_path_decl
     | next_decl
+    | comment_decl
     ;
 
 comparison_op

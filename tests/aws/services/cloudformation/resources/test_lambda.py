@@ -4,10 +4,10 @@ import os
 from io import BytesIO
 
 import pytest
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.lambda_ import InvocationType, Runtime, State
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
@@ -955,7 +955,7 @@ def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_
     invocation_result = aws_client.lambda_.invoke(
         FunctionName=function_name, Payload=json.dumps({"hello": "world"})
     )
-    payload = json.loads(to_str(invocation_result["Payload"].read()))
+    payload = json.load(invocation_result["Payload"])
     assert payload == {"hello": "world"}
     assert invocation_result["StatusCode"] == 200
 

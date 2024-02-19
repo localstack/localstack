@@ -1,12 +1,8 @@
 import os
-from typing import TYPE_CHECKING
 
 import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
-
-if TYPE_CHECKING:
-    from localstack.testing.snapshots import SnapshotSession
 
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
@@ -14,7 +10,7 @@ pytest_plugins = [
     "localstack.testing.pytest.cloudtrail_tracking",
     "localstack.testing.pytest.fixtures",
     "localstack.testing.pytest.container",
-    "localstack.testing.pytest.snapshot",
+    "localstack_snapshot.pytest.snapshot",
     "localstack.testing.pytest.filters",
     "localstack.testing.pytest.fixture_conflicts",
     "localstack.testing.pytest.detect_thread_leakage",
@@ -121,11 +117,6 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_offline)
 
 
-@pytest.fixture(scope="function")
-def snapshot(_snapshot_session: "SnapshotSession"):
-    return _snapshot_session
-
-
 @pytest.fixture(scope="session")
 def aws_session():
     """
@@ -166,6 +157,7 @@ def secondary_aws_client(aws_client_factory):
     This fixture can be used to obtain Boto clients for testing.
 
     The clients are configured with the secondary testing credentials.
+    The region is not overridden.
     """
     from localstack.testing.aws.util import secondary_testing_aws_client
 

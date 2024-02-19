@@ -1,6 +1,6 @@
 # LocalStack project configuration
 [build-system]
-requires = ['setuptools', 'wheel', 'plux>=1.3.1']
+requires = ['setuptools', 'wheel', 'plux>=1.7']
 build-backend = "setuptools.build_meta"
 
 [tool.black]
@@ -12,6 +12,19 @@ extend_exclude = '(localstack/infra|localstack/node_modules|.filesystem|localsta
 # Always generate Python 3.8-compatible code.
 target-version = "py38"
 line-length = 110
+exclude = [
+    ".venv*",
+    "venv*",
+    "dist",
+    "build",
+    "target",
+    "*.egg-info",
+    ".filesystem",
+    ".git",
+    "localstack/services/stepfunctions/asl/antlr/runtime"
+    ]
+
+[tool.ruff.lint]
 ignore = [
     "B005", # TODO Using `.strip()` with multi-character strings is misleading
     "B006", # TODO Do not use mutable data structures for argument defaults
@@ -51,17 +64,6 @@ ignore = [
     "T203", # TODO `pprint` found
 ]
 select = ["B", "C", "E", "F", "I", "W", "T", "B9"]
-exclude = [
-    ".venv*",
-    "venv*",
-    "dist",
-    "build",
-    "target",
-    "*.egg-info",
-    ".filesystem",
-    ".git",
-    "localstack/services/stepfunctions/asl/antlr/runtime"
-    ]
 
 [tool.coverage.run]
 relative_files = true

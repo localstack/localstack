@@ -69,6 +69,12 @@ class DataShareStatusForProducer(str):
     REJECTED = "REJECTED"
 
 
+class ImpactRankingType(str):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
 class LogDestinationType(str):
     s3 = "s3"
     cloudwatch = "cloudwatch"
@@ -106,6 +112,11 @@ class PartnerIntegrationStatus(str):
     Inactive = "Inactive"
     RuntimeFailure = "RuntimeFailure"
     ConnectionFailure = "ConnectionFailure"
+
+
+class RecommendedActionType(str):
+    SQL = "SQL"
+    CLI = "CLI"
 
 
 class ReservedNodeExchangeActionType(str):
@@ -2821,6 +2832,54 @@ class InboundIntegrationsMessage(TypedDict, total=False):
     InboundIntegrations: Optional[InboundIntegrationList]
 
 
+class ListRecommendationsMessage(ServiceRequest):
+    ClusterIdentifier: Optional[String]
+    NamespaceArn: Optional[String]
+    MaxRecords: Optional[IntegerOptional]
+    Marker: Optional[String]
+
+
+class ReferenceLink(TypedDict, total=False):
+    Text: Optional[String]
+    Link: Optional[String]
+
+
+ReferenceLinkList = List[ReferenceLink]
+
+
+class RecommendedAction(TypedDict, total=False):
+    Text: Optional[String]
+    Database: Optional[String]
+    Command: Optional[String]
+    Type: Optional[RecommendedActionType]
+
+
+RecommendedActionList = List[RecommendedAction]
+
+
+class Recommendation(TypedDict, total=False):
+    Id: Optional[String]
+    ClusterIdentifier: Optional[String]
+    NamespaceArn: Optional[String]
+    CreatedAt: Optional[TStamp]
+    RecommendationType: Optional[String]
+    Title: Optional[String]
+    Description: Optional[String]
+    Observation: Optional[String]
+    ImpactRanking: Optional[ImpactRankingType]
+    RecommendationText: Optional[String]
+    RecommendedActions: Optional[RecommendedActionList]
+    ReferenceLinks: Optional[ReferenceLinkList]
+
+
+RecommendationList = List[Recommendation]
+
+
+class ListRecommendationsResult(TypedDict, total=False):
+    Recommendations: Optional[RecommendationList]
+    Marker: Optional[String]
+
+
 class LoggingStatus(TypedDict, total=False):
     LoggingEnabled: Optional[Boolean]
     BucketName: Optional[String]
@@ -4461,6 +4520,18 @@ class RedshiftApi:
     def get_resource_policy(
         self, context: RequestContext, resource_arn: String, **kwargs
     ) -> GetResourcePolicyResult:
+        raise NotImplementedError
+
+    @handler("ListRecommendations")
+    def list_recommendations(
+        self,
+        context: RequestContext,
+        cluster_identifier: String = None,
+        namespace_arn: String = None,
+        max_records: IntegerOptional = None,
+        marker: String = None,
+        **kwargs
+    ) -> ListRecommendationsResult:
         raise NotImplementedError
 
     @handler("ModifyAquaConfiguration")

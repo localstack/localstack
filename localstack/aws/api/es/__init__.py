@@ -95,6 +95,17 @@ class AutoTuneType(str):
     SCHEDULED_ACTION = "SCHEDULED_ACTION"
 
 
+class ConfigChangeStatus(str):
+    Pending = "Pending"
+    Initializing = "Initializing"
+    Validating = "Validating"
+    ValidationFailed = "ValidationFailed"
+    ApplyingChanges = "ApplyingChanges"
+    Completed = "Completed"
+    PendingUserInput = "PendingUserInput"
+    Cancelled = "Cancelled"
+
+
 class DeploymentStatus(str):
     PENDING_UPDATE = "PENDING_UPDATE"
     IN_PROGRESS = "IN_PROGRESS"
@@ -115,6 +126,16 @@ class DomainPackageStatus(str):
     ACTIVE = "ACTIVE"
     DISSOCIATING = "DISSOCIATING"
     DISSOCIATION_FAILED = "DISSOCIATION_FAILED"
+
+
+class DomainProcessingStatusType(str):
+    Creating = "Creating"
+    Active = "Active"
+    Modifying = "Modifying"
+    UpgradingEngineVersion = "UpgradingEngineVersion"
+    UpdatingServiceSoftware = "UpdatingServiceSoftware"
+    Isolated = "Isolated"
+    Deleting = "Deleting"
 
 
 class ESPartitionInstanceType(str):
@@ -197,6 +218,11 @@ class InboundCrossClusterSearchConnectionStatusCode(str):
     DELETED = "DELETED"
 
 
+class InitiatedBy(str):
+    CUSTOMER = "CUSTOMER"
+    SERVICE = "SERVICE"
+
+
 class LogType(str):
     INDEX_SLOW_LOGS = "INDEX_SLOW_LOGS"
     SEARCH_SLOW_LOGS = "SEARCH_SLOW_LOGS"
@@ -246,6 +272,11 @@ class PackageType(str):
 class PrincipalType(str):
     AWS_ACCOUNT = "AWS_ACCOUNT"
     AWS_SERVICE = "AWS_SERVICE"
+
+
+class PropertyValueType(str):
+    PLAIN_TEXT = "PLAIN_TEXT"
+    STRINGIFIED_JSON = "STRINGIFIED_JSON"
 
 
 class ReservedElasticsearchInstancePaymentOption(str):
@@ -620,6 +651,27 @@ class AutoTuneOptionsStatus(TypedDict, total=False):
     Status: Optional[AutoTuneStatus]
 
 
+class CancelDomainConfigChangeRequest(ServiceRequest):
+    DomainName: DomainName
+    DryRun: Optional[DryRun]
+
+
+class CancelledChangeProperty(TypedDict, total=False):
+    PropertyName: Optional[String]
+    CancelledValue: Optional[String]
+    ActiveValue: Optional[String]
+
+
+CancelledChangePropertyList = List[CancelledChangeProperty]
+GUIDList = List[GUID]
+
+
+class CancelDomainConfigChangeResponse(TypedDict, total=False):
+    DryRun: Optional[DryRun]
+    CancelledChangeIds: Optional[GUIDList]
+    CancelledChangeProperties: Optional[CancelledChangePropertyList]
+
+
 class CancelElasticsearchServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
 
@@ -645,6 +697,10 @@ class CancelElasticsearchServiceSoftwareUpdateResponse(TypedDict, total=False):
 class ChangeProgressDetails(TypedDict, total=False):
     ChangeId: Optional[GUID]
     Message: Optional[Message]
+    ConfigChangeStatus: Optional[ConfigChangeStatus]
+    StartTime: Optional[UpdateTimestamp]
+    LastUpdatedTime: Optional[UpdateTimestamp]
+    InitiatedBy: Optional[InitiatedBy]
 
 
 class ChangeProgressStage(TypedDict, total=False):
@@ -666,6 +722,9 @@ class ChangeProgressStatusDetails(TypedDict, total=False):
     CompletedProperties: Optional[StringList]
     TotalNumberOfStages: Optional[TotalNumberOfStages]
     ChangeProgressStages: Optional[ChangeProgressStageList]
+    ConfigChangeStatus: Optional[ConfigChangeStatus]
+    LastUpdatedTime: Optional[UpdateTimestamp]
+    InitiatedBy: Optional[InitiatedBy]
 
 
 class CognitoOptions(TypedDict, total=False):
@@ -774,6 +833,16 @@ class CreateElasticsearchDomainRequest(ServiceRequest):
     TagList: Optional[TagList]
 
 
+class ModifyingProperties(TypedDict, total=False):
+    Name: Optional[String]
+    ActiveValue: Optional[String]
+    PendingValue: Optional[String]
+    ValueType: Optional[PropertyValueType]
+
+
+ModifyingPropertiesList = List[ModifyingProperties]
+
+
 class VPCDerivedInfo(TypedDict, total=False):
     VPCId: Optional[String]
     SubnetIds: Optional[StringList]
@@ -810,6 +879,8 @@ class ElasticsearchDomainStatus(TypedDict, total=False):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptions]
     AutoTuneOptions: Optional[AutoTuneOptionsOutput]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
+    DomainProcessingStatus: Optional[DomainProcessingStatusType]
+    ModifyingProperties: Optional[ModifyingPropertiesList]
 
 
 class CreateElasticsearchDomainResponse(TypedDict, total=False):
@@ -1025,6 +1096,7 @@ class ElasticsearchDomainConfig(TypedDict, total=False):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsStatus]
     AutoTuneOptions: Optional[AutoTuneOptionsStatus]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
+    ModifyingProperties: Optional[ModifyingPropertiesList]
 
 
 class DescribeElasticsearchDomainConfigResponse(TypedDict, total=False):
@@ -1563,6 +1635,12 @@ class EsApi:
     def authorize_vpc_endpoint_access(
         self, context: RequestContext, domain_name: DomainName, account: AWSAccount, **kwargs
     ) -> AuthorizeVpcEndpointAccessResponse:
+        raise NotImplementedError
+
+    @handler("CancelDomainConfigChange")
+    def cancel_domain_config_change(
+        self, context: RequestContext, domain_name: DomainName, dry_run: DryRun = None, **kwargs
+    ) -> CancelDomainConfigChangeResponse:
         raise NotImplementedError
 
     @handler("CancelElasticsearchServiceSoftwareUpdate")

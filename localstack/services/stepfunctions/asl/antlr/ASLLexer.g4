@@ -154,7 +154,6 @@ ERRORNAMEStatesResultWriterFailed: '"States.ResultWriterFailed"';
 ERRORNAMEStatesRuntime: '"States.Runtime"';
 
 // Strings.
-
 STRINGDOLLAR
     : '"' (ESC | SAFECODEPOINT)* '.$"'
     ;

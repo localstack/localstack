@@ -64,12 +64,14 @@ class ExecutionEnvironment:
     last_returned: datetime
     startup_timer: Optional[Timer]
     keepalive_timer: Optional[Timer]
+    on_timeout: Callable[[str, str], None]
 
     def __init__(
         self,
         function_version: FunctionVersion,
         initialization_type: InitializationType,
         on_timeout: Callable[[str, str], None],
+        version_manager_id: str,
     ):
         self.id = generate_runtime_id()
         self.status = RuntimeStatus.INACTIVE
@@ -82,6 +84,7 @@ class ExecutionEnvironment:
         self.startup_timer = None
         self.keepalive_timer = Timer(0, lambda *args, **kwargs: None)
         self.on_timeout = on_timeout
+        self.version_manager_id = version_manager_id
 
     def get_log_group_name(self) -> str:
         return f"/aws/lambda/{self.function_version.id.function_name}"
@@ -154,9 +157,9 @@ class ExecutionEnvironment:
         # config.handler is None for image lambdas and will be populated at runtime (e.g., by RIE)
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler
-        # Not defined for custom runtimes (e.g., provided, provided.al2)
+        # Will be overriden by the runtime itself unless it is a provided runtime
         if self.function_version.config.runtime:
-            env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.config.runtime}"
+            env_vars["AWS_EXECUTION_ENV"] = "AWS_Lambda_rapid"
         if self.function_version.config.environment:
             env_vars.update(self.function_version.config.environment)
         if config.LAMBDA_INIT_DEBUG:
@@ -169,6 +172,10 @@ class ExecutionEnvironment:
             env_vars["LOCALSTACK_INIT_LOG_LEVEL"] = "debug"
         if config.LAMBDA_INIT_POST_INVOKE_WAIT_MS:
             env_vars["LOCALSTACK_POST_INVOKE_WAIT_MS"] = int(config.LAMBDA_INIT_POST_INVOKE_WAIT_MS)
+        if config.LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES:
+            env_vars["LOCALSTACK_MAX_PAYLOAD_SIZE"] = int(
+                config.LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES
+            )
         return env_vars
 
     # Lifecycle methods
@@ -266,7 +273,7 @@ class ExecutionEnvironment:
         )
         self.stop()
         # Notify assignment service via callback to remove from environments list
-        self.on_timeout(self.function_version.qualified_arn, self.id)
+        self.on_timeout(self.version_manager_id, self.id)
 
     def timed_out(self) -> None:
         """Handle status updates if the startup of an execution environment times out.

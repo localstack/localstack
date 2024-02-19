@@ -744,6 +744,7 @@ class LogGroup(TypedDict, total=False):
     dataProtectionStatus: Optional[DataProtectionStatus]
     inheritedProperties: Optional[InheritedProperties]
     logGroupClass: Optional[LogGroupClass]
+    logGroupArn: Optional[Arn]
 
 
 LogGroups = List[LogGroup]
