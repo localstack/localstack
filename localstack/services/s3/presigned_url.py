@@ -233,20 +233,17 @@ def get_credentials_from_parameters(parameters: dict) -> PreSignedCredentials:
         if len(credential_value):
             access_key_id = credential_value[0]
 
-    secret_access_key = get_secret_access_key_from_access_key_id(access_key_id)
-
-    if not access_key_id or not secret_access_key:
-        # if we could not retrieve the secret access key, it means the access key was not registered in LocalStack,
-        # so passing the right access key id but the wrong secret access key will always end up in a failure
-        # fallback to hardcoded necessary test/test credentials then
-        secret_access_key = DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
+    if not access_key_id:
+        # fallback to the hardcoded value
         access_key_id = DEFAULT_PRE_SIGNED_ACCESS_KEY_ID
+
+    if not (secret_access_key := get_secret_access_key_from_access_key_id(access_key_id)):
+        # if we could not retrieve the secret access key, it means the access key was not registered in LocalStack,
+        # fallback to hardcoded necessary secret access key
+        secret_access_key = DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
 
     security_token = parameters.get("X-Amz-Security-Token", None)
     return PreSignedCredentials(access_key_id, secret_access_key, security_token)
-    # cred = PreSignedCredentials(access_key_id, secret_access_key, security_token)
-    # print(f"{cred=}")
-    # return cred
 
 
 @cache

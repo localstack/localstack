@@ -6518,8 +6518,7 @@ class TestS3PresignedUrl:
         if not is_aws_cloud():
             # Moto does not register the default returned value from STS as a valid IAM user, which is way we can't
             # retrieve the secret access key
-            # we need to hardcode the credentials to the test ones here, but still use the session token
-            response["Credentials"]["AccessKeyId"] = s3_constants.DEFAULT_PRE_SIGNED_ACCESS_KEY_ID
+            # we need to hardcode the secret access key to the default one
             response["Credentials"][
                 "SecretAccessKey"
             ] = s3_constants.DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
