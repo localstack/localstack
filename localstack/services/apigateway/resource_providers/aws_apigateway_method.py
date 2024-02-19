@@ -1,6 +1,7 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional, TypedDict
 from urllib.parse import urlparse
@@ -104,7 +105,7 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
         # key_to_lower makes in-place changes which will cause crash
         # when we try to use model outside of this function
         # for example generating composite physical id
-        params = keys_to_lower(model.copy())
+        params = keys_to_lower(deepcopy(model))
         param_names = [
             "restApiId",
             "resourceId",
@@ -129,7 +130,7 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
             api_id = model["RestApiId"]
             res_id = model["ResourceId"]
 
-            kwargs = keys_to_lower(integration)
+            kwargs = keys_to_lower(deepcopy(integration))
             if uri := integration.get("Uri"):
                 # Moto has a validate method on Uri for integration_type "HTTP" | "HTTP_PROXY" that does not accept
                 # Uri value without path, we need to add path ("/") if not exists
@@ -244,7 +245,7 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
         model = request.desired_state
         apigw = request.aws_client_factory.apigateway
 
-        params = keys_to_lower(model.copy())
+        params = keys_to_lower(deepcopy(model))
         param_names = [
             "restApiId",
             "resourceId",
@@ -254,7 +255,7 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
         params = util.select_attributes(params, param_names)
 
         if integration := model.get("Integration"):
-            params["type"] = integration["type"]
+            params["type"] = integration["Type"]
             if integration.get("IntegrationHttpMethod"):
                 params["integrationHttpMethod"] = integration.get("IntegrationHttpMethod")
             if integration.get("Uri"):

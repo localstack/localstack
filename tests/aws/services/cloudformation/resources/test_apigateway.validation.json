@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::TestServerlessApigwLambda::test_serverless_like_deployment_with_update": {
+    "last_validated_date": "2024-02-19T08:55:12+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::TestServerlessApigwLambda::test_stuff": {
     "last_validated_date": "2024-02-16T14:51:15+00:00"
   },
