@@ -208,6 +208,11 @@
 /tests/unit/test_s3.py @bentsku @macnev2013
 /tests/unit/services/s3/ @bentsku @macnev2013
 
+# scheduler
+/localstack/aws/api/scheduler/ @viren-nadkarni
+/localstack/services/scheduler/ @viren-nadkarni
+/tests/aws/services/scheduler/ @viren-nadkarni
+
 # secretsmanager
 /localstack/aws/api/secretsmanager/ @dominikschubert @MEPalma
 /localstack/services/secretsmanager/ @dominikschubert @MEPalma
