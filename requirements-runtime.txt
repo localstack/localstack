@@ -24,7 +24,7 @@ attrs==23.2.0
     #   jsonschema
     #   referencing
     #   sarif-om
-aws-sam-translator==1.84.0
+aws-sam-translator==1.85.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -65,7 +65,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.85.1
+cfn-lint==0.85.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -78,7 +78,7 @@ colorama==0.4.4
     # via awscli
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.2
+cryptography==42.0.3
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
@@ -91,7 +91,7 @@ dill==0.3.6
     # via localstack-core (pyproject.toml)
 dnslib==0.9.24
     # via localstack-core (pyproject.toml)
-dnspython==2.5.0
+dnspython==2.6.1
     # via
     #   localstack-core (pyproject.toml)
     #   pymongo
@@ -185,9 +185,7 @@ markupsafe==2.1.5
 mdurl==0.1.2
     # via markdown-it-py
 moto-ext[all]==5.0.0.post1
-    # via
-    #   localstack-core (pyproject.toml)
-    #   moto-ext
+    # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
 multipart==0.2.4
@@ -211,7 +209,7 @@ pbr==6.0.0
     #   jschema-to-python
     #   sarif-om
     #   stevedore
-plux==1.5.0
+plux==1.7.0
     # via localstack-core (pyproject.toml)
 ply==3.11
     # via
@@ -249,9 +247,7 @@ python-dateutil==2.8.2
 python-dotenv==1.0.1
     # via localstack-core (pyproject.toml)
 python-jose[cryptography]==3.3.0
-    # via
-    #   moto-ext
-    #   python-jose
+    # via moto-ext
 pyyaml==6.0.1
     # via
     #   awscli
