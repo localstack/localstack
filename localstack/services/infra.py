@@ -6,7 +6,7 @@ import threading
 import traceback
 
 from localstack import config, constants
-from localstack.constants import AWS_REGION_US_EAST_1, LOCALSTACK_INFRA_PROCESS
+from localstack.constants import LOCALSTACK_INFRA_PROCESS
 from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.runtime import events, hooks
 from localstack.runtime.exceptions import LocalstackExit
@@ -290,9 +290,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     def prepare_environment():
         # enable the HTTP/HTTPS duplex socket
         enable_duplex_socket()
-
-        # set environment
-        os.environ["AWS_REGION"] = AWS_REGION_US_EAST_1
 
         patch_moto_request_handling()
 
