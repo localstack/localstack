@@ -60,6 +60,7 @@ class Markers:
     )  # for now with a _beta suffix to make clear they are not really used as acceptance tests yet
     skip_offline = pytest.mark.skip_offline
     only_on_amd64 = pytest.mark.only_on_amd64
+    only_on_arm64 = pytest.mark.only_on_arm64
     resource_heavy = pytest.mark.resource_heavy
     only_in_docker = pytest.mark.only_in_docker
     # Tests to execute when updating snapshots for a new Lambda runtime

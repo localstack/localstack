@@ -36,7 +36,7 @@ from localstack.utils.aws import arns
 from localstack.utils.aws.arns import lambda_function_name
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
-from localstack.utils.platform import Arch, get_arch, is_arm_compatible, standardized_arch
+from localstack.utils.platform import Arch, get_arch, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -120,7 +120,7 @@ TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
 TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
 TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
 
-# TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
+# TODO: remove the architecture filter once all non-ARM compatible runtimes are fully deprecated
 PYTHON_TEST_RUNTIMES = (
     RUNTIMES_AGGREGATED["python"] if (get_arch() != Arch.arm64) else [Runtime.python3_11]
 )
@@ -440,9 +440,8 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_uid",
         ],
     )
-    # TODO: fix arch compatibility detection for supported emulations
-    @pytest.mark.skipif(get_arch() == Arch.arm64, reason="Cannot inspect x86 runtime on arm")
     @markers.aws.validated
+    @markers.only_on_amd64
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_x86_{short_uid()}"
         create_lambda_function(
@@ -456,10 +455,6 @@ class TestLambdaBehavior:
         invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_x86_introspection", invoke_result)
 
-    @pytest.mark.skipif(
-        not is_arm_compatible() and not is_aws_cloud(),
-        reason="ARM architecture not supported on this host",
-    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # requires creating a new user `slicer` and chown /var/task
@@ -469,6 +464,7 @@ class TestLambdaBehavior:
         ],
     )
     @markers.aws.validated
+    @markers.only_on_arm64
     def test_runtime_introspection_arm(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_arm_{short_uid()}"
         create_lambda_function(
@@ -526,7 +522,6 @@ class TestLambdaBehavior:
         lambda_arch = standardized_arch(payload.get("platform_machine"))
         assert lambda_arch == native_arch
 
-    @pytest.mark.skip  # TODO remove once is_arch_compatible checks work properly
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..LoggingConfig",
@@ -535,6 +530,9 @@ class TestLambdaBehavior:
         ]
     )
     @markers.aws.validated
+    # Special case requiring both architectures
+    @markers.only_on_amd64
+    @markers.only_on_arm64
     def test_mixed_architecture(self, create_lambda_function, aws_client, snapshot):
         """Test emulation of a lambda function changing architectures.
         Limitation: only works on hosts that support both ARM and AMD64 architectures.

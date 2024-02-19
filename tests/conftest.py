@@ -4,6 +4,8 @@ import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
 
+from localstack.testing.pytest.filters import filter_tests
+
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
 pytest_plugins = [
@@ -69,6 +71,14 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
+        "only_on_amd64: mark the test as running only in an amd64 (i.e., x86_64) environment",
+    )
+    config.addinivalue_line(
+        "markers",
+        "only_on_arm64: mark the test as running only in an arm64 environment",
+    )
+    config.addinivalue_line(
+        "markers",
         "only_in_docker: mark the test as running only in Docker (e.g., requires installation of system packages)",
     )
     config.addinivalue_line(
@@ -103,18 +113,7 @@ def pytest_configure(config):
 
 
 def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--offline"):
-        # The tests are not executed offline, so we don't skip the tests marked to need an internet connection
-        return
-    skip_offline = pytest.mark.skip(
-        reason="Test cannot be executed offline / in a restricted network environment. "
-        "Add network connectivity and remove the --offline option when running "
-        "the test."
-    )
-
-    for item in items:
-        if "skip_offline" in item.keywords:
-            item.add_marker(skip_offline)
+    filter_tests(config, items)
 
 
 @pytest.fixture(scope="session")
