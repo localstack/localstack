@@ -125,7 +125,7 @@ class TestKinesisFirehoseScenario:
             error_output_prefix="firehose-raw-data/errors/",
             compression_format="UNCOMPRESSED",
             s3_backup_mode="Disabled",
-            buffering_hints=cdk.aws_kinesisfirehose.CfnDeliveryStream.BufferingHintsProperty(
+            buffering_hints=firehose.CfnDeliveryStream.BufferingHintsProperty(
                 interval_in_seconds=1, size_in_m_bs=1
             ),
             encryption_configuration=firehose.CfnDeliveryStream.EncryptionConfigurationProperty(
