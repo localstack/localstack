@@ -23,7 +23,9 @@ from localstack import config
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
+    SECONDARY_TEST_AWS_REGION_NAME,
     TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
 )
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -97,7 +99,7 @@ def aws_http_client_factory(aws_session):
         creds = credentials.get_frozen_credentials()
 
         if not endpoint_url:
-            if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":
+            if is_aws_cloud():
                 # FIXME: this is a bit raw. we should probably re-use boto in a better way
                 resolver: EndpointResolver = aws_session._session.get_component("endpoint_resolver")
                 endpoint_url = "https://" + resolver.construct_endpoint(service, region)["hostname"]
@@ -922,27 +924,32 @@ class StackDeployError(Exception):
     def __init__(self, describe_res: dict, events: list[dict]):
         self.describe_result = describe_res
         self.events = events
-        super().__init__(
-            f"Describe output:\n{json.dumps(self.describe_result, cls=CustomEncoder)}\nEvents:\n{self.format_events(events)}"
-        )
+
+        encoded_describe_output = json.dumps(self.describe_result, cls=CustomEncoder)
+        if config.CFN_VERBOSE_ERRORS:
+            msg = f"Describe output:\n{encoded_describe_output}\nEvents:\n{self.format_events(events)}"
+        else:
+            msg = f"Describe output:\n{encoded_describe_output}\nFailing resources:\n{self.format_events(events)}"
+
+        super().__init__(msg)
 
     def format_events(self, events: list[dict]) -> str:
-        event_details = (
-            json.dumps(
-                {
-                    key: event.get(key)
-                    for key in [
-                        "LogicalResourceId",
-                        "ResourceType",
-                        "ResourceStatus",
-                        "ResourceStatusReason",
-                    ]
-                },
-                cls=CustomEncoder,
-            )
-            for event in events
-        )
-        return "\n".join(event_details)
+        formatted_events = []
+
+        chronological_events = sorted(events, key=lambda event: event["Timestamp"])
+        for event in chronological_events:
+            if event["ResourceStatus"].endswith("FAILED") or config.CFN_VERBOSE_ERRORS:
+                formatted_events.append(self.format_event(event))
+
+        return "\n".join(formatted_events)
+
+    @staticmethod
+    def format_event(event: dict) -> str:
+        if reason := event.get("ResourceStatusReason"):
+            reason = reason.replace("\n", "; ")
+            return f"- {event['LogicalResourceId']} ({event['ResourceType']}) -> {event['ResourceStatus']} ({reason})"
+        else:
+            return f"- {event['LogicalResourceId']} ({event['ResourceType']}) -> {event['ResourceStatus']}"
 
 
 @pytest.fixture
@@ -1292,6 +1299,24 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
 
 
 @pytest.fixture
+def create_event_source_mapping(aws_client):
+    uuids = []
+
+    def _create_event_source_mapping(*args, **kwargs):
+        response = aws_client.lambda_.create_event_source_mapping(*args, **kwargs)
+        uuids.append(response["UUID"])
+        return response
+
+    yield _create_event_source_mapping
+
+    for uuid in uuids:
+        try:
+            aws_client.lambda_.delete_event_source_mapping(UUID=uuid)
+        except Exception:
+            LOG.debug(f"Unable to delete event source mapping {uuid} in cleanup")
+
+
+@pytest.fixture
 def check_lambda_logs(aws_client):
     def _check_logs(func_name: str, expected_lines: List[str] = None) -> List[str]:
         if not expected_lines:
@@ -1558,7 +1583,7 @@ def lambda_su_role(aws_client):
     )["Policy"]["Arn"]
     aws_client.iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
 
-    if os.environ.get("TEST_TARGET", "") == "AWS_CLOUD":  # dirty but necessary
+    if is_aws_cloud():  # dirty but necessary
         time.sleep(10)
 
     yield role["Arn"]
@@ -1572,13 +1597,18 @@ def lambda_su_role(aws_client):
 def create_iam_role_with_policy(aws_client):
     roles = {}
 
-    def _create_role_and_policy(**kwargs):
+    def _create_role_and_policy(**kwargs: dict[str, any]) -> str:
+        if "RoleName" not in kwargs:
+            kwargs["RoleName"] = f"test-role-{short_uid()}"
         role = kwargs["RoleName"]
+        if "PolicyName" not in kwargs:
+            kwargs["PolicyName"] = f"test-policy-{short_uid()}"
         policy = kwargs["PolicyName"]
         role_policy = json.dumps(kwargs["RoleDefinition"])
 
         result = aws_client.iam.create_role(RoleName=role, AssumeRolePolicyDocument=role_policy)
         role_arn = result["Role"]["Arn"]
+
         policy_document = json.dumps(kwargs["PolicyDefinition"])
         aws_client.iam.put_role_policy(
             RoleName=role, PolicyName=policy, PolicyDocument=policy_document
@@ -1595,21 +1625,24 @@ def create_iam_role_with_policy(aws_client):
 
 @pytest.fixture
 def firehose_create_delivery_stream(wait_for_delivery_stream_ready, aws_client):
-    delivery_streams = {}
+    delivery_stream_names = []
 
     def _create_delivery_stream(**kwargs):
         if "DeliveryStreamName" not in kwargs:
             kwargs["DeliveryStreamName"] = f"test-delivery-stream-{short_uid()}"
-
-        delivery_stream = aws_client.firehose.create_delivery_stream(**kwargs)
-        delivery_streams.update({kwargs["DeliveryStreamName"]: delivery_stream})
-        wait_for_delivery_stream_ready(kwargs["DeliveryStreamName"])
-        return delivery_stream
+        delivery_stream_name = kwargs["DeliveryStreamName"]
+        response = aws_client.firehose.create_delivery_stream(**kwargs)
+        delivery_stream_names.append(delivery_stream_name)
+        wait_for_delivery_stream_ready(delivery_stream_name)
+        return response
 
     yield _create_delivery_stream
 
-    for delivery_stream_name in delivery_streams.keys():
-        aws_client.firehose.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+    for delivery_stream_name in delivery_stream_names:
+        try:
+            aws_client.firehose.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+        except Exception:
+            LOG.info("Failed to delete delivery stream %s", delivery_stream_name)
 
 
 @pytest.fixture
@@ -1781,6 +1814,14 @@ def account_id(aws_client):
 
 
 @pytest.fixture(scope="session")
+def region_name(aws_client):
+    if is_aws_cloud() or is_api_enabled("sts"):
+        return aws_client.sts.meta.region_name
+    else:
+        return TEST_AWS_REGION_NAME
+
+
+@pytest.fixture(scope="session")
 def secondary_account_id(secondary_aws_client):
     if is_aws_cloud() or is_api_enabled("sts"):
         return secondary_aws_client.sts.get_caller_identity()["Account"]
@@ -1788,10 +1829,15 @@ def secondary_account_id(secondary_aws_client):
         return SECONDARY_TEST_AWS_ACCOUNT_ID
 
 
+@pytest.fixture(scope="session")
+def secondary_region_name():
+    return SECONDARY_TEST_AWS_REGION_NAME
+
+
 @pytest.hookimpl
 def pytest_collection_modifyitems(config: Config, items: list[Item]):
     only_localstack = pytest.mark.skipif(
-        os.environ.get("TEST_TARGET") == "AWS_CLOUD",
+        is_aws_cloud(),
         reason="test only applicable if run against localstack",
     )
     for item in items:

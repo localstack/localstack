@@ -84,7 +84,7 @@ _DL_LOCK = threading.Lock()
 
 class TranscribeProvider(TranscribeApi):
     def get_transcription_job(
-        self, context: RequestContext, transcription_job_name: TranscriptionJobName
+        self, context: RequestContext, transcription_job_name: TranscriptionJobName, **kwargs
     ) -> GetTranscriptionJobResponse:
         store = transcribe_stores[context.account_id][context.region]
 
@@ -180,6 +180,7 @@ class TranscribeProvider(TranscribeApi):
         job_name_contains: TranscriptionJobName = None,
         next_token: NextToken = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListTranscriptionJobsResponse:
         store = transcribe_stores[context.account_id][context.region]
         summaries = []
@@ -199,7 +200,7 @@ class TranscribeProvider(TranscribeApi):
         return ListTranscriptionJobsResponse(TranscriptionJobSummaries=summaries)
 
     def delete_transcription_job(
-        self, context: RequestContext, transcription_job_name: TranscriptionJobName
+        self, context: RequestContext, transcription_job_name: TranscriptionJobName, **kwargs
     ) -> None:
         store = transcribe_stores[context.account_id][context.region]
 
@@ -285,9 +286,9 @@ class TranscribeProvider(TranscribeApi):
             job["MediaFormat"] = SUPPORTED_FORMAT_NAMES[format]
 
             # Determine the sample rate of input audio if possible
-            if len(ffprobe_output["streams"]):
-                sample_rate = ffprobe_output["streams"][0]["sample_rate"]
-                job["MediaSampleRateHertz"] = int(sample_rate)
+            for stream in ffprobe_output["streams"]:
+                if stream["codec_type"] == "audio":
+                    job["MediaSampleRateHertz"] = int(stream["sample_rate"])
 
             if format in SUPPORTED_FORMAT_NAMES:
                 wav_path = new_tmp_file(suffix=".wav")

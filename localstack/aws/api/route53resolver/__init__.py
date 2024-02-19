@@ -33,6 +33,7 @@ OutpostResolverName = str
 OutpostResolverStatusMessage = str
 Port = int
 Priority = int
+Qtype = str
 ResolverQueryLogConfigAssociationErrorMessage = str
 ResolverQueryLogConfigName = str
 ResolverQueryLogConfigPolicy = str
@@ -135,6 +136,12 @@ class OutpostResolverStatus(str):
     ACTION_NEEDED = "ACTION_NEEDED"
     FAILED_CREATION = "FAILED_CREATION"
     FAILED_DELETION = "FAILED_DELETION"
+
+
+class Protocol(str):
+    DoH = "DoH"
+    Do53 = "Do53"
+    DoH_FIPS = "DoH-FIPS"
 
 
 class ResolverAutodefinedReverseStatus(str):
@@ -393,6 +400,7 @@ class AssociateResolverEndpointIpAddressRequest(ServiceRequest):
     IpAddress: IpAddressUpdate
 
 
+ProtocolList = List[Protocol]
 SecurityGroupIds = List[ResourceId]
 
 
@@ -409,9 +417,10 @@ class ResolverEndpoint(TypedDict, total=False):
     StatusMessage: Optional[StatusMessage]
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
-    ResolverEndpointType: Optional[ResolverEndpointType]
     OutpostArn: Optional[OutpostArn]
     PreferredInstanceType: Optional[OutpostInstanceType]
+    ResolverEndpointType: Optional[ResolverEndpointType]
+    Protocols: Optional[ProtocolList]
 
 
 class AssociateResolverEndpointIpAddressResponse(TypedDict, total=False):
@@ -514,6 +523,7 @@ class CreateFirewallRuleRequest(ServiceRequest):
     BlockOverrideDnsType: Optional[BlockOverrideDnsType]
     BlockOverrideTtl: Optional[BlockOverrideTtl]
     Name: Name
+    Qtype: Optional[Qtype]
 
 
 class FirewallRule(TypedDict, total=False):
@@ -529,6 +539,7 @@ class FirewallRule(TypedDict, total=False):
     CreatorRequestId: Optional[CreatorRequestId]
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
+    Qtype: Optional[Qtype]
 
 
 class CreateFirewallRuleResponse(TypedDict, total=False):
@@ -577,10 +588,11 @@ class CreateResolverEndpointRequest(ServiceRequest):
     SecurityGroupIds: SecurityGroupIds
     Direction: ResolverEndpointDirection
     IpAddresses: IpAddressesRequest
-    Tags: Optional[TagList]
-    ResolverEndpointType: Optional[ResolverEndpointType]
     OutpostArn: Optional[OutpostArn]
     PreferredInstanceType: Optional[OutpostInstanceType]
+    Tags: Optional[TagList]
+    ResolverEndpointType: Optional[ResolverEndpointType]
+    Protocols: Optional[ProtocolList]
 
 
 class CreateResolverEndpointResponse(TypedDict, total=False):
@@ -615,6 +627,7 @@ class TargetAddress(TypedDict, total=False):
     Ip: Optional[Ip]
     Port: Optional[Port]
     Ipv6: Optional[Ipv6]
+    Protocol: Optional[Protocol]
 
 
 TargetList = List[TargetAddress]
@@ -624,7 +637,7 @@ class CreateResolverRuleRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
     Name: Optional[Name]
     RuleType: RuleTypeOption
-    DomainName: DomainName
+    DomainName: Optional[DomainName]
     TargetIps: Optional[TargetList]
     ResolverEndpointId: Optional[ResourceId]
     Tags: Optional[TagList]
@@ -670,6 +683,7 @@ class DeleteFirewallRuleGroupResponse(TypedDict, total=False):
 class DeleteFirewallRuleRequest(ServiceRequest):
     FirewallRuleGroupId: ResourceId
     FirewallDomainListId: ResourceId
+    Qtype: Optional[Qtype]
 
 
 class DeleteFirewallRuleResponse(TypedDict, total=False):
@@ -1261,6 +1275,7 @@ class UpdateFirewallRuleRequest(ServiceRequest):
     BlockOverrideDnsType: Optional[BlockOverrideDnsType]
     BlockOverrideTtl: Optional[BlockOverrideTtl]
     Name: Optional[Name]
+    Qtype: Optional[Qtype]
 
 
 class UpdateFirewallRuleResponse(TypedDict, total=False):
@@ -1309,6 +1324,7 @@ class UpdateResolverEndpointRequest(ServiceRequest):
     Name: Optional[Name]
     ResolverEndpointType: Optional[ResolverEndpointType]
     UpdateIpAddresses: Optional[UpdateIpAddresses]
+    Protocols: Optional[ProtocolList]
 
 
 class UpdateResolverEndpointResponse(TypedDict, total=False):
@@ -1339,12 +1355,17 @@ class Route53ResolverApi:
         name: Name,
         mutation_protection: MutationProtectionStatus = None,
         tags: TagList = None,
+        **kwargs
     ) -> AssociateFirewallRuleGroupResponse:
         raise NotImplementedError
 
     @handler("AssociateResolverEndpointIpAddress")
     def associate_resolver_endpoint_ip_address(
-        self, context: RequestContext, resolver_endpoint_id: ResourceId, ip_address: IpAddressUpdate
+        self,
+        context: RequestContext,
+        resolver_endpoint_id: ResourceId,
+        ip_address: IpAddressUpdate,
+        **kwargs
     ) -> AssociateResolverEndpointIpAddressResponse:
         raise NotImplementedError
 
@@ -1354,6 +1375,7 @@ class Route53ResolverApi:
         context: RequestContext,
         resolver_query_log_config_id: ResourceId,
         resource_id: ResourceId,
+        **kwargs
     ) -> AssociateResolverQueryLogConfigResponse:
         raise NotImplementedError
 
@@ -1364,6 +1386,7 @@ class Route53ResolverApi:
         resolver_rule_id: ResourceId,
         vpc_id: ResourceId,
         name: Name = None,
+        **kwargs
     ) -> AssociateResolverRuleResponse:
         raise NotImplementedError
 
@@ -1374,6 +1397,7 @@ class Route53ResolverApi:
         creator_request_id: CreatorRequestId,
         name: Name,
         tags: TagList = None,
+        **kwargs
     ) -> CreateFirewallDomainListResponse:
         raise NotImplementedError
 
@@ -1391,6 +1415,8 @@ class Route53ResolverApi:
         block_override_domain: BlockOverrideDomain = None,
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
+        qtype: Qtype = None,
+        **kwargs
     ) -> CreateFirewallRuleResponse:
         raise NotImplementedError
 
@@ -1401,6 +1427,7 @@ class Route53ResolverApi:
         creator_request_id: CreatorRequestId,
         name: Name,
         tags: TagList = None,
+        **kwargs
     ) -> CreateFirewallRuleGroupResponse:
         raise NotImplementedError
 
@@ -1414,6 +1441,7 @@ class Route53ResolverApi:
         outpost_arn: OutpostArn,
         instance_count: InstanceCount = None,
         tags: TagList = None,
+        **kwargs
     ) -> CreateOutpostResolverResponse:
         raise NotImplementedError
 
@@ -1426,10 +1454,12 @@ class Route53ResolverApi:
         direction: ResolverEndpointDirection,
         ip_addresses: IpAddressesRequest,
         name: Name = None,
-        tags: TagList = None,
-        resolver_endpoint_type: ResolverEndpointType = None,
         outpost_arn: OutpostArn = None,
         preferred_instance_type: OutpostInstanceType = None,
+        tags: TagList = None,
+        resolver_endpoint_type: ResolverEndpointType = None,
+        protocols: ProtocolList = None,
+        **kwargs
     ) -> CreateResolverEndpointResponse:
         raise NotImplementedError
 
@@ -1441,6 +1471,7 @@ class Route53ResolverApi:
         destination_arn: DestinationArn,
         creator_request_id: CreatorRequestId,
         tags: TagList = None,
+        **kwargs
     ) -> CreateResolverQueryLogConfigResponse:
         raise NotImplementedError
 
@@ -1450,17 +1481,18 @@ class Route53ResolverApi:
         context: RequestContext,
         creator_request_id: CreatorRequestId,
         rule_type: RuleTypeOption,
-        domain_name: DomainName,
         name: Name = None,
+        domain_name: DomainName = None,
         target_ips: TargetList = None,
         resolver_endpoint_id: ResourceId = None,
         tags: TagList = None,
+        **kwargs
     ) -> CreateResolverRuleResponse:
         raise NotImplementedError
 
     @handler("DeleteFirewallDomainList")
     def delete_firewall_domain_list(
-        self, context: RequestContext, firewall_domain_list_id: ResourceId
+        self, context: RequestContext, firewall_domain_list_id: ResourceId, **kwargs
     ) -> DeleteFirewallDomainListResponse:
         raise NotImplementedError
 
@@ -1470,48 +1502,54 @@ class Route53ResolverApi:
         context: RequestContext,
         firewall_rule_group_id: ResourceId,
         firewall_domain_list_id: ResourceId,
+        qtype: Qtype = None,
+        **kwargs
     ) -> DeleteFirewallRuleResponse:
         raise NotImplementedError
 
     @handler("DeleteFirewallRuleGroup")
     def delete_firewall_rule_group(
-        self, context: RequestContext, firewall_rule_group_id: ResourceId
+        self, context: RequestContext, firewall_rule_group_id: ResourceId, **kwargs
     ) -> DeleteFirewallRuleGroupResponse:
         raise NotImplementedError
 
     @handler("DeleteOutpostResolver")
     def delete_outpost_resolver(
-        self, context: RequestContext, id: ResourceId
+        self, context: RequestContext, id: ResourceId, **kwargs
     ) -> DeleteOutpostResolverResponse:
         raise NotImplementedError
 
     @handler("DeleteResolverEndpoint")
     def delete_resolver_endpoint(
-        self, context: RequestContext, resolver_endpoint_id: ResourceId
+        self, context: RequestContext, resolver_endpoint_id: ResourceId, **kwargs
     ) -> DeleteResolverEndpointResponse:
         raise NotImplementedError
 
     @handler("DeleteResolverQueryLogConfig")
     def delete_resolver_query_log_config(
-        self, context: RequestContext, resolver_query_log_config_id: ResourceId
+        self, context: RequestContext, resolver_query_log_config_id: ResourceId, **kwargs
     ) -> DeleteResolverQueryLogConfigResponse:
         raise NotImplementedError
 
     @handler("DeleteResolverRule")
     def delete_resolver_rule(
-        self, context: RequestContext, resolver_rule_id: ResourceId
+        self, context: RequestContext, resolver_rule_id: ResourceId, **kwargs
     ) -> DeleteResolverRuleResponse:
         raise NotImplementedError
 
     @handler("DisassociateFirewallRuleGroup")
     def disassociate_firewall_rule_group(
-        self, context: RequestContext, firewall_rule_group_association_id: ResourceId
+        self, context: RequestContext, firewall_rule_group_association_id: ResourceId, **kwargs
     ) -> DisassociateFirewallRuleGroupResponse:
         raise NotImplementedError
 
     @handler("DisassociateResolverEndpointIpAddress")
     def disassociate_resolver_endpoint_ip_address(
-        self, context: RequestContext, resolver_endpoint_id: ResourceId, ip_address: IpAddressUpdate
+        self,
+        context: RequestContext,
+        resolver_endpoint_id: ResourceId,
+        ip_address: IpAddressUpdate,
+        **kwargs
     ) -> DisassociateResolverEndpointIpAddressResponse:
         raise NotImplementedError
 
@@ -1521,102 +1559,106 @@ class Route53ResolverApi:
         context: RequestContext,
         resolver_query_log_config_id: ResourceId,
         resource_id: ResourceId,
+        **kwargs
     ) -> DisassociateResolverQueryLogConfigResponse:
         raise NotImplementedError
 
     @handler("DisassociateResolverRule")
     def disassociate_resolver_rule(
-        self, context: RequestContext, vpc_id: ResourceId, resolver_rule_id: ResourceId
+        self, context: RequestContext, vpc_id: ResourceId, resolver_rule_id: ResourceId, **kwargs
     ) -> DisassociateResolverRuleResponse:
         raise NotImplementedError
 
     @handler("GetFirewallConfig")
     def get_firewall_config(
-        self, context: RequestContext, resource_id: ResourceId
+        self, context: RequestContext, resource_id: ResourceId, **kwargs
     ) -> GetFirewallConfigResponse:
         raise NotImplementedError
 
     @handler("GetFirewallDomainList")
     def get_firewall_domain_list(
-        self, context: RequestContext, firewall_domain_list_id: ResourceId
+        self, context: RequestContext, firewall_domain_list_id: ResourceId, **kwargs
     ) -> GetFirewallDomainListResponse:
         raise NotImplementedError
 
     @handler("GetFirewallRuleGroup")
     def get_firewall_rule_group(
-        self, context: RequestContext, firewall_rule_group_id: ResourceId
+        self, context: RequestContext, firewall_rule_group_id: ResourceId, **kwargs
     ) -> GetFirewallRuleGroupResponse:
         raise NotImplementedError
 
     @handler("GetFirewallRuleGroupAssociation")
     def get_firewall_rule_group_association(
-        self, context: RequestContext, firewall_rule_group_association_id: ResourceId
+        self, context: RequestContext, firewall_rule_group_association_id: ResourceId, **kwargs
     ) -> GetFirewallRuleGroupAssociationResponse:
         raise NotImplementedError
 
     @handler("GetFirewallRuleGroupPolicy")
     def get_firewall_rule_group_policy(
-        self, context: RequestContext, arn: Arn
+        self, context: RequestContext, arn: Arn, **kwargs
     ) -> GetFirewallRuleGroupPolicyResponse:
         raise NotImplementedError
 
     @handler("GetOutpostResolver")
     def get_outpost_resolver(
-        self, context: RequestContext, id: ResourceId
+        self, context: RequestContext, id: ResourceId, **kwargs
     ) -> GetOutpostResolverResponse:
         raise NotImplementedError
 
     @handler("GetResolverConfig")
     def get_resolver_config(
-        self, context: RequestContext, resource_id: ResourceId
+        self, context: RequestContext, resource_id: ResourceId, **kwargs
     ) -> GetResolverConfigResponse:
         raise NotImplementedError
 
     @handler("GetResolverDnssecConfig")
     def get_resolver_dnssec_config(
-        self, context: RequestContext, resource_id: ResourceId
+        self, context: RequestContext, resource_id: ResourceId, **kwargs
     ) -> GetResolverDnssecConfigResponse:
         raise NotImplementedError
 
     @handler("GetResolverEndpoint")
     def get_resolver_endpoint(
-        self, context: RequestContext, resolver_endpoint_id: ResourceId
+        self, context: RequestContext, resolver_endpoint_id: ResourceId, **kwargs
     ) -> GetResolverEndpointResponse:
         raise NotImplementedError
 
     @handler("GetResolverQueryLogConfig")
     def get_resolver_query_log_config(
-        self, context: RequestContext, resolver_query_log_config_id: ResourceId
+        self, context: RequestContext, resolver_query_log_config_id: ResourceId, **kwargs
     ) -> GetResolverQueryLogConfigResponse:
         raise NotImplementedError
 
     @handler("GetResolverQueryLogConfigAssociation")
     def get_resolver_query_log_config_association(
-        self, context: RequestContext, resolver_query_log_config_association_id: ResourceId
+        self,
+        context: RequestContext,
+        resolver_query_log_config_association_id: ResourceId,
+        **kwargs
     ) -> GetResolverQueryLogConfigAssociationResponse:
         raise NotImplementedError
 
     @handler("GetResolverQueryLogConfigPolicy")
     def get_resolver_query_log_config_policy(
-        self, context: RequestContext, arn: Arn
+        self, context: RequestContext, arn: Arn, **kwargs
     ) -> GetResolverQueryLogConfigPolicyResponse:
         raise NotImplementedError
 
     @handler("GetResolverRule")
     def get_resolver_rule(
-        self, context: RequestContext, resolver_rule_id: ResourceId
+        self, context: RequestContext, resolver_rule_id: ResourceId, **kwargs
     ) -> GetResolverRuleResponse:
         raise NotImplementedError
 
     @handler("GetResolverRuleAssociation")
     def get_resolver_rule_association(
-        self, context: RequestContext, resolver_rule_association_id: ResourceId
+        self, context: RequestContext, resolver_rule_association_id: ResourceId, **kwargs
     ) -> GetResolverRuleAssociationResponse:
         raise NotImplementedError
 
     @handler("GetResolverRulePolicy")
     def get_resolver_rule_policy(
-        self, context: RequestContext, arn: Arn
+        self, context: RequestContext, arn: Arn, **kwargs
     ) -> GetResolverRulePolicyResponse:
         raise NotImplementedError
 
@@ -1627,6 +1669,7 @@ class Route53ResolverApi:
         firewall_domain_list_id: ResourceId,
         operation: FirewallDomainImportOperation,
         domain_file_url: DomainListFileUrl,
+        **kwargs
     ) -> ImportFirewallDomainsResponse:
         raise NotImplementedError
 
@@ -1636,12 +1679,17 @@ class Route53ResolverApi:
         context: RequestContext,
         max_results: ListFirewallConfigsMaxResult = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListFirewallConfigsResponse:
         raise NotImplementedError
 
     @handler("ListFirewallDomainLists")
     def list_firewall_domain_lists(
-        self, context: RequestContext, max_results: MaxResults = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListFirewallDomainListsResponse:
         raise NotImplementedError
 
@@ -1652,6 +1700,7 @@ class Route53ResolverApi:
         firewall_domain_list_id: ResourceId,
         max_results: ListDomainMaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListFirewallDomainsResponse:
         raise NotImplementedError
 
@@ -1665,12 +1714,17 @@ class Route53ResolverApi:
         status: FirewallRuleGroupAssociationStatus = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListFirewallRuleGroupAssociationsResponse:
         raise NotImplementedError
 
     @handler("ListFirewallRuleGroups")
     def list_firewall_rule_groups(
-        self, context: RequestContext, max_results: MaxResults = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListFirewallRuleGroupsResponse:
         raise NotImplementedError
 
@@ -1683,6 +1737,7 @@ class Route53ResolverApi:
         action: Action = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListFirewallRulesResponse:
         raise NotImplementedError
 
@@ -1693,6 +1748,7 @@ class Route53ResolverApi:
         outpost_arn: OutpostArn = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListOutpostResolversResponse:
         raise NotImplementedError
 
@@ -1702,6 +1758,7 @@ class Route53ResolverApi:
         context: RequestContext,
         max_results: ListResolverConfigsMaxResult = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListResolverConfigsResponse:
         raise NotImplementedError
 
@@ -1712,6 +1769,7 @@ class Route53ResolverApi:
         max_results: MaxResults = None,
         next_token: NextToken = None,
         filters: Filters = None,
+        **kwargs
     ) -> ListResolverDnssecConfigsResponse:
         raise NotImplementedError
 
@@ -1722,6 +1780,7 @@ class Route53ResolverApi:
         resolver_endpoint_id: ResourceId,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListResolverEndpointIpAddressesResponse:
         raise NotImplementedError
 
@@ -1732,6 +1791,7 @@ class Route53ResolverApi:
         max_results: MaxResults = None,
         next_token: NextToken = None,
         filters: Filters = None,
+        **kwargs
     ) -> ListResolverEndpointsResponse:
         raise NotImplementedError
 
@@ -1744,6 +1804,7 @@ class Route53ResolverApi:
         filters: Filters = None,
         sort_by: SortByKey = None,
         sort_order: SortOrder = None,
+        **kwargs
     ) -> ListResolverQueryLogConfigAssociationsResponse:
         raise NotImplementedError
 
@@ -1756,6 +1817,7 @@ class Route53ResolverApi:
         filters: Filters = None,
         sort_by: SortByKey = None,
         sort_order: SortOrder = None,
+        **kwargs
     ) -> ListResolverQueryLogConfigsResponse:
         raise NotImplementedError
 
@@ -1766,6 +1828,7 @@ class Route53ResolverApi:
         max_results: MaxResults = None,
         next_token: NextToken = None,
         filters: Filters = None,
+        **kwargs
     ) -> ListResolverRuleAssociationsResponse:
         raise NotImplementedError
 
@@ -1776,6 +1839,7 @@ class Route53ResolverApi:
         max_results: MaxResults = None,
         next_token: NextToken = None,
         filters: Filters = None,
+        **kwargs
     ) -> ListResolverRulesResponse:
         raise NotImplementedError
 
@@ -1786,12 +1850,17 @@ class Route53ResolverApi:
         resource_arn: Arn,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListTagsForResourceResponse:
         raise NotImplementedError
 
     @handler("PutFirewallRuleGroupPolicy")
     def put_firewall_rule_group_policy(
-        self, context: RequestContext, arn: Arn, firewall_rule_group_policy: FirewallRuleGroupPolicy
+        self,
+        context: RequestContext,
+        arn: Arn,
+        firewall_rule_group_policy: FirewallRuleGroupPolicy,
+        **kwargs
     ) -> PutFirewallRuleGroupPolicyResponse:
         raise NotImplementedError
 
@@ -1801,24 +1870,25 @@ class Route53ResolverApi:
         context: RequestContext,
         arn: Arn,
         resolver_query_log_config_policy: ResolverQueryLogConfigPolicy,
+        **kwargs
     ) -> PutResolverQueryLogConfigPolicyResponse:
         raise NotImplementedError
 
     @handler("PutResolverRulePolicy")
     def put_resolver_rule_policy(
-        self, context: RequestContext, arn: Arn, resolver_rule_policy: ResolverRulePolicy
+        self, context: RequestContext, arn: Arn, resolver_rule_policy: ResolverRulePolicy, **kwargs
     ) -> PutResolverRulePolicyResponse:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: Arn, tags: TagList
+        self, context: RequestContext, resource_arn: Arn, tags: TagList, **kwargs
     ) -> TagResourceResponse:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList
+        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceResponse:
         raise NotImplementedError
 
@@ -1828,6 +1898,7 @@ class Route53ResolverApi:
         context: RequestContext,
         resource_id: ResourceId,
         firewall_fail_open: FirewallFailOpenStatus,
+        **kwargs
     ) -> UpdateFirewallConfigResponse:
         raise NotImplementedError
 
@@ -1838,6 +1909,7 @@ class Route53ResolverApi:
         firewall_domain_list_id: ResourceId,
         operation: FirewallDomainUpdateOperation,
         domains: FirewallDomains,
+        **kwargs
     ) -> UpdateFirewallDomainsResponse:
         raise NotImplementedError
 
@@ -1854,6 +1926,8 @@ class Route53ResolverApi:
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
         name: Name = None,
+        qtype: Qtype = None,
+        **kwargs
     ) -> UpdateFirewallRuleResponse:
         raise NotImplementedError
 
@@ -1865,6 +1939,7 @@ class Route53ResolverApi:
         priority: Priority = None,
         mutation_protection: MutationProtectionStatus = None,
         name: Name = None,
+        **kwargs
     ) -> UpdateFirewallRuleGroupAssociationResponse:
         raise NotImplementedError
 
@@ -1876,6 +1951,7 @@ class Route53ResolverApi:
         name: OutpostResolverName = None,
         instance_count: InstanceCount = None,
         preferred_instance_type: OutpostInstanceType = None,
+        **kwargs
     ) -> UpdateOutpostResolverResponse:
         raise NotImplementedError
 
@@ -1885,12 +1961,13 @@ class Route53ResolverApi:
         context: RequestContext,
         resource_id: ResourceId,
         autodefined_reverse_flag: AutodefinedReverseFlag,
+        **kwargs
     ) -> UpdateResolverConfigResponse:
         raise NotImplementedError
 
     @handler("UpdateResolverDnssecConfig")
     def update_resolver_dnssec_config(
-        self, context: RequestContext, resource_id: ResourceId, validation: Validation
+        self, context: RequestContext, resource_id: ResourceId, validation: Validation, **kwargs
     ) -> UpdateResolverDnssecConfigResponse:
         raise NotImplementedError
 
@@ -1902,11 +1979,17 @@ class Route53ResolverApi:
         name: Name = None,
         resolver_endpoint_type: ResolverEndpointType = None,
         update_ip_addresses: UpdateIpAddresses = None,
+        protocols: ProtocolList = None,
+        **kwargs
     ) -> UpdateResolverEndpointResponse:
         raise NotImplementedError
 
     @handler("UpdateResolverRule")
     def update_resolver_rule(
-        self, context: RequestContext, resolver_rule_id: ResourceId, config: ResolverRuleConfig
+        self,
+        context: RequestContext,
+        resolver_rule_id: ResourceId,
+        config: ResolverRuleConfig,
+        **kwargs
     ) -> UpdateResolverRuleResponse:
         raise NotImplementedError

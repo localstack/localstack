@@ -1,5 +1,3 @@
-import os
-
 import pytest
 import requests
 import xmltodict
@@ -12,8 +10,8 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_REGION_NAME,
 )
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import short_uid
@@ -22,7 +20,7 @@ from localstack.utils.strings import short_uid
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
         region = AWS_REGION_US_EAST_1
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+    if is_aws_cloud():
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"
         else:
@@ -168,7 +166,7 @@ class TestS3Cors:
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
     @markers.aws.only_localstack
-    def test_cors_list_buckets(self):
+    def test_cors_list_buckets(self, region_name):
         # ListBuckets is an operation outside S3 CORS configuration management
         # it should follow the default rules of LocalStack
 
@@ -177,7 +175,9 @@ class TestS3Cors:
         # we need to "sign" the request so that our service name parser recognize ListBuckets as an S3 operation
         # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
         headers = mock_aws_request_headers(
-            "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "s3",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         headers["Origin"] = origin
         response = requests.options(
@@ -404,7 +404,9 @@ class TestS3Cors:
         condition=lambda: config.LEGACY_V2_S3_PROVIDER,
         paths=["$..Headers.x-amz-server-side-encryption"],
     )
-    def test_cors_match_headers(self, s3_bucket, match_headers, aws_client, allow_bucket_acl):
+    def test_cors_match_headers(
+        self, s3_bucket, match_headers, aws_client, allow_bucket_acl, snapshot
+    ):
         origin = "https://localhost:4200"
         bucket_cors_config = {
             "CORSRules": [
@@ -462,11 +464,15 @@ class TestS3Cors:
                     "AllowedHeaders": [
                         "x-amz-expected-bucket-owner",
                         "x-amz-server-side-encryption-customer-algorithm",
+                        "x-AMZ-server-SIDE-encryption",
                     ],
                 }
             ]
         }
         aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+
+        get_bucket_cors_casing = aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
+        snapshot.match("get-bucket-cors-casing", get_bucket_cors_casing)
 
         # test with a specific header: x-amz-request-payer, but not allowed in the config
         opt_req = requests.options(
@@ -490,6 +496,18 @@ class TestS3Cors:
             },
         )
         match_headers("opt-get-allowed", opt_req)
+        assert opt_req.ok
+
+        # test with a specific header but different casing: x-AMZ-expected-BUCKET-owner, allowed in the config
+        opt_req = requests.options(
+            key_url,
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "x-AMZ-expected-BUCKET-owner, x-amz-server-side-encryption",
+            },
+        )
+        match_headers("opt-get-allowed-diff-casing", opt_req)
         assert opt_req.ok
 
         # test GET with Access-Control-Request-Headers: should not happen in reality, AWS is considering it like an

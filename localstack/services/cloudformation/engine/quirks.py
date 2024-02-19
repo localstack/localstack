@@ -11,16 +11,21 @@ Since this is therefore rather part of the cloudformation layer and *not* the re
 
 # note: format here is subject to change (e.g. it might not be a pure str -> str mapping, it could also involve more sophisticated handlers
 PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
-    # Example
-    # "AWS::ApiGateway::Resource": "/properties/ResourceId",
-    "AWS::Events::EventBus": "/properties/Name",
-    "AWS::Events::Rule": "/properties/Name",
+    "AWS::ApiGateway::Authorizer": "/properties/AuthorizerId",
     "AWS::ApiGateway::RequestValidator": "/properties/RequestValidatorId",
+    "AWS::ApiGatewayV2::Authorizer": "/properties/AuthorizerId",
+    "AWS::ApiGatewayV2::Deployment": "/properties/DeploymentId",
+    "AWS::ApiGatewayV2::IntegrationResponse": "/properties/IntegrationResponseId",
+    "AWS::ApiGatewayV2::Route": "/properties/RouteId",
+    "AWS::ApiGateway::BasePathMapping": "/properties/RestApiId",
     "AWS::ApiGateway::Deployment": "/properties/DeploymentId",
+    "AWS::ApiGateway::Model": "/properties/Name",
     "AWS::ApiGateway::Resource": "/properties/ResourceId",
     "AWS::ApiGateway::Stage": "/properties/StageName",
-    "AWS::ApiGateway::BasePathMapping": "/properties/RestApiId",
-    "AWS::ApiGateway::Model": "/properties/Name",
+    "AWS::Cognito::UserPoolClient": "/properties/ClientId",
+    "AWS::ECS::Service": "/properties/ServiceArn",
+    "AWS::EKS::FargateProfile": "</properties/ClusterName>|</properties/FargateProfileName>",  # composite
+    "AWS::Events::EventBus": "/properties/Name",
     "AWS::Logs::LogStream": "/properties/LogStreamName",
     "AWS::Logs::SubscriptionFilter": "/properties/LogGroupName",
     "AWS::SSM::Parameter": "/properties/Name",

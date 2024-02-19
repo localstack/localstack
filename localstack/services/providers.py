@@ -40,13 +40,30 @@ def awsconfig():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider()
+@aws_provider(api="cloudwatch", name="default")
 def cloudwatch():
     from localstack.services.cloudwatch.provider import CloudwatchProvider
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = CloudwatchProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="cloudwatch", name="v1")
+def cloudwatch_v1():
+    from localstack.services.cloudwatch.provider import CloudwatchProvider
+    from localstack.services.moto import MotoFallbackDispatcher
+
+    provider = CloudwatchProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="cloudwatch", name="v2")
+def cloudwatch_v2():
+    from localstack.services.cloudwatch.provider_v2 import CloudwatchProvider
+
+    provider = CloudwatchProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider()
@@ -298,41 +315,16 @@ def sns():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-sqs_provider = None
-
-
-def get_sqs_provider():
-    """
-    Creates the SQS provider instance (and registers the query API routes) in a singleton fashion, such that the
-    same instance of the provider can be used by multiple services (i.e. the `sqs` as well as the `sqs-query` service).
-
-    TODO it would be great if we could find a better solution to use a single provider for multiple services
-    """
-    global sqs_provider
-
-    if not sqs_provider:
-        from localstack.services import edge
-        from localstack.services.sqs import query_api
-        from localstack.services.sqs.provider import SqsProvider
-
-        query_api.register(edge.ROUTER)
-
-        sqs_provider = SqsProvider()
-    return sqs_provider
-
-
 @aws_provider()
 def sqs():
-    return Service.for_provider(get_sqs_provider())
+    from localstack.services import edge
+    from localstack.services.sqs import query_api
+    from localstack.services.sqs.provider import SqsProvider
 
+    query_api.register(edge.ROUTER)
 
-@aws_provider("sqs-query")
-def sqs_query():
-    sqs_query_service = Service.for_provider(
-        get_sqs_provider(),
-        custom_service_name="sqs-query",
-    )
-    return sqs_query_service
+    provider = SqsProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider()

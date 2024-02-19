@@ -106,7 +106,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return events_stores[context.account_id][context.region]
 
     def test_event_pattern(
-        self, context: RequestContext, event_pattern: EventPattern, event: String
+        self, context: RequestContext, event_pattern: EventPattern, event: String, **kwargs
     ) -> TestEventPatternResponse:
         # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
         # Test event pattern uses event pattern to match against event.
@@ -163,10 +163,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     event = default_event
                     if target.get("InputPath"):
                         event = filter_event_with_target_input_path(target, event)
-                    if target.get("InputTransformer"):
-                        LOG.warning(
-                            "InputTransformer is currently not supported for scheduled rules"
-                        )
+                    if input_transformer := target.get("InputTransformer"):
+                        event = process_event_with_input_transformer(input_transformer, event)
 
                 attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
 
@@ -258,6 +256,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         role_arn: RoleArn = None,
         tags: TagList = None,
         event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> PutRuleResponse:
         store = self.get_store(context)
         self.put_rule_job_scheduler(
@@ -271,6 +270,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         name: RuleName,
         event_bus_name: EventBusNameOrArn = None,
         force: Boolean = None,
+        **kwargs,
     ) -> None:
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
@@ -280,7 +280,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         call_moto(context)
 
     def disable_rule(
-        self, context: RequestContext, name: RuleName, event_bus_name: EventBusNameOrArn = None
+        self,
+        context: RequestContext,
+        name: RuleName,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> None:
         rule_scheduled_jobs = self.get_store(context).rule_scheduled_jobs
         job_id = rule_scheduled_jobs.get(name)
@@ -296,6 +300,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
+        **kwargs,
     ) -> CreateConnectionResponse:
         errors = []
 
@@ -326,6 +331,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule: RuleName,
         targets: TargetList,
         event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
     ) -> PutTargetsResponse:
         validation_errors = []
 
@@ -376,7 +382,7 @@ def _dump_events_to_files(events_with_added_uuid):
         LOG.info("Unable to dump events to tmp dir %s: %s", _get_events_tmp_dir(), e)
 
 
-def handle_numeric_conditions(conditions: List[Any], value: float):
+def handle_numeric_conditions(conditions: list[Any], value: float):
     for i in range(0, len(conditions), 2):
         if conditions[i] == "<" and not (value < conditions[i + 1]):
             return False
@@ -423,7 +429,7 @@ def filter_event_with_content_base_parameter(pattern_value: list, event_value: s
             elif element_key.lower() == "exists":
                 if element_value and event_value:
                     return True
-                elif not element_value and not event_value:
+                elif not element_value and isinstance(event_value, object):
                     return True
             elif element_key.lower() == "cidr":
                 ips = [str(ip) for ip in ipaddress.IPv4Network(element_value)]
@@ -489,6 +495,9 @@ def handle_prefix_filtering(event_pattern, value):
         elif isinstance(element, dict) and "anything-but" in element:
             if element.get("anything-but") != value:
                 return True
+        elif isinstance(element, dict) and "exists" in element:
+            if element.get("exists") and value:
+                return True
         elif "numeric" in element:
             return handle_numeric_conditions(element.get("numeric"), value)
         elif isinstance(element, list):
@@ -510,15 +519,23 @@ def get_two_lists_intersection(lst1: List, lst2: List) -> List:
     return lst3
 
 
+def event_pattern_prefix_bool_filter(event_pattern_filter_value_list: list[dict[str, Any]]) -> bool:
+    for event_pattern_filter_value in event_pattern_filter_value_list:
+        if "exists" in event_pattern_filter_value:
+            return event_pattern_filter_value.get("exists")
+        else:
+            return True
+
+
 # TODO: refactor/simplify!
 def filter_event_based_on_event_format(
-    self, rule_name: str, event_bus_name: str, event: Dict[str, Any]
+    self, rule_name: str, event_bus_name: str, event: dict[str, Any]
 ):
-    def filter_event(event_pattern_filter: Dict[str, Any], event: Dict[str, Any]):
+    def filter_event(event_pattern_filter: dict[str, Any], event: dict[str, Any]):
         for key, value in event_pattern_filter.items():
-            # match keys in the event in a case-agnostic way
-            event_value = event.get(key.lower(), event.get(key))
-            if event_value is None:
+            fallback = object()
+            event_value = event.get(key.lower(), event.get(key, fallback))
+            if event_value is fallback and event_pattern_prefix_bool_filter(value):
                 return False
 
             # 1. check if certain values in the event do not match the expected pattern
@@ -584,10 +601,33 @@ def filter_event_with_target_input_path(target: Dict, event: Dict) -> Dict:
     return event
 
 
-def process_events(event: Dict, targets: List[Dict]):
+def process_event_with_input_transformer(input_transformer: Dict, event: Dict) -> Dict:
+    """
+    Process the event with the input transformer of the target event,
+    by replacing the message with the populated InputTemplate.
+    docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html
+    """
+    try:
+        input_paths = input_transformer["InputPathsMap"]
+        input_template = input_transformer["InputTemplate"]
+    except KeyError as e:
+        LOG.error("%s key does not exist in input_transformer.", e)
+        raise e
+    for key, path in input_paths.items():
+        value = extract_jsonpath(event, path)
+        if not value:
+            value = ""
+        input_template = input_template.replace(f"<{key}>", value)
+    templated_event = re.sub('"', "", input_template)
+    return templated_event
+
+
+def process_events(event: Dict, targets: list[Dict]):
     for target in targets:
         arn = target["Arn"]
         changed_event = filter_event_with_target_input_path(target, event)
+        if input_transformer := target.get("InputTransformer"):
+            changed_event = process_event_with_input_transformer(input_transformer, changed_event)
         if target.get("Input"):
             changed_event = json.loads(target.get("Input"))
         try:
@@ -669,7 +709,6 @@ def events_handler_put_events(self):
                 ).get("Targets", [])
 
                 targets.extend([{"RuleArn": rule.arn} | target for target in rule_targets])
-
         # process event
         process_events(formatted_event, targets)
 

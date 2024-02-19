@@ -52,14 +52,15 @@ class HashFunc(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.arg_list.eval(env=env)
+        args = env.stack.pop()
 
-        algorithm = env.stack.pop()
+        algorithm = args.pop()
         try:
             hash_algorithm = HashAlgorithm(algorithm)
         except Exception:
             raise ValueError(f"Unknown hash function '{algorithm}'.")
 
-        input_data = env.stack.pop()
+        input_data = args.pop()
         if not isinstance(input_data, str):
             raise TypeError(
                 f"Expected string type as input data for function type '{type(self)}', but got: '{input_data}'."

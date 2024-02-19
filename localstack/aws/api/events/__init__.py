@@ -42,6 +42,7 @@ EventPattern = str
 EventResource = str
 EventSourceName = str
 EventSourceNamePrefix = str
+GraphQLOperation = str
 HeaderKey = str
 HeaderValue = str
 HeaderValueSensitive = str
@@ -298,6 +299,12 @@ class ApiDestination(TypedDict, total=False):
 
 
 ApiDestinationResponseList = List[ApiDestination]
+
+
+class AppSyncParameters(TypedDict, total=False):
+    GraphQLOperation: Optional[GraphQLOperation]
+
+
 Long = int
 
 
@@ -1181,6 +1188,7 @@ class Target(TypedDict, total=False):
     SageMakerPipelineParameters: Optional[SageMakerPipelineParameters]
     DeadLetterConfig: Optional[DeadLetterConfig]
     RetryPolicy: Optional[RetryPolicy]
+    AppSyncParameters: Optional[AppSyncParameters]
 
 
 TargetList = List[Target]
@@ -1472,12 +1480,14 @@ class EventsApi:
     version = "2015-10-07"
 
     @handler("ActivateEventSource")
-    def activate_event_source(self, context: RequestContext, name: EventSourceName) -> None:
+    def activate_event_source(
+        self, context: RequestContext, name: EventSourceName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("CancelReplay")
     def cancel_replay(
-        self, context: RequestContext, replay_name: ReplayName
+        self, context: RequestContext, replay_name: ReplayName, **kwargs
     ) -> CancelReplayResponse:
         raise NotImplementedError
 
@@ -1491,6 +1501,7 @@ class EventsApi:
         http_method: ApiDestinationHttpMethod,
         description: ApiDestinationDescription = None,
         invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
+        **kwargs
     ) -> CreateApiDestinationResponse:
         raise NotImplementedError
 
@@ -1503,6 +1514,7 @@ class EventsApi:
         description: ArchiveDescription = None,
         event_pattern: EventPattern = None,
         retention_days: RetentionDays = None,
+        **kwargs
     ) -> CreateArchiveResponse:
         raise NotImplementedError
 
@@ -1514,6 +1526,7 @@ class EventsApi:
         authorization_type: ConnectionAuthorizationType,
         auth_parameters: CreateConnectionAuthRequestParameters,
         description: ConnectionDescription = None,
+        **kwargs
     ) -> CreateConnectionResponse:
         raise NotImplementedError
 
@@ -1527,6 +1540,7 @@ class EventsApi:
         description: EndpointDescription = None,
         replication_config: ReplicationConfig = None,
         role_arn: IamRoleArn = None,
+        **kwargs
     ) -> CreateEndpointResponse:
         raise NotImplementedError
 
@@ -1537,56 +1551,59 @@ class EventsApi:
         name: EventBusName,
         event_source_name: EventSourceName = None,
         tags: TagList = None,
+        **kwargs
     ) -> CreateEventBusResponse:
         raise NotImplementedError
 
     @handler("CreatePartnerEventSource")
     def create_partner_event_source(
-        self, context: RequestContext, name: EventSourceName, account: AccountId
+        self, context: RequestContext, name: EventSourceName, account: AccountId, **kwargs
     ) -> CreatePartnerEventSourceResponse:
         raise NotImplementedError
 
     @handler("DeactivateEventSource")
-    def deactivate_event_source(self, context: RequestContext, name: EventSourceName) -> None:
+    def deactivate_event_source(
+        self, context: RequestContext, name: EventSourceName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeauthorizeConnection")
     def deauthorize_connection(
-        self, context: RequestContext, name: ConnectionName
+        self, context: RequestContext, name: ConnectionName, **kwargs
     ) -> DeauthorizeConnectionResponse:
         raise NotImplementedError
 
     @handler("DeleteApiDestination")
     def delete_api_destination(
-        self, context: RequestContext, name: ApiDestinationName
+        self, context: RequestContext, name: ApiDestinationName, **kwargs
     ) -> DeleteApiDestinationResponse:
         raise NotImplementedError
 
     @handler("DeleteArchive")
     def delete_archive(
-        self, context: RequestContext, archive_name: ArchiveName
+        self, context: RequestContext, archive_name: ArchiveName, **kwargs
     ) -> DeleteArchiveResponse:
         raise NotImplementedError
 
     @handler("DeleteConnection")
     def delete_connection(
-        self, context: RequestContext, name: ConnectionName
+        self, context: RequestContext, name: ConnectionName, **kwargs
     ) -> DeleteConnectionResponse:
         raise NotImplementedError
 
     @handler("DeleteEndpoint")
     def delete_endpoint(
-        self, context: RequestContext, name: EndpointName
+        self, context: RequestContext, name: EndpointName, **kwargs
     ) -> DeleteEndpointResponse:
         raise NotImplementedError
 
     @handler("DeleteEventBus")
-    def delete_event_bus(self, context: RequestContext, name: EventBusName) -> None:
+    def delete_event_bus(self, context: RequestContext, name: EventBusName, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeletePartnerEventSource")
     def delete_partner_event_source(
-        self, context: RequestContext, name: EventSourceName, account: AccountId
+        self, context: RequestContext, name: EventSourceName, account: AccountId, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1597,72 +1614,85 @@ class EventsApi:
         name: RuleName,
         event_bus_name: EventBusNameOrArn = None,
         force: Boolean = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DescribeApiDestination")
     def describe_api_destination(
-        self, context: RequestContext, name: ApiDestinationName
+        self, context: RequestContext, name: ApiDestinationName, **kwargs
     ) -> DescribeApiDestinationResponse:
         raise NotImplementedError
 
     @handler("DescribeArchive")
     def describe_archive(
-        self, context: RequestContext, archive_name: ArchiveName
+        self, context: RequestContext, archive_name: ArchiveName, **kwargs
     ) -> DescribeArchiveResponse:
         raise NotImplementedError
 
     @handler("DescribeConnection")
     def describe_connection(
-        self, context: RequestContext, name: ConnectionName
+        self, context: RequestContext, name: ConnectionName, **kwargs
     ) -> DescribeConnectionResponse:
         raise NotImplementedError
 
     @handler("DescribeEndpoint")
     def describe_endpoint(
-        self, context: RequestContext, name: EndpointName, home_region: HomeRegion = None
+        self, context: RequestContext, name: EndpointName, home_region: HomeRegion = None, **kwargs
     ) -> DescribeEndpointResponse:
         raise NotImplementedError
 
     @handler("DescribeEventBus")
     def describe_event_bus(
-        self, context: RequestContext, name: EventBusNameOrArn = None
+        self, context: RequestContext, name: EventBusNameOrArn = None, **kwargs
     ) -> DescribeEventBusResponse:
         raise NotImplementedError
 
     @handler("DescribeEventSource")
     def describe_event_source(
-        self, context: RequestContext, name: EventSourceName
+        self, context: RequestContext, name: EventSourceName, **kwargs
     ) -> DescribeEventSourceResponse:
         raise NotImplementedError
 
     @handler("DescribePartnerEventSource")
     def describe_partner_event_source(
-        self, context: RequestContext, name: EventSourceName
+        self, context: RequestContext, name: EventSourceName, **kwargs
     ) -> DescribePartnerEventSourceResponse:
         raise NotImplementedError
 
     @handler("DescribeReplay")
     def describe_replay(
-        self, context: RequestContext, replay_name: ReplayName
+        self, context: RequestContext, replay_name: ReplayName, **kwargs
     ) -> DescribeReplayResponse:
         raise NotImplementedError
 
     @handler("DescribeRule")
     def describe_rule(
-        self, context: RequestContext, name: RuleName, event_bus_name: EventBusNameOrArn = None
+        self,
+        context: RequestContext,
+        name: RuleName,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs
     ) -> DescribeRuleResponse:
         raise NotImplementedError
 
     @handler("DisableRule")
     def disable_rule(
-        self, context: RequestContext, name: RuleName, event_bus_name: EventBusNameOrArn = None
+        self,
+        context: RequestContext,
+        name: RuleName,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("EnableRule")
     def enable_rule(
-        self, context: RequestContext, name: RuleName, event_bus_name: EventBusNameOrArn = None
+        self,
+        context: RequestContext,
+        name: RuleName,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1674,6 +1704,7 @@ class EventsApi:
         connection_arn: ConnectionArn = None,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListApiDestinationsResponse:
         raise NotImplementedError
 
@@ -1686,6 +1717,7 @@ class EventsApi:
         state: ArchiveState = None,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListArchivesResponse:
         raise NotImplementedError
 
@@ -1697,6 +1729,7 @@ class EventsApi:
         connection_state: ConnectionState = None,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListConnectionsResponse:
         raise NotImplementedError
 
@@ -1708,6 +1741,7 @@ class EventsApi:
         home_region: HomeRegion = None,
         next_token: NextToken = None,
         max_results: LimitMax100 = None,
+        **kwargs
     ) -> ListEndpointsResponse:
         raise NotImplementedError
 
@@ -1718,6 +1752,7 @@ class EventsApi:
         name_prefix: EventBusName = None,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListEventBusesResponse:
         raise NotImplementedError
 
@@ -1728,6 +1763,7 @@ class EventsApi:
         name_prefix: EventSourceNamePrefix = None,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListEventSourcesResponse:
         raise NotImplementedError
 
@@ -1738,6 +1774,7 @@ class EventsApi:
         event_source_name: EventSourceName,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListPartnerEventSourceAccountsResponse:
         raise NotImplementedError
 
@@ -1748,6 +1785,7 @@ class EventsApi:
         name_prefix: PartnerEventSourceNamePrefix,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListPartnerEventSourcesResponse:
         raise NotImplementedError
 
@@ -1760,6 +1798,7 @@ class EventsApi:
         event_source_arn: Arn = None,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListReplaysResponse:
         raise NotImplementedError
 
@@ -1771,6 +1810,7 @@ class EventsApi:
         event_bus_name: EventBusNameOrArn = None,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListRuleNamesByTargetResponse:
         raise NotImplementedError
 
@@ -1782,12 +1822,13 @@ class EventsApi:
         event_bus_name: EventBusNameOrArn = None,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListRulesResponse:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: Arn
+        self, context: RequestContext, resource_arn: Arn, **kwargs
     ) -> ListTagsForResourceResponse:
         raise NotImplementedError
 
@@ -1799,6 +1840,7 @@ class EventsApi:
         event_bus_name: EventBusNameOrArn = None,
         next_token: NextToken = None,
         limit: LimitMax100 = None,
+        **kwargs
     ) -> ListTargetsByRuleResponse:
         raise NotImplementedError
 
@@ -1808,12 +1850,13 @@ class EventsApi:
         context: RequestContext,
         entries: PutEventsRequestEntryList,
         endpoint_id: EndpointId = None,
+        **kwargs
     ) -> PutEventsResponse:
         raise NotImplementedError
 
     @handler("PutPartnerEvents")
     def put_partner_events(
-        self, context: RequestContext, entries: PutPartnerEventsRequestEntryList
+        self, context: RequestContext, entries: PutPartnerEventsRequestEntryList, **kwargs
     ) -> PutPartnerEventsResponse:
         raise NotImplementedError
 
@@ -1827,6 +1870,7 @@ class EventsApi:
         statement_id: StatementId = None,
         condition: Condition = None,
         policy: String = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1842,6 +1886,7 @@ class EventsApi:
         role_arn: RoleArn = None,
         tags: TagList = None,
         event_bus_name: EventBusNameOrArn = None,
+        **kwargs
     ) -> PutRuleResponse:
         raise NotImplementedError
 
@@ -1852,6 +1897,7 @@ class EventsApi:
         rule: RuleName,
         targets: TargetList,
         event_bus_name: EventBusNameOrArn = None,
+        **kwargs
     ) -> PutTargetsResponse:
         raise NotImplementedError
 
@@ -1862,6 +1908,7 @@ class EventsApi:
         statement_id: StatementId = None,
         remove_all_permissions: Boolean = None,
         event_bus_name: NonPartnerEventBusName = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1873,6 +1920,7 @@ class EventsApi:
         ids: TargetIdList,
         event_bus_name: EventBusNameOrArn = None,
         force: Boolean = None,
+        **kwargs
     ) -> RemoveTargetsResponse:
         raise NotImplementedError
 
@@ -1886,24 +1934,25 @@ class EventsApi:
         event_end_time: Timestamp,
         destination: ReplayDestination,
         description: ReplayDescription = None,
+        **kwargs
     ) -> StartReplayResponse:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: Arn, tags: TagList
+        self, context: RequestContext, resource_arn: Arn, tags: TagList, **kwargs
     ) -> TagResourceResponse:
         raise NotImplementedError
 
     @handler("TestEventPattern")
     def test_event_pattern(
-        self, context: RequestContext, event_pattern: EventPattern, event: String
+        self, context: RequestContext, event_pattern: EventPattern, event: String, **kwargs
     ) -> TestEventPatternResponse:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList
+        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceResponse:
         raise NotImplementedError
 
@@ -1917,6 +1966,7 @@ class EventsApi:
         invocation_endpoint: HttpsEndpoint = None,
         http_method: ApiDestinationHttpMethod = None,
         invocation_rate_limit_per_second: ApiDestinationInvocationRateLimitPerSecond = None,
+        **kwargs
     ) -> UpdateApiDestinationResponse:
         raise NotImplementedError
 
@@ -1928,6 +1978,7 @@ class EventsApi:
         description: ArchiveDescription = None,
         event_pattern: EventPattern = None,
         retention_days: RetentionDays = None,
+        **kwargs
     ) -> UpdateArchiveResponse:
         raise NotImplementedError
 
@@ -1939,6 +1990,7 @@ class EventsApi:
         description: ConnectionDescription = None,
         authorization_type: ConnectionAuthorizationType = None,
         auth_parameters: UpdateConnectionAuthRequestParameters = None,
+        **kwargs
     ) -> UpdateConnectionResponse:
         raise NotImplementedError
 
@@ -1952,5 +2004,6 @@ class EventsApi:
         replication_config: ReplicationConfig = None,
         event_buses: EndpointEventBusList = None,
         role_arn: IamRoleArn = None,
+        **kwargs
     ) -> UpdateEndpointResponse:
         raise NotImplementedError

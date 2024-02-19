@@ -30,7 +30,7 @@ from localstack.services.lambda_.invocation.metrics import (
     record_cw_metric_invocation,
 )
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.utils.strings import truncate
+from localstack.utils.strings import long_uid, truncate
 from localstack.utils.threads import FuncThread, start_thread
 
 if TYPE_CHECKING:
@@ -67,6 +67,7 @@ class LambdaVersionManager:
         counting_service: CountingService,
         assignment_service: AssignmentService,
     ):
+        self.id = long_uid()
         self.function_arn = function_arn
         self.function_version = function_version
         self.function = function
@@ -127,7 +128,7 @@ class LambdaVersionManager:
         )
         self.shutdown_event.set()
         self.log_handler.stop()
-        self.assignment_service.stop_environments_for_version(self.function_version)
+        self.assignment_service.stop_environments_for_version(self.id)
         get_runtime_executor().cleanup_version(self.function_version)  # TODO: make pluggable?
 
     def update_provisioned_concurrency_config(
@@ -157,7 +158,7 @@ class LambdaVersionManager:
 
         def scale_environments(*args, **kwargs) -> None:
             futures = self.assignment_service.scale_provisioned_concurrency(
-                self.function_version, provisioned_concurrent_executions
+                self.id, self.function_version, provisioned_concurrent_executions
             )
 
             concurrent.futures.wait(futures)
@@ -188,8 +189,13 @@ class LambdaVersionManager:
         2.(nogood) fail fast fail hard
 
         """
+        LOG.debug(
+            "Got an invocation for function %s with request_id %s",
+            self.function_arn,
+            invocation.request_id,
+        )
         if self.shutdown_event.is_set():
-            message = f"Got an invocation with request id {invocation.request_id} for a version shutting down"
+            message = f"Got an invocation with request_id {invocation.request_id} for a version shutting down"
             LOG.warning(message)
             raise ServiceException(message)
 
@@ -201,7 +207,7 @@ class LambdaVersionManager:
             try:
                 # Blocks and potentially creates a new execution environment for this invocation
                 with self.assignment_service.get_environment(
-                    self.function_version, provisioning_type
+                    self.id, self.function_version, provisioning_type
                 ) as execution_env:
                     invocation_result = execution_env.invoke(invocation)
                     invocation_result.executed_version = self.function_version.id.qualifier
@@ -224,6 +230,7 @@ class LambdaVersionManager:
             start_thread(
                 lambda *args, **kwargs: record_cw_metric_error(
                     function_name=self.function.function_name,
+                    account_id=self.function_version.id.account,
                     region_name=self.function_version.id.region,
                 ),
                 name=f"record-cloudwatch-metric-error-{function_id.function_name}:{function_id.qualifier}",
@@ -232,15 +239,21 @@ class LambdaVersionManager:
             start_thread(
                 lambda *args, **kwargs: record_cw_metric_invocation(
                     function_name=self.function.function_name,
+                    account_id=self.function_version.id.account,
                     region_name=self.function_version.id.region,
                 ),
                 name=f"record-cloudwatch-metric-{function_id.function_name}:{function_id.qualifier}",
             )
-        # MAYBE: consider using the same prefix logging as in error case for execution environment.
+        # TODO: consider using the same prefix logging as in error case for execution environment.
         #   possibly as separate named logger.
         LOG.debug("Got logs for invocation '%s'", invocation.request_id)
         for log_line in invocation_result.logs.splitlines():
-            LOG.debug("> %s", truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT))
+            LOG.debug(
+                "[%s-%s] %s",
+                function_id.function_name,
+                invocation.request_id,
+                truncate(log_line, config.LAMBDA_TRUNCATE_STDOUT),
+            )
         return invocation_result
 
     def store_logs(

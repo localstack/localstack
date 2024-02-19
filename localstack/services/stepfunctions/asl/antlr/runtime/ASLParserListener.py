@@ -44,6 +44,15 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#version_decl.
+    def enterVersion_decl(self, ctx:ASLParser.Version_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#version_decl.
+    def exitVersion_decl(self, ctx:ASLParser.Version_declContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#state_stmt.
     def enterState_stmt(self, ctx:ASLParser.State_stmtContext):
         pass
@@ -179,12 +188,48 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#error_path_decl_path.
+    def enterError_path_decl_path(self, ctx:ASLParser.Error_path_decl_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#error_path_decl_path.
+    def exitError_path_decl_path(self, ctx:ASLParser.Error_path_decl_pathContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#error_path_decl_intrinsic.
+    def enterError_path_decl_intrinsic(self, ctx:ASLParser.Error_path_decl_intrinsicContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#error_path_decl_intrinsic.
+    def exitError_path_decl_intrinsic(self, ctx:ASLParser.Error_path_decl_intrinsicContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#cause_decl.
     def enterCause_decl(self, ctx:ASLParser.Cause_declContext):
         pass
 
     # Exit a parse tree produced by ASLParser#cause_decl.
     def exitCause_decl(self, ctx:ASLParser.Cause_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#cause_path_decl_path.
+    def enterCause_path_decl_path(self, ctx:ASLParser.Cause_path_decl_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#cause_path_decl_path.
+    def exitCause_path_decl_path(self, ctx:ASLParser.Cause_path_decl_pathContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#cause_path_decl_intrinsic.
+    def enterCause_path_decl_intrinsic(self, ctx:ASLParser.Cause_path_decl_intrinsicContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#cause_path_decl_intrinsic.
+    def exitCause_path_decl_intrinsic(self, ctx:ASLParser.Cause_path_decl_intrinsicContext):
         pass
 
 

@@ -21,7 +21,7 @@ endif
 VENV_RUN = . $(VENV_ACTIVATE)
 
 usage:                    ## Show this help
-	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-25s %s\n", $$1, $$2 }'
+	@grep -Fh "##" $(MAKEFILE_LIST) | grep -Fv fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-25s %s\n", $$1, $$2 }'
 
 $(VENV_ACTIVATE): setup.py setup.cfg
 	test -d $(VENV_DIR) || $(VENV_BIN) $(VENV_DIR)
@@ -33,33 +33,47 @@ venv: $(VENV_ACTIVATE)    ## Create a new (empty) virtual environment
 freeze:                   ## Run pip freeze -l in the virtual environment
 	@$(VENV_RUN); pip freeze -l
 
+pip-tools: venv
+	$(VENV_RUN); $(PIP_CMD) install --upgrade pip-tools
+
+upgrade-pinned-dependencies: pip-tools
+	$(VENV_RUN); pip-compile --upgrade --strip-extras -o requirements-basic.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra runtime -o requirements-runtime.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra test -o requirements-test.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra dev -o requirements-dev.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra typehint -o requirements-typehint.txt pyproject.toml
+	$(VENV_RUN); pip-compile --upgrade --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
+
 install-basic: venv       ## Install basic dependencies for CLI usage into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-basic.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e .
 
 install-runtime: venv     ## Install dependencies for the localstack runtime into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-runtime.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[runtime]"
 
 install-test: venv        ## Install requirements to run tests into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test]"
-
-install-test-only: venv
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-test.txt
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[test]"
 
 install-dev: venv         ## Install developer requirements into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-dev.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[dev]"
 
 install-dev-types: venv   ## Install developer requirements incl. type hints into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev,typehint]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-typehint.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[typehint]"
 
 install-s3: venv     ## Install dependencies for the localstack runtime for s3-only into venv
-	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,base-runtime]"
+	$(VENV_RUN); $(PIP_CMD) install -r requirements-base-runtime.txt
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[base-runtime]"
 
 install: install-dev entrypoints  ## Install full dependencies into venv
 
 entrypoints:              ## Run setup.py develop to build entry points
 	$(VENV_RUN); python setup.py plugins egg_info
-	# make sure that the entrypoints were correctly created and are non-empty
-	test -s localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
+	@# make sure that the entrypoints were correctly created and are non-empty
+	@test -s localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
 
 dist: entrypoints        ## Build source and built (wheel) distributions of the current version
 	$(VENV_RUN); pip install --upgrade twine; python setup.py sdist bdist_wheel
@@ -172,19 +186,15 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 	)
 
 docker-run-tests:		  ## Initializes the test environment and runs the tests in a docker container
-	# Remove argparse and dataclasses to fix https://github.com/pytest-dev/pytest/issues/5594
-	# Note: running "install-test-only" below, to avoid pulling in [runtime] extras from transitive dependencies
-	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
+	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/requirements-test.txt:/opt/code/localstack/requirements-test.txt -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
 		$(IMAGE_NAME) \
-	    bash -c "make install-test-only && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' LAMBDA_IGNORE_ARCHITECTURE=1 LAMBDA_INIT_POST_INVOKE_WAIT_MS=50 TINYBIRD_PYTEST_ARGS='$(TINYBIRD_PYTEST_ARGS)' TINYBIRD_DATASOURCE='$(TINYBIRD_DATASOURCE)' TINYBIRD_TOKEN='$(TINYBIRD_TOKEN)' TINYBIRD_URL='$(TINYBIRD_URL)' CI_COMMIT_BRANCH='$(CI_COMMIT_BRANCH)' CI_COMMIT_SHA='$(CI_COMMIT_SHA)' CI_JOB_URL='$(CI_JOB_URL)' CI_JOB_NAME='$(CI_JOB_NAME)' CI_JOB_ID='$(CI_JOB_ID)' make test-coverage"
+	    bash -c "make install-test && DEBUG=$(DEBUG) PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' LAMBDA_IGNORE_ARCHITECTURE=1 LAMBDA_INIT_POST_INVOKE_WAIT_MS=50 TINYBIRD_PYTEST_ARGS='$(TINYBIRD_PYTEST_ARGS)' TINYBIRD_DATASOURCE='$(TINYBIRD_DATASOURCE)' TINYBIRD_TOKEN='$(TINYBIRD_TOKEN)' TINYBIRD_URL='$(TINYBIRD_URL)' CI_COMMIT_BRANCH='$(CI_COMMIT_BRANCH)' CI_COMMIT_SHA='$(CI_COMMIT_SHA)' CI_JOB_URL='$(CI_JOB_URL)' CI_JOB_NAME='$(CI_JOB_NAME)' CI_JOB_ID='$(CI_JOB_ID)' make test-coverage"
 
 docker-run-tests-s3-only:		  ## Initializes the test environment and runs the tests in a docker container for the S3 only image
-	# Remove argparse and dataclasses to fix https://github.com/pytest-dev/pytest/issues/5594
-	# Note: running "install-test-only" below, to avoid pulling in [runtime] extras from transitive dependencies
 	# TODO: We need node as it's a dependency of the InfraProvisioner at import time, remove when we do not need it anymore
-	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
+	docker run -e LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC=1 --entrypoint= -v `pwd`/requirements-test.txt:/opt/code/localstack/requirements-test.txt -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/localstack:/var/lib/localstack \
 		$(IMAGE_NAME) \
-	    bash -c "make install-test-only && apt-get install -y --no-install-recommends gnupg && mkdir -p /etc/apt/keyrings && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && echo \"deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main\" > /etc/apt/sources.list.d/nodesource.list && apt-get update && apt-get install -y --no-install-recommends nodejs && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' TEST_PATH='$(TEST_PATH)' TINYBIRD_PYTEST_ARGS='$(TINYBIRD_PYTEST_ARGS)' TINYBIRD_DATASOURCE='$(TINYBIRD_DATASOURCE)' TINYBIRD_TOKEN='$(TINYBIRD_TOKEN)' TINYBIRD_URL='$(TINYBIRD_URL)' CI_COMMIT_BRANCH='$(CI_COMMIT_BRANCH)' CI_COMMIT_SHA='$(CI_COMMIT_SHA)' CI_JOB_URL='$(CI_JOB_URL)' CI_JOB_NAME='$(CI_JOB_NAME)' CI_JOB_ID='$(CI_JOB_ID)' make test"
+	    bash -c "make install-test && apt-get install -y --no-install-recommends gnupg && mkdir -p /etc/apt/keyrings && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && echo \"deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main\" > /etc/apt/sources.list.d/nodesource.list && apt-get update && apt-get install -y --no-install-recommends nodejs && DEBUG=$(DEBUG) PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' TEST_PATH='$(TEST_PATH)' TINYBIRD_PYTEST_ARGS='$(TINYBIRD_PYTEST_ARGS)' TINYBIRD_DATASOURCE='$(TINYBIRD_DATASOURCE)' TINYBIRD_TOKEN='$(TINYBIRD_TOKEN)' TINYBIRD_URL='$(TINYBIRD_URL)' CI_COMMIT_BRANCH='$(CI_COMMIT_BRANCH)' CI_COMMIT_SHA='$(CI_COMMIT_SHA)' CI_JOB_URL='$(CI_JOB_URL)' CI_JOB_NAME='$(CI_JOB_NAME)' CI_JOB_ID='$(CI_JOB_ID)' make test"
 
 
 docker-run:        		  ## Run Docker image locally
@@ -226,20 +236,23 @@ test-docker-mount-code:
 	PACKAGES_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages | awk '{print $$NF}'); \
 		DOCKER_FLAGS="$(DOCKER_FLAGS) --entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/aws:/opt/code/localstack/localstack/aws -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$PACKAGES_DIR/moto:/opt/code/localstack/.venv/lib/python3.11/site-packages/moto/ -e TEST_PATH=\\'$(TEST_PATH)\\' -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
 
-lint:              		  ## Run code linter to check code style and check if formatter would make changes
-	($(VENV_RUN); python -m ruff check --show-source . && python -m black --check .)
+lint:              		  ## Run code linter to check code style, check if formatter would make changes and check if dependency pins need to be updated
+	($(VENV_RUN); python -m ruff check --output-format=full . && python -m black --check .)
+	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files setup.cfg # run pre-commit hook manually here to ensure that this check runs in CI as well
 
-lint-modified:     		  ## Run code linter to check code style and check if formatter would make changes on modified files
-	($(VENV_RUN); python -m ruff check --show-source `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` && python -m black --check `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
+
+lint-modified:     		  ## Run code linter to check code style, check if formatter would make changes on modified files, and check if dependency pins need to be updated because of modified files
+	($(VENV_RUN); python -m ruff check --output-format=full `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` && python -m black --check `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
+	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files $(git diff master --name-only) # run pre-commit hook manually here to ensure that this check runs in CI as well
 
 check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibilty markers set
 	($(VENV_RUN); python -m pytest --co tests/aws/)
 
 format:            		  ## Run ruff and black to format the whole codebase
-	($(VENV_RUN); python -m ruff check --show-source --fix .; python -m black .)
+	($(VENV_RUN); python -m ruff check --output-format=full --fix .; python -m black .)
 
 format-modified:          ## Run ruff and black to format only modified code
-	($(VENV_RUN); python -m ruff check --show-source --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
+	($(VENV_RUN); python -m ruff check --output-format=full --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m black `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` )
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
@@ -255,4 +268,4 @@ clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-.PHONY: usage freeze install-basic install-runtime install-test install-test-only install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist
+.PHONY: usage freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist pip-tools upgrade-pinned-dependencies

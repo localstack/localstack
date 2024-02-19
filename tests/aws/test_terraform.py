@@ -4,7 +4,6 @@ import threading
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.packages.terraform import terraform_package
 from localstack.testing.pytest import markers
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
@@ -125,20 +124,18 @@ class TestTerraform:
 
     @markers.skip_offline
     @markers.aws.needs_fixing
-    def test_lambda(self, aws_client):
+    def test_lambda(self, aws_client, account_id):
         response = aws_client.lambda_.get_function(FunctionName=LAMBDA_NAME)
         assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
         assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
         assert response["Configuration"]["Runtime"] == LAMBDA_RUNTIME
-        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(
-            account_id=TEST_AWS_ACCOUNT_ID
-        )
+        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(account_id=account_id)
 
     @markers.skip_offline
     @markers.aws.needs_fixing
-    def test_event_source_mapping(self, aws_client):
-        queue_arn = QUEUE_ARN.format(account_id=TEST_AWS_ACCOUNT_ID)
-        lambda_arn = LAMBDA_ARN.format(account_id=TEST_AWS_ACCOUNT_ID, lambda_name=LAMBDA_NAME)
+    def test_event_source_mapping(self, aws_client, account_id):
+        queue_arn = QUEUE_ARN.format(account_id=account_id)
+        lambda_arn = LAMBDA_ARN.format(account_id=account_id, lambda_name=LAMBDA_NAME)
         all_mappings = aws_client.lambda_.list_event_source_mappings(
             EventSourceArn=queue_arn, FunctionName=LAMBDA_NAME
         )

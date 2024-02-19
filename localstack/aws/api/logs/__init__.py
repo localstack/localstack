@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, Iterator, List, Optional, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -6,7 +6,10 @@ AccessPolicy = str
 AccountId = str
 AccountPolicyDocument = str
 AmazonResourceName = str
+AnomalyDetectorArn = str
+AnomalyId = str
 Arn = str
+Boolean = bool
 ClientToken = str
 DataProtectionPolicyDocument = str
 Days = int
@@ -18,10 +21,13 @@ DeliverySourceName = str
 Descending = bool
 DescribeLimit = int
 DescribeQueriesMaxResults = int
+Description = str
 DestinationArn = str
 DestinationName = str
+DetectorName = str
 DimensionsKey = str
 DimensionsValue = str
+DynamicTokenPosition = int
 EncryptionKey = str
 EventId = str
 EventMessage = str
@@ -37,9 +43,15 @@ FilterName = str
 FilterPattern = str
 ForceUpdate = bool
 IncludeLinkedAccounts = bool
+Integer = int
 Interleaved = bool
+IsSampled = bool
 KmsKeyId = str
+ListAnomaliesLimit = int
+ListLogAnomalyDetectorsLimit = int
+LogEvent = str
 LogEventIndex = int
+LogGroupArn = str
 LogGroupIdentifier = str
 LogGroupName = str
 LogGroupNamePattern = str
@@ -52,28 +64,46 @@ MetricName = str
 MetricNamespace = str
 MetricValue = str
 NextToken = str
+PatternId = str
+PatternRegex = str
+PatternString = str
 Percentage = int
 PolicyDocument = str
 PolicyName = str
+Priority = str
 QueryCharOffset = int
 QueryDefinitionName = str
 QueryDefinitionString = str
 QueryId = str
 QueryListMaxResults = int
 QueryString = str
+RequestId = str
 ResourceIdentifier = str
 RoleArn = str
+SelectionCriteria = str
 SequenceToken = str
 Service = str
+SessionId = str
 StartFromHead = bool
 StatsValue = float
 Success = bool
 TagKey = str
 TagValue = str
 TargetArn = str
+Time = str
 Token = str
+TokenString = str
 Unmask = bool
 Value = str
+
+
+class AnomalyDetectorStatus(str):
+    INITIALIZING = "INITIALIZING"
+    TRAINING = "TRAINING"
+    ANALYZING = "ANALYZING"
+    FAILED = "FAILED"
+    DELETED = "DELETED"
+    PAUSED = "PAUSED"
 
 
 class DataProtectionStatus(str):
@@ -94,6 +124,15 @@ class Distribution(str):
     ByLogStream = "ByLogStream"
 
 
+class EvaluationFrequency(str):
+    ONE_MIN = "ONE_MIN"
+    FIVE_MIN = "FIVE_MIN"
+    TEN_MIN = "TEN_MIN"
+    FIFTEEN_MIN = "FIFTEEN_MIN"
+    THIRTY_MIN = "THIRTY_MIN"
+    ONE_HOUR = "ONE_HOUR"
+
+
 class ExportTaskStatusCode(str):
     CANCELLED = "CANCELLED"
     COMPLETED = "COMPLETED"
@@ -105,6 +144,11 @@ class ExportTaskStatusCode(str):
 
 class InheritedProperty(str):
     ACCOUNT_DATA_PROTECTION = "ACCOUNT_DATA_PROTECTION"
+
+
+class LogGroupClass(str):
+    STANDARD = "STANDARD"
+    INFREQUENT_ACCESS = "INFREQUENT_ACCESS"
 
 
 class OrderBy(str):
@@ -122,6 +166,7 @@ class OutputFormat(str):
 
 class PolicyType(str):
     DATA_PROTECTION_POLICY = "DATA_PROTECTION_POLICY"
+    SUBSCRIPTION_FILTER_POLICY = "SUBSCRIPTION_FILTER_POLICY"
 
 
 class QueryStatus(str):
@@ -166,6 +211,28 @@ class StandardUnit(str):
     Terabits_Second = "Terabits/Second"
     Count_Second = "Count/Second"
     None_ = "None"
+
+
+class State(str):
+    Active = "Active"
+    Suppressed = "Suppressed"
+    Baseline = "Baseline"
+
+
+class SuppressionState(str):
+    SUPPRESSED = "SUPPRESSED"
+    UNSUPPRESSED = "UNSUPPRESSED"
+
+
+class SuppressionType(str):
+    LIMITED = "LIMITED"
+    INFINITE = "INFINITE"
+
+
+class SuppressionUnit(str):
+    SECONDS = "SECONDS"
+    MINUTES = "MINUTES"
+    HOURS = "HOURS"
 
 
 class AccessDeniedException(ServiceException):
@@ -259,6 +326,18 @@ class ServiceUnavailableException(ServiceException):
     status_code: int = 400
 
 
+class SessionStreamingException(ServiceException):
+    code: str = "SessionStreamingException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class SessionTimeoutException(ServiceException):
+    code: str = "SessionTimeoutException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ThrottlingException(ServiceException):
     code: str = "ThrottlingException"
     sender_fault: bool = False
@@ -294,10 +373,70 @@ class AccountPolicy(TypedDict, total=False):
     lastUpdatedTime: Optional[Timestamp]
     policyType: Optional[PolicyType]
     scope: Optional[Scope]
+    selectionCriteria: Optional[SelectionCriteria]
     accountId: Optional[AccountId]
 
 
 AccountPolicies = List[AccountPolicy]
+EpochMillis = int
+LogGroupArnList = List[LogGroupArn]
+TokenValue = int
+Enumerations = Dict[TokenString, TokenValue]
+
+
+class PatternToken(TypedDict, total=False):
+    dynamicTokenPosition: Optional[DynamicTokenPosition]
+    isDynamic: Optional[Boolean]
+    tokenString: Optional[TokenString]
+    enumerations: Optional[Enumerations]
+
+
+PatternTokens = List[PatternToken]
+LogSamples = List[LogEvent]
+Count = int
+Histogram = Dict[Time, Count]
+
+
+class Anomaly(TypedDict, total=False):
+    anomalyId: AnomalyId
+    patternId: PatternId
+    anomalyDetectorArn: AnomalyDetectorArn
+    patternString: PatternString
+    patternRegex: Optional[PatternRegex]
+    priority: Optional[Priority]
+    firstSeen: EpochMillis
+    lastSeen: EpochMillis
+    description: Description
+    active: Boolean
+    state: State
+    histogram: Histogram
+    logSamples: LogSamples
+    patternTokens: PatternTokens
+    logGroupArnList: LogGroupArnList
+    suppressed: Optional[Boolean]
+    suppressedDate: Optional[EpochMillis]
+    suppressedUntil: Optional[EpochMillis]
+    isPatternLevelSuppression: Optional[Boolean]
+
+
+Anomalies = List[Anomaly]
+AnomalyVisibilityTime = int
+
+
+class AnomalyDetector(TypedDict, total=False):
+    anomalyDetectorArn: Optional[AnomalyDetectorArn]
+    detectorName: Optional[DetectorName]
+    logGroupArnList: Optional[LogGroupArnList]
+    evaluationFrequency: Optional[EvaluationFrequency]
+    filterPattern: Optional[FilterPattern]
+    anomalyDetectorStatus: Optional[AnomalyDetectorStatus]
+    kmsKeyId: Optional[KmsKeyId]
+    creationTimeStamp: Optional[EpochMillis]
+    lastModifiedTimeStamp: Optional[EpochMillis]
+    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+
+
+AnomalyDetectors = List[AnomalyDetector]
 
 
 class AssociateKmsKeyRequest(ServiceRequest):
@@ -351,10 +490,25 @@ class CreateExportTaskResponse(TypedDict, total=False):
     taskId: Optional[ExportTaskId]
 
 
+class CreateLogAnomalyDetectorRequest(ServiceRequest):
+    logGroupArnList: LogGroupArnList
+    detectorName: Optional[DetectorName]
+    evaluationFrequency: Optional[EvaluationFrequency]
+    filterPattern: Optional[FilterPattern]
+    kmsKeyId: Optional[KmsKeyId]
+    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+    tags: Optional[Tags]
+
+
+class CreateLogAnomalyDetectorResponse(TypedDict, total=False):
+    anomalyDetectorArn: Optional[AnomalyDetectorArn]
+
+
 class CreateLogGroupRequest(ServiceRequest):
     logGroupName: LogGroupName
     kmsKeyId: Optional[KmsKeyId]
     tags: Optional[Tags]
+    logGroupClass: Optional[LogGroupClass]
 
 
 class CreateLogStreamRequest(ServiceRequest):
@@ -389,6 +543,10 @@ class DeleteDeliverySourceRequest(ServiceRequest):
 
 class DeleteDestinationRequest(ServiceRequest):
     destinationName: DestinationName
+
+
+class DeleteLogAnomalyDetectorRequest(ServiceRequest):
+    anomalyDetectorArn: AnomalyDetectorArn
 
 
 class DeleteLogGroupRequest(ServiceRequest):
@@ -568,6 +726,7 @@ class DescribeLogGroupsRequest(ServiceRequest):
     nextToken: Optional[NextToken]
     limit: Optional[DescribeLimit]
     includeLinkedAccounts: Optional[IncludeLinkedAccounts]
+    logGroupClass: Optional[LogGroupClass]
 
 
 InheritedProperties = List[InheritedProperty]
@@ -584,6 +743,8 @@ class LogGroup(TypedDict, total=False):
     kmsKeyId: Optional[KmsKeyId]
     dataProtectionStatus: Optional[DataProtectionStatus]
     inheritedProperties: Optional[InheritedProperties]
+    logGroupClass: Optional[LogGroupClass]
+    logGroupArn: Optional[Arn]
 
 
 LogGroups = List[LogGroup]
@@ -850,6 +1011,22 @@ class GetDeliverySourceResponse(TypedDict, total=False):
     deliverySource: Optional[DeliverySource]
 
 
+class GetLogAnomalyDetectorRequest(ServiceRequest):
+    anomalyDetectorArn: AnomalyDetectorArn
+
+
+class GetLogAnomalyDetectorResponse(TypedDict, total=False):
+    detectorName: Optional[DetectorName]
+    logGroupArnList: Optional[LogGroupArnList]
+    evaluationFrequency: Optional[EvaluationFrequency]
+    filterPattern: Optional[FilterPattern]
+    anomalyDetectorStatus: Optional[AnomalyDetectorStatus]
+    kmsKeyId: Optional[KmsKeyId]
+    creationTimeStamp: Optional[EpochMillis]
+    lastModifiedTimeStamp: Optional[EpochMillis]
+    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+
+
 class GetLogEventsRequest(ServiceRequest):
     logGroupName: Optional[LogGroupName]
     logGroupIdentifier: Optional[LogGroupIdentifier]
@@ -941,6 +1118,29 @@ class InputLogEvent(TypedDict, total=False):
 InputLogEvents = List[InputLogEvent]
 
 
+class ListAnomaliesRequest(ServiceRequest):
+    anomalyDetectorArn: Optional[AnomalyDetectorArn]
+    suppressionState: Optional[SuppressionState]
+    limit: Optional[ListAnomaliesLimit]
+    nextToken: Optional[NextToken]
+
+
+class ListAnomaliesResponse(TypedDict, total=False):
+    anomalies: Optional[Anomalies]
+    nextToken: Optional[NextToken]
+
+
+class ListLogAnomalyDetectorsRequest(ServiceRequest):
+    filterLogGroupArn: Optional[LogGroupArn]
+    limit: Optional[ListLogAnomalyDetectorsLimit]
+    nextToken: Optional[NextToken]
+
+
+class ListLogAnomalyDetectorsResponse(TypedDict, total=False):
+    anomalyDetectors: Optional[AnomalyDetectors]
+    nextToken: Optional[NextToken]
+
+
 class ListTagsForResourceRequest(ServiceRequest):
     resourceArn: AmazonResourceName
 
@@ -955,6 +1155,36 @@ class ListTagsLogGroupRequest(ServiceRequest):
 
 class ListTagsLogGroupResponse(TypedDict, total=False):
     tags: Optional[Tags]
+
+
+class LiveTailSessionLogEvent(TypedDict, total=False):
+    logStreamName: Optional[LogStreamName]
+    logGroupIdentifier: Optional[LogGroupIdentifier]
+    message: Optional[EventMessage]
+    timestamp: Optional[Timestamp]
+    ingestionTime: Optional[Timestamp]
+
+
+class LiveTailSessionMetadata(TypedDict, total=False):
+    sampled: Optional[IsSampled]
+
+
+LiveTailSessionResults = List[LiveTailSessionLogEvent]
+StartLiveTailLogGroupIdentifiers = List[LogGroupIdentifier]
+
+
+class LiveTailSessionStart(TypedDict, total=False):
+    requestId: Optional[RequestId]
+    sessionId: Optional[SessionId]
+    logGroupIdentifiers: Optional[StartLiveTailLogGroupIdentifiers]
+    logStreamNames: Optional[InputLogStreamNames]
+    logStreamNamePrefixes: Optional[InputLogStreamNames]
+    logEventFilterPattern: Optional[FilterPattern]
+
+
+class LiveTailSessionUpdate(TypedDict, total=False):
+    sessionMetadata: Optional[LiveTailSessionMetadata]
+    sessionResults: Optional[LiveTailSessionResults]
 
 
 LogGroupIdentifiers = List[LogGroupIdentifier]
@@ -974,6 +1204,7 @@ class PutAccountPolicyRequest(ServiceRequest):
     policyDocument: AccountPolicyDocument
     policyType: PolicyType
     scope: Optional[Scope]
+    selectionCriteria: Optional[SelectionCriteria]
 
 
 class PutAccountPolicyResponse(TypedDict, total=False):
@@ -1099,6 +1330,24 @@ class PutSubscriptionFilterRequest(ServiceRequest):
     distribution: Optional[Distribution]
 
 
+class StartLiveTailRequest(ServiceRequest):
+    logGroupIdentifiers: StartLiveTailLogGroupIdentifiers
+    logStreamNames: Optional[InputLogStreamNames]
+    logStreamNamePrefixes: Optional[InputLogStreamNames]
+    logEventFilterPattern: Optional[FilterPattern]
+
+
+class StartLiveTailResponseStream(TypedDict, total=False):
+    sessionStart: Optional[LiveTailSessionStart]
+    sessionUpdate: Optional[LiveTailSessionUpdate]
+    SessionTimeoutException: Optional[SessionTimeoutException]
+    SessionStreamingException: Optional[SessionStreamingException]
+
+
+class StartLiveTailResponse(TypedDict, total=False):
+    responseStream: Iterator[StartLiveTailResponseStream]
+
+
 class StartQueryRequest(ServiceRequest):
     logGroupName: Optional[LogGroupName]
     logGroupNames: Optional[LogGroupNames]
@@ -1119,6 +1368,11 @@ class StopQueryRequest(ServiceRequest):
 
 class StopQueryResponse(TypedDict, total=False):
     success: Optional[Success]
+
+
+class SuppressionPeriod(TypedDict, total=False):
+    value: Optional[Integer]
+    suppressionUnit: Optional[SuppressionUnit]
 
 
 TagKeyList = List[TagKey]
@@ -1157,6 +1411,22 @@ class UntagResourceRequest(ServiceRequest):
     tagKeys: TagKeyList
 
 
+class UpdateAnomalyRequest(ServiceRequest):
+    anomalyId: Optional[AnomalyId]
+    patternId: Optional[PatternId]
+    anomalyDetectorArn: AnomalyDetectorArn
+    suppressionType: Optional[SuppressionType]
+    suppressionPeriod: Optional[SuppressionPeriod]
+
+
+class UpdateLogAnomalyDetectorRequest(ServiceRequest):
+    anomalyDetectorArn: AnomalyDetectorArn
+    evaluationFrequency: Optional[EvaluationFrequency]
+    filterPattern: Optional[FilterPattern]
+    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+    enabled: Boolean
+
+
 class LogsApi:
     service = "logs"
     version = "2014-03-28"
@@ -1168,11 +1438,12 @@ class LogsApi:
         kms_key_id: KmsKeyId,
         log_group_name: LogGroupName = None,
         resource_identifier: ResourceIdentifier = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("CancelExportTask")
-    def cancel_export_task(self, context: RequestContext, task_id: ExportTaskId) -> None:
+    def cancel_export_task(self, context: RequestContext, task_id: ExportTaskId, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("CreateDelivery")
@@ -1182,13 +1453,29 @@ class LogsApi:
         delivery_source_name: DeliverySourceName,
         delivery_destination_arn: Arn,
         tags: Tags = None,
+        **kwargs
     ) -> CreateDeliveryResponse:
         raise NotImplementedError
 
     @handler("CreateExportTask", expand=False)
     def create_export_task(
-        self, context: RequestContext, request: CreateExportTaskRequest
+        self, context: RequestContext, request: CreateExportTaskRequest, **kwargs
     ) -> CreateExportTaskResponse:
+        raise NotImplementedError
+
+    @handler("CreateLogAnomalyDetector")
+    def create_log_anomaly_detector(
+        self,
+        context: RequestContext,
+        log_group_arn_list: LogGroupArnList,
+        detector_name: DetectorName = None,
+        evaluation_frequency: EvaluationFrequency = None,
+        filter_pattern: FilterPattern = None,
+        kms_key_id: KmsKeyId = None,
+        anomaly_visibility_time: AnomalyVisibilityTime = None,
+        tags: Tags = None,
+        **kwargs
+    ) -> CreateLogAnomalyDetectorResponse:
         raise NotImplementedError
 
     @handler("CreateLogGroup")
@@ -1198,90 +1485,118 @@ class LogsApi:
         log_group_name: LogGroupName,
         kms_key_id: KmsKeyId = None,
         tags: Tags = None,
+        log_group_class: LogGroupClass = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("CreateLogStream")
     def create_log_stream(
-        self, context: RequestContext, log_group_name: LogGroupName, log_stream_name: LogStreamName
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        log_stream_name: LogStreamName,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccountPolicy")
     def delete_account_policy(
-        self, context: RequestContext, policy_name: PolicyName, policy_type: PolicyType
+        self, context: RequestContext, policy_name: PolicyName, policy_type: PolicyType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDataProtectionPolicy")
     def delete_data_protection_policy(
-        self, context: RequestContext, log_group_identifier: LogGroupIdentifier
+        self, context: RequestContext, log_group_identifier: LogGroupIdentifier, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDelivery")
-    def delete_delivery(self, context: RequestContext, id: DeliveryId) -> None:
+    def delete_delivery(self, context: RequestContext, id: DeliveryId, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteDeliveryDestination")
     def delete_delivery_destination(
-        self, context: RequestContext, name: DeliveryDestinationName
+        self, context: RequestContext, name: DeliveryDestinationName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDeliveryDestinationPolicy")
     def delete_delivery_destination_policy(
-        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName
+        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDeliverySource")
-    def delete_delivery_source(self, context: RequestContext, name: DeliverySourceName) -> None:
+    def delete_delivery_source(
+        self, context: RequestContext, name: DeliverySourceName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteDestination")
     def delete_destination(
-        self, context: RequestContext, destination_name: DestinationName
+        self, context: RequestContext, destination_name: DestinationName, **kwargs
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteLogAnomalyDetector")
+    def delete_log_anomaly_detector(
+        self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteLogGroup")
-    def delete_log_group(self, context: RequestContext, log_group_name: LogGroupName) -> None:
+    def delete_log_group(
+        self, context: RequestContext, log_group_name: LogGroupName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteLogStream")
     def delete_log_stream(
-        self, context: RequestContext, log_group_name: LogGroupName, log_stream_name: LogStreamName
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        log_stream_name: LogStreamName,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteMetricFilter")
     def delete_metric_filter(
-        self, context: RequestContext, log_group_name: LogGroupName, filter_name: FilterName
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteQueryDefinition")
     def delete_query_definition(
-        self, context: RequestContext, query_definition_id: QueryId
+        self, context: RequestContext, query_definition_id: QueryId, **kwargs
     ) -> DeleteQueryDefinitionResponse:
         raise NotImplementedError
 
     @handler("DeleteResourcePolicy")
     def delete_resource_policy(
-        self, context: RequestContext, policy_name: PolicyName = None
+        self, context: RequestContext, policy_name: PolicyName = None, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteRetentionPolicy")
     def delete_retention_policy(
-        self, context: RequestContext, log_group_name: LogGroupName
+        self, context: RequestContext, log_group_name: LogGroupName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteSubscriptionFilter")
     def delete_subscription_filter(
-        self, context: RequestContext, log_group_name: LogGroupName, filter_name: FilterName
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        filter_name: FilterName,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1292,24 +1607,37 @@ class LogsApi:
         policy_type: PolicyType,
         policy_name: PolicyName = None,
         account_identifiers: AccountIds = None,
+        **kwargs
     ) -> DescribeAccountPoliciesResponse:
         raise NotImplementedError
 
     @handler("DescribeDeliveries")
     def describe_deliveries(
-        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeDeliveriesResponse:
         raise NotImplementedError
 
     @handler("DescribeDeliveryDestinations")
     def describe_delivery_destinations(
-        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeDeliveryDestinationsResponse:
         raise NotImplementedError
 
     @handler("DescribeDeliverySources")
     def describe_delivery_sources(
-        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeDeliverySourcesResponse:
         raise NotImplementedError
 
@@ -1320,6 +1648,7 @@ class LogsApi:
         destination_name_prefix: DestinationName = None,
         next_token: NextToken = None,
         limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeDestinationsResponse:
         raise NotImplementedError
 
@@ -1331,6 +1660,7 @@ class LogsApi:
         status_code: ExportTaskStatusCode = None,
         next_token: NextToken = None,
         limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeExportTasksResponse:
         raise NotImplementedError
 
@@ -1344,6 +1674,8 @@ class LogsApi:
         next_token: NextToken = None,
         limit: DescribeLimit = None,
         include_linked_accounts: IncludeLinkedAccounts = None,
+        log_group_class: LogGroupClass = None,
+        **kwargs
     ) -> DescribeLogGroupsResponse:
         raise NotImplementedError
 
@@ -1358,6 +1690,7 @@ class LogsApi:
         descending: Descending = None,
         next_token: NextToken = None,
         limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeLogStreamsResponse:
         raise NotImplementedError
 
@@ -1371,6 +1704,7 @@ class LogsApi:
         limit: DescribeLimit = None,
         metric_name: MetricName = None,
         metric_namespace: MetricNamespace = None,
+        **kwargs
     ) -> DescribeMetricFiltersResponse:
         raise NotImplementedError
 
@@ -1382,6 +1716,7 @@ class LogsApi:
         status: QueryStatus = None,
         max_results: DescribeQueriesMaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeQueriesResponse:
         raise NotImplementedError
 
@@ -1392,12 +1727,17 @@ class LogsApi:
         query_definition_name_prefix: QueryDefinitionName = None,
         max_results: QueryListMaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeQueryDefinitionsResponse:
         raise NotImplementedError
 
     @handler("DescribeResourcePolicies")
     def describe_resource_policies(
-        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeResourcePoliciesResponse:
         raise NotImplementedError
 
@@ -1409,6 +1749,7 @@ class LogsApi:
         filter_name_prefix: FilterName = None,
         next_token: NextToken = None,
         limit: DescribeLimit = None,
+        **kwargs
     ) -> DescribeSubscriptionFiltersResponse:
         raise NotImplementedError
 
@@ -1418,6 +1759,7 @@ class LogsApi:
         context: RequestContext,
         log_group_name: LogGroupName = None,
         resource_identifier: ResourceIdentifier = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1436,35 +1778,44 @@ class LogsApi:
         limit: EventsLimit = None,
         interleaved: Interleaved = None,
         unmask: Unmask = None,
+        **kwargs
     ) -> FilterLogEventsResponse:
         raise NotImplementedError
 
     @handler("GetDataProtectionPolicy")
     def get_data_protection_policy(
-        self, context: RequestContext, log_group_identifier: LogGroupIdentifier
+        self, context: RequestContext, log_group_identifier: LogGroupIdentifier, **kwargs
     ) -> GetDataProtectionPolicyResponse:
         raise NotImplementedError
 
     @handler("GetDelivery")
-    def get_delivery(self, context: RequestContext, id: DeliveryId) -> GetDeliveryResponse:
+    def get_delivery(
+        self, context: RequestContext, id: DeliveryId, **kwargs
+    ) -> GetDeliveryResponse:
         raise NotImplementedError
 
     @handler("GetDeliveryDestination")
     def get_delivery_destination(
-        self, context: RequestContext, name: DeliveryDestinationName
+        self, context: RequestContext, name: DeliveryDestinationName, **kwargs
     ) -> GetDeliveryDestinationResponse:
         raise NotImplementedError
 
     @handler("GetDeliveryDestinationPolicy")
     def get_delivery_destination_policy(
-        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName
+        self, context: RequestContext, delivery_destination_name: DeliveryDestinationName, **kwargs
     ) -> GetDeliveryDestinationPolicyResponse:
         raise NotImplementedError
 
     @handler("GetDeliverySource")
     def get_delivery_source(
-        self, context: RequestContext, name: DeliverySourceName
+        self, context: RequestContext, name: DeliverySourceName, **kwargs
     ) -> GetDeliverySourceResponse:
+        raise NotImplementedError
+
+    @handler("GetLogAnomalyDetector")
+    def get_log_anomaly_detector(
+        self, context: RequestContext, anomaly_detector_arn: AnomalyDetectorArn, **kwargs
+    ) -> GetLogAnomalyDetectorResponse:
         raise NotImplementedError
 
     @handler("GetLogEvents")
@@ -1480,6 +1831,7 @@ class LogsApi:
         limit: EventsLimit = None,
         start_from_head: StartFromHead = None,
         unmask: Unmask = None,
+        **kwargs
     ) -> GetLogEventsResponse:
         raise NotImplementedError
 
@@ -1490,30 +1842,58 @@ class LogsApi:
         log_group_name: LogGroupName = None,
         time: Timestamp = None,
         log_group_identifier: LogGroupIdentifier = None,
+        **kwargs
     ) -> GetLogGroupFieldsResponse:
         raise NotImplementedError
 
     @handler("GetLogRecord")
     def get_log_record(
-        self, context: RequestContext, log_record_pointer: LogRecordPointer, unmask: Unmask = None
+        self,
+        context: RequestContext,
+        log_record_pointer: LogRecordPointer,
+        unmask: Unmask = None,
+        **kwargs
     ) -> GetLogRecordResponse:
         raise NotImplementedError
 
     @handler("GetQueryResults")
     def get_query_results(
-        self, context: RequestContext, query_id: QueryId
+        self, context: RequestContext, query_id: QueryId, **kwargs
     ) -> GetQueryResultsResponse:
+        raise NotImplementedError
+
+    @handler("ListAnomalies")
+    def list_anomalies(
+        self,
+        context: RequestContext,
+        anomaly_detector_arn: AnomalyDetectorArn = None,
+        suppression_state: SuppressionState = None,
+        limit: ListAnomaliesLimit = None,
+        next_token: NextToken = None,
+        **kwargs
+    ) -> ListAnomaliesResponse:
+        raise NotImplementedError
+
+    @handler("ListLogAnomalyDetectors")
+    def list_log_anomaly_detectors(
+        self,
+        context: RequestContext,
+        filter_log_group_arn: LogGroupArn = None,
+        limit: ListLogAnomalyDetectorsLimit = None,
+        next_token: NextToken = None,
+        **kwargs
+    ) -> ListLogAnomalyDetectorsResponse:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceResponse:
         raise NotImplementedError
 
     @handler("ListTagsLogGroup")
     def list_tags_log_group(
-        self, context: RequestContext, log_group_name: LogGroupName
+        self, context: RequestContext, log_group_name: LogGroupName, **kwargs
     ) -> ListTagsLogGroupResponse:
         raise NotImplementedError
 
@@ -1525,6 +1905,8 @@ class LogsApi:
         policy_document: AccountPolicyDocument,
         policy_type: PolicyType,
         scope: Scope = None,
+        selection_criteria: SelectionCriteria = None,
+        **kwargs
     ) -> PutAccountPolicyResponse:
         raise NotImplementedError
 
@@ -1534,6 +1916,7 @@ class LogsApi:
         context: RequestContext,
         log_group_identifier: LogGroupIdentifier,
         policy_document: DataProtectionPolicyDocument,
+        **kwargs
     ) -> PutDataProtectionPolicyResponse:
         raise NotImplementedError
 
@@ -1545,6 +1928,7 @@ class LogsApi:
         delivery_destination_configuration: DeliveryDestinationConfiguration,
         output_format: OutputFormat = None,
         tags: Tags = None,
+        **kwargs
     ) -> PutDeliveryDestinationResponse:
         raise NotImplementedError
 
@@ -1554,6 +1938,7 @@ class LogsApi:
         context: RequestContext,
         delivery_destination_name: DeliveryDestinationName,
         delivery_destination_policy: DeliveryDestinationPolicy,
+        **kwargs
     ) -> PutDeliveryDestinationPolicyResponse:
         raise NotImplementedError
 
@@ -1565,6 +1950,7 @@ class LogsApi:
         resource_arn: Arn,
         log_type: LogType,
         tags: Tags = None,
+        **kwargs
     ) -> PutDeliverySourceResponse:
         raise NotImplementedError
 
@@ -1576,6 +1962,7 @@ class LogsApi:
         target_arn: TargetArn,
         role_arn: RoleArn,
         tags: Tags = None,
+        **kwargs
     ) -> PutDestinationResponse:
         raise NotImplementedError
 
@@ -1586,6 +1973,7 @@ class LogsApi:
         destination_name: DestinationName,
         access_policy: AccessPolicy,
         force_update: ForceUpdate = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1597,6 +1985,7 @@ class LogsApi:
         log_stream_name: LogStreamName,
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
+        **kwargs
     ) -> PutLogEventsResponse:
         raise NotImplementedError
 
@@ -1608,6 +1997,7 @@ class LogsApi:
         filter_name: FilterName,
         filter_pattern: FilterPattern,
         metric_transformations: MetricTransformations,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1620,6 +2010,7 @@ class LogsApi:
         query_definition_id: QueryId = None,
         log_group_names: LogGroupNames = None,
         client_token: ClientToken = None,
+        **kwargs
     ) -> PutQueryDefinitionResponse:
         raise NotImplementedError
 
@@ -1629,12 +2020,17 @@ class LogsApi:
         context: RequestContext,
         policy_name: PolicyName = None,
         policy_document: PolicyDocument = None,
+        **kwargs
     ) -> PutResourcePolicyResponse:
         raise NotImplementedError
 
     @handler("PutRetentionPolicy")
     def put_retention_policy(
-        self, context: RequestContext, log_group_name: LogGroupName, retention_in_days: Days
+        self,
+        context: RequestContext,
+        log_group_name: LogGroupName,
+        retention_in_days: Days,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1648,7 +2044,20 @@ class LogsApi:
         destination_arn: DestinationArn,
         role_arn: RoleArn = None,
         distribution: Distribution = None,
+        **kwargs
     ) -> None:
+        raise NotImplementedError
+
+    @handler("StartLiveTail")
+    def start_live_tail(
+        self,
+        context: RequestContext,
+        log_group_identifiers: StartLiveTailLogGroupIdentifiers,
+        log_stream_names: InputLogStreamNames = None,
+        log_stream_name_prefixes: InputLogStreamNames = None,
+        log_event_filter_pattern: FilterPattern = None,
+        **kwargs
+    ) -> StartLiveTailResponse:
         raise NotImplementedError
 
     @handler("StartQuery")
@@ -1662,22 +2071,23 @@ class LogsApi:
         log_group_names: LogGroupNames = None,
         log_group_identifiers: LogGroupIdentifiers = None,
         limit: EventsLimit = None,
+        **kwargs
     ) -> StartQueryResponse:
         raise NotImplementedError
 
     @handler("StopQuery")
-    def stop_query(self, context: RequestContext, query_id: QueryId) -> StopQueryResponse:
+    def stop_query(self, context: RequestContext, query_id: QueryId, **kwargs) -> StopQueryResponse:
         raise NotImplementedError
 
     @handler("TagLogGroup")
     def tag_log_group(
-        self, context: RequestContext, log_group_name: LogGroupName, tags: Tags
+        self, context: RequestContext, log_group_name: LogGroupName, tags: Tags, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1687,17 +2097,48 @@ class LogsApi:
         context: RequestContext,
         filter_pattern: FilterPattern,
         log_event_messages: TestEventMessages,
+        **kwargs
     ) -> TestMetricFilterResponse:
         raise NotImplementedError
 
     @handler("UntagLogGroup")
     def untag_log_group(
-        self, context: RequestContext, log_group_name: LogGroupName, tags: TagList
+        self, context: RequestContext, log_group_name: LogGroupName, tags: TagList, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateAnomaly")
+    def update_anomaly(
+        self,
+        context: RequestContext,
+        anomaly_detector_arn: AnomalyDetectorArn,
+        anomaly_id: AnomalyId = None,
+        pattern_id: PatternId = None,
+        suppression_type: SuppressionType = None,
+        suppression_period: SuppressionPeriod = None,
+        **kwargs
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateLogAnomalyDetector")
+    def update_log_anomaly_detector(
+        self,
+        context: RequestContext,
+        anomaly_detector_arn: AnomalyDetectorArn,
+        enabled: Boolean,
+        evaluation_frequency: EvaluationFrequency = None,
+        filter_pattern: FilterPattern = None,
+        anomaly_visibility_time: AnomalyVisibilityTime = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError

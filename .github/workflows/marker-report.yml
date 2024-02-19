@@ -21,22 +21,22 @@ jobs:
 
       - name: Set up Python
         id: setup-python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Cache LocalStack community dependencies (venv)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('requirements-dev.txt') }}
 
       - name: Install dependencies
         run: make install-dev
 
       - name: Collect marker report
         env:
-          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack.testing.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
+          PYTEST_ADDOPTS: "-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:tests.fixtures -s --co --disable-warnings --marker-report --marker-report-tinybird-upload"
           MARKER_REPORT_PROJECT_NAME: localstack
           MARKER_REPORT_TINYBIRD_TOKEN: ${{ secrets.MARKER_REPORT_TINYBIRD_TOKEN }}
           MARKER_REPORT_COMMIT_SHA: ${{ github.sha }}

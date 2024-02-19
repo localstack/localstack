@@ -5,7 +5,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, List, Optional
 
-from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery, StateValue
+from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery, MetricStat, StateValue
 from localstack.aws.connect import connect_to
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.scheduler import Scheduler
@@ -47,7 +47,7 @@ class AlarmScheduler:
         Shutsdown the scheduler, must be called before application stops
         """
         self.scheduler.close()
-        self.thread.join(5)
+        self.thread.join(10)
 
     def schedule_metric_alarm(self, alarm_arn: str) -> None:
         """(Re-)schedules the alarm, if the alarm is re-scheduled, the running alarm scheduler will be cancelled before
@@ -142,15 +142,15 @@ def generate_metric_query(alarm_details: MetricAlarm) -> MetricDataQuery:
         metric["Namespace"] = alarm_details["Namespace"]
     if alarm_details.get("Dimensions"):
         metric["Dimensions"] = alarm_details["Dimensions"]
-    return {
-        "Id": alarm_details["AlarmName"],
-        "MetricStat": {
-            "Metric": metric,
-            "Period": alarm_details["Period"],
-            "Stat": alarm_details["Statistic"].capitalize(),
-        },
+    return MetricDataQuery(
+        Id=alarm_details["AlarmName"],
+        MetricStat=MetricStat(
+            Metric=metric,
+            Period=alarm_details["Period"],
+            Stat=alarm_details["Statistic"],
+        )
         # TODO other fields might be required in the future
-    }
+    )
 
 
 def is_threshold_exceeded(metric_values: List[float], alarm_details: MetricAlarm) -> bool:

@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Mapping, Optional, Sequence, overload
 
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
-from localstack.utils.common import to_str
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, retry
@@ -254,7 +253,7 @@ def get_invoke_init_type(
 ) -> Literal["on-demand", "provisioned-concurrency"]:
     """check the environment in the lambda for AWS_LAMBDA_INITIALIZATION_TYPE indicating ondemand/provisioned"""
     invoke_result = client.invoke(FunctionName=function_name, Qualifier=qualifier)
-    return json.loads(to_str(invoke_result["Payload"].read()))
+    return json.load(invoke_result["Payload"])
 
 
 lambda_role = {
@@ -323,4 +322,4 @@ def _get_lambda_invocation_events(logs_client, function_name, expected_num_event
         assert len(events) == expected_num_events
         return events
 
-    return retry(get_events, retries=retries, sleep_before=2)
+    return retry(get_events, retries=retries, sleep_before=5, sleep=5)

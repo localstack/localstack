@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -50,106 +51,7 @@ Properties = TypeVar("Properties")
 
 PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 
-# by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
-# add your new provider here when you want it to be the default
-PROVIDER_DEFAULTS = {
-    "AWS::ApiGateway::Account": "ResourceProvider",
-    "AWS::ApiGateway::ApiKey": "ResourceProvider",
-    "AWS::ApiGateway::BasePathMapping": "ResourceProvider",
-    "AWS::ApiGateway::Deployment": "ResourceProvider",
-    "AWS::ApiGateway::DomainName": "ResourceProvider",
-    "AWS::ApiGateway::GatewayResponse": "ResourceProvider",
-    "AWS::ApiGateway::Method": "ResourceProvider",
-    "AWS::ApiGateway::Model": "ResourceProvider",
-    "AWS::ApiGateway::RequestValidator": "ResourceProvider",
-    "AWS::ApiGateway::Resource": "ResourceProvider",
-    "AWS::ApiGateway::RestApi": "ResourceProvider",
-    "AWS::ApiGateway::Stage": "ResourceProvider",
-    "AWS::ApiGateway::UsagePlan": "ResourceProvider",
-    "AWS::ApiGateway::UsagePlanKey": "ResourceProvider",
-    "AWS::AppSync::ApiKey": "ResourceProvider",
-    "AWS::AppSync::DataSource": "ResourceProvider",
-    "AWS::AppSync::FunctionConfiguration": "ResourceProvider",
-    "AWS::AppSync::GraphQLApi": "ResourceProvider",
-    "AWS::AppSync::GraphQLSchema": "ResourceProvider",
-    "AWS::AppSync::Resolver": "ResourceProvider",
-    "AWS::CertificateManager::Certificate": "ResourceProvider",
-    "AWS::CloudFront::CloudFrontOriginAccessIdentity": "ResourceProvider",
-    "AWS::CloudFront::Function": "ResourceProvider",
-    "AWS::CloudFront::OriginRequestPolicy": "ResourceProvider",
-    "AWS::CloudFront::Distribution": "ResourceProvider",
-    "AWS::CloudFront::OriginAccessControl": "ResourceProvider",
-    "AWS::CloudFront::CachePolicy": "ResourceProvider",
-    "AWS::CloudFormation::Stack": "ResourceProvider",
-    "AWS::CloudWatch::Alarm": "ResourceProvider",
-    "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
-    "AWS::DynamoDB::Table": "ResourceProvider",
-    "AWS::EC2::DHCPOptions": "ResourceProvider",
-    "AWS::EC2::Instance": "ResourceProvider",
-    "AWS::EC2::InternetGateway": "ResourceProvider",
-    "AWS::EC2::NatGateway": "ResourceProvider",
-    "AWS::EC2::NetworkAcl": "ResourceProvider",
-    "AWS::EC2::Route": "ResourceProvider",
-    "AWS::EC2::RouteTable": "ResourceProvider",
-    "AWS::EC2::SecurityGroup": "ResourceProvider",
-    "AWS::EC2::Subnet": "ResourceProvider",
-    "AWS::EC2::SubnetRouteTableAssociation": "ResourceProvider",
-    "AWS::EC2::TransitGateway": "ResourceProvider",
-    "AWS::EC2::TransitGatewayAttachment": "ResourceProvider",
-    "AWS::EC2::VPC": "ResourceProvider",
-    "AWS::EC2::VPCGatewayAttachment": "ResourceProvider",
-    "AWS::ECR::Repository": "ResourceProvider",
-    "AWS::EKS::Nodegroup": "ResourceProvider",
-    "AWS::ElasticBeanstalk::Application": "ResourceProvider",
-    "AWS::ElasticBeanstalk::ApplicationVersion": "ResourceProvider",
-    "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
-    "AWS::ElasticBeanstalk::Environment": "ResourceProvider",
-    "AWS::Events::Connection": "ResourceProvider",
-    "AWS::Events::EventBus": "ResourceProvider",
-    "AWS::Events::EventBusPolicy": "ResourceProvider",
-    "AWS::Events::Rule": "ResourceProvider",
-    "AWS::IAM::AccessKey": "ResourceProvider",
-    "AWS::IAM::Group": "ResourceProvider",
-    "AWS::IAM::InstanceProfile": "ResourceProvider",
-    "AWS::IAM::ManagedPolicy": "ResourceProvider",
-    "AWS::IAM::Policy": "ResourceProvider",
-    "AWS::IAM::Role": "ResourceProvider",
-    "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
-    "AWS::IAM::User": "ResourceProvider",
-    "AWS::KMS::Alias": "ResourceProvider",
-    "AWS::KMS::Key": "ResourceProvider",
-    "AWS::Kinesis::Stream": "ResourceProvider",
-    "AWS::Kinesis::StreamConsumer": "ResourceProvider",
-    "AWS::KinesisAnalytics::Application": "ResourceProvider",
-    "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
-    "AWS::Lambda::Alias": "ResourceProvider",
-    "AWS::Logs::LogGroup": "ResourceProvider",
-    "AWS::Logs::LogStream": "ResourceProvider",
-    "AWS::Logs::SubscriptionFilter": "ResourceProvider",
-    "AWS::OpenSearchService::Domain": "ResourceProvider",
-    "AWS::RDS::DBCluster": "ResourceProvider",
-    "AWS::Redshift::Cluster": "ResourceProvider",
-    "AWS::Route53::HealthCheck": "ResourceProvider",
-    "AWS::Route53::RecordSet": "ResourceProvider",
-    "AWS::S3::Bucket": "ResourceProvider",
-    "AWS::S3::BucketPolicy": "ResourceProvider",
-    "AWS::SNS::Topic": "ResourceProvider",
-    "AWS::SQS::Queue": "ResourceProvider",
-    "AWS::SQS::QueuePolicy": "ResourceProvider",
-    "AWS::Scheduler::Schedule": "ResourceProvider",
-    "AWS::Scheduler::ScheduleGroup": "ResourceProvider",
-    "AWS::SecretsManager::ResourcePolicy": "ResourceProvider",
-    "AWS::SecretsManager::RotationSchedule": "ResourceProvider",
-    "AWS::SecretsManager::Secret": "ResourceProvider",
-    "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",
-    "AWS::SSM::Parameter": "ResourceProvider",
-    "AWS::SSM::MaintenanceWindow": "ResourceProvider",
-    "AWS::SSM::MaintenanceWindowTarget": "ResourceProvider",
-    "AWS::SSM::MaintenanceWindowTask": "ResourceProvider",
-    "AWS::SSM::PatchBaseline": "ResourceProvider",
-    "AWS::StepFunctions::Activity": "ResourceProvider",
-    "AWS::StepFunctions::StateMachine": "ResourceProvider",
-}
+PROVIDER_DEFAULTS = {}  # TODO: remove this after removing patching in -ext
 
 
 class OperationStatus(Enum):
@@ -806,6 +708,11 @@ class ResourceProviderExecutor:
                         request.resource_type,
                         request.logical_resource_id,
                     )
+                    if request.previous_state is None:
+                        # this is an issue with our update detection. We should never be in this state.
+                        request.action = "Add"
+                        return resource_provider.create(request)
+
                     return ProgressEvent(
                         status=OperationStatus.SUCCESS, resource_model=request.previous_state
                     )
@@ -815,42 +722,60 @@ class ResourceProviderExecutor:
                 raise NotImplementedError(change_type)  # TODO: change error type
 
     def should_use_legacy_provider(self, resource_type: str) -> bool:
-        # any config overwrites take precedence over the default list
-        PROVIDER_CONFIG = {**PROVIDER_DEFAULTS, **self.provider_config}
-        if resource_type in PROVIDER_CONFIG:
-            return PROVIDER_CONFIG[resource_type] == "GenericBaseModel"
-
-        return True
+        # any config overwrites take precedence over the default order
+        return self.provider_config.get(resource_type) == "GenericBaseModel"
 
     def load_resource_provider(self, resource_type: str) -> ResourceProvider:
-        # by default look up GenericBaseModel
+        # TODO: unify namespace of plugins
+
+        # opt-in to switch to older resource provider
         if self.should_use_legacy_provider(resource_type):
             return self._load_legacy_resource_provider(resource_type)
 
+        # 1. try to load pro resource provider
         # prioritise pro resource providers
         if PRO_RESOURCE_PROVIDERS:
+            # temporary patch until this has equivalent resource providers in -ext
+            if resource_type in {
+                "AWS::ECR::Repository",
+                "AWS::SecretsManager::SecretTargetAttachment",
+                "AWS::EC2::SubnetRouteTableAssociation",
+            }:
+                return self._load_legacy_resource_provider(resource_type)
             try:
                 plugin = pro_plugin_manager.load(resource_type)
                 return plugin.factory()
             except ValueError:
-                # could not load the plugin
+                # could not find a plugin for that name
                 pass
             except Exception:
                 LOG.warning(
-                    "error loading plugin from plugin manager",
+                    "Failed to load PRO resource type %s as a ResourceProvider.",
+                    resource_type,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+
+        # 2. try to load community resource provider
+        try:
+            plugin = plugin_manager.load(resource_type)
+            return plugin.factory()
+        except ValueError:
+            # could not find a plugin for that name
+            pass
+        except Exception:
+            if config.CFN_VERBOSE_ERRORS:
+                LOG.warning(
+                    "Failed to load community resource type %s as a ResourceProvider.",
+                    resource_type,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
         try:
-            plugin = plugin_manager.load(resource_type)
-            return plugin.factory()
-        except Exception:
-            LOG.warning(
-                "Failed to load resource type %s as a ResourceProvider.",
-                resource_type,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
-            raise NoResourceProvider
+            # 3. try to load legacy resource provider (and raise if nothing found)
+            return self._load_legacy_resource_provider(resource_type)
+        except NoResourceProvider:
+            LOG.warning("Failed to load resource provider for resource type %s", resource_type)
+            raise
 
     def _load_legacy_resource_provider(self, resource_type: str) -> LegacyResourceProvider:
         if resource_type in self.legacy_base_models:
@@ -868,7 +793,19 @@ class ResourceProviderExecutor:
     ) -> str:
         if resource_type in PHYSICAL_RESOURCE_ID_SPECIAL_CASES:
             primary_id_path = PHYSICAL_RESOURCE_ID_SPECIAL_CASES[resource_type]
-            physical_resource_id = resolve_json_pointer(resource_model, primary_id_path)
+
+            if "<" in primary_id_path:
+                # composite quirk, e.g. something like MyRef|MyName
+                # try to extract parts
+                physical_resource_id = primary_id_path
+                find_results = re.findall("<([^>]+)>", primary_id_path)
+                for found_part in find_results:
+                    resolved_part = resolve_json_pointer(resource_model, found_part)
+                    physical_resource_id = physical_resource_id.replace(
+                        f"<{found_part}>", resolved_part
+                    )
+            else:
+                physical_resource_id = resolve_json_pointer(resource_model, primary_id_path)
         else:
             primary_id_paths = resource_type_schema["primaryIdentifier"]
             if len(primary_id_paths) > 1:

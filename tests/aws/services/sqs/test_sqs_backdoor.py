@@ -4,7 +4,6 @@ import xmltodict
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.sqs.utils import parse_queue_url
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -49,7 +48,7 @@ class TestSqsDeveloperEndpoints:
         assert attributes[1]["ApproximateReceiveCount"] == "0"
 
         # do a real receive op that has a side effect
-        response = aws_client.sqs_query.receive_message(
+        response = aws_client.sqs.receive_message(
             QueueUrl=queue_url, VisibilityTimeout=0, MaxNumberOfMessages=1, AttributeNames=["All"]
         )
         assert response["Messages"][0]["Body"] == "message-1"
@@ -72,13 +71,11 @@ class TestSqsDeveloperEndpoints:
 
         queue_url = sqs_create_queue()
 
-        aws_client.sqs_query.send_message(QueueUrl=queue_url, MessageBody="message-1")
-        aws_client.sqs_query.send_message(QueueUrl=queue_url, MessageBody="message-2")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
+        aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
 
         # use the developer endpoint as boto client URL
-        client = aws_client_factory(
-            endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        ).sqs_query
+        client = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
         # max messages is ignored
         response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 
@@ -109,9 +106,7 @@ class TestSqsDeveloperEndpoints:
         aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody="message-3", MessageGroupId="2")
 
         # use the developer endpoint as boto client URL
-        client = aws_client_factory(
-            endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        ).sqs_query
+        client = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
         # max messages is ignored
         response = client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 
@@ -136,9 +131,7 @@ class TestSqsDeveloperEndpoints:
 
         queue_url = sqs_create_queue()
 
-        client = aws_client_factory(
-            endpoint_url="http://localhost:4566/_aws/sqs/messages"
-        ).sqs_query
+        client = aws_client_factory(endpoint_url="http://localhost:4566/_aws/sqs/messages").sqs
 
         with pytest.raises(ClientError) as e:
             client.send_message(QueueUrl=queue_url, MessageBody="foobar")
@@ -151,7 +144,9 @@ class TestSqsDeveloperEndpoints:
 
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
-    def test_list_messages_as_json(self, sqs_create_queue, monkeypatch, aws_client, strategy):
+    def test_list_messages_as_json(
+        self, sqs_create_queue, monkeypatch, aws_client, account_id, strategy
+    ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
         queue_url = sqs_create_queue()
@@ -177,7 +172,7 @@ class TestSqsDeveloperEndpoints:
 
         # make sure attributes are returned
         attributes = {a["Name"]: a["Value"] for a in messages[0]["Attribute"]}
-        assert attributes["SenderId"] == TEST_AWS_ACCOUNT_ID
+        assert attributes["SenderId"] == account_id
         assert "ApproximateReceiveCount" in attributes
         assert "ApproximateFirstReceiveTimestamp" in attributes
         assert "SentTimestamp" in attributes

@@ -84,7 +84,7 @@ class KinesisMockServer(Server):
         for param in latency_params:
             env_vars[param] = self._latency
 
-        if self._data_dir:
+        if self._data_dir and config.KINESIS_PERSISTENCE:
             env_vars["SHOULD_PERSIST_DATA"] = "true"
             # FIXME use relative path to current working directory until
             #  https://github.com/etspaceman/kinesis-mock/issues/554 is resolved
@@ -147,10 +147,16 @@ class KinesisServerManager:
         if config.KINESIS_MOCK_LOG_LEVEL:
             log_level = config.KINESIS_MOCK_LOG_LEVEL.upper()
         elif config.LS_LOG:
-            if config.LS_LOG == "warning":
+            ls_log_level = config.LS_LOG.upper()
+            if ls_log_level == "WARNING":
                 log_level = "WARN"
+            elif ls_log_level == "TRACE-INTERNAL":
+                log_level = "TRACE"
+            elif ls_log_level not in ("ERROR", "WARN", "INFO", "DEBUG", "TRACE"):
+                # to protect from cases where the log level will be rejected from kinesis-mock
+                log_level = "INFO"
             else:
-                log_level = config.LS_LOG.upper()
+                log_level = ls_log_level
         else:
             log_level = "INFO"
         latency = config.KINESIS_LATENCY + "ms"

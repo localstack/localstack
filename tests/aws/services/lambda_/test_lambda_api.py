@@ -21,19 +21,21 @@ import pytest
 import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError, ParamValidationError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
-from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.services.lambda_.api_utils import ARCHITECTURES
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     SNAP_START_SUPPORTED_RUNTIMES,
 )
-from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
+from localstack.testing.aws.lambda_utils import (
+    _await_dynamodb_table_active,
+    _await_event_source_mapping_enabled,
+)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.docker_utils import DOCKER_CLIENT
@@ -403,6 +405,115 @@ class TestLambdaFunction:
             len(zip_file_bytes_updated)
             == get_function_response_updated["Configuration"]["CodeSize"]
         )
+
+    # TODO: fix type of AccessDeniedException yielding null
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["function_arn_other_account_exc..Error.Message", "$..CodeSha256"]
+    )
+    @markers.aws.validated
+    def test_function_arns(
+        self, create_lambda_function, region_name, account_id, aws_client, lambda_su_role, snapshot
+    ):
+        # create_function
+        function_name_1 = f"test-function-arn-{short_uid()}"
+        function_arn = f"arn:aws:lambda:{region_name}:{account_id}:function:{function_name_1}"
+        function_arn_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_arn,
+            runtime=Runtime.python3_12,
+        )
+        snapshot.match("create-function-arn-response", function_arn_response)
+
+        function_name_2 = f"test-partial-arn-{short_uid()}"
+        partial_arn = f"{account_id}:function:{function_name_2}"
+        function_partial_arn_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=partial_arn,
+            runtime=Runtime.python3_12,
+        )
+        snapshot.match("create-function-partial-arn-response", function_partial_arn_response)
+
+        # create_function exceptions
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        # test invalid function name
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName="invalid:function:name",
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("invalid_function_name_exc", e.value.response)
+
+        # test too long function name
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName="a" * 65,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("long_function_name_exc", e.value.response)
+
+        # test too long function arn
+        max_function_arn_length = 140
+        function_arn_prefix = f"arn:aws:lambda:{region_name}:{account_id}:function:"
+        suffix_length = max_function_arn_length - len(function_arn_prefix) + 1
+        long_function_arn = function_arn_prefix + "a" * suffix_length
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=long_function_arn,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("long_function_arn_exc", e.value.response)
+
+        # test other region in function arn than client
+        function_name_1 = f"test-function-arn-{short_uid()}"
+        other_region = "ap-southeast-1"
+        assert (
+            region_name != other_region
+        ), "This test assumes that the region in the function arn differs from the client region"
+        function_arn_other_region = (
+            f"arn:aws:lambda:{other_region}:{account_id}:function:{function_name_1}"
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_arn_other_region,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("function_arn_other_region_exc", e.value.response)
+
+        # test other account in function arn than client
+        function_name_1 = f"test-function-arn-{short_uid()}"
+        other_account = "123456789012"
+        assert (
+            account_id != other_account
+        ), "This test assumes that the account in the function arn differs from the client region"
+        function_arn_other_account = (
+            f"arn:aws:lambda:{region_name}:{other_account}:function:{function_name_1}"
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_arn_other_account,
+                Handler="index.handler",
+                Code={"ZipFile": zip_file_bytes},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("function_arn_other_account_exc", e.value.response)
 
     @markers.lambda_runtime_update
     @markers.aws.validated
@@ -1523,6 +1634,55 @@ class TestLambdaAlias:
                 Name="non-existent",
             )
         snapshot.match("alias_does_not_exist_esc", e.value.response)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
+    @markers.aws.validated
+    def test_alias_naming(self, aws_client, snapshot, create_lambda_function_aws, lambda_su_role):
+        """
+        numbers can be included and can even start the alias name, but it can't be purely a number
+        """
+        function_name = f"alias-fn-{short_uid()}"
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={
+                "ZipFile": create_lambda_archive(
+                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+                )
+            },
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_9,
+            Environment={"Variables": {"testenv": "staging"}},
+        )
+        snapshot.match("create_response", create_response)
+
+        publish_v1 = aws_client.lambda_.publish_version(FunctionName=function_name)
+        snapshot.match("publish_v1", publish_v1)
+
+        # alias in date format
+        alias_name = "2024-01-02"
+        create_alias_date = aws_client.lambda_.create_alias(
+            FunctionName=function_name,
+            Name=alias_name,
+            FunctionVersion="1",
+            Description="custom-alias",
+        )
+        snapshot.match("create_alias_date", create_alias_date)
+        get_alias_date = aws_client.lambda_.get_alias(FunctionName=function_name, Name=alias_name)
+        snapshot.match("get_alias_date", get_alias_date)
+        aws_client.lambda_.invoke(FunctionName=f"{function_name}:{alias_name}")
+
+        # alias as a number should fail
+        alias_name_number = "2024"
+        with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
+            aws_client.lambda_.create_alias(
+                FunctionName=function_name,
+                Name=alias_name_number,
+                FunctionVersion="1",
+                Description="custom-alias",
+            )
+        snapshot.match("create_alias_number_exception", e.value.response)
 
 
 class TestLambdaRevisions:
@@ -4132,6 +4292,7 @@ class TestLambdaEventSourceMappings:
         snapshot.match("create_unknown_params", e.value.response)
         # TODO: add test for event source arn == failure destination
         # TODO: add test for adding success destination
+        # TODO: add test_multiple_esm_conflict: create an event source mapping for a combination of function + target ARN that already exists
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -4218,9 +4379,61 @@ class TestLambdaEventSourceMappings:
         # lambda_client.delete_event_source_mapping(UUID=uuid)
 
     @markers.aws.validated
+    def test_function_name_variations(
+        self,
+        create_lambda_function,
+        snapshot,
+        sqs_create_queue,
+        cleanups,
+        lambda_su_role,
+        aws_client,
+    ):
+        function_name = f"lambda_func-{short_uid()}"
+
+        queue_url = sqs_create_queue()
+        queue_arn = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+
+        # create version & alias pointing to the version
+        v1 = aws_client.lambda_.publish_version(FunctionName=function_name)
+        alias = aws_client.lambda_.create_alias(
+            FunctionName=function_name, FunctionVersion=v1["Version"], Name="myalias"
+        )
+        fn = aws_client.lambda_.get_function(FunctionName=function_name)
+
+        def _create_esm(snapshot_scope: str, tested_name: str):
+            result = aws_client.lambda_.create_event_source_mapping(
+                FunctionName=tested_name,
+                EventSourceArn=queue_arn,
+            )
+            cleanups.append(
+                lambda: aws_client.lambda_.delete_event_source_mapping(UUID=result["UUID"])
+            )
+            snapshot.match(f"{snapshot_scope}_create_esm", result)
+            _await_event_source_mapping_enabled(aws_client.lambda_, result["UUID"])
+            aws_client.lambda_.delete_event_source_mapping(UUID=result["UUID"])
+
+        _create_esm("name_only", function_name)
+        _create_esm("partial_arn_latest", f"{function_name}:$LATEST")
+        _create_esm("partial_arn_version", f"{function_name}:{v1['Version']}")
+        _create_esm("partial_arn_alias", f"{function_name}:{alias['Name']}")
+        _create_esm("full_arn_latest", fn["Configuration"]["FunctionArn"])
+        _create_esm("full_arn_version", v1["FunctionArn"])
+        _create_esm("full_arn_alias", alias["AliasArn"])
+
+    @markers.aws.validated
     def test_create_event_source_validation(
         self, create_lambda_function, lambda_su_role, dynamodb_create_table, snapshot, aws_client
     ):
+        """missing required field for DynamoDb stream event source mapping"""
         function_name = f"function-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -4585,7 +4798,14 @@ class TestLambdaLayer:
 
     @markers.aws.validated
     def test_layer_function_exceptions(
-        self, create_lambda_function, snapshot, dummylayer, cleanups, aws_client_factory, aws_client
+        self,
+        create_lambda_function,
+        snapshot,
+        dummylayer,
+        cleanups,
+        aws_client_factory,
+        aws_client,
+        secondary_region_name,
     ):
         """Test interaction of layers when adding them to the function"""
         function_name = f"fn-layer-{short_uid()}"
@@ -4693,9 +4913,7 @@ class TestLambdaLayer:
             )
         snapshot.match("add_layer_arn_without_version_exc", e.value.response)
 
-        other_region_lambda_client = aws_client_factory(
-            region_name=SECONDARY_TEST_AWS_REGION_NAME
-        ).lambda_
+        other_region_lambda_client = aws_client_factory(region_name=secondary_region_name).lambda_
         other_region_layer_result = other_region_lambda_client.publish_layer_version(
             LayerName=layer_name,
             CompatibleRuntimes=[],

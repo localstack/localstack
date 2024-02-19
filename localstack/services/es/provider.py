@@ -227,6 +227,7 @@ class EsProvider(EsApi):
         advanced_security_options: AdvancedSecurityOptionsInput = None,
         auto_tune_options: AutoTuneOptionsInput = None,
         tag_list: TagList = None,
+        **kwargs,
     ) -> CreateElasticsearchDomainResponse:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
@@ -266,7 +267,7 @@ class EsProvider(EsApi):
         return CreateElasticsearchDomainResponse(DomainStatus=status)
 
     def delete_elasticsearch_domain(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DeleteElasticsearchDomainResponse:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
@@ -281,7 +282,7 @@ class EsProvider(EsApi):
         return DeleteElasticsearchDomainResponse(DomainStatus=status)
 
     def describe_elasticsearch_domain(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DescribeElasticsearchDomainResponse:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
@@ -318,7 +319,7 @@ class EsProvider(EsApi):
         return UpdateElasticsearchDomainConfigResponse(DomainConfig=config)
 
     def describe_elasticsearch_domains(
-        self, context: RequestContext, domain_names: DomainNameList
+        self, context: RequestContext, domain_names: DomainNameList, **kwargs
     ) -> DescribeElasticsearchDomainsResponse:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
@@ -333,7 +334,7 @@ class EsProvider(EsApi):
         return DescribeElasticsearchDomainsResponse(DomainStatusList=status_list)
 
     def list_domain_names(
-        self, context: RequestContext, engine_type: EngineType = None
+        self, context: RequestContext, engine_type: EngineType = None, **kwargs
     ) -> ListDomainNamesResponse:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
@@ -353,6 +354,7 @@ class EsProvider(EsApi):
         context: RequestContext,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> ListElasticsearchVersionsResponse:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
@@ -374,7 +376,7 @@ class EsProvider(EsApi):
         )
 
     def get_compatible_elasticsearch_versions(
-        self, context: RequestContext, domain_name: DomainName = None
+        self, context: RequestContext, domain_name: DomainName = None, **kwargs
     ) -> GetCompatibleElasticsearchVersionsResponse:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
@@ -395,7 +397,7 @@ class EsProvider(EsApi):
         )
 
     def describe_elasticsearch_domain_config(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DescribeElasticsearchDomainConfigResponse:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
@@ -410,7 +412,7 @@ class EsProvider(EsApi):
             DomainConfig=_domainconfig_from_opensearch(domain_config)
         )
 
-    def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
+    def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList, **kwargs) -> None:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
         ).opensearch
@@ -418,7 +420,7 @@ class EsProvider(EsApi):
         with exception_mapper():
             opensearch_client.add_tags(ARN=arn, TagList=tag_list)
 
-    def list_tags(self, context: RequestContext, arn: ARN) -> ListTagsResponse:
+    def list_tags(self, context: RequestContext, arn: ARN, **kwargs) -> ListTagsResponse:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
         ).opensearch
@@ -428,7 +430,9 @@ class EsProvider(EsApi):
 
         return ListTagsResponse(TagList=response.get("TagList"))
 
-    def remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
+    def remove_tags(
+        self, context: RequestContext, arn: ARN, tag_keys: StringList, **kwargs
+    ) -> None:
         opensearch_client = connect_to(
             region_name=context.region, aws_access_key_id=context.account_id
         ).opensearch

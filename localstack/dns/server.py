@@ -69,6 +69,7 @@ VERIFICATION_DOMAIN = config.DNS_VERIFICATION_DOMAIN
 RCODE_REFUSED = 5
 
 DNS_SERVER: "DnsServerProtocol" = None
+PREVIOUS_RESOLV_CONF_FILE: str | None = None
 
 REQUEST_TIMEOUT_SECS = 7
 
@@ -91,6 +92,15 @@ THREAD_LOCAL = threading.local()
 ClientAddress = Tuple[str, int]
 
 psutil_cache = TTLCache(maxsize=100, ttl=10)
+
+
+# TODO: update route53 provider to use this util
+def normalise_dns_name(name: DNSLabel | str) -> str:
+    name = str(name)
+    if not name.endswith("."):
+        return f"{name}."
+
+    return name
 
 
 @cached(cache=psutil_cache)
@@ -451,7 +461,7 @@ class Resolver(DnsServerProtocol):
         converter = RecordConverter(request, client_address)
 
         # check for direct (not regex based) response
-        zone = self.zones.get(request.q.qname)
+        zone = self.zones.get(normalise_dns_name(request.q.qname))
         if zone is not None:
             for zone_records in zone:
                 rr = converter.to_record(zone_records).try_rr(request.q)
@@ -522,12 +532,14 @@ class Resolver(DnsServerProtocol):
 
     def add_host(self, name: str, record: NameRecord):
         LOG.debug("Adding host %s with record %s", name, record)
+        name = normalise_dns_name(name)
         with self.lock:
             self.zones.setdefault(name, [])
             self.zones[name].append(record)
 
     def delete_host(self, name: str, record: NameRecord):
         LOG.debug("Deleting host %s with record %s", name, record)
+        name = normalise_dns_name(name)
         with self.lock:
             if not self.zones.get(name):
                 raise ValueError("Could not find entry %s for name %s in zones", record, name)
@@ -780,6 +792,7 @@ def get_available_dns_server():
 
 # ###### LEGACY METHODS ######
 def add_resolv_entry(file_path: Path | str = Path("/etc/resolv.conf")):
+    global PREVIOUS_RESOLV_CONF_FILE
     # never overwrite the host configuration without the user's permission
     if not in_docker():
         LOG.warning("Incorrectly attempted to alter host networking config")
@@ -794,11 +807,35 @@ def add_resolv_entry(file_path: Path | str = Path("/etc/resolv.conf")):
     )
     file_path = Path(file_path)
     try:
-        with file_path.open("w") as outfile:
-            print(content, file=outfile)
+        with file_path.open("r+") as outfile:
+            PREVIOUS_RESOLV_CONF_FILE = outfile.read()
+            outfile.seek(0)
+            outfile.write(content)
+            outfile.truncate()
     except Exception:
         LOG.warning(
             "Could not update container DNS settings", exc_info=LOG.isEnabledFor(logging.DEBUG)
+        )
+
+
+def revert_resolv_entry(file_path: Path | str = Path("/etc/resolv.conf")):
+    # never overwrite the host configuration without the user's permission
+    if not in_docker():
+        LOG.warning("Incorrectly attempted to alter host networking config")
+        return
+
+    if not PREVIOUS_RESOLV_CONF_FILE:
+        LOG.warning("resolv.conf file to restore not found.")
+        return
+
+    LOG.debug("Reverting container DNS config")
+    file_path = Path(file_path)
+    try:
+        with file_path.open("w") as outfile:
+            outfile.write(PREVIOUS_RESOLV_CONF_FILE)
+    except Exception:
+        LOG.warning(
+            "Could not revert container DNS settings", exc_info=LOG.isEnabledFor(logging.DEBUG)
         )
 
 
@@ -810,6 +847,16 @@ def setup_network_configuration():
     # add entry to /etc/resolv.conf
     if in_docker():
         add_resolv_entry()
+
+
+def revert_network_configuration():
+    # check if DNS is disabled
+    if not config.use_custom_dns():
+        return
+
+    # add entry to /etc/resolv.conf
+    if in_docker():
+        revert_resolv_entry()
 
 
 def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
@@ -828,8 +875,17 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
     if config.LOCALSTACK_HOST.host != LOCALHOST_HOSTNAME:
         dns_server.add_host_pointing_to_localstack(f".*{config.LOCALSTACK_HOST.host}")
 
-    if config.DNS_LOCAL_NAME_PATTERNS:
-        for skip_pattern in re.split(r"[,;\s]+", config.DNS_LOCAL_NAME_PATTERNS):
+    # support both DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM and DNS_LOCAL_NAME_PATTERNS
+    # until the next major version change
+    # TODO(srw): remove the usage of DNS_LOCAL_NAME_PATTERNS
+    skip_local_resolution = " ".join(
+        [
+            config.DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM,
+            config.DNS_LOCAL_NAME_PATTERNS,
+        ]
+    ).strip()
+    if skip_local_resolution:
+        for skip_pattern in re.split(r"[,;\s]+", skip_local_resolution):
             dns_server.add_skip(skip_pattern)
 
     dns_server.start()

@@ -49,7 +49,8 @@ from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.json import try_json
-from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
+from localstack.utils.numbers import is_number
+from localstack.utils.strings import canonicalize_bool_to_str, long_uid, short_uid, to_bytes, to_str
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -401,8 +402,7 @@ class RequestParametersResolver:
         # }
         request_params = context.integration.get("requestParameters", {})
 
-        # resolve all integration request parameters with the already resolved method
-        # request parameters
+        # resolve all integration request parameters with the already resolved method request parameters
         integrations_parameters = {}
         for k, v in request_params.items():
             if v.lower() in method_request_params:
@@ -439,7 +439,6 @@ class RequestParametersResolver:
         """
         params: Dict[str, str] = {}
 
-        # TODO: add support for context variables - include in apiinvocationcontext
         # TODO: add support for multi-values headers and multi-values querystring
 
         for k, v in context.query_params().items():
@@ -453,6 +452,32 @@ class RequestParametersResolver:
 
         for k, v in context.stage_variables.items():
             params[f"stagevariables.{k}"] = v
+
+        # TODO: add support for missing context variables, use `context.context` which contains most of the variables
+        #  see https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference
+        #  - all `context.identity` fields
+        #  - protocol
+        #  - requestId, extendedRequestId
+        #  - all requestOverride, responseOverride
+        #  - requestTime, requestTimeEpoch
+        #  - resourcePath
+        #  - wafResponseCode, webaclArn
+        params["context.accountId"] = context.account_id
+        params["context.apiId"] = context.api_id
+        params["context.domainName"] = context.domain_name
+        params["context.httpMethod"] = context.method
+        params["context.path"] = context.path
+        params["context.resourceId"] = context.resource_id
+        params["context.stage"] = context.stage
+
+        auth_context_authorizer = context.auth_context.get("authorizer") or {}
+        for k, v in auth_context_authorizer.items():
+            if isinstance(v, bool):
+                v = canonicalize_bool_to_str(v)
+            elif is_number(v):
+                v = str(v)
+
+            params[f"context.authorizer.{k.lower()}"] = v
 
         if context.data:
             params["method.request.body"] = context.data
@@ -585,11 +610,13 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     if not context.stage:
         return {}
 
-    _, region_name = get_api_account_id_and_region(context.api_id)
-    api_gateway_client = connect_to(region_name=region_name).apigateway
+    account_id, region_name = get_api_account_id_and_region(context.api_id)
+    api_gateway_client = connect_to(
+        aws_access_key_id=account_id, region_name=region_name
+    ).apigateway
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
-        return response.get("variables")
+        return response.get("variables", {})
     except Exception:
         LOG.info("Failed to get stage %s for API id %s", context.stage, context.api_id)
         return {}
@@ -1155,9 +1182,18 @@ def import_api_from_openapi_spec(
             integration_type = (
                 i_type.upper() if (i_type := method_integration.get("type")) else None
             )
-            # TODO: validate more cases like this
-            # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
-            integration_method = method_name if integration_type != "AWS_PROXY" else "POST"
+
+            match integration_type:
+                case "AWS_PROXY":
+                    # if the integration is AWS_PROXY with lambda, the only accepted integration method is POST
+                    integration_method = "POST"
+                case "AWS":
+                    integration_method = (
+                        method_integration.get("httpMethod") or method_name
+                    ).upper()
+                case _:
+                    integration_method = method_name
+
             connection_type = (
                 ConnectionType.INTERNET
                 if integration_type in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY)
@@ -1385,7 +1421,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     api_id = invocation_context.api_id
     stage = invocation_context.stage
 
-    source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
+    source_ip = invocation_context.auth_identity.get("sourceIp")
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
     account_id = account_id or DEFAULT_AWS_ACCOUNT_ID
@@ -1492,22 +1528,6 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     """Extract API ID 'id123' from URLs like https://id123.execute-api.localhost.localstack.cloud:4566"""
     match = re.match(HOST_REGEX_EXECUTE_API, hostname)
     return match.group(1)
-
-
-# This need to be extended to handle mappings and not just literal values.
-def create_invocation_headers(invocation_context: ApiInvocationContext) -> Dict[str, Any]:
-    headers = invocation_context.headers
-    integration = invocation_context.integration
-
-    if request_parameters := integration.get("requestParameters"):
-        for req_parameter_key, req_parameter_value in request_parameters.items():
-            if (
-                header_name := req_parameter_key.lstrip("integration.request.header.")
-                if "integration.request.header." in req_parameter_key
-                else None
-            ):
-                headers.update({header_name: req_parameter_value})
-    return headers
 
 
 def is_greedy_path(path_part: str) -> bool:

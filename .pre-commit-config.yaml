@@ -18,3 +18,8 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
+  - repo: https://github.com/localstack/pre-commit-hooks
+    rev: v0.2.1
+    hooks:
+      - id: check-pinned-deps-for-needed-upgrade

@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Union
 
 import requests
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
@@ -19,6 +21,7 @@ from localstack.aws.api.sns import MessageAttributeMap
 from localstack.aws.connect import connect_to
 from localstack.config import external_service_url
 from localstack.services.sns import constants as sns_constants
+from localstack.services.sns.certificate import SNS_SERVER_PRIVATE_KEY
 from localstack.services.sns.models import (
     SnsApplicationPlatforms,
     SnsMessage,
@@ -38,7 +41,7 @@ from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queu
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.objects import not_none_or
-from localstack.utils.strings import long_uid, md5, to_bytes
+from localstack.utils.strings import long_uid, md5, to_bytes, to_str
 from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
@@ -99,16 +102,22 @@ class TopicPublisher(abc.ABC):
         """
         raise NotImplementedError
 
-    def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription) -> str:
+    def prepare_message(
+        self,
+        message_context: SnsMessage,
+        subscriber: SnsSubscription,
+        topic_attributes: dict[str, str] = None,
+    ) -> str:
         """
         Returns the message formatted in the base SNS message format. The base SNS message format is shared amongst
         SQS, HTTP(S), email-json and Firehose.
         See https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html
         :param message_context: the SnsMessage containing the message data
         :param subscriber: the SNS subscription
+        :param topic_attributes: the SNS Topic attributes
         :return: formatted SNS message body in a JSON string
         """
-        return create_sns_message_body(message_context, subscriber)
+        return create_sns_message_body(message_context, subscriber, topic_attributes)
 
 
 class EndpointPublisher(abc.ABC):
@@ -174,7 +183,7 @@ class LambdaTopicPublisher(TopicPublisher):
             lambda_client = connect_to(region_name=region).lambda_.request_metadata(
                 source_arn=subscriber["TopicArn"], service_principal="sns"
             )
-            event = self.prepare_message(context.message, subscriber)
+            event = self.prepare_message(context.message, subscriber, context.topic_attributes)
             inv_result = lambda_client.invoke(
                 FunctionName=subscriber["Endpoint"],
                 Payload=to_bytes(event),
@@ -208,42 +217,60 @@ class LambdaTopicPublisher(TopicPublisher):
                 topic_attributes=context.topic_attributes,
             )
             message_body = create_sns_message_body(
-                message_context=context.message, subscriber=subscriber
+                message_context=context.message,
+                subscriber=subscriber,
+                topic_attributes=context.topic_attributes,
             )
             sns_error_to_dead_letter_queue(subscriber, message_body, str(exc))
 
-    def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription) -> str:
+    def prepare_message(
+        self,
+        message_context: SnsMessage,
+        subscriber: SnsSubscription,
+        topic_attributes: dict[str, str] = None,
+    ) -> str:
         """
         You can see Lambda SNS Event format here: https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html
         :param message_context: the SnsMessage containing the message data
         :param subscriber: the SNS subscription
         :return: an SNS message body formatted as a lambda Event in a JSON string
         """
-        external_url = external_service_url()
+        external_url = external_service_url().rstrip("/")
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
         message_attributes = prepare_message_attributes(message_context.message_attributes)
-        region_name = extract_region_from_arn(subscriber["SubscriptionArn"])
+
+        event_payload = {
+            "Type": message_context.type or "Notification",
+            "MessageId": message_context.message_id,
+            "Subject": message_context.subject,
+            "TopicArn": subscriber["TopicArn"],
+            "Message": message_context.message_content(subscriber["Protocol"]),
+            "Timestamp": timestamp_millis(),
+            "UnsubscribeUrl": unsubscribe_url,
+            "MessageAttributes": message_attributes,
+        }
+
+        signature_version = (
+            topic_attributes.get("signature_version", "1") if topic_attributes else "1"
+        )
+        canonical_string = compute_canonical_string(event_payload, message_context.type)
+        signature = get_message_signature(canonical_string, signature_version=signature_version)
+
+        event_payload.update(
+            {
+                # this is a bug on AWS side, it is always returned a 1, but it should be actual version of the topic
+                "SignatureVersion": "1",
+                "Signature": signature,
+                "SigningCertUrl": f"{external_url}{sns_constants.SNS_CERT_ENDPOINT}",
+            }
+        )
         event = {
             "Records": [
                 {
                     "EventSource": "aws:sns",
                     "EventVersion": "1.0",
                     "EventSubscriptionArn": subscriber["SubscriptionArn"],
-                    "Sns": {
-                        "Type": message_context.type or "Notification",
-                        "MessageId": message_context.message_id,
-                        "TopicArn": subscriber["TopicArn"],
-                        "Subject": message_context.subject,
-                        "Message": message_context.message_content(subscriber["Protocol"]),
-                        "Timestamp": timestamp_millis(),
-                        "SignatureVersion": "1",
-                        # TODO Add a more sophisticated solution with an actual signature
-                        # Hardcoded
-                        "Signature": "EXAMPLEpH+..",
-                        "SigningCertUrl": f"https://sns.{region_name}.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
-                        "UnsubscribeUrl": unsubscribe_url,
-                        "MessageAttributes": message_attributes,
-                    },
+                    "Sns": event_payload,
                 }
             ]
         }
@@ -260,7 +287,9 @@ class SqsTopicPublisher(TopicPublisher):
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         message_context = context.message
         try:
-            message_body = self.prepare_message(message_context, subscriber)
+            message_body = self.prepare_message(
+                message_context, subscriber, topic_attributes=context.topic_attributes
+            )
             kwargs = self.get_sqs_kwargs(msg_context=message_context, subscriber=subscriber)
         except Exception:
             LOG.exception("An internal error occurred while trying to format the message for SQS")
@@ -338,7 +367,9 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
         # TODO: check ID, SNS rules are not the same as SQS, so maybe generate the entries ID
         failure_map = {}
         for index, message_ctx in enumerate(context.messages):
-            message_body = self.prepare_message(message_ctx, subscriber)
+            message_body = self.prepare_message(
+                message_ctx, subscriber, topic_attributes=context.topic_attributes
+            )
             sqs_kwargs = self.get_sqs_kwargs(message_ctx, subscriber)
             entry = {"Id": f"sns-batch-{index}", "MessageBody": message_body, **sqs_kwargs}
             # in case of failure
@@ -408,7 +439,9 @@ class SqsBatchTopicPublisher(SqsTopicPublisher):
                     success=False,
                     topic_attributes=context.topic_attributes,
                 )
-                msg_body = self.prepare_message(message_ctx, subscriber)
+                msg_body = self.prepare_message(
+                    message_ctx, subscriber, topic_attributes=context.topic_attributes
+                )
                 kwargs = self.get_sqs_kwargs(message_ctx, subscriber)
 
                 sns_error_to_dead_letter_queue(
@@ -433,7 +466,9 @@ class HttpTopicPublisher(TopicPublisher):
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         message_context = context.message
-        message_body = self.prepare_message(message_context, subscriber)
+        message_body = self.prepare_message(
+            message_context, subscriber, topic_attributes=context.topic_attributes
+        )
         try:
             message_headers = {
                 "Content-Type": "text/plain; charset=UTF-8",
@@ -507,7 +542,9 @@ class EmailJsonTopicPublisher(TopicPublisher):
         if endpoint := subscriber.get("Endpoint"):
             ses_client.verify_email_address(EmailAddress=endpoint)
             ses_client.verify_email_address(EmailAddress="admin@localstack.com")
-            message_body = self.prepare_message(context.message, subscriber)
+            message_body = self.prepare_message(
+                context.message, subscriber, topic_attributes=context.topic_attributes
+            )
             ses_client.send_email(
                 Source="admin@localstack.com",
                 Message={
@@ -526,7 +563,12 @@ class EmailTopicPublisher(EmailJsonTopicPublisher):
     See https://docs.aws.amazon.com/sns/latest/dg/sns-email-notifications.html
     """
 
-    def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription):
+    def prepare_message(
+        self,
+        message_context: SnsMessage,
+        subscriber: SnsSubscription,
+        topic_attributes: dict[str, str] = None,
+    ) -> str:
         return message_context.message_content(subscriber["Protocol"])
 
 
@@ -545,7 +587,9 @@ class ApplicationTopicPublisher(TopicPublisher):
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
         endpoint_arn = subscriber["Endpoint"]
-        message = self.prepare_message(context.message, subscriber)
+        message = self.prepare_message(
+            context.message, subscriber, topic_attributes=context.topic_attributes
+        )
         cache = context.store.platform_endpoint_messages.setdefault(endpoint_arn, [])
         cache.append(message)
 
@@ -563,8 +607,11 @@ class ApplicationTopicPublisher(TopicPublisher):
         )
 
     def prepare_message(
-        self, message_context: SnsMessage, subscriber: SnsSubscription
-    ) -> Union[str, Dict]:
+        self,
+        message_context: SnsMessage,
+        subscriber: SnsSubscription,
+        topic_attributes: dict[str, str] = None,
+    ) -> dict[str, str]:
         endpoint_arn = subscriber["Endpoint"]
         platform_type = get_platform_type_from_endpoint_arn(endpoint_arn)
         return {
@@ -597,7 +644,9 @@ class SmsTopicPublisher(TopicPublisher):
     """
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
-        event = self.prepare_message(context.message, subscriber)
+        event = self.prepare_message(
+            context.message, subscriber, topic_attributes=context.topic_attributes
+        )
         context.store.sms_messages.append(event)
         LOG.info(
             "Delivering SMS message to %s: %s from topic: %s",
@@ -618,7 +667,12 @@ class SmsTopicPublisher(TopicPublisher):
         }
         store_delivery_log(context.message, subscriber, success=True, delivery=delivery)
 
-    def prepare_message(self, message_context: SnsMessage, subscriber: SnsSubscription) -> dict:
+    def prepare_message(
+        self,
+        message_context: SnsMessage,
+        subscriber: SnsSubscription,
+        topic_attributes: dict[str, str] = None,
+    ) -> dict:
         return {
             "PhoneNumber": subscriber["Endpoint"],
             "TopicArn": subscriber["TopicArn"],
@@ -640,7 +694,9 @@ class FirehoseTopicPublisher(TopicPublisher):
     """
 
     def _publish(self, context: SnsPublishContext, subscriber: SnsSubscription):
-        message_body = self.prepare_message(context.message, subscriber)
+        message_body = self.prepare_message(
+            context.message, subscriber, topic_attributes=context.topic_attributes
+        )
         try:
             region = extract_region_from_arn(subscriber["Endpoint"])
             if role_arn := subscriber.get("SubscriptionRoleArn"):
@@ -822,7 +878,45 @@ def send_message_to_gcm(
         )
 
 
-def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscription) -> str:
+def compute_canonical_string(message: dict, notification_type: str) -> str:
+    """
+    The notification message signature is computed using the SHA1withRSA algorithm on a "canonical string" – a UTF-8
+    string which observes certain conventions including the sort order of included fields. (Please note that any
+    deviation in the construction of the message string described below such as excluding a field, including an extra
+    space or changing sort order will result in a different validation signature which will not match the pre-computed
+    message signature.)
+    See https://docs.aws.amazon.com/sns/latest/dg/sns-verify-signature-of-message.html
+    """
+    # create the canonical string
+    if notification_type == "Notification":
+        fields = ["Message", "MessageId", "Subject", "Timestamp", "TopicArn", "Type"]
+    elif notification_type in ("SubscriptionConfirmation", "UnsubscriptionConfirmation"):
+        fields = ["Message", "MessageId", "SubscribeURL", "Timestamp", "Token", "TopicArn", "Type"]
+    else:
+        return ""
+
+    # create the canonical string
+    string_to_sign = "".join([f"{f}\n{message[f]}\n" for f in fields if f in message])
+    return string_to_sign
+
+
+def get_message_signature(canonical_string: str, signature_version: str) -> str:
+    chosen_hash = hashes.SHA256() if signature_version == "2" else hashes.SHA1()
+    message_signature = SNS_SERVER_PRIVATE_KEY.sign(
+        to_bytes(canonical_string),
+        padding=padding.PKCS1v15(),
+        algorithm=chosen_hash,
+    )
+    # base64 encode the signature
+    encoded_signature = base64.b64encode(message_signature)
+    return to_str(encoded_signature)
+
+
+def create_sns_message_body(
+    message_context: SnsMessage,
+    subscriber: SnsSubscription,
+    topic_attributes: dict[str, str] = None,
+) -> str:
     message_type = message_context.type or "Notification"
     protocol = subscriber["Protocol"]
     message_content = message_context.message_content(protocol)
@@ -830,7 +924,7 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
     if message_type == "Notification" and is_raw_message_delivery(subscriber):
         return message_content
 
-    external_url = external_service_url()
+    external_url = external_service_url().rstrip("/")
 
     data = {
         "Type": message_type,
@@ -839,21 +933,6 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
         "Message": message_content,
         "Timestamp": timestamp_millis(),
     }
-    # FIFO topics do not add the signature in the message
-    if not subscriber.get("TopicArn", "").endswith(".fifo"):
-        region_name = extract_region_from_arn(subscriber["SubscriptionArn"])
-        data.update(
-            {
-                "SignatureVersion": "1",
-                # TODO Add a more sophisticated solution with an actual signature
-                #  check KMS for providing real cert and how to serve them
-                # Hardcoded
-                "Signature": "EXAMPLEpH+..",
-                "SigningCertURL": f"https://sns.{region_name}.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem",
-            }
-        )
-    else:
-        data["SequenceNumber"] = message_context.sequencer_number
 
     if message_type == "Notification":
         unsubscribe_url = create_unsubscribe_url(external_url, subscriber["SubscriptionArn"])
@@ -870,6 +949,23 @@ def create_sns_message_body(message_context: SnsMessage, subscriber: SnsSubscrip
 
     if message_context.message_attributes:
         data["MessageAttributes"] = prepare_message_attributes(message_context.message_attributes)
+
+    # FIFO topics do not add the signature in the message
+    if not subscriber.get("TopicArn", "").endswith(".fifo"):
+        signature_version = (
+            topic_attributes.get("signature_version", "1") if topic_attributes else "1"
+        )
+        canonical_string = compute_canonical_string(data, message_type)
+        signature = get_message_signature(canonical_string, signature_version=signature_version)
+        data.update(
+            {
+                "SignatureVersion": signature_version,
+                "Signature": signature,
+                "SigningCertURL": f"{external_url}{sns_constants.SNS_CERT_ENDPOINT}",
+            }
+        )
+    else:
+        data["SequenceNumber"] = message_context.sequencer_number
 
     return json.dumps(data)
 

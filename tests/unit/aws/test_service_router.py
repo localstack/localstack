@@ -7,7 +7,7 @@ from botocore.awsrequest import AWSRequest, create_request_object
 from botocore.config import Config
 from botocore.model import OperationModel, ServiceModel, Shape, StructureShape
 
-from localstack.aws.protocol.service_router import determine_aws_service_name, get_service_catalog
+from localstack.aws.protocol.service_router import determine_aws_service_model, get_service_catalog
 from localstack.http import Request
 from localstack.utils.run import to_str
 
@@ -24,6 +24,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
             # Exclude all operations for the following, currently _not_ supported services
             if service.service_name in [
                 "bedrock",
+                "bedrock-agent",
+                "bedrock-agent-runtime",
                 "bedrock-runtime",
                 "chime",
                 "chime-sdk-identity",
@@ -50,20 +52,25 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "lex-runtime",
                 "lexv2-models",
                 "lexv2-runtime",
+                "marketplace-catalog",
+                "marketplace-deployment",
                 "personalize",
                 "personalize-events",
                 "personalize-runtime",
                 "pinpoint-sms-voice",
+                "qconnect",
                 "sagemaker-edge",
                 "sagemaker-featurestore-runtime",
                 "sagemaker-metrics",
                 "sms-voice",
                 "sso",
                 "sso-oidc",
+                "wisdom",
                 "workdocs",
             ]:
                 yield pytest.param(
                     service,
+                    service.protocol,
                     service.operation_model(operation_name),
                     marks=pytest.mark.xfail(
                         reason=f"{service.service_name} is currently not supported by the service router"
@@ -80,13 +87,14 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
             ):
                 yield pytest.param(
                     service,
+                    service.protocol,
                     service.operation_model(operation_name),
                     marks=pytest.mark.skip(
                         reason=f"{service.service_name} may differ due to ambiguities in the service specs"
                     ),
                 )
             else:
-                yield service, service.operation_model(operation_name)
+                yield service, service.protocol, service.operation_model(operation_name)
 
 
 def _botocore_request_to_localstack_request(request_object: AWSRequest) -> Request:
@@ -113,6 +121,7 @@ _dummy_values = {
     "integer": 0,
     "long": 0,
     "timestamp": datetime.now(),
+    "boolean": True,
 }
 
 
@@ -140,18 +149,24 @@ def _generate_test_name(param: Any):
 
 
 @pytest.mark.parametrize(
-    "service, operation",
+    "service, protocol, operation",
     _collect_operations(),
     ids=_generate_test_name,
 )
 def test_service_router_works_for_every_service(
-    service: ServiceModel, operation: OperationModel, caplog, aws_client_factory
+    service: ServiceModel, protocol: str, operation: OperationModel, caplog, aws_client_factory
 ):
     caplog.set_level("CRITICAL", "botocore")
 
+    # if we test the routing to the internalized sqs json, we want to use the service name "sqs-json" in order to
+    # instruct botocore to load the internalized spec instead of the default (query)
+    service_name = (
+        "sqs-json" if service.service_name == "sqs" and protocol == "json" else service.service_name
+    )
+
     # Create a dummy request for the service router
     client = aws_client_factory.get_client(
-        service.service_name,
+        service_name,
         config=Config(
             connect_timeout=1_000,
             read_timeout=1_000,
@@ -180,52 +195,56 @@ def test_service_router_works_for_every_service(
     request: Request = _botocore_request_to_localstack_request(request_object)
 
     # Execute the service router
-    detected_service_name = determine_aws_service_name(request)
+    detected_service_model = determine_aws_service_model(request)
 
     # Make sure the detected service is the same as the one we generated the request for
-    assert detected_service_name == service.service_name
+    assert detected_service_model.service_name == service.service_name
+    assert detected_service_model.protocol == service.protocol
 
 
 def test_endpoint_prefix_based_routing():
     # TODO could be generalized using endpoint resolvers and replacing "amazonaws.com" with "localhost.localstack.cloud"
-    detected_service_name = determine_aws_service_name(
+    detected_service_model = determine_aws_service_model(
         Request(method="GET", path="/", headers={"Host": "kms.localhost.localstack.cloud"})
     )
-    assert detected_service_name == "kms"
+    assert detected_service_model.service_name == "kms"
 
-    detected_service_name = determine_aws_service_name(
+    detected_service_model = determine_aws_service_model(
         Request(
             method="POST",
             path="/app-instances",
             headers={"Host": "identity-chime.localhost.localstack.cloud"},
         )
     )
-    assert detected_service_name == "chime-sdk-identity"
+    assert detected_service_model.service_name == "chime-sdk-identity"
 
 
 def test_endpoint_prefix_based_routing_s3_virtual_host():
-    detected_service_name = determine_aws_service_name(
+    detected_service_model = determine_aws_service_model(
         Request(method="GET", path="/", headers={"Host": "pictures.s3.localhost.localstack.cloud"})
     )
-    assert detected_service_name == "s3"
+    assert detected_service_model.service_name == "s3"
 
-    detected_service_name = determine_aws_service_name(
+    detected_service_model = determine_aws_service_model(
         Request(
             method="POST",
             path="/app-instances",
             headers={"Host": "kms.s3.localhost.localstack.cloud"},
         )
     )
-    assert detected_service_name == "s3"
+    assert detected_service_model.service_name == "s3"
 
 
-def test_endpoint_prefix_based_not_short_circuit_for_sqs():
-    detected_service_name = determine_aws_service_name(
+def test_endpoint_prefix_based_routing_for_sqs():
+    # test without content type
+    detected_service_model = determine_aws_service_model(
         Request(method="GET", path="/", headers={"Host": "sqs.localhost.localstack.cloud"})
     )
-    assert detected_service_name == "sqs-query"
+    assert detected_service_model.service_name == "sqs"
+    assert detected_service_model.protocol == "query"
 
-    detected_service_name = determine_aws_service_name(
+    # test explicitly with JSON
+    detected_service_model = determine_aws_service_model(
         Request(
             method="GET",
             path="/",
@@ -235,4 +254,5 @@ def test_endpoint_prefix_based_not_short_circuit_for_sqs():
             },
         )
     )
-    assert detected_service_name == "sqs"
+    assert detected_service_model.service_name == "sqs"
+    assert detected_service_model.protocol == "json"

@@ -7,14 +7,13 @@ from operator import itemgetter
 import pytest
 import requests
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.apigateway import Resources
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -47,6 +46,7 @@ OAS_30_CIRCULAR_REF_WITH_REQUEST_BODY = os.path.join(
     PARENT_DIR, "../../files/openapi.spec.circular-ref-with-request-body.json"
 )
 OAS_30_STAGE_VARIABLES = os.path.join(PARENT_DIR, "../../files/openapi.spec.stage-variables.json")
+OAS30_HTTP_METHOD_INT = os.path.join(PARENT_DIR, "../../files/openapi-http-method-integration.json")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "../lambda_/functions/lambda_echo.py")
 
 
@@ -177,7 +177,9 @@ def apigw_create_rest_api(aws_client):
 
 
 @pytest.fixture(scope="class")
-def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_su_role):
+def apigateway_placeholder_authorizer_lambda_invocation_arn(
+    aws_client, region_name, lambda_su_role
+):
     """
     Using this fixture to create only one lambda in AWS to be used for every test, as we need a real lambda ARN
     to be able to import an API. We need a class scoped fixture here, so the code is pulled from
@@ -227,7 +229,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_s
         response = retry(_create_function, retries=3, sleep=4)
 
         lambda_invocation_arn = arns.apigateway_invocations_arn(
-            response["FunctionArn"], TEST_AWS_REGION_NAME
+            response["FunctionArn"], region_name
         )
 
         yield lambda_invocation_arn
@@ -646,6 +648,7 @@ class TestApiGatewayImportRestApi:
         paths=[
             "$.resources.items..resourceMethods.POST",
             # TODO: this is really weird, after importing, AWS returns them empty?
+            "$..rootResourceId",  # TODO: newly added
         ]
     )
     @markers.aws.validated
@@ -754,3 +757,34 @@ class TestApiGatewayImportRestApi:
             assert res.ok
 
         retry(call_api, retries=5, sleep=2)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.resources.items..resourceMethods.GET",
+            "$.resources.items..resourceMethods.OPTIONS",
+        ]
+    )
+    def test_import_with_http_method_integration(
+        self,
+        import_apigw,
+        aws_client,
+        apigw_snapshot_imported_resources,
+        apigateway_placeholder_authorizer_lambda_invocation_arn,
+        snapshot,
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("uri"))
+        spec_file = load_file(OAS30_HTTP_METHOD_INT)
+        spec_file = spec_file.replace(
+            "${lambda_invocation_arn}", apigateway_placeholder_authorizer_lambda_invocation_arn
+        )
+        import_resp, root_id = import_apigw(body=spec_file, failOnWarnings=True)
+        rest_api_id = import_resp["id"]
+
+        response = aws_client.apigateway.get_resources(restApiId=rest_api_id)
+        response["items"] = sorted(response["items"], key=itemgetter("path"))
+        snapshot.match("resources", response)
+
+        # this fixture will iterate over every resource and match its method, methodResponse, integration and
+        # integrationResponse
+        apigw_snapshot_imported_resources(rest_api_id=rest_api_id, resources=response)

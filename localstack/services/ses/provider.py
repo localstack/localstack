@@ -201,6 +201,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         event_destination: EventDestination,
+        **kwargs,
     ) -> CreateConfigurationSetEventDestinationResponse:
         # send SES test event if an SNS topic is attached
         sns_topic_arn = event_destination.get("SNSDestination", {}).get("TopicARN")
@@ -223,7 +224,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
     @handler("DeleteConfigurationSet")
     def delete_configuration_set(
-        self, context: RequestContext, configuration_set_name: ConfigurationSetName
+        self, context: RequestContext, configuration_set_name: ConfigurationSetName, **kwargs
     ) -> DeleteConfigurationSetResponse:
         # not implemented in moto
         # TODO: contribute upstream?
@@ -243,6 +244,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         event_destination_name: EventDestinationName,
+        **kwargs,
     ) -> DeleteConfigurationSetEventDestinationResponse:
         # not implemented in moto
         # TODO: contribute upstream?
@@ -272,7 +274,11 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
     @handler("ListTemplates")
     def list_templates(
-        self, context: RequestContext, next_token: NextToken = None, max_items: MaxItems = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        max_items: MaxItems = None,
+        **kwargs,
     ) -> ListTemplatesResponse:
         backend = get_ses_backend(context)
         for template in backend.list_templates():
@@ -282,7 +288,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
     @handler("DeleteTemplate")
     def delete_template(
-        self, context: RequestContext, template_name: TemplateName
+        self, context: RequestContext, template_name: TemplateName, **kwargs
     ) -> DeleteTemplateResponse:
         backend = get_ses_backend(context)
         if template_name in backend.templates:
@@ -291,7 +297,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
     @handler("GetIdentityVerificationAttributes")
     def get_identity_verification_attributes(
-        self, context: RequestContext, identities: IdentityList
+        self, context: RequestContext, identities: IdentityList, **kwargs
     ) -> GetIdentityVerificationAttributesResponse:
         attributes: VerificationAttributes = {}
 
@@ -323,6 +329,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         return_path_arn: AmazonResourceName = None,
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
+        **kwargs,
     ) -> SendEmailResponse:
         if tags:
             for tag in tags:
@@ -399,6 +406,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
         template_arn: AmazonResourceName = None,
+        **kwargs,
     ) -> SendTemplatedEmailResponse:
         response = call_moto(context)
 
@@ -448,6 +456,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         return_path_arn: AmazonResourceName = None,
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
+        **kwargs,
     ) -> SendRawEmailResponse:
         raw_data = to_str(raw_message["Data"])
 
@@ -500,6 +509,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         original_rule_set_name: ReceiptRuleSetName,
+        **kwargs,
     ) -> CloneReceiptRuleSetResponse:
         backend = get_ses_backend(context)
 

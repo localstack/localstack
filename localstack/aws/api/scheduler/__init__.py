@@ -471,6 +471,7 @@ class SchedulerApi:
         schedule_expression_timezone: ScheduleExpressionTimezone = None,
         start_date: StartDate = None,
         state: ScheduleState = None,
+        **kwargs
     ) -> CreateScheduleOutput:
         raise NotImplementedError
 
@@ -481,6 +482,7 @@ class SchedulerApi:
         name: ScheduleGroupName,
         client_token: ClientToken = None,
         tags: TagList = None,
+        **kwargs
     ) -> CreateScheduleGroupOutput:
         raise NotImplementedError
 
@@ -491,24 +493,29 @@ class SchedulerApi:
         name: Name,
         client_token: ClientToken = None,
         group_name: ScheduleGroupName = None,
+        **kwargs
     ) -> DeleteScheduleOutput:
         raise NotImplementedError
 
     @handler("DeleteScheduleGroup")
     def delete_schedule_group(
-        self, context: RequestContext, name: ScheduleGroupName, client_token: ClientToken = None
+        self,
+        context: RequestContext,
+        name: ScheduleGroupName,
+        client_token: ClientToken = None,
+        **kwargs
     ) -> DeleteScheduleGroupOutput:
         raise NotImplementedError
 
     @handler("GetSchedule")
     def get_schedule(
-        self, context: RequestContext, name: Name, group_name: ScheduleGroupName = None
+        self, context: RequestContext, name: Name, group_name: ScheduleGroupName = None, **kwargs
     ) -> GetScheduleOutput:
         raise NotImplementedError
 
     @handler("GetScheduleGroup")
     def get_schedule_group(
-        self, context: RequestContext, name: ScheduleGroupName
+        self, context: RequestContext, name: ScheduleGroupName, **kwargs
     ) -> GetScheduleGroupOutput:
         raise NotImplementedError
 
@@ -519,6 +526,7 @@ class SchedulerApi:
         max_results: MaxResults = None,
         name_prefix: ScheduleGroupNamePrefix = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListScheduleGroupsOutput:
         raise NotImplementedError
 
@@ -531,24 +539,25 @@ class SchedulerApi:
         name_prefix: NamePrefix = None,
         next_token: NextToken = None,
         state: ScheduleState = None,
+        **kwargs
     ) -> ListSchedulesOutput:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: TagResourceArn
+        self, context: RequestContext, resource_arn: TagResourceArn, **kwargs
     ) -> ListTagsForResourceOutput:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: TagResourceArn, tags: TagList
+        self, context: RequestContext, resource_arn: TagResourceArn, tags: TagList, **kwargs
     ) -> TagResourceOutput:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: TagResourceArn, tag_keys: TagKeyList
+        self, context: RequestContext, resource_arn: TagResourceArn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceOutput:
         raise NotImplementedError
 
@@ -569,5 +578,6 @@ class SchedulerApi:
         schedule_expression_timezone: ScheduleExpressionTimezone = None,
         start_date: StartDate = None,
         state: ScheduleState = None,
+        **kwargs
     ) -> UpdateScheduleOutput:
         raise NotImplementedError

@@ -1,0 +1,23 @@
+{
+  "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDLQ::test_dead_letter_queue": {
+    "last_validated_date": "2023-02-27T15:00:54+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
+    "last_validated_date": "2023-08-07T15:39:40+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload0]": {
+    "last_validated_date": "2023-03-22T23:15:17+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload1]": {
+    "last_validated_date": "2023-03-22T23:15:20+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_lambda_destination_default_retries": {
+    "last_validated_date": "2023-03-22T23:18:52+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_maxeventage": {
+    "last_validated_date": "2023-03-22T17:52:05+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_retries": {
+    "last_validated_date": "2023-03-22T17:50:18+00:00"
+  }
+}

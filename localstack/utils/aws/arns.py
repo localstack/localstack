@@ -176,6 +176,11 @@ def cloudwatch_alarm_arn(alarm_name: str, account_id: str, region_name: str) -> 
     return _resource_arn(alarm_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def cloudwatch_dashboard_arn(alarm_name: str, account_id: str, region_name: str) -> str:
+    pattern = "arn:aws:cloudwatch::%s:dashboard/%s"
+    return _resource_arn(alarm_name, pattern, account_id=account_id, region_name=region_name)
+
+
 #
 # Logs
 #

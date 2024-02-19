@@ -166,7 +166,7 @@ class PortMappings:
                 else:
                     self.add(port[0] + i, mapped, protocol)
             return
-        if port is None or int(port) <= 0:
+        if port is None or int(port) < 0:
             raise Exception(f"Unable to add mapping for invalid port: {port}")
         if self.contains(port, protocol):
             return
@@ -242,6 +242,14 @@ class PortMappings:
     def to_dict(self) -> Dict[str, Union[Tuple[str, Union[int, List[int]]], int]]:
         bind_address = self.bind_host or ""
 
+        def bind_port(bind_address, host_port):
+            if host_port == 0:
+                return None
+            elif bind_address:
+                return (bind_address, host_port)
+            else:
+                return host_port
+
         def entry(k, v):
             from_range, protocol = k
             to_range = v
@@ -258,7 +266,7 @@ class PortMappings:
             return [
                 (
                     f"{container_port}{protocol_suffix}",
-                    (bind_address, host_port) if bind_address else host_port,
+                    bind_port(bind_address, host_port),
                 )
                 for container_port, host_port in zip(
                     range(to_range[0], to_range[1] + 1), range(from_range[0], from_range[1] + 1)
@@ -726,13 +734,18 @@ class ContainerClient(metaclass=ABCMeta):
 
     @abstractmethod
     def connect_container_to_network(
-        self, network_name: str, container_name_or_id: str, aliases: Optional[List] = None
+        self,
+        network_name: str,
+        container_name_or_id: str,
+        aliases: Optional[List] = None,
+        link_local_ips: List[str] = None,
     ) -> None:
         """
         Connects a container to a given network
         :param network_name: Network to connect the container to
         :param container_name_or_id: Container to connect to the network
         :param aliases: List of dns names the container should be available under in the network
+        :param link_local_ips: List of link-local (IPv4 or IPv6) addresses
         """
 
     @abstractmethod
@@ -888,6 +901,7 @@ class ContainerClient(metaclass=ABCMeta):
         platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
+        init: Optional[bool] = None,
     ) -> Tuple[bytes, bytes]:
         """Creates and runs a given docker container
 

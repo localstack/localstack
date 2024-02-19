@@ -63,6 +63,8 @@ from localstack.aws.api.route53resolver import (
     OutpostArn,
     OutpostInstanceType,
     Priority,
+    ProtocolList,
+    Qtype,
     ResolverEndpointDirection,
     ResolverEndpointType,
     ResolverQueryLogConfig,
@@ -112,6 +114,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         creator_request_id: CreatorRequestId,
         name: Name,
         tags: TagList = None,
+        **kwargs,
     ) -> CreateFirewallRuleGroupResponse:
         """Create a Firewall Rule Group."""
         store = self.get_store(context.account_id, context.region)
@@ -137,7 +140,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         return CreateFirewallRuleGroupResponse(FirewallRuleGroup=firewall_rule_group)
 
     def delete_firewall_rule_group(
-        self, context: RequestContext, firewall_rule_group_id: ResourceId
+        self, context: RequestContext, firewall_rule_group_id: ResourceId, **kwargs
     ) -> DeleteFirewallRuleGroupResponse:
         """Delete a Firewall Rule Group."""
         store = self.get_store(context.account_id, context.region)
@@ -147,7 +150,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         return DeleteFirewallRuleGroupResponse(FirewallRuleGroup=firewall_rule_group)
 
     def get_firewall_rule_group(
-        self, context: RequestContext, firewall_rule_group_id: ResourceId
+        self, context: RequestContext, firewall_rule_group_id: ResourceId, **kwargs
     ) -> GetFirewallRuleGroupResponse:
         """Get the details of a Firewall Rule Group."""
         store = self.get_store(context.account_id, context.region)
@@ -157,7 +160,11 @@ class Route53ResolverProvider(Route53ResolverApi):
         return GetFirewallRuleGroupResponse(FirewallRuleGroup=firewall_rule_group)
 
     def list_firewall_rule_groups(
-        self, context: RequestContext, max_results: MaxResults = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> ListFirewallRuleGroupsResponse:
         """List Firewall Rule Groups."""
         store = self.get_store(context.account_id, context.region)
@@ -174,6 +181,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         creator_request_id: CreatorRequestId,
         name: Name,
         tags: TagList = None,
+        **kwargs,
     ) -> CreateFirewallDomainListResponse:
         """Create a Firewall Domain List."""
         store = self.get_store(context.account_id, context.region)
@@ -198,7 +206,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         return CreateFirewallDomainListResponse(FirewallDomainList=firewall_domain_list)
 
     def delete_firewall_domain_list(
-        self, context: RequestContext, firewall_domain_list_id: ResourceId
+        self, context: RequestContext, firewall_domain_list_id: ResourceId, **kwargs
     ) -> DeleteFirewallDomainListResponse:
         """Delete a Firewall Domain List."""
         store = self.get_store(context.account_id, context.region)
@@ -208,7 +216,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         return DeleteFirewallDomainListResponse(FirewallDomainList=firewall_domain_list)
 
     def get_firewall_domain_list(
-        self, context: RequestContext, firewall_domain_list_id: ResourceId
+        self, context: RequestContext, firewall_domain_list_id: ResourceId, **kwargs
     ) -> GetFirewallDomainListResponse:
         """Get the details of a Firewall Domain List."""
         store = self.get_store(context.account_id, context.region)
@@ -218,7 +226,11 @@ class Route53ResolverProvider(Route53ResolverApi):
         return GetFirewallDomainListResponse(FirewallDomainList=firewall_domain_list)
 
     def list_firewall_domain_lists(
-        self, context: RequestContext, max_results: MaxResults = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> ListFirewallDomainListsResponse:
         """List all Firewall Domain Lists."""
         store = self.get_store(context.account_id, context.region)
@@ -235,6 +247,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         firewall_domain_list_id: ResourceId,
         operation: FirewallDomainUpdateOperation,
         domains: FirewallDomains,
+        **kwargs,
     ) -> UpdateFirewallDomainsResponse:
         """Update the domains in a Firewall Domain List."""
         store = self.get_store(context.account_id, context.region)
@@ -278,6 +291,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         firewall_domain_list_id: ResourceId,
         max_results: ListDomainMaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> ListFirewallDomainsResponse:
         """List the domains in a DNS Firewall domain list."""
         store = self.get_store(context.account_id, context.region)
@@ -300,6 +314,8 @@ class Route53ResolverProvider(Route53ResolverApi):
         block_override_domain: BlockOverrideDomain = None,
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
+        qtype: Qtype = None,
+        **kwargs,
     ) -> CreateFirewallRuleResponse:
         """Create a new firewall rule"""
         store = self.get_store(context.account_id, context.region)
@@ -329,6 +345,8 @@ class Route53ResolverProvider(Route53ResolverApi):
         context: RequestContext,
         firewall_rule_group_id: ResourceId,
         firewall_domain_list_id: ResourceId,
+        qtype: Qtype = None,
+        **kwargs,
     ) -> DeleteFirewallRuleResponse:
         """Delete a firewall rule"""
         store = self.get_store(context.account_id, context.region)
@@ -347,6 +365,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         action: Action = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> ListFirewallRulesResponse:
         """List all the firewall rules in a firewall rule group."""
         # TODO: implement priority and action filtering
@@ -374,6 +393,8 @@ class Route53ResolverProvider(Route53ResolverApi):
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
         name: Name = None,
+        qtype: Qtype = None,
+        **kwargs,
     ) -> UpdateFirewallRuleResponse:
         """Updates a firewall rule"""
         store = self.get_store(context.account_id, context.region)
@@ -409,6 +430,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         name: Name,
         mutation_protection: MutationProtectionStatus = None,
         tags: TagList = None,
+        **kwargs,
     ) -> AssociateFirewallRuleGroupResponse:
         """Associate a firewall rule group with a VPC."""
         store = self.get_store(context.account_id, context.region)
@@ -453,7 +475,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         )
 
     def disassociate_firewall_rule_group(
-        self, context: RequestContext, firewall_rule_group_association_id: ResourceId
+        self, context: RequestContext, firewall_rule_group_association_id: ResourceId, **kwargs
     ) -> DisassociateFirewallRuleGroupResponse:
         """Disassociate a DNS Firewall rule group from a VPC."""
         store = self.get_store(context.account_id, context.region)
@@ -465,7 +487,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         )
 
     def get_firewall_rule_group_association(
-        self, context: RequestContext, firewall_rule_group_association_id: ResourceId
+        self, context: RequestContext, firewall_rule_group_association_id: ResourceId, **kwargs
     ) -> GetFirewallRuleGroupAssociationResponse:
         """Returns the Firewall Rule Group Association that you specified."""
         store = self.get_store(context.account_id, context.region)
@@ -483,6 +505,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         priority: Priority = None,
         mutation_protection: MutationProtectionStatus = None,
         name: Name = None,
+        **kwargs,
     ) -> UpdateFirewallRuleGroupAssociationResponse:
         """Updates the specified Firewall Rule Group Association."""
         store = self.get_store(context.account_id, context.region)
@@ -511,6 +534,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         destination_arn: DestinationArn,
         creator_request_id: CreatorRequestId,
         tags: TagList = None,
+        **kwargs,
     ) -> CreateResolverQueryLogConfigResponse:
         store = self.get_store(context.account_id, context.region)
         validate_destination_arn(destination_arn)
@@ -544,10 +568,12 @@ class Route53ResolverProvider(Route53ResolverApi):
         direction: ResolverEndpointDirection,
         ip_addresses: IpAddressesRequest,
         name: Name = None,
-        tags: TagList = None,
-        resolver_endpoint_type: ResolverEndpointType = None,
         outpost_arn: OutpostArn = None,
         preferred_instance_type: OutpostInstanceType = None,
+        tags: TagList = None,
+        resolver_endpoint_type: ResolverEndpointType = None,
+        protocols: ProtocolList = None,
+        **kwargs,
     ) -> CreateResolverEndpointResponse:
         create_resolver_endpoint_resp = call_moto(context)
         create_resolver_endpoint_resp["ResolverEndpoint"][
@@ -556,7 +582,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         return create_resolver_endpoint_resp
 
     def get_resolver_query_log_config(
-        self, context: RequestContext, resolver_query_log_config_id: ResourceId
+        self, context: RequestContext, resolver_query_log_config_id: ResourceId, **kwargs
     ) -> GetResolverQueryLogConfigResponse:
         store = self.get_store(context.account_id, context.region)
         resolver_query_log_config: ResolverQueryLogConfig = store.get_resolver_query_log_config(
@@ -565,7 +591,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         return GetResolverQueryLogConfigResponse(ResolverQueryLogConfig=resolver_query_log_config)
 
     def delete_resolver_query_log_config(
-        self, context: RequestContext, resolver_query_log_config_id: ResourceId
+        self, context: RequestContext, resolver_query_log_config_id: ResourceId, **kwargs
     ) -> DeleteResolverQueryLogConfigResponse:
         store = self.get_store(context.account_id, context.region)
         resolver_query_log_config: ResolverQueryLogConfig = store.delete_resolver_query_log_config(
@@ -583,6 +609,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         filters: Filters = None,
         sort_by: SortByKey = None,
         sort_order: SortOrder = None,
+        **kwargs,
     ) -> ListResolverQueryLogConfigsResponse:
         store = self.get_store(context.account_id, context.region)
         resolver_query_log_configs = []
@@ -598,6 +625,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         context: RequestContext,
         resolver_query_log_config_id: ResourceId,
         resource_id: ResourceId,
+        **kwargs,
     ) -> AssociateResolverQueryLogConfigResponse:
         store = self.get_store(context.account_id, context.region)
         id = get_route53_resolver_query_log_config_association_id()
@@ -625,6 +653,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         context: RequestContext,
         resolver_query_log_config_id: ResourceId,
         resource_id: ResourceId,
+        **kwargs,
     ) -> DisassociateResolverQueryLogConfigResponse:
         store = self.get_store(context.account_id, context.region)
         resolver_query_log_config_association = store.delete_resolver_query_log_config_associations(
@@ -636,7 +665,10 @@ class Route53ResolverProvider(Route53ResolverApi):
         )
 
     def get_resolver_query_log_config_association(
-        self, context: RequestContext, resolver_query_log_config_association_id: ResourceId
+        self,
+        context: RequestContext,
+        resolver_query_log_config_association_id: ResourceId,
+        **kwargs,
     ) -> GetResolverQueryLogConfigAssociationResponse:
         store = self.get_store(context.account_id, context.region)
         resolver_query_log_config_association: ResolverQueryLogConfigAssociation = (
@@ -656,6 +688,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         filters: Filters = None,
         sort_by: SortByKey = None,
         sort_order: SortOrder = None,
+        **kwargs,
     ) -> ListResolverQueryLogConfigAssociationsResponse:
         store = self.get_store(context.account_id, context.region)
         resolver_query_log_config_associations = []
@@ -671,7 +704,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         )
 
     def get_firewall_config(
-        self, context: RequestContext, resource_id: ResourceId
+        self, context: RequestContext, resource_id: ResourceId, **kwargs
     ) -> GetFirewallConfigResponse:
         store = self.get_store(context.account_id, context.region)
         firewall_config = store.get_or_create_firewall_config(
@@ -684,6 +717,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         context: RequestContext,
         max_results: ListFirewallConfigsMaxResult = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> ListFirewallConfigsResponse:
         store = self.get_store(context.account_id, context.region)
         firewall_configs = []
@@ -700,6 +734,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         context: RequestContext,
         resource_id: ResourceId,
         firewall_fail_open: FirewallFailOpenStatus,
+        **kwargs,
     ) -> UpdateFirewallConfigResponse:
         store = self.get_store(context.account_id, context.region)
         backend = get_ec2_backend(context.account_id, context.region)

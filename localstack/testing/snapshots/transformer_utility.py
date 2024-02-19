@@ -5,15 +5,18 @@ from datetime import datetime
 from json import JSONDecodeError
 from typing import Optional, Pattern
 
-from localstack.aws.api.secretsmanager import CreateSecretResponse
-from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
-from localstack.testing.snapshots.transformer import (
+from localstack_snapshot.snapshots.transformer import (
+    PATTERN_ISO8601,
     JsonpathTransformer,
     KeyValueBasedTransformer,
     RegexTransformer,
     ResponseMetaDataTransformer,
     SortingTransformer,
+    TimestampTransformer,
 )
+
+from localstack.aws.api.secretsmanager import CreateSecretResponse
+from localstack.aws.api.stepfunctions import CreateStateMachineOutput, LongArn, StartExecutionOutput
 from localstack.utils.net import IP_REGEX
 
 LOG = logging.getLogger(__name__)
@@ -22,9 +25,7 @@ LOG = logging.getLogger(__name__)
 PATTERN_UUID = re.compile(
     r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 )
-PATTERN_ISO8601 = re.compile(
-    r"(?:[1-9]\d{3}-(?:(?:0[1-9]|1[0-2])-(?:0[1-9]|1\d|2[0-8])|(?:0[13-9]|1[0-2])-(?:29|30)|(?:0[13578]|1[02])-31)|(?:[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00)-02-29)T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-][01]\d:?([0-5]\d)?)"
-)
+
 PATTERN_ARN = re.compile(r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:(.*)")
 PATTERN_ARN_CHANGESET = re.compile(
     r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:changeSet/([^/]+)"
@@ -39,6 +40,7 @@ PATTERN_KEY_ARN = re.compile(
 )
 
 
+# TODO: split into generic/aws and put into lib
 class TransformerUtility:
     @staticmethod
     def key_value(
@@ -462,6 +464,7 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("ReceiptHandle"),
+            TransformerUtility.key_value("TaskHandle"),
             TransformerUtility.key_value(
                 "SenderId"
             ),  # TODO: flaky against AWS (e.g. /Attributes/SenderId '<sender-id:1>' → '<sender-id:2>' ... (expected → actual))
@@ -511,10 +514,14 @@ class TransformerUtility:
                 _sns_pem_file_token_transformer,
                 replacement="signing-cert-file",
             ),
+            # replaces the domain in "SigningCertURL" URL (KeyValue won't work as it replaces reference, and if
+            # replace_reference is False, then it replaces the whole key
+            RegexTransformer(
+                r"(?i)(?<=SigningCertURL[\"|']:\s[\"|'])(https?.*?)(?=/\SimpleNotificationService-)",
+                replacement="<cert-domain>",
+            ),
             # replaces the domain in "UnsubscribeURL" URL (KeyValue won't work as it replaces reference, and if
             # replace_reference is False, then it replaces the whole key
-            # this will be able to use a KeyValue based once we provide a certificate for message signing in SNS
-            # a match must be made case-insensitive because the key casing is different from lambda notifications
             RegexTransformer(
                 r"(?i)(?<=UnsubscribeURL[\"|']:\s[\"|'])(https?.*?)(?=/\?Action=Unsubscribe)",
                 replacement="<unsubscribe-domain>",
@@ -748,6 +755,19 @@ def _change_set_id_transformer(key: str, val: str) -> str:
 
 # TODO maybe move to a different place?
 # Basic Transformation - added automatically to each snapshot (in the fixture)
+SNAPSHOT_BASIC_TRANSFORMER_NEW = [
+    ResponseMetaDataTransformer(),
+    KeyValueBasedTransformer(
+        lambda k, v: (
+            v
+            if (isinstance(v, str) and k.lower().endswith("id") and re.match(PATTERN_UUID, v))
+            else None
+        ),
+        "uuid",
+    ),
+    TimestampTransformer(),
+]
+
 SNAPSHOT_BASIC_TRANSFORMER = [
     ResponseMetaDataTransformer(),
     KeyValueBasedTransformer(

@@ -5,6 +5,8 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 
 AbortRuleId = str
 AcceptRanges = str
+AccessKeyIdValue = str
+AccessPointAlias = bool
 AccessPointArn = str
 AccountId = str
 AllowQuotedRecordDelimiter = bool
@@ -13,6 +15,7 @@ AllowedMethod = str
 AllowedOrigin = str
 AnalyticsId = str
 BucketKeyEnabled = bool
+BucketLocationName = str
 BucketName = str
 BypassGovernanceRetention = bool
 CacheControl = str
@@ -45,6 +48,7 @@ DeleteMarker = bool
 DeleteMarkerVersionId = str
 Delimiter = str
 Description = str
+DirectoryBucketToken = str
 DisplayName = str
 ETag = str
 EmailAddress = str
@@ -84,10 +88,12 @@ KeyMarker = str
 KeyPrefixEquals = str
 LambdaFunctionArn = str
 Location = str
+LocationNameAsString = str
 LocationPrefix = str
 MFA = str
 Marker = str
 MaxAgeSeconds = int
+MaxDirectoryBuckets = int
 MaxKeys = int
 MaxParts = int
 MaxUploads = int
@@ -121,6 +127,7 @@ QuoteCharacter = str
 QuoteEscapeCharacter = str
 Range = str
 RecordDelimiter = str
+Region = str
 ReplaceKeyPrefixWith = str
 ReplaceKeyWith = str
 ReplicaKmsKeyID = str
@@ -139,6 +146,7 @@ SSECustomerKey = str
 SSECustomerKeyMD5 = str
 SSEKMSEncryptionContext = str
 SSEKMSKeyId = str
+SessionCredentialValue = str
 Setting = bool
 SkipValidation = bool
 StartAfter = str
@@ -174,6 +182,7 @@ X_Amz_Expires = int
 HttpMethod = str
 ResourceType = str
 MissingHeaderName = str
+KeyLength = str
 
 
 class AnalyticsS3ExportFileFormat(str):
@@ -205,6 +214,7 @@ class BucketLocationConstraint(str):
     ap_northeast_2 = "ap-northeast-2"
     ap_northeast_3 = "ap-northeast-3"
     ap_south_1 = "ap-south-1"
+    ap_south_2 = "ap-south-2"
     ap_southeast_1 = "ap-southeast-1"
     ap_southeast_2 = "ap-southeast-2"
     ap_southeast_3 = "ap-southeast-3"
@@ -215,6 +225,7 @@ class BucketLocationConstraint(str):
     eu_central_1 = "eu-central-1"
     eu_north_1 = "eu-north-1"
     eu_south_1 = "eu-south-1"
+    eu_south_2 = "eu-south-2"
     eu_west_1 = "eu-west-1"
     eu_west_2 = "eu-west-2"
     eu_west_3 = "eu-west-3"
@@ -225,14 +236,16 @@ class BucketLocationConstraint(str):
     us_gov_west_1 = "us-gov-west-1"
     us_west_1 = "us-west-1"
     us_west_2 = "us-west-2"
-    ap_south_2 = "ap-south-2"
-    eu_south_2 = "eu-south-2"
 
 
 class BucketLogsPermission(str):
     FULL_CONTROL = "FULL_CONTROL"
     READ = "READ"
     WRITE = "WRITE"
+
+
+class BucketType(str):
+    Directory = "Directory"
 
 
 class BucketVersioningStatus(str):
@@ -255,6 +268,10 @@ class CompressionType(str):
     NONE = "NONE"
     GZIP = "GZIP"
     BZIP2 = "BZIP2"
+
+
+class DataRedundancy(str):
+    SingleAvailabilityZone = "SingleAvailabilityZone"
 
 
 class DeleteMarkerReplicationStatus(str):
@@ -372,6 +389,10 @@ class JSONType(str):
     LINES = "LINES"
 
 
+class LocationType(str):
+    AvailabilityZone = "AvailabilityZone"
+
+
 class MFADelete(str):
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -446,6 +467,7 @@ class ObjectStorageClass(str):
     OUTPOSTS = "OUTPOSTS"
     GLACIER_IR = "GLACIER_IR"
     SNOW = "SNOW"
+    EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
 
 
 class ObjectVersionStorageClass(str):
@@ -458,6 +480,11 @@ class OptionalObjectAttributes(str):
 
 class OwnerOverride(str):
     Destination = "Destination"
+
+
+class PartitionDateSource(str):
+    EventTime = "EventTime"
+    DeliveryTime = "DeliveryTime"
 
 
 class Payer(str):
@@ -524,6 +551,11 @@ class ServerSideEncryption(str):
     aws_kms_dsse = "aws:kms:dsse"
 
 
+class SessionMode(str):
+    ReadOnly = "ReadOnly"
+    ReadWrite = "ReadWrite"
+
+
 class SseKmsEncryptedObjectsStatus(str):
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -540,6 +572,7 @@ class StorageClass(str):
     OUTPOSTS = "OUTPOSTS"
     GLACIER_IR = "GLACIER_IR"
     SNOW = "SNOW"
+    EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
 
 
 class StorageClassAnalysisSchemaVersion(str):
@@ -575,7 +608,7 @@ class Type(str):
 class BucketAlreadyExists(ServiceException):
     code: str = "BucketAlreadyExists"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 409
 
 
 class BucketAlreadyOwnedByYou(ServiceException):
@@ -619,13 +652,13 @@ class NoSuchUpload(ServiceException):
 class ObjectAlreadyInActiveTierError(ServiceException):
     code: str = "ObjectAlreadyInActiveTierError"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 403
 
 
 class ObjectNotInActiveTierError(ServiceException):
     code: str = "ObjectNotInActiveTierError"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 403
 
 
 class NoSuchLifecycleConfiguration(ServiceException):
@@ -884,6 +917,14 @@ class InvalidDigest(ServiceException):
     Content_MD5: Optional[ContentMD5]
 
 
+class KeyTooLongError(ServiceException):
+    code: str = "KeyTooLongError"
+    sender_fault: bool = False
+    status_code: int = 400
+    MaxSizeAllowed: Optional[KeyLength]
+    Size: Optional[KeyLength]
+
+
 AbortDate = datetime
 
 
@@ -997,6 +1038,11 @@ class Bucket(TypedDict, total=False):
     CreationDate: Optional[CreationDate]
 
 
+class BucketInfo(TypedDict, total=False):
+    DataRedundancy: Optional[DataRedundancy]
+    Type: Optional[BucketType]
+
+
 class NoncurrentVersionExpiration(TypedDict, total=False):
     NoncurrentDays: Optional[Days]
     NewerNoncurrentVersions: Optional[VersionCount]
@@ -1063,6 +1109,19 @@ class BucketLifecycleConfiguration(TypedDict, total=False):
     Rules: LifecycleRules
 
 
+class PartitionedPrefix(TypedDict, total=False):
+    PartitionDateSource: Optional[PartitionDateSource]
+
+
+class SimplePrefix(TypedDict, total=False):
+    pass
+
+
+class TargetObjectKeyFormat(TypedDict, total=False):
+    SimplePrefix: Optional[SimplePrefix]
+    PartitionedPrefix: Optional[PartitionedPrefix]
+
+
 class TargetGrant(TypedDict, total=False):
     Grantee: Optional[Grantee]
     Permission: Optional[BucketLogsPermission]
@@ -1075,6 +1134,7 @@ class LoggingEnabled(TypedDict, total=False):
     TargetBucket: TargetBucket
     TargetGrants: Optional[TargetGrants]
     TargetPrefix: TargetPrefix
+    TargetObjectKeyFormat: Optional[TargetObjectKeyFormat]
 
 
 class BucketLoggingStatus(TypedDict, total=False):
@@ -1294,8 +1354,15 @@ class CopyPartResult(TypedDict, total=False):
     ChecksumSHA256: Optional[ChecksumSHA256]
 
 
+class LocationInfo(TypedDict, total=False):
+    Type: Optional[LocationType]
+    Name: Optional[LocationNameAsString]
+
+
 class CreateBucketConfiguration(TypedDict, total=False):
     LocationConstraint: Optional[BucketLocationConstraint]
+    Location: Optional[LocationInfo]
+    Bucket: Optional[BucketInfo]
 
 
 class CreateBucketOutput(TypedDict, total=False):
@@ -1362,6 +1429,25 @@ class CreateMultipartUploadRequest(ServiceRequest):
     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
     ExpectedBucketOwner: Optional[AccountId]
     ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+
+
+SessionExpiration = datetime
+
+
+class SessionCredentials(TypedDict, total=False):
+    AccessKeyId: AccessKeyIdValue
+    SecretAccessKey: SessionCredentialValue
+    SessionToken: SessionCredentialValue
+    Expiration: SessionExpiration
+
+
+class CreateSessionOutput(TypedDict, total=False):
+    Credentials: SessionCredentials
+
+
+class CreateSessionRequest(ServiceRequest):
+    SessionMode: Optional[SessionMode]
+    Bucket: BucketName
 
 
 class DefaultRetention(TypedDict, total=False):
@@ -2227,6 +2313,11 @@ class GlacierJobParameters(TypedDict, total=False):
     Tier: Tier
 
 
+class HeadBucketOutput(TypedDict, total=False):
+    BucketRegion: Optional[BucketRegion]
+    BucketContentType: Optional[BucketContentType]
+
+
 class HeadBucketRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
@@ -2398,6 +2489,16 @@ class ListBucketMetricsConfigurationsRequest(ServiceRequest):
 class ListBucketsOutput(TypedDict, total=False):
     Owner: Optional[Owner]
     Buckets: Optional[Buckets]
+
+
+class ListDirectoryBucketsOutput(TypedDict, total=False):
+    Buckets: Optional[Buckets]
+    ContinuationToken: Optional[DirectoryBucketToken]
+
+
+class ListDirectoryBucketsRequest(ServiceRequest):
+    ContinuationToken: Optional[DirectoryBucketToken]
+    MaxDirectoryBuckets: Optional[MaxDirectoryBuckets]
 
 
 class MultipartUpload(TypedDict, total=False):
@@ -3222,11 +3323,6 @@ class WriteGetObjectResponseRequest(ServiceRequest):
     BucketKeyEnabled: Optional[BucketKeyEnabled]
 
 
-class HeadBucketOutput(TypedDict, total=False):
-    BucketRegion: Optional[BucketRegion]
-    BucketContentType: Optional[BucketContentType]
-
-
 class PostObjectRequest(ServiceRequest):
     Body: Optional[IO[Body]]
     Bucket: BucketName
@@ -3268,6 +3364,7 @@ class S3Api:
         upload_id: MultipartUploadId,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> AbortMultipartUploadOutput:
         raise NotImplementedError
 
@@ -3288,6 +3385,7 @@ class S3Api:
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
+        **kwargs
     ) -> CompleteMultipartUploadOutput:
         raise NotImplementedError
 
@@ -3336,6 +3434,7 @@ class S3Api:
         object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         expected_bucket_owner: AccountId = None,
         expected_source_bucket_owner: AccountId = None,
+        **kwargs
     ) -> CopyObjectOutput:
         raise NotImplementedError
 
@@ -3353,6 +3452,7 @@ class S3Api:
         grant_write_acp: GrantWriteACP = None,
         object_lock_enabled_for_bucket: ObjectLockEnabledForBucket = None,
         object_ownership: ObjectOwnership = None,
+        **kwargs
     ) -> CreateBucketOutput:
         raise NotImplementedError
 
@@ -3390,12 +3490,27 @@ class S3Api:
         object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
+        **kwargs
     ) -> CreateMultipartUploadOutput:
+        raise NotImplementedError
+
+    @handler("CreateSession")
+    def create_session(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        session_mode: SessionMode = None,
+        **kwargs
+    ) -> CreateSessionOutput:
         raise NotImplementedError
 
     @handler("DeleteBucket")
     def delete_bucket(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3406,24 +3521,33 @@ class S3Api:
         bucket: BucketName,
         id: AnalyticsId,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketCors")
     def delete_bucket_cors(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketEncryption")
     def delete_bucket_encryption(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketIntelligentTieringConfiguration")
     def delete_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3434,12 +3558,17 @@ class S3Api:
         bucket: BucketName,
         id: InventoryId,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketLifecycle")
     def delete_bucket_lifecycle(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3450,36 +3579,57 @@ class S3Api:
         bucket: BucketName,
         id: MetricsId,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketOwnershipControls")
     def delete_bucket_ownership_controls(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketPolicy")
     def delete_bucket_policy(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketReplication")
     def delete_bucket_replication(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketTagging")
     def delete_bucket_tagging(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketWebsite")
     def delete_bucket_website(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3494,6 +3644,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> DeleteObjectOutput:
         raise NotImplementedError
 
@@ -3505,6 +3656,7 @@ class S3Api:
         key: ObjectKey,
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> DeleteObjectTaggingOutput:
         raise NotImplementedError
 
@@ -3519,12 +3671,17 @@ class S3Api:
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
+        **kwargs
     ) -> DeleteObjectsOutput:
         raise NotImplementedError
 
     @handler("DeletePublicAccessBlock")
     def delete_public_access_block(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3535,12 +3692,17 @@ class S3Api:
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
+        **kwargs
     ) -> GetBucketAccelerateConfigurationOutput:
         raise NotImplementedError
 
     @handler("GetBucketAcl")
     def get_bucket_acl(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketAclOutput:
         raise NotImplementedError
 
@@ -3551,24 +3713,33 @@ class S3Api:
         bucket: BucketName,
         id: AnalyticsId,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketAnalyticsConfigurationOutput:
         raise NotImplementedError
 
     @handler("GetBucketCors")
     def get_bucket_cors(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketCorsOutput:
         raise NotImplementedError
 
     @handler("GetBucketEncryption")
     def get_bucket_encryption(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketEncryptionOutput:
         raise NotImplementedError
 
     @handler("GetBucketIntelligentTieringConfiguration")
     def get_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
     ) -> GetBucketIntelligentTieringConfigurationOutput:
         raise NotImplementedError
 
@@ -3579,30 +3750,47 @@ class S3Api:
         bucket: BucketName,
         id: InventoryId,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketInventoryConfigurationOutput:
         raise NotImplementedError
 
     @handler("GetBucketLifecycle")
     def get_bucket_lifecycle(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketLifecycleOutput:
         raise NotImplementedError
 
     @handler("GetBucketLifecycleConfiguration")
     def get_bucket_lifecycle_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketLifecycleConfigurationOutput:
         raise NotImplementedError
 
     @handler("GetBucketLocation")
     def get_bucket_location(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketLocationOutput:
         raise NotImplementedError
 
     @handler("GetBucketLogging")
     def get_bucket_logging(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketLoggingOutput:
         raise NotImplementedError
 
@@ -3613,66 +3801,107 @@ class S3Api:
         bucket: BucketName,
         id: MetricsId,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketMetricsConfigurationOutput:
         raise NotImplementedError
 
     @handler("GetBucketNotification")
     def get_bucket_notification(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> NotificationConfigurationDeprecated:
         raise NotImplementedError
 
     @handler("GetBucketNotificationConfiguration")
     def get_bucket_notification_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> NotificationConfiguration:
         raise NotImplementedError
 
     @handler("GetBucketOwnershipControls")
     def get_bucket_ownership_controls(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketOwnershipControlsOutput:
         raise NotImplementedError
 
     @handler("GetBucketPolicy")
     def get_bucket_policy(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketPolicyOutput:
         raise NotImplementedError
 
     @handler("GetBucketPolicyStatus")
     def get_bucket_policy_status(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketPolicyStatusOutput:
         raise NotImplementedError
 
     @handler("GetBucketReplication")
     def get_bucket_replication(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketReplicationOutput:
         raise NotImplementedError
 
     @handler("GetBucketRequestPayment")
     def get_bucket_request_payment(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketRequestPaymentOutput:
         raise NotImplementedError
 
     @handler("GetBucketTagging")
     def get_bucket_tagging(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketTaggingOutput:
         raise NotImplementedError
 
     @handler("GetBucketVersioning")
     def get_bucket_versioning(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketVersioningOutput:
         raise NotImplementedError
 
     @handler("GetBucketWebsite")
     def get_bucket_website(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetBucketWebsiteOutput:
         raise NotImplementedError
 
@@ -3701,6 +3930,7 @@ class S3Api:
         part_number: PartNumber = None,
         expected_bucket_owner: AccountId = None,
         checksum_mode: ChecksumMode = None,
+        **kwargs
     ) -> GetObjectOutput:
         raise NotImplementedError
 
@@ -3713,6 +3943,7 @@ class S3Api:
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetObjectAclOutput:
         raise NotImplementedError
 
@@ -3731,6 +3962,7 @@ class S3Api:
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetObjectAttributesOutput:
         raise NotImplementedError
 
@@ -3743,12 +3975,17 @@ class S3Api:
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetObjectLegalHoldOutput:
         raise NotImplementedError
 
     @handler("GetObjectLockConfiguration")
     def get_object_lock_configuration(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetObjectLockConfigurationOutput:
         raise NotImplementedError
 
@@ -3761,6 +3998,7 @@ class S3Api:
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetObjectRetentionOutput:
         raise NotImplementedError
 
@@ -3773,6 +4011,7 @@ class S3Api:
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
+        **kwargs
     ) -> GetObjectTaggingOutput:
         raise NotImplementedError
 
@@ -3784,18 +4023,27 @@ class S3Api:
         key: ObjectKey,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetObjectTorrentOutput:
         raise NotImplementedError
 
     @handler("GetPublicAccessBlock")
     def get_public_access_block(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> GetPublicAccessBlockOutput:
         raise NotImplementedError
 
     @handler("HeadBucket")
     def head_bucket(
-        self, context: RequestContext, bucket: BucketName, expected_bucket_owner: AccountId = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> HeadBucketOutput:
         raise NotImplementedError
 
@@ -3818,6 +4066,7 @@ class S3Api:
         part_number: PartNumber = None,
         expected_bucket_owner: AccountId = None,
         checksum_mode: ChecksumMode = None,
+        **kwargs
     ) -> HeadObjectOutput:
         raise NotImplementedError
 
@@ -3828,12 +4077,17 @@ class S3Api:
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> ListBucketAnalyticsConfigurationsOutput:
         raise NotImplementedError
 
     @handler("ListBucketIntelligentTieringConfigurations")
     def list_bucket_intelligent_tiering_configurations(
-        self, context: RequestContext, bucket: BucketName, continuation_token: Token = None
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+        **kwargs
     ) -> ListBucketIntelligentTieringConfigurationsOutput:
         raise NotImplementedError
 
@@ -3844,6 +4098,7 @@ class S3Api:
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> ListBucketInventoryConfigurationsOutput:
         raise NotImplementedError
 
@@ -3854,14 +4109,22 @@ class S3Api:
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> ListBucketMetricsConfigurationsOutput:
         raise NotImplementedError
 
     @handler("ListBuckets")
-    def list_buckets(
+    def list_buckets(self, context: RequestContext, **kwargs) -> ListBucketsOutput:
+        raise NotImplementedError
+
+    @handler("ListDirectoryBuckets")
+    def list_directory_buckets(
         self,
         context: RequestContext,
-    ) -> ListBucketsOutput:
+        continuation_token: DirectoryBucketToken = None,
+        max_directory_buckets: MaxDirectoryBuckets = None,
+        **kwargs
+    ) -> ListDirectoryBucketsOutput:
         raise NotImplementedError
 
     @handler("ListMultipartUploads")
@@ -3877,6 +4140,7 @@ class S3Api:
         upload_id_marker: UploadIdMarker = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
+        **kwargs
     ) -> ListMultipartUploadsOutput:
         raise NotImplementedError
 
@@ -3894,6 +4158,7 @@ class S3Api:
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
+        **kwargs
     ) -> ListObjectVersionsOutput:
         raise NotImplementedError
 
@@ -3910,6 +4175,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
+        **kwargs
     ) -> ListObjectsOutput:
         raise NotImplementedError
 
@@ -3928,6 +4194,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
+        **kwargs
     ) -> ListObjectsV2Output:
         raise NotImplementedError
 
@@ -3945,6 +4212,7 @@ class S3Api:
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
+        **kwargs
     ) -> ListPartsOutput:
         raise NotImplementedError
 
@@ -3956,6 +4224,7 @@ class S3Api:
         accelerate_configuration: AccelerateConfiguration,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3974,6 +4243,7 @@ class S3Api:
         grant_write: GrantWrite = None,
         grant_write_acp: GrantWriteACP = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3985,6 +4255,7 @@ class S3Api:
         id: AnalyticsId,
         analytics_configuration: AnalyticsConfiguration,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -3997,6 +4268,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4009,6 +4281,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4019,6 +4292,7 @@ class S3Api:
         bucket: BucketName,
         id: IntelligentTieringId,
         intelligent_tiering_configuration: IntelligentTieringConfiguration,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4030,6 +4304,7 @@ class S3Api:
         id: InventoryId,
         inventory_configuration: InventoryConfiguration,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4042,6 +4317,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: LifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4053,6 +4329,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: BucketLifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4065,6 +4342,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4076,6 +4354,7 @@ class S3Api:
         id: MetricsId,
         metrics_configuration: MetricsConfiguration,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4088,6 +4367,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4099,6 +4379,7 @@ class S3Api:
         notification_configuration: NotificationConfiguration,
         expected_bucket_owner: AccountId = None,
         skip_destination_validation: SkipValidation = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4110,6 +4391,7 @@ class S3Api:
         ownership_controls: OwnershipControls,
         content_md5: ContentMD5 = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4123,6 +4405,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4136,6 +4419,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         token: ObjectLockToken = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4148,6 +4432,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4160,6 +4445,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4173,6 +4459,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         mfa: MFA = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4185,6 +4472,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4229,6 +4517,7 @@ class S3Api:
         object_lock_retain_until_date: ObjectLockRetainUntilDate = None,
         object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> PutObjectOutput:
         raise NotImplementedError
 
@@ -4250,6 +4539,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> PutObjectAclOutput:
         raise NotImplementedError
 
@@ -4265,6 +4555,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> PutObjectLegalHoldOutput:
         raise NotImplementedError
 
@@ -4279,6 +4570,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> PutObjectLockConfigurationOutput:
         raise NotImplementedError
 
@@ -4295,6 +4587,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> PutObjectRetentionOutput:
         raise NotImplementedError
 
@@ -4310,6 +4603,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
+        **kwargs
     ) -> PutObjectTaggingOutput:
         raise NotImplementedError
 
@@ -4322,6 +4616,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -4336,6 +4631,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> RestoreObjectOutput:
         raise NotImplementedError
 
@@ -4355,6 +4651,7 @@ class S3Api:
         request_progress: RequestProgress = None,
         scan_range: ScanRange = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> SelectObjectContentOutput:
         raise NotImplementedError
 
@@ -4379,6 +4676,7 @@ class S3Api:
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
+        **kwargs
     ) -> UploadPartOutput:
         raise NotImplementedError
 
@@ -4405,6 +4703,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         expected_source_bucket_owner: AccountId = None,
+        **kwargs
     ) -> UploadPartCopyOutput:
         raise NotImplementedError
 
@@ -4452,11 +4751,12 @@ class S3Api:
         tag_count: TagCount = None,
         version_id: ObjectVersionId = None,
         bucket_key_enabled: BucketKeyEnabled = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("PostObject")
     def post_object(
-        self, context: RequestContext, bucket: BucketName, body: IO[Body] = None
+        self, context: RequestContext, bucket: BucketName, body: IO[Body] = None, **kwargs
     ) -> PostResponse:
         raise NotImplementedError

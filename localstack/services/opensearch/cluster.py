@@ -504,8 +504,7 @@ class EndpointProxy:
         )
 
     def unregister(self):
-        for rule in self.routing_rules:
-            ROUTER.remove_rule(rule)
+        ROUTER.remove(self.routing_rules)
         self.routing_rules.clear()
 
 

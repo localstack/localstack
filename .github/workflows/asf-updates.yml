@@ -21,15 +21,15 @@ jobs:
 
       - name: Set up Python 3.11
         id: setup-python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Cache LocalStack community dependencies (venv)
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('requirements-dev.txt') }}
 
       - name: Install dependencies
         run: make install-dev
@@ -62,6 +62,24 @@ jobs:
           echo "$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Update botocore pin
+        # only update the pin if we have updates in the ASF code
+        if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
+        run: |
+          source .venv/bin/activate
+          # determine botocore version in venv
+          BOTOCORE_VERSION=$(python -c "import botocore; print(botocore.__version__)");
+          echo "Pinning botocore to version $BOTOCORE_VERSION"
+          bin/release-helper.sh set-dep-ver botocore "==$BOTOCORE_VERSION"
+
+          # upgrade the requirements files only for the botocore package
+          pip install pip-tools
+          pip-compile --upgrade-package botocore --upgrade-package boto3 --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
+          pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra runtime -o requirements-runtime.txt pyproject.toml
+          pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra test -o requirements-test.txt pyproject.toml
+          pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra dev -o requirements-dev.txt pyproject.toml
+          pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra typehint -o requirements-typehint.txt pyproject.toml
+
       - name: Read PR markdown template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         id: template
@@ -79,7 +97,7 @@ jobs:
           replace: ${{ steps.check-for-changes.outputs.changed-services }}
 
       - name: Create PR
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         with:
           title: "Update ASF APIs"

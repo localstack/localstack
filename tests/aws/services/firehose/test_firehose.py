@@ -1,16 +1,19 @@
 import base64
 import json
+import time
 
 import pytest as pytest
 import requests
 from pytest_httpserver import HTTPServer
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
+
+from .conftest import get_firehose_iam_documents
 
 PROCESSOR_LAMBDA = """
 def handler(event, context):
@@ -31,11 +34,17 @@ def handler(event, context):
     return {"records": records}
 """
 
+TEST_MESSAGE = "Test-message-2948294kdlsie"
+
 
 @pytest.mark.parametrize("lambda_processor_enabled", [True, False])
 @markers.aws.unknown
-def test_firehose_http(
-    aws_client, lambda_processor_enabled: bool, create_lambda_function, httpserver: HTTPServer
+def test_kinesis_firehose_http(
+    aws_client,
+    lambda_processor_enabled: bool,
+    create_lambda_function,
+    httpserver: HTTPServer,
+    cleanups,
 ):
     httpserver.expect_request("").respond_with_data(b"", 200)
     http_endpoint = httpserver.url_for("/")
@@ -47,7 +56,6 @@ def test_firehose_http(
         ]["FunctionArn"]
 
     # define firehose configs
-    # records = []
     http_destination_update = {
         "EndpointConfiguration": {"Url": http_endpoint, "Name": "test_update"}
     }
@@ -87,6 +95,8 @@ def test_firehose_http(
         HttpEndpointDestinationConfiguration=http_destination,
     )
     assert stream
+    cleanups.append(lambda: firehose.delete_delivery_stream(DeliveryStreamName=stream_name))
+
     stream_description = firehose.describe_delivery_stream(DeliveryStreamName=stream_name)
     stream_description = stream_description["DeliveryStreamDescription"]
     destination_description = stream_description["Destinations"][0][
@@ -123,20 +133,21 @@ def test_firehose_http(
     ]
     assert destination_description["EndpointConfiguration"]["Name"] == "test_update"
 
-    # delete stream
-    stream = firehose.delete_delivery_stream(DeliveryStreamName=stream_name)
-    assert stream["ResponseMetadata"]["HTTPStatusCode"] == 200
-
 
 class TestFirehoseIntegration:
     @markers.skip_offline
     @markers.aws.unknown
     def test_kinesis_firehose_elasticsearch_s3_backup(
-        self, s3_bucket, kinesis_create_stream, cleanups, aws_client
+        self,
+        s3_bucket,
+        kinesis_create_stream,
+        cleanups,
+        aws_client,
+        account_id,
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
-        role_arn = f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:role/Firehose-Role"
+        role_arn = f"arn:aws:iam::{account_id}:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         es_create_response = aws_client.es.create_elasticsearch_domain(DomainName=domain_name)
         cleanups.append(lambda: aws_client.es.delete_elasticsearch_domain(DomainName=domain_name))
@@ -242,10 +253,11 @@ class TestFirehoseIntegration:
         monkeypatch,
         opensearch_endpoint_strategy,
         aws_client,
+        account_id,
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
-        role_arn = f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:role/Firehose-Role"
+        role_arn = f"arn:aws:iam::{account_id}:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
         try:
@@ -347,13 +359,13 @@ class TestFirehoseIntegration:
             aws_client.opensearch.delete_domain(DomainName=domain_name)
 
     @markers.aws.unknown
-    def test_delivery_stream_with_kinesis_as_source(
-        self, s3_bucket, kinesis_create_stream, cleanups, aws_client
+    def test_kinesis_firehose_kinesis_as_source(
+        self, s3_bucket, kinesis_create_stream, cleanups, aws_client, account_id
     ):
         bucket_arn = arns.s3_bucket_arn(s3_bucket)
         stream_name = f"test-stream-{short_uid()}"
         log_group_name = f"group{short_uid()}"
-        role_arn = f"arn:aws:iam::{TEST_AWS_ACCOUNT_ID}:role/Firehose-Role"
+        role_arn = f"arn:aws:iam::{account_id}:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
 
         kinesis_create_stream(StreamName=stream_name, ShardCount=2)
@@ -413,3 +425,110 @@ class TestFirehoseIntegration:
             return stream["DeliveryStreamDescription"]["DeliveryStreamStatus"] == "ACTIVE"
 
         assert poll_condition(check_stream_state, 45, 1)
+
+    @markers.aws.validated
+    def test_kinesis_firehose_kinesis_as_source_multiple_delivery_streams(
+        self,
+        s3_create_bucket,
+        kinesis_create_stream,
+        create_iam_role_with_policy,
+        wait_for_stream_ready,
+        firehose_create_delivery_stream,
+        read_s3_data,
+        snapshot,
+        aws_client,
+    ):
+        # create s3 bucket a and b
+        bucket_a_name = f"test-bucket-a-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_a_name)
+        bucket_a_arn = arns.s3_bucket_arn(bucket_a_name)
+        bucket_b_name = f"test-bucket-b-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_b_name)
+        bucket_b_arn = arns.s3_bucket_arn(bucket_b_name)
+
+        # create kinesis stream
+        stream_name = f"test-stream-{short_uid()}"
+        kinesis_create_stream(
+            StreamName=stream_name,
+            ShardCount=1,
+            StreamModeDetails={"StreamMode": "PROVISIONED"},
+        )
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        # create IAM role and policy
+        role_document, policy_document = get_firehose_iam_documents(
+            [bucket_a_arn, bucket_b_arn], stream_arn
+        )
+        role_arn = create_iam_role_with_policy(
+            RoleDefinition=role_document, PolicyDefinition=policy_document
+        )
+        # required for role propagation delay on aws
+        if is_aws_cloud():
+            time.sleep(10)
+        wait_for_stream_ready(stream_name)
+
+        # create log groupe for firehose delivery stream error logging
+        log_group_name = f"group-{short_uid()}"
+        aws_client.logs.create_log_group(
+            logGroupName=log_group_name,
+        )
+
+        # create firehose streams & subscribe to kinesis
+        delivery_stream_a_name = f"test-delivery-stream-a-{short_uid()}"
+        delivery_stream_b_name = f"test-delivery-stream-b-{short_uid()}"
+
+        for bucket_arn, delivery_stream_name in [
+            (bucket_a_arn, delivery_stream_a_name),
+            (bucket_b_arn, delivery_stream_b_name),
+        ]:
+            extended_s3_destination_configuration = {
+                "RoleARN": role_arn,
+                "BucketARN": bucket_arn,
+                "Prefix": "firehoseTest",
+                "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
+                "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 1},
+                "CompressionFormat": "UNCOMPRESSED",
+                "EncryptionConfiguration": {"NoEncryptionConfig": "NoEncryption"},
+                "CloudWatchLoggingOptions": {
+                    "Enabled": True,
+                    "LogGroupName": log_group_name,
+                    "LogStreamName": f"stream-{short_uid()}",
+                },
+            }
+
+            firehose_create_delivery_stream(
+                DeliveryStreamName=delivery_stream_name,
+                DeliveryStreamType="KinesisStreamAsSource",
+                KinesisStreamSourceConfiguration={
+                    "KinesisStreamARN": stream_arn,
+                    "RoleARN": role_arn,
+                },
+                ExtendedS3DestinationConfiguration=extended_s3_destination_configuration,
+            )
+
+        # put message to kinesis event stream
+        record_data = TEST_MESSAGE
+        aws_client.kinesis.put_record(
+            StreamName=stream_name,
+            Data=record_data,
+            PartitionKey="1",
+        )
+
+        # poll file from s3 buckets
+        s3_data = dict()
+        for bucket_name in [bucket_a_name, bucket_b_name]:
+            s3_data_bucket = read_s3_data(bucket_name, timeout=300)
+            assert len(s3_data_bucket.keys()) == 1
+            assert record_data == next(iter(s3_data_bucket.values()))
+            s3_data_bucket = {"folder-name": s3_data_bucket.popitem()[1]}
+            s3_data[bucket_name] = s3_data_bucket
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(bucket_a_name, "<bucket-a>"),
+                snapshot.transform.regex(bucket_b_name, "<bucket-b>"),
+            ]
+        )
+        snapshot.match("kinesis-event-stream-multiple-delivery-streams", s3_data)

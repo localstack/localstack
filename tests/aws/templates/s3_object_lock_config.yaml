@@ -1,0 +1,22 @@
+Resources:
+  LocalBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      ObjectLockEnabled: true
+      ObjectLockConfiguration:
+        ObjectLockEnabled: "Enabled"
+        Rule:
+          DefaultRetention:
+            Mode: "GOVERNANCE"
+            Days: 2
+
+  LocalBucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      ObjectLockEnabled: true
+
+Outputs:
+  LockConfigAllParameters:
+    Value: !Ref LocalBucket
+  LockConfigOnlyRequired:
+    Value: !Ref LocalBucket2

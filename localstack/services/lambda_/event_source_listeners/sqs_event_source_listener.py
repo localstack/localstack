@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Dict, List, Optional
 
+from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.services.lambda_.event_source_listeners.adapters import (
     EventSourceAdapter,
@@ -25,7 +26,7 @@ LOG = logging.getLogger(__name__)
 class SQSEventSourceListener(EventSourceListener):
     # SQS listener thread settings
     SQS_LISTENER_THREAD: Dict = {}
-    SQS_POLL_INTERVAL_SEC: float = 1
+    SQS_POLL_INTERVAL_SEC: float = config.LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC
 
     _invoke_adapter: EventSourceAdapter
 
@@ -88,7 +89,12 @@ class SQSEventSourceListener(EventSourceListener):
                     except Exception as e:
                         if "NonExistentQueue" not in str(e):
                             # TODO: remove event source if queue does no longer exist?
-                            LOG.debug("Unable to poll SQS messages for queue %s: %s", queue_arn, e)
+                            LOG.debug(
+                                "Unable to poll SQS messages for queue %s: %s",
+                                queue_arn,
+                                e,
+                                exc_info=True,
+                            )
 
             except Exception as e:
                 LOG.debug(e)

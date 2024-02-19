@@ -11,9 +11,7 @@ from localstack.services.stepfunctions.asl.antlt4utils.antlr4utils import Antlr4
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_decl import CatcherDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_props import CatcherProps
-from localstack.services.stepfunctions.asl.component.common.cause_decl import CauseDecl
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
-from localstack.services.stepfunctions.asl.component.common.error_decl import ErrorDecl
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
 )
@@ -95,6 +93,7 @@ from localstack.services.stepfunctions.asl.component.common.timeouts.timeout imp
     TimeoutSeconds,
     TimeoutSecondsPath,
 )
+from localstack.services.stepfunctions.asl.component.common.version import Version
 from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
@@ -185,6 +184,18 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.state_task_factory import (
     state_task_for,
 )
+from localstack.services.stepfunctions.asl.component.state.state_fail.cause_decl import CauseDecl
+from localstack.services.stepfunctions.asl.component.state.state_fail.cause_path import (
+    CausePath,
+    CausePathIntrinsicFunction,
+    CausePathJsonPath,
+)
+from localstack.services.stepfunctions.asl.component.state.state_fail.error_decl import ErrorDecl
+from localstack.services.stepfunctions.asl.component.state.state_fail.error_path import (
+    ErrorPath,
+    ErrorPathIntrinsicFunction,
+    ErrorPathJsonPath,
+)
 from localstack.services.stepfunctions.asl.component.state.state_fail.state_fail import StateFail
 from localstack.services.stepfunctions.asl.component.state.state_pass.result import Result
 from localstack.services.stepfunctions.asl.component.state.state_pass.state_pass import StatePass
@@ -224,6 +235,10 @@ class Preprocessor(ASLParserVisitor):
     def visitComment_decl(self, ctx: ASLParser.Comment_declContext) -> Comment:
         inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
         return Comment(comment=inner_str)
+
+    def visitVersion_decl(self, ctx: ASLParser.Version_declContext) -> Version:
+        version_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        return Version(version=version_str)
 
     def visitStartat_decl(self, ctx: ASLParser.Startat_declContext) -> StartAt:
         inner_str = self._inner_string_of(
@@ -271,11 +286,11 @@ class Preprocessor(ASLParserVisitor):
         return ResultPath(result_path_src=inner_str)
 
     def visitInput_path_decl(self, ctx: ASLParser.Input_path_declContext) -> InputPath:
-        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
         return InputPath(input_path_src=inner_str)
 
     def visitOutput_path_decl(self, ctx: ASLParser.Output_path_declContext):
-        inner_str = self._inner_string_of(parse_tree=ctx.keyword_or_string())
+        inner_str = self._inner_string_of(parse_tree=ctx.children[-1])
         return OutputPath(output_path=inner_str)
 
     def visitResult_decl(self, ctx: ASLParser.Result_declContext) -> Result:
@@ -440,6 +455,7 @@ class Preprocessor(ASLParserVisitor):
                 ),
             ),
             next_stmt=composite_stmts.get(Next),
+            comment=composite_stmts.get(Comment),
         )
 
     def visitChoice_rule_comparison_variable(
@@ -460,7 +476,11 @@ class Preprocessor(ASLParserVisitor):
             ),
         )
         comparison_variable = ComparisonVariable(variable=variable, func=comparison_func)
-        return ChoiceRule(comparison=comparison_variable, next_stmt=comparison_stmts.get(Next))
+        return ChoiceRule(
+            comparison=comparison_variable,
+            next_stmt=comparison_stmts.get(Next),
+            comment=comparison_stmts.get(Comment),
+        )
 
     def visitChoices_decl(self, ctx: ASLParser.Choices_declContext) -> ChoicesDecl:
         rules: list[ChoiceRule] = list()
@@ -474,11 +494,31 @@ class Preprocessor(ASLParserVisitor):
 
     def visitError_decl(self, ctx: ASLParser.Error_declContext) -> ErrorDecl:
         error = self._inner_string_of(parse_tree=ctx.keyword_or_string())
-        return ErrorDecl(error=error)
+        return ErrorDecl(value=error)
+
+    def visitError_path_decl_path(self, ctx: ASLParser.Error_path_decl_pathContext) -> ErrorPath:
+        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return ErrorPathJsonPath(value=path)
+
+    def visitError_path_decl_intrinsic(
+        self, ctx: ASLParser.Error_path_decl_intrinsicContext
+    ) -> ErrorPath:
+        intrinsic_func: str = self._inner_string_of(parse_tree=ctx.intrinsic_func())
+        return ErrorPathIntrinsicFunction(value=intrinsic_func)
 
     def visitCause_decl(self, ctx: ASLParser.Cause_declContext) -> CauseDecl:
         cause = self._inner_string_of(parse_tree=ctx.keyword_or_string())
-        return CauseDecl(cause=cause)
+        return CauseDecl(value=cause)
+
+    def visitCause_path_decl_path(self, ctx: ASLParser.Cause_path_decl_pathContext) -> CausePath:
+        path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return CausePathJsonPath(value=path)
+
+    def visitCause_path_decl_intrinsic(
+        self, ctx: ASLParser.Cause_path_decl_intrinsicContext
+    ) -> CausePath:
+        intrinsic_func: str = self._inner_string_of(parse_tree=ctx.intrinsic_func())
+        return CausePathIntrinsicFunction(value=intrinsic_func)
 
     def visitSeconds_decl(self, ctx: ASLParser.Seconds_declContext) -> Seconds:
         return Seconds(seconds=int(ctx.INT().getText()))
@@ -553,12 +593,7 @@ class Preprocessor(ASLParserVisitor):
                 typ=States,
                 raise_on_missing=ValueError(f"Expected a States declaration at '{ctx.getText()}'."),
             ),
-            processor_config=props.get(
-                typ=ProcessorConfig,
-                raise_on_missing=ValueError(
-                    f"Expected a ProcessorConfig declaration at '{ctx.getText()}'."
-                ),
-            ),
+            processor_config=props.get(typ=ProcessorConfig),
         )
 
     def visitIterator_decl(self, ctx: ASLParser.Iterator_declContext) -> IteratorDecl:
@@ -816,5 +851,6 @@ class Preprocessor(ASLParserVisitor):
             ),
             timeout_seconds=props.get(TimeoutSeconds),
             comment=props.get(typ=Comment),
+            version=props.get(typ=Version),
         )
         return program

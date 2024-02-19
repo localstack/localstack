@@ -19,14 +19,19 @@ class TimestampEquals(Operator):
         return str(ComparisonOperatorType.TimestampEquals)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
             a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = IsTimestamp.string_to_timestamp(value)
+                b = IsTimestamp.string_to_timestamp(comparison_value)
                 res = a == b
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = TimestampEquals._compare(variable, value)
         env.stack.append(res)
 
 
@@ -37,8 +42,11 @@ class TimestampEqualsPath(TimestampEquals):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        TimestampEquals.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = TimestampEqualsPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class TimestampGreaterThan(Operator):
@@ -47,14 +55,19 @@ class TimestampGreaterThan(Operator):
         return str(ComparisonOperatorType.TimestampGreaterThan)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
             a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = IsTimestamp.string_to_timestamp(value)
+                b = IsTimestamp.string_to_timestamp(comparison_value)
                 res = a > b
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = TimestampGreaterThan._compare(variable, value)
         env.stack.append(res)
 
 
@@ -65,8 +78,11 @@ class TimestampGreaterThanPath(TimestampGreaterThan):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        TimestampGreaterThan.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = TimestampGreaterThanPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class TimestampGreaterThanEquals(Operator):
@@ -75,14 +91,19 @@ class TimestampGreaterThanEquals(Operator):
         return str(ComparisonOperatorType.TimestampGreaterThanEquals)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
             a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = IsTimestamp.string_to_timestamp(value)
+                b = IsTimestamp.string_to_timestamp(comparison_value)
                 res = a >= b
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = TimestampGreaterThanEquals._compare(variable, value)
         env.stack.append(res)
 
 
@@ -93,8 +114,11 @@ class TimestampGreaterThanEqualsPath(TimestampGreaterThanEquals):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        TimestampGreaterThanEquals.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = TimestampGreaterThanEqualsPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class TimestampLessThan(Operator):
@@ -103,14 +127,19 @@ class TimestampLessThan(Operator):
         return str(ComparisonOperatorType.TimestampLessThan)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
             a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = IsTimestamp.string_to_timestamp(value)
+                b = IsTimestamp.string_to_timestamp(comparison_value)
                 res = a < b
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = TimestampLessThan._compare(variable, value)
         env.stack.append(res)
 
 
@@ -121,8 +150,11 @@ class TimestampLessThanPath(TimestampLessThan):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        TimestampLessThan.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = TimestampLessThanPath._compare(variable, comp_value)
+        env.stack.append(res)
 
 
 class TimestampLessThanEquals(Operator):
@@ -131,14 +163,19 @@ class TimestampLessThanEquals(Operator):
         return str(ComparisonOperatorType.TimestampLessThanEquals)
 
     @staticmethod
-    def eval(env: Environment, value: Any) -> None:
-        variable = env.stack.pop()
+    def _compare(variable: Any, comparison_value: Any) -> bool:
         res = False
         if isinstance(variable, str):
             a = IsTimestamp.string_to_timestamp(variable)
             if a is not None:
-                b = IsTimestamp.string_to_timestamp(value)
+                b = IsTimestamp.string_to_timestamp(comparison_value)
                 res = a <= b
+        return res
+
+    @staticmethod
+    def eval(env: Environment, value: Any) -> None:
+        variable = env.stack.pop()
+        res = TimestampLessThanEquals._compare(variable, value)
         env.stack.append(res)
 
 
@@ -149,5 +186,8 @@ class TimestampLessThanEqualsPath(TimestampLessThanEquals):
 
     @staticmethod
     def eval(env: Environment, value: Any) -> None:
-        comp_value = JSONPathUtils.extract_json(value, env.inp)
-        TimestampLessThanEquals.eval(env=env, value=comp_value)
+        variable = env.stack.pop()
+        inp = env.stack[-1]
+        comp_value = JSONPathUtils.extract_json(value, inp)
+        res = TimestampLessThanEqualsPath._compare(variable, comp_value)
+        env.stack.append(res)

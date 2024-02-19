@@ -4,7 +4,8 @@ import os
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.common import retry, run
@@ -20,7 +21,18 @@ LOG = logging.getLogger(__name__)
 
 class TestServerless:
     @pytest.fixture(scope="class")
-    def setup_and_teardown(self, aws_client):
+    def delenv(self):
+        # Workaround for the inability to use the standard `monkeypatch` fixture in `class` scope
+        from _pytest.monkeypatch import MonkeyPatch
+
+        mkypatch = MonkeyPatch()
+        yield mkypatch.delenv
+        mkypatch.undo()
+
+    @pytest.fixture(scope="class")
+    def setup_and_teardown(self, aws_client, region_name, delenv):
+        if not is_aws_cloud():
+            delenv("AWS_PROFILE", raising=False)
         base_dir = get_base_dir()
         if not os.path.exists(os.path.join(base_dir, "node_modules")):
             # install dependencies
@@ -31,13 +43,17 @@ class TestServerless:
         existing_api_ids = [api["id"] for api in apis]
 
         # deploy serverless app
-        run(["npm", "run", "deploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir)
+        run(
+            ["npm", "run", "deploy", "--", f"--region={region_name}"],
+            cwd=base_dir,
+            env_vars={"AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID},
+        )
 
         yield existing_api_ids
 
         try:
             # TODO the cleanup still fails due to inability to find ECR service in community
-            run(["npm", "run", "undeploy", "--", f"--region={TEST_AWS_REGION_NAME}"], cwd=base_dir)
+            run(["npm", "run", "undeploy", "--", f"--region={region_name}"], cwd=base_dir)
         except Exception:
             LOG.error("Unable to clean up serverless stack")
 
@@ -104,7 +120,7 @@ class TestServerless:
 
         # assert that stream consumer is properly connected and Lambda gets invoked
         def assert_invocations():
-            events = get_lambda_log_events(function_name2)
+            events = get_lambda_log_events(function_name2, logs_client=aws_client.logs)
             assert len(events) == 1
 
         kinesis_client.put_record(StreamName=stream_name, Data=b"test123", PartitionKey="key1")
@@ -112,7 +128,7 @@ class TestServerless:
 
     @markers.skip_offline
     @markers.aws.unknown
-    def test_queue_handler_deployed(self, aws_client, setup_and_teardown):
+    def test_queue_handler_deployed(self, aws_client, account_id, region_name, setup_and_teardown):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
 
@@ -128,11 +144,11 @@ class TestServerless:
         assert 1 == len(events)
         event_source_arn = events[0]["EventSourceArn"]
 
-        assert event_source_arn == arns.sqs_queue_arn(
-            queue_name, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
-        )
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id=account_id, region_name=region_name)
+
+        assert event_source_arn == queue_arn
         result = sqs_client.get_queue_attributes(
-            QueueUrl=arns.sqs_queue_url_for_arn(queue_name),
+            QueueUrl=arns.sqs_queue_url_for_arn(queue_arn),
             AttributeNames=[
                 "RedrivePolicy",
             ],
@@ -160,7 +176,7 @@ class TestServerless:
 
     @markers.skip_offline
     @markers.aws.unknown
-    def test_apigateway_deployed(self, aws_client, setup_and_teardown):
+    def test_apigateway_deployed(self, aws_client, account_id, region_name, setup_and_teardown):
         function_name = "sls-test-local-router"
         existing_api_ids = setup_and_teardown
 
@@ -184,7 +200,7 @@ class TestServerless:
             assert method in proxy_resource["resourceMethods"]
             resource_method = proxy_resource["resourceMethods"][method]
             assert (
-                arns.lambda_function_arn(function_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+                arns.lambda_function_arn(function_name, account_id, region_name)
                 in resource_method["methodIntegration"]["uri"]
             )
 

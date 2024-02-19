@@ -1,0 +1,50 @@
+{
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_associate_and_disassociate_resolver_rule": {
+    "last_validated_date": "2023-09-08T08:43:50+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_endpoint[INBOUND-5]": {
+    "last_validated_date": "2023-09-08T06:22:31+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_endpoint[OUTBOUND-10]": {
+    "last_validated_date": "2023-09-08T06:25:18+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_query_log_config": {
+    "last_validated_date": "2023-09-08T08:27:08+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_rule": {
+    "last_validated_date": "2023-09-08T06:47:16+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_create_resolver_rule_with_invalid_direction": {
+    "last_validated_date": "2023-09-08T06:52:13+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_delete_non_existent_resolver_endpoint": {
+    "last_validated_date": "2023-09-08T06:43:29+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_delete_non_existent_resolver_query_log_config": {
+    "last_validated_date": "2023-09-08T08:37:52+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_delete_non_existent_resolver_rule": {
+    "last_validated_date": "2023-09-08T08:10:29+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_delete_resolver_endpoint": {
+    "last_validated_date": "2023-09-08T06:42:35+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_disassociate_non_existent_association": {
+    "last_validated_date": "2023-09-08T08:22:56+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_list_firewall_domain_lists": {
+    "last_validated_date": "2023-09-01T08:05:46+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_multipe_create_resolver_rule": {
+    "last_validated_date": "2023-09-08T08:10:19+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_multiple_create_resolver_endpoint_with_same_req_id": {
+    "last_validated_date": "2023-09-08T06:37:11+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_route53resolver_bad_create_endpoint_security_groups": {
+    "last_validated_date": "2023-09-08T06:35:45+00:00"
+  },
+  "tests/aws/services/route53resolver/test_route53resolver.py::TestRoute53Resolver::test_update_resolver_endpoint": {
+    "last_validated_date": "2023-09-08T06:39:43+00:00"
+  }
+}

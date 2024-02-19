@@ -38,6 +38,8 @@ run_custom_response_handlers = chain.CompositeResponseHandler()
 modify_service_response = service.ServiceResponseHandlers()
 parse_service_response = service.ServiceResponseParser()
 parse_pre_signed_url_request = presigned_url.ParsePreSignedUrlRequest()
+run_custom_finalizers = chain.CompositeFinalizer()
+serve_custom_exception_handlers = chain.CompositeExceptionHandler()
 # legacy compatibility handlers
 serve_edge_router_rules = legacy.EdgeRouterHandler()
 set_close_connection_header = legacy.set_close_connection_header

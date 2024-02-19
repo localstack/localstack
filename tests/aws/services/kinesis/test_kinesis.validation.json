@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_add_tags_to_stream": {
+    "last_validated_date": "2022-08-25T06:56:43+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_create_stream_without_shard_count": {
+    "last_validated_date": "2022-08-26T07:30:59+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_record_lifecycle_data_integrity": {
+    "last_validated_date": "2022-08-25T10:39:44+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_stream_consumers": {
+    "last_validated_date": "2022-08-26T08:23:46+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard": {
+    "last_validated_date": "2022-08-26T07:33:29+00:00"
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_sequence_number_as_iterator": {
+    "last_validated_date": "2022-08-26T07:29:21+00:00"
+  }
+}

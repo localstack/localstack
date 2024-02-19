@@ -40,11 +40,10 @@ class StatePass(CommonStateField):
     def from_state_props(self, state_props: StateProps) -> None:
         super(StatePass, self).from_state_props(state_props)
         self.result = state_props.get(Result)
-        self.result_path = state_props.get(ResultPath)
+        self.result_path = state_props.get(ResultPath) or ResultPath(
+            result_path_src=ResultPath.DEFAULT_PATH
+        )
         self.parameters = state_props.get(Parameters)
-
-        if self.result_path is None:
-            self.result_path = ResultPath(result_path_src=ResultPath.DEFAULT_PATH)
 
     def _get_state_entered_event_details(self, env: Environment) -> StateEnteredEventDetails:
         return StateEnteredEventDetails(

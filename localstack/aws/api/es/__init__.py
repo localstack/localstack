@@ -95,6 +95,17 @@ class AutoTuneType(str):
     SCHEDULED_ACTION = "SCHEDULED_ACTION"
 
 
+class ConfigChangeStatus(str):
+    Pending = "Pending"
+    Initializing = "Initializing"
+    Validating = "Validating"
+    ValidationFailed = "ValidationFailed"
+    ApplyingChanges = "ApplyingChanges"
+    Completed = "Completed"
+    PendingUserInput = "PendingUserInput"
+    Cancelled = "Cancelled"
+
+
 class DeploymentStatus(str):
     PENDING_UPDATE = "PENDING_UPDATE"
     IN_PROGRESS = "IN_PROGRESS"
@@ -115,6 +126,16 @@ class DomainPackageStatus(str):
     ACTIVE = "ACTIVE"
     DISSOCIATING = "DISSOCIATING"
     DISSOCIATION_FAILED = "DISSOCIATION_FAILED"
+
+
+class DomainProcessingStatusType(str):
+    Creating = "Creating"
+    Active = "Active"
+    Modifying = "Modifying"
+    UpgradingEngineVersion = "UpgradingEngineVersion"
+    UpdatingServiceSoftware = "UpdatingServiceSoftware"
+    Isolated = "Isolated"
+    Deleting = "Deleting"
 
 
 class ESPartitionInstanceType(str):
@@ -197,6 +218,11 @@ class InboundCrossClusterSearchConnectionStatusCode(str):
     DELETED = "DELETED"
 
 
+class InitiatedBy(str):
+    CUSTOMER = "CUSTOMER"
+    SERVICE = "SERVICE"
+
+
 class LogType(str):
     INDEX_SLOW_LOGS = "INDEX_SLOW_LOGS"
     SEARCH_SLOW_LOGS = "SEARCH_SLOW_LOGS"
@@ -248,6 +274,11 @@ class PrincipalType(str):
     AWS_SERVICE = "AWS_SERVICE"
 
 
+class PropertyValueType(str):
+    PLAIN_TEXT = "PLAIN_TEXT"
+    STRINGIFIED_JSON = "STRINGIFIED_JSON"
+
+
 class ReservedElasticsearchInstancePaymentOption(str):
     ALL_UPFRONT = "ALL_UPFRONT"
     PARTIAL_UPFRONT = "PARTIAL_UPFRONT"
@@ -273,6 +304,7 @@ class ScheduledAutoTuneSeverityType(str):
 class TLSSecurityPolicy(str):
     Policy_Min_TLS_1_0_2019_07 = "Policy-Min-TLS-1-0-2019-07"
     Policy_Min_TLS_1_2_2019_07 = "Policy-Min-TLS-1-2-2019-07"
+    Policy_Min_TLS_1_2_PFS_2023_10 = "Policy-Min-TLS-1-2-PFS-2023-10"
 
 
 class TimeUnit(str):
@@ -619,6 +651,27 @@ class AutoTuneOptionsStatus(TypedDict, total=False):
     Status: Optional[AutoTuneStatus]
 
 
+class CancelDomainConfigChangeRequest(ServiceRequest):
+    DomainName: DomainName
+    DryRun: Optional[DryRun]
+
+
+class CancelledChangeProperty(TypedDict, total=False):
+    PropertyName: Optional[String]
+    CancelledValue: Optional[String]
+    ActiveValue: Optional[String]
+
+
+CancelledChangePropertyList = List[CancelledChangeProperty]
+GUIDList = List[GUID]
+
+
+class CancelDomainConfigChangeResponse(TypedDict, total=False):
+    DryRun: Optional[DryRun]
+    CancelledChangeIds: Optional[GUIDList]
+    CancelledChangeProperties: Optional[CancelledChangePropertyList]
+
+
 class CancelElasticsearchServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
 
@@ -644,6 +697,10 @@ class CancelElasticsearchServiceSoftwareUpdateResponse(TypedDict, total=False):
 class ChangeProgressDetails(TypedDict, total=False):
     ChangeId: Optional[GUID]
     Message: Optional[Message]
+    ConfigChangeStatus: Optional[ConfigChangeStatus]
+    StartTime: Optional[UpdateTimestamp]
+    LastUpdatedTime: Optional[UpdateTimestamp]
+    InitiatedBy: Optional[InitiatedBy]
 
 
 class ChangeProgressStage(TypedDict, total=False):
@@ -665,6 +722,9 @@ class ChangeProgressStatusDetails(TypedDict, total=False):
     CompletedProperties: Optional[StringList]
     TotalNumberOfStages: Optional[TotalNumberOfStages]
     ChangeProgressStages: Optional[ChangeProgressStageList]
+    ConfigChangeStatus: Optional[ConfigChangeStatus]
+    LastUpdatedTime: Optional[UpdateTimestamp]
+    InitiatedBy: Optional[InitiatedBy]
 
 
 class CognitoOptions(TypedDict, total=False):
@@ -773,6 +833,16 @@ class CreateElasticsearchDomainRequest(ServiceRequest):
     TagList: Optional[TagList]
 
 
+class ModifyingProperties(TypedDict, total=False):
+    Name: Optional[String]
+    ActiveValue: Optional[String]
+    PendingValue: Optional[String]
+    ValueType: Optional[PropertyValueType]
+
+
+ModifyingPropertiesList = List[ModifyingProperties]
+
+
 class VPCDerivedInfo(TypedDict, total=False):
     VPCId: Optional[String]
     SubnetIds: Optional[StringList]
@@ -809,6 +879,8 @@ class ElasticsearchDomainStatus(TypedDict, total=False):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptions]
     AutoTuneOptions: Optional[AutoTuneOptionsOutput]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
+    DomainProcessingStatus: Optional[DomainProcessingStatusType]
+    ModifyingProperties: Optional[ModifyingPropertiesList]
 
 
 class CreateElasticsearchDomainResponse(TypedDict, total=False):
@@ -1024,6 +1096,7 @@ class ElasticsearchDomainConfig(TypedDict, total=False):
     AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsStatus]
     AutoTuneOptions: Optional[AutoTuneOptionsStatus]
     ChangeProgressDetails: Optional[ChangeProgressDetails]
+    ModifyingProperties: Optional[ModifyingPropertiesList]
 
 
 class DescribeElasticsearchDomainConfigResponse(TypedDict, total=False):
@@ -1544,28 +1617,35 @@ class EsApi:
         self,
         context: RequestContext,
         cross_cluster_search_connection_id: CrossClusterSearchConnectionId,
+        **kwargs
     ) -> AcceptInboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
     @handler("AddTags")
-    def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
+    def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("AssociatePackage")
     def associate_package(
-        self, context: RequestContext, package_id: PackageID, domain_name: DomainName
+        self, context: RequestContext, package_id: PackageID, domain_name: DomainName, **kwargs
     ) -> AssociatePackageResponse:
         raise NotImplementedError
 
     @handler("AuthorizeVpcEndpointAccess")
     def authorize_vpc_endpoint_access(
-        self, context: RequestContext, domain_name: DomainName, account: AWSAccount
+        self, context: RequestContext, domain_name: DomainName, account: AWSAccount, **kwargs
     ) -> AuthorizeVpcEndpointAccessResponse:
+        raise NotImplementedError
+
+    @handler("CancelDomainConfigChange")
+    def cancel_domain_config_change(
+        self, context: RequestContext, domain_name: DomainName, dry_run: DryRun = None, **kwargs
+    ) -> CancelDomainConfigChangeResponse:
         raise NotImplementedError
 
     @handler("CancelElasticsearchServiceSoftwareUpdate")
     def cancel_elasticsearch_service_software_update(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> CancelElasticsearchServiceSoftwareUpdateResponse:
         raise NotImplementedError
 
@@ -1589,6 +1669,7 @@ class EsApi:
         advanced_security_options: AdvancedSecurityOptionsInput = None,
         auto_tune_options: AutoTuneOptionsInput = None,
         tag_list: TagList = None,
+        **kwargs
     ) -> CreateElasticsearchDomainResponse:
         raise NotImplementedError
 
@@ -1599,6 +1680,7 @@ class EsApi:
         source_domain_info: DomainInformation,
         destination_domain_info: DomainInformation,
         connection_alias: ConnectionAlias,
+        **kwargs
     ) -> CreateOutboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
@@ -1610,6 +1692,7 @@ class EsApi:
         package_type: PackageType,
         package_source: PackageSource,
         package_description: PackageDescription = None,
+        **kwargs
     ) -> CreatePackageResponse:
         raise NotImplementedError
 
@@ -1620,20 +1703,18 @@ class EsApi:
         domain_arn: DomainArn,
         vpc_options: VPCOptions,
         client_token: ClientToken = None,
+        **kwargs
     ) -> CreateVpcEndpointResponse:
         raise NotImplementedError
 
     @handler("DeleteElasticsearchDomain")
     def delete_elasticsearch_domain(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DeleteElasticsearchDomainResponse:
         raise NotImplementedError
 
     @handler("DeleteElasticsearchServiceRole")
-    def delete_elasticsearch_service_role(
-        self,
-        context: RequestContext,
-    ) -> None:
+    def delete_elasticsearch_service_role(self, context: RequestContext, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteInboundCrossClusterSearchConnection")
@@ -1641,6 +1722,7 @@ class EsApi:
         self,
         context: RequestContext,
         cross_cluster_search_connection_id: CrossClusterSearchConnectionId,
+        **kwargs
     ) -> DeleteInboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
@@ -1649,18 +1731,19 @@ class EsApi:
         self,
         context: RequestContext,
         cross_cluster_search_connection_id: CrossClusterSearchConnectionId,
+        **kwargs
     ) -> DeleteOutboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
     @handler("DeletePackage")
     def delete_package(
-        self, context: RequestContext, package_id: PackageID
+        self, context: RequestContext, package_id: PackageID, **kwargs
     ) -> DeletePackageResponse:
         raise NotImplementedError
 
     @handler("DeleteVpcEndpoint")
     def delete_vpc_endpoint(
-        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId
+        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId, **kwargs
     ) -> DeleteVpcEndpointResponse:
         raise NotImplementedError
 
@@ -1671,30 +1754,31 @@ class EsApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeDomainAutoTunesResponse:
         raise NotImplementedError
 
     @handler("DescribeDomainChangeProgress")
     def describe_domain_change_progress(
-        self, context: RequestContext, domain_name: DomainName, change_id: GUID = None
+        self, context: RequestContext, domain_name: DomainName, change_id: GUID = None, **kwargs
     ) -> DescribeDomainChangeProgressResponse:
         raise NotImplementedError
 
     @handler("DescribeElasticsearchDomain")
     def describe_elasticsearch_domain(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DescribeElasticsearchDomainResponse:
         raise NotImplementedError
 
     @handler("DescribeElasticsearchDomainConfig")
     def describe_elasticsearch_domain_config(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> DescribeElasticsearchDomainConfigResponse:
         raise NotImplementedError
 
     @handler("DescribeElasticsearchDomains")
     def describe_elasticsearch_domains(
-        self, context: RequestContext, domain_names: DomainNameList
+        self, context: RequestContext, domain_names: DomainNameList, **kwargs
     ) -> DescribeElasticsearchDomainsResponse:
         raise NotImplementedError
 
@@ -1705,6 +1789,7 @@ class EsApi:
         instance_type: ESPartitionInstanceType,
         elasticsearch_version: ElasticsearchVersionString,
         domain_name: DomainName = None,
+        **kwargs
     ) -> DescribeElasticsearchInstanceTypeLimitsResponse:
         raise NotImplementedError
 
@@ -1715,6 +1800,7 @@ class EsApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeInboundCrossClusterSearchConnectionsResponse:
         raise NotImplementedError
 
@@ -1725,6 +1811,7 @@ class EsApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeOutboundCrossClusterSearchConnectionsResponse:
         raise NotImplementedError
 
@@ -1735,6 +1822,7 @@ class EsApi:
         filters: DescribePackagesFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribePackagesResponse:
         raise NotImplementedError
 
@@ -1745,6 +1833,7 @@ class EsApi:
         reserved_elasticsearch_instance_offering_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeReservedElasticsearchInstanceOfferingsResponse:
         raise NotImplementedError
 
@@ -1755,24 +1844,25 @@ class EsApi:
         reserved_elasticsearch_instance_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> DescribeReservedElasticsearchInstancesResponse:
         raise NotImplementedError
 
     @handler("DescribeVpcEndpoints")
     def describe_vpc_endpoints(
-        self, context: RequestContext, vpc_endpoint_ids: VpcEndpointIdList
+        self, context: RequestContext, vpc_endpoint_ids: VpcEndpointIdList, **kwargs
     ) -> DescribeVpcEndpointsResponse:
         raise NotImplementedError
 
     @handler("DissociatePackage")
     def dissociate_package(
-        self, context: RequestContext, package_id: PackageID, domain_name: DomainName
+        self, context: RequestContext, package_id: PackageID, domain_name: DomainName, **kwargs
     ) -> DissociatePackageResponse:
         raise NotImplementedError
 
     @handler("GetCompatibleElasticsearchVersions")
     def get_compatible_elasticsearch_versions(
-        self, context: RequestContext, domain_name: DomainName = None
+        self, context: RequestContext, domain_name: DomainName = None, **kwargs
     ) -> GetCompatibleElasticsearchVersionsResponse:
         raise NotImplementedError
 
@@ -1783,6 +1873,7 @@ class EsApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> GetPackageVersionHistoryResponse:
         raise NotImplementedError
 
@@ -1793,18 +1884,19 @@ class EsApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> GetUpgradeHistoryResponse:
         raise NotImplementedError
 
     @handler("GetUpgradeStatus")
     def get_upgrade_status(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> GetUpgradeStatusResponse:
         raise NotImplementedError
 
     @handler("ListDomainNames")
     def list_domain_names(
-        self, context: RequestContext, engine_type: EngineType = None
+        self, context: RequestContext, engine_type: EngineType = None, **kwargs
     ) -> ListDomainNamesResponse:
         raise NotImplementedError
 
@@ -1815,6 +1907,7 @@ class EsApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListDomainsForPackageResponse:
         raise NotImplementedError
 
@@ -1826,12 +1919,17 @@ class EsApi:
         domain_name: DomainName = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListElasticsearchInstanceTypesResponse:
         raise NotImplementedError
 
     @handler("ListElasticsearchVersions")
     def list_elasticsearch_versions(
-        self, context: RequestContext, max_results: MaxResults = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        max_results: MaxResults = None,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListElasticsearchVersionsResponse:
         raise NotImplementedError
 
@@ -1842,28 +1940,37 @@ class EsApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListPackagesForDomainResponse:
         raise NotImplementedError
 
     @handler("ListTags")
-    def list_tags(self, context: RequestContext, arn: ARN) -> ListTagsResponse:
+    def list_tags(self, context: RequestContext, arn: ARN, **kwargs) -> ListTagsResponse:
         raise NotImplementedError
 
     @handler("ListVpcEndpointAccess")
     def list_vpc_endpoint_access(
-        self, context: RequestContext, domain_name: DomainName, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListVpcEndpointAccessResponse:
         raise NotImplementedError
 
     @handler("ListVpcEndpoints")
     def list_vpc_endpoints(
-        self, context: RequestContext, next_token: NextToken = None
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListVpcEndpointsResponse:
         raise NotImplementedError
 
     @handler("ListVpcEndpointsForDomain")
     def list_vpc_endpoints_for_domain(
-        self, context: RequestContext, domain_name: DomainName, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        domain_name: DomainName,
+        next_token: NextToken = None,
+        **kwargs
     ) -> ListVpcEndpointsForDomainResponse:
         raise NotImplementedError
 
@@ -1874,6 +1981,7 @@ class EsApi:
         reserved_elasticsearch_instance_offering_id: GUID,
         reservation_name: ReservationToken,
         instance_count: InstanceCount = None,
+        **kwargs
     ) -> PurchaseReservedElasticsearchInstanceOfferingResponse:
         raise NotImplementedError
 
@@ -1882,22 +1990,25 @@ class EsApi:
         self,
         context: RequestContext,
         cross_cluster_search_connection_id: CrossClusterSearchConnectionId,
+        **kwargs
     ) -> RejectInboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
     @handler("RemoveTags")
-    def remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
+    def remove_tags(
+        self, context: RequestContext, arn: ARN, tag_keys: StringList, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("RevokeVpcEndpointAccess")
     def revoke_vpc_endpoint_access(
-        self, context: RequestContext, domain_name: DomainName, account: AWSAccount
+        self, context: RequestContext, domain_name: DomainName, account: AWSAccount, **kwargs
     ) -> RevokeVpcEndpointAccessResponse:
         raise NotImplementedError
 
     @handler("StartElasticsearchServiceSoftwareUpdate")
     def start_elasticsearch_service_software_update(
-        self, context: RequestContext, domain_name: DomainName
+        self, context: RequestContext, domain_name: DomainName, **kwargs
     ) -> StartElasticsearchServiceSoftwareUpdateResponse:
         raise NotImplementedError
 
@@ -1920,6 +2031,7 @@ class EsApi:
         encryption_at_rest_options: EncryptionAtRestOptions = None,
         auto_tune_options: AutoTuneOptions = None,
         dry_run: DryRun = None,
+        **kwargs
     ) -> UpdateElasticsearchDomainConfigResponse:
         raise NotImplementedError
 
@@ -1931,12 +2043,17 @@ class EsApi:
         package_source: PackageSource,
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
+        **kwargs
     ) -> UpdatePackageResponse:
         raise NotImplementedError
 
     @handler("UpdateVpcEndpoint")
     def update_vpc_endpoint(
-        self, context: RequestContext, vpc_endpoint_id: VpcEndpointId, vpc_options: VPCOptions
+        self,
+        context: RequestContext,
+        vpc_endpoint_id: VpcEndpointId,
+        vpc_options: VPCOptions,
+        **kwargs
     ) -> UpdateVpcEndpointResponse:
         raise NotImplementedError
 
@@ -1947,5 +2064,6 @@ class EsApi:
         domain_name: DomainName,
         target_version: ElasticsearchVersionString,
         perform_check_only: Boolean = None,
+        **kwargs
     ) -> UpgradeElasticsearchDomainResponse:
         raise NotImplementedError

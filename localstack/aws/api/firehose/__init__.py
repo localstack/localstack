@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, TypedDict
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 AWSKMSKeyARN = str
+AccessKeyId = str
 AmazonOpenSearchServerlessBufferingIntervalInSeconds = int
 AmazonOpenSearchServerlessBufferingSizeInMBs = int
 AmazonOpenSearchServerlessCollectionEndpoint = str
@@ -21,6 +22,7 @@ BooleanObject = bool
 BucketARN = str
 ClusterJDBCURL = str
 CopyOptions = str
+CustomTimeZone = str
 DataTableColumns = str
 DataTableName = str
 DeliveryStreamARN = str
@@ -38,6 +40,8 @@ ElasticsearchTypeName = str
 ErrorCode = str
 ErrorMessage = str
 ErrorOutputPrefix = str
+FileExtension = str
+FirehoseSource = str
 HECAcknowledgmentTimeoutInSeconds = int
 HECEndpoint = str
 HECToken = str
@@ -70,10 +74,30 @@ PutResponseRecordId = str
 RedshiftRetryDurationInSeconds = int
 RetryDurationInSeconds = int
 RoleARN = str
+SecretAccessKey = str
+SessionToken = str
 SizeInMBs = int
+SnowflakeAccountUrl = str
+SnowflakeContentColumnName = str
+SnowflakeDatabase = str
+SnowflakeKeyPassphrase = str
+SnowflakeMetaDataColumnName = str
+SnowflakePrivateKey = str
+SnowflakePrivateLinkVpceId = str
+SnowflakeRetryDurationInSeconds = int
+SnowflakeRole = str
+SnowflakeSchema = str
+SnowflakeTable = str
+SnowflakeUser = str
+SplunkBufferingIntervalInSeconds = int
+SplunkBufferingSizeInMBs = int
 SplunkRetryDurationInSeconds = int
 TagKey = str
 TagValue = str
+TagrisAccountId = str
+TagrisAmazonResourceName = str
+TagrisExceptionMessage = str
+TagrisInternalId = str
 TopicName = str
 Username = str
 
@@ -225,11 +249,13 @@ class ProcessorParameterName(str):
     SubRecordType = "SubRecordType"
     Delimiter = "Delimiter"
     CompressionFormat = "CompressionFormat"
+    DataMessageExtraction = "DataMessageExtraction"
 
 
 class ProcessorType(str):
     RecordDeAggregation = "RecordDeAggregation"
     Decompression = "Decompression"
+    CloudWatchLogProcessing = "CloudWatchLogProcessing"
     Lambda = "Lambda"
     MetadataExtraction = "MetadataExtraction"
     AppendDelimiterToRecord = "AppendDelimiterToRecord"
@@ -245,9 +271,25 @@ class S3BackupMode(str):
     Enabled = "Enabled"
 
 
+class SnowflakeDataLoadingOption(str):
+    JSON_MAPPING = "JSON_MAPPING"
+    VARIANT_CONTENT_MAPPING = "VARIANT_CONTENT_MAPPING"
+    VARIANT_CONTENT_AND_METADATA_MAPPING = "VARIANT_CONTENT_AND_METADATA_MAPPING"
+
+
+class SnowflakeS3BackupMode(str):
+    FailedDataOnly = "FailedDataOnly"
+    AllData = "AllData"
+
+
 class SplunkS3BackupMode(str):
     FailedEventsOnly = "FailedEventsOnly"
     AllEvents = "AllEvents"
+
+
+class TagrisStatus(str):
+    ACTIVE = "ACTIVE"
+    NOT_ACTIVE = "NOT_ACTIVE"
 
 
 class ConcurrentModificationException(ServiceException):
@@ -266,6 +308,19 @@ class InvalidKMSResourceException(ServiceException):
     code: str = "InvalidKMSResourceException"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class InvalidSourceException(ServiceException):
+    code: str = "InvalidSourceException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class InvalidStreamTypeException(ServiceException):
+    code: str = "InvalidStreamTypeException"
+    sender_fault: bool = False
+    status_code: int = 400
+    source: Optional[FirehoseSource]
 
 
 class LimitExceededException(ServiceException):
@@ -288,6 +343,57 @@ class ResourceNotFoundException(ServiceException):
 
 class ServiceUnavailableException(ServiceException):
     code: str = "ServiceUnavailableException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class TagrisAccessDeniedException(ServiceException):
+    code: str = "TagrisAccessDeniedException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class TagrisInternalServiceException(ServiceException):
+    code: str = "TagrisInternalServiceException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+TagrisVersion = int
+
+
+class TagrisSweepListItem(TypedDict, total=False):
+    TagrisAccountId: Optional[TagrisAccountId]
+    TagrisAmazonResourceName: Optional[TagrisAmazonResourceName]
+    TagrisInternalId: Optional[TagrisInternalId]
+    TagrisVersion: Optional[TagrisVersion]
+
+
+class TagrisInvalidArnException(ServiceException):
+    code: str = "TagrisInvalidArnException"
+    sender_fault: bool = False
+    status_code: int = 400
+    sweepListItem: Optional[TagrisSweepListItem]
+
+
+class TagrisInvalidParameterException(ServiceException):
+    code: str = "TagrisInvalidParameterException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+TagrisSweepListResult = Dict[TagrisAmazonResourceName, TagrisStatus]
+
+
+class TagrisPartialResourcesExistResultsException(ServiceException):
+    code: str = "TagrisPartialResourcesExistResultsException"
+    sender_fault: bool = False
+    status_code: int = 400
+    resourceExistenceInformation: Optional[TagrisSweepListResult]
+
+
+class TagrisThrottledException(ServiceException):
+    code: str = "TagrisThrottledException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -505,6 +611,40 @@ class CopyCommand(TypedDict, total=False):
     CopyOptions: Optional[CopyOptions]
 
 
+class SnowflakeRetryOptions(TypedDict, total=False):
+    DurationInSeconds: Optional[SnowflakeRetryDurationInSeconds]
+
+
+class SnowflakeVpcConfiguration(TypedDict, total=False):
+    PrivateLinkVpceId: SnowflakePrivateLinkVpceId
+
+
+class SnowflakeRoleConfiguration(TypedDict, total=False):
+    Enabled: Optional[BooleanObject]
+    SnowflakeRole: Optional[SnowflakeRole]
+
+
+class SnowflakeDestinationConfiguration(TypedDict, total=False):
+    AccountUrl: SnowflakeAccountUrl
+    PrivateKey: SnowflakePrivateKey
+    KeyPassphrase: Optional[SnowflakeKeyPassphrase]
+    User: SnowflakeUser
+    Database: SnowflakeDatabase
+    Schema: SnowflakeSchema
+    Table: SnowflakeTable
+    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
+    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
+    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
+    ContentColumnName: Optional[SnowflakeContentColumnName]
+    SnowflakeVpcConfiguration: Optional[SnowflakeVpcConfiguration]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    RoleARN: RoleARN
+    RetryOptions: Optional[SnowflakeRetryOptions]
+    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    S3Configuration: S3DestinationConfiguration
+
+
 class MSKSourceConfiguration(TypedDict, total=False):
     MSKClusterARN: MSKClusterARN
     TopicName: TopicName
@@ -559,6 +699,11 @@ class HttpEndpointDestinationConfiguration(TypedDict, total=False):
     S3Configuration: S3DestinationConfiguration
 
 
+class SplunkBufferingHints(TypedDict, total=False):
+    IntervalInSeconds: Optional[SplunkBufferingIntervalInSeconds]
+    SizeInMBs: Optional[SplunkBufferingSizeInMBs]
+
+
 class SplunkRetryOptions(TypedDict, total=False):
     DurationInSeconds: Optional[SplunkRetryDurationInSeconds]
 
@@ -573,6 +718,7 @@ class SplunkDestinationConfiguration(TypedDict, total=False):
     S3Configuration: S3DestinationConfiguration
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    BufferingHints: Optional[SplunkBufferingHints]
 
 
 class ElasticsearchRetryOptions(TypedDict, total=False):
@@ -714,6 +860,8 @@ class ExtendedS3DestinationConfiguration(TypedDict, total=False):
     S3BackupConfiguration: Optional[S3DestinationConfiguration]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DeliveryStreamEncryptionConfigurationInput(TypedDict, total=False):
@@ -745,6 +893,7 @@ class CreateDeliveryStreamInput(ServiceRequest):
         AmazonOpenSearchServerlessDestinationConfiguration
     ]
     MSKSourceConfiguration: Optional[MSKSourceConfiguration]
+    SnowflakeDestinationConfiguration: Optional[SnowflakeDestinationConfiguration]
 
 
 class CreateDeliveryStreamOutput(TypedDict, total=False):
@@ -764,6 +913,25 @@ class DeleteDeliveryStreamOutput(TypedDict, total=False):
 
 
 DeliveryStartTimestamp = datetime
+
+
+class SnowflakeDestinationDescription(TypedDict, total=False):
+    AccountUrl: Optional[SnowflakeAccountUrl]
+    User: Optional[SnowflakeUser]
+    Database: Optional[SnowflakeDatabase]
+    Schema: Optional[SnowflakeSchema]
+    Table: Optional[SnowflakeTable]
+    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
+    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
+    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
+    ContentColumnName: Optional[SnowflakeContentColumnName]
+    SnowflakeVpcConfiguration: Optional[SnowflakeVpcConfiguration]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    RoleARN: Optional[RoleARN]
+    RetryOptions: Optional[SnowflakeRetryOptions]
+    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    S3DestinationDescription: Optional[S3DestinationDescription]
 
 
 class HttpEndpointDescription(TypedDict, total=False):
@@ -793,6 +961,7 @@ class SplunkDestinationDescription(TypedDict, total=False):
     S3DestinationDescription: Optional[S3DestinationDescription]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    BufferingHints: Optional[SplunkBufferingHints]
 
 
 class ElasticsearchDestinationDescription(TypedDict, total=False):
@@ -839,6 +1008,8 @@ class ExtendedS3DestinationDescription(TypedDict, total=False):
     S3BackupDescription: Optional[S3DestinationDescription]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DestinationDescription(TypedDict, total=False):
@@ -852,6 +1023,7 @@ class DestinationDescription(TypedDict, total=False):
     ]
     SplunkDestinationDescription: Optional[SplunkDestinationDescription]
     HttpEndpointDestinationDescription: Optional[HttpEndpointDestinationDescription]
+    SnowflakeDestinationDescription: Optional[SnowflakeDestinationDescription]
     AmazonOpenSearchServerlessDestinationDescription: Optional[
         AmazonOpenSearchServerlessDestinationDescription
     ]
@@ -950,6 +1122,24 @@ class ExtendedS3DestinationUpdate(TypedDict, total=False):
     S3BackupUpdate: Optional[S3DestinationUpdate]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
+
+
+class GetKinesisStreamInput(ServiceRequest):
+    DeliveryStreamARN: DeliveryStreamARN
+
+
+class SessionCredentials(TypedDict, total=False):
+    AccessKeyId: AccessKeyId
+    SecretAccessKey: SecretAccessKey
+    SessionToken: SessionToken
+    Expiration: Timestamp
+
+
+class GetKinesisStreamOutput(TypedDict, total=False):
+    KinesisStreamARN: Optional[KinesisStreamARN]
+    CredentialsForReadingKinesisStream: Optional[SessionCredentials]
 
 
 class HttpEndpointDestinationUpdate(TypedDict, total=False):
@@ -1040,6 +1230,26 @@ class RedshiftDestinationUpdate(TypedDict, total=False):
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
 
 
+class SnowflakeDestinationUpdate(TypedDict, total=False):
+    AccountUrl: Optional[SnowflakeAccountUrl]
+    PrivateKey: Optional[SnowflakePrivateKey]
+    KeyPassphrase: Optional[SnowflakeKeyPassphrase]
+    User: Optional[SnowflakeUser]
+    Database: Optional[SnowflakeDatabase]
+    Schema: Optional[SnowflakeSchema]
+    Table: Optional[SnowflakeTable]
+    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
+    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
+    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
+    ContentColumnName: Optional[SnowflakeContentColumnName]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    RoleARN: Optional[RoleARN]
+    RetryOptions: Optional[SnowflakeRetryOptions]
+    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    S3Update: Optional[S3DestinationUpdate]
+
+
 class SplunkDestinationUpdate(TypedDict, total=False):
     HECEndpoint: Optional[HECEndpoint]
     HECEndpointType: Optional[HECEndpointType]
@@ -1050,6 +1260,7 @@ class SplunkDestinationUpdate(TypedDict, total=False):
     S3Update: Optional[S3DestinationUpdate]
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    BufferingHints: Optional[SplunkBufferingHints]
 
 
 class StartDeliveryStreamEncryptionInput(ServiceRequest):
@@ -1079,6 +1290,15 @@ class TagDeliveryStreamOutput(TypedDict, total=False):
 
 
 TagKeyList = List[TagKey]
+TagrisSweepList = List[TagrisSweepListItem]
+
+
+class TagrisVerifyResourcesExistInput(ServiceRequest):
+    TagrisSweepList: TagrisSweepList
+
+
+class TagrisVerifyResourcesExistOutput(TypedDict, total=False):
+    TagrisSweepListResult: TagrisSweepListResult
 
 
 class UntagDeliveryStreamInput(ServiceRequest):
@@ -1104,6 +1324,7 @@ class UpdateDestinationInput(ServiceRequest):
     AmazonOpenSearchServerlessDestinationUpdate: Optional[
         AmazonOpenSearchServerlessDestinationUpdate
     ]
+    SnowflakeDestinationUpdate: Optional[SnowflakeDestinationUpdate]
 
 
 class UpdateDestinationOutput(TypedDict, total=False):
@@ -1132,6 +1353,8 @@ class FirehoseApi:
         tags: TagDeliveryStreamInputTagList = None,
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
+        snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
+        **kwargs
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1141,6 +1364,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         allow_force_delete: BooleanObject = None,
+        **kwargs
     ) -> DeleteDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1151,7 +1375,14 @@ class FirehoseApi:
         delivery_stream_name: DeliveryStreamName,
         limit: DescribeDeliveryStreamInputLimit = None,
         exclusive_start_destination_id: DestinationId = None,
+        **kwargs
     ) -> DescribeDeliveryStreamOutput:
+        raise NotImplementedError
+
+    @handler("GetKinesisStream")
+    def get_kinesis_stream(
+        self, context: RequestContext, delivery_stream_arn: DeliveryStreamARN, **kwargs
+    ) -> GetKinesisStreamOutput:
         raise NotImplementedError
 
     @handler("ListDeliveryStreams")
@@ -1161,6 +1392,7 @@ class FirehoseApi:
         limit: ListDeliveryStreamsInputLimit = None,
         delivery_stream_type: DeliveryStreamType = None,
         exclusive_start_delivery_stream_name: DeliveryStreamName = None,
+        **kwargs
     ) -> ListDeliveryStreamsOutput:
         raise NotImplementedError
 
@@ -1171,12 +1403,17 @@ class FirehoseApi:
         delivery_stream_name: DeliveryStreamName,
         exclusive_start_tag_key: TagKey = None,
         limit: ListTagsForDeliveryStreamInputLimit = None,
+        **kwargs
     ) -> ListTagsForDeliveryStreamOutput:
         raise NotImplementedError
 
     @handler("PutRecord")
     def put_record(
-        self, context: RequestContext, delivery_stream_name: DeliveryStreamName, record: Record
+        self,
+        context: RequestContext,
+        delivery_stream_name: DeliveryStreamName,
+        record: Record,
+        **kwargs
     ) -> PutRecordOutput:
         raise NotImplementedError
 
@@ -1186,6 +1423,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         records: PutRecordBatchRequestEntryList,
+        **kwargs
     ) -> PutRecordBatchOutput:
         raise NotImplementedError
 
@@ -1195,12 +1433,13 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
+        **kwargs
     ) -> StartDeliveryStreamEncryptionOutput:
         raise NotImplementedError
 
     @handler("StopDeliveryStreamEncryption")
     def stop_delivery_stream_encryption(
-        self, context: RequestContext, delivery_stream_name: DeliveryStreamName
+        self, context: RequestContext, delivery_stream_name: DeliveryStreamName, **kwargs
     ) -> StopDeliveryStreamEncryptionOutput:
         raise NotImplementedError
 
@@ -1210,6 +1449,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tags: TagDeliveryStreamInputTagList,
+        **kwargs
     ) -> TagDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1219,6 +1459,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tag_keys: TagKeyList,
+        **kwargs
     ) -> UntagDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1237,5 +1478,13 @@ class FirehoseApi:
         splunk_destination_update: SplunkDestinationUpdate = None,
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
+        snowflake_destination_update: SnowflakeDestinationUpdate = None,
+        **kwargs
     ) -> UpdateDestinationOutput:
+        raise NotImplementedError
+
+    @handler("VerifyResourcesExistForTagris")
+    def verify_resources_exist_for_tagris(
+        self, context: RequestContext, tagris_sweep_list: TagrisSweepList, **kwargs
+    ) -> TagrisVerifyResourcesExistOutput:
         raise NotImplementedError

@@ -60,6 +60,8 @@ from localstack.aws.api.firehose import (
     S3DestinationConfiguration,
     S3DestinationDescription,
     S3DestinationUpdate,
+    SnowflakeDestinationConfiguration,
+    SnowflakeDestinationUpdate,
     SplunkDestinationConfiguration,
     SplunkDestinationUpdate,
     TagDeliveryStreamInputTagList,
@@ -220,6 +222,8 @@ class FirehoseProvider(FirehoseApi):
         tags: TagDeliveryStreamInputTagList = None,
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
+        snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
+        **kwargs,
     ) -> CreateDeliveryStreamOutput:
         store = self.get_store(context.account_id, context.region)
 
@@ -317,7 +321,7 @@ class FirehoseProvider(FirehoseApi):
                         region_name=context.region,
                         listener_func=listener_function,
                         wait_until_started=True,
-                        ddb_lease_table_suffix="-firehose",
+                        ddb_lease_table_suffix=f"-firehose-{delivery_stream_name}",
                     )
 
                     self.kinesis_listeners[delivery_stream_arn] = process
@@ -336,6 +340,7 @@ class FirehoseProvider(FirehoseApi):
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         allow_force_delete: BooleanObject = None,
+        **kwargs,
     ) -> DeleteDeliveryStreamOutput:
         store = self.get_store(context.account_id, context.region)
         delivery_stream_description = store.delivery_streams.pop(delivery_stream_name, {})
@@ -361,6 +366,7 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_name: DeliveryStreamName,
         limit: DescribeDeliveryStreamInputLimit = None,
         exclusive_start_destination_id: DestinationId = None,
+        **kwargs,
     ) -> DescribeDeliveryStreamOutput:
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
@@ -373,6 +379,7 @@ class FirehoseProvider(FirehoseApi):
         limit: ListDeliveryStreamsInputLimit = None,
         delivery_stream_type: DeliveryStreamType = None,
         exclusive_start_delivery_stream_name: DeliveryStreamName = None,
+        **kwargs,
     ) -> ListDeliveryStreamsOutput:
         store = self.get_store(context.account_id, context.region)
         delivery_stream_names = []
@@ -383,7 +390,11 @@ class FirehoseProvider(FirehoseApi):
         )
 
     def put_record(
-        self, context: RequestContext, delivery_stream_name: DeliveryStreamName, record: Record
+        self,
+        context: RequestContext,
+        delivery_stream_name: DeliveryStreamName,
+        record: Record,
+        **kwargs,
     ) -> PutRecordOutput:
         record = self._reencode_record(record)
         return self._put_record(context.account_id, context.region, delivery_stream_name, record)
@@ -393,6 +404,7 @@ class FirehoseProvider(FirehoseApi):
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         records: PutRecordBatchRequestEntryList,
+        **kwargs,
     ) -> PutRecordBatchOutput:
         records = self._reencode_records(records)
         return PutRecordBatchOutput(
@@ -407,6 +419,7 @@ class FirehoseProvider(FirehoseApi):
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tags: TagDeliveryStreamInputTagList,
+        **kwargs,
     ) -> TagDeliveryStreamOutput:
         store = self.get_store(context.account_id, context.region)
         delivery_stream_description = _get_description_or_raise_not_found(
@@ -421,6 +434,7 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_name: DeliveryStreamName,
         exclusive_start_tag_key: TagKey = None,
         limit: ListTagsForDeliveryStreamInputLimit = None,
+        **kwargs,
     ) -> ListTagsForDeliveryStreamOutput:
         store = self.get_store(context.account_id, context.region)
         delivery_stream_description = _get_description_or_raise_not_found(
@@ -439,6 +453,7 @@ class FirehoseProvider(FirehoseApi):
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tag_keys: TagKeyList,
+        **kwargs,
     ) -> UntagDeliveryStreamOutput:
         store = self.get_store(context.account_id, context.region)
         delivery_stream_description = _get_description_or_raise_not_found(
@@ -464,6 +479,8 @@ class FirehoseProvider(FirehoseApi):
         splunk_destination_update: SplunkDestinationUpdate = None,
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
+        snowflake_destination_update: SnowflakeDestinationUpdate = None,
+        **kwargs,
     ) -> UpdateDestinationOutput:
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
@@ -718,8 +735,7 @@ class FirehoseProvider(FirehoseApi):
             client = connect_to(aws_access_key_id=account_id, region_name=region_name).lambda_
 
             response = client.invoke(FunctionName=lambda_arn, Payload=event)
-            result = response.get("Payload").read()
-            result = json.loads(to_str(result))
+            result = json.load(response["Payload"])
             records = result.get("records", []) if result else []
         else:
             LOG.warning("Unsupported Firehose processor type '%s'", proc_type)

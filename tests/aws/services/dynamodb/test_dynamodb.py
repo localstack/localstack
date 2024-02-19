@@ -1,20 +1,24 @@
 import json
 import re
+import time
 from datetime import datetime
 from time import sleep
 from typing import Dict
 
+import botocore.exceptions
 import pytest
+import requests
 from boto3.dynamodb.types import STRING
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
+from localstack import config
 from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
-from localstack.constants import AWS_REGION_US_EAST_1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, queries, resources
 from localstack.utils.aws.resources import create_dynamodb_table
@@ -102,8 +106,39 @@ class TestDynamoDB:
         assert len(result["Items"]) == num_items
 
     @markers.aws.only_localstack
+    def test_time_to_live_deletion(self, aws_client, ddb_test_table):
+        table_name = ddb_test_table
+        aws_client.dynamodb.update_time_to_live(
+            TableName=table_name,
+            TimeToLiveSpecification={"Enabled": True, "AttributeName": "expiringAt"},
+        )
+        aws_client.dynamodb.describe_time_to_live(TableName=table_name)
+
+        exp = int(time.time()) - 10  # expired
+        items = [
+            {PARTITION_KEY: {"S": "expired"}, "expiringAt": {"N": str(exp)}},
+            {PARTITION_KEY: {"S": "not-expired"}, "expiringAt": {"N": str(exp + 120)}},
+        ]
+        for item in items:
+            aws_client.dynamodb.put_item(TableName=table_name, Item=item)
+
+        url = f"{config.internal_service_url()}/_aws/dynamodb/expired"
+        response = requests.delete(url)
+        assert response.status_code == 200
+        assert response.json() == {"ExpiredItems": 1}
+
+        result = aws_client.dynamodb.get_item(
+            TableName=table_name, Key={PARTITION_KEY: {"S": "not-expired"}}
+        )
+        assert result.get("Item")
+        result = aws_client.dynamodb.get_item(
+            TableName=table_name, Key={PARTITION_KEY: {"S": "expired"}}
+        )
+        assert not result.get("Item")
+
+    @markers.aws.only_localstack
     def test_time_to_live(self, aws_client, ddb_test_table):
-        # check response for inexistent table
+        # check response for nonexistent table
         response = testutil.send_describe_dynamodb_ttl_request("test")
         assert json.loads(response._content)["__type"] == "ResourceNotFoundException"
         assert response.status_code == 400
@@ -202,55 +237,6 @@ class TestDynamoDB:
         assert "NewKey" not in tags.keys()
 
         aws_client.dynamodb.delete_table(TableName=table_name)
-
-    @markers.aws.only_localstack
-    def test_stream_spec_and_region_replacement(self, aws_client):
-        ddbstreams = aws_client.dynamodbstreams
-        kinesis = aws_client.kinesis
-        table_name = f"ddb-{short_uid()}"
-        resources.create_dynamodb_table(
-            table_name,
-            partition_key=PARTITION_KEY,
-            stream_view_type="NEW_AND_OLD_IMAGES",
-            client=aws_client.dynamodb,
-        )
-
-        table = aws_client.dynamodb.describe_table(TableName=table_name)["Table"]
-
-        # assert ARN formats
-        expected_arn_prefix = "arn:aws:dynamodb:" + TEST_AWS_REGION_NAME
-        assert table["TableArn"].startswith(expected_arn_prefix)
-        assert table["LatestStreamArn"].startswith(expected_arn_prefix)
-
-        # test list_streams filtering
-        stream_tables = ddbstreams.list_streams(TableName="foo")["Streams"]
-        assert len(stream_tables) == 0
-
-        # assert stream has been created
-        stream_tables = [
-            s["TableName"] for s in ddbstreams.list_streams(TableName=table_name)["Streams"]
-        ]
-        assert table_name in stream_tables
-        assert len(stream_tables) == 1
-        stream_name = get_kinesis_stream_name(table_name)
-        assert stream_name in kinesis.list_streams()["StreamNames"]
-
-        # assert shard ID formats
-        result = ddbstreams.describe_stream(StreamArn=table["LatestStreamArn"])["StreamDescription"]
-        assert "Shards" in result
-        for shard in result["Shards"]:
-            assert re.match(r"^shardId-[0-9]{20}-[a-zA-Z0-9]{1,36}$", shard["ShardId"])
-
-        # clean up
-        aws_client.dynamodb.delete_table(TableName=table_name)
-
-        def _assert_stream_deleted():
-            stream_tables = [s["TableName"] for s in ddbstreams.list_streams()["Streams"]]
-            assert table_name not in stream_tables
-            assert stream_name not in kinesis.list_streams()["StreamNames"]
-
-        # assert stream has been deleted
-        retry(_assert_stream_deleted, sleep=0.4, retries=5)
 
     @markers.aws.only_localstack
     def test_multiple_update_expressions(self, aws_client, ddb_test_table):
@@ -850,7 +836,7 @@ class TestDynamoDB:
         sleep(1)
         # Get stream description
         stream_description = kinesis.describe_stream(StreamName=stream_name)["StreamDescription"]
-        table_name = "table_with_kinesis_stream-%s" % short_uid()
+        table_name = f"table_with_kinesis_stream-{short_uid()}"
         # create table
         dynamodb.create_table(
             TableName=table_name,
@@ -1499,14 +1485,14 @@ class TestDynamoDB:
 
     @markers.aws.only_localstack
     def test_dynamodb_create_table_with_sse_specification(
-        self, dynamodb_create_table_with_parameters
+        self, dynamodb_create_table_with_parameters, account_id, region_name
     ):
         table_name = f"ddb-table-{short_uid()}"
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
         kms_master_key_arn = arns.kms_key_arn(
-            kms_master_key_id, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+            kms_master_key_id, account_id=account_id, region_name=region_name
         )
 
         result = dynamodb_create_table_with_parameters(
@@ -1543,6 +1529,16 @@ class TestDynamoDB:
         kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
         result = aws_client.kms.describe_key(KeyId=kms_master_key_arn)
         snapshot.match("KMSDescription", result)
+
+        result = aws_client.dynamodb.update_table(
+            TableName=table_name, SSESpecification={"Enabled": False}
+        )
+        snapshot.match(
+            "update-table-disable-sse-spec", result["TableDescription"]["SSEDescription"]
+        )
+
+        result = aws_client.dynamodb.describe_table(TableName=table_name)
+        assert "SSESpecification" not in result["Table"]
 
     @markers.aws.validated
     def test_dynamodb_get_batch_items(
@@ -1923,3 +1919,32 @@ class TestDynamoDB:
             sleep=sleep_secs,
             sleep_before=2,
         )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
+    def test_return_values_on_conditions_check_failure(
+        self, dynamodb_create_table_with_parameters, snapshot, aws_client
+    ):
+        table_name = f"table-{short_uid()}"
+        dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        item = {
+            PARTITION_KEY: {"S": "456"},
+            "price": {"N": "650"},
+            "product": {"S": "sporting goods"},
+        }
+        aws_client.dynamodb.put_item(TableName=table_name, Item=item)
+        try:
+            aws_client.dynamodb.delete_item(
+                TableName=table_name,
+                Key={PARTITION_KEY: {"S": "456"}},
+                ConditionExpression="price between :lo and :hi",
+                ExpressionAttributeValues={":lo": {"N": "500"}, ":hi": {"N": "600"}},
+                ReturnValuesOnConditionCheckFailure="ALL_OLD",
+            )
+        except botocore.exceptions.ClientError as error:
+            snapshot.match("items", error.response)  # noqa

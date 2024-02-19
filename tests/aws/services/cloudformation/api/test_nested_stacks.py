@@ -10,7 +10,7 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     # upload template to S3
     artifacts_bucket = f"cf-artifacts-{short_uid()}"
@@ -116,7 +116,7 @@ def test_nested_with_nested_stack(deploy_cfn_template, s3_create_bucket, aws_cli
 
 
 @markers.aws.validated
-@pytest.mark.skip(reason="not working correctly")
+@pytest.mark.skip(reason="UPDATE isn't working on nested stacks")
 def test_lifecycle_nested_stack(deploy_cfn_template, s3_create_bucket, aws_client):
     bucket_name = s3_create_bucket()
     nested_bucket_name = f"test-bucket-nested-{short_uid()}"
@@ -215,7 +215,7 @@ def test_nested_output_in_params(deploy_cfn_template, s3_create_bucket, snapshot
     topic_name = f"test-topic-{short_uid()}"
     role_name = f"test-role-{short_uid()}"
 
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+    if is_aws_cloud():
         base_path = "https://s3.amazonaws.com"
     else:
         base_path = "http://localhost:4566"
@@ -252,3 +252,42 @@ def test_nested_output_in_params(deploy_cfn_template, s3_create_bucket, snapshot
     topics = sns_pager.paginate().build_full_result()["Topics"]
     filtered_topics = [t["TopicArn"] for t in topics if topic_name in t["TopicArn"]]
     assert len(filtered_topics) == 1
+
+
+@markers.aws.validated
+def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_client):
+    """
+    see: TestCloudFormationConditions.test_condition_on_outputs
+
+    equivalent to the condition test but for a nested stack
+    """
+    bucket_name = s3_create_bucket()
+    nested_bucket_name = f"test-bucket-nested-{short_uid()}"
+    key = f"test-key-{short_uid()}"
+
+    aws_client.s3.upload_file(
+        os.path.join(
+            os.path.dirname(__file__), "../../../templates/nested-stack-conditions.nested.yaml"
+        ),
+        Bucket=bucket_name,
+        Key=key,
+    )
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/nested-stack-conditions.yaml"
+        ),
+        parameters={
+            "S3BucketPath": f"/{bucket_name}/{key}",
+            "S3BucketName": nested_bucket_name,
+        },
+    )
+
+    assert stack.outputs["ProdBucket"] == f"{nested_bucket_name}-prod"
+    assert aws_client.s3.head_bucket(Bucket=stack.outputs["ProdBucket"])
+
+    # Ensure that nested stack names are correctly generated
+    nested_stack = aws_client.cloudformation.describe_stacks(
+        StackName=stack.outputs["NestedStackArn"]
+    )
+    assert ":" not in nested_stack["Stacks"][0]["StackName"]

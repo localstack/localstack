@@ -120,11 +120,12 @@ ELASTICSEARCH_PLUGIN_LIST = [
 ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 
 # the version of opensearch which is used by default
-OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.9"
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.11"
 
 # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
 OPENSEARCH_PLUGIN_LIST = [
     "ingest-attachment",
+    "analysis-kuromoji",
 ]
 
 # API endpoint for analytics events

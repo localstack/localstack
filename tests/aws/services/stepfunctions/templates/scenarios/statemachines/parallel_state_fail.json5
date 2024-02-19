@@ -1,0 +1,21 @@
+{
+  "Comment": "PARALLEL_STATE_FAIL",
+  "StartAt": "ParallelState",
+  "States": {
+    "ParallelState": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "Branch1",
+          "States": {
+            "Branch1": {
+              "Type": "Fail",
+              "Error": "FailureType"
+            }
+          }
+        },
+      ]
+    }
+  }
+}

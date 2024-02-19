@@ -230,22 +230,32 @@ def is_env_not_false(env_var_name: str) -> bool:
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
 
-def load_environment(profile: str = None) -> Optional[str]:
-    """Loads the environment variables from ~/.localstack/{profile}.env
-    :param profile: the profile to load (defaults to "default")
-    :returns str: the name of the actually loaded profile (might be the fallback)
+def load_environment(profiles: str = None, env=os.environ) -> List[str]:
+    """Loads the environment variables from ~/.localstack/{profile}.env, for each profile listed in the profiles.
+    :param env: environment to load profile to. Defaults to `os.environ`
+    :param profiles: a comma separated list of profiles to load (defaults to "default")
+    :returns str: the list of the actually loaded profiles (might be the fallback)
     """
-    if not profile:
-        profile = "default"
+    if not profiles:
+        profiles = "default"
 
-    path = os.path.join(CONFIG_DIR, f"{profile}.env")
-    if not os.path.exists(path):
-        return None
-
+    profiles = profiles.split(",")
+    environment = {}
     import dotenv
 
-    dotenv.load_dotenv(path, override=False)
-    return profile
+    for profile in profiles:
+        profile = profile.strip()
+        path = os.path.join(CONFIG_DIR, f"{profile}.env")
+        if not os.path.exists(path):
+            continue
+        environment.update(dotenv.dotenv_values(path))
+
+    for k, v in environment.items():
+        # we do not want to override the environment
+        if k not in env and v is not None:
+            env[k] = v
+
+    return profiles
 
 
 def is_persistence_enabled() -> bool:
@@ -371,10 +381,10 @@ CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 # keep this on top to populate environment
 try:
     # CLI specific: the actually loaded configuration profile
-    LOADED_PROFILE = load_environment(CONFIG_PROFILE)
+    LOADED_PROFILES = load_environment(CONFIG_PROFILE)
 except ImportError:
     # dotenv may not be available in lambdas or other environments where config is loaded
-    LOADED_PROFILE = None
+    LOADED_PROFILES = None
 
 # directory for persisting data (TODO: deprecated, simply use PERSISTENCE=1)
 DATA_DIR = os.environ.get("DATA_DIR", "").strip()
@@ -645,6 +655,8 @@ def populate_edge_configuration(
     GATEWAY_LISTEN,
 ) = populate_edge_configuration(os.environ)
 
+GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
+
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
 
@@ -769,6 +781,7 @@ LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
 
 # limit in which to kinesis-mock will start throwing exceptions
 KINESIS_SHARD_LIMIT = os.environ.get("KINESIS_SHARD_LIMIT", "").strip() or "100"
+KINESIS_PERSISTENCE = is_env_not_false("KINESIS_PERSISTENCE")
 
 # limit in which to kinesis-mock will start throwing exceptions
 KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT = (
@@ -805,11 +818,17 @@ DYNAMODB_SHARE_DB = int(os.environ.get("DYNAMODB_SHARE_DB") or 0)
 # the port on which to expose dynamodblocal
 DYNAMODB_LOCAL_PORT = int(os.environ.get("DYNAMODB_LOCAL_PORT") or 0)
 
+# Enables the automatic removal of stale KV pais based on TTL
+DYNAMODB_REMOVE_EXPIRED_ITEMS = is_env_true("DYNAMODB_REMOVE_EXPIRED_ITEMS")
+
 # Used to toggle PurgeInProgress exceptions when calling purge within 60 seconds
 SQS_DELAY_PURGE_RETRY = is_env_true("SQS_DELAY_PURGE_RETRY")
 
 # Used to toggle QueueDeletedRecently errors when re-creating a queue within 60 seconds of deleting it
 SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
+
+# Used to toggle MessageRetentionPeriod functionality in SQS queues
+SQS_ENABLE_MESSAGE_RETENTION_PERIOD = is_env_true("SQS_ENABLE_MESSAGE_RETENTION_PERIOD")
 
 # Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", or "path"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "standard"
@@ -864,9 +883,9 @@ LAMBDA_PREBUILD_IMAGES = is_env_true("LAMBDA_PREBUILD_IMAGES")
 # Where Lambdas will be executed.
 LAMBDA_RUNTIME_EXECUTOR = os.environ.get("LAMBDA_RUNTIME_EXECUTOR", "").strip()
 
-# PUBLIC: 10 (default)
+# PUBLIC: 20 (default)
 # How many seconds Lambda will wait for the runtime environment to start up.
-LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 10)
+LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT") or 20)
 
 # PUBLIC: base images for Lambda (default) https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html
 # localstack/services/lambda_/invocation/lambda_models.py:IMAGE_MAPPING
@@ -913,6 +932,18 @@ LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE = int(
 # SEMI-PUBLIC: not actively communicated
 LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = int(
     os.environ.get("LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES", 4 * 1024)
+)
+# SEMI-PUBLIC: not actively communicated
+LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES = int(
+    os.environ.get(
+        "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES", 6 * 1024 * 1024 + 100
+    )  # the 100 comes from the init defaults
+)
+
+LAMBDA_EVENTS_INTERNAL_SQS = is_env_not_false("LAMBDA_EVENTS_INTERNAL_SQS")
+
+LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC = float(
+    os.environ.get("LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC") or 1.0
 )
 
 # DEV: 0 (default) only applies to new lambda provider. For LS developers only.
@@ -1019,7 +1050,10 @@ DNS_PORT = int(os.environ.get("DNS_PORT", "53"))
 # Comma-separated list of regex patterns for DNS names to resolve locally.
 # Any DNS name not matched against any of the patterns on this whitelist
 # will resolve to the real DNS entry, rather than the local one.
-DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()
+DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM = (
+    os.environ.get("DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM") or ""
+).strip()
+DNS_LOCAL_NAME_PATTERNS = (os.environ.get("DNS_LOCAL_NAME_PATTERNS") or "").strip()  # deprecated
 
 # IP address that AWS endpoints should resolve to in our local DNS server. By default,
 # hostnames resolve to 127.0.0.1, which allows to use the LocalStack APIs transparently
@@ -1090,6 +1124,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_LOCAL_PORT",
     "DYNAMODB_SHARE_DB",
     "DYNAMODB_READ_ERROR_PROBABILITY",
+    "DYNAMODB_REMOVE_EXPIRED_ITEMS",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
     "ENABLE_CONFIG_UPDATES",
@@ -1097,16 +1132,19 @@ CONFIG_ENV_VARS = [
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",
     "GATEWAY_LISTEN",
+    "GATEWAY_WORKER_THREAD_COUNT",
     "HOSTNAME",
     "HOSTNAME_FROM_LAMBDA",
     "KINESIS_ERROR_PROBABILITY",
     "KINESIS_MOCK_PERSIST_INTERVAL",
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
+    "KINESIS_PERSISTENCE",
     "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
     "LAMBDA_DOCKER_DNS",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",
+    "LAMBDA_EVENTS_INTERNAL_SQS",
     "LAMBDA_INIT_DEBUG",
     "LAMBDA_INIT_BIN_PATH",
     "LAMBDA_INIT_BOOTSTRAP_PATH",
@@ -1130,6 +1168,8 @@ CONFIG_ENV_VARS = [
     "LAMBDA_LIMITS_CODE_SIZE_UNZIPPED",
     "LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE",
     "LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES",
+    "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES",
+    "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_SNS_GCM_PUBLISHING",
     "LOCALSTACK_API_KEY",
@@ -1156,6 +1196,7 @@ CONFIG_ENV_VARS = [
     "SNAPSHOT_FLUSH_INTERVAL",
     "SQS_DELAY_PURGE_RETRY",
     "SQS_DELAY_RECENTLY_DELETED",
+    "SQS_ENABLE_MESSAGE_RETENTION_PERIOD",
     "SQS_ENDPOINT_STRATEGY",
     "SQS_DISABLE_CLOUDWATCH_METRICS",
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",

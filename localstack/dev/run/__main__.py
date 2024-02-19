@@ -1,12 +1,13 @@
 import dataclasses
 import os
-from typing import Tuple
+from typing import Iterable, Tuple
 
 import click
 from rich.rule import Rule
 
 from localstack import config
 from localstack.cli import console
+from localstack.runtime import hooks
 from localstack.utils.bootstrap import Container, ContainerConfigurators
 from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
@@ -114,9 +115,6 @@ from .paths import HostPaths
     required=False,
     help="Docker network to start the container in",
 )
-@click.option(
-    "--dev-extensions", is_flag=True, default=False, help="Load extensions in develop mode"
-)
 @click.argument("command", nargs=-1, required=False)
 def run(
     image: str = None,
@@ -134,7 +132,6 @@ def run(
     entrypoint: str = None,
     network: str = None,
     command: str = None,
-    dev_extensions: bool = False,
 ):
     """
     A tool for localstack developers to start localstack containers. Run this in your localstack or
@@ -215,118 +212,108 @@ def run(
         │   └── ...
 
     """
-    status = console.status("Configuring")
-    status.start()
+    with console.status("Configuring") as status:
+        env_vars = parse_env_vars(env)
+        configure_licensing_credentials_environment(env_vars)
 
-    # set the VOLUME_DIR config variable like in the CLI
-    if not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
-        config.VOLUME_DIR = str(cache_dir() / "volume")
+        # run all prepare_host hooks
+        hooks.prepare_host.run()
 
-    # setup important paths on the host
-    host_paths = HostPaths(
-        # we assume that python -m localstack.dev.run is always executed in the repo source
-        workspace_dir=os.path.abspath(os.path.join(os.getcwd(), "..")),
-        volume_dir=volume_dir or config.VOLUME_DIR,
-    )
+        # set the VOLUME_DIR config variable like in the CLI
+        if not os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip():
+            config.VOLUME_DIR = str(cache_dir() / "volume")
 
-    # auto-set pro flag
-    if pro is None:
-        if os.getcwd().endswith("localstack-ext"):
-            pro = True
-        else:
-            pro = False
-
-    # setup base configuration
-    container_config = ContainerConfiguration(
-        image_name=image,
-        name=config.MAIN_CONTAINER_NAME if not randomize else f"localstack-{short_uid()}",
-        remove=True,
-        interactive=True,
-        tty=True,
-        env_vars=dict(),
-        volumes=VolumeMappings(),
-        ports=PortMappings(),
-        network=network,
-    )
-
-    # replicate pro startup
-    if pro:
-        try:
-            from localstack_ext.plugins import modify_gateway_listen_config
-
-            modify_gateway_listen_config(config)
-        except ImportError:
-            pass
-
-    # setup configurators
-    configurators = [
-        ImageConfigurator(pro, image),
-        PortConfigurator(randomize),
-        ConfigEnvironmentConfigurator(pro),
-        ContainerConfigurators.mount_localstack_volume(host_paths.volume_dir),
-        CoverageRunScriptConfigurator(host_paths=host_paths),
-    ]
-    if command:
-        configurators.append(ContainerConfigurators.custom_command(list(command)))
-    if entrypoint:
-        container_config.entrypoint = entrypoint
-    if mount_docker_socket:
-        configurators.append(ContainerConfigurators.mount_docker_socket)
-    if mount_source:
-        configurators.append(
-            SourceVolumeMountConfigurator(
-                host_paths=host_paths,
-                pro=pro,
-            )
+        # setup important paths on the host
+        host_paths = HostPaths(
+            # we assume that python -m localstack.dev.run is always executed in the repo source
+            workspace_dir=os.path.abspath(os.path.join(os.getcwd(), "..")),
+            volume_dir=volume_dir or config.VOLUME_DIR,
         )
-    if mount_entrypoints:
-        configurators.append(EntryPointMountConfigurator(host_paths=host_paths, pro=pro))
-    if mount_dependencies:
-        configurators.append(DependencyMountConfigurator(host_paths=host_paths))
-    if develop:
-        configurators.append(ContainerConfigurators.develop)
-    if dev_extensions:
+
+        # auto-set pro flag
+        if pro is None:
+            if os.getcwd().endswith("localstack-ext"):
+                pro = True
+            else:
+                pro = False
+
+        # setup base configuration
+        container_config = ContainerConfiguration(
+            image_name=image,
+            name=config.MAIN_CONTAINER_NAME if not randomize else f"localstack-{short_uid()}",
+            remove=True,
+            interactive=True,
+            tty=True,
+            env_vars=dict(),
+            volumes=VolumeMappings(),
+            ports=PortMappings(),
+            network=network,
+        )
+
+        # replicate pro startup
         if pro:
             try:
-                from localstack_ext.extensions.bootstrap import (
-                    run_on_configure_host_hook,
-                    run_on_configure_localstack_container_hook,
-                )
+                from localstack_ext.plugins import modify_gateway_listen_config
 
-                # collect dev extensions
-                run_on_configure_host_hook()
-
-                # create stub container with configuration to apply
-                c = Container(container_config=container_config)
-                run_on_configure_localstack_container_hook(c)
-
+                modify_gateway_listen_config(config)
             except ImportError:
                 pass
-        else:
-            click.echo("Pro mode is required for extensions support")
 
-    # make sure anything coming from CLI arguments has priority
-    configurators.extend(
-        [
-            ContainerConfigurators.volume_cli_params(volume),
-            ContainerConfigurators.port_cli_params(publish),
-            ContainerConfigurators.env_cli_params(env),
+        # setup configurators
+        configurators = [
+            ImageConfigurator(pro, image),
+            PortConfigurator(randomize),
+            ConfigEnvironmentConfigurator(pro),
+            ContainerConfigurators.mount_localstack_volume(host_paths.volume_dir),
+            CoverageRunScriptConfigurator(host_paths=host_paths),
+            ContainerConfigurators.config_env_vars,
         ]
-    )
 
-    # run configurators
-    for configurator in configurators:
-        configurator(container_config)
-    # print the config
-    print_config(container_config)
+        # create stub container with configuration to apply
+        c = Container(container_config=container_config)
 
-    # run the container
-    docker = CmdDockerClient()
-    status.update("Creating container")
-    try:
+        # apply existing hooks first that can later be overwritten
+        hooks.configure_localstack_container.run(c)
+
+        if command:
+            configurators.append(ContainerConfigurators.custom_command(list(command)))
+        if entrypoint:
+            container_config.entrypoint = entrypoint
+        if mount_docker_socket:
+            configurators.append(ContainerConfigurators.mount_docker_socket)
+        if mount_source:
+            configurators.append(
+                SourceVolumeMountConfigurator(
+                    host_paths=host_paths,
+                    pro=pro,
+                )
+            )
+        if mount_entrypoints:
+            configurators.append(EntryPointMountConfigurator(host_paths=host_paths, pro=pro))
+        if mount_dependencies:
+            configurators.append(DependencyMountConfigurator(host_paths=host_paths))
+        if develop:
+            configurators.append(ContainerConfigurators.develop)
+
+        # make sure anything coming from CLI arguments has priority
+        configurators.extend(
+            [
+                ContainerConfigurators.volume_cli_params(volume),
+                ContainerConfigurators.port_cli_params(publish),
+                ContainerConfigurators.env_cli_params(env),
+            ]
+        )
+
+        # run configurators
+        for configurator in configurators:
+            configurator(container_config)
+        # print the config
+        print_config(container_config)
+
+        # run the container
+        docker = CmdDockerClient()
+        status.update("Creating container")
         container_id = docker.create_container_from_config(container_config)
-    finally:
-        status.stop()
 
     rule = Rule(f"Interactive session with {container_id[:12]} 💻")
     console.print(rule)
@@ -354,6 +341,41 @@ def print_config(cfg: ContainerConfiguration):
             d.pop(k)
 
     console.print(d)
+
+
+def parse_env_vars(params: Iterable[str] = None) -> dict[str, str]:
+    env = {}
+
+    if not params:
+        return env
+
+    for e in params:
+        if "=" in e:
+            k, v = e.split("=", maxsplit=1)
+            env[k] = v
+        else:
+            # there's currently no way in our abstraction to only pass the variable name (as
+            # you can do in docker) so we resolve the value here.
+            env[e] = os.getenv(e)
+
+    return env
+
+
+def configure_licensing_credentials_environment(env_vars: dict[str, str]):
+    """
+    If an api key or auth token is set in the parsed CLI parameters, then we also set them into the OS environment
+    unless they are already set. This is just convenience so you don't have to set them twice.
+
+    :param env_vars: the environment variables parsed from the CLI parameters
+    """
+    if os.environ.get("LOCALSTACK_API_KEY"):
+        return
+    if os.environ.get("LOCALSTACK_AUTH_TOKEN"):
+        return
+    if api_key := env_vars.get("LOCALSTACK_API_KEY"):
+        os.environ["LOCALSTACK_API_KEY"] = api_key
+    if api_key := env_vars.get("LOCALSTACK_AUTH_TOKEN"):
+        os.environ["LOCALSTACK_AUTH_TOKEN"] = api_key
 
 
 def main():

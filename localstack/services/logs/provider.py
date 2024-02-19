@@ -23,6 +23,7 @@ from localstack.aws.api.logs import (
     KmsKeyId,
     ListTagsForResourceResponse,
     ListTagsLogGroupResponse,
+    LogGroupClass,
     LogGroupName,
     LogsApi,
     LogStreamName,
@@ -59,6 +60,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_stream_name: LogStreamName,
         log_events: InputLogEvents,
         sequence_token: SequenceToken = None,
+        **kwargs,
     ) -> PutLogEventsResponse:
         logs_backend = get_moto_logs_backend(context.account_id, context.region)
         metric_filters = logs_backend.filters.metric_filters if is_api_enabled("cloudwatch") else []
@@ -139,6 +141,8 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_group_name: LogGroupName,
         kms_key_id: KmsKeyId = None,
         tags: Tags = None,
+        log_group_class: LogGroupClass = None,
+        **kwargs,
     ) -> None:
         call_moto(context)
         if tags:
@@ -149,7 +153,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
             store.TAGS.setdefault(resource_arn, {}).update(tags)
 
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceResponse:
         self._check_resource_arn_tagging(resource_arn)
         store = logs_stores[context.account_id][context.region]
@@ -157,7 +161,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         return ListTagsForResourceResponse(tags=tags)
 
     def list_tags_log_group(
-        self, context: RequestContext, log_group_name: LogGroupName
+        self, context: RequestContext, log_group_name: LogGroupName, **kwargs
     ) -> ListTagsLogGroupResponse:
         # deprecated implementation, new one: list_tags_for_resource
         self._verify_log_group_exists(
@@ -171,7 +175,11 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         return ListTagsLogGroupResponse(tags=tags)
 
     def untag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs,
     ) -> None:
         self._check_resource_arn_tagging(resource_arn)
         store = logs_stores[context.account_id][context.region]
@@ -180,7 +188,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
             tags_stored.pop(tag, None)
 
     def untag_log_group(
-        self, context: RequestContext, log_group_name: LogGroupName, tags: TagList
+        self, context: RequestContext, log_group_name: LogGroupName, tags: TagList, **kwargs
     ) -> None:
         # deprecated implementation -> new one: untag_resource
         self._verify_log_group_exists(
@@ -195,14 +203,14 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
             tags_stored.pop(tag, None)
 
     def tag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: Tags, **kwargs
     ) -> None:
         self._check_resource_arn_tagging(resource_arn)
         store = logs_stores[context.account_id][context.region]
         store.TAGS.get(resource_arn, {}).update(tags or {})
 
     def tag_log_group(
-        self, context: RequestContext, log_group_name: LogGroupName, tags: Tags
+        self, context: RequestContext, log_group_name: LogGroupName, tags: Tags, **kwargs
     ) -> None:
         # deprecated implementation -> new one: tag_resource
         self._verify_log_group_exists(
@@ -255,7 +263,9 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
 
     if role_arn:
         factory = connect_to.with_assumed_role(
-            role_arn=role_arn, service_principal=ServicePrincipal.logs
+            role_arn=role_arn,
+            service_principal=ServicePrincipal.logs,
+            region_name=arn_data["region"],
         )
     else:
         factory = connect_to(aws_access_key_id=arn_data["account"], region_name=arn_data["region"])
@@ -361,7 +371,9 @@ def moto_put_log_events(self: "MotoLogStream", log_events):
 
             if subscription_filter.role_arn:
                 factory = connect_to.with_assumed_role(
-                    role_arn=subscription_filter.role_arn, service_principal=ServicePrincipal.logs
+                    role_arn=subscription_filter.role_arn,
+                    service_principal=ServicePrincipal.logs,
+                    region_name=arn_data["region"],
                 )
             else:
                 factory = connect_to(

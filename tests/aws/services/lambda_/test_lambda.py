@@ -14,8 +14,10 @@ from io import BytesIO
 from typing import Dict, TypeVar
 
 import pytest
+import requests
 from botocore.config import Config
 from botocore.response import StreamingBody
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Architecture, Runtime
@@ -28,8 +30,6 @@ from localstack.testing.aws.lambda_utils import (
 )
 from localstack.testing.aws.util import create_client_with_keys, is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.pytest.snapshot import is_aws
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.testing.snapshots.transformer_utility import PATTERN_UUID
 from localstack.utils import files, platform, testutil
 from localstack.utils.aws import arns
@@ -47,6 +47,7 @@ LOG = logging.getLogger(__name__)
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_ECHO_JSON_BODY = os.path.join(THIS_FOLDER, "functions/lambda_echo_json_body.py")
 TEST_LAMBDA_PYTHON_REQUEST_ID = os.path.join(THIS_FOLDER, "functions/lambda_request_id.py")
 TEST_LAMBDA_PYTHON_ECHO_VERSION_ENV = os.path.join(
     THIS_FOLDER, "functions/lambda_echo_version_env.py"
@@ -67,6 +68,7 @@ TEST_LAMBDA_PYTHON_RUNTIME_EXIT_SEGFAULT = os.path.join(
 TEST_LAMBDA_PYTHON_HANDLER_ERROR = os.path.join(THIS_FOLDER, "functions/lambda_handler_error.py")
 TEST_LAMBDA_PYTHON_HANDLER_EXIT = os.path.join(THIS_FOLDER, "functions/lambda_handler_exit.py")
 TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
+TEST_LAMBDA_PYTHON_S3_INTEGRATION = os.path.join(THIS_FOLDER, "functions/lambda_s3_integration.py")
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
 TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
@@ -108,6 +110,14 @@ TEST_LAMBDA_ULIMITS = os.path.join(THIS_FOLDER, "functions/lambda_ulimits.py")
 TEST_LAMBDA_INVOCATION_TYPE = os.path.join(THIS_FOLDER, "functions/lambda_invocation_type.py")
 TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
+TEST_LAMBDA_PROCESS_INSPECTION = os.path.join(THIS_FOLDER, "functions/lambda_process_inspection.py")
+TEST_LAMBDA_CUSTOM_RESPONSE_SIZE = os.path.join(THIS_FOLDER, "functions/lambda_response_size.py")
+TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
+    THIS_FOLDER, "functions/lambda_multiple_handlers.py"
+)
+
+TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
+TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
 
 # TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
 PYTHON_TEST_RUNTIMES = (
@@ -193,7 +203,81 @@ class TestLambdaBaseFeatures:
         )
         # do not use snapshots here - loading 5MB json takes ~14 sec
         assert "FunctionError" not in result
-        assert payload == json.loads(to_str(result["Payload"].read()))
+        assert payload == json.load(result["Payload"])
+
+    @markers.aws.validated
+    def test_lambda_large_response(self, caplog, create_lambda_function, aws_client):
+        # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
+        caplog.set_level(logging.INFO)
+
+        function_name = f"large_response-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
+            func_name=function_name,
+            runtime=Runtime.python3_10,
+        )
+        response_size = 6 * 1024 * 1024  # actually + 100 is the upper limit
+        payload = {"bytenum": response_size}  # 6MB response size
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        assert "FunctionError" not in result
+        assert "a" * response_size == json.load(result["Payload"])
+
+    @markers.aws.validated
+    def test_lambda_too_large_response(self, create_lambda_function, aws_client, snapshot):
+        function_name = f"large_payload-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
+            func_name=function_name,
+            runtime=Runtime.python3_10,
+        )
+        response_size = 7 * 1024 * 1024  # 7MB response size (i.e. over 6MB limit)
+        payload = {"bytenum": response_size}
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        snapshot.match("invoke_result", result)
+
+        # second invoke to make sure we didn't break further invocations
+        result2 = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        snapshot.match("invoke_result_2", result2)
+
+        # check that our manual log/print statement ends up in CW
+        def _check_print_in_logs():
+            log_events = (
+                aws_client.logs.get_paginator("filter_log_events")
+                .paginate(logGroupName=f"/aws/lambda/{function_name}")
+                .build_full_result()
+            )
+            assert any(["generating bytes" in e["message"] for e in log_events["events"]])
+
+        retry(_check_print_in_logs, retries=10)
+
+    @markers.aws.only_localstack
+    def test_lambda_too_large_response_but_with_custom_limit(
+        self, caplog, create_lambda_function, aws_client, monkeypatch
+    ):
+        # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
+        caplog.set_level(logging.INFO)
+        monkeypatch.setattr(
+            config, "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES", str(7 * 1024 * 1024 + 100)
+        )
+
+        function_name = f"large_payload-{short_uid()}"
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
+            func_name=function_name,
+            runtime=Runtime.python3_10,
+        )
+        response_size = 7 * 1024 * 1024  # 7MB response size (i.e. over 6MB limit)
+        payload = {"bytenum": response_size}
+        result = aws_client.lambda_.invoke(
+            FunctionName=function_name, Payload=to_bytes(json.dumps(payload))
+        )
+        assert "a" * response_size == json.load(result["Payload"])
 
     @markers.aws.validated
     def test_function_state(self, lambda_su_role, snapshot, create_lambda_function_aws, aws_client):
@@ -257,7 +341,7 @@ class TestLambdaBaseFeatures:
         )
 
         invoke_result = aws_client.lambda_.invoke(FunctionName=function_name)
-        payload = json.loads(to_str(invoke_result["Payload"].read()))
+        payload = json.load(invoke_result["Payload"])
         snapshot.match("invoke-result-assumed-role-arn", payload["Arn"])
 
         # Example: arn:aws:sts::111111111111:assumed-role/lambda-autogenerated-c33a16ee/f@lambda_function
@@ -276,7 +360,7 @@ class TestLambdaBaseFeatures:
 
     @markers.aws.validated
     def test_lambda_different_iam_keys_environment(
-        self, lambda_su_role, create_lambda_function, snapshot, aws_client, region
+        self, lambda_su_role, create_lambda_function, snapshot, aws_client, region_name
     ):
         """
         In this test we want to check if multiple lambda environments (= instances of hot functions) have
@@ -296,7 +380,7 @@ class TestLambdaBaseFeatures:
             result = aws_client.lambda_.invoke(
                 FunctionName=function_name, Payload=to_bytes(json.dumps({"sleep": 2}))
             )
-            return json.loads(to_str(result["Payload"].read()))["environment"]
+            return json.load(result["Payload"])["environment"]
 
         def _transform_to_key_dict(env: Dict[str, str]):
             return {
@@ -326,8 +410,8 @@ class TestLambdaBaseFeatures:
             # since a lot of asserts are based on the structure of the arns, snapshots are not too nice here, so manual
             keys_1 = _transform_to_key_dict(results[0])
             keys_2 = _transform_to_key_dict(results[1])
-            sts_client_1 = create_client_with_keys("sts", keys=keys_1, region_name=region)
-            sts_client_2 = create_client_with_keys("sts", keys=keys_2, region_name=region)
+            sts_client_1 = create_client_with_keys("sts", keys=keys_1, region_name=region_name)
+            sts_client_2 = create_client_with_keys("sts", keys=keys_2, region_name=region_name)
             identity_1 = sts_client_1.get_caller_identity()
             identity_2 = sts_client_2.get_caller_identity()
             assert identity_1["Arn"] == identity_2["Arn"]
@@ -356,7 +440,7 @@ class TestLambdaBehavior:
         ],
     )
     # TODO: fix arch compatibility detection for supported emulations
-    @pytest.mark.skipif(get_arch() == "arm64", reason="Cannot inspect x86 runtime on arm")
+    @pytest.mark.skipif(get_arch() == Arch.arm64, reason="Cannot inspect x86 runtime on arm")
     @markers.aws.validated
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_x86_{short_uid()}"
@@ -372,7 +456,7 @@ class TestLambdaBehavior:
         snapshot.match("invoke_runtime_x86_introspection", invoke_result)
 
     @pytest.mark.skipif(
-        not is_arm_compatible() and not is_aws(),
+        not is_arm_compatible() and not is_aws_cloud(),
         reason="ARM architecture not supported on this host",
     )
     @markers.snapshot.skip_snapshot_verify(
@@ -426,7 +510,7 @@ class TestLambdaBehavior:
         # This assumption could be violated when using remote Lambda executors
         native_arch = platform.get_arch()
         non_native_architecture = (
-            Architecture.x86_64 if native_arch == "arm64" else Architecture.arm64
+            Architecture.x86_64 if native_arch == Arch.arm64 else Architecture.arm64
         )
         func_name = f"test_lambda_arch_{short_uid()}"
         create_lambda_function(
@@ -437,69 +521,52 @@ class TestLambdaBehavior:
         )
 
         invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
-        payload = json.loads(to_str(invoke_result["Payload"].read()))
+        payload = json.load(invoke_result["Payload"])
         lambda_arch = standardized_arch(payload.get("platform_machine"))
         assert lambda_arch == native_arch
 
     @pytest.mark.skip  # TODO remove once is_arch_compatible checks work properly
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..LoggingConfig",
+            "$..CreateFunctionResponse.LoggingConfig",
+            "$..RuntimeVersionConfig.RuntimeVersionArn",
+        ]
+    )
     @markers.aws.validated
-    def test_mixed_architecture(self, create_lambda_function, aws_client):
-        """Test emulation and interaction of lambda functions with different architectures.
-        Limitation: only works on ARM hosts that support x86 emulation.
+    def test_mixed_architecture(self, create_lambda_function, aws_client, snapshot):
+        """Test emulation of a lambda function changing architectures.
+        Limitation: only works on hosts that support both ARM and AMD64 architectures.
         """
-        func_name = f"test_lambda_x86_{short_uid()}"
-        create_lambda_function(
+        func_name = f"test_lambda_mixed_arch_{short_uid()}"
+        zip_file = create_lambda_archive(load_file(TEST_LAMBDA_INTROSPECT_PYTHON), get_content=True)
+        create_function_response = create_lambda_function(
             func_name=func_name,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
+            zip_file=zip_file,
+            runtime=Runtime.python3_12,
             Architectures=[Architecture.x86_64],
         )
+        snapshot.match("create_function_response", create_function_response)
 
-        invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
-        assert "FunctionError" not in invoke_result
-        payload = json.loads(invoke_result["Payload"].read())
+        invoke_result_x86 = aws_client.lambda_.invoke(FunctionName=func_name)
+        assert "FunctionError" not in invoke_result_x86
+        payload = json.load(invoke_result_x86["Payload"])
         assert payload.get("platform_machine") == "x86_64"
 
-        func_name_arm = f"test_lambda_arm_{short_uid()}"
-        create_lambda_function(
-            func_name=func_name_arm,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
-            Architectures=[Architecture.arm64],
+        update_function_configuration_response = aws_client.lambda_.update_function_code(
+            FunctionName=func_name, ZipFile=zip_file, Architectures=[Architecture.arm64]
+        )
+        snapshot.match(
+            "update_function_configuration_response", update_function_configuration_response
+        )
+        aws_client.lambda_.get_waiter(waiter_name="function_updated_v2").wait(
+            FunctionName=func_name
         )
 
-        invoke_result_arm = aws_client.lambda_.invoke(FunctionName=func_name_arm)
+        invoke_result_arm = aws_client.lambda_.invoke(FunctionName=func_name)
         assert "FunctionError" not in invoke_result_arm
-        payload_arm = json.loads(invoke_result_arm["Payload"].read())
+        payload_arm = json.load(invoke_result_arm["Payload"])
         assert payload_arm.get("platform_machine") == "aarch64"
-
-        v1_result = aws_client.lambda_.publish_version(FunctionName=func_name)
-        v1 = v1_result["Version"]
-
-        # assert version is available(!)
-        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
-            FunctionName=func_name, Qualifier=v1
-        )
-
-        arm_v1_result = aws_client.lambda_.publish_version(FunctionName=func_name_arm)
-        arm_v1 = arm_v1_result["Version"]
-
-        # assert version is available(!)
-        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
-            FunctionName=func_name_arm, Qualifier=arm_v1
-        )
-
-        invoke_result_2 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier=v1)
-        assert "FunctionError" not in invoke_result_2
-        payload_2 = json.loads(invoke_result_2["Payload"].read())
-        assert payload_2.get("platform_machine") == "x86_64"
-
-        invoke_result_arm_2 = aws_client.lambda_.invoke(
-            FunctionName=func_name_arm, Qualifier=arm_v1
-        )
-        assert "FunctionError" not in invoke_result_arm_2
-        payload_arm_2 = json.loads(invoke_result_arm_2["Payload"].read())
-        assert payload_arm_2.get("platform_machine") == "aarch64"
 
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
@@ -690,6 +757,72 @@ class TestLambdaBehavior:
         )
         snapshot.match("invoke-result-read-number-after-timeout", result)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..CreateFunctionResponse.LoggingConfig",
+            # not set directly on init in lambda, but only on runtime processes
+            "$..Payload.environment.AWS_ACCESS_KEY_ID",
+            "$..Payload.environment.AWS_SECRET_ACCESS_KEY",
+            "$..Payload.environment.AWS_SESSION_TOKEN",
+            "$..Payload.environment.AWS_XRAY_DAEMON_ADDRESS",
+            # variables set by default in the image/docker
+            "$..Payload.environment.HOME",
+            "$..Payload.environment.HOSTNAME",
+            # LocalStack specific variables
+            "$..Payload.environment.AWS_ENDPOINT_URL",
+            "$..Payload.environment.AWS_LAMBDA_FUNCTION_TIMEOUT",
+            "$..Payload.environment.EDGE_PORT",
+            "$..Payload.environment.LOCALSTACK_FUNCTION_ACCOUNT_ID",
+            "$..Payload.environment.LOCALSTACK_HOSTNAME",
+            "$..Payload.environment.LOCALSTACK_INIT_LOG_LEVEL",
+            "$..Payload.environment.LOCALSTACK_RUNTIME_ENDPOINT",
+            "$..Payload.environment.LOCALSTACK_RUNTIME_ID",
+            "$..Payload.environment.LOCALSTACK_USER",
+            "$..Payload.environment.LOCALSTACK_POST_INVOKE_WAIT_MS",
+            "$..Payload.environment.LOCALSTACK_MAX_PAYLOAD_SIZE",
+            # internal AWS lambda functionality
+            "$..Payload.environment._AWS_XRAY_DAEMON_ADDRESS",
+            "$..Payload.environment._LAMBDA_CONSOLE_SOCKET",
+            "$..Payload.environment._LAMBDA_CONTROL_SOCKET",
+            "$..Payload.environment._LAMBDA_DIRECT_INVOKE_SOCKET",
+            "$..Payload.environment._LAMBDA_LOG_FD",
+            "$..Payload.environment._LAMBDA_RUNTIME_LOAD_TIME",
+            "$..Payload.environment._LAMBDA_SB_ID",
+            "$..Payload.environment._LAMBDA_SHARED_MEM_FD",
+            "$..Payload.environment._LAMBDA_TELEMETRY_API_PASSPHRASE",
+            "$..Payload.environment._X_AMZN_TRACE_ID",
+        ]
+    )
+    def test_lambda_init_environment(
+        self, aws_client, create_lambda_function, snapshot, monkeypatch
+    ):
+        if not is_aws_cloud():
+            # needed to be able to read /proc/1/environ
+            monkeypatch.setattr(config, "LAMBDA_INIT_USER", "root")
+        func_name = f"test_lambda_{short_uid()}"
+        # The file descriptors might change, and might have to be added to the transformers at some point
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value(
+                    "_LAMBDA_TELEMETRY_API_PASSPHRASE", "telemetry-passphrase"
+                ),
+                snapshot.transform.key_value("AWS_LAMBDA_LOG_STREAM_NAME", "log-stream-name"),
+                snapshot.transform.key_value("_X_AMZN_TRACE_ID", "xray-trace-id"),
+                snapshot.transform.key_value("_LAMBDA_RUNTIME_LOAD_TIME", "runtime-load-time"),
+            ]
+        )
+        create_result = create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_PROCESS_INSPECTION,
+            runtime=Runtime.python3_12,
+            client=aws_client.lambda_,
+        )
+        snapshot.match("create-result", create_result)
+
+        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=json.dumps({"pid": 1}))
+        snapshot.match("lambda-init-inspection", result)
+
 
 URL_HANDLER_CODE = """
 def handler(event, ctx):
@@ -826,6 +959,55 @@ class TestLambdaURL:
         assert event["isBase64Encoded"] is False
 
     @markers.aws.validated
+    def test_lambda_url_headers_and_status(self, create_lambda_function, aws_client):
+        function_name = f"test-fnurl-echo-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_PYTHON_ECHO_JSON_BODY, get_content=True),
+            runtime=Runtime.python3_10,
+            handler="lambda_echo_json_body.handler",
+        )
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name,
+            AuthType="NONE",
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+
+        url = f"{url_config['FunctionUrl']}custom_path/extend?test_param=test_value"
+
+        event = {
+            "statusCode": 201,
+            "headers": {
+                "Content-Type": "application/json",
+                "My-Custom-Header": "Custom Value",
+            },
+            "body": json.dumps({"message": "hello-world"}),
+            "isBase64Encoded": False,
+        }
+        result = requests.post(url, json=event)
+        assert result.json() == {"message": "hello-world"}
+        assert result.status_code == 201
+        assert "my-custom-header" in result.headers
+        assert result.headers["my-custom-header"] == "Custom Value"
+
+        # try with string status code
+        event = {
+            "statusCode": "418",
+            "body": "i'm a teapot",
+            "isBase64Encoded": False,
+        }
+        result = requests.post(url, json=event)
+        assert result.text == "i'm a teapot"
+        assert result.status_code == 418
+
+    @markers.aws.validated
     def test_lambda_url_invocation_exception(self, create_lambda_function, snapshot, aws_client):
         # TODO: extend tests
         snapshot.add_transformer(
@@ -865,7 +1047,7 @@ class TestLambdaURL:
         assert result.status_code == 502
 
 
-@pytest.mark.skipif(not is_aws(), reason="Not yet implemented")
+@pytest.mark.skipif(not is_aws_cloud(), reason="Not yet implemented")
 class TestLambdaPermissions:
     @markers.aws.validated
     def test_lambda_permission_url_invocation(self, create_lambda_function, snapshot, aws_client):
@@ -1456,6 +1638,14 @@ class TestLambdaMultiAccounts:
     def test_cross_account_access(
         self, primary_client, secondary_client, create_lambda_function, dummylayer
     ):
+        # TODO: AWS validate this test
+        # As of 2024-02, AWS restricts the input for adding resource-based policy to layer versions via AddLayerVersionPermission.
+        # Only 'lambda:GetLayerVersion' is accepted for Action.
+        # https://github.com/boto/botocore/blob/cf7b8449643187670620ab699596ca785e3ec889/botocore/data/lambda/2015-03-31/service-2.json#L3906-L3909
+        # This appears to have been the case atleast since 2021-06.
+        # Furthermore this contradicts with what its docs on valid IAM actions for layer versions:
+        # https://docs.aws.amazon.com/lambda/latest/dg/lambda-api-permissions-ref.html#permissions-resources-layers
+
         # Create resources using primary test credentials
         func_name = f"func-{short_uid()}"
         func_arn = create_lambda_function(
@@ -1542,14 +1732,14 @@ class TestLambdaMultiAccounts:
 
         assert secondary_client.delete_function_concurrency(FunctionName=func_arn)
 
-        alias_name = short_uid()
+        alias_name = f"alias-{short_uid()}"
         assert secondary_client.create_alias(
             FunctionName=func_arn, FunctionVersion="$LATEST", Name=alias_name
         )
 
         assert secondary_client.get_alias(FunctionName=func_arn, Name=alias_name)
 
-        alias_description = "blyat"
+        alias_description = f"alias-description-{short_uid()}"
         assert secondary_client.update_alias(
             FunctionName=func_arn, Name=alias_name, Description=alias_description
         )
@@ -1676,7 +1866,7 @@ class TestLambdaConcurrency:
         snapshot.match("invoke_latest_second_exc", e.value.response)
 
     @pytest.mark.skip(reason="Not yet implemented")
-    @pytest.mark.skipif(condition=is_aws(), reason="very slow (only execute when needed)")
+    @pytest.mark.skipif(condition=is_aws_cloud(), reason="very slow (only execute when needed)")
     @markers.aws.validated
     def test_lambda_provisioned_concurrency_moves_with_alias(
         self, create_lambda_function, snapshot, aws_client
@@ -1854,11 +2044,11 @@ class TestLambdaConcurrency:
         snapshot.match("get_provisioned_postwait", get_provisioned_postwait)
 
         invoke_result1 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier=v1["Version"])
-        result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+        result1 = json.load(invoke_result1["Payload"])
         assert result1 == "provisioned-concurrency"
 
         invoke_result2 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier="$LATEST")
-        result2 = json.loads(to_str(invoke_result2["Payload"].read()))
+        result2 = json.load(invoke_result2["Payload"])
         assert result2 == "on-demand"
 
     @markers.aws.validated
@@ -1895,7 +2085,7 @@ class TestLambdaConcurrency:
             FunctionName=func_name,
             Qualifier=v1["Version"],
         )
-        result = json.loads(to_str(invoke_result["Payload"].read()))
+        result = json.load(invoke_result["Payload"])
         assert result == "provisioned-concurrency"
 
         # Send two simultaneous invokes
@@ -1909,7 +2099,7 @@ class TestLambdaConcurrency:
                     Qualifier=v1["Version"],
                     Payload=json.dumps({"wait": 6}),
                 )
-                result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+                result1 = json.load(invoke_result1["Payload"])
                 assert result1 == "provisioned-concurrency"
             except Exception:
                 LOG.exception("Invoking Lambda failed")
@@ -1926,7 +2116,7 @@ class TestLambdaConcurrency:
             FunctionName=func_name,
             Qualifier=v1["Version"],
         )
-        result2 = json.loads(to_str(invoke_result2["Payload"].read()))
+        result2 = json.load(invoke_result2["Payload"])
         assert result2 == "on-demand"
 
         # Wait for the first invoker thread
@@ -2117,7 +2307,7 @@ class TestLambdaConcurrency:
 
         # passes since the version has a provisioned concurrency config set
         invoke_result1 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier=v1["Version"])
-        result1 = json.loads(to_str(invoke_result1["Payload"].read()))
+        result1 = json.load(invoke_result1["Payload"])
         assert result1 == "provisioned-concurrency"
 
         # try to add a new provisioned concurrency config to another qualifier on the same function
@@ -2221,6 +2411,42 @@ class TestLambdaVersions:
             FunctionName=function_name, Qualifier=first_publish_response["Version"], Payload=b"{}"
         )
         snapshot.match("invocation_result_v1_end", invocation_result_v1)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
+    @markers.aws.validated
+    def test_lambda_handler_update(self, aws_client, create_lambda_function, snapshot):
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            # handler.handler by convention
+            handler_file=TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS,
+            runtime=Runtime.python3_12,
+            client=aws_client.lambda_,
+        )
+
+        invoke_result_handler_one = aws_client.lambda_.invoke(FunctionName=func_name)
+        snapshot.match("invoke_result_handler_one", invoke_result_handler_one)
+
+        update_function_configuration_result = aws_client.lambda_.update_function_configuration(
+            FunctionName=func_name, Handler="handler.handler_two"
+        )
+        snapshot.match("update_function_configuration_result", update_function_configuration_result)
+        waiter = aws_client.lambda_.get_waiter("function_updated_v2")
+        waiter.wait(FunctionName=func_name)
+
+        get_function_result = aws_client.lambda_.get_function(FunctionName=func_name)
+        snapshot.match("get_function_result", get_function_result)
+
+        invoke_result_handler_two = aws_client.lambda_.invoke(FunctionName=func_name)
+        snapshot.match("invoke_result_handler_two", invoke_result_handler_two)
+
+        publish_version_result = aws_client.lambda_.publish_version(FunctionName=func_name)
+        waiter.wait(FunctionName=func_name, Qualifier=publish_version_result["Version"])
+
+        invoke_result_handler_two_postpublish = aws_client.lambda_.invoke(FunctionName=func_name)
+        snapshot.match(
+            "invoke_result_handler_two_postpublish", invoke_result_handler_two_postpublish
+        )
 
 
 # TODO: test if routing is static for a single invocation:
@@ -2360,7 +2586,7 @@ class TestLambdaAliases:
             invoke_response = aws_client.lambda_.invoke(
                 FunctionName=function_name, Qualifier=create_alias_response["Name"], Payload=b"{}"
             )
-            payload = json.loads(to_str(invoke_response["Payload"].read()))
+            payload = json.load(invoke_response["Payload"])
             versions_hit.add(payload["version_from_ctx"])
             retries += 1
         assert len(versions_hit) == 2, f"Did not hit both versions after {max_retries} retries"

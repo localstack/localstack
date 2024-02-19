@@ -4,6 +4,7 @@ import os
 from typing import Callable, Final
 
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.aws.api.stepfunctions import (
     CreateStateMachineOutput,
@@ -12,7 +13,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventType,
 )
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
-from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
@@ -25,10 +26,7 @@ _DELETION_TIMEOUT_SECS: Final[int] = 120
 
 
 def is_legacy_provider():
-    return (
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
-        and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") == "legacy"
-    )
+    return not is_aws_cloud() and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") == "legacy"
 
 
 def is_not_legacy_provider():

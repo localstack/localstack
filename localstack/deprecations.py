@@ -269,6 +269,12 @@ DEPRECATIONS = [
         "0.14.0",
         "This option has no effect anymore. Please use OPENSEARCH_ENDPOINT_STRATEGY instead.",
     ),
+    EnvVarDeprecation(
+        "DNS_LOCAL_NAME_PATTERNS",
+        "3.0.0",
+        "This option was confusingly named. Please use DNS_NAME_PATTERNS_TO_RESOLVE_UPSTREAM "
+        "instead.",
+    ),
 ]
 
 

@@ -1218,5 +1218,126 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution": {
+    "recorded-date": "18-12-2023, 14:22:59",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Input": null,
+                "Name": "TestStartTarget"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "StartExecution"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Input": null,
+                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "Name": "TestStartTarget"
+              },
+              "region": "<region>",
+              "resource": "startExecution",
+              "resourceType": "aws-sdk:sfn"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "startExecution",
+              "resourceType": "aws-sdk:sfn"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "StartDate": "date"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "startExecution",
+              "resourceType": "aws-sdk:sfn"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "StartExecution",
+              "output": {
+                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "StartDate": "date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "StartDate": "date"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

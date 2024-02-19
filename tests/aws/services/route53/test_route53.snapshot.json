@@ -45,5 +45,58 @@
         }
       }
     }
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_private_hosted_zone": {
+    "recorded-date": "15-12-2023, 15:20:07",
+    "recorded-content": {
+      "create-hosted-zone-response": {
+        "ChangeInfo": {
+          "Id": "/change/<change-id>",
+          "Status": "<status:1>",
+          "SubmittedAt": "datetime"
+        },
+        "HostedZone": {
+          "CallerReference": "<caller-reference:1>",
+          "Config": {
+            "Comment": "test",
+            "PrivateZone": true
+          },
+          "Id": "/hostedzone/<zone-id:1>",
+          "Name": "<zone_name:1>",
+          "ResourceRecordSetCount": 2
+        },
+        "Location": "https://route53.amazonaws.com/2013-04-01/hostedzone/<zone-id:1>",
+        "VPC": {
+          "VPCId": "<v-p-c-id:1>",
+          "VPCRegion": "<region>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_hosted_zone": {
+        "HostedZone": {
+          "CallerReference": "<caller-reference:1>",
+          "Config": {
+            "Comment": "test",
+            "PrivateZone": true
+          },
+          "Id": "/hostedzone/<zone-id:1>",
+          "Name": "<zone_name:1>",
+          "ResourceRecordSetCount": 2
+        },
+        "VPCs": [
+          {
+            "VPCId": "<v-p-c-id:1>",
+            "VPCRegion": "<region>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

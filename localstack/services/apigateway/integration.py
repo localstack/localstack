@@ -119,6 +119,23 @@ class BackendIntegration(ABC):
                 response.headers[header_name] = value.strip("'")
         return response
 
+    @classmethod
+    def render_template_selection_expression(cls, invocation_context: ApiInvocationContext):
+        integration = invocation_context.integration
+        template_selection_expression = integration.get("templateSelectionExpression")
+        if not template_selection_expression:
+            return "$default"
+        variables = {
+            "request": {
+                "header": invocation_context.headers,
+                "querystring": invocation_context.query_params(),
+                "body": invocation_context.data_as_string(),
+                "context": invocation_context.context or {},
+                "stage_variables": invocation_context.stage_variables or {},
+            }
+        }
+        return VtlTemplate().render_vtl(template_selection_expression, variables)
+
 
 @lru_cache(maxsize=64)
 def get_service_factory(region_name: str, role_arn: str):
@@ -168,9 +185,9 @@ def get_source_arn(invocation_context: ApiInvocationContext):
 def call_lambda(
     function_arn: str, event: bytes, asynchronous: bool, invocation_context: ApiInvocationContext
 ) -> str:
-    region_name = extract_region_from_arn(function_arn)
     clients = get_service_factory(
-        region_name=region_name, role_arn=invocation_context.integration.get("credentials")
+        region_name=extract_region_from_arn(function_arn),
+        role_arn=invocation_context.integration.get("credentials"),
     )
     inv_result = clients.lambda_.request_metadata(
         service_principal=ServicePrincipal.apigateway, source_arn=get_source_arn(invocation_context)
@@ -202,7 +219,8 @@ class LambdaProxyIntegration(BackendIntegration):
         keys = parsed_result.keys()
         if "statusCode" not in keys or "body" not in keys:
             LOG.warning(
-                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
+                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}\n Lambda output: %s',
+                parsed_result,
             )
             response.status_code = 502
             response._content = json.dumps({"message": "Internal server error"})
@@ -352,7 +370,8 @@ class LambdaProxyIntegration(BackendIntegration):
 
         if not ("statusCode" in keys and "body" in keys):
             LOG.warning(
-                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
+                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}\n Lambda output: %s',
+                parsed_result,
             )
             response.status_code = 502
             response._content = json.dumps({"message": "Internal server error"})
@@ -385,9 +404,14 @@ class LambdaProxyIntegration(BackendIntegration):
 
 class LambdaIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
-        headers = helpers.create_invocation_headers(invocation_context)
         invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        headers = invocation_context.headers
+
+        # resolve integration parameters
+        integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
+        headers.update(integration_parameters.get("headers", {}))
+
         if invocation_context.authorizer_type:
             invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
@@ -466,11 +490,8 @@ class KinesisIntegration(BackendIntegration):
             # integration type "AWS" is only supported for WebSocket APIs and REST
             # API (v1), but the template selection expression is only supported for
             # Websockets
-            template_key = None
             if invocation_context.is_websocket_request():
-                template_key = invocation_context.integration.get(
-                    "TemplateSelectionExpression", "$default"
-                )
+                template_key = self.render_template_selection_expression(invocation_context)
                 payload = self.request_templates.render(invocation_context, template_key)
             else:
                 payload = self.request_templates.render(invocation_context)
@@ -609,8 +630,13 @@ class HTTPIntegration(BackendIntegration):
         path_params = invocation_context.path_params
         method = invocation_context.method
         headers = invocation_context.headers
+
         relative_path, query_string_params = extract_query_string_params(path=invocation_path)
         uri = integration.get("uri") or integration.get("integrationUri") or ""
+
+        # resolve integration parameters
+        integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
+        headers.update(integration_parameters.get("headers", {}))
 
         if ":servicediscovery:" in uri:
             # check if this is a servicediscovery integration URI
@@ -682,12 +708,17 @@ class SQSIntegration(BackendIntegration):
         if "Accept" not in headers:
             headers["Accept"] = "application/json"
 
-        template = integration.get("requestTemplates").get(APPLICATION_JSON)
-        if "GetQueueUrl" in template or "CreateQueue" in template:
-            payload = self.request_templates.render(invocation_context)
-            new_request = f"{payload}&QueueName={queue}"
+        if invocation_context.is_websocket_request():
+            template_key = self.render_template_selection_expression(invocation_context)
+            payload = self.request_templates.render(invocation_context, template_key)
         else:
             payload = self.request_templates.render(invocation_context)
+
+        # not sure what the purpose of this is, but it's in the original code
+        # TODO: check if this is still needed
+        if "GetQueueUrl" in payload or "CreateQueue" in payload:
+            new_request = f"{payload}&QueueName={queue}"
+        else:
             queue_url = f"{config.internal_service_url()}/queue/{region_name}/{account_id}/{queue}"
             new_request = f"{payload}&QueueUrl={queue_url}"
 
@@ -754,7 +785,11 @@ class StepFunctionIntegration(BackendIntegration):
         else:
             payload = json.loads(invocation_context.data)
 
-        client = connect_to().stepfunctions
+        client = get_service_factory(
+            region_name=invocation_context.region_name,
+            role_arn=invocation_context.integration.get("credentials"),
+        ).stepfunctions
+
         if isinstance(payload.get("input"), dict):
             payload["input"] = json.dumps(payload["input"])
 

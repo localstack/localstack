@@ -1,12 +1,8 @@
 import os
-from typing import TYPE_CHECKING
 
 import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
-
-if TYPE_CHECKING:
-    from localstack.testing.snapshots import SnapshotSession
 
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
@@ -14,14 +10,45 @@ pytest_plugins = [
     "localstack.testing.pytest.cloudtrail_tracking",
     "localstack.testing.pytest.fixtures",
     "localstack.testing.pytest.container",
-    "localstack.testing.pytest.snapshot",
+    "localstack_snapshot.pytest.snapshot",
     "localstack.testing.pytest.filters",
     "localstack.testing.pytest.fixture_conflicts",
     "localstack.testing.pytest.detect_thread_leakage",
     "localstack.testing.pytest.marking",
     "localstack.testing.pytest.marker_report",
     "localstack.testing.pytest.in_memory_localstack",
+    "localstack.testing.pytest.validation_tracking",
 ]
+
+
+# FIXME: remove this, quick hack to prevent the HTTPServer fixture to spawn non-daemon threads
+def pytest_sessionstart(session):
+    import threading
+
+    try:
+        from pytest_httpserver import HTTPServer, HTTPServerError
+        from werkzeug.serving import make_server
+
+        from localstack.utils.patch import Patch
+
+        def start_non_daemon_thread(self):
+            if self.is_running():
+                raise HTTPServerError("Server is already running")
+
+            self.server = make_server(
+                self.host, self.port, self.application, ssl_context=self.ssl_context
+            )
+            self.port = self.server.port  # Update port (needed if `port` was set to 0)
+            self.server_thread = threading.Thread(target=self.thread_target, daemon=True)
+            self.server_thread.start()
+
+        patch = Patch(name="start", obj=HTTPServer, new=start_non_daemon_thread)
+        patch.apply()
+
+    except ImportError:
+        # this will be executed in the CLI tests as well, where we don't have the pytest_httpserver dependency
+        # skip in that case
+        pass
 
 
 @pytest.hookimpl
@@ -90,11 +117,6 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_offline)
 
 
-@pytest.fixture(scope="function")
-def snapshot(_snapshot_session: "SnapshotSession"):
-    return _snapshot_session
-
-
 @pytest.fixture(scope="session")
 def aws_session():
     """
@@ -135,6 +157,7 @@ def secondary_aws_client(aws_client_factory):
     This fixture can be used to obtain Boto clients for testing.
 
     The clients are configured with the secondary testing credentials.
+    The region is not overridden.
     """
     from localstack.testing.aws.util import secondary_testing_aws_client
 

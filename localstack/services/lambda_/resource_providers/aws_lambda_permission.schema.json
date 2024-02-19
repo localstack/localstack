@@ -1,0 +1,55 @@
+{
+  "typeName": "AWS::Lambda::Permission",
+  "description": "Resource Type definition for AWS::Lambda::Permission",
+  "additionalProperties": false,
+  "properties": {
+    "FunctionName": {
+      "type": "string"
+    },
+    "Action": {
+      "type": "string"
+    },
+    "EventSourceToken": {
+      "type": "string"
+    },
+    "FunctionUrlAuthType": {
+      "type": "string"
+    },
+    "SourceArn": {
+      "type": "string"
+    },
+    "SourceAccount": {
+      "type": "string"
+    },
+    "PrincipalOrgID": {
+      "type": "string"
+    },
+    "Id": {
+      "type": "string"
+    },
+    "Principal": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "FunctionName",
+    "Action",
+    "Principal"
+  ],
+  "createOnlyProperties": [
+    "/properties/SourceAccount",
+    "/properties/FunctionUrlAuthType",
+    "/properties/SourceArn",
+    "/properties/Principal",
+    "/properties/Action",
+    "/properties/FunctionName",
+    "/properties/EventSourceToken",
+    "/properties/PrincipalOrgID"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ]
+}

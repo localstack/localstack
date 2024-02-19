@@ -3,10 +3,10 @@ import json
 import re
 
 import pytest
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import JsonpathTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.utils import (
@@ -30,6 +30,48 @@ class TestSnfBase:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_state_fail_path(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_RAISE_FAILURE_PATH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Error": "error string", "Cause": "cause string"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_state_fail_intrinsic(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_RAISE_FAILURE_INTRINSIC)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Error": "error string", "Cause": "cause string"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -129,6 +171,28 @@ class TestSnfBase:
             execution_input,
         )
 
+    @markers.aws.validated
+    def test_decl_version_1_0(
+        self,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_events_to_sqs_queue,
+        aws_client,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.DECL_VERSION_1_0)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @pytest.mark.skip(reason="flaky")  # FIXME
     @markers.aws.needs_fixing
     def test_event_bridge_events_failure(
@@ -187,6 +251,27 @@ class TestSnfBase:
         definition = json.dumps(template)
 
         exec_input = json.dumps({"message": "HelloWorld!"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_state_pass_result_null_input_output_paths(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.PASS_RESULT_NULL_INPUT_OUTPUT_PATHS)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"InputValue": 0})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

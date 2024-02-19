@@ -16,7 +16,8 @@ class Variable(EvalComponent):
 
     def _eval_body(self, env: Environment) -> None:
         try:
-            value = JSONPathUtils.extract_json(self.value, env.inp)
+            inp = env.stack[-1]
+            value = JSONPathUtils.extract_json(self.value, inp)
         except Exception as ex:
             value = NoSuchVariable(f"{self.value}, {ex}")
         env.stack.append(value)

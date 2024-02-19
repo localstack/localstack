@@ -21,7 +21,9 @@ NextToken = str
 OnDemandStreamCountLimitObject = int
 OnDemandStreamCountObject = int
 PartitionKey = str
+Policy = str
 PositiveIntegerObject = int
+ResourceARN = str
 RetentionPeriodHours = int
 SequenceNumber = str
 ShardCountObject = int
@@ -248,6 +250,10 @@ class DecreaseStreamRetentionPeriodInput(ServiceRequest):
     StreamARN: Optional[StreamARN]
 
 
+class DeleteResourcePolicyInput(ServiceRequest):
+    ResourceARN: ResourceARN
+
+
 class DeleteStreamInput(ServiceRequest):
     StreamName: Optional[StreamName]
     EnforceConsumerDeletion: Optional[BooleanObject]
@@ -401,6 +407,14 @@ class GetRecordsOutput(TypedDict, total=False):
     ChildShards: Optional[ChildShardList]
 
 
+class GetResourcePolicyInput(ServiceRequest):
+    ResourceARN: ResourceARN
+
+
+class GetResourcePolicyOutput(TypedDict, total=False):
+    Policy: Policy
+
+
 class GetShardIteratorInput(ServiceRequest):
     StreamName: Optional[StreamName]
     ShardId: ShardId
@@ -551,6 +565,11 @@ class PutRecordsOutput(TypedDict, total=False):
     EncryptionType: Optional[EncryptionType]
 
 
+class PutResourcePolicyInput(ServiceRequest):
+    ResourceARN: ResourceARN
+    Policy: Policy
+
+
 class RegisterStreamConsumerInput(ServiceRequest):
     StreamARN: StreamARN
     ConsumerName: ConsumerName
@@ -656,6 +675,7 @@ class KinesisApi:
         tags: TagMap,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -666,6 +686,7 @@ class KinesisApi:
         stream_name: StreamName,
         shard_count: PositiveIntegerObject = None,
         stream_mode_details: StreamModeDetails = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -676,6 +697,13 @@ class KinesisApi:
         retention_period_hours: RetentionPeriodHours,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteResourcePolicy")
+    def delete_resource_policy(
+        self, context: RequestContext, resource_arn: ResourceARN, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -686,6 +714,7 @@ class KinesisApi:
         stream_name: StreamName = None,
         enforce_consumer_deletion: BooleanObject = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -696,14 +725,12 @@ class KinesisApi:
         stream_arn: StreamARN = None,
         consumer_name: ConsumerName = None,
         consumer_arn: ConsumerARN = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DescribeLimits")
-    def describe_limits(
-        self,
-        context: RequestContext,
-    ) -> DescribeLimitsOutput:
+    def describe_limits(self, context: RequestContext, **kwargs) -> DescribeLimitsOutput:
         raise NotImplementedError
 
     @handler("DescribeStream")
@@ -714,6 +741,7 @@ class KinesisApi:
         limit: DescribeStreamInputLimit = None,
         exclusive_start_shard_id: ShardId = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> DescribeStreamOutput:
         raise NotImplementedError
 
@@ -724,12 +752,17 @@ class KinesisApi:
         stream_arn: StreamARN = None,
         consumer_name: ConsumerName = None,
         consumer_arn: ConsumerARN = None,
+        **kwargs
     ) -> DescribeStreamConsumerOutput:
         raise NotImplementedError
 
     @handler("DescribeStreamSummary")
     def describe_stream_summary(
-        self, context: RequestContext, stream_name: StreamName = None, stream_arn: StreamARN = None
+        self,
+        context: RequestContext,
+        stream_name: StreamName = None,
+        stream_arn: StreamARN = None,
+        **kwargs
     ) -> DescribeStreamSummaryOutput:
         raise NotImplementedError
 
@@ -740,6 +773,7 @@ class KinesisApi:
         shard_level_metrics: MetricsNameList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> EnhancedMonitoringOutput:
         raise NotImplementedError
 
@@ -750,6 +784,7 @@ class KinesisApi:
         shard_level_metrics: MetricsNameList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> EnhancedMonitoringOutput:
         raise NotImplementedError
 
@@ -760,7 +795,14 @@ class KinesisApi:
         shard_iterator: ShardIterator,
         limit: GetRecordsInputLimit = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> GetRecordsOutput:
+        raise NotImplementedError
+
+    @handler("GetResourcePolicy")
+    def get_resource_policy(
+        self, context: RequestContext, resource_arn: ResourceARN, **kwargs
+    ) -> GetResourcePolicyOutput:
         raise NotImplementedError
 
     @handler("GetShardIterator")
@@ -773,6 +815,7 @@ class KinesisApi:
         starting_sequence_number: SequenceNumber = None,
         timestamp: Timestamp = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> GetShardIteratorOutput:
         raise NotImplementedError
 
@@ -783,6 +826,7 @@ class KinesisApi:
         retention_period_hours: RetentionPeriodHours,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -797,6 +841,7 @@ class KinesisApi:
         stream_creation_timestamp: Timestamp = None,
         shard_filter: ShardFilter = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> ListShardsOutput:
         raise NotImplementedError
 
@@ -808,6 +853,7 @@ class KinesisApi:
         next_token: NextToken = None,
         max_results: ListStreamConsumersInputLimit = None,
         stream_creation_timestamp: Timestamp = None,
+        **kwargs
     ) -> ListStreamConsumersOutput:
         raise NotImplementedError
 
@@ -818,6 +864,7 @@ class KinesisApi:
         limit: ListStreamsInputLimit = None,
         exclusive_start_stream_name: StreamName = None,
         next_token: NextToken = None,
+        **kwargs
     ) -> ListStreamsOutput:
         raise NotImplementedError
 
@@ -829,6 +876,7 @@ class KinesisApi:
         exclusive_start_tag_key: TagKey = None,
         limit: ListTagsForStreamInputLimit = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> ListTagsForStreamOutput:
         raise NotImplementedError
 
@@ -840,6 +888,7 @@ class KinesisApi:
         adjacent_shard_to_merge: ShardId,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -853,6 +902,7 @@ class KinesisApi:
         explicit_hash_key: HashKey = None,
         sequence_number_for_ordering: SequenceNumber = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> PutRecordOutput:
         raise NotImplementedError
 
@@ -863,12 +913,19 @@ class KinesisApi:
         records: PutRecordsRequestEntryList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> PutRecordsOutput:
+        raise NotImplementedError
+
+    @handler("PutResourcePolicy")
+    def put_resource_policy(
+        self, context: RequestContext, resource_arn: ResourceARN, policy: Policy, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("RegisterStreamConsumer")
     def register_stream_consumer(
-        self, context: RequestContext, stream_arn: StreamARN, consumer_name: ConsumerName
+        self, context: RequestContext, stream_arn: StreamARN, consumer_name: ConsumerName, **kwargs
     ) -> RegisterStreamConsumerOutput:
         raise NotImplementedError
 
@@ -879,6 +936,7 @@ class KinesisApi:
         tag_keys: TagKeyList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -890,6 +948,7 @@ class KinesisApi:
         new_starting_hash_key: HashKey,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -901,6 +960,7 @@ class KinesisApi:
         key_id: KeyId,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -912,6 +972,7 @@ class KinesisApi:
         key_id: KeyId,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -922,6 +983,7 @@ class KinesisApi:
         consumer_arn: ConsumerARN,
         shard_id: ShardId,
         starting_position: StartingPosition,
+        **kwargs
     ) -> SubscribeToShardOutput:
         raise NotImplementedError
 
@@ -933,11 +995,16 @@ class KinesisApi:
         scaling_type: ScalingType,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
+        **kwargs
     ) -> UpdateShardCountOutput:
         raise NotImplementedError
 
     @handler("UpdateStreamMode")
     def update_stream_mode(
-        self, context: RequestContext, stream_arn: StreamARN, stream_mode_details: StreamModeDetails
+        self,
+        context: RequestContext,
+        stream_arn: StreamARN,
+        stream_mode_details: StreamModeDetails,
+        **kwargs
     ) -> None:
         raise NotImplementedError

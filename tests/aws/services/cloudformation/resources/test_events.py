@@ -2,7 +2,6 @@ import json
 import logging
 import os
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
@@ -213,6 +212,29 @@ Resources:
 """
 
 
+@markers.aws.validated
+def test_rule_properties(deploy_cfn_template, aws_client, snapshot):
+    event_bus_name = f"events-{short_uid()}"
+    rule_name = f"rule-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(event_bus_name, "<event-bus-name>"))
+    snapshot.add_transformer(snapshot.transform.regex(rule_name, "<custom-rule-name>"))
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/events_rule_properties.yaml"
+        ),
+        parameters={"EventBusName": event_bus_name, "RuleName": rule_name},
+    )
+
+    rule_id = stack.outputs["RuleWithoutNameArn"].rsplit("/")[-1]
+    snapshot.add_transformer(snapshot.transform.regex(rule_id, "<rule-id>"))
+
+    without_bus_id = stack.outputs["RuleWithoutBusArn"].rsplit("/")[-1]
+    snapshot.add_transformer(snapshot.transform.regex(without_bus_id, "<without-bus-id>"))
+
+    snapshot.match("outputs", stack.outputs)
+
+
 # {"LogicalResourceId": "ScheduledRule", "ResourceType": "AWS::Events::Rule", "ResourceStatus": "CREATE_FAILED", "ResourceStatusReason": "s3 is not a supported service for a target."}
 @markers.aws.needs_fixing
 def test_cfn_handle_events_rule(deploy_cfn_template, aws_client):
@@ -239,12 +261,12 @@ def test_cfn_handle_events_rule(deploy_cfn_template, aws_client):
 
 # {"LogicalResourceId": "TestStateMachine", "ResourceType": "AWS::StepFunctions::StateMachine", "ResourceStatus": "CREATE_FAILED", "ResourceStatusReason": "Resource handler returned message: \"Cross-account pass role is not allowed."}
 @markers.aws.needs_fixing
-def test_cfn_handle_events_rule_without_name(deploy_cfn_template, aws_client):
+def test_cfn_handle_events_rule_without_name(deploy_cfn_template, aws_client, account_id):
     rs = aws_client.events.list_rules()
     rule_names = [rule["Name"] for rule in rs["Rules"]]
 
     stack = deploy_cfn_template(
-        template=TEST_TEMPLATE_18 % arns.iam_role_arn("sfn_role", account_id=TEST_AWS_ACCOUNT_ID),
+        template=TEST_TEMPLATE_18 % arns.iam_role_arn("sfn_role", account_id=account_id),
     )
 
     rs = aws_client.events.list_rules()

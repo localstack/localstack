@@ -24,16 +24,22 @@ on:
         type: string
   pull_request:
     paths:
-      - ".github/workflows/tests-pro-integration.yml"
-      - "localstack/**"
-      - "tests/**"
-      - "setup.py"
-      - "pyproject.toml"
-      - "setup.cfg"
-      - "Dockerfile"
-      - "Dockerfile.rh"
-      - "docker-compose.yml"
-      - "bin/**"
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-pro-integration.yml'
+      - '!doc/**'
+      - '!scripts/**'
+      - './scripts/build_common_test_functions.sh'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
     branches:
       - master
       - 'v[0-9]+'
@@ -42,12 +48,22 @@ on:
     - cron: '0 4 * * *'  # run once a day at 4 AM UTC
   push:
     paths:
-      - ".github/workflows/tests-pro-integration.yml"
-      - "localstack/**/packages.py"
-      - "localstack/packages/*.py"
-      - "setup.py"
-      - "pyproject.toml"
-      - "setup.cfg"
+      - '**'
+      - '!.github/**'
+      - '.github/workflows/tests-pro-integration.yml'
+      - '!doc/**'
+      - '!scripts/**'
+      - './scripts/build_common_test_functions.sh'
+      - '!.dockerignore'
+      - '!.git-blame-ignore-revs'
+      - '!CODE_OF_CONDUCT.md'
+      - '!CODEOWNERS'
+      - '!CONTRIBUTING.md'
+      - '!docker-compose.yml'
+      - '!docker-compose-pro.yml'
+      - '!Dockerfile*'
+      - '!LICENSE.txt'
+      - '!README.md'
     branches:
       - master
 
@@ -70,7 +86,7 @@ jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
     # This job needs secrets and cannot be executed on forks, skip it in this case
-    if: github.event.repository.fork == false
+    if: github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -154,7 +170,7 @@ jobs:
 
       - name: Set up Python 3.11
         id: setup-python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -177,22 +193,23 @@ jobs:
       - name: Install OS packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.9-0ubuntu0* postgresql-client postgresql-plpython3
+          # postgresql-14 pin is required to make explicit install of the version from the Ubuntu repos and not PGDG repos
+          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.10-0ubuntu0* postgresql-client postgresql-plpython3
 
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             localstack-ext/.venv
           # include the matrix group (to re-use the var-libs used in the specific test group)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg') }}-${{steps.determine-companion-ref.outputs.result}}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt', 'localstack/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/setup.cfg') }}-refs/heads/master
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt', 'localstack/requirements-test.txt') }}-refs/heads/master
 
       - name: Cache Ext Dependencies (libs)
         if: inputs.disableCaching != true
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             localstack/.filesystem/var/lib/localstack
@@ -205,7 +222,7 @@ jobs:
       - name: Restore Lambda common runtime packages
         id: cached-lambda-common-restore
         if: inputs.disableCaching != true
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             localstack/tests/aws/services/lambda_/functions/common
@@ -217,7 +234,7 @@ jobs:
 
       - name: Save Lambda common runtime packages
         if: inputs.disableCaching != true
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: |
             localstack/tests/aws/services/lambda_/functions/common
@@ -278,7 +295,7 @@ jobs:
           make test
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: test-results-community-${{ matrix.group }}
@@ -298,12 +315,12 @@ jobs:
     if: success() || failure()
     steps:
       - name: Download Artifacts 1
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: test-results-community-1
 
       - name: Download Artifacts 2
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: test-results-community-2
 

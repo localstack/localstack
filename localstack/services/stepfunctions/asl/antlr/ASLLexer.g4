@@ -18,6 +18,7 @@ COMMENT: '"Comment"';
 STATES: '"States"';
 STARTAT: '"StartAt"';
 NEXTSTATE: '"NextState"';
+VERSION: '"Version"';
 
 TYPE: '"Type"';
 TASK: '"Task"';
@@ -121,7 +122,9 @@ NEXT: '"Next"';
 END: '"End"';
 
 CAUSE: '"Cause"';
+CAUSEPATH: '"CausePath"';
 ERROR: '"Error"';
+ERRORPATH: '"ErrorPath"';
 
 // Retry.
 RETRY: '"Retry"';

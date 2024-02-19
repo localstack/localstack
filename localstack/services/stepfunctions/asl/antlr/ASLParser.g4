@@ -12,6 +12,7 @@ program_decl
 
 top_layer_stmt
     : comment_decl
+    | version_decl
     | startat_decl
     | states_decl
     | timeout_seconds_decl
@@ -23,6 +24,10 @@ startat_decl
 
 comment_decl
     : COMMENT COLON keyword_or_string
+    ;
+
+version_decl
+    : VERSION COLON keyword_or_string
     ;
 
 state_stmt
@@ -38,7 +43,9 @@ state_stmt
     | default_decl
     | choices_decl
     | error_decl
+    | error_path_decl
     | cause_decl
+    | cause_path_decl
     | seconds_decl
     | seconds_path_decl
     | timestamp_decl
@@ -98,7 +105,7 @@ resource_decl
     ;
 
 input_path_decl
-    : INPUTPATH COLON keyword_or_string
+    : INPUTPATH COLON (NULL | keyword_or_string)
     ;
 
 result_decl
@@ -110,7 +117,7 @@ result_path_decl
     ;
 
 output_path_decl
-    : OUTPUTPATH COLON keyword_or_string
+    : OUTPUTPATH COLON (NULL | keyword_or_string)
     ;
 
 end_decl
@@ -125,9 +132,20 @@ error_decl
     : ERROR COLON keyword_or_string
     ;
 
+error_path_decl
+    : ERRORPATH COLON STRINGPATH      #error_path_decl_path
+    | ERRORPATH COLON intrinsic_func  #error_path_decl_intrinsic
+    ;
+
 cause_decl
     : CAUSE COLON keyword_or_string
     ;
+
+cause_path_decl
+    : CAUSEPATH COLON STRINGPATH      #cause_path_decl_path
+    | CAUSEPATH COLON intrinsic_func  #cause_path_decl_intrinsic
+    ;
+
 
 seconds_decl
     : SECONDS COLON INT
@@ -245,6 +263,7 @@ comparison_variable_stmt
     : variable_decl
     | comparison_func
     | next_decl
+    | comment_decl
     ;
 
 comparison_composite_stmt
@@ -414,6 +433,7 @@ retrier_stmt
     | interval_seconds_decl
     | max_attempts_decl
     | backoff_rate_decl
+    | comment_decl
     ;
 
 error_equals_decl
@@ -454,6 +474,7 @@ catcher_stmt
     : error_equals_decl
     | result_path_decl
     | next_decl
+    | comment_decl
     ;
 
 comparison_op

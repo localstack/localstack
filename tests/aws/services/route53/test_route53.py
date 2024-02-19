@@ -1,6 +1,5 @@
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
@@ -49,12 +48,41 @@ class TestRoute53:
             aws_client.route53.delete_health_check(HealthCheckId=health_check_id)
         assert "NoSuchHealthCheck" in str(ctx.value)
 
-    @markers.aws.unknown
-    def test_associate_vpc_with_hosted_zone(self, cleanups, aws_client):
-        name = "zone123"
-        response = aws_client.route53.create_hosted_zone(
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..HostedZone.CallerReference"])
+    def test_create_private_hosted_zone(
+        self, region_name, aws_client, cleanups, snapshot, hosted_zone
+    ):
+        vpc = aws_client.ec2.create_vpc(CidrBlock="10.113.0.0/24")
+        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
+        vpc_id = vpc["Vpc"]["VpcId"]
+        snapshot.add_transformer(snapshot.transform.key_value("VPCId"))
+
+        name = f"zone-{short_uid()}.com"
+        response = hosted_zone(
             Name=name,
-            CallerReference="ref123",
+            HostedZoneConfig={
+                "PrivateZone": True,
+                "Comment": "test",
+            },
+            VPC={
+                "VPCId": vpc_id,
+                "VPCRegion": region_name,
+            },
+        )
+        snapshot.match("create-hosted-zone-response", response)
+        zone_id = response["HostedZone"]["Id"]
+
+        response = aws_client.route53.get_hosted_zone(Id=zone_id)
+        snapshot.match("get_hosted_zone", response)
+
+    @markers.aws.unknown
+    def test_associate_vpc_with_hosted_zone(
+        self, cleanups, hosted_zone, aws_client, account_id, region_name
+    ):
+        name = "zone123"
+        response = hosted_zone(
+            Name=name,
             HostedZoneConfig={"PrivateZone": True, "Comment": "test"},
         )
         zone_id = response["HostedZone"]["Id"]
@@ -69,7 +97,7 @@ class TestRoute53:
         vpc2_id = vpc2["Vpc"]["VpcId"]
 
         # associate zone with VPC
-        vpc_region = TEST_AWS_REGION_NAME
+        vpc_region = region_name
         for vpc_id in [vpc1_id, vpc2_id]:
             result = aws_client.route53.associate_vpc_with_hosted_zone(
                 HostedZoneId=zone_id,
@@ -91,7 +119,7 @@ class TestRoute53:
         expected = {
             "HostedZoneId": zone_id,
             "Name": "%s." % name,
-            "Owner": {"OwningAccount": TEST_AWS_ACCOUNT_ID},
+            "Owner": {"OwningAccount": account_id},
         }
         assert expected in result
 

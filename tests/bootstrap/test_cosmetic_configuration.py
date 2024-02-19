@@ -123,9 +123,17 @@ class TestLocalStackHost:
 
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(
-        self, aws_client_factory, infrastructure_setup, port, chosen_localstack_host
+        self,
+        aws_client_factory,
+        infrastructure_setup,
+        port,
+        chosen_localstack_host,
+        region_name,
     ):
-        aws_client = aws_client_factory(endpoint_url=f"http://localhost:{port}")
+        aws_client = aws_client_factory(
+            endpoint_url=f"http://localhost:{port}",
+            region_name=region_name,
+        )
 
         infra: InfraProvisioner = infrastructure_setup(
             namespace="LocalStackHostBootstrap",
@@ -137,6 +145,9 @@ class TestLocalStackHost:
         # results bucket
         results_bucket = cdk.aws_s3.Bucket(stack, "ResultsBucket")
         cdk.CfnOutput(stack, "ResultsBucketName", value=results_bucket.bucket_name)
+
+        # assets bucket
+        assets_bucket_name = "bootstrap-bucket"
 
         # OpenSearch domain
         domain_name = f"domain-{short_uid()}"
@@ -164,7 +175,7 @@ class TestLocalStackHost:
             infra.add_custom_setup(
                 lambda: load_python_lambda_to_s3(
                     s3_client=aws_client.s3,
-                    bucket_name=infra.get_asset_bucket(),
+                    bucket_name=assets_bucket_name,
                     key_name=key_name,
                     code_path=resources_path,
                     additional_python_packages=additional_packages or [],
@@ -195,7 +206,7 @@ class TestLocalStackHost:
         asset_bucket = cdk.aws_s3.Bucket.from_bucket_name(
             stack,
             "BucketName",
-            bucket_name=infra.get_asset_bucket(),
+            bucket_name=assets_bucket_name,
         )
         apigw_handler_fn = create_lambda_function(
             stack,
@@ -232,7 +243,9 @@ class TestLocalStackHost:
         with infra.provisioner() as prov:
             yield prov
 
-    def test_scenario(self, port, infrastructure, aws_client_factory, chosen_localstack_host):
+    def test_scenario(
+        self, port, infrastructure, aws_client_factory, chosen_localstack_host, region_name
+    ):
         """
         Scenario:
             * API Gateway handles web request
@@ -243,6 +256,7 @@ class TestLocalStackHost:
 
         aws_client = aws_client_factory(
             endpoint_url=f"http://localhost:{port}",
+            region_name=region_name,
         )
 
         stack_outputs = infrastructure.get_stack_outputs(STACK_NAME)

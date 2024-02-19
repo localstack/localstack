@@ -138,6 +138,17 @@ class TestCliContainerLifecycle:
         result = runner.invoke(cli, ["logs", "--tail", "20"])
         assert constants.READY_MARKER_OUTPUT in result.output.splitlines()
 
+    def test_restart(self, runner, container_client):
+        result = runner.invoke(cli, ["restart"])
+        assert result.exit_code != 0
+
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "60"])
+
+        result = runner.invoke(cli, ["restart"])
+        assert result.exit_code == 0
+        assert "restarted" in result.output
+
     def test_status_services(self, runner):
         result = runner.invoke(cli, ["status", "services"])
         assert result.exit_code != 0

@@ -49,6 +49,29 @@ class AuthorizationError(Exception):
         return requests_response({"message": self.message}, status_code=self.status_code)
 
 
+# we separate those 2 exceptions to allow better GatewayResponse support later on
+class BadRequestParameters(Exception):
+    message: str
+
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message
+
+    def to_response(self):
+        return requests_response({"message": self.message}, status_code=400)
+
+
+class BadRequestBody(Exception):
+    message: str
+
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message
+
+    def to_response(self):
+        return requests_response({"message": self.message}, status_code=400)
+
+
 class RequestValidator:
     __slots__ = ["context", "rest_api_container"]
 
@@ -60,45 +83,50 @@ class RequestValidator:
             raise NotFound()
         self.rest_api_container = container
 
-    def is_request_valid(self) -> bool:
+    def validate_request(self) -> None:
+        """
+        :raises BadRequestParameters if the request has required parameters which are not present
+        :raises BadRequestBody if the request has required body validation with a model and it does not respect it
+        :return: None
+        """
         # make all the positive checks first
         if self.context.resource is None or "resourceMethods" not in self.context.resource:
-            return True
+            return
 
         resource_methods = self.context.resource["resourceMethods"]
         if self.context.method not in resource_methods and "ANY" not in resource_methods:
-            return True
+            return
 
         # check if there is validator for the resource
         resource = resource_methods.get(self.context.method, resource_methods.get("ANY", {}))
         if not (resource.get("requestValidatorId") or "").strip():
-            return True
+            return
 
         # check if there is a validator for this request
         validator = self.rest_api_container.validators.get(resource["requestValidatorId"])
         if not validator:
-            return True
+            return
 
-        # are we validating the body?
-        if self.should_validate_body(validator):
-            is_body_valid = self.validate_body(resource)
-            if not is_body_valid:
-                return is_body_valid
+        if self.should_validate_request(validator) and (
+            missing_parameters := self._get_missing_required_parameters(resource)
+        ):
+            message = f"Missing required request parameters: [{', '.join(missing_parameters)}]"
+            raise BadRequestParameters(message=message)
 
-        if self.should_validate_request(validator):
-            is_valid_parameters = self.validate_parameters_and_headers(resource)
-            if not is_valid_parameters:
-                return is_valid_parameters
+        if self.should_validate_body(validator) and not self._is_body_valid(resource):
+            raise BadRequestBody(message="Invalid request body")
 
-        return True
+        return
 
-    def validate_body(self, resource):
+    def _is_body_valid(self, resource) -> bool:
         # if there's no model to validate the body, use the Empty model
         # https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_aws-apigateway.EmptyModel.html
         if not (request_models := resource.get("requestModels")):
             model_name = EMPTY_MODEL
         else:
-            model_name = request_models.get(APPLICATION_JSON, EMPTY_MODEL)
+            model_name = request_models.get(
+                APPLICATION_JSON, request_models.get("$default", EMPTY_MODEL)
+            )
 
         model_resolver = ModelResolver(
             rest_api_container=self.rest_api_container,
@@ -127,9 +155,32 @@ class RequestValidator:
             LOG.warning("failed to validate request body, request data is not valid JSON %s", e)
             return False
 
-    # TODO implement parameters and headers
-    def validate_parameters_and_headers(self, resource):
-        return True
+    def _get_missing_required_parameters(self, resource) -> list[str]:
+        missing_params = []
+        if not (request_parameters := resource.get("requestParameters")):
+            return missing_params
+
+        for request_parameter, required in sorted(request_parameters.items()):
+            if not required:
+                continue
+
+            param_type, param_value = request_parameter.removeprefix("method.request.").split(".")
+            match param_type:
+                case "header":
+                    is_missing = param_value not in self.context.headers
+                case "path":
+                    is_missing = param_value not in self.context.resource_path
+                case "querystring":
+                    is_missing = param_value not in self.context.query_params()
+                case _:
+                    # TODO: method.request.body is not specified in the documentation, and requestModels should do it
+                    # verify this
+                    is_missing = False
+
+            if is_missing:
+                missing_params.append(param_value)
+
+        return missing_params
 
     @staticmethod
     def should_validate_body(validator):
@@ -226,8 +277,10 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
     # validate request
     validator = RequestValidator(invocation_context)
-    if not validator.is_request_valid():
-        return make_error_response("Invalid request body", 400)
+    try:
+        validator.validate_request()
+    except (BadRequestParameters, BadRequestBody) as e:
+        return e.to_response()
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
     if api_key_required and not is_api_key_valid(invocation_context):
