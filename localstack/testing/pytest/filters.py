@@ -1,11 +1,11 @@
+import os
+from typing import List
+
 import pytest
 from _pytest.config import Config, PytestPluginManager
 from _pytest.config.argparsing import Parser
 from _pytest.main import Session
 from _pytest.nodes import Item
-
-from localstack.utils.bootstrap import in_ci
-from localstack.utils.platform import Arch
 
 
 @pytest.hookimpl
@@ -14,7 +14,7 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 
 
 @pytest.hookimpl
-def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]):
+def pytest_collection_modifyitems(session: Session, config: Config, items: List[Item]):
     ff = config.getoption("--filter-fixtures")
     if ff:
         # TODO: add more sophisticated combinations (=> like pytest -m and -k)
@@ -35,15 +35,17 @@ def filter_tests(config, items):
     """Filter tests by markers.
     Re-usable helper for `pytest_collection_modifyitems`."""
     from localstack import config as localstack_config
-    from localstack.testing.aws.util import is_aws_cloud
-    from localstack.utils.platform import get_arch
+    from localstack.utils.bootstrap import in_ci
+    from localstack.utils.platform import Arch, get_arch
 
     is_offline = config.getoption("--offline")
     is_in_docker = localstack_config.is_in_docker
     is_in_ci = in_ci()
     is_amd64 = get_arch() == Arch.amd64
     is_arm64 = get_arch() == Arch.arm64
-    is_real_aws = is_aws_cloud()
+    # Inlining `is_aws_cloud()` here because localstack.testing.aws.util imports boto3,
+    # which is not installed for the CLI tests
+    is_real_aws = os.environ.get("TEST_TARGET", "") == "AWS_CLOUD"
 
     if is_real_aws:
         # Do not skip any tests if they are executed against real AWS
