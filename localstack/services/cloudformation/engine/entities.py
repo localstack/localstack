@@ -164,9 +164,24 @@ class Stack:
         self.metadata["StackStatus"] = status
         if "FAILED" in status:
             self.metadata["StackStatusReason"] = status_reason or "Deployment failed"
+        self.log_stack_errors()
         self.add_stack_event(
             self.stack_name, self.stack_id, status, status_reason=status_reason or ""
         )
+
+    def log_stack_errors(self, level=logging.WARNING):
+        for event in self.events:
+            if event["ResourceStatus"].endswith("FAILED"):
+                if reason := event.get("ResourceStatusReason"):
+                    reason = reason.replace("\n", "; ")
+                    LOG.log(
+                        level,
+                        "CFn resource failed to deploy: %s (%s)",
+                        event["LogicalResourceId"],
+                        reason,
+                    )
+                else:
+                    LOG.warning("CFn resource failed to deploy: %s", event["LogicalResourceId"])
 
     def set_time_attribute(self, attribute, new_time=None):
         self.metadata[attribute] = new_time or timestamp_millis()
@@ -202,7 +217,7 @@ class Stack:
 
         self.events.insert(0, event)
 
-    def set_resource_status(self, resource_id: str, status: str):
+    def set_resource_status(self, resource_id: str, status: str, status_reason: str = ""):
         """Update the deployment status of the given resource ID and publish a corresponding stack event."""
         physical_res_id = self.resources.get(resource_id, {}).get("PhysicalResourceId")
         self._set_resource_status_details(resource_id, physical_res_id=physical_res_id)
@@ -210,7 +225,7 @@ class Stack:
         state["PreviousResourceStatus"] = state.get("ResourceStatus")
         state["ResourceStatus"] = status
         state["LastUpdatedTimestamp"] = timestamp_millis()
-        self.add_stack_event(resource_id, physical_res_id, status)
+        self.add_stack_event(resource_id, physical_res_id, status, status_reason=status_reason)
 
     def _set_resource_status_details(self, resource_id: str, physical_res_id: str = None):
         """Helper function to ensure that the status details for the given resource ID are up-to-date."""

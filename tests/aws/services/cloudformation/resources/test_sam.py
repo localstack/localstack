@@ -3,7 +3,7 @@ import os
 import os.path
 
 from localstack.testing.pytest import markers
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid
 
 
 @markers.aws.validated
@@ -33,5 +33,5 @@ def test_sam_template(deploy_cfn_template, aws_client):
 
     # run Lambda test invocation
     result = aws_client.lambda_.invoke(FunctionName=func_name)
-    result = json.loads(to_str(result["Payload"].read()))
+    result = json.load(result["Payload"])
     assert result == {"hello": "world"}

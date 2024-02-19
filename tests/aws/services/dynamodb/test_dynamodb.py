@@ -10,15 +10,15 @@ import pytest
 import requests
 from boto3.dynamodb.types import STRING
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.dynamodb import PointInTimeRecoverySpecification
-from localstack.constants import AWS_REGION_US_EAST_1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns, queries, resources
 from localstack.utils.aws.resources import create_dynamodb_table
@@ -1485,14 +1485,14 @@ class TestDynamoDB:
 
     @markers.aws.only_localstack
     def test_dynamodb_create_table_with_sse_specification(
-        self, dynamodb_create_table_with_parameters
+        self, dynamodb_create_table_with_parameters, account_id, region_name
     ):
         table_name = f"ddb-table-{short_uid()}"
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
         kms_master_key_arn = arns.kms_key_arn(
-            kms_master_key_id, account_id=TEST_AWS_ACCOUNT_ID, region_name=TEST_AWS_REGION_NAME
+            kms_master_key_id, account_id=account_id, region_name=region_name
         )
 
         result = dynamodb_create_table_with_parameters(

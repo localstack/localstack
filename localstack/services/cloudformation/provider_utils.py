@@ -41,6 +41,17 @@ def keys_lower(model: dict) -> dict:
     return {k.lower(): v for k, v in model.items()}
 
 
+def convert_pascalcase_to_lower_camelcase(item: str) -> str:
+    if len(item) <= 1:
+        return item.lower()
+    else:
+        return f"{item[0].lower()}{item[1:]}"
+
+
+def keys_pascalcase_to_lower_camelcase(model: dict) -> dict:
+    return {convert_pascalcase_to_lower_camelcase(k): v for k, v in model.items()}
+
+
 def transform_list_to_dict(param, key_attr_name="Key", value_attr_name="Value"):
     result = {}
     for entry in param:

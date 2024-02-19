@@ -1,4 +1,4 @@
-from plugin import Plugin
+from plux import Plugin
 
 from .aws import CompositeExceptionHandler, CompositeHandler, CompositeResponseHandler
 from .http import RouteHandler, Router

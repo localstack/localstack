@@ -28,7 +28,7 @@ class AssignmentService(OtherServiceEndpoint):
     scope: LocalStack global
     """
 
-    # function_version (fully qualified function ARN) => runtime_environment_id => runtime_environment
+    # function_version manager id => runtime_environment_id => runtime_environment
     environments: dict[str, dict[str, ExecutionEnvironment]]
 
     # Global pool for spawning and killing provisioned Lambda runtime environments
@@ -40,12 +40,14 @@ class AssignmentService(OtherServiceEndpoint):
 
     @contextlib.contextmanager
     def get_environment(
-        self, function_version: FunctionVersion, provisioning_type: InitializationType
+        self,
+        version_manager_id: str,
+        function_version: FunctionVersion,
+        provisioning_type: InitializationType,
     ) -> ContextManager[ExecutionEnvironment]:
-        version_arn = function_version.qualified_arn
         applicable_envs = (
             env
-            for env in self.environments[version_arn].values()
+            for env in self.environments[version_manager_id].values()
             if env.initialization_type == provisioning_type
         )
         execution_environment = None
@@ -63,8 +65,10 @@ class AssignmentService(OtherServiceEndpoint):
                     "No provisioned concurrency environment available despite lease."
                 )
             elif provisioning_type == "on-demand":
-                execution_environment = self.start_environment(function_version)
-                self.environments[version_arn][execution_environment.id] = execution_environment
+                execution_environment = self.start_environment(version_manager_id, function_version)
+                self.environments[version_manager_id][
+                    execution_environment.id
+                ] = execution_environment
                 execution_environment.reserve()
             else:
                 raise ValueError(f"Invalid provisioning type {provisioning_type}")
@@ -79,12 +83,15 @@ class AssignmentService(OtherServiceEndpoint):
             self.stop_environment(execution_environment)
             raise e
 
-    def start_environment(self, function_version: FunctionVersion) -> ExecutionEnvironment:
+    def start_environment(
+        self, version_manager_id: str, function_version: FunctionVersion
+    ) -> ExecutionEnvironment:
         LOG.debug("Starting new environment")
         execution_environment = ExecutionEnvironment(
             function_version=function_version,
             initialization_type="on-demand",
             on_timeout=self.on_timeout,
+            version_manager_id=version_manager_id,
         )
         try:
             execution_environment.start()
@@ -97,38 +104,39 @@ class AssignmentService(OtherServiceEndpoint):
             raise AssignmentException(message) from e
         return execution_environment
 
-    def on_timeout(self, version_arn: str, environment_id: str) -> None:
+    def on_timeout(self, version_manager_id: str, environment_id: str) -> None:
         """Callback for deleting environment after function times out"""
-        del self.environments[version_arn][environment_id]
+        del self.environments[version_manager_id][environment_id]
 
     def stop_environment(self, environment: ExecutionEnvironment) -> None:
-        version_arn = environment.function_version.qualified_arn
+        version_manager_id = environment.version_manager_id
         try:
             environment.stop()
-            self.environments.get(version_arn).pop(environment.id)
+            self.environments.get(version_manager_id).pop(environment.id)
         except Exception as e:
             LOG.debug(
-                "Error while stopping environment for lambda %s, environment: %s, error: %s",
-                version_arn,
+                "Error while stopping environment for lambda %s, manager id %s, environment: %s, error: %s",
+                environment.function_version.qualified_arn,
+                version_manager_id,
                 environment.id,
                 e,
             )
 
-    def stop_environments_for_version(self, function_version: FunctionVersion):
+    def stop_environments_for_version(self, version_manager_id: str):
         # We have to materialize the list before iterating due to concurrency
-        environments_to_stop = list(
-            self.environments.get(function_version.qualified_arn, {}).values()
-        )
+        environments_to_stop = list(self.environments.get(version_manager_id, {}).values())
         for env in environments_to_stop:
             self.stop_environment(env)
 
     def scale_provisioned_concurrency(
-        self, function_version: FunctionVersion, target_provisioned_environments: int
+        self,
+        version_manager_id: str,
+        function_version: FunctionVersion,
+        target_provisioned_environments: int,
     ) -> list[Future[None]]:
-        version_arn = function_version.qualified_arn
         current_provisioned_environments = [
             e
-            for e in self.environments[version_arn].values()
+            for e in self.environments[version_manager_id].values()
             if e.initialization_type == "provisioned-concurrency"
         ]
         # TODO: refine scaling loop to re-use existing environments instead of re-creating all
@@ -144,8 +152,9 @@ class AssignmentService(OtherServiceEndpoint):
                 function_version=function_version,
                 initialization_type="provisioned-concurrency",
                 on_timeout=self.on_timeout,
+                version_manager_id=version_manager_id,
             )
-            self.environments[version_arn][execution_environment.id] = execution_environment
+            self.environments[version_manager_id][execution_environment.id] = execution_environment
             futures.append(self.provisioning_pool.submit(execution_environment.start))
         # 2) Kill all existing
         for env in current_provisioned_environments:
