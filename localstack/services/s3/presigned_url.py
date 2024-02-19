@@ -253,7 +253,6 @@ def get_secret_access_key_from_access_key_id(access_key_id: str) -> Optional[str
     For now, we need to access Moto internals, as they are no public APIs to retrieve it for obvious reasons.
     If the AccessKey is not registered, use the default `test` value that was historically used for pre-signed URLs, in
     order to support default use cases
-    :param account_id: the account id derived from the AccessKey
     :param access_key_id: the provided AccessKeyID in the Credentials parameter
     :return: the linked secret_access_key to the access_key
     """
