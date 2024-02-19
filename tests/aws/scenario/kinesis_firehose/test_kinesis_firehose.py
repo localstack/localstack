@@ -81,7 +81,9 @@ class TestKinesisFirehoseScenario:
             log_group_name=firehose_s3_log_group_name,
             removal_policy=cdk.RemovalPolicy.DESTROY,  # required since default value is RETAIN
         )
-        firehose_s3_log_group.add_stream(firehose_s3_log_stream_name)
+        firehose_s3_log_group.add_stream(
+            "FirehoseLogStream", log_stream_name=firehose_s3_log_stream_name
+        )
 
         # s3 access role for firehose
         role_firehose_s3 = iam.Role(
