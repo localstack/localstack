@@ -44,6 +44,7 @@ function set_defaults() {
     if [ -z "$DOCKERFILE" ]; then DOCKERFILE=Dockerfile; fi
     if [ -z "$SOURCE_IMAGE_NAME" ]; then SOURCE_IMAGE_NAME=$IMAGE_NAME; fi
     if [ -z "$TARGET_IMAGE_NAME" ]; then TARGET_IMAGE_NAME=$IMAGE_NAME; fi
+    if [ -z "$MANIFEST_IMAGE_NAME" ]; then MANIFEST_IMAGE_NAME=$IMAGE_NAME; fi
     if [ -z "$TAG" ]; then TAG=$IMAGE_NAME; fi
     if [ -z "$MAIN_BRANCH" ]; then MAIN_BRANCH=master; fi
 }
@@ -75,16 +76,18 @@ function docker_build_multiarch() {
 
 function docker_push_main() {
     ## Push a single platform-specific Docker image to registry, if we are currently on the main branch
-    (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^'$MAIN_BRANCH'$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*'$MAIN_BRANCH'$' | sed 's/[* ]//g' || true`; \
-      test "$CURRENT_BRANCH" != "$MAIN_BRANCH" && echo "Not on main branch.") || \
+    (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^'$MAIN_BRANCH'$' || \
+      ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z/_-]*)') && git branch -a)) | grep '^[* ]*'$MAIN_BRANCH'$' | sed 's/[* ]//g' || true`;
+        echo "Current git branch: '$CURRENT_BRANCH'"
+        test "$CURRENT_BRANCH" != "$MAIN_BRANCH" && echo "Not on main branch.") || \
     ((test "$DOCKER_USERNAME" = '' || test "$DOCKER_PASSWORD" = '' ) && \
       echo "Skipping docker push as no credentials are provided.") || \
-    (REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $2}'`"; \
-      test "$REMOTE_ORIGIN" != 'https://github.com/localstack/'* && \
-      test "$REMOTE_ORIGIN" != 'git@github.com:localstack/'* && \
+    (REMOTE_ORIGIN="`git remote -v | grep 'localstack/' | grep origin | grep push | awk '{print $2}'`"; \
+      [[ "$REMOTE_ORIGIN" != 'https://github.com/localstack/'* ]] && \
+      [[ "$REMOTE_ORIGIN" != 'git@github.com:localstack/'* ]] && \
       echo "This is a fork and not the main repo.") || \
     ( \
-      docker info | grep Username || docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; \
+      docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; \
         docker tag $SOURCE_IMAGE_NAME:latest $TARGET_IMAGE_NAME:latest-$PLATFORM && \
       ((! (git diff HEAD~1 $PYTHON_CODE_DIR/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
         echo "Only pushing tag 'latest' as version has not changed.") || \
@@ -105,18 +108,20 @@ function docker_push_main() {
 
 function docker_push_manifests_main() {
     ## Create and push manifests for the multi-arch Docker image, if we are currently on the main branch
-    (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^'$MAIN_BRANCH'$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*'$MAIN_BRANCH'$' | sed 's/[* ]//g' || true`; \
+    (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^'$MAIN_BRANCH'$' || \
+      ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z/_-]*)') && git branch -a)) | grep '^[* ]*'$MAIN_BRANCH'$' | sed 's/[* ]//g' || true`;
+      echo "Current git branch: '$CURRENT_BRANCH'"
       test "$CURRENT_BRANCH" != "$MAIN_BRANCH" && echo "Not on main branch.") || \
     ((test "$DOCKER_USERNAME" = '' || test "$DOCKER_PASSWORD" = '' ) && \
       echo "Skipping docker manifest push as no credentials are provided.") || \
-    (REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $2}'`"; \
-      test "$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
-      test "$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
+    (REMOTE_ORIGIN="`git remote -v | grep 'localstack/' | grep origin | grep push | awk '{print $2}'`"; \
+      [[ "$REMOTE_ORIGIN" != 'https://github.com/localstack/'* ]] && \
+      [[ "$REMOTE_ORIGIN" != 'git@github.com:localstack/'* ]] && \
       echo "This is a fork and not the main repo.") || \
     ( \
-      docker info | grep Username || docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; \
+      docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD; \
         docker manifest create $MANIFEST_IMAGE_NAME:latest --amend $MANIFEST_IMAGE_NAME:latest-amd64 --amend $MANIFEST_IMAGE_NAME:latest-arm64 && \
-      ((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
+      ((! (git diff HEAD~1 $PYTHON_CODE_DIR/__init__.py | grep '^+__version__ =' | grep -v '.dev') && \
           echo "Only pushing tag 'latest' as version has not changed.") || \
         (docker manifest create $MANIFEST_IMAGE_NAME:$IMAGE_TAG \
         --amend $MANIFEST_IMAGE_NAME:$IMAGE_TAG-amd64 \
@@ -175,7 +180,6 @@ function main() {
     case $command_name in
         "build")               cmd-build "$@" ;;
         "build-multiarch")     cmd-build-multiarch "$@" ;;
-        "push")                cmd-push "$@" ;;
         "push-main")           cmd-push-main "$@" ;;
         "push-manifests-main") cmd-push-manifests-main "$@" ;;
         "help")                usage && exit 0 ;;
