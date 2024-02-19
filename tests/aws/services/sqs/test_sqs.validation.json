@@ -47,6 +47,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs_json]": {
     "last_validated_date": "2024-02-12T16:08:14+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_high_throughput_ordering[sqs]": {
+    "last_validated_date": "2024-02-19T13:07:33+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_high_throughput_ordering[sqs_json]": {
+    "last_validated_date": "2024-02-19T13:07:31+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_message_attributes": {
     "last_validated_date": "2023-11-14T10:58:35+00:00"
   },
@@ -129,10 +135,10 @@
     "last_validated_date": "2023-11-14T11:15:03+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_same_dedup_id_different_message_groups[sqs]": {
-    "last_validated_date": "2024-02-15T13:49:46+00:00"
+    "last_validated_date": "2024-02-19T12:34:04+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_same_dedup_id_different_message_groups[sqs_json]": {
-    "last_validated_date": "2024-02-15T13:49:44+00:00"
+    "last_validated_date": "2024-02-19T12:34:02+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_permission_lifecycle": {
     "last_validated_date": "2023-11-14T11:00:19+00:00"
