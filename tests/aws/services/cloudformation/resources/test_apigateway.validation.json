@@ -2,12 +2,6 @@
   "tests/aws/services/cloudformation/resources/test_apigateway.py::TestServerlessApigwLambda::test_serverless_like_deployment_with_update": {
     "last_validated_date": "2024-02-19T08:55:12+00:00"
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::TestServerlessApigwLambda::test_stuff": {
-    "last_validated_date": "2024-02-16T14:51:15+00:00"
-  },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::TestServerlessApigwLambda::test_update_trigger": {
-    "last_validated_date": "2024-02-16T22:21:12+00:00"
-  },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
     "last_validated_date": "2023-03-01T22:36:31+00:00"
   },
