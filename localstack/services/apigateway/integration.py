@@ -124,7 +124,13 @@ class BackendIntegration(ABC):
         integration = invocation_context.integration
         template_selection_expression = integration.get("templateSelectionExpression")
 
+        # AWS template selection relies on the content type
+        # to select an input template or output mapping AND template selection expressions.
+        # All of them will fall back to the $default template if a matching template is not found.
         if not template_selection_expression:
+            content_type = invocation_context.headers.get(HEADER_CONTENT_TYPE, APPLICATION_JSON)
+            if integration.get("RequestTemplates", {}).get(content_type):
+                return content_type
             return "$default"
 
         data = try_json(invocation_context.data)
