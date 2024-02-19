@@ -160,6 +160,14 @@ class ApiGatewayDeploymentProvider(ResourceProvider[ApiGatewayDeploymentProperti
         """
         model = request.desired_state
         api = request.aws_client_factory.apigateway
+        # TODO: verify if AWS behaves the same?
+        get_stages = api.get_stages(
+            restApiId=model["RestApiId"], deploymentId=model["DeploymentId"]
+        )
+        if stages := get_stages["item"]:
+            for stage in stages:
+                api.delete_stage(restApiId=model["RestApiId"], stageName=stage["stageName"])
+
         try:
             api.delete_deployment(restApiId=model["RestApiId"], deploymentId=model["DeploymentId"])
         except api.exceptions.NotFoundException:

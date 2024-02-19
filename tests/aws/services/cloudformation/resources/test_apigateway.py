@@ -515,3 +515,164 @@ def test_rest_api_serverless_ref_resolving(
             restApiId=rest_api_id, resourceId=root_resource["id"], httpMethod=http_method
         )
         snapshot.match(f"get-method-{http_method}", method)
+
+
+SLS_FN_1 = """
+def handler(event, context):
+    print("Hello world!")
+"""
+
+SLS_FN_2 = """
+def handler2(event, context):
+    print("Hello world!")
+"""
+
+
+class TestServerlessApigwLambda:
+    @markers.aws.unknown
+    def test_stuff(self, deploy_cfn_template, aws_client, cleanups):
+        """This test recreates a spepcific serverless deployment"""
+
+        # 1. deploy create
+        template_content = load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/serverless-apigw-lambda.create.json"
+            )
+        )
+        stack_name = f"slsstack-{short_uid()}"
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template_content,
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+        )
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        # 2. update first
+        # get deployed bucket name
+        outputs = aws_client.cloudformation.describe_stacks(StackName=stack["StackId"])["Stacks"][
+            0
+        ]["Outputs"]
+        outputs = {k["OutputKey"]: k["OutputValue"] for k in outputs}
+        bucket_name = outputs["ServerlessDeploymentBucketName"]
+
+        # upload zip file to s3 bucket
+        # "serverless/test-service/local/1708076358388-2024-02-16T09:39:18.388Z/api.zip"
+        handler1_filename = os.path.join(os.path.dirname(__file__), "handlers/handler1/api.zip")
+        aws_client.s3.upload_file(
+            Filename=handler1_filename,
+            Bucket=bucket_name,
+            Key="serverless/test-service/local/1708076358388-2024-02-16T09:39:18.388Z/api.zip",
+        )
+
+        template_content = load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/serverless-apigw-lambda.update.json"
+            )
+        )
+        stack = aws_client.cloudformation.update_stack(
+            StackName=stack_name,
+            TemplateBody=template_content,
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)
+        res = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
+
+        # all stack resources should be in "CREATE_COMPLETE", no update handler should be called
+
+        assert all([r["ResourceStatus"] == "CREATE_COMPLETE" for r in res["StackResources"]])
+
+        get_fn_1 = aws_client.lambda_.get_function(FunctionName="test-service-local-api")
+
+        print("events")
+        # # 3. update second
+        # # upload zip file to s3 bucket
+        handler2_filename = os.path.join(os.path.dirname(__file__), "handlers/handler2/api.zip")
+        aws_client.s3.upload_file(
+            Filename=handler2_filename,
+            Bucket=bucket_name,
+            Key="serverless/test-service/local/1708076568092-2024-02-16T09:42:48.092Z/api.zip",
+        )
+
+        template_content = load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/serverless-apigw-lambda.update2.json"
+            )
+        )
+        stack = aws_client.cloudformation.update_stack(
+            StackName=stack_name,
+            TemplateBody=template_content,
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        events_postupdate2 = aws_client.cloudformation.describe_stack_events(StackName=stack_name)
+        res_postupdate2 = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
+        get_fn_2 = aws_client.lambda_.get_function(FunctionName="test-service-local-api")
+
+        print("events")
+        assert get_fn_1["Configuration"]["Handler"] == "index.handler"
+        assert get_fn_2["Configuration"]["Handler"] == "index.handler2"
+
+    @markers.aws.unknown
+    def test_intrinsic_functions_evaluated_before_change_detection(
+        self, deploy_cfn_template, aws_client, cleanups
+    ):
+        """
+        Verifies that CloudFormation evaluates intrinsic functions BEFORE the change detection procedure
+
+        At this point in time it's still unclear if:
+        - This applies for all non-referable intrinsic functions
+        - this applies the same way to UpdateStack
+        """
+
+        # 1. deploy create
+        template_content = load_file(
+            os.path.join(os.path.dirname(__file__), "./templates/update-trigger-1.yaml")
+        )
+        stack_name = f"testupdatetrigger-{short_uid()}"
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template_content,
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+        )
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        # 2. update first
+
+        template_content = load_file(
+            os.path.join(os.path.dirname(__file__), "./templates/update-trigger-2.yaml")
+        )
+        change_set = aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName="updatecs",
+            ChangeSetType="UPDATE",
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+            TemplateBody=template_content,
+        )
+        try:
+            aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                StackName=stack["StackId"], ChangeSetName="updatecs"
+            )
+            cs = aws_client.cloudformation.describe_change_set(ChangeSetName=change_set["Id"])
+        except Exception:
+            cs = aws_client.cloudformation.describe_change_set(ChangeSetName=change_set["Id"])
+            print("oh no")
+
+        events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)
+        res = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
+
+        # all stack resources should be in "CREATE_COMPLETE", no update handler should be called
+
+        # assert all([r['ResourceStatus'] == "CREATE_COMPLETE" for r in res['StackResources']])
