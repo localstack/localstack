@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, TypedDict
+from typing import Any, Callable, Literal, Optional, TypedDict
 
 # ---------------------
 # TYPES
@@ -43,3 +43,18 @@ FuncDetails = list[FuncDetailsValue] | FuncDetailsValue
 
 # Type definition returned by GenericBaseModel.get_deploy_templates
 DeployTemplates = dict[str, FuncDetails | Callable]
+
+
+class ResourceChange(TypedDict, total=False):
+    Action: Literal["Add", "Modify", "Remove"]
+    LogicalResourceId: str
+    PhysicalResourceId: str
+    ResourceType: str
+    Scope: list
+    Details: list
+    Replacement: Literal["False"] | Literal["True"]
+
+
+class ChangeConfig(TypedDict):
+    Type: str
+    ResourceChange: ResourceChange

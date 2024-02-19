@@ -1,0 +1,5 @@
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Join [ "-", [ "aaa", "bbb-ccc" ] ]

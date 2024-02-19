@@ -104,5 +104,161 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestUpdateDetection::test_update_with_replacement": {
+    "recorded-date": "17-02-2024, 10:37:21",
+    "recorded-content": {
+      "stack_resource_preupdate": {
+        "StackResourceDetail": {
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          },
+          "LastUpdatedTimestamp": "timestamp",
+          "LogicalResourceId": "TestSsmParam",
+          "Metadata": {},
+          "PhysicalResourceId": "/test/updates/<random-scope>/<resource:2>",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceType": "AWS::SSM::Parameter",
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_param_1": {
+        "Parameter": {
+          "ARN": "arn:aws:ssm:<region>:111111111111:parameter/test/updates/<random-scope>/<resource:2>",
+          "DataType": "text",
+          "LastModifiedDate": "datetime",
+          "Name": "/test/updates/<random-scope>/<resource:2>",
+          "Type": "String",
+          "Value": "myvalue",
+          "Version": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_resource_postupdate": {
+        "StackResourceDetail": {
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          },
+          "LastUpdatedTimestamp": "timestamp",
+          "LogicalResourceId": "TestSsmParam",
+          "Metadata": {},
+          "PhysicalResourceId": "/test/updates/<random-scope>/<resource:3>",
+          "ResourceStatus": "UPDATE_COMPLETE",
+          "ResourceType": "AWS::SSM::Parameter",
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_param_1_postupdate_exception": {
+        "Error": {
+          "Code": "ParameterNotFound",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get_param_2": {
+        "Parameter": {
+          "ARN": "arn:aws:ssm:<region>:111111111111:parameter/test/updates/<random-scope>/<resource:3>",
+          "DataType": "text",
+          "LastModifiedDate": "datetime",
+          "Name": "/test/updates/<random-scope>/<resource:3>",
+          "Type": "String",
+          "Value": "myvalue",
+          "Version": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestUpdateDetection::test_update_in_place": {
+    "recorded-date": "17-02-2024, 19:09:54",
+    "recorded-content": {
+      "stack_resource_preupdate": {
+        "StackResourceDetail": {
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          },
+          "LastUpdatedTimestamp": "timestamp",
+          "LogicalResourceId": "TestSsmParam",
+          "Metadata": {},
+          "PhysicalResourceId": "/test/updates/<random-scope>/<resource:2>",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceType": "AWS::SSM::Parameter",
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_param_1": {
+        "Parameter": {
+          "ARN": "arn:aws:ssm:<region>:111111111111:<resource:2>eter/test/updates/<random-scope>/<resource:2>",
+          "DataType": "text",
+          "LastModifiedDate": "datetime",
+          "Name": "/test/updates/<random-scope>/<resource:2>",
+          "Type": "String",
+          "Value": "val1",
+          "Version": 1
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_resource_postupdate": {
+        "StackResourceDetail": {
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          },
+          "LastUpdatedTimestamp": "timestamp",
+          "LogicalResourceId": "TestSsmParam",
+          "Metadata": {},
+          "PhysicalResourceId": "/test/updates/<random-scope>/<resource:2>",
+          "ResourceStatus": "UPDATE_COMPLETE",
+          "ResourceType": "AWS::SSM::Parameter",
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_param_2": {
+        "Parameter": {
+          "ARN": "arn:aws:ssm:<region>:111111111111:<resource:2>eter/test/updates/<random-scope>/<resource:2>",
+          "DataType": "text",
+          "LastModifiedDate": "datetime",
+          "Name": "/test/updates/<random-scope>/<resource:2>",
+          "Type": "String",
+          "Value": "val2",
+          "Version": 2
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -1,4 +1,13 @@
 {
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestUpdateDetection::test_update_in_place": {
+    "last_validated_date": "2024-02-17T19:09:54+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestUpdateDetection::test_update_with_replacement": {
+    "last_validated_date": "2024-02-17T19:21:23+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::TestUpdateDetection::test_update_with_replacement_cs": {
+    "last_validated_date": "2024-02-17T11:33:56+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_basic_update": {
     "last_validated_date": "2022-11-21T07:27:37+00:00"
   },
