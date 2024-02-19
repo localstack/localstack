@@ -219,7 +219,7 @@ class PluginsResource:
     """
 
     def on_get(self, request):
-        from plugin import PluginManager
+        from plux import PluginManager
 
         from localstack.runtime import hooks
         from localstack.services.plugins import SERVICE_PLUGINS

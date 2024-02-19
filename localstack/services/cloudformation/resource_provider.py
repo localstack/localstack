@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedD
 
 import botocore
 from botocore.exceptions import UnknownServiceError
-from plugin import Plugin, PluginManager
+from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
