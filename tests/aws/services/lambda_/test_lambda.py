@@ -112,6 +112,9 @@ TEST_LAMBDA_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_version.py")
 TEST_LAMBDA_CONTEXT_REQID = os.path.join(THIS_FOLDER, "functions/lambda_context.py")
 TEST_LAMBDA_PROCESS_INSPECTION = os.path.join(THIS_FOLDER, "functions/lambda_process_inspection.py")
 TEST_LAMBDA_CUSTOM_RESPONSE_SIZE = os.path.join(THIS_FOLDER, "functions/lambda_response_size.py")
+TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
+    THIS_FOLDER, "functions/lambda_multiple_handlers.py"
+)
 
 TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
 TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
@@ -357,7 +360,7 @@ class TestLambdaBaseFeatures:
 
     @markers.aws.validated
     def test_lambda_different_iam_keys_environment(
-        self, lambda_su_role, create_lambda_function, snapshot, aws_client, region
+        self, lambda_su_role, create_lambda_function, snapshot, aws_client, region_name
     ):
         """
         In this test we want to check if multiple lambda environments (= instances of hot functions) have
@@ -407,8 +410,8 @@ class TestLambdaBaseFeatures:
             # since a lot of asserts are based on the structure of the arns, snapshots are not too nice here, so manual
             keys_1 = _transform_to_key_dict(results[0])
             keys_2 = _transform_to_key_dict(results[1])
-            sts_client_1 = create_client_with_keys("sts", keys=keys_1, region_name=region)
-            sts_client_2 = create_client_with_keys("sts", keys=keys_2, region_name=region)
+            sts_client_1 = create_client_with_keys("sts", keys=keys_1, region_name=region_name)
+            sts_client_2 = create_client_with_keys("sts", keys=keys_2, region_name=region_name)
             identity_1 = sts_client_1.get_caller_identity()
             identity_2 = sts_client_2.get_caller_identity()
             assert identity_1["Arn"] == identity_2["Arn"]
@@ -523,64 +526,47 @@ class TestLambdaBehavior:
         assert lambda_arch == native_arch
 
     @pytest.mark.skip  # TODO remove once is_arch_compatible checks work properly
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..LoggingConfig",
+            "$..CreateFunctionResponse.LoggingConfig",
+            "$..RuntimeVersionConfig.RuntimeVersionArn",
+        ]
+    )
     @markers.aws.validated
-    def test_mixed_architecture(self, create_lambda_function, aws_client):
-        """Test emulation and interaction of lambda functions with different architectures.
-        Limitation: only works on ARM hosts that support x86 emulation.
+    def test_mixed_architecture(self, create_lambda_function, aws_client, snapshot):
+        """Test emulation of a lambda function changing architectures.
+        Limitation: only works on hosts that support both ARM and AMD64 architectures.
         """
-        func_name = f"test_lambda_x86_{short_uid()}"
-        create_lambda_function(
+        func_name = f"test_lambda_mixed_arch_{short_uid()}"
+        zip_file = create_lambda_archive(load_file(TEST_LAMBDA_INTROSPECT_PYTHON), get_content=True)
+        create_function_response = create_lambda_function(
             func_name=func_name,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
+            zip_file=zip_file,
+            runtime=Runtime.python3_12,
             Architectures=[Architecture.x86_64],
         )
+        snapshot.match("create_function_response", create_function_response)
 
-        invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
-        assert "FunctionError" not in invoke_result
-        payload = json.load(invoke_result["Payload"])
+        invoke_result_x86 = aws_client.lambda_.invoke(FunctionName=func_name)
+        assert "FunctionError" not in invoke_result_x86
+        payload = json.load(invoke_result_x86["Payload"])
         assert payload.get("platform_machine") == "x86_64"
 
-        func_name_arm = f"test_lambda_arm_{short_uid()}"
-        create_lambda_function(
-            func_name=func_name_arm,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
-            Architectures=[Architecture.arm64],
+        update_function_configuration_response = aws_client.lambda_.update_function_code(
+            FunctionName=func_name, ZipFile=zip_file, Architectures=[Architecture.arm64]
+        )
+        snapshot.match(
+            "update_function_configuration_response", update_function_configuration_response
+        )
+        aws_client.lambda_.get_waiter(waiter_name="function_updated_v2").wait(
+            FunctionName=func_name
         )
 
-        invoke_result_arm = aws_client.lambda_.invoke(FunctionName=func_name_arm)
+        invoke_result_arm = aws_client.lambda_.invoke(FunctionName=func_name)
         assert "FunctionError" not in invoke_result_arm
         payload_arm = json.load(invoke_result_arm["Payload"])
         assert payload_arm.get("platform_machine") == "aarch64"
-
-        v1_result = aws_client.lambda_.publish_version(FunctionName=func_name)
-        v1 = v1_result["Version"]
-
-        # assert version is available(!)
-        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
-            FunctionName=func_name, Qualifier=v1
-        )
-
-        arm_v1_result = aws_client.lambda_.publish_version(FunctionName=func_name_arm)
-        arm_v1 = arm_v1_result["Version"]
-
-        # assert version is available(!)
-        aws_client.lambda_.get_waiter(waiter_name="function_active_v2").wait(
-            FunctionName=func_name_arm, Qualifier=arm_v1
-        )
-
-        invoke_result_2 = aws_client.lambda_.invoke(FunctionName=func_name, Qualifier=v1)
-        assert "FunctionError" not in invoke_result_2
-        payload_2 = json.load(invoke_result_2["Payload"])
-        assert payload_2.get("platform_machine") == "x86_64"
-
-        invoke_result_arm_2 = aws_client.lambda_.invoke(
-            FunctionName=func_name_arm, Qualifier=arm_v1
-        )
-        assert "FunctionError" not in invoke_result_arm_2
-        payload_arm_2 = json.load(invoke_result_arm_2["Payload"])
-        assert payload_arm_2.get("platform_machine") == "aarch64"
 
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
@@ -1652,6 +1638,14 @@ class TestLambdaMultiAccounts:
     def test_cross_account_access(
         self, primary_client, secondary_client, create_lambda_function, dummylayer
     ):
+        # TODO: AWS validate this test
+        # As of 2024-02, AWS restricts the input for adding resource-based policy to layer versions via AddLayerVersionPermission.
+        # Only 'lambda:GetLayerVersion' is accepted for Action.
+        # https://github.com/boto/botocore/blob/cf7b8449643187670620ab699596ca785e3ec889/botocore/data/lambda/2015-03-31/service-2.json#L3906-L3909
+        # This appears to have been the case atleast since 2021-06.
+        # Furthermore this contradicts with what its docs on valid IAM actions for layer versions:
+        # https://docs.aws.amazon.com/lambda/latest/dg/lambda-api-permissions-ref.html#permissions-resources-layers
+
         # Create resources using primary test credentials
         func_name = f"func-{short_uid()}"
         func_arn = create_lambda_function(
@@ -1738,14 +1732,14 @@ class TestLambdaMultiAccounts:
 
         assert secondary_client.delete_function_concurrency(FunctionName=func_arn)
 
-        alias_name = short_uid()
+        alias_name = f"alias-{short_uid()}"
         assert secondary_client.create_alias(
             FunctionName=func_arn, FunctionVersion="$LATEST", Name=alias_name
         )
 
         assert secondary_client.get_alias(FunctionName=func_arn, Name=alias_name)
 
-        alias_description = "blyat"
+        alias_description = f"alias-description-{short_uid()}"
         assert secondary_client.update_alias(
             FunctionName=func_arn, Name=alias_name, Description=alias_description
         )
@@ -2417,6 +2411,42 @@ class TestLambdaVersions:
             FunctionName=function_name, Qualifier=first_publish_response["Version"], Payload=b"{}"
         )
         snapshot.match("invocation_result_v1_end", invocation_result_v1)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
+    @markers.aws.validated
+    def test_lambda_handler_update(self, aws_client, create_lambda_function, snapshot):
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            # handler.handler by convention
+            handler_file=TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS,
+            runtime=Runtime.python3_12,
+            client=aws_client.lambda_,
+        )
+
+        invoke_result_handler_one = aws_client.lambda_.invoke(FunctionName=func_name)
+        snapshot.match("invoke_result_handler_one", invoke_result_handler_one)
+
+        update_function_configuration_result = aws_client.lambda_.update_function_configuration(
+            FunctionName=func_name, Handler="handler.handler_two"
+        )
+        snapshot.match("update_function_configuration_result", update_function_configuration_result)
+        waiter = aws_client.lambda_.get_waiter("function_updated_v2")
+        waiter.wait(FunctionName=func_name)
+
+        get_function_result = aws_client.lambda_.get_function(FunctionName=func_name)
+        snapshot.match("get_function_result", get_function_result)
+
+        invoke_result_handler_two = aws_client.lambda_.invoke(FunctionName=func_name)
+        snapshot.match("invoke_result_handler_two", invoke_result_handler_two)
+
+        publish_version_result = aws_client.lambda_.publish_version(FunctionName=func_name)
+        waiter.wait(FunctionName=func_name, Qualifier=publish_version_result["Version"])
+
+        invoke_result_handler_two_postpublish = aws_client.lambda_.invoke(FunctionName=func_name)
+        snapshot.match(
+            "invoke_result_handler_two_postpublish", invoke_result_handler_two_postpublish
+        )
 
 
 # TODO: test if routing is static for a single invocation:

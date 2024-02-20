@@ -3472,8 +3472,105 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_mixed_architecture": {
-    "recorded-date": "20-11-2023, 23:14:17",
-    "recorded-content": {}
+    "recorded-date": "16-02-2024, 11:16:11",
+    "recorded-content": {
+      "create_function_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha256",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.12",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "update_function_configuration_response": {
+        "Architectures": [
+          "arm64"
+        ],
+        "CodeSha256": "code-sha256",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "InProgress",
+        "LastUpdateStatusReason": "The function is being created.",
+        "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:2>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.12",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_provisioned_concurrency_scheduling": {
     "recorded-date": "28-11-2023, 16:48:42",
@@ -3608,6 +3705,142 @@
         "Payload": {
           "errorMessage": "Response payload size exceeded maximum allowed payload size (6291556 bytes).",
           "errorType": "Function.ResponseSizeTooLarge"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_lambda_handler_update": {
+    "recorded-date": "14-02-2024, 14:32:32",
+    "recorded-content": {
+      "invoke_result_handler_one": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "handler": "handler"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_function_configuration_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "code-sha256",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler_two",
+        "LastModified": "date",
+        "LastUpdateStatus": "InProgress",
+        "LastUpdateStatusReason": "The function is being created.",
+        "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.12",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 30,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_result": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha256",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler_two",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.12",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke_result_handler_two": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "handler": "handler_two"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "invoke_result_handler_two_postpublish": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "handler": "handler_two"
         },
         "StatusCode": 200,
         "ResponseMetadata": {

@@ -1,6 +1,6 @@
 import functools
 
-from plugin import PluginManager, plugin
+from plux import PluginManager, plugin
 
 # plugin namespace constants
 HOOKS_CONFIGURE_LOCALSTACK_CONTAINER = "localstack.hooks.configure_localstack_container"

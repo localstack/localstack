@@ -11,7 +11,6 @@ from botocore.exceptions import ClientError
 from localstack import constants
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.config import in_docker
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.container import ContainerFactory, LogStreamFactory
 from localstack.testing.scenario.cdk_lambda_helper import load_python_lambda_to_s3
@@ -124,10 +123,16 @@ class TestLocalStackHost:
 
     @pytest.fixture(scope="class", autouse=True)
     def infrastructure(
-        self, aws_client_factory, infrastructure_setup, port, chosen_localstack_host
+        self,
+        aws_client_factory,
+        infrastructure_setup,
+        port,
+        chosen_localstack_host,
+        region_name,
     ):
         aws_client = aws_client_factory(
-            endpoint_url=f"http://localhost:{port}", region_name=TEST_AWS_REGION_NAME
+            endpoint_url=f"http://localhost:{port}",
+            region_name=region_name,
         )
 
         infra: InfraProvisioner = infrastructure_setup(
@@ -238,7 +243,9 @@ class TestLocalStackHost:
         with infra.provisioner() as prov:
             yield prov
 
-    def test_scenario(self, port, infrastructure, aws_client_factory, chosen_localstack_host):
+    def test_scenario(
+        self, port, infrastructure, aws_client_factory, chosen_localstack_host, region_name
+    ):
         """
         Scenario:
             * API Gateway handles web request
@@ -249,7 +256,7 @@ class TestLocalStackHost:
 
         aws_client = aws_client_factory(
             endpoint_url=f"http://localhost:{port}",
-            region_name=TEST_AWS_REGION_NAME,
+            region_name=region_name,
         )
 
         stack_outputs = infrastructure.get_stack_outputs(STACK_NAME)

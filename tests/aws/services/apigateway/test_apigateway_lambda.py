@@ -6,7 +6,6 @@ import requests
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
@@ -249,7 +248,12 @@ def test_lambda_aws_proxy_integration(
 
 @markers.aws.validated
 def test_lambda_aws_integration(
-    create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
+    create_rest_apigw,
+    create_lambda_function,
+    create_role_with_policy,
+    snapshot,
+    aws_client,
+    region_name,
 ):
     snapshot.add_transformers_list(
         [
@@ -271,7 +275,7 @@ def test_lambda_aws_integration(
         "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
     )
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-    target_uri = arns.apigateway_invocations_arn(lambda_arn, TEST_AWS_REGION_NAME)
+    target_uri = arns.apigateway_invocations_arn(lambda_arn, region_name)
 
     api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
     resource_id, _ = create_rest_resource(
@@ -329,7 +333,12 @@ def test_lambda_aws_integration(
 
 @markers.aws.validated
 def test_lambda_aws_integration_with_request_template(
-    create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
+    create_rest_apigw,
+    create_lambda_function,
+    create_role_with_policy,
+    snapshot,
+    aws_client,
+    region_name,
 ):
     # this test almost follow
     # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-custom-integrations.html
@@ -354,7 +363,7 @@ def test_lambda_aws_integration_with_request_template(
     )
 
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-    target_uri = arns.apigateway_invocations_arn(lambda_arn, TEST_AWS_REGION_NAME)
+    target_uri = arns.apigateway_invocations_arn(lambda_arn, region_name)
 
     api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
     resource_id, _ = create_rest_resource(
@@ -438,7 +447,12 @@ def test_lambda_aws_integration_with_request_template(
 
 @markers.aws.validated
 def test_lambda_aws_integration_response_with_mapping_templates(
-    create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client, region
+    create_rest_apigw,
+    create_lambda_function,
+    create_role_with_policy,
+    snapshot,
+    aws_client,
+    region_name,
 ):
     function_name = f"test-{short_uid()}"
     stage_name = "api"
@@ -454,7 +468,7 @@ def test_lambda_aws_integration_response_with_mapping_templates(
     )
 
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-    target_uri = arns.apigateway_invocations_arn(lambda_arn, region)
+    target_uri = arns.apigateway_invocations_arn(lambda_arn, region_name)
 
     api_id, _, root = create_rest_apigw(name=f"test-api-{short_uid()}")
     resource_id, _ = create_rest_resource(

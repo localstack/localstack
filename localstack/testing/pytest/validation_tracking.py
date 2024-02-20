@@ -60,6 +60,7 @@ def record_passed_validation(item: pytest.Item, timestamp: Optional[datetime.dat
         # save updates
         fd.seek(0)
         json.dump(content, fd, indent=2, sort_keys=True)
+        fd.write("\n")  # add trailing newline for linter and Git compliance
 
 
 # TODO: we should skip if we're updating snapshots

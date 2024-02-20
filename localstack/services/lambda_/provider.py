@@ -619,7 +619,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"{runtime} is not supported for SnapStart enabled functions.", Type="User"
             )
 
-    def _validate_layers(self, new_layers: list[str], region: str, account_id: int):
+    def _validate_layers(self, new_layers: list[str], region: str, account_id: str):
         if len(new_layers) > LAMBDA_LAYERS_LIMIT_PER_FUNCTION:
             raise InvalidParameterValueException(
                 "Cannot reference more than 5 layers.", Type="User"
@@ -728,8 +728,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"Request must be smaller than {config.LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE} bytes for the CreateFunction operation"
             )
 
-        architectures = request.get("Architectures")
-        if architectures:
+        if architectures := request.get("Architectures"):
             if len(architectures) != 1:
                 raise ValidationException(
                     f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
@@ -998,6 +997,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 context.account_id, context.region, vpc_config
             )
 
+        if "Handler" in request:
+            replace_kwargs["handler"] = request["Handler"]
+
         if "Runtime" in request:
             runtime = request["Runtime"]
             if runtime not in ALL_RUNTIMES:
@@ -1136,6 +1138,23 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         old_function_version = function.versions.get("$LATEST")
         replace_kwargs = {"code": code} if code else {"image": image}
+
+        if architectures := request.get("Architectures"):
+            if len(architectures) != 1:
+                raise ValidationException(
+                    f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
+                    f"satisfy constraint: Member must have length less than or equal to 1",
+                )
+            # An empty list of architectures is also forbidden. Further exceptions are tested here for create_function:
+            # tests.aws.services.lambda_.test_lambda_api.TestLambdaFunction.test_create_lambda_exceptions
+            if architectures[0] not in ARCHITECTURES:
+                raise ValidationException(
+                    f"1 validation error detected: Value '[{', '.join(architectures)}]' at 'architectures' failed to "
+                    f"satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: "
+                    f"[x86_64, arm64], Member must not be null]",
+                )
+            replace_kwargs["architectures"] = architectures
+
         config = dataclasses.replace(
             old_function_version.config,
             internal_revision=short_uid(),

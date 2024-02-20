@@ -32,15 +32,15 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.127.0
+aws-cdk-lib==2.128.0
     # via localstack-core (pyproject.toml)
-aws-sam-translator==1.84.0
+aws-sam-translator==1.85.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.12.1
     # via moto-ext
-awscli==1.32.39
+awscli==1.32.44
     # via localstack-core (pyproject.toml)
 awscrt==0.20.3
     # via localstack-core (pyproject.toml)
@@ -52,12 +52,12 @@ blinker==1.7.0
     #   quart
 boto==2.49.0
     # via amazon-kclpy
-boto3==1.34.39
+boto3==1.34.44
     # via
     #   aws-sam-translator
     #   localstack-core (pyproject.toml)
     #   moto-ext
-botocore==1.34.39
+botocore==1.34.44
     # via
     #   aws-xray-sdk
     #   awscli
@@ -82,7 +82,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==0.85.1
+cfn-lint==0.85.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -98,14 +98,13 @@ constructs==10.3.0
     # via aws-cdk-lib
 coverage[toml]==6.5.0
     # via
-    #   coverage
     #   coveralls
     #   localstack-core (pyproject.toml)
 coveralls==3.3.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.2
+cryptography==42.0.3
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
@@ -126,7 +125,7 @@ distlib==0.3.8
     # via virtualenv
 dnslib==0.9.24
     # via localstack-core (pyproject.toml)
-dnspython==2.5.0
+dnspython==2.6.1
     # via
     #   localstack-core (pyproject.toml)
     #   pymongo
@@ -165,7 +164,7 @@ hypercorn==0.16.0
     #   quart
 hyperframe==6.0.1
     # via h2
-identify==2.5.34
+identify==2.5.35
     # via pre-commit
 idna==3.6
     # via requests
@@ -241,9 +240,7 @@ markupsafe==2.1.5
 mdurl==0.1.2
     # via markdown-it-py
 moto-ext[all]==5.0.0.post1
-    # via
-    #   localstack-core (pyproject.toml)
-    #   moto-ext
+    # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
 multipart==0.2.4
@@ -292,14 +289,14 @@ pluggy==1.4.0
     #   pytest
 plumbum==1.8.2
     # via pandoc
-plux==1.5.0
+plux==1.7.0
     # via localstack-core (pyproject.toml)
 ply==3.11
     # via
     #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
-pre-commit==3.6.1
+pre-commit==3.6.2
     # via localstack-core (pyproject.toml)
 priority==2.0.0
     # via hypercorn
@@ -331,17 +328,17 @@ pymongo==4.6.1
     # via localstack-core (pyproject.toml)
 pyopenssl==24.0.0
     # via localstack-core (pyproject.toml)
-pypandoc==1.12
+pypandoc==1.13
     # via localstack-core (pyproject.toml)
 pyparsing==3.1.1
     # via moto-ext
-pytest==8.0.0
+pytest==8.0.1
     # via
     #   localstack-core (pyproject.toml)
     #   pytest-rerunfailures
     #   pytest-split
     #   pytest-tinybird
-pytest-httpserver==1.0.8
+pytest-httpserver==1.0.9
     # via localstack-core (pyproject.toml)
 pytest-rerunfailures==13.0
     # via localstack-core (pyproject.toml)
@@ -358,9 +355,7 @@ python-dateutil==2.8.2
 python-dotenv==1.0.1
     # via localstack-core (pyproject.toml)
 python-jose[cryptography]==3.3.0
-    # via
-    #   moto-ext
-    #   python-jose
+    # via moto-ext
 pyyaml==6.0.1
     # via
     #   awscli
@@ -395,7 +390,7 @@ requests==2.31.0
     #   rolo
 requests-aws4auth==1.2.3
     # via localstack-core (pyproject.toml)
-responses==0.24.1
+responses==0.25.0
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
@@ -403,7 +398,7 @@ rich==13.7.0
     # via localstack-core (pyproject.toml)
 rolo==0.3.0
     # via localstack-core (pyproject.toml)
-rpds-py==0.17.1
+rpds-py==0.18.0
     # via
     #   jsonschema
     #   referencing
@@ -413,7 +408,7 @@ rsa==4.7.2
     #   python-jose
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.2.1
+ruff==0.2.2
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.0
     # via

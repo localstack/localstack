@@ -215,7 +215,7 @@ def test_nested_output_in_params(deploy_cfn_template, s3_create_bucket, snapshot
     topic_name = f"test-topic-{short_uid()}"
     role_name = f"test-role-{short_uid()}"
 
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+    if is_aws_cloud():
         base_path = "https://s3.amazonaws.com"
     else:
         base_path = "http://localhost:4566"

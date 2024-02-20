@@ -157,6 +157,7 @@ def secondary_aws_client(aws_client_factory):
     This fixture can be used to obtain Boto clients for testing.
 
     The clients are configured with the secondary testing credentials.
+    The region is not overridden.
     """
     from localstack.testing.aws.util import secondary_testing_aws_client
 

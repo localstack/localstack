@@ -93,9 +93,7 @@ def create_client_with_keys(
         aws_secret_access_key=keys["SecretAccessKey"],
         aws_session_token=keys.get("SessionToken"),
         config=client_config,
-        endpoint_url=config.internal_service_url()
-        if os.environ.get("TEST_TARGET") != "AWS_CLOUD"
-        else None,
+        endpoint_url=config.internal_service_url() if not is_aws_cloud() else None,
     )
 
 
@@ -204,7 +202,7 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
             retries={"total_max_attempts": 1},
         )
 
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+    if is_aws_cloud():
         return ExternalAwsClientFactory(session=session, config=config)
     else:
         if not config:
