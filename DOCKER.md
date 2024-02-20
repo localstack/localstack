@@ -1,34 +1,20 @@
-# Base Image Tags
-
-We do push a set of different image tags for the LocalStack Docker images. When using LocalStack, you can decide which tag you want to use.These tags have different semantics and will be updated on different occasions:
-
-- `latest` (default)
-  - This is our default tag.
-    It refers to the latest commit which has been fully tested using our extensive integration test suite.
-  - This also entails changes that are part of major releases, which means that this tag can contain breaking changes.
-  - This tag should be used if you want to stay up-to-date with the latest changes.
-- `stable`
-  - This tag refers to the latest tagged release.
-    It will be updated with every release of LocalStack.
-  - This also entails major releases, which means that this tag can contain breaking changes.
-  - This tag should be used if you want to stay up-to-date with releases, but don't necessarily need the latest and greatest changes right away.
-- `<major>` (e.g. `3`)
-  - These tags can be used to refer to the latest release of a specific major release.
-    It will be updated with every minor and patch release within this major release.
-  - This tag should be used if you want to avoid any potential breaking changes.
-- `<major>.<minor>` (e.g. `3.0`)
-  - These tags can be used to refer to the latest release of a specific minor release.
-    It will be updated with every patch release within this minor release.
-  - This tag can be used if you want to avoid any bigger changes, like new features, but still want to update to the latest bugfix release.
-- `<major>.<minor>.<patch>` (e.g. `3.0.2`)
-  - These tags can be used if you want to use a very specific release.
-    It will not be updated.
-  - This tag can be used if you really want to avoid any changes to the image (not even minimal bug fixes).
-
 # What is LocalStack?
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
+</p>
+
+<p align="center">
+  <a href="https://circleci.com/gh/localstack/localstack"><img alt="CircleCI" src="https://img.shields.io/circleci/build/gh/localstack/localstack/master?logo=circleci"></a>
+  <a href="https://coveralls.io/github/localstack/localstack?branch=master"><img alt="Coverage Status" src="https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master"></a>
+  <a href="https://pypi.org/project/localstack/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/localstack?color=blue"></a>
+  <a href="https://hub.docker.com/r/localstack/localstack"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/localstack/localstack"></a>
+  <a href="https://pypi.org/project/localstack"><img alt="PyPi downloads" src="https://static.pepy.tech/badge/localstack"></a>
+  <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/localstack/backers/badge.svg"></a>
+  <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/localstack/sponsors/badge.svg"></a>
+  <a href="https://img.shields.io/pypi/l/localstack.svg"><img alt="PyPI License" src="https://img.shields.io/pypi/l/localstack.svg"></a>
+  <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+  <a href="https://twitter.com/localstack"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>
 </p>
 
 [LocalStack](https://localstack.cloud) is a cloud service emulator that runs in a single container on your laptop or in your CI environment. With LocalStack, you can run your AWS applications or Lambdas entirely on your local machine without connecting to a remote cloud provider! Whether you are testing complex CDK applications or Terraform configurations, or just beginning to learn about AWS services, LocalStack helps speed up and simplify your testing and development workflow.
@@ -50,6 +36,16 @@ You can start the Docker container simply by executing the following docker run 
 ```console
 $ docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
 ```
+
+Create an s3 bucket with LocalStack's awslocal CLI  
+
+```
+$ docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
+$ docker exec -it id_container /bin/bash
+$ awslocal s3api create-bucket --bucket sample-bucket
+$ awslocal s3api list-buckets
+```
+User guide for reference [https://docs.localstack.cloud/user-guide/aws/s3/](https://docs.localstack.cloud/user-guide/aws/s3)
 
 **Notes**
 
@@ -86,6 +82,16 @@ Start the container by running the following command:
 $ docker-compose up
 ```
 
+Create a queue using SQS
+
+```
+$ docker exec -it id_container /bin/bash
+$ awslocal sqs create-queue --queue-name test-queue
+$ awslocal sqs list-queues 
+```
+
+User guide for reference [https://docs.localstack.cloud/user-guide/aws/sqs](https://docs.localstack.cloud/user-guide/aws/sqs/)
+
 **Notes**
 
 - This command pulls the current nightly build from the `master` branch (if you don’t have the image locally) and **not** the latest supported version. If you want to use a specific version, set the appropriate localstack image tag at `services.localstack.image` in the `docker-compose.yml` file (for example `localstack/localstack:<version>`).
@@ -100,6 +106,33 @@ Please note that there are a few pitfalls when configuring your stack manually v
 $ localstack config validate
 ```
 
+### Base Image Tags
+
+We do push a set of different image tags for the LocalStack Docker images. When using LocalStack, you can decide which tag you want to use.These tags have different semantics and will be updated on different occasions:
+
+- `latest` (default)
+  - This is our default tag.
+    It refers to the latest commit which has been fully tested using our extensive integration test suite.
+  - This also entails changes that are part of major releases, which means that this tag can contain breaking changes.
+  - This tag should be used if you want to stay up-to-date with the latest changes.
+- `stable`
+  - This tag refers to the latest tagged release.
+    It will be updated with every release of LocalStack.
+  - This also entails major releases, which means that this tag can contain breaking changes.
+  - This tag should be used if you want to stay up-to-date with releases, but don't necessarily need the latest and greatest changes right away.
+- `<major>` (e.g. `3`)
+  - These tags can be used to refer to the latest release of a specific major release.
+    It will be updated with every minor and patch release within this major release.
+  - This tag should be used if you want to avoid any potential breaking changes.
+- `<major>.<minor>` (e.g. `3.0`)
+  - These tags can be used to refer to the latest release of a specific minor release.
+    It will be updated with every patch release within this minor release.
+  - This tag can be used if you want to avoid any bigger changes, like new features, but still want to update to the latest bugfix release.
+- `<major>.<minor>.<patch>` (e.g. `3.0.2`)
+  - These tags can be used if you want to use a very specific release.
+    It will not be updated.
+  - This tag can be used if you really want to avoid any changes to the image (not even minimal bug fixes).
+
 ### Where to get help 
 
 Get in touch with the LocalStack Team to report 🐞 [issues](https://github.com/localstack/localstack/issues/new/choose),upvote 👍 [feature requests](https://github.com/localstack/localstack/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+),🙋🏽 ask [support questions](https://docs.localstack.cloud/getting-started/help-and-support/),or 🗣️ discuss local cloud development:
@@ -109,7 +142,7 @@ Get in touch with the LocalStack Team to report 🐞 [issues](https://github.com
 - [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
 - [Getting Started - FAQ](https://docs.localstack.cloud/getting-started/faq/)
 
-## License
+### License
 
 Copyright (c) 2017-2024 LocalStack maintainers and contributors.
 
