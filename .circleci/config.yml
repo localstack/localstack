@@ -19,9 +19,7 @@ commands:
       - run:
           name: Setup Environment Variables
           command: |
-            if [[ $CIRCLE_BRANCH == "master" ]] ; then
-              echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
-            fi
+            echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             echo "export TINYBIRD_DATASOURCE=localstack-tests-circleci" >> $BASH_ENV
             echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
             echo "export CI_COMMIT_BRANCH=${CIRCLE_BRANCH}" >> $BASH_ENV
@@ -492,13 +490,41 @@ jobs:
             source .venv/bin/activate
             bin/release-helper.sh set-ver $(bin/release-helper.sh next-dev-ver)
             make publish
+  save-start-time:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - run:
+          name: Save start time to file
+          command: mkdir -p target/stats && echo $(date +%s) > target/stats/start-time.txt
+      - persist_to_workspace:
+            root: /tmp/workspace
+            paths:
+                - repo/target/stats/
+  send-stats:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load start time from file
+          command: |
+            START_TIME=$(cat target/stats/start-time.txt)
+            END_TIME=$(date +%s)
+            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'"}' > target/stats/stats.json
+            echo 'Sending: '$(cat target/stats/stats.json)
+            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @target/stats/stats.json
 
 
 
 workflows:
   main:
     jobs:
-      - install
+      - save-start-time
+      - install:
+          requires:
+            - save-start-time
       - preflight:
           requires:
             - install
@@ -564,6 +590,9 @@ workflows:
             - docker-test-arm64
             - collect-not-implemented
             - unit-tests
+      - send-stats:
+          requires:
+            - report
       - push:
           filters:
             branches:
