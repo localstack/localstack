@@ -1408,6 +1408,17 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
     return methods.get(invocation_context.method.upper()) or methods.get("ANY")
 
 
+def event_type_from_route_key(invocation_context):
+    action = invocation_context.route["RouteKey"]
+    return (
+        "CONNECT"
+        if action == "$connect"
+        else "DISCONNECT"
+        if action == "$disconnect"
+        else "MESSAGE"
+    )
+
+
 def get_event_request_context(invocation_context: ApiInvocationContext):
     method = invocation_context.method
     path = invocation_context.path
@@ -1449,6 +1460,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
 
     if invocation_context.is_websocket_request():
         request_context["connectionId"] = invocation_context.connection_id
+        request_context["eventType"] = event_type_from_route_key(invocation_context)
 
     # set "authorizer" and "identity" event attributes from request context
     authorizer_result = invocation_context.authorizer_result

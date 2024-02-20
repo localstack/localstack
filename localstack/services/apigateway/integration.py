@@ -262,7 +262,7 @@ class LambdaProxyIntegration(BackendIntegration):
         del path_params["proxy+"]
         path_params["proxy"] = proxy_path_param_value
 
-    @classmethod
+    @classmethod\
     def construct_invocation_event(
         cls, method, path, headers, data, query_string_params=None, is_base64_encoded=False
     ):
