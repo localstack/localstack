@@ -20,12 +20,12 @@ commands:
           name: Setup Environment Variables
           command: |
             echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
-            echo "export TINYBIRD_DATASOURCE=localstack-tests-circleci" >> $BASH_ENV
+            echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
             echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
             echo "export CI_COMMIT_BRANCH=${CIRCLE_BRANCH}" >> $BASH_ENV
             echo "export CI_COMMIT_SHA=${CIRCLE_SHA1}" >> $BASH_ENV
             echo "export CI_JOB_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
-            echo "export CI_JOB_NAME=${CIRCLE_JOB}" >> $BASH_ENV
+            echo "export CI_JOB_NAME=${CIRCLE_WORKFLOW_ID}" >> $BASH_ENV
             echo "export CI_JOB_ID=${CIRCLE_WORKFLOW_JOB_ID}" >> $BASH_ENV
             source $BASH_ENV
 

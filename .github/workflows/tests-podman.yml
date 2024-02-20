@@ -6,13 +6,14 @@ on:
 env:
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
-  TINYBIRD_DATASOURCE: ${{ github.event.repository.name }}-tests-podman
+  TINYBIRD_DATASOURCE: community_tests_podman
   TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
-  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master
-  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  #  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  TINYBIRD_PYTEST_ARGS: "--report-to-tinybird "
 
 jobs:
   podman-tests:
@@ -62,3 +63,15 @@ jobs:
           podmanSocket=$(podman system info --format json | jq -r '.host.remoteSocket.path')
           echo "Running tests against local podman socket $podmanSocket"
           DOCKER_HOST=$podmanSocket make test
+
+  push-to-tinybird:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: podman-tests
+    steps:
+      - name: Push to Tinybird
+        uses: localstack/tinybird-workflow-push@v2.0.0
+        with:
+          tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tinybird_datasource: "ci_workflows"
