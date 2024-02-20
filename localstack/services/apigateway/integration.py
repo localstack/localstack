@@ -469,7 +469,7 @@ class KinesisIntegration(BackendIntegration):
         integration_type = integration_type_orig.upper()
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
-        if uri.endswith("kinesis:action/PutRecord"):
+        if uri.endswith("kinesis:action/PutRecord") or integration.get('integrationSubtype') == "Kinesis-PutRecord":
             target = "Kinesis_20131202.PutRecord"
         elif uri.endswith("kinesis:action/PutRecords"):
             target = "Kinesis_20131202.PutRecords"
@@ -483,7 +483,8 @@ class KinesisIntegration(BackendIntegration):
 
         try:
             # xXx this "event" request context is used in multiple places, we probably
-            # want to refactor this into a model class
+            # want to refactor this into a model class.
+            # I'd argue
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
 
