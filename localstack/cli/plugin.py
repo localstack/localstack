@@ -3,7 +3,7 @@ import logging
 import os
 
 import click
-from plugin import Plugin, PluginManager
+from plux import Plugin, PluginManager
 
 LOG = logging.getLogger(__name__)
 

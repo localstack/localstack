@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Type
 
-from plugin import PluginManager
+from plux import PluginManager
 
 from localstack import config
 from localstack.services.lambda_.invocation.lambda_models import FunctionVersion, InvocationResult

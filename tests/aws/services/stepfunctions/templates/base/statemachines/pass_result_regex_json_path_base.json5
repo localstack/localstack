@@ -1,0 +1,13 @@
+{
+  "Comment": "BASE_PASS_RESULT_REGEX_JSON_PATH_BASE",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "Parameters": {
+        "FromInput.$": "$.users[?(@.status == 0)]"
+      },
+      "End": true
+    }
+  }
+}

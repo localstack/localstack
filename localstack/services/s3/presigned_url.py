@@ -5,7 +5,8 @@ import json
 import logging
 import re
 import time
-from functools import cached_property
+from collections import namedtuple
+from functools import cache, cached_property
 from typing import Mapping, Optional, TypedDict
 from urllib import parse as urlparse
 
@@ -19,6 +20,7 @@ from botocore.utils import percent_encode_sequence
 from werkzeug.datastructures import Headers, ImmutableMultiDict
 
 from localstack import config
+from localstack.aws.accounts import get_account_id_from_access_key_id
 from localstack.aws.api import RequestContext
 from localstack.aws.api.s3 import (
     AccessDenied,
@@ -30,10 +32,14 @@ from localstack.aws.api.s3 import (
 from localstack.aws.chain import HandlerChain
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.protocol.service_router import get_service_catalog
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Request, Response
 from localstack.http.request import get_raw_path
-from localstack.services.s3.constants import SIGNATURE_V2_PARAMS, SIGNATURE_V4_PARAMS
+from localstack.services.s3.constants import (
+    DEFAULT_PRE_SIGNED_ACCESS_KEY_ID,
+    DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY,
+    SIGNATURE_V2_PARAMS,
+    SIGNATURE_V4_PARAMS,
+)
 from localstack.services.s3.utils import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
     _create_invalid_argument_exc,
@@ -76,6 +82,10 @@ PORT_REPLACEMENT = [":80", ":443", f":{config.GATEWAY_LISTEN[0].port}", ""]
 # STS policy expiration date format
 POLICY_EXPIRATION_FORMAT1 = "%Y-%m-%dT%H:%M:%SZ"
 POLICY_EXPIRATION_FORMAT2 = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+PreSignedCredentials = namedtuple(
+    "PreSignedCredentials", ["access_key_id", "secret_access_key", "security_token"]
+)
 
 
 class NotValidSigV4SignatureContext(TypedDict):
@@ -129,12 +139,12 @@ class S3SigV4QueryAuthValidation(S3SigV4QueryAuth):
 
 
 def create_signature_does_not_match_sig_v2(
-    request_signature: str, string_to_sign: str
+    request_signature: str, string_to_sign: str, access_key_id: str
 ) -> SignatureDoesNotMatch:
     ex = SignatureDoesNotMatch(
         "The request signature we calculated does not match the signature you provided. Check your key and signing method."
     )
-    ex.AWSAccessKeyId = TEST_AWS_ACCESS_KEY_ID  # todo maybe return access key used for the request
+    ex.AWSAccessKeyId = access_key_id
     ex.HostId = FAKE_HOST_ID
     ex.SignatureProvided = request_signature
     ex.StringToSign = string_to_sign
@@ -143,11 +153,12 @@ def create_signature_does_not_match_sig_v2(
 
 
 def create_signature_does_not_match_sig_v4(
-    not_valid_sig_v4: NotValidSigV4SignatureContext,
+    not_valid_sig_v4: NotValidSigV4SignatureContext, access_key_id: str
 ) -> SignatureDoesNotMatch:
     ex = create_signature_does_not_match_sig_v2(
         request_signature=not_valid_sig_v4["signature_provided"],
         string_to_sign=not_valid_sig_v4["string_to_sign"],
+        access_key_id=access_key_id,
     )
     ex.CanonicalRequest = not_valid_sig_v4["canonical_request"]
     ex.CanonicalRequestBytes = to_bytes(ex.CanonicalRequest).hex(sep=" ", bytes_per_sep=2).upper()
@@ -206,6 +217,55 @@ class S3PreSignedURLRequestHandler:
             return self._service.operation_model("GetObject")
 
 
+def get_credentials_from_parameters(parameters: dict) -> PreSignedCredentials:
+    """
+    Extract and retrieves the credentials from the passed signed requests parameters (can be from the query string or
+    the form for POST requests)
+    :param parameters:
+    :return:
+    """
+    # This is V2 signature AccessKeyId
+    if not (access_key_id := parameters.get("AWSAccessKeyId")):
+        # If not present, then it is a V4 signature (casing differs between QS parameters and form)
+        credential_value = parameters.get(
+            "X-Amz-Credential", parameters.get("x-amz-credential", "")
+        ).split("/")
+        if len(credential_value):
+            access_key_id = credential_value[0]
+
+    if not access_key_id:
+        # fallback to the hardcoded value
+        access_key_id = DEFAULT_PRE_SIGNED_ACCESS_KEY_ID
+
+    if not (secret_access_key := get_secret_access_key_from_access_key_id(access_key_id)):
+        # if we could not retrieve the secret access key, it means the access key was not registered in LocalStack,
+        # fallback to hardcoded necessary secret access key
+        secret_access_key = DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
+
+    security_token = parameters.get("X-Amz-Security-Token", None)
+    return PreSignedCredentials(access_key_id, secret_access_key, security_token)
+
+
+@cache
+def get_secret_access_key_from_access_key_id(access_key_id: str) -> Optional[str]:
+    """
+    We need to retrieve the internal secret access key in order to also sign the request on our side to validate it
+    For now, we need to access Moto internals, as they are no public APIs to retrieve it for obvious reasons.
+    If the AccessKey is not registered, use the default `test` value that was historically used for pre-signed URLs, in
+    order to support default use cases
+    :param access_key_id: the provided AccessKeyID in the Credentials parameter
+    :return: the linked secret_access_key to the access_key
+    """
+    from moto.iam.models import AccessKey, iam_backends
+
+    account_id = get_account_id_from_access_key_id(access_key_id)
+    moto_access_key: AccessKey = iam_backends[account_id]["global"].access_keys.get(access_key_id)
+    if not moto_access_key:
+        return
+
+    return moto_access_key.secret_access_key
+
+
 def is_expired(expiry_datetime: datetime.datetime):
     now_datetime = datetime.datetime.now(tz=expiry_datetime.tzinfo)
     return now_datetime > expiry_datetime
@@ -254,11 +314,11 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
     """
     query_parameters = context.request.args
     method = context.request.method
-    # todo: use the current User credentials instead? so it would not be set in stone??
-    credentials = Credentials(
-        access_key=TEST_AWS_ACCESS_KEY_ID,
-        secret_key=TEST_AWS_SECRET_ACCESS_KEY,
-        token=query_parameters.get("X-Amz-Security-Token", None),
+    credentials = get_credentials_from_parameters(query_parameters)
+    signing_credentials = Credentials(
+        access_key=credentials.access_key_id,
+        secret_key=credentials.secret_access_key,
+        token=credentials.security_token,
     )
     try:
         expires = int(query_parameters["Expires"])
@@ -277,7 +337,7 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
                 "Request has expired", HostId=FAKE_HOST_ID, Expires=expires, ServerTime=time.time()
             )
 
-    auth_signer = HmacV1QueryAuthValidation(credentials=credentials, expires=expires)
+    auth_signer = HmacV1QueryAuthValidation(credentials=signing_credentials, expires=expires)
 
     split_url, headers = _reverse_inject_signature_hmac_v1_query(context.request)
 
@@ -294,7 +354,9 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
             )
         else:
             ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v2(
-                request_signature=req_signature, string_to_sign=string_to_sign
+                request_signature=req_signature,
+                string_to_sign=string_to_sign,
+                access_key_id=credentials.access_key_id,
             )
             raise ex
 
@@ -381,7 +443,9 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
                 "Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
             )
         else:
-            ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v4(exception)
+            ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v4(
+                exception, sigv4_context.credentials.access_key_id
+            )
             raise ex
 
     # Checking whether the url is expired or not
@@ -467,16 +531,18 @@ class S3SigV4SignatureContext:
         self._request_method = context.request.method
         self.missing_signed_headers = []
 
-        credentials = ReadOnlyCredentials(
-            TEST_AWS_ACCESS_KEY_ID,
-            TEST_AWS_SECRET_ACCESS_KEY,
-            self._query_parameters.get("X-Amz-Security-Token", None),
+        credentials = get_credentials_from_parameters(self._query_parameters)
+        signing_credentials = ReadOnlyCredentials(
+            credentials.access_key_id,
+            credentials.secret_access_key,
+            credentials.security_token,
         )
+        self.credentials = credentials
         region = self._query_parameters["X-Amz-Credential"].split("/")[2]
         expires = int(self._query_parameters["X-Amz-Expires"])
         self.signature_date = self._query_parameters["X-Amz-Date"]
 
-        self.signer = S3SigV4QueryAuthValidation(credentials, "s3", region, expires=expires)
+        self.signer = S3SigV4QueryAuthValidation(signing_credentials, "s3", region, expires=expires)
         sig_headers, qs, headers_in_qs = self._get_signed_headers_and_filtered_query_string()
         self.signed_headers = sig_headers
         self.request_query_string = qs
@@ -678,9 +744,11 @@ def validate_post_policy(request_form: ImmutableMultiDict) -> None:
     except ValueError:
         # this means the policy has been tampered with
         signature = request_form.get("signature") if is_v2 else request_form.get("x-amz-signature")
+        credentials = get_credentials_from_parameters(request_form)
         ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v2(
             request_signature=signature,
             string_to_sign=policy,
+            access_key_id=credentials.access_key_id,
         )
         raise ex
 

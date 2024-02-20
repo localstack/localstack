@@ -396,7 +396,7 @@ class TestPythonRuntimes:
 
         # invoke function and assert result
         result = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
-        result_data = json.loads(result["Payload"].read())
+        result_data = json.load(result["Payload"])
         assert 200 == result["StatusCode"]
         assert json.loads("{}") == result_data["event"]
 
@@ -414,5 +414,5 @@ class TestPythonRuntimes:
             FunctionName=function_name,
             Payload=b"{}",
         )
-        result = json.loads(to_str(result["Payload"].read()))
+        result = json.load(result["Payload"])
         assert result["version"] == runtime

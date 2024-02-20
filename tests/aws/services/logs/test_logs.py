@@ -4,11 +4,11 @@ import json
 import re
 
 import pytest
+from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import KeyValueBasedTransformer
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
@@ -150,7 +150,7 @@ class TestCloudWatchLogs:
         ]
     )
     @markers.aws.validated
-    def test_create_and_delete_log_stream(self, logs_log_group, aws_client, snapshot):
+    def test_create_and_delete_log_stream(self, logs_log_group, aws_client, region_name, snapshot):
         snapshot.add_transformer(snapshot.transform.logs_api())
         test_name = f"test-log-stream-{short_uid()}"
 
@@ -206,7 +206,7 @@ class TestCloudWatchLogs:
             logGroupIdentifier=arns.log_group_arn(
                 logs_log_group,
                 account_id=aws_client.sts.get_caller_identity()["Account"],
-                region_name=TEST_AWS_REGION_NAME,
+                region_name=region_name,
             )
         ).get("logStreams")
         snapshot.match("log_group_identifier-arn", response)
@@ -257,7 +257,13 @@ class TestCloudWatchLogs:
         ]
     )
     def test_put_subscription_filter_lambda(
-        self, logs_log_group, logs_log_stream, create_lambda_function, snapshot, aws_client
+        self,
+        logs_log_group,
+        logs_log_stream,
+        create_lambda_function,
+        snapshot,
+        aws_client,
+        region_name,
     ):
         snapshot.add_transformer(snapshot.transform.lambda_api())
         # special replacements for this test case:
@@ -287,9 +293,9 @@ class TestCloudWatchLogs:
         result = aws_client.lambda_.add_permission(
             FunctionName=test_lambda_name,
             StatementId=test_lambda_name,
-            Principal=f"logs.{TEST_AWS_REGION_NAME}.amazonaws.com",
+            Principal=f"logs.{region_name}.amazonaws.com",
             Action="lambda:InvokeFunction",
-            SourceArn=f"arn:aws:logs:{TEST_AWS_REGION_NAME}:{account_id}:log-group:{logs_log_group}:*",
+            SourceArn=f"arn:aws:logs:{region_name}:{account_id}:log-group:{logs_log_group}:*",
             SourceAccount=account_id,
         )
 
