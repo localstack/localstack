@@ -20,7 +20,6 @@ from localstack.aws.connect import (
 )
 from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
-from localstack.aws.proxy import get_account_id_from_request
 from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH, load_service
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
@@ -29,6 +28,7 @@ from localstack.constants import (
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
+from localstack.utils.aws.request_context import get_account_id_from_request
 from localstack.utils.sync import poll_condition
 
 

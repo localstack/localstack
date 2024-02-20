@@ -67,7 +67,7 @@ from localstack.aws.api.iam import (
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.moto import call_moto
-from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
+from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
 

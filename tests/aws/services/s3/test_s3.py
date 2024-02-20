@@ -25,6 +25,7 @@ from botocore import UNSIGNED
 from botocore.auth import SigV4Auth
 from botocore.client import Config
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 from zoneinfo import ZoneInfo
 
 import localstack.config
@@ -51,7 +52,6 @@ from localstack.services.s3.utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -3611,8 +3611,8 @@ class TestS3:
         s3_create_bucket(Bucket=function_name)
 
         response = aws_client.lambda_.invoke(FunctionName=function_name)
-        presigned_url = response["Payload"].read()
-        presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
+        payload = json.load(response["Payload"])
+        presigned_url = payload["body"].strip('"')
 
         response = requests.put(presigned_url, verify=False)
         assert response.status_code == 200
@@ -6916,8 +6916,8 @@ class TestS3PresignedUrl:
         s3_create_bucket(Bucket=function_name)
 
         response = aws_client.lambda_.invoke(FunctionName=function_name)
-        presigned_url = response["Payload"].read()
-        presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
+        payload = json.load(response["Payload"])
+        presigned_url = payload["body"].strip('"')
         # assert that the Javascript SDK hoists it in the URL, unlike Boto
         assert StorageClass.STANDARD in presigned_url
         assert "bar-complicated-no-random" in presigned_url
@@ -6987,8 +6987,8 @@ class TestS3PresignedUrl:
         s3_create_bucket(Bucket=function_name)
 
         response = aws_client.lambda_.invoke(FunctionName=function_name)
-        presigned_url = response["Payload"].read()
-        presigned_url = json.loads(to_str(presigned_url))["body"].strip('"')
+        payload = json.load(response["Payload"])
+        presigned_url = payload["body"].strip('"')
         assert "=AES256" in presigned_url
 
         # AWS needs the Content-MD5 header to validate the integrity of the file as set in the pre-signed URL

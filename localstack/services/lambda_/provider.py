@@ -1513,6 +1513,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         routing_config: AliasRoutingConfiguration = None,
         **kwargs,
     ) -> AliasConfiguration:
+        if not api_utils.qualifier_is_alias(name):
+            raise ValidationException(
+                f"1 validation error detected: Value '{name}' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: (?!^[0-9]+$)([a-zA-Z0-9-_]+)"
+            )
+
         account_id, region = api_utils.get_account_and_region(function_name, context)
         function_name = api_utils.get_function_name(function_name, context)
         target_version = self._get_function_version(

@@ -83,7 +83,7 @@ VERSION_REGEX = re.compile(r"^[0-9]+$")
 # Pattern for an alias qualifier
 # Rules: https://docs.aws.amazon.com/lambda/latest/dg/API_CreateAlias.html#SSS-CreateAlias-request-Name
 # The original regex from AWS misses ^ and $ in the second regex, which allowed for partial substring matches
-ALIAS_REGEX = re.compile(r"(?!^[0-9]+)(^[a-zA-Z0-9-_]+$)")
+ALIAS_REGEX = re.compile(r"(?!^[0-9]+$)(^[a-zA-Z0-9-_]+$)")
 # Permission statement id
 STATEMENT_ID_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
 
