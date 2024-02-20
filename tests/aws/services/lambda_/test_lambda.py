@@ -20,7 +20,7 @@ from botocore.response import StreamingBody
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack import config
-from localstack.aws.api.lambda_ import Architecture, Runtime
+from localstack.aws.api.lambda_ import Architecture, InvokeMode, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.testing.aws.lambda_utils import (
@@ -915,7 +915,7 @@ class TestLambdaURL:
 
     @pytest.mark.parametrize(
         "invoke_mode",
-        [None, "BUFFERED", "RESPONSE_STREAM"],
+        [None, InvokeMode.BUFFERED, InvokeMode.RESPONSE_STREAM],
     )
     @markers.aws.validated
     def test_lambda_url_echo_invoke(
@@ -941,14 +941,14 @@ class TestLambdaURL:
             handler="lambda_url.handler",
         )
 
-        if not invoke_mode:
+        if invoke_mode:
             url_config = aws_client.lambda_.create_function_url_config(
-                FunctionName=function_name,
-                AuthType="NONE",
+                FunctionName=function_name, AuthType="NONE", InvokeMode=invoke_mode
             )
         else:
             url_config = aws_client.lambda_.create_function_url_config(
-                FunctionName=function_name, AuthType="NONE", InvokeMode=invoke_mode
+                FunctionName=function_name,
+                AuthType="NONE",
             )
         snapshot.match("create_lambda_url_config", url_config)
 
@@ -1053,12 +1053,12 @@ class TestLambdaURL:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
-            runtime=Runtime.nodejs16_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_url.handler",
         )
 
         url_config = aws_client.lambda_.create_function_url_config(
-            FunctionName=function_name, AuthType="NONE", InvokeMode="BUFFERED"
+            FunctionName=function_name, AuthType="NONE", InvokeMode=InvokeMode.BUFFERED
         )
         snapshot.match("create_lambda_url_config", url_config)
 
@@ -1127,8 +1127,8 @@ class TestLambdaURL:
 
         create_lambda_function(
             func_name=function_name,
-            zip_file=testutil.create_zip_file(TEST_LAMBDA_PYTHON_ECHO_JSON_BODY, get_content=True),
-            runtime=Runtime.python3_10,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO_JSON_BODY,
+            runtime=Runtime.python3_12,
             handler="lambda_echo_json_body.handler",
         )
 
