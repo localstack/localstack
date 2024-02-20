@@ -1447,7 +1447,7 @@ class TestAPIGateway:
         aws_client,
         create_role_with_policy,
         region_name,
-        snapshot
+        snapshot,
     ):
         _, role_arn = create_role_with_policy(
             "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
@@ -1461,9 +1461,7 @@ class TestAPIGateway:
             runtime=Runtime.nodejs18_x,
         )
         lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-        target_uri = arns.apigateway_invocations_arn(
-            lambda_arn, region_name
-        )
+        target_uri = arns.apigateway_invocations_arn(lambda_arn, region_name)
 
         # create REST API and test resource
         rest_api_id, _, root = create_rest_apigw(name=f"test-{short_uid()}")

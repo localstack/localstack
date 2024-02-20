@@ -413,7 +413,7 @@ class LambdaProxyIntegration(BackendIntegration):
 
 class LambdaIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
-        #invocation_context.context = helpers.get_event_request_context(invocation_context)
+        # invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
         headers = invocation_context.headers
 
