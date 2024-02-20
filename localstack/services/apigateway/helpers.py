@@ -1460,7 +1460,6 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
 
     if invocation_context.is_websocket_request():
         request_context["connectionId"] = invocation_context.connection_id
-        request_context["eventType"] = event_type_from_route_key(invocation_context)
 
     # set "authorizer" and "identity" event attributes from request context
     authorizer_result = invocation_context.authorizer_result
