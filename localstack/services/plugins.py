@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Protocol, Tuple
 
-from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
+from plux import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 
 from localstack import config
 from localstack.aws.skeleton import DispatchTable, Skeleton

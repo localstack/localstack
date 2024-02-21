@@ -4,7 +4,7 @@ import abc
 import copy
 from typing import Any, Final, Optional
 
-from botocore.model import OperationModel, StructureShape
+from botocore.model import OperationModel, StringShape, StructureShape
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
@@ -87,11 +87,8 @@ class StateTaskService(StateTask, abc.ABC):
 
     def _to_boto_args(self, parameters: dict, structure_shape: StructureShape) -> None:
         shape_members = structure_shape.members
-        norm_member_binds: dict[str, tuple[str, Optional[StructureShape]]] = {
-            camel_to_snake_case(member_key): (
-                member_key,
-                member_value if isinstance(member_value, StructureShape) else None,
-            )
+        norm_member_binds: dict[str, tuple[str, StructureShape]] = {
+            camel_to_snake_case(member_key): (member_key, member_value)
             for member_key, member_value in shape_members.items()
         }
         parameters_bind_keys: list[str] = list(parameters.keys())
@@ -103,8 +100,12 @@ class StateTaskService(StateTask, abc.ABC):
             if norm_member_bind is not None:
                 norm_member_bind_key, norm_member_bind_shape = norm_member_bind
                 parameter_value = parameters.pop(parameter_key)
-                if norm_member_bind_shape is not None:
+                if isinstance(norm_member_bind_shape, StructureShape):
                     self._to_boto_args(parameter_value, norm_member_bind_shape)
+                elif isinstance(norm_member_bind_shape, StringShape) and not isinstance(
+                    parameter_value, str
+                ):
+                    parameter_value = to_json_str(parameter_value)
                 parameters[norm_member_bind_key] = parameter_value
 
     @staticmethod
