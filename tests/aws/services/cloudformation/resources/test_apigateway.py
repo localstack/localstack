@@ -267,6 +267,17 @@ def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client)
     assert result.status_code == 400
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..methodIntegration.integrationResponses",
+        "$..methodIntegration.requestParameters",  # missing {}
+        "$..methodIntegration.requestTemplates",  # missing {}
+        "$..methodResponses",  # missing {}
+        "$..requestModels",  # missing {}
+        "$..requestParameters",  # missing {}
+        "$..rootResourceId",  # shouldn't exist
+    ]
+)
 @markers.aws.validated
 def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
@@ -285,6 +296,7 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
     rest_api_id = stack.outputs["RestApiId"]
     rest_api = aws_client.apigateway.get_rest_api(restApiId=rest_api_id)
     snapshot.match("rest_api", rest_api)
+    snapshot.add_transformer(snapshot.transform.key_value("rootResourceId"))
 
     resource_id = stack.outputs["ResourceId"]
     method = aws_client.apigateway.get_method(

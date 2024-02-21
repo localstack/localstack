@@ -4,7 +4,6 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 from typing import Optional, TypedDict
-from urllib.parse import urlparse
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -132,13 +131,6 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
 
             kwargs = keys_to_lower(deepcopy(integration))
             if uri := integration.get("Uri"):
-                # Moto has a validate method on Uri for integration_type "HTTP" | "HTTP_PROXY" that does not accept
-                # Uri value without path, we need to add path ("/") if not exists
-                if integration.get("Type") in ["HTTP", "HTTP_PROXY"]:
-                    rs = urlparse(uri)
-                    if not rs.path:
-                        uri = "{}/".format(uri)
-
                 kwargs["uri"] = uri
 
             integration_responses = kwargs.pop("integrationResponses", [])
