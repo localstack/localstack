@@ -1,5 +1,3 @@
-# What is LocalStack?
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
 </p>
@@ -17,6 +15,8 @@
   <a href="https://twitter.com/localstack"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>
 </p>
 
+# What is LocalStack?
+
 [LocalStack](https://localstack.cloud) is a cloud service emulator that runs in a single container on your laptop or in your CI environment. With LocalStack, you can run your AWS applications or Lambdas entirely on your local machine without connecting to a remote cloud provider! Whether you are testing complex CDK applications or Terraform configurations, or just beginning to learn about AWS services, LocalStack helps speed up and simplify your testing and development workflow.
 
 LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynamodb, Kinesis, SQS, SNS, and many more! You can find a comprehensive list of supported APIs on our [☑️ Feature Coverage](https://docs.localstack.cloud/user-guide/aws/feature-coverage/) page.
@@ -25,7 +25,7 @@ LocalStack also provides additional features to make your life as a cloud develo
 
 ## Usage
 
-Please make sure that you have a working [docker environment](https://docs.docker.com/get-docker/) on your machine before moving on. You can check if docker is correctly configured on your machine by executing `docker info` in your terminal. If it does not report an error (but shows information on your Docker system), you’re good to go.
+Please make sure that you have a working [Docker environment](https://docs.docker.com/get-docker/) on your machine before moving on. You can check if Docker is correctly configured on your machine by executing `docker info` in your terminal. If it does not report an error (but shows information on your Docker system), you’re good to go.
 
 ### Docker CLI
 
@@ -37,26 +37,24 @@ You can start the Docker container simply by executing the following docker run 
 $ docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
 ```
 
-Create an s3 bucket with LocalStack's awslocal CLI  
+Create an s3 bucket with LocalStack's [`awslocal`](https://docs.localstack.cloud/user-guide/integrations/aws-cli/#localstack-aws-cli-awslocal) CLI:
 
 ```
-$ docker run --rm -it -p 4566:4566 -p 4510-4559:4510-4559 localstack/localstack
-$ docker exec -it id_container /bin/bash
 $ awslocal s3api create-bucket --bucket sample-bucket
 $ awslocal s3api list-buckets
 ```
+
 User guide for reference [https://docs.localstack.cloud/user-guide/aws/s3/](https://docs.localstack.cloud/user-guide/aws/s3)
 
 **Notes**
 
 - This command reuses the image if it’s already on your machine, i.e. it will **not** pull the latest image automatically from Docker Hub.
 
-- This command does not bind all ports that are potentially used by LocalStack, nor does it mount any volumes. When using Docker to manually start LocalStack, you will have to configure the container on your own (see [docker-compose-pro.yml](https://github.com/localstack/localstack/blob/master/docker-compose-pro.yml) and [Configuration](https://docs.localstack.cloud/references/configuration/)). This could be seen as the “expert mode” of starting LocalStack. If you are looking for a simpler method of starting LocalStack, please use the [LocalStack CLI](https://docs.localstack.cloud/getting-started/installation/#localstack-cli).
+- This command does not bind all ports that are potentially used by LocalStack, nor does it mount any volumes. When using Docker to manually start LocalStack, you will have to configure the container on your own (see [`docker-compose.yml`](https://github.com/localstack/localstack/blob/master/docker-compose.yml) and [Configuration](https://docs.localstack.cloud/references/configuration/)). This could be seen as the “expert mode” of starting LocalStack. If you are looking for a simpler method of starting LocalStack, please use the [LocalStack CLI](https://docs.localstack.cloud/getting-started/installation/#localstack-cli).
 
 ### Docker Compose
 
-- You can start LocalStack with [Docker Compose](https://docs.docker.com/compose/) by configuring a `docker-compose.yml file`. Currently, docker-compose version 1.9.0+ is supported.
-- Prerequisites [docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/)
+You can start LocalStack with [Docker Compose](https://docs.docker.com/compose/) by configuring a `docker-compose.yml file`. Currently, docker-compose version 1.9.0+ is supported.
 
 ```
 version: "3.8"
@@ -82,10 +80,9 @@ Start the container by running the following command:
 $ docker-compose up
 ```
 
-Create a queue using SQS
+Create a queue using SQS with LocalStack's [`awslocal`](https://docs.localstack.cloud/user-guide/integrations/aws-cli/#localstack-aws-cli-awslocal) CLI:
 
 ```
-$ docker exec -it id_container /bin/bash
 $ awslocal sqs create-queue --queue-name test-queue
 $ awslocal sqs list-queues 
 ```
@@ -106,7 +103,7 @@ Please note that there are a few pitfalls when configuring your stack manually v
 $ localstack config validate
 ```
 
-### Base Image Tags
+## Base Image Tags
 
 We do push a set of different image tags for the LocalStack Docker images. When using LocalStack, you can decide which tag you want to use.These tags have different semantics and will be updated on different occasions:
 
@@ -133,7 +130,7 @@ We do push a set of different image tags for the LocalStack Docker images. When 
     It will not be updated.
   - This tag can be used if you really want to avoid any changes to the image (not even minimal bug fixes).
 
-### Where to get help 
+## Where to get help
 
 Get in touch with the LocalStack Team to report 🐞 [issues](https://github.com/localstack/localstack/issues/new/choose),upvote 👍 [feature requests](https://github.com/localstack/localstack/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc+),🙋🏽 ask [support questions](https://docs.localstack.cloud/getting-started/help-and-support/),or 🗣️ discuss local cloud development:
 
@@ -142,10 +139,10 @@ Get in touch with the LocalStack Team to report 🐞 [issues](https://github.com
 - [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
 - [Getting Started - FAQ](https://docs.localstack.cloud/getting-started/faq/)
 
-### License
+## License
 
 Copyright (c) 2017-2024 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
-This version of LocalStack is released under the Apache License, Version 2.0 (see [LICENSE](https://github.com/localstack/localstack/blob/master/LICENSE.txt)). By downloading and using this software you agree to the [End-User License Agreement (EULA)](https://github.com/localstack/localstack/blob/master/doc/end_user_license_agreement).  
+This version of LocalStack is released under the Apache License, Version 2.0 (see [LICENSE](https://github.com/localstack/localstack/blob/master/LICENSE.txt)). By downloading and using this software you agree to the [End-User License Agreement (EULA)](https://github.com/localstack/localstack/blob/master/doc/end_user_license_agreement).
