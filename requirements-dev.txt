@@ -72,7 +72,7 @@ cachetools==5.3.2
     #   localstack-core (pyproject.toml)
 cattrs==23.2.3
     # via jsii
-cbor2==5.6.1
+cbor2==5.6.2
     # via localstack-core (pyproject.toml)
 certifi==2024.2.2
     # via
@@ -106,11 +106,10 @@ crontab==1.0.1
     # via localstack-core (pyproject.toml)
 cryptography==42.0.3
     # via
+    #   joserfc
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-    #   python-jose
-    #   sshpubkeys
 cython==3.0.8
     # via localstack-core (pyproject.toml)
 decorator==5.1.1
@@ -137,11 +136,6 @@ docopt==0.6.2
     # via coveralls
 docutils==0.16
     # via awscli
-ecdsa==0.18.0
-    # via
-    #   moto-ext
-    #   python-jose
-    #   sshpubkeys
 filelock==3.13.1
     # via virtualenv
 flask==3.0.2
@@ -185,6 +179,8 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
+joserfc==0.9.0
+    # via moto-ext
 jschema-to-python==1.2.3
     # via cfn-lint
 jsii==1.94.0
@@ -194,7 +190,7 @@ jsii==1.94.0
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-lib
     #   constructs
-json5==0.9.14
+json5==0.9.17
     # via localstack-core (pyproject.toml)
 jsondiff==2.0.0
     # via moto-ext
@@ -208,7 +204,7 @@ jsonpath-ng==1.6.1
     #   localstack-snapshot
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
-jsonpickle==3.0.2
+jsonpickle==3.0.3
     # via jschema-to-python
 jsonpointer==2.4
     # via jsonpatch
@@ -239,7 +235,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext[all]==5.0.0.post1
+moto-ext[all]==5.0.2.post1
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -310,12 +306,10 @@ publication==0.0.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-py-partiql-parser==0.5.0
+py-partiql-parser==0.5.1
     # via moto-ext
 pyasn1==0.5.1
-    # via
-    #   python-jose
-    #   rsa
+    # via rsa
 pycparser==2.21
     # via cffi
 pydantic==2.6.1
@@ -354,8 +348,6 @@ python-dateutil==2.8.2
     #   opensearch-py
 python-dotenv==1.0.1
     # via localstack-core (pyproject.toml)
-python-jose[cryptography]==3.3.0
-    # via moto-ext
 pyyaml==6.0.1
     # via
     #   awscli
@@ -403,9 +395,7 @@ rpds-py==0.18.0
     #   jsonschema
     #   referencing
 rsa==4.7.2
-    # via
-    #   awscli
-    #   python-jose
+    # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
 ruff==0.2.2
@@ -421,15 +411,12 @@ semver==3.0.2
 six==1.16.0
     # via
     #   airspeed-ext
-    #   ecdsa
     #   jsonpath-rw
     #   junit-xml
     #   opensearch-py
     #   python-dateutil
     #   requests-aws4auth
     #   rfc3339-validator
-sshpubkeys==3.3.1
-    # via moto-ext
 stevedore==5.1.0
     # via
     #   localstack-core (pyproject.toml)
