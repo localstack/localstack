@@ -4,7 +4,7 @@ set -eo pipefail
 shopt -s nullglob
 
 # When trying to activate pro features in the community version, raise a warning
-if [[ -n $LOCALSTACK_API_KEY || -n $LOCALSTACK_AUTH_TOKEN ]] && ! compgen -G /usr/lib/localstack/.*pro-version >/dev/null; then
+if [[ -n $LOCALSTACK_API_KEY || -n $LOCALSTACK_AUTH_TOKEN ]]; then
     echo "WARNING"
     echo "============================================================================"
     echo "  It seems you are trying to use the LocalStack Pro version without using "
