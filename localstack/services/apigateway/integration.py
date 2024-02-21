@@ -497,6 +497,8 @@ class KinesisIntegration(BackendIntegration):
                 template_key = self.render_template_selection_expression(invocation_context)
                 payload = self.request_templates.render(invocation_context, template_key)
             else:
+                # For HTTP APIs with a specified integration_subtype,
+                # a key-value map specifying parameters that are passed to AWS_PROXY integrations
                 if integration_type == "AWS_PROXY" and integration_subtype == "Kinesis-PutRecord":
                     payload = self._create_request_parameters(invocation_context)
                 else:
