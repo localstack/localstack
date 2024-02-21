@@ -57,7 +57,7 @@ cachetools==5.3.2
     # via
     #   airspeed-ext
     #   localstack-core (pyproject.toml)
-cbor2==5.6.1
+cbor2==5.6.2
     # via localstack-core (pyproject.toml)
 certifi==2024.2.2
     # via
