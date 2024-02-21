@@ -56,6 +56,8 @@ class StsProvider(StsApi, ServiceLifecycleHook):
             transformed_tags = {tag["Key"]: tag["Value"] for tag in tags}
             # we should save it in the store of the role account, not the requester
             account_id = extract_account_id_from_arn(role_arn)
+            # the region is hardcoded to "us-east-1" as IAM/STS are global services
+            # this will only differ for other partitions, which are not yet supported
             store = sts_stores[account_id]["us-east-1"]
             access_key_id = response["Credentials"]["AccessKeyId"]
             store.session_tags[access_key_id] = transformed_tags
