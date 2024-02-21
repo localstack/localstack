@@ -468,7 +468,7 @@ class KinesisIntegration(BackendIntegration):
         integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
         integration_type = integration_type_orig.upper()
         uri = integration.get("uri") or integration.get("integrationUri") or ""
-        integration_subtype = integration.get('integrationSubtype')
+        integration_subtype = integration.get("integrationSubtype")
 
         if uri.endswith("kinesis:action/PutRecord") or integration_subtype == "Kinesis-PutRecord":
             target = "Kinesis_20131202.PutRecord"
@@ -544,7 +544,9 @@ class KinesisIntegration(BackendIntegration):
         if not data:
             raise BadRequestException("Data")
 
-    def _create_request_parameters(self, invocation_context: ApiInvocationContext) -> Dict[str, Any]:
+    def _create_request_parameters(
+        self, invocation_context: ApiInvocationContext
+    ) -> Dict[str, Any]:
         request_parameters = invocation_context.integration.get("requestParameters", {})
         self._validate_required_params(request_parameters)
 
@@ -565,15 +567,23 @@ class KinesisIntegration(BackendIntegration):
         payload = {
             "StreamName": VtlTemplate().render_vtl(request_parameters.get("StreamName"), variables),
             "Data": VtlTemplate().render_vtl(request_parameters.get("Data"), variables),
-            "PartitionKey": VtlTemplate().render_vtl(request_parameters.get("PartitionKey"), variables)
+            "PartitionKey": VtlTemplate().render_vtl(
+                request_parameters.get("PartitionKey"), variables
+            ),
         }
         # Optional Parameters
         if "ExplicitHashKey" in request_parameters:
-            payload["ExplicitHashKey"] = VtlTemplate().render_vtl(request_parameters.get("ExplicitHashKey"), variables)
+            payload["ExplicitHashKey"] = VtlTemplate().render_vtl(
+                request_parameters.get("ExplicitHashKey"), variables
+            )
         if "SequenceNumberForOrdering" in request_parameters:
-            payload["SequenceNumberForOrdering"] = VtlTemplate().render_vtl(request_parameters.get("SequenceNumberForOrdering"), variables)
+            payload["SequenceNumberForOrdering"] = VtlTemplate().render_vtl(
+                request_parameters.get("SequenceNumberForOrdering"), variables
+            )
         if "Region" in request_parameters:
-            payload["Region"] = VtlTemplate().render_vtl(request_parameters.get("Region"), variables)
+            payload["Region"] = VtlTemplate().render_vtl(
+                request_parameters.get("Region"), variables
+            )
         return json.dumps(payload)
 
 
