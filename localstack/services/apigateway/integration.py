@@ -53,7 +53,7 @@ from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import add_query_params_to_url, canonicalize_headers, parse_request_data
-from localstack.utils.json import json_safe
+from localstack.utils.json import json_safe, try_json
 from localstack.utils.strings import camel_to_snake_case, to_bytes
 
 LOG = logging.getLogger(__name__)
@@ -562,6 +562,9 @@ class KinesisIntegration(BackendIntegration):
 
         if invocation_context.headers.get("Content-Type") == "application/json":
             variables["request"]["body"] = json.loads(invocation_context.data_as_string())
+        else:
+            # AWS parity no content type still yields a valid response from Kinesis
+            variables["request"]["body"] = try_json(invocation_context.data_as_string())
 
         # Required parameters
         payload = {
