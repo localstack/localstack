@@ -647,7 +647,7 @@ class PutEventsHandler:
             )
 
     # specific logic for put_events which forwards matching events to target listeners
-    def __call__(handler_self, self):
+    def __call__(handler_self, self) -> tuple:
         entries = self._get_param("Entries")
 
         # keep track of events for local integration testing
@@ -724,5 +724,12 @@ class PutEventsHandler:
         return json.dumps(content), self.response_headers
 
 
+def get_handler_function(handler: PutEventsHandler):
+    def handle(self) -> str:
+        return handler(self)[0]
+
+    return handle
+
+
 def apply_patches(publisher: EventTargetPublisher):
-    MotoEventsHandler.put_events = PutEventsHandler(publisher)
+    MotoEventsHandler.put_events = get_handler_function(PutEventsHandler(publisher))
