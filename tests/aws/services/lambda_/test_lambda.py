@@ -20,7 +20,7 @@ from botocore.response import StreamingBody
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack import config
-from localstack.aws.api.lambda_ import Architecture, Runtime
+from localstack.aws.api.lambda_ import Architecture, InvokeMode, Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.testing.aws.lambda_utils import (
@@ -913,8 +913,20 @@ class TestLambdaURL:
             },
         )
 
+    @pytest.mark.parametrize(
+        "invoke_mode",
+        [None, InvokeMode.BUFFERED, InvokeMode.RESPONSE_STREAM],
+    )
     @markers.aws.validated
-    def test_lambda_url_echo_invoke(self, create_lambda_function, snapshot, aws_client):
+    def test_lambda_url_echo_invoke(
+        self, create_lambda_function, snapshot, aws_client, invoke_mode
+    ):
+        if invoke_mode == "RESPONSE_STREAM" and not is_aws_cloud():
+            pytest.skip(
+                "'RESPONSE_STREAM should invoke the lambda using InvokeWithResponseStream, "
+                "but this is not implemented on LS yet. '"
+            )
+
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "FunctionUrl", "<function-url>", reference_replacement=False
@@ -929,10 +941,15 @@ class TestLambdaURL:
             handler="lambda_url.handler",
         )
 
-        url_config = aws_client.lambda_.create_function_url_config(
-            FunctionName=function_name,
-            AuthType="NONE",
-        )
+        if invoke_mode:
+            url_config = aws_client.lambda_.create_function_url_config(
+                FunctionName=function_name, AuthType="NONE", InvokeMode=invoke_mode
+            )
+        else:
+            url_config = aws_client.lambda_.create_function_url_config(
+                FunctionName=function_name,
+                AuthType="NONE",
+            )
         snapshot.match("create_lambda_url_config", url_config)
 
         permissions_response = aws_client.lambda_.add_permission(
@@ -949,12 +966,29 @@ class TestLambdaURL:
         # TODO: add more cases
         result = safe_requests.post(url, data="text", headers={"Content-Type": "text/plain"})
         assert result.status_code == 200
-        event = json.loads(result.content)["event"]
-        assert event["body"] == "text"
-        assert event["isBase64Encoded"] is False
 
-        result = safe_requests.post(url)
-        event = json.loads(result.content)["event"]
+        if invoke_mode != "RESPONSE_STREAM":
+            event = json.loads(result.content)["event"]
+            assert event["body"] == "text"
+            assert event["isBase64Encoded"] is False
+
+            result = safe_requests.post(url)
+            event = json.loads(result.content)["event"]
+
+        else:
+            response_chunks = []
+            for chunk in result.iter_content(chunk_size=1024):
+                if chunk:  # Filter out keep-alive new chunks
+                    response_chunks.append(chunk.decode("utf-8"))
+
+            # Join the chunks to form the complete response string
+            complete_response = "".join(response_chunks)
+
+            response_json = json.loads(complete_response)
+            event = json.loads(response_json["body"])["event"]
+            # TODO the chunk-event actually contains a key "body": "text" - not sure if we need more/other validation here
+            # but it's not implemented in LS anyhow yet
+
         assert "Body" not in event
         assert event["isBase64Encoded"] is False
 
@@ -1008,6 +1042,47 @@ class TestLambdaURL:
         assert result.status_code == 418
 
     @markers.aws.validated
+    def test_lambda_update_function_url_config(self, create_lambda_function, snapshot, aws_client):
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                "FunctionUrl", "<function-url>", reference_replacement=False
+            )
+        )
+        function_name = f"test-fnurl-echo-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
+            runtime=Runtime.nodejs20_x,
+            handler="lambda_url.handler",
+        )
+
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name, AuthType="NONE", InvokeMode=InvokeMode.BUFFERED
+        )
+        snapshot.match("create_lambda_url_config", url_config)
+
+        get_url_config = aws_client.lambda_.get_function_url_config(FunctionName=function_name)
+        snapshot.match("get_url_config", get_url_config)
+
+        modify_config = aws_client.lambda_.update_function_url_config(
+            FunctionName=function_name, InvokeMode="RESPONSE_STREAM"
+        )
+        snapshot.match("modify_lambda_url_config", modify_config)
+
+        get_url_config = aws_client.lambda_.get_function_url_config(FunctionName=function_name)
+        snapshot.match("get_url_config_2", get_url_config)
+
+        # test if this removes the invoke-mode from the function
+        modify_config = aws_client.lambda_.update_function_url_config(
+            FunctionName=function_name,
+        )
+        snapshot.match("modify_lambda_url_config_none", modify_config)
+
+        get_url_config = aws_client.lambda_.get_function_url_config(FunctionName=function_name)
+        snapshot.match("get_url_config_3", get_url_config)
+
+    @markers.aws.validated
     def test_lambda_url_invocation_exception(self, create_lambda_function, snapshot, aws_client):
         # TODO: extend tests
         snapshot.add_transformer(
@@ -1045,6 +1120,23 @@ class TestLambdaURL:
         )
         assert to_str(result.content) == "Internal Server Error"
         assert result.status_code == 502
+
+    @markers.aws.validated
+    def test_lambda_url_invalid_invoke_mode(self, create_lambda_function, snapshot, aws_client):
+        function_name = f"test-fn-echo-{short_uid()}"
+
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO_JSON_BODY,
+            runtime=Runtime.python3_12,
+            handler="lambda_echo_json_body.handler",
+        )
+
+        with pytest.raises(Exception) as e:
+            aws_client.lambda_.create_function_url_config(
+                FunctionName=function_name, AuthType="NONE", InvokeMode="UNKNOWN"
+            )
+        snapshot.match("invoke_function_invalid_invoke_type", e.value.response)
 
 
 @pytest.mark.skipif(not is_aws_cloud(), reason="Not yet implemented")

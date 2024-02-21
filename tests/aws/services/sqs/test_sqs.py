@@ -3696,6 +3696,70 @@ class TestSqsProvider:
         )[0].get("MD5OfBody")
 
     @markers.aws.validated
+    def test_sqs_fifo_same_dedup_id_different_message_groups(
+        self, sqs_create_queue, aws_sqs_client, snapshot
+    ):
+        attributes = {"FifoQueue": "True", "ContentBasedDeduplication": "False"}
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}.fifo", Attributes=attributes)
+        dedup_id = "same-dedup"
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test",
+            MessageGroupId="group1",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-1", response)
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test",
+            MessageGroupId="group2",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-2", response)
+
+    @pytest.mark.xfail(
+        condition=not is_aws_cloud(), reason="High-throughput for FIFO queues not yet implemented"
+    )
+    @markers.aws.needs_fixing
+    def test_fifo_high_throughput_ordering(self, aws_sqs_client, snapshot, sqs_create_queue):
+        attributes = {
+            "FifoQueue": "True",
+            "ContentBasedDeduplication": "False",
+            "DeduplicationScope": "messageGroup",
+            "FifoThroughputLimit": "perMessageGroupId",
+        }
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}.fifo", Attributes=attributes)
+        dedup_id = "same-dedup"
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test1",
+            MessageGroupId="group1",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-1", response)
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test2",
+            MessageGroupId="group2",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-2", response)
+
+    @markers.aws.validated
     def test_sse_queue_attributes(self, sqs_create_queue, snapshot, aws_sqs_client):
         # KMS server-side encryption (SSE)
         queue_url = sqs_create_queue()

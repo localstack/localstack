@@ -24,6 +24,7 @@ from localstack.aws.api.lambda_ import (
     DestinationConfig,
     FunctionUrlAuthType,
     InvocationType,
+    InvokeMode,
     LastUpdateStatus,
     PackageType,
     ProvisionedConcurrencyStatusEnum,
@@ -348,6 +349,7 @@ class FunctionUrlConfig:
         str
     ] = None  # TODO: check if this is the creation time when initially creating
     function_qualifier: Optional[str] = "$LATEST"  # only $LATEST or alias name
+    invoke_mode: Optional[InvokeMode] = None
 
 
 @dataclasses.dataclass
