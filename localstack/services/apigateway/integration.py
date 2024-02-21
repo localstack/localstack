@@ -468,8 +468,9 @@ class KinesisIntegration(BackendIntegration):
         integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
         integration_type = integration_type_orig.upper()
         uri = integration.get("uri") or integration.get("integrationUri") or ""
+        integration_subtype = integration.get('integrationSubtype')
 
-        if uri.endswith("kinesis:action/PutRecord") or integration.get('integrationSubtype') == "Kinesis-PutRecord":
+        if uri.endswith("kinesis:action/PutRecord") or integration_subtype == "Kinesis-PutRecord":
             target = "Kinesis_20131202.PutRecord"
         elif uri.endswith("kinesis:action/PutRecords"):
             target = "Kinesis_20131202.PutRecords"
@@ -484,7 +485,8 @@ class KinesisIntegration(BackendIntegration):
         try:
             # xXx this "event" request context is used in multiple places, we probably
             # want to refactor this into a model class.
-            # I'd argue
+            # I'd argue we should not make a decision on the event_request_context inside the integration because,
+            # it's different between API types (REST, HTTP, WebSocket) and per event version
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
 
@@ -495,7 +497,10 @@ class KinesisIntegration(BackendIntegration):
                 template_key = self.render_template_selection_expression(invocation_context)
                 payload = self.request_templates.render(invocation_context, template_key)
             else:
-                payload = self.request_templates.render(invocation_context)
+                if integration_type == "AWS_PROXY" and integration_subtype == "Kinesis-PutRecord":
+                    payload = self._create_request_parameters(invocation_context)
+                else:
+                    payload = self.request_templates.render(invocation_context)
 
         except Exception as e:
             LOG.warning("Unable to convert API Gateway payload to str", e)
@@ -518,6 +523,56 @@ class KinesisIntegration(BackendIntegration):
         invocation_context.response = result
         self.response_templates.render(invocation_context)
         return invocation_context.response
+
+    @classmethod
+    def _validate_required_params(cls, request_parameters: Dict[str, Any]) -> None:
+        if not request_parameters:
+            raise BadRequestException("Missing required parameters")
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services-reference.html#Kinesis-PutRecord
+        stream_name = request_parameters.get("StreamName")
+        partition_key = request_parameters.get("PartitionKey")
+        data = request_parameters.get("Data")
+
+        if not stream_name:
+            raise BadRequestException("StreamName")
+
+        if not partition_key:
+            raise BadRequestException("PartitionKey")
+
+        if not data:
+            raise BadRequestException("Data")
+
+    def _create_request_parameters(self, invocation_context: ApiInvocationContext) -> Dict[str, Any]:
+        request_parameters = invocation_context.integration.get("requestParameters", {})
+        self._validate_required_params(request_parameters)
+
+        variables = {
+            "request": {
+                "header": invocation_context.headers,
+                "querystring": invocation_context.query_params(),
+                "body": invocation_context.data_as_string(),
+                "context": invocation_context.context or {},
+                "stage_variables": invocation_context.stage_variables or {},
+            }
+        }
+
+        if invocation_context.headers.get("Content-Type") == "application/json":
+            variables["request"]["body"] = json.loads(invocation_context.data_as_string())
+
+        # Required parameters
+        payload = {
+            "StreamName": VtlTemplate().render_vtl(request_parameters.get("StreamName"), variables),
+            "Data": VtlTemplate().render_vtl(request_parameters.get("Data"), variables),
+            "PartitionKey": VtlTemplate().render_vtl(request_parameters.get("PartitionKey"), variables)
+        }
+        # Optional Parameters
+        if "ExplicitHashKey" in request_parameters:
+            payload["ExplicitHashKey"] = VtlTemplate().render_vtl(request_parameters.get("ExplicitHashKey"), variables)
+        if "SequenceNumberForOrdering" in request_parameters:
+            payload["SequenceNumberForOrdering"] = VtlTemplate().render_vtl(request_parameters.get("SequenceNumberForOrdering"), variables)
+        if "Region" in request_parameters:
+            payload["Region"] = VtlTemplate().render_vtl(request_parameters.get("Region"), variables)
+        return json.dumps(payload)
 
 
 class DynamoDBIntegration(BackendIntegration):

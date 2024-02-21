@@ -382,6 +382,8 @@ class RequestParametersResolver:
     """
     Integration request data mapping expressions
     https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html
+
+    Note: Use on REST APIs only
     """
 
     def resolve(self, context: ApiInvocationContext) -> IntegrationParameters:
