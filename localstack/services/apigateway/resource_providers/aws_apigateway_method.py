@@ -176,9 +176,9 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
                 restApiId=api_id,
                 resourceId=res_id,
                 httpMethod=model["HttpMethod"],
-                statusCode=str(response["statusCode"]),
-                responseParameters=response.get("responseParameters") or {},
-                responseModels=response.get("responseModels") or {},
+                statusCode=str(response["StatusCode"]),
+                responseParameters=response.get("ResponseParameters") or {},
+                responseModels=response.get("ResponseModels") or {},
             )
 
         return ProgressEvent(
