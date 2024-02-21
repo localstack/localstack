@@ -21,6 +21,7 @@ from localstack.aws.api.sts import (
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sts.models import sts_stores
+from localstack.utils.aws.arns import extract_account_id_from_arn
 
 LOG = logging.getLogger(__name__)
 
@@ -53,7 +54,9 @@ class StsProvider(StsApi, ServiceLifecycleHook):
 
         if tags:
             transformed_tags = {tag["Key"]: tag["Value"] for tag in tags}
-            store = sts_stores[context.account_id][context.region]
+            # we should save it in the store of the role account, not the requester
+            account_id = extract_account_id_from_arn(role_arn)
+            store = sts_stores[account_id]["us-east-1"]
             access_key_id = response["Credentials"]["AccessKeyId"]
             store.session_tags[access_key_id] = transformed_tags
         return response
