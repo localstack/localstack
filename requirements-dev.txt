@@ -104,7 +104,7 @@ coveralls==3.3.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.3
+cryptography==42.0.4
     # via
     #   joserfc
     #   localstack-core (pyproject.toml)
