@@ -10,7 +10,7 @@ from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 
 # TODO: figure out a better way, maybe via marker? e.g. @markers.localstack.ext
-@pytest.mark.skipif(condition=not is_license_activated())
+# @pytest.mark.skipif(condition=not is_license_activated())
 class TestTaskServiceECS:
     STACK_NAME = "StepFunctionsEcsTaskStack"
 
@@ -43,7 +43,8 @@ class TestTaskServiceECS:
             task_definition=task_def,
             integration_pattern=sfn.IntegrationPattern.RUN_JOB,
         )
-        statemachine = sfn.StateMachine(stack, "statemachine", definition=run_task)
+        definition_body = sfn.DefinitionBody.from_chainable(run_task)
+        statemachine = sfn.StateMachine(stack, "statemachine", definition_body=definition_body)
 
         # stack outputs
         cdk.CfnOutput(stack, "StateMachineArn", value=statemachine.state_machine_arn)

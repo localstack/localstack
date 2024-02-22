@@ -1,0 +1,664 @@
+{
+  "tests/aws/services/stepfunctions/v2/services/test_ecs_task_service.py::TestTaskServiceECS::test_run_machine": {
+    "recorded-date": "21-02-2024, 11:30:15",
+    "recorded-content": {
+      "cluster": {
+        "activeServicesCount": 0,
+        "capacityProviders": [],
+        "clusterArn": "arn:aws:ecs:<region>:111111111111:cluster/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE",
+        "clusterName": "StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE",
+        "defaultCapacityProviderStrategy": [],
+        "pendingTasksCount": 0,
+        "registeredContainerInstancesCount": 0,
+        "runningTasksCount": 0,
+        "settings": [],
+        "statistics": [],
+        "status": "ACTIVE",
+        "tags": []
+      },
+      "execution": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:statemachineC5962F3E-oKrCzqRacJZW:cf13632a-3b6a-4402-8cf3-1b78ca4272f3",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "cf13632a-3b6a-4402-8cf3-1b78ca4272f3",
+        "output": {
+          "Attachments": [
+            {
+              "Details": [
+                {
+                  "Name": "subnetId",
+                  "Value": "subnet-0fc6480e35217309d"
+                },
+                {
+                  "Name": "networkInterfaceId",
+                  "Value": "eni-0f3d91ab98db165d6"
+                },
+                {
+                  "Name": "macAddress",
+                  "Value": "06:57:c2:53:56:e7"
+                },
+                {
+                  "Name": "privateDnsName",
+                  "Value": "ip-10-0-213-221.<region>.compute.internal"
+                },
+                {
+                  "Name": "privateIPv4Address",
+                  "Value": "10.0.213.221"
+                }
+              ],
+              "Id": "<uuid:1>",
+              "Status": "DELETED",
+              "Type": "eni"
+            }
+          ],
+          "Attributes": [
+            {
+              "Name": "ecs.cpu-architecture",
+              "Value": "x86_64"
+            }
+          ],
+          "AvailabilityZone": "<region>b",
+          "ClusterArn": "arn:aws:ecs:<region>:111111111111:cluster/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE",
+          "Connectivity": "CONNECTED",
+          "ConnectivityAt": 1708514980467,
+          "Containers": [
+            {
+              "ContainerArn": "arn:aws:ecs:<region>:111111111111:container/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05/4f83b142-ede3-4c73-8b0d-1662502b31de",
+              "Cpu": "0",
+              "ExitCode": 0,
+              "GpuIds": [],
+              "Image": "busybox",
+              "ImageDigest": "sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74",
+              "LastStatus": "STOPPED",
+              "ManagedAgents": [],
+              "Name": "maincontainer",
+              "NetworkBindings": [],
+              "NetworkInterfaces": [
+                {
+                  "AttachmentId": "<uuid:1>",
+                  "PrivateIpv4Address": "10.0.213.221"
+                }
+              ],
+              "RuntimeId": "e14c65d19b854222b3ee1c7c3ffd3d05-1840696031",
+              "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05"
+            }
+          ],
+          "Cpu": "256",
+          "CreatedAt": 1708514976011,
+          "DesiredStatus": "STOPPED",
+          "EnableExecuteCommand": false,
+          "EphemeralStorage": {
+            "SizeInGiB": 20
+          },
+          "ExecutionStoppedAt": 1708514990548,
+          "Group": "family:StepFunctionsEcsTaskStacktaskdefA6894239",
+          "InferenceAccelerators": [],
+          "LastStatus": "STOPPED",
+          "LaunchType": "FARGATE",
+          "Memory": "512",
+          "Overrides": {
+            "ContainerOverrides": [
+              {
+                "Command": [],
+                "Environment": [],
+                "EnvironmentFiles": [],
+                "Name": "maincontainer",
+                "ResourceRequirements": []
+              }
+            ],
+            "InferenceAcceleratorOverrides": []
+          },
+          "PlatformVersion": "1.4.0",
+          "PullStartedAt": 1708514989182,
+          "PullStoppedAt": 1708514990724,
+          "StartedAt": 1708514990555,
+          "StartedBy": "AWS Step Functions",
+          "StopCode": "EssentialContainerExited",
+          "StoppedAt": 1708515013591,
+          "StoppedReason": "Essential container in task exited",
+          "StoppingAt": 1708515000597,
+          "Tags": [],
+          "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05",
+          "TaskDefinitionArn": "arn:aws:ecs:<region>:111111111111:task-definition/StepFunctionsEcsTaskStacktaskdefA6894239:1",
+          "Version": 5
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "redriveCount": 0,
+        "redriveStatus": "NOT_REDRIVABLE",
+        "redriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:statemachineC5962F3E-oKrCzqRacJZW",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/StepFunctionsEcsTaskStack-statemachineRole52044F93-3OgxQ1PwiuwI"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ecstask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Cluster": "arn:aws:ecs:<region>:111111111111:cluster/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE",
+                "TaskDefinition": "StepFunctionsEcsTaskStacktaskdefA6894239",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets": [
+                      "subnet-06edacf5d08825fa6",
+                      "subnet-0fc6480e35217309d"
+                    ],
+                    "SecurityGroups": [
+                      "sg-0e12abd9f85371dfe"
+                    ]
+                  }
+                },
+                "LaunchType": "FARGATE",
+                "PlatformVersion": "1.4.0",
+                "StartedBy": "AWS Step Functions"
+              },
+              "region": "<region>",
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "Failures": [],
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "Content-Length": [
+                      "1594"
+                    ],
+                    "Date": [
+                      "Wed, 21 Feb 2024 11:29:35 GMT"
+                    ],
+                    "Content-Type": [
+                      "application/x-amz-json-1.1"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "Content-Length": "1594",
+                    "Content-Type": "application/x-amz-json-1.1",
+                    "Date": "Wed, 21 Feb 2024 11:29:35 GMT",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                },
+                "Tasks": [
+                  {
+                    "Attachments": [
+                      {
+                        "Details": [
+                          {
+                            "Name": "subnetId",
+                            "Value": "subnet-0fc6480e35217309d"
+                          }
+                        ],
+                        "Id": "<uuid:1>",
+                        "Status": "PRECREATED",
+                        "Type": "ElasticNetworkInterface"
+                      }
+                    ],
+                    "Attributes": [
+                      {
+                        "Name": "ecs.cpu-architecture",
+                        "Value": "x86_64"
+                      }
+                    ],
+                    "AvailabilityZone": "<region>b",
+                    "ClusterArn": "arn:aws:ecs:<region>:111111111111:cluster/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE",
+                    "Containers": [
+                      {
+                        "ContainerArn": "arn:aws:ecs:<region>:111111111111:container/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05/4f83b142-ede3-4c73-8b0d-1662502b31de",
+                        "Cpu": "0",
+                        "GpuIds": [],
+                        "Image": "busybox",
+                        "LastStatus": "PENDING",
+                        "ManagedAgents": [],
+                        "Name": "maincontainer",
+                        "NetworkBindings": [],
+                        "NetworkInterfaces": [],
+                        "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05"
+                      }
+                    ],
+                    "Cpu": "256",
+                    "CreatedAt": 1708514976011,
+                    "DesiredStatus": "RUNNING",
+                    "EnableExecuteCommand": false,
+                    "EphemeralStorage": {
+                      "SizeInGiB": 20
+                    },
+                    "Group": "family:StepFunctionsEcsTaskStacktaskdefA6894239",
+                    "InferenceAccelerators": [],
+                    "LastStatus": "PROVISIONING",
+                    "LaunchType": "FARGATE",
+                    "Memory": "512",
+                    "Overrides": {
+                      "ContainerOverrides": [
+                        {
+                          "Command": [],
+                          "Environment": [],
+                          "EnvironmentFiles": [],
+                          "Name": "maincontainer",
+                          "ResourceRequirements": []
+                        }
+                      ],
+                      "InferenceAcceleratorOverrides": []
+                    },
+                    "PlatformFamily": "Linux",
+                    "PlatformVersion": "1.4.0",
+                    "StartedBy": "AWS Step Functions",
+                    "Tags": [],
+                    "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05",
+                    "TaskDefinitionArn": "arn:aws:ecs:<region>:111111111111:task-definition/StepFunctionsEcsTaskStacktaskdefA6894239:1",
+                    "Version": 1
+                  }
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Attachments": [
+                  {
+                    "Details": [
+                      {
+                        "Name": "subnetId",
+                        "Value": "subnet-0fc6480e35217309d"
+                      },
+                      {
+                        "Name": "networkInterfaceId",
+                        "Value": "eni-0f3d91ab98db165d6"
+                      },
+                      {
+                        "Name": "macAddress",
+                        "Value": "06:57:c2:53:56:e7"
+                      },
+                      {
+                        "Name": "privateDnsName",
+                        "Value": "ip-10-0-213-221.<region>.compute.internal"
+                      },
+                      {
+                        "Name": "privateIPv4Address",
+                        "Value": "10.0.213.221"
+                      }
+                    ],
+                    "Id": "<uuid:1>",
+                    "Status": "DELETED",
+                    "Type": "eni"
+                  }
+                ],
+                "Attributes": [
+                  {
+                    "Name": "ecs.cpu-architecture",
+                    "Value": "x86_64"
+                  }
+                ],
+                "AvailabilityZone": "<region>b",
+                "ClusterArn": "arn:aws:ecs:<region>:111111111111:cluster/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE",
+                "Connectivity": "CONNECTED",
+                "ConnectivityAt": 1708514980467,
+                "Containers": [
+                  {
+                    "ContainerArn": "arn:aws:ecs:<region>:111111111111:container/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05/4f83b142-ede3-4c73-8b0d-1662502b31de",
+                    "Cpu": "0",
+                    "ExitCode": 0,
+                    "GpuIds": [],
+                    "Image": "busybox",
+                    "ImageDigest": "sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74",
+                    "LastStatus": "STOPPED",
+                    "ManagedAgents": [],
+                    "Name": "maincontainer",
+                    "NetworkBindings": [],
+                    "NetworkInterfaces": [
+                      {
+                        "AttachmentId": "<uuid:1>",
+                        "PrivateIpv4Address": "10.0.213.221"
+                      }
+                    ],
+                    "RuntimeId": "e14c65d19b854222b3ee1c7c3ffd3d05-1840696031",
+                    "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05"
+                  }
+                ],
+                "Cpu": "256",
+                "CreatedAt": 1708514976011,
+                "DesiredStatus": "STOPPED",
+                "EnableExecuteCommand": false,
+                "EphemeralStorage": {
+                  "SizeInGiB": 20
+                },
+                "ExecutionStoppedAt": 1708514990548,
+                "Group": "family:StepFunctionsEcsTaskStacktaskdefA6894239",
+                "InferenceAccelerators": [],
+                "LastStatus": "STOPPED",
+                "LaunchType": "FARGATE",
+                "Memory": "512",
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Command": [],
+                      "Environment": [],
+                      "EnvironmentFiles": [],
+                      "Name": "maincontainer",
+                      "ResourceRequirements": []
+                    }
+                  ],
+                  "InferenceAcceleratorOverrides": []
+                },
+                "PlatformVersion": "1.4.0",
+                "PullStartedAt": 1708514989182,
+                "PullStoppedAt": 1708514990724,
+                "StartedAt": 1708514990555,
+                "StartedBy": "AWS Step Functions",
+                "StopCode": "EssentialContainerExited",
+                "StoppedAt": 1708515013591,
+                "StoppedReason": "Essential container in task exited",
+                "StoppingAt": 1708515000597,
+                "Tags": [],
+                "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05",
+                "TaskDefinitionArn": "arn:aws:ecs:<region>:111111111111:task-definition/StepFunctionsEcsTaskStacktaskdefA6894239:1",
+                "Version": 5
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "runTask.sync",
+              "resourceType": "ecs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "ecstask",
+              "output": {
+                "Attachments": [
+                  {
+                    "Details": [
+                      {
+                        "Name": "subnetId",
+                        "Value": "subnet-0fc6480e35217309d"
+                      },
+                      {
+                        "Name": "networkInterfaceId",
+                        "Value": "eni-0f3d91ab98db165d6"
+                      },
+                      {
+                        "Name": "macAddress",
+                        "Value": "06:57:c2:53:56:e7"
+                      },
+                      {
+                        "Name": "privateDnsName",
+                        "Value": "ip-10-0-213-221.<region>.compute.internal"
+                      },
+                      {
+                        "Name": "privateIPv4Address",
+                        "Value": "10.0.213.221"
+                      }
+                    ],
+                    "Id": "<uuid:1>",
+                    "Status": "DELETED",
+                    "Type": "eni"
+                  }
+                ],
+                "Attributes": [
+                  {
+                    "Name": "ecs.cpu-architecture",
+                    "Value": "x86_64"
+                  }
+                ],
+                "AvailabilityZone": "<region>b",
+                "ClusterArn": "arn:aws:ecs:<region>:111111111111:cluster/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE",
+                "Connectivity": "CONNECTED",
+                "ConnectivityAt": 1708514980467,
+                "Containers": [
+                  {
+                    "ContainerArn": "arn:aws:ecs:<region>:111111111111:container/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05/4f83b142-ede3-4c73-8b0d-1662502b31de",
+                    "Cpu": "0",
+                    "ExitCode": 0,
+                    "GpuIds": [],
+                    "Image": "busybox",
+                    "ImageDigest": "sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74",
+                    "LastStatus": "STOPPED",
+                    "ManagedAgents": [],
+                    "Name": "maincontainer",
+                    "NetworkBindings": [],
+                    "NetworkInterfaces": [
+                      {
+                        "AttachmentId": "<uuid:1>",
+                        "PrivateIpv4Address": "10.0.213.221"
+                      }
+                    ],
+                    "RuntimeId": "e14c65d19b854222b3ee1c7c3ffd3d05-1840696031",
+                    "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05"
+                  }
+                ],
+                "Cpu": "256",
+                "CreatedAt": 1708514976011,
+                "DesiredStatus": "STOPPED",
+                "EnableExecuteCommand": false,
+                "EphemeralStorage": {
+                  "SizeInGiB": 20
+                },
+                "ExecutionStoppedAt": 1708514990548,
+                "Group": "family:StepFunctionsEcsTaskStacktaskdefA6894239",
+                "InferenceAccelerators": [],
+                "LastStatus": "STOPPED",
+                "LaunchType": "FARGATE",
+                "Memory": "512",
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Command": [],
+                      "Environment": [],
+                      "EnvironmentFiles": [],
+                      "Name": "maincontainer",
+                      "ResourceRequirements": []
+                    }
+                  ],
+                  "InferenceAcceleratorOverrides": []
+                },
+                "PlatformVersion": "1.4.0",
+                "PullStartedAt": 1708514989182,
+                "PullStoppedAt": 1708514990724,
+                "StartedAt": 1708514990555,
+                "StartedBy": "AWS Step Functions",
+                "StopCode": "EssentialContainerExited",
+                "StoppedAt": 1708515013591,
+                "StoppedReason": "Essential container in task exited",
+                "StoppingAt": 1708515000597,
+                "Tags": [],
+                "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05",
+                "TaskDefinitionArn": "arn:aws:ecs:<region>:111111111111:task-definition/StepFunctionsEcsTaskStacktaskdefA6894239:1",
+                "Version": 5
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Attachments": [
+                  {
+                    "Details": [
+                      {
+                        "Name": "subnetId",
+                        "Value": "subnet-0fc6480e35217309d"
+                      },
+                      {
+                        "Name": "networkInterfaceId",
+                        "Value": "eni-0f3d91ab98db165d6"
+                      },
+                      {
+                        "Name": "macAddress",
+                        "Value": "06:57:c2:53:56:e7"
+                      },
+                      {
+                        "Name": "privateDnsName",
+                        "Value": "ip-10-0-213-221.<region>.compute.internal"
+                      },
+                      {
+                        "Name": "privateIPv4Address",
+                        "Value": "10.0.213.221"
+                      }
+                    ],
+                    "Id": "<uuid:1>",
+                    "Status": "DELETED",
+                    "Type": "eni"
+                  }
+                ],
+                "Attributes": [
+                  {
+                    "Name": "ecs.cpu-architecture",
+                    "Value": "x86_64"
+                  }
+                ],
+                "AvailabilityZone": "<region>b",
+                "ClusterArn": "arn:aws:ecs:<region>:111111111111:cluster/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE",
+                "Connectivity": "CONNECTED",
+                "ConnectivityAt": 1708514980467,
+                "Containers": [
+                  {
+                    "ContainerArn": "arn:aws:ecs:<region>:111111111111:container/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05/4f83b142-ede3-4c73-8b0d-1662502b31de",
+                    "Cpu": "0",
+                    "ExitCode": 0,
+                    "GpuIds": [],
+                    "Image": "busybox",
+                    "ImageDigest": "sha256:6d9ac9237a84afe1516540f40a0fafdc86859b2141954b4d643af7066d598b74",
+                    "LastStatus": "STOPPED",
+                    "ManagedAgents": [],
+                    "Name": "maincontainer",
+                    "NetworkBindings": [],
+                    "NetworkInterfaces": [
+                      {
+                        "AttachmentId": "<uuid:1>",
+                        "PrivateIpv4Address": "10.0.213.221"
+                      }
+                    ],
+                    "RuntimeId": "e14c65d19b854222b3ee1c7c3ffd3d05-1840696031",
+                    "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05"
+                  }
+                ],
+                "Cpu": "256",
+                "CreatedAt": 1708514976011,
+                "DesiredStatus": "STOPPED",
+                "EnableExecuteCommand": false,
+                "EphemeralStorage": {
+                  "SizeInGiB": 20
+                },
+                "ExecutionStoppedAt": 1708514990548,
+                "Group": "family:StepFunctionsEcsTaskStacktaskdefA6894239",
+                "InferenceAccelerators": [],
+                "LastStatus": "STOPPED",
+                "LaunchType": "FARGATE",
+                "Memory": "512",
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Command": [],
+                      "Environment": [],
+                      "EnvironmentFiles": [],
+                      "Name": "maincontainer",
+                      "ResourceRequirements": []
+                    }
+                  ],
+                  "InferenceAcceleratorOverrides": []
+                },
+                "PlatformVersion": "1.4.0",
+                "PullStartedAt": 1708514989182,
+                "PullStoppedAt": 1708514990724,
+                "StartedAt": 1708514990555,
+                "StartedBy": "AWS Step Functions",
+                "StopCode": "EssentialContainerExited",
+                "StoppedAt": 1708515013591,
+                "StoppedReason": "Essential container in task exited",
+                "StoppingAt": 1708515000597,
+                "Tags": [],
+                "TaskArn": "arn:aws:ecs:<region>:111111111111:task/StepFunctionsEcsTaskStack-cluster611F8AFF-jU6469eiQOHE/e14c65d19b854222b3ee1c7c3ffd3d05",
+                "TaskDefinitionArn": "arn:aws:ecs:<region>:111111111111:task-definition/StepFunctionsEcsTaskStacktaskdefA6894239:1",
+                "Version": 5
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ]
+      }
+    }
+  }
+}

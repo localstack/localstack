@@ -489,117 +489,231 @@
             {
               "Action": "ecs:RunTask",
               "Effect": "Allow",
-              "Resource": {
-                "Fn::Join": [
-                  "",
-                  [
-                    "arn:",
-                    {
-                      "Fn::Select": [
-                        1,
-                        {
-                          "Fn::Split": [
-                            ":",
-                            {
-                              "Ref": "taskdef8C9C43DE"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    ":",
-                    {
-                      "Fn::Select": [
-                        2,
-                        {
-                          "Fn::Split": [
-                            ":",
-                            {
-                              "Ref": "taskdef8C9C43DE"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    ":",
-                    {
-                      "Fn::Select": [
-                        3,
-                        {
-                          "Fn::Split": [
-                            ":",
-                            {
-                              "Ref": "taskdef8C9C43DE"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    ":",
-                    {
-                      "Fn::Select": [
-                        4,
-                        {
-                          "Fn::Split": [
-                            ":",
-                            {
-                              "Ref": "taskdef8C9C43DE"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    ":",
-                    {
-                      "Fn::Select": [
-                        0,
-                        {
-                          "Fn::Split": [
-                            "/",
-                            {
-                              "Fn::Select": [
-                                5,
-                                {
-                                  "Fn::Split": [
-                                    ":",
-                                    {
-                                      "Ref": "taskdef8C9C43DE"
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    "/",
-                    {
-                      "Fn::Select": [
-                        1,
-                        {
-                          "Fn::Split": [
-                            "/",
-                            {
-                              "Fn::Select": [
-                                5,
-                                {
-                                  "Fn::Split": [
-                                    ":",
-                                    {
-                                      "Ref": "taskdef8C9C43DE"
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Fn::Select": [
+                          1,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          2,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          3,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          4,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          0,
+                          {
+                            "Fn::Split": [
+                              "/",
+                              {
+                                "Fn::Select": [
+                                  5,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "taskdef8C9C43DE"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "/",
+                      {
+                        "Fn::Select": [
+                          1,
+                          {
+                            "Fn::Split": [
+                              "/",
+                              {
+                                "Fn::Select": [
+                                  5,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "taskdef8C9C43DE"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
                   ]
-                ]
-              }
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Fn::Select": [
+                          1,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          2,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          3,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          4,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          0,
+                          {
+                            "Fn::Split": [
+                              "/",
+                              {
+                                "Fn::Select": [
+                                  5,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "taskdef8C9C43DE"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "/",
+                      {
+                        "Fn::Select": [
+                          1,
+                          {
+                            "Fn::Split": [
+                              "/",
+                              {
+                                "Fn::Select": [
+                                  5,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "taskdef8C9C43DE"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":*"
+                    ]
+                  ]
+                }
+              ]
             },
             {
               "Action": [
