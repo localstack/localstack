@@ -496,11 +496,11 @@ jobs:
     steps:
       - run:
           name: Save start time to file
-          command: mkdir -p target/stats && echo $(date +%s) > target/stats/start-time.txt
+          command: mkdir stats && echo $(date +%s) > stats/start-time.txt
       - persist_to_workspace:
             root: /tmp/workspace
             paths:
-                - repo/target/stats/
+                - repo/stats/
   send-stats:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -510,11 +510,11 @@ jobs:
       - run:
           name: Load start time from file
           command: |
-            START_TIME=$(cat target/stats/start-time.txt)
+            START_TIME=$(cat stats/start-time.txt)
             END_TIME=$(date +%s)
-            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'"}' > target/stats/stats.json
-            echo 'Sending: '$(cat target/stats/stats.json)
-            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @target/stats/stats.json
+            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'"}' > /stats/stats.json
+            echo 'Sending: '$(cat /stats/stats.json)
+            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @/stats/stats.json
 
 
 
