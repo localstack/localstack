@@ -2660,39 +2660,6 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke": {
-    "recorded-date": "20-11-2023, 22:05:40",
-    "recorded-content": {
-      "create_lambda_url_config": {
-        "AuthType": "NONE",
-        "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-        "FunctionUrl": "<function-url>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "add_permission": {
-        "Statement": {
-          "Sid": "urlPermission",
-          "Effect": "Allow",
-          "Principal": "*",
-          "Action": "lambda:InvokeFunctionUrl",
-          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
-          "Condition": {
-            "StringEquals": {
-              "lambda:FunctionUrlAuthType": "NONE"
-            }
-          }
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      }
-    }
-  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_arm": {
     "recorded-date": "20-11-2023, 22:04:08",
     "recorded-content": {
@@ -3846,6 +3813,198 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invalid_invoke_mode": {
+    "recorded-date": "19-02-2024, 15:12:50",
+    "recorded-content": {
+      "invoke_function_invalid_invoke_type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'UNKNOWN' at 'invokeMode' failed to satisfy constraint: Member must satisfy enum value set: [RESPONSE_STREAM, BUFFERED]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_update_function_url_config": {
+    "recorded-date": "19-02-2024, 15:49:43",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "InvokeMode": "BUFFERED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "InvokeMode": "BUFFERED",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "modify_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "InvokeMode": "RESPONSE_STREAM",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_url_config_2": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "InvokeMode": "RESPONSE_STREAM",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "modify_lambda_url_config_none": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "InvokeMode": "RESPONSE_STREAM",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_url_config_3": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "InvokeMode": "RESPONSE_STREAM",
+        "LastModifiedTime": "date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[RESPONSE_STREAM]": {
+    "recorded-date": "19-02-2024, 16:23:18",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "InvokeMode": "RESPONSE_STREAM",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[BUFFERED]": {
+    "recorded-date": "19-02-2024, 16:23:23",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "InvokeMode": "BUFFERED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[None]": {
+    "recorded-date": "19-02-2024, 16:23:28",
+    "recorded-content": {
+      "create_lambda_url_config": {
+        "AuthType": "NONE",
+        "CreationTime": "date",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionUrl": "<function-url>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add_permission": {
+        "Statement": {
+          "Sid": "urlPermission",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "lambda:InvokeFunctionUrl",
+          "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "Condition": {
+            "StringEquals": {
+              "lambda:FunctionUrlAuthType": "NONE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
         }
       }
     }

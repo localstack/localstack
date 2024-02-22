@@ -1422,14 +1422,14 @@ def create_user(aws_client):
 
 @pytest.fixture
 def wait_and_assume_role(aws_client):
-    def _wait_and_assume_role(role_arn: str, session_name: str = None):
+    def _wait_and_assume_role(role_arn: str, session_name: str = None, **kwargs):
         if not session_name:
             session_name = f"session-{short_uid()}"
 
         def assume_role():
-            return aws_client.sts.assume_role(RoleArn=role_arn, RoleSessionName=session_name)[
-                "Credentials"
-            ]
+            return aws_client.sts.assume_role(
+                RoleArn=role_arn, RoleSessionName=session_name, **kwargs
+            )["Credentials"]
 
         # need to retry a couple of times before we are allowed to assume this role in AWS
         keys = retry(assume_role, sleep=5, retries=4)
