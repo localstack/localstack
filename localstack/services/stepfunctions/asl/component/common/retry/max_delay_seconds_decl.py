@@ -10,7 +10,7 @@ class MaxDelaySecondsDecl(EvalComponent):
     max_delays_seconds: Final[int]
 
     def __init__(self, max_delays_seconds: int = MAX_VALUE):
-        if not (0 < max_delays_seconds <= MaxDelaySecondsDecl.MAX_VALUE):
+        if not (1 <= max_delays_seconds <= MaxDelaySecondsDecl.MAX_VALUE):
             raise ValueError(
                 f"MaxDelaySeconds value MUST be a positive integer between "
                 f"1 and {MaxDelaySecondsDecl.MAX_VALUE}, got '{max_delays_seconds}'."

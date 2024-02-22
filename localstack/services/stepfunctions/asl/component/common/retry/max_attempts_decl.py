@@ -22,7 +22,7 @@ class MaxAttemptsDecl(EvalComponent):
     attempts: Final[int]
 
     def __init__(self, attempts: int = DEFAULT_ATTEMPTS):
-        if not (0 < attempts <= MaxAttemptsDecl.MAX_VALUE):
+        if not (1 <= attempts <= MaxAttemptsDecl.MAX_VALUE):
             raise ValueError(
                 f"MaxAttempts value MUST be a positive integer between "
                 f"1 and {MaxAttemptsDecl.MAX_VALUE}, got '{attempts}'."

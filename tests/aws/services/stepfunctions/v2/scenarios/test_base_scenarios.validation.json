@@ -110,6 +110,9 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_retry_interval_features": {
     "last_validated_date": "2024-02-18T20:08:18+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_retry_interval_features_jitter_none": {
+    "last_validated_date": "2024-02-22T21:30:46+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp": {
     "last_validated_date": "2023-10-31T18:01:20+00:00"
   },

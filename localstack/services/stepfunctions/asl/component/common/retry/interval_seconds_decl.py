@@ -14,7 +14,7 @@ class IntervalSecondsDecl(EvalComponent):
     MAX_VALUE: Final[int] = 99999999
 
     def __init__(self, seconds: int = DEFAULT_SECONDS):
-        if not (0 < seconds <= IntervalSecondsDecl.MAX_VALUE):
+        if not (1 <= seconds <= IntervalSecondsDecl.MAX_VALUE):
             raise ValueError(
                 f"IntervalSeconds value MUST be a positive integer between "
                 f"1 and {IntervalSecondsDecl.MAX_VALUE}, got '{seconds}'."
