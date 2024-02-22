@@ -216,5 +216,66 @@
         "Type": "AMAZON_ISSUED"
       }
     }
+  },
+  "tests/aws/services/acm/test_acm.py::TestACM::test_import_certificate": {
+    "recorded-date": "22-02-2024, 17:27:28",
+    "recorded-content": {
+      "import-certificate-response": {
+        "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-certificate-response": {
+        "Certificate": {
+          "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+          "CreatedAt": "datetime",
+          "DomainName": "mysite.com",
+          "DomainValidationOptions": [
+            {
+              "DomainName": "localhost"
+            },
+            {
+              "DomainName": "mysite.com"
+            }
+          ],
+          "ExtendedKeyUsages": [
+            {
+              "Name": "NONE",
+              "OID": ""
+            }
+          ],
+          "ImportedAt": "datetime",
+          "InUseBy": [],
+          "Issuer": "My Company",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [
+            {
+              "Name": "ANY"
+            }
+          ],
+          "NotAfter": "datetime",
+          "NotBefore": "datetime",
+          "Options": {
+            "CertificateTransparencyLoggingPreference": "DISABLED"
+          },
+          "RenewalEligibility": "INELIGIBLE",
+          "Serial": "3e:25:17:25:90:91:c2:2c:05:f6:63:f4:aa:1a:bf:f2:b6:04:88:38",
+          "SignatureAlgorithm": "SHA256WITHRSA",
+          "Status": "ISSUED",
+          "Subject": "C=US,ST=California,L=San Francisco,O=My Company,CN=mysite.com",
+          "SubjectAlternativeNames": [
+            "localhost",
+            "mysite.com"
+          ],
+          "Type": "IMPORTED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
