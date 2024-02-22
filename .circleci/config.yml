@@ -512,9 +512,9 @@ jobs:
           command: |
             START_TIME=$(cat stats/start-time.txt)
             END_TIME=$(date +%s)
-            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'"}' > /stats/stats.json
-            echo 'Sending: '$(cat /stats/stats.json)
-            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @/stats/stats.json
+            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'"}' > stats/stats.json
+            echo 'Sending: '$(cat stats/stats.json)
+            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats/stats.json
 
 
 
