@@ -218,7 +218,7 @@
     }
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_import_certificate": {
-    "recorded-date": "22-02-2024, 17:27:28",
+    "recorded-date": "22-02-2024, 17:41:15",
     "recorded-content": {
       "import-certificate-response": {
         "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
@@ -231,28 +231,40 @@
         "Certificate": {
           "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
           "CreatedAt": "datetime",
-          "DomainName": "mysite.com",
+          "DomainName": "localhost",
           "DomainValidationOptions": [
             {
               "DomainName": "localhost"
             },
             {
-              "DomainName": "mysite.com"
+              "DomainName": "localhost.localstack.cloud"
+            },
+            {
+              "DomainName": "localhost.localstack.cloudIP:127.0.0.1"
+            },
+            {
+              "DomainName": "test.localhost.atlassian.io"
             }
           ],
           "ExtendedKeyUsages": [
             {
-              "Name": "NONE",
-              "OID": ""
+              "Name": "TLS_WEB_SERVER_AUTHENTICATION",
+              "OID": "1.3.6.1.5.5.7.3.1"
             }
           ],
           "ImportedAt": "datetime",
           "InUseBy": [],
-          "Issuer": "My Company",
+          "Issuer": "LocalStack Org",
           "KeyAlgorithm": "RSA-2048",
           "KeyUsages": [
             {
-              "Name": "ANY"
+              "Name": "DIGITAL_SIGNATURE"
+            },
+            {
+              "Name": "NON_REPUDIATION"
+            },
+            {
+              "Name": "KEY_ENCIPHERMENT"
             }
           ],
           "NotAfter": "datetime",
@@ -261,13 +273,15 @@
             "CertificateTransparencyLoggingPreference": "DISABLED"
           },
           "RenewalEligibility": "INELIGIBLE",
-          "Serial": "3e:25:17:25:90:91:c2:2c:05:f6:63:f4:aa:1a:bf:f2:b6:04:88:38",
+          "Serial": "03:e9",
           "SignatureAlgorithm": "SHA256WITHRSA",
           "Status": "ISSUED",
-          "Subject": "C=US,ST=California,L=San Francisco,O=My Company,CN=mysite.com",
+          "Subject": "C=AU,ST=Some-State,L=Some-Locality,O=LocalStack Org,OU=Testing,CN=localhost",
           "SubjectAlternativeNames": [
             "localhost",
-            "mysite.com"
+            "localhost.localstack.cloud",
+            "localhost.localstack.cloudIP:127.0.0.1",
+            "test.localhost.atlassian.io"
           ],
           "Type": "IMPORTED"
         },

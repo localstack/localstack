@@ -6,6 +6,6 @@
     "last_validated_date": "2024-01-09T14:58:14+00:00"
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_import_certificate": {
-    "last_validated_date": "2024-02-22T17:27:28+00:00"
+    "last_validated_date": "2024-02-22T17:41:15+00:00"
   }
 }

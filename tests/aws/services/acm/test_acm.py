@@ -1,61 +1,12 @@
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
-import datetime
-from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat
 import pytest
 from moto import settings as moto_settings
-
-from cryptography import x509
-from cryptography.x509.oid import NameOID
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
 
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.crypto import generate_ssl_cert
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-
-
-# TODO: functions taken from the cryptography docs, and
-def generate_private_key() -> RSAPrivateKey:
-    return rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-    )
-
-
-def generate_certificate_bytes(key: RSAPrivateKey) -> bytes:
-    subject = issuer = x509.Name(
-        [
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
-            x509.NameAttribute(NameOID.LOCALITY_NAME, "San Francisco"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "My Company"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "mysite.com"),
-        ]
-    )
-
-    cert = (
-        x509.CertificateBuilder()
-        .subject_name(subject)
-        .issuer_name(issuer)
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
-        .not_valid_after(
-            # Our certificate will be valid for 10 days
-            datetime.datetime.now(datetime.timezone.utc)
-            + datetime.timedelta(days=10)
-        )
-        .add_extension(
-            x509.SubjectAlternativeName([x509.DNSName("localhost")]),
-            critical=False,
-            # Sign our certificate with our private key
-        )
-        .sign(key, hashes.SHA256())
-    )
-
-    return cert.public_bytes(Encoding.PEM)
 
 
 class TestACM:
@@ -78,16 +29,16 @@ class TestACM:
             "$..Certificate.Subject",
         ]
     )
-    def test_import_certificate(self, aws_client, cleanups, snapshot):
+    def test_import_certificate(self, tmp_path, aws_client, cleanups, snapshot):
         with pytest.raises(Exception) as exc_info:
             aws_client.acm.import_certificate(Certificate=b"CERT123", PrivateKey=b"KEY123")
         assert exc_info.value.response["Error"]["Code"] == "ValidationException"
 
-        private_key = generate_private_key()
-        private_key_bytes = private_key.private_bytes(
-            Encoding.PEM, PrivateFormat.TraditionalOpenSSL, NoEncryption()
-        )
-        certificate_bytes = generate_certificate_bytes(private_key)
+        _, cert_file, key_file = generate_ssl_cert(target_file=str(tmp_path / "cert"))
+        with open(key_file, "rb") as infile:
+            private_key_bytes = infile.read()
+        with open(cert_file, "rb") as infile:
+            certificate_bytes = infile.read()
         result = aws_client.acm.import_certificate(
             Certificate=certificate_bytes, PrivateKey=private_key_bytes
         )
