@@ -1,5 +1,6 @@
 import abc
 import logging
+from typing import Optional
 
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEventException,
@@ -7,11 +8,20 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
 from localstack.services.stepfunctions.asl.component.component import Component
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
 
 class EvalComponent(Component, abc.ABC):
+    __heap_key: Optional[str] = None
+
+    @property
+    def heap_key(self) -> str:
+        if self.__heap_key is None:
+            self.__heap_key = long_uid()
+        return self.__heap_key
+
     def _log_evaluation_step(self, subject: str = "Generic") -> None:
         LOG.debug(f"[ASL] [{subject.lower()[:4]}] [{self.__class__.__name__}]: '{repr(self)}'")
 
