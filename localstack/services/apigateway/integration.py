@@ -583,10 +583,11 @@ class KinesisIntegration(BackendIntegration):
             payload["SequenceNumberForOrdering"] = VtlTemplate().render_vtl(
                 request_parameters.get("SequenceNumberForOrdering"), variables
             )
-        if "Region" in request_parameters:
-            payload["Region"] = VtlTemplate().render_vtl(
-                request_parameters.get("Region"), variables
-            )
+        # TODO: XXX we don't support the Region parameter
+        # if "Region" in request_parameters:
+        #     payload["Region"] = VtlTemplate().render_vtl(
+        #         request_parameters.get("Region"), variables
+        #     )
         return json.dumps(payload)
 
 
