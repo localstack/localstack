@@ -132,6 +132,10 @@ ERROREQUALS: '"ErrorEquals"';
 INTERVALSECONDS: '"IntervalSeconds"';
 MAXATTEMPTS: '"MaxAttempts"';
 BACKOFFRATE: '"BackoffRate"';
+MAXDELAYSECONDS: '"MaxDelaySeconds"';
+JITTERSTRATEGY: '"JitterStrategy"';
+FULL: '"FULL"';
+NONE: '"NONE"';
 
 // Catch.
 CATCH: '"Catch"';
