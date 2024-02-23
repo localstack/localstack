@@ -87,7 +87,10 @@ class S3BucketPolicyProvider(ResourceProvider[S3BucketPolicyProperties]):
         model = request.desired_state
         s3 = request.aws_client_factory.s3
 
-        s3.delete_bucket_policy(Bucket=model["Bucket"])
+        try:
+            s3.delete_bucket_policy(Bucket=model["Bucket"])
+        except s3.exceptions.NoSuchBucket:
+            pass
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
