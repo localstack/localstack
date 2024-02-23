@@ -44,8 +44,6 @@ $ awslocal s3api create-bucket --bucket sample-bucket
 $ awslocal s3api list-buckets
 ```
 
-User guide for reference [https://docs.localstack.cloud/user-guide/aws/s3/](https://docs.localstack.cloud/user-guide/aws/s3)
-
 **Notes**
 
 - This command reuses the image if it’s already on your machine, i.e. it will **not** pull the latest image automatically from Docker Hub.
@@ -86,8 +84,6 @@ Create a queue using SQS with LocalStack's [`awslocal`](https://docs.localstack.
 $ awslocal sqs create-queue --queue-name test-queue
 $ awslocal sqs list-queues 
 ```
-
-User guide for reference [https://docs.localstack.cloud/user-guide/aws/sqs](https://docs.localstack.cloud/user-guide/aws/sqs/)
 
 **Notes**
 
