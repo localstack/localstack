@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/lambda_/test_lambda_performance.py::test_number_of_function_versions_async": {
+    "last_validated_date": "2024-02-08T17:18:44+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_performance.py::test_number_of_function_versions_sync": {
+    "last_validated_date": "2024-02-08T17:01:53+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_performance.py::test_number_of_functions_async": {
+    "last_validated_date": "2024-02-08T17:55:20+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_performance.py::test_number_of_functions_sync": {
+    "last_validated_date": "2024-02-08T17:50:10+00:00"
+  }
+}

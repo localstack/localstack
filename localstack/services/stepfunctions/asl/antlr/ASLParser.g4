@@ -434,6 +434,8 @@ retrier_stmt
     | interval_seconds_decl
     | max_attempts_decl
     | backoff_rate_decl
+    | max_delay_seconds_decl
+    | jitter_strategy_decl
     | comment_decl
     ;
 
@@ -455,6 +457,14 @@ max_attempts_decl
 
 backoff_rate_decl
     : BACKOFFRATE COLON (INT | NUMBER)
+    ;
+
+max_delay_seconds_decl
+    : MAXDELAYSECONDS COLON INT
+    ;
+
+jitter_strategy_decl
+    : JITTERSTRATEGY COLON (FULL | NONE)
     ;
 
 catch_decl
@@ -574,7 +584,7 @@ json_value_decl
    | keyword_or_string
    ;
 
-keyword_or_string // TODO: check keywords can be used as strings.
+keyword_or_string
     : STRINGDOLLAR
     | STRINGPATHCONTEXTOBJ
     | STRINGPATH
@@ -681,6 +691,10 @@ keyword_or_string // TODO: check keywords can be used as strings.
     | INTERVALSECONDS
     | MAXATTEMPTS
     | BACKOFFRATE
+    | MAXDELAYSECONDS
+    | JITTERSTRATEGY
+    | FULL
+    | NONE
     | CATCH
     | ERRORNAMEStatesALL
     | ERRORNAMEStatesHeartbeatTimeout

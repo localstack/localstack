@@ -79,8 +79,15 @@ from localstack.services.stepfunctions.asl.component.common.retry.backoff_rate_d
 from localstack.services.stepfunctions.asl.component.common.retry.interval_seconds_decl import (
     IntervalSecondsDecl,
 )
+from localstack.services.stepfunctions.asl.component.common.retry.jitter_strategy_decl import (
+    JitterStrategy,
+    JitterStrategyDecl,
+)
 from localstack.services.stepfunctions.asl.component.common.retry.max_attempts_decl import (
     MaxAttemptsDecl,
+)
+from localstack.services.stepfunctions.asl.component.common.retry.max_delay_seconds_decl import (
+    MaxDelaySecondsDecl,
 )
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import RetrierDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_props import RetrierProps
@@ -737,6 +744,20 @@ class Preprocessor(ASLParserVisitor):
 
     def visitBackoff_rate_decl(self, ctx: ASLParser.Backoff_rate_declContext) -> BackoffRateDecl:
         return BackoffRateDecl(rate=float(ctx.children[-1].getText()))
+
+    def visitMax_delay_seconds_decl(
+        self, ctx: ASLParser.Max_delay_seconds_declContext
+    ) -> MaxDelaySecondsDecl:
+        return MaxDelaySecondsDecl(max_delays_seconds=int(ctx.INT().getText()))
+
+    def visitJitter_strategy_decl(
+        self, ctx: ASLParser.Jitter_strategy_declContext
+    ) -> JitterStrategyDecl:
+        last_child: ParseTree = ctx.children[-1]
+        strategy_child: Optional[TerminalNodeImpl] = Antlr4Utils.is_terminal(last_child)
+        strategy_value = strategy_child.getSymbol().type
+        jitter_strategy = JitterStrategy(strategy_value)
+        return JitterStrategyDecl(jitter_strategy=jitter_strategy)
 
     def visitCatch_decl(self, ctx: ASLParser.Catch_declContext) -> CatchDecl:
         catchers: list[CatcherDecl] = list()

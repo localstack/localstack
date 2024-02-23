@@ -248,6 +248,12 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                 custom_context=request.custom_context,
             )
 
+        if model.get("TimeToLiveSpecification"):
+            request.aws_client_factory.dynamodb.update_time_to_live(
+                TableName=model["TableName"],
+                TimeToLiveSpecification=model["TimeToLiveSpecification"],
+            )
+
         if description["Table"].get("LatestStreamArn"):
             model["StreamArn"] = description["Table"]["LatestStreamArn"]
 

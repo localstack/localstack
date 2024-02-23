@@ -791,6 +791,24 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#max_delay_seconds_decl.
+    def enterMax_delay_seconds_decl(self, ctx:ASLParser.Max_delay_seconds_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#max_delay_seconds_decl.
+    def exitMax_delay_seconds_decl(self, ctx:ASLParser.Max_delay_seconds_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#jitter_strategy_decl.
+    def enterJitter_strategy_decl(self, ctx:ASLParser.Jitter_strategy_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#jitter_strategy_decl.
+    def exitJitter_strategy_decl(self, ctx:ASLParser.Jitter_strategy_declContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#catch_decl.
     def enterCatch_decl(self, ctx:ASLParser.Catch_declContext):
         pass

@@ -358,10 +358,11 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                 self.container_name, f"{str(get_runtime_client_path())}/.", "/"
             )
             # tiny bit inefficient since we actually overwrite the init, but otherwise the path might not exist
-            if config.LAMBDA_INIT_DEBUG:
+            if config.LAMBDA_INIT_BIN_PATH:
                 CONTAINER_CLIENT.copy_into_container(
                     self.container_name, config.LAMBDA_INIT_BIN_PATH, "/var/rapid/init"
                 )
+            if config.LAMBDA_INIT_DEBUG:
                 CONTAINER_CLIENT.copy_into_container(
                     self.container_name, config.LAMBDA_INIT_DELVE_PATH, "/var/rapid/dlv"
                 )

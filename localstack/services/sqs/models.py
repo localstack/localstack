@@ -922,11 +922,7 @@ class FifoQueue(SqsQueue):
         """
         with self.mutex:
             if message_group_id not in self.message_groups:
-                # a newly created message group is added to the queue immediately
-                message_group = self.message_groups[message_group_id] = MessageGroup(
-                    message_group_id
-                )
-                self.message_group_queue.put_nowait(message_group)
+                self.message_groups[message_group_id] = MessageGroup(message_group_id)
 
             return self.message_groups.get(message_group_id)
 
@@ -1018,14 +1014,19 @@ class FifoQueue(SqsQueue):
         message_group = self.get_message_group(message.message_group_id)
 
         with self.mutex:
+            previously_empty = message_group.empty()
             # put the message into the group
             message_group.push(message)
 
-            # if an older message becomes visible again in the queue, that message's group becomes visible also.
-            if message.receive_count < 1:
+            # new messages should not make groups visible that are currently inflight
+            if message.receive_count < 1 and message_group in self.inflight_groups:
                 return
+            # if an older message becomes visible again in the queue, that message's group becomes visible also.
             if message_group in self.inflight_groups:
                 self.inflight_groups.remove(message_group)
+                self.message_group_queue.put_nowait(message_group)
+            # if the group was previously empty, it was not yet added back to the queue
+            elif previously_empty:
                 self.message_group_queue.put_nowait(message_group)
 
     def remove_expired_messages(self):
@@ -1080,10 +1081,9 @@ class FifoQueue(SqsQueue):
             except Empty:
                 break
 
-            self.inflight_groups.add(group)
-
             if group.empty():
-                # this can be the case if all messages in the group are still invisible
+                # this can be the case if all messages in the group are still invisible or
+                # if all messages of a group have been processed.
                 # TODO: it should be blocking until at least one message is in the queue, but we don't
                 #  want to block the group
                 # TODO: check behavior in case it happens if all messages were removed from a group due to message
@@ -1092,6 +1092,8 @@ class FifoQueue(SqsQueue):
                 if timeout < 0:
                     timeout = 0
                 continue
+
+            self.inflight_groups.add(group)
 
             received_groups.add(group)
 
@@ -1175,7 +1177,8 @@ class FifoQueue(SqsQueue):
                         return
 
                 self.inflight_groups.remove(message_group)
-                self.message_group_queue.put_nowait(message_group)
+                if not message_group.empty():
+                    self.message_group_queue.put_nowait(message_group)
 
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):
