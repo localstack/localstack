@@ -216,8 +216,13 @@ class LambdaProxyIntegration(BackendIntegration):
         parsed_result = common.json_safe(parsed_result)
         parsed_result = {} if parsed_result is None else parsed_result
 
-        keys = parsed_result.keys()
-        if "statusCode" not in keys or "body" not in keys:
+        if "statusCode" not in parsed_result or set(parsed_result) - {
+            "body",
+            "statusCode",
+            "headers",
+            "isBase64Encoded",
+            "multiValueHeaders",
+        }:
             LOG.warning(
                 'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}\n Lambda output: %s',
                 parsed_result,
@@ -366,9 +371,13 @@ class LambdaProxyIntegration(BackendIntegration):
         parsed_result = common.json_safe(parsed_result)
         parsed_result = {} if parsed_result is None else parsed_result
 
-        keys = parsed_result.keys()
-
-        if not ("statusCode" in keys and "body" in keys):
+        if "statusCode" not in parsed_result or set(parsed_result) - {
+            "body",
+            "statusCode",
+            "headers",
+            "isBase64Encoded",
+            "multiValueHeaders",
+        }:
             LOG.warning(
                 'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}\n Lambda output: %s',
                 parsed_result,

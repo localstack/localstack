@@ -1,5 +1,6 @@
 import json
 import os
+import textwrap
 
 import pytest
 import requests
@@ -666,3 +667,138 @@ def test_lambda_selection_patterns(
     for status_code in status_codes:
         response = retry(invoke_api, sleep=2, retries=10, status_code=status_code)
         snapshot.match(f"lambda-selection-pattern-{status_code}", response.json())
+
+
+@markers.aws.validated
+def test_lambda_aws_proxy_response_format(
+    create_rest_apigw, create_lambda_function, create_role_with_policy, aws_client
+):
+    function_code_no_body = textwrap.dedent(
+        """
+    import json
+    def handler(event, context):
+        return {
+            "statusCode": 200,
+        }
+    """
+    )
+
+    function_code_with_headers = textwrap.dedent(
+        """
+    import json
+    def handler(event, context):
+        return {
+            "statusCode": 200,
+            "headers": {
+              "test-header": "value",
+            }
+        }
+    """
+    )
+
+    function_code_wrong_format = textwrap.dedent(
+        """
+    import json
+    def handler(event, context):
+        return {
+            "statusCode": 200,
+            "wrongField": "test",
+        }
+    """
+    )
+
+    lambdas_types = {
+        "nobody": function_code_no_body,
+        "onlyheaders": function_code_with_headers,
+        "wrongformat": function_code_wrong_format,
+    }
+
+    stage_name = "test"
+
+    lambda_arns = {}
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
+
+    for lambda_format_type, lambda_code in lambdas_types.items():
+        # create 2 lambdas
+        function_name = f"test-function-{short_uid()}"
+        create_function_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=lambda_code,
+            runtime=Runtime.python3_9,
+        )
+        # create invocation role
+        lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+        lambda_arns[lambda_format_type] = lambda_arn
+
+    # create rest api
+    api_id, _, root = create_rest_apigw(
+        name=f"test-api-{short_uid()}",
+        description="Integration test API",
+    )
+
+    # create 2 paths to have different proxy
+    for lambda_format_type, lambda_arn in lambda_arns.items():
+        resource_root_part_id = aws_client.apigateway.create_resource(
+            restApiId=api_id,
+            parentId=root,
+            pathPart=lambda_format_type,
+        )["id"]
+
+        resource_id = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=resource_root_part_id, pathPart="{proxy+}"
+        )["id"]
+
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+        )
+
+        # Lambda AWS_PROXY integration
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="ANY",
+            type="AWS_PROXY",
+            integrationHttpMethod="POST",
+            uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+            credentials=role_arn,
+        )
+
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+    for lambda_format_type in lambdas_types:
+        # invoke rest api
+        invocation_url = api_invoke_url(
+            api_id=api_id,
+            stage=stage_name,
+            path=f"/{lambda_format_type}/test-path",
+        )
+
+        def invoke_api(url):
+            # use test header with different casing to check if it is preserved in the proxy payload
+            response = requests.get(
+                url,
+                headers={"User-Agent": "python-requests/testing"},
+                verify=False,
+            )
+            if lambda_format_type == "wrongformat":
+                assert response.status_code == 502
+            else:
+                assert response.status_code == 200
+            return response
+
+        # retry is necessary against AWS, probably IAM permission delay
+        response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+
+        if lambda_format_type in ("nobody", "onlyheaders"):
+            assert response.content == b""
+            if lambda_format_type == "onlyheaders":
+                assert response.headers["test-header"] == "value"
+
+        elif lambda_format_type == "wrongformat":
+            assert response.status_code == 502
+            assert response.json() == {"message": "Internal server error"}
