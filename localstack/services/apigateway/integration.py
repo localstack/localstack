@@ -216,7 +216,7 @@ class LambdaProxyIntegration(BackendIntegration):
         parsed_result = common.json_safe(parsed_result)
         parsed_result = {} if parsed_result is None else parsed_result
 
-        if "statusCode" not in parsed_result or set(parsed_result) - {
+        if set(parsed_result) - {
             "body",
             "statusCode",
             "headers",
@@ -371,7 +371,7 @@ class LambdaProxyIntegration(BackendIntegration):
         parsed_result = common.json_safe(parsed_result)
         parsed_result = {} if parsed_result is None else parsed_result
 
-        if "statusCode" not in parsed_result or set(parsed_result) - {
+        if set(parsed_result) - {
             "body",
             "statusCode",
             "headers",
