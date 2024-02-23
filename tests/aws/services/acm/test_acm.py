@@ -1,7 +1,7 @@
 import pytest
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 from moto import settings as moto_settings
 
-from localstack_snapshot.snapshots.transformer import SortingTransformer
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.crypto import generate_ssl_cert
