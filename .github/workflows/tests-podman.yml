@@ -12,8 +12,7 @@ env:
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master
-  #  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
-  TINYBIRD_PYTEST_ARGS: "--report-to-tinybird "
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
 
 jobs:
   podman-tests:
@@ -65,7 +64,7 @@ jobs:
           DOCKER_HOST=$podmanSocket make test
 
   push-to-tinybird:
-    if: always()
+    if: always() && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs: podman-tests
     steps:

@@ -74,15 +74,13 @@ concurrency:
 env:
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
-#  TINYBIRD_DATASOURCE: ${{ github.event.repository.name }}-tests-pro-integration
   TINYBIRD_DATASOURCE: community_tests_pro_integration
   TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master
-#  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
-  TINYBIRD_PYTEST_ARGS: "--report-to-tinybird "
+  TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
 
 jobs:
   test-pro:
@@ -334,7 +332,7 @@ jobs:
           action_fail_on_inconclusive: true
 
   push-to-tinybird:
-    if: always()
+    if: always() && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs: publish-pro-test-results
     steps:
