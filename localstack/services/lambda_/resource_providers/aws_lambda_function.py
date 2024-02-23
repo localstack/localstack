@@ -495,6 +495,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                 _include_arch=True,
             )
             client.update_function_code(FunctionName=function_name, **code)
+            client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
         if "Environment" in update_config_props:
             environment_variables = update_config_props["Environment"].get("Variables", {})
             update_config_props["Environment"]["Variables"] = {

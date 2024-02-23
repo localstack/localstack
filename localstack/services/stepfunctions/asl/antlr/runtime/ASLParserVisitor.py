@@ -444,6 +444,16 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#max_delay_seconds_decl.
+    def visitMax_delay_seconds_decl(self, ctx:ASLParser.Max_delay_seconds_declContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by ASLParser#jitter_strategy_decl.
+    def visitJitter_strategy_decl(self, ctx:ASLParser.Jitter_strategy_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#catch_decl.
     def visitCatch_decl(self, ctx:ASLParser.Catch_declContext):
         return self.visitChildren(ctx)
