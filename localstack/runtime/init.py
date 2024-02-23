@@ -152,8 +152,12 @@ class InitScriptManager:
                 else:
                     script.state = State.SUCCESSFUL
                 finally:
-                    os.environ.clear()
-                    os.environ.update(env_original)
+                    # Restore original state of Boto credentials.
+                    for env_var in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION"):
+                        if env_var in env_original:
+                            os.environ[env_var] = env_original[env_var]
+                        else:
+                            os.environ.pop(env_var, None)
 
         finally:
             self.stage_completed[stage] = True
