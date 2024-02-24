@@ -123,18 +123,27 @@ class BackendIntegration(ABC):
     def render_template_selection_expression(cls, invocation_context: ApiInvocationContext):
         integration = invocation_context.integration
         template_selection_expression = integration.get("templateSelectionExpression")
+
+        # AWS template selection relies on the content type
+        # to select an input template or output mapping AND template selection expressions.
+        # All of them will fall back to the $default template if a matching template is not found.
         if not template_selection_expression:
+            content_type = invocation_context.headers.get(HEADER_CONTENT_TYPE, APPLICATION_JSON)
+            if integration.get("RequestTemplates", {}).get(content_type):
+                return content_type
             return "$default"
+
+        data = try_json(invocation_context.data)
         variables = {
             "request": {
                 "header": invocation_context.headers,
                 "querystring": invocation_context.query_params(),
-                "body": invocation_context.data_as_string(),
+                "body": data,
                 "context": invocation_context.context or {},
                 "stage_variables": invocation_context.stage_variables or {},
             }
         }
-        return VtlTemplate().render_vtl(template_selection_expression, variables)
+        return VtlTemplate().render_vtl(template_selection_expression, variables) or "$default"
 
 
 @lru_cache(maxsize=64)
@@ -404,7 +413,7 @@ class LambdaProxyIntegration(BackendIntegration):
 
 class LambdaIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
-        invocation_context.context = helpers.get_event_request_context(invocation_context)
+        # invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
         headers = invocation_context.headers
 
@@ -416,12 +425,20 @@ class LambdaIntegration(BackendIntegration):
             invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         func_arn = self._lambda_integration_uri(invocation_context)
-        event = self.request_templates.render(invocation_context) or b""
+        # integration type "AWS" is only supported for WebSocket APIs and REST
+        # API (v1), but the template selection expression is only supported for
+        # Websockets
+        if invocation_context.is_websocket_request():
+            template_key = self.render_template_selection_expression(invocation_context)
+            payload = self.request_templates.render(invocation_context, template_key)
+        else:
+            payload = self.request_templates.render(invocation_context)
+
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
         try:
             result = call_lambda(
                 function_arn=func_arn,
-                event=to_bytes(event),
+                event=to_bytes(payload or ""),
                 asynchronous=asynchronous,
                 invocation_context=invocation_context,
             )
@@ -812,7 +829,11 @@ class SNSIntegration(BackendIntegration):
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
         try:
-            payload = self.request_templates.render(invocation_context)
+            if invocation_context.is_websocket_request():
+                template_key = self.render_template_selection_expression(invocation_context)
+                payload = self.request_templates.render(invocation_context, template_key)
+            else:
+                payload = self.request_templates.render(invocation_context)
         except Exception as e:
             LOG.warning("Failed to apply template for SNS integration", e)
             raise
@@ -820,10 +841,13 @@ class SNSIntegration(BackendIntegration):
         headers = mock_aws_request_headers(
             service="sns", aws_access_key_id=invocation_context.account_id, region_name=region_name
         )
-        result = make_http_request(
+        response = make_http_request(
             config.internal_service_url(), method="POST", headers=headers, data=payload
         )
-        return self.apply_response_parameters(invocation_context, result)
+
+        invocation_context.response = response
+        response._content = self.response_templates.render(invocation_context)
+        return self.apply_response_parameters(invocation_context, response)
 
 
 class StepFunctionIntegration(BackendIntegration):
