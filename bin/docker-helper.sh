@@ -12,8 +12,11 @@ function usage() {
     echo "  build"
     echo "      Build the Docker image for the project in the working directory"
     echo ""
-    echo "  push"
-    echo "      Push the Docker image for the project in the working directory"
+    echo "  push-main"
+    echo "      Push the Docker image for the project if we're on the main branch"
+    echo ""
+    echo "  push-manifests-main"
+    echo "      Push the multi-arch Docker manifests if we're on the main branch"
     echo ""
     echo "  help"
     echo "      Show this message"
@@ -41,6 +44,12 @@ function set_defaults() {
         PYTHON_CODE_DIR=$(dirname $entry)
     fi
 
+    # determine major/minor/patch versions
+    IMAGE_TAG?=$(cat $PYTHON_CODE_DIR/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
+    MAJOR_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f1)
+    MINOR_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f2)
+    PATCH_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f3)
+
     if [ -z "$DOCKERFILE" ]; then DOCKERFILE=Dockerfile; fi
     if [ -z "$SOURCE_IMAGE_NAME" ]; then SOURCE_IMAGE_NAME=$IMAGE_NAME; fi
     if [ -z "$TARGET_IMAGE_NAME" ]; then TARGET_IMAGE_NAME=$IMAGE_NAME; fi
@@ -50,7 +59,7 @@ function set_defaults() {
 }
 
 function docker_build() {
-    # start build
+    # start build of a platform-specific image (this target will get called for multiple archs like AMD64/ARM64)
 
     # by default we load the result to the docker daemon
     if [ "$DOCKER_BUILD_FLAGS" = "" ]; then DOCKER_BUILD_FLAGS="--load"; fi
