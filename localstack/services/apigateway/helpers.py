@@ -744,27 +744,38 @@ def get_resource_for_path(
     # /{proxy+} and /api/{proxy+} for inputs like /api/foo/bar
     # /foo/{param1}/baz and /foo/{param1}/{param2} for inputs like /for/bar/baz
     if len(matches) > 1:
-        filtered_matches = []
+        proxy_matches = []
+        param_matches = []
         for match in matches:
             match_methods = list(match[1].get("resourceMethods", {}).keys())
             # only look for path matches if the request method is in the resource
             if method.upper() in match_methods or "ANY" in match_methods:
                 # check if we have an exact match (exact matches take precedence) if the method is the same
-                if match[0] == path or path_matches_pattern(path, match[0]):
-                    # either an exact match or not an exact match but parameters can fit in
+                if match[0] == path:
                     return match
 
-                filtered_matches.append(match)
+                elif path_matches_pattern(path, match[0]):
+                    # parameters can fit in
+                    param_matches.append(match)
+                    continue
+
+                proxy_matches.append(match)
+
+        if param_matches:
+            # count the amount of parameters, return the one with the least which is the most precise
+            sorted_matches = sorted(param_matches, key=lambda x: x[0].count("{"))
+            return sorted_matches[0]
+
+        if proxy_matches:
+            # at this stage, we still have more than one match, but we have an eager example like
+            # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length, only if they have a method
+            # that could match
+            sorted_matches = sorted(proxy_matches, key=lambda x: len(x[0]), reverse=True)
+            return sorted_matches[0]
 
         # if there are no matches with a method that would match, return
-        if not filtered_matches:
-            return None, None
+        return None, None
 
-        # at this stage, we have more than one match, but we have an eager example like
-        # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length, only if they have a method that
-        # could match
-        sorted_matches = sorted(filtered_matches, key=lambda x: len(x[0]), reverse=True)
-        return sorted_matches[0]
     return matches[0]
 
 

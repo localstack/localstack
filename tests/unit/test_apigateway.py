@@ -65,12 +65,14 @@ class TestApiGatewayPaths:
         [
             ("/foo/bar", ["/foo/{param1}"], "/foo/{param1}"),
             ("/foo/bar", ["/foo/bar", "/foo/{param1}"], "/foo/bar"),
+            ("/foo/bar", ["/foo/{param1}", "/foo/bar"], "/foo/bar"),
             ("/foo/bar/baz", ["/foo/bar", "/foo/{proxy+}"], "/foo/{proxy+}"),
             ("/foo/bar/baz", ["/{proxy+}", "/foo/{proxy+}"], "/foo/{proxy+}"),
             ("/foo/bar", ["/foo/bar1", "/foo/bar2"], None),
             ("/foo/bar", ["/{param1}/bar1", "/foo/bar2"], None),
             ("/foo/bar", ["/{param1}/{param2}/foo/{param3}", "/{param}/bar"], "/{param}/bar"),
             ("/foo/bar", ["/{param1}/{param2}", "/{param}/bar"], "/{param}/bar"),
+            ("/foo/bar", ["/{param}/bar", "/{param1}/{param2}"], "/{param}/bar"),
             (
                 "/foo/bar/baz",
                 ["/{param1}/{param2}/baz", "/{param1}/bar/{param2}"],
@@ -78,6 +80,7 @@ class TestApiGatewayPaths:
             ),
             ("/foo/bar/baz", ["/foo123/{param1}/baz"], None),
             ("/foo/bar/baz", ["/foo/{param1}/baz", "/foo/{param1}/{param2}"], "/foo/{param1}/baz"),
+            ("/foo/bar/baz", ["/foo/{param1}/{param2}", "/foo/{param1}/baz"], "/foo/{param1}/baz"),
         ],
     )
     def test_path_matches(self, path, path_parts, expected):
