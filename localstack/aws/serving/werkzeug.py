@@ -31,6 +31,7 @@ def serve(
     """
     kwargs["threaded"] = kwargs.get("threaded", True)  # make sure requests don't block
     kwargs["ssl_context"] = ssl_creds
+    kwargs.setdefault("request_handler", CustomWSGIRequestHandler)
     run_simple(host, port, WsgiGateway(gateway), use_reloader=use_reloader, **kwargs)
 
 
