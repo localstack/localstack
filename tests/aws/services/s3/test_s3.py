@@ -10402,20 +10402,16 @@ class TestS3PresignedPost:
             ],
         )
 
-        # this is a hack needed for requests to properly send the request as multipart/form-data with no files
+        # we need to define a proper format for `files` so that we don't add the filename= field to the form
         # see https://github.com/psf/requests/issues/1081
-
-        class ForceMultipartDict(dict):
-            def __bool__(self):
-                return True
-
-        force_multipart = ForceMultipartDict()  # An empty dict that boolean-evaluates as `True`.
 
         # PostObject
         response = requests.post(
             presigned_request["url"],
-            data={**presigned_request["fields"], "file": "test-body-file-as-field"},
-            files=force_multipart,
+            data=presigned_request["fields"],
+            files={
+                "file": (None, "test-body-file-as-field"),
+            },
             verify=False,
         )
         assert response.status_code == 204
@@ -10434,11 +10430,10 @@ class TestS3PresignedPost:
         )
         response = requests.post(
             presigned_request["url"],
-            data={
-                **presigned_request["fields"],
-                "file": "test-body-file-as-field-filename-replacement",
+            data=presigned_request["fields"],
+            files={
+                "file": (None, "test-body-file-as-field-filename-replacement"),
             },
-            files=force_multipart,
             verify=False,
         )
         assert response.status_code == 204
