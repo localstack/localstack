@@ -485,7 +485,7 @@ Timestamp = datetime
 
 class PhoneNumberInformation(TypedDict, total=False):
     CreatedAt: Optional[Timestamp]
-    PhoneNumber: Optional[String]
+    PhoneNumber: Optional[PhoneNumber]
     Status: Optional[String]
     Iso2CountryCode: Optional[Iso2CountryCode]
     RouteType: Optional[RouteType]
@@ -645,7 +645,7 @@ class PublishBatchResponse(TypedDict, total=False):
 class PublishInput(ServiceRequest):
     TopicArn: Optional[topicARN]
     TargetArn: Optional[String]
-    PhoneNumber: Optional[String]
+    PhoneNumber: Optional[PhoneNumber]
     Message: message
     Subject: Optional[subject]
     MessageStructure: Optional[messageStructure]
@@ -964,7 +964,7 @@ class SnsApi:
         message: message,
         topic_arn: topicARN = None,
         target_arn: String = None,
-        phone_number: String = None,
+        phone_number: PhoneNumber = None,
         subject: subject = None,
         message_structure: messageStructure = None,
         message_attributes: MessageAttributeMap = None,

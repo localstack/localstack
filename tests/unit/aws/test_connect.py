@@ -20,8 +20,8 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_
 from localstack.http import Response
 from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.http.hypercorn import GatewayServer
-from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.net import get_free_tcp_port
 
 

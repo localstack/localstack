@@ -20,7 +20,6 @@ from localstack.aws.connect import (
 )
 from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
-from localstack.aws.proxy import get_account_id_from_request
 from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH, load_service
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
@@ -29,6 +28,7 @@ from localstack.constants import (
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
+from localstack.utils.aws.request_context import get_account_id_from_request
 from localstack.utils.sync import poll_condition
 
 
@@ -93,9 +93,7 @@ def create_client_with_keys(
         aws_secret_access_key=keys["SecretAccessKey"],
         aws_session_token=keys.get("SessionToken"),
         config=client_config,
-        endpoint_url=config.internal_service_url()
-        if os.environ.get("TEST_TARGET") != "AWS_CLOUD"
-        else None,
+        endpoint_url=config.internal_service_url() if not is_aws_cloud() else None,
     )
 
 
@@ -204,7 +202,7 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
             retries={"total_max_attempts": 1},
         )
 
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+    if is_aws_cloud():
         return ExternalAwsClientFactory(session=session, config=config)
     else:
         if not config:

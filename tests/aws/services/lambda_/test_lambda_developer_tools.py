@@ -10,7 +10,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.container_networking import get_main_container_network
 from localstack.utils.docker_utils import DOCKER_CLIENT, get_host_path_for_path_in_docker
 from localstack.utils.files import load_file, mkdir, rm_rf
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import create_lambda_archive
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_ENV, THIS_FOLDER
@@ -64,11 +64,11 @@ class TestHotReloading:
             Runtime=runtime,
         )
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
-        response_dict = json.loads(response["Payload"].read())
+        response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value1"
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
-        response_dict = json.loads(response["Payload"].read())
+        response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 2
         assert response_dict["constant"] == "value1"
         with open(os.path.join(hot_reloading_dir_path, handler_filename), mode="wt") as f:
@@ -76,11 +76,11 @@ class TestHotReloading:
         # we have to sleep here, since the hot reloading is debounced with 500ms
         time.sleep(0.6)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
-        response_dict = json.loads(response["Payload"].read())
+        response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
-        response_dict = json.loads(response["Payload"].read())
+        response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 2
         assert response_dict["constant"] == "value2"
 
@@ -90,7 +90,7 @@ class TestHotReloading:
         # make sure the creation of the folder triggered reload
         time.sleep(0.6)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
-        response_dict = json.loads(response["Payload"].read())
+        response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
         # now writing something in the new folder to check if it will reload
@@ -98,7 +98,7 @@ class TestHotReloading:
             f.write("test-content")
         time.sleep(0.6)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
-        response_dict = json.loads(response["Payload"].read())
+        response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
 
@@ -147,8 +147,7 @@ class TestDockerFlags:
         )
         aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
         result = aws_client.lambda_.invoke(FunctionName=function_name, Payload="{}")
-        result_data = result["Payload"].read()
-        result_data = json.loads(to_str(result_data))
+        result_data = json.load(result["Payload"])
         assert {"Hello": env_value} == result_data
 
     @markers.aws.only_localstack
@@ -196,8 +195,7 @@ class TestDockerFlags:
         result = aws_client.lambda_.invoke(
             FunctionName=function_name, Payload=json.dumps({"url": f"http://{container_name}"})
         )
-        result_data = result["Payload"].read()
-        result_data = json.loads(to_str(result_data))
+        result_data = json.load(result["Payload"])
         assert result_data["status"] == 200
         assert "nginx" in result_data["response"]
 
@@ -226,7 +224,6 @@ class TestLambdaDNS:
             ),
         )
         assert "FunctionError" not in result
-        result_data = result["Payload"].read()
-        result_data = json.loads(to_str(result_data))
+        result_data = json.load(result["Payload"])
         assert result_data["status"] == 200
         assert "services" in result_data["response"]

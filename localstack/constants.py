@@ -5,12 +5,6 @@ import localstack
 # LocalStack version
 VERSION = localstack.__version__
 
-# constant to represent the "local" region, i.e., local machine
-REGION_LOCAL = "local"
-
-# dev environment
-ENV_DEV = "dev"
-
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = "x-localstack-edge"
 HEADER_LOCALSTACK_REQUEST_URL = "x-localstack-request-url"
@@ -120,7 +114,7 @@ ELASTICSEARCH_PLUGIN_LIST = [
 ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 
 # the version of opensearch which is used by default
-OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.9"
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.11"
 
 # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
 OPENSEARCH_PLUGIN_LIST = [

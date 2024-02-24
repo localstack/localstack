@@ -1,4 +1,4 @@
-from plugin import Plugin
+from plux import Plugin
 
 
 class RuntimeExecutorPlugin(Plugin):

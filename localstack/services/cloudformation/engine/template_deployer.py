@@ -97,9 +97,16 @@ def get_attr_from_model_instance(
 
     attribute_candidate = properties.get(attribute_name)
     if "." in attribute_name:
+        # in case we explicitly add a property with a dot, e.g. resource["Properties"]["Endpoint.Port"]
+        # this is only really used for legacy cases since this isn't supported in the propertiers part of the schema
         if attribute_candidate:
-            # in case we explicitly add a property with a dot, e.g. resource["Properties"]["Endpoint.Port"]
             return attribute_candidate
+
+        # some resources (e.g. ElastiCache) have their readOnly attributes defined as Aa.Bb but the property is named AaBb
+        if attribute_candidate := properties.get(attribute_name.replace(".", "")):
+            return attribute_candidate
+
+        # accessing nested properties
         parts = attribute_name.split(".")
         attribute = properties
         # TODO: the attribute fetching below is a temporary workaround for the dependency resolution.
@@ -1376,7 +1383,11 @@ class TemplateDeployer:
         stack_action = get_action_name_for_resource_change(action)
         match progress_event.status:
             case OperationStatus.FAILED:
-                stack.set_resource_status(resource_id, f"{stack_action}_FAILED")
+                stack.set_resource_status(
+                    resource_id,
+                    f"{stack_action}_FAILED",
+                    status_reason=progress_event.message or "",
+                )
                 # TODO: remove exception raising here?
                 # TODO: fix request token
                 raise Exception(

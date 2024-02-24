@@ -7,7 +7,6 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 
 
@@ -26,15 +25,12 @@ def exec_lambda_function(env: Environment, parameters: dict, region: str, accoun
     invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
 
     func_error: Optional[str] = invocation_resp.get("FunctionError")
+    payload_json = json.load(invocation_resp["Payload"])
     if func_error:
-        payload = json.loads(to_str(invocation_resp["Payload"].read()))
-        payload_str = json.dumps(payload, separators=(",", ":"))
+        payload_str = json.dumps(payload_json, separators=(",", ":"))
         raise LambdaFunctionErrorException(func_error, payload_str)
 
-    resp_payload = invocation_resp["Payload"].read()
-    resp_payload_str = to_str(resp_payload)
-    resp_payload_json: json = json.loads(resp_payload_str)
-    invocation_resp["Payload"] = resp_payload_json
+    invocation_resp["Payload"] = payload_json
 
     response = select_from_typed_dict(typed_dict=InvocationResponse, obj=invocation_resp)
     env.stack.append(response)
