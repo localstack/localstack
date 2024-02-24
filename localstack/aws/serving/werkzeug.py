@@ -1,3 +1,4 @@
+import ssl
 from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 from rolo.gateway import Gateway
@@ -37,9 +38,20 @@ class CustomWSGIRequestHandler(WSGIRequestHandler):
     def make_environ(self) -> "WSGIEnvironment":
         environ = super().make_environ()
 
-        # add
+        # restore RAW_URI from the requestline will be something like ``GET //foo/?foo=bar%20ed HTTP/1.1``
+        environ["RAW_URI"] = " ".join(self.requestline.split(" ")[1:-1])
+
+        # restore raw headers for rolo
         environ["asgi.headers"] = [
             (k.encode("latin-1"), v.encode("latin-1")) for k, v in self.headers.raw_items()
         ]
+
+        # the default WSGIRequestHandler does not understand our DuplexSocket, so it will always set https, which we
+        # correct here
+        try:
+            is_ssl = isinstance(self.request, ssl.SSLSocket)
+        except AttributeError:
+            is_ssl = False
+        environ["wsgi.url_scheme"] = "https" if is_ssl else "http"
 
         return environ
