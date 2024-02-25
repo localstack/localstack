@@ -73,6 +73,8 @@ class TestApiGatewayPaths:
             ("/foo/bar", ["/{param1}/{param2}/foo/{param3}", "/{param}/bar"], "/{param}/bar"),
             ("/foo/bar", ["/{param1}/{param2}", "/{param}/bar"], "/{param}/bar"),
             ("/foo/bar", ["/{param}/bar", "/{param1}/{param2}"], "/{param}/bar"),
+            ("/foo/bar", ["/foo/bar", "/foo/{param+}"], "/foo/bar"),
+            ("/foo/bar", ["/foo/{param+}", "/foo/bar"], "/foo/bar"),
             (
                 "/foo/bar/baz",
                 ["/{param1}/{param2}/baz", "/{param1}/bar/{param2}"],
