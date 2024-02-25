@@ -732,34 +732,6 @@
                   "Arn"
                 ]
               }
-            },
-            {
-              "Action": [
-                "events:PutTargets",
-                "events:PutRule",
-                "events:DescribeRule"
-              ],
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::Join": [
-                  "",
-                  [
-                    "arn:",
-                    {
-                      "Ref": "AWS::Partition"
-                    },
-                    ":events:",
-                    {
-                      "Ref": "AWS::Region"
-                    },
-                    ":",
-                    {
-                      "Ref": "AWS::AccountId"
-                    },
-                    ":rule/StepFunctionsGetEventsForECSTaskRule"
-                  ]
-                ]
-              }
             }
           ],
           "Version": "2012-10-17"
@@ -783,7 +755,7 @@
               {
                 "Ref": "AWS::Partition"
               },
-              ":states:::ecs:runTask.sync\",\"Parameters\":{\"Cluster\":\"",
+              ":states:::ecs:runTask\",\"Parameters\":{\"Cluster\":\"",
               {
                 "Fn::GetAtt": [
                   "cluster611F8AFF",
@@ -825,6 +797,19 @@
     }
   },
   "Outputs": {
+    "TaskDefinitionArn": {
+      "Value": {
+        "Ref": "taskdef8C9C43DE"
+      }
+    },
+    "ClusterArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "cluster611F8AFF",
+          "Arn"
+        ]
+      }
+    },
     "StateMachineArn": {
       "Value": {
         "Ref": "statemachineC5962F3E"
@@ -834,6 +819,20 @@
       "Value": {
         "Ref": "cluster611F8AFF"
       }
+    },
+    "StateMachineRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "statemachineRole52044F93",
+          "Arn"
+        ]
+      }
+    },
+    "TaskDefinitionFamily": {
+      "Value": "StepFunctionsEcsTaskStacktaskdefA6894239"
+    },
+    "TaskDefinitionContainerName": {
+      "Value": "maincontainer"
     }
   },
   "Mappings": {
