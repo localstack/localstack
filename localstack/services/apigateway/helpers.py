@@ -382,6 +382,8 @@ class RequestParametersResolver:
     """
     Integration request data mapping expressions
     https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html
+
+    Note: Use on REST APIs only
     """
 
     def resolve(self, context: ApiInvocationContext) -> IntegrationParameters:
@@ -1404,6 +1406,17 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
         return None
     methods = resource.get("resourceMethods") or {}
     return methods.get(invocation_context.method.upper()) or methods.get("ANY")
+
+
+def event_type_from_route_key(invocation_context):
+    action = invocation_context.route["RouteKey"]
+    return (
+        "CONNECT"
+        if action == "$connect"
+        else "DISCONNECT"
+        if action == "$disconnect"
+        else "MESSAGE"
+    )
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):
