@@ -5,12 +5,6 @@ import localstack
 # LocalStack version
 VERSION = localstack.__version__
 
-# constant to represent the "local" region, i.e., local machine
-REGION_LOCAL = "local"
-
-# dev environment
-ENV_DEV = "dev"
-
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = "x-localstack-edge"
 HEADER_LOCALSTACK_REQUEST_URL = "x-localstack-request-url"
