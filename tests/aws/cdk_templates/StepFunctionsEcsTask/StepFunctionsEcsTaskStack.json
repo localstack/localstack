@@ -732,6 +732,34 @@
                   "Arn"
                 ]
               }
+            },
+            {
+              "Action": [
+                "events:PutTargets",
+                "events:PutRule",
+                "events:DescribeRule"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":events:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":rule/StepFunctionsGetEventsForECSTaskRule"
+                  ]
+                ]
+              }
             }
           ],
           "Version": "2012-10-17"
@@ -755,7 +783,7 @@
               {
                 "Ref": "AWS::Partition"
               },
-              ":states:::ecs:runTask\",\"Parameters\":{\"Cluster\":\"",
+              ":states:::ecs:runTask.sync\",\"Parameters\":{\"Cluster\":\"",
               {
                 "Fn::GetAtt": [
                   "cluster611F8AFF",

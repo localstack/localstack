@@ -34,38 +34,6 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
     def _get_supported_parameters(self) -> Optional[set[str]]:
         return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
-    # def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
-    #     if isinstance(ex, ClientError):
-    #         error_code = ex.response["Error"]["Code"]
-    #         error_name: str = f"StepFunctions.{error_code}Exception"
-    #         error_cause_details = [
-    #             "Service: AWSStepFunctions",
-    #             f"Status Code: {ex.response['ResponseMetadata']['HTTPStatusCode']}",
-    #             f"Error Code: {error_code}",
-    #             f"Request ID: {ex.response['ResponseMetadata']['RequestId']}",
-    #             "Proxy: null",  # TODO: investigate this proxy value.
-    #         ]
-    #         if "HostId" in ex.response["ResponseMetadata"]:
-    #             error_cause_details.append(
-    #                 f'Extended Request ID: {ex.response["ResponseMetadata"]["HostId"]}'
-    #             )
-    #         error_cause: str = (
-    #             f"{ex.response['Error']['Message']} ({'; '.join(error_cause_details)})"
-    #         )
-    #         return FailureEvent(
-    #             error_name=CustomErrorName(error_name),
-    #             event_type=HistoryEventType.TaskFailed,
-    #             event_details=EventDetails(
-    #                 taskFailedEventDetails=TaskFailedEventDetails(
-    #                     error=error_name,
-    #                     cause=error_cause,
-    #                     resource=self._get_sfn_resource(),
-    #                     resourceType=self._get_sfn_resource_type(),
-    #                 )
-    #             ),
-    #         )
-    #     return super()._from_error(env=env, ex=ex)
-
     def _before_eval_execution(
         self, env: Environment, resource_runtime_part: ResourceRuntimePart, raw_parameters: dict
     ) -> None:
@@ -134,23 +102,6 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
                 )
                 return describe_tasks_output["Tasks"][0]  # noqa
 
-                # if execution_status == ExecutionStatus.SUCCEEDED:
-                #     return describe_execution_output
-                # else:
-                #     raise FailureEventException(
-                #         FailureEvent(
-                #             error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
-                #             event_type=HistoryEventType.TaskFailed,
-                #             event_details=EventDetails(
-                #                 taskFailedEventDetails=TaskFailedEventDetails(
-                #                     resource=self._get_sfn_resource(),
-                #                     resourceType=self._get_sfn_resource_type(),
-                #                     error=StatesErrorNameType.StatesTaskFailed.to_name(),
-                #                     cause=to_json_str(describe_execution_output),
-                #                 )
-                #             ),
-                #         )
-                #     )
             return None
 
         termination_output: Optional[dict] = None
