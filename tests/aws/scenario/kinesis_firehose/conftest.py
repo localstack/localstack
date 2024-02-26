@@ -36,7 +36,7 @@ def get_all_expected_messages_from_s3(
             message = json.loads(json_array_string)
             LOG.debug(f"Received messages: {message}")
             messages.extend(message)
-        if not expected_message_count and len(messages) != expected_message_count:
+        if expected_message_count is not None and len(messages) != expected_message_count:
             raise Exception(f"Failed to receive all sent messages: {messages}")
         else:
             return messages
