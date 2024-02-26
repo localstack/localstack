@@ -77,6 +77,9 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
     "last_validated_date": "2023-11-20T15:46:48+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_invoke": {
+    "last_validated_date": "2024-02-26T17:04:08+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
     "last_validated_date": "2023-11-20T15:46:59+00:00"
   },

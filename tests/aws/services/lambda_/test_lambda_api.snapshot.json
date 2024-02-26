@@ -13763,5 +13763,20 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_invoke": {
+    "recorded-date": "26-02-2024, 17:04:08",
+    "recorded-content": {
+      "invoke_function_name_pattern_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'arn:aws:lambda:<region>:123400000000@function:myfn' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
