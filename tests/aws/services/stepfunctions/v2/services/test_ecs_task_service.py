@@ -13,7 +13,7 @@ from tests.aws.services.stepfunctions.utils import launch_and_record_execution
 
 
 # TODO: figure out a better way, maybe via marker? e.g. @markers.localstack.ext
-@pytest.mark.skipif(condition=not is_license_activated())
+@pytest.mark.skipif(condition=not is_license_activated(), reason="integration test with pro")
 class TestTaskServiceECS:
     STACK_NAME = "StepFunctionsEcsTaskStack"
 
