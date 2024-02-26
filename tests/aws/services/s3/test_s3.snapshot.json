@@ -11150,5 +11150,65 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_wrong_content_type": {
+    "recorded-date": "23-02-2024, 23:47:44",
+    "recorded-content": {
+      "invalid-content-type-error": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "Bucket POST must be of the enclosure-type multipart/form-data",
+          "HostId": "<host-id:1>",
+          "Message": "At least one of the pre-conditions you specified did not hold",
+          "RequestId": "<request-id:1>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_file_as_string": {
+    "recorded-date": "24-02-2024, 01:01:59",
+    "recorded-content": {
+      "head-object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 23,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"518feee9a33977e5047cda470999729a\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-objects": {
+        "Contents": [
+          {
+            "ETag": "\"31ac3a102af06a3d79f0172d01158b49\"",
+            "Key": "file-as-field-${filename}",
+            "LastModified": "datetime",
+            "Size": 44,
+            "StorageClass": "STANDARD"
+          },
+          {
+            "ETag": "\"518feee9a33977e5047cda470999729a\"",
+            "Key": "test-presigned-post-file-as-field",
+            "LastModified": "datetime",
+            "Size": 23,
+            "StorageClass": "STANDARD"
+          }
+        ],
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 2,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

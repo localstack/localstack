@@ -10333,6 +10333,114 @@ class TestS3PresignedPost:
         assert response.status_code == 400
         snapshot.match("invalid-storage-error", xmltodict.parse(response.content))
 
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..HostId"],  # FIXME: in CI, it fails sporadically and the form is empty
+    )
+    def test_post_object_with_wrong_content_type(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("HostId"),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        object_key = "test-presigned-post-key-wrong-content-type"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+            ],
+        )
+        # PostObject
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "test-body-wrong-content-type"},
+            headers={"Content-Type": "text/html"},
+            verify=False,
+        )
+
+        assert response.status_code == 412
+        snapshot.match("invalid-content-type-error", xmltodict.parse(response.content))
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ContentLength",
+            "$..ETag",
+            "$..HostId",
+        ],  # FIXME: in CI, it fails sporadically and the form is empty
+    )
+    def test_post_object_with_file_as_string(self, s3_bucket, aws_client, snapshot):
+        # this is a test for https://github.com/localstack/localstack/issues/10309
+        # You can send requests with node.js with a different format than what we can with Python
+        # (the actual file would just be a regular `file` key of the form with content)
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("HostId"),
+                snapshot.transform.key_value("RequestId"),
+                snapshot.transform.key_value("Name"),
+            ]
+        )
+        object_key = "test-presigned-post-file-as-field"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+            ],
+        )
+
+        # we need to define a proper format for `files` so that we don't add the filename= field to the form
+        # see https://github.com/psf/requests/issues/1081
+
+        # PostObject
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={
+                "file": (None, "test-body-file-as-field"),
+            },
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_object)
+
+        object_key = "file-as-field-${filename}"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+            ],
+        )
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={
+                "file": (None, "test-body-file-as-field-filename-replacement"),
+            },
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects", response)
+
 
 def _s3_client_pre_signed_client(conf: Config, endpoint_url: str = None):
     if is_aws_cloud():
