@@ -45,10 +45,12 @@ function set_defaults() {
     fi
 
     # determine major/minor/patch versions
-    IMAGE_TAG?=$(cat $PYTHON_CODE_DIR/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
-    MAJOR_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f1)
-    MINOR_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f2)
-    PATCH_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f3)
+    if [ -z "$IMAGE_TAG" ]; then
+      IMAGE_TAG=$(cat $PYTHON_CODE_DIR/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
+    fi
+    if [ -z "$MAJOR_VERSION" ]; then MAJOR_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f1); fi
+    if [ -z "$MINOR_VERSION" ]; then MINOR_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f2); fi
+    if [ -z "$PATCH_VERSION" ]; then PATCH_VERSION=$(echo ${IMAGE_TAG} | cut -d '.' -f3); fi
 
     if [ -z "$DOCKERFILE" ]; then DOCKERFILE=Dockerfile; fi
     if [ -z "$SOURCE_IMAGE_NAME" ]; then SOURCE_IMAGE_NAME=$IMAGE_NAME; fi
