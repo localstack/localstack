@@ -26,6 +26,18 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_with_too_large_batch": {
     "last_validated_date": "2023-11-14T10:59:02+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs]": {
+    "last_validated_date": "2024-02-26T18:54:48+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs_json]": {
+    "last_validated_date": "2024-02-26T18:54:41+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs]": {
+    "last_validated_date": "2024-02-26T19:05:32+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs_json]": {
+    "last_validated_date": "2024-02-26T19:05:27+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[False]": {
     "last_validated_date": "2023-11-14T10:59:33+00:00"
   },
