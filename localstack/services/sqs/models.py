@@ -664,7 +664,7 @@ class SqsQueue:
                 if value is not None:
                     result[attr] = value
             elif value == "False" or value == "True":
-                result[attr] = str(value).lower()
+                result[attr] = value.lower()
             elif value is not None:
                 result[attr] = value
         return result
