@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements-basic.txt --strip-extras pyproject.toml
 #
-cachetools==5.3.2
+cachetools==5.3.3
     # via localstack-core (pyproject.toml)
 certifi==2024.2.2
     # via requests
@@ -14,7 +14,7 @@ charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via localstack-core (pyproject.toml)
-cryptography==42.0.3
+cryptography==42.0.5
     # via localstack-core (pyproject.toml)
 dill==0.3.6
     # via localstack-core (pyproject.toml)
@@ -48,7 +48,7 @@ rich==13.7.0
     # via localstack-core (pyproject.toml)
 semver==3.0.2
     # via localstack-core (pyproject.toml)
-stevedore==5.1.0
+stevedore==5.2.0
     # via
     #   localstack-core (pyproject.toml)
     #   plux
