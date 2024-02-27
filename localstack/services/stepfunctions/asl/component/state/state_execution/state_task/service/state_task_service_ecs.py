@@ -105,6 +105,7 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
 
         termination_output: Optional[dict] = None
         while env.is_running() and termination_output is None:
+            self._throttle_sync_iteration()
             termination_output: Optional[dict] = _has_terminated()
 
         env.stack.append(termination_output)
