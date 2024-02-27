@@ -18,3 +18,9 @@ Resources:
 Outputs:
   ClusterRef:
     Value: !Ref Cluster
+  ClusterAttEndpointPort:
+    Value: !GetAtt Cluster.Endpoint.Port
+  ClusterAttEndpointAddress:
+    Value: !GetAtt Cluster.Endpoint.Address
+  ClusterAttDeferMaintenanceIdentifier:
+    Value: !GetAtt Cluster.DeferMaintenanceIdentifier
