@@ -216,5 +216,80 @@
         "Type": "AMAZON_ISSUED"
       }
     }
+  },
+  "tests/aws/services/acm/test_acm.py::TestACM::test_import_certificate": {
+    "recorded-date": "22-02-2024, 17:41:15",
+    "recorded-content": {
+      "import-certificate-response": {
+        "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-certificate-response": {
+        "Certificate": {
+          "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+          "CreatedAt": "datetime",
+          "DomainName": "localhost",
+          "DomainValidationOptions": [
+            {
+              "DomainName": "localhost"
+            },
+            {
+              "DomainName": "localhost.localstack.cloud"
+            },
+            {
+              "DomainName": "localhost.localstack.cloudIP:127.0.0.1"
+            },
+            {
+              "DomainName": "test.localhost.atlassian.io"
+            }
+          ],
+          "ExtendedKeyUsages": [
+            {
+              "Name": "TLS_WEB_SERVER_AUTHENTICATION",
+              "OID": "1.3.6.1.5.5.7.3.1"
+            }
+          ],
+          "ImportedAt": "datetime",
+          "InUseBy": [],
+          "Issuer": "LocalStack Org",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [
+            {
+              "Name": "DIGITAL_SIGNATURE"
+            },
+            {
+              "Name": "NON_REPUDIATION"
+            },
+            {
+              "Name": "KEY_ENCIPHERMENT"
+            }
+          ],
+          "NotAfter": "datetime",
+          "NotBefore": "datetime",
+          "Options": {
+            "CertificateTransparencyLoggingPreference": "DISABLED"
+          },
+          "RenewalEligibility": "INELIGIBLE",
+          "Serial": "03:e9",
+          "SignatureAlgorithm": "SHA256WITHRSA",
+          "Status": "ISSUED",
+          "Subject": "C=AU,ST=Some-State,L=Some-Locality,O=LocalStack Org,OU=Testing,CN=localhost",
+          "SubjectAlternativeNames": [
+            "localhost",
+            "localhost.localstack.cloud",
+            "localhost.localstack.cloudIP:127.0.0.1",
+            "test.localhost.atlassian.io"
+          ],
+          "Type": "IMPORTED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
