@@ -82,7 +82,6 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
     ) -> None:
-        ...
         ecs_client = boto_client_for(
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,

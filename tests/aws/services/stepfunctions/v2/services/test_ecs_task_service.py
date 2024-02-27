@@ -8,12 +8,50 @@ import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.testing.pytest import markers
-from localstack.utils.analytics.metadata import is_license_activated
 from tests.aws.services.stepfunctions.utils import launch_and_record_execution
+
+_ECS_SNAPSHOT_SKIP_PATHS: [list[str]] = [
+    "$..Attachments..Details",
+    "$..Attachments..Id",
+    "$..Attachments..Status",
+    "$..Attachments..Type",
+    "$..AvailabilityZone",
+    "$..ClusterArn",
+    "$..Connectivity",
+    "$..ConnectivityAt",
+    "$..Cpu",
+    "$..DesiredStatus",
+    "$..ExecutionStoppedAt",
+    "$..GpuIds",
+    "$..Group",
+    "$..HealthStatus",
+    "$..ImageDigest",
+    "$..InferenceAccelerators",
+    "$..LastStatus",
+    "$..ManagedAgents",
+    "$..Memory",
+    "$..NetworkInterfaces",
+    "$..Overrides.ContainerOverrides",
+    "$..Overrides.InferenceAcceleratorOverrides",
+    "$..PlatformFamily",
+    "$..PullStartedAt",
+    "$..PullStoppedAt",
+    "$..RuntimeId",
+    "$..SdkHttpMetadata",
+    "$..SdkResponseMetadata",
+    "$..StartedAt",
+    "$..StopCode",
+    "$..StoppedAt",
+    "$..StoppedReason",
+    "$..StoppingAt",
+    "$..TaskDefinitionArn",
+    "$..Version",
+    "$..parameters.Cluster",
+]
 
 
 # TODO: figure out a better way, maybe via marker? e.g. @markers.localstack.ext
-@pytest.mark.skipif(condition=not is_license_activated(), reason="integration test with pro")
+# @pytest.mark.skipif(condition=not is_license_activated(), reason="integration test with pro")
 class TestTaskServiceECS:
     STACK_NAME = "StepFunctionsEcsTaskStack"
 
@@ -206,47 +244,7 @@ class TestTaskServiceECS:
             yield prov
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attachments..Details",
-            "$..Attachments..Id",
-            "$..Attachments..Status",
-            "$..Attachments..Type",
-            "$..AvailabilityZone",
-            "$..ClusterArn",
-            "$..Connectivity",
-            "$..ConnectivityAt",
-            "$..Cpu",
-            "$..DesiredStatus",
-            "$..ExecutionStoppedAt",
-            "$..GpuIds",
-            "$..Group",
-            "$..HealthStatus",
-            "$..ImageDigest",
-            "$..InferenceAccelerators",
-            "$..LastStatus",
-            "$..ManagedAgents",
-            "$..Memory",
-            "$..NetworkInterfaces",
-            "$..Overrides.ContainerOverrides",
-            "$..Overrides.InferenceAcceleratorOverrides",
-            "$..PlatformFamily",
-            "$..PullStartedAt",
-            "$..PullStoppedAt",
-            "$..RuntimeId",
-            "$..SdkHttpMetadata",
-            "$..SdkResponseMetadata",
-            "$..StartedAt",
-            "$..StartedBy",
-            "$..StopCode",
-            "$..StoppedAt",
-            "$..StoppedReason",
-            "$..StoppingAt",
-            "$..TaskDefinitionArn",
-            "$..Version",
-            "$..parameters.Cluster",
-        ]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=[*_ECS_SNAPSHOT_SKIP_PATHS, "$..StartedBy"])
     def test_run_task(self, aws_client, infrastructure_test_run_task, sfn_ecs_snapshot):
         stack_outputs = infrastructure_test_run_task.get_stack_outputs(stack_name=self.STACK_NAME)
         state_machine_arn = stack_outputs["StateMachineArn"]
@@ -281,47 +279,7 @@ class TestTaskServiceECS:
         )
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attachments..Details",
-            "$..Attachments..Id",
-            "$..Attachments..Status",
-            "$..Attachments..Type",
-            "$..AvailabilityZone",
-            "$..ClusterArn",
-            "$..Connectivity",
-            "$..ConnectivityAt",
-            "$..Cpu",
-            "$..DesiredStatus",
-            "$..ExecutionStoppedAt",
-            "$..GpuIds",
-            "$..Group",
-            "$..HealthStatus",
-            "$..ImageDigest",
-            "$..InferenceAccelerators",
-            "$..LastStatus",
-            "$..ManagedAgents",
-            "$..Memory",
-            "$..NetworkInterfaces",
-            "$..Overrides.ContainerOverrides",
-            "$..Overrides.InferenceAcceleratorOverrides",
-            "$..PlatformFamily",
-            "$..PullStartedAt",
-            "$..PullStoppedAt",
-            "$..RuntimeId",
-            "$..SdkHttpMetadata",
-            "$..SdkResponseMetadata",
-            "$..StartedAt",
-            "$..StartedBy",
-            "$..StopCode",
-            "$..StoppedAt",
-            "$..StoppedReason",
-            "$..StoppingAt",
-            "$..TaskDefinitionArn",
-            "$..Version",
-            "$..parameters.Cluster",
-        ]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=_ECS_SNAPSHOT_SKIP_PATHS)
     @pytest.mark.skip(reason="ECS Provider doesn't raise failure on invalid image.")
     def test_run_task_raise_failure(
         self, aws_client, infrastructure_test_run_task_raise_failure, sfn_ecs_snapshot
@@ -361,46 +319,7 @@ class TestTaskServiceECS:
         )
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attachments..Details",
-            "$..Attachments..Id",
-            "$..Attachments..Status",
-            "$..Attachments..Type",
-            "$..AvailabilityZone",
-            "$..ClusterArn",
-            "$..Connectivity",
-            "$..ConnectivityAt",
-            "$..Cpu",
-            "$..DesiredStatus",
-            "$..ExecutionStoppedAt",
-            "$..GpuIds",
-            "$..Group",
-            "$..HealthStatus",
-            "$..ImageDigest",
-            "$..InferenceAccelerators",
-            "$..LastStatus",
-            "$..ManagedAgents",
-            "$..Memory",
-            "$..NetworkInterfaces",
-            "$..Overrides.ContainerOverrides",
-            "$..Overrides.InferenceAcceleratorOverrides",
-            "$..PlatformFamily",
-            "$..PullStartedAt",
-            "$..PullStoppedAt",
-            "$..RuntimeId",
-            "$..SdkHttpMetadata",
-            "$..SdkResponseMetadata",
-            "$..StartedAt",
-            "$..StopCode",
-            "$..StoppedAt",
-            "$..StoppedReason",
-            "$..StoppingAt",
-            "$..TaskDefinitionArn",
-            "$..Version",
-            "$..parameters.Cluster",
-        ]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=_ECS_SNAPSHOT_SKIP_PATHS)
     def test_run_task_sync(self, aws_client, infrastructure_test_run_task_sync, sfn_ecs_snapshot):
         stack_outputs = infrastructure_test_run_task_sync.get_stack_outputs(
             stack_name=self.STACK_NAME
@@ -437,46 +356,7 @@ class TestTaskServiceECS:
         )
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attachments..Details",
-            "$..Attachments..Id",
-            "$..Attachments..Status",
-            "$..Attachments..Type",
-            "$..AvailabilityZone",
-            "$..ClusterArn",
-            "$..Connectivity",
-            "$..ConnectivityAt",
-            "$..Cpu",
-            "$..DesiredStatus",
-            "$..ExecutionStoppedAt",
-            "$..GpuIds",
-            "$..Group",
-            "$..HealthStatus",
-            "$..ImageDigest",
-            "$..InferenceAccelerators",
-            "$..LastStatus",
-            "$..ManagedAgents",
-            "$..Memory",
-            "$..NetworkInterfaces",
-            "$..Overrides.ContainerOverrides",
-            "$..Overrides.InferenceAcceleratorOverrides",
-            "$..PlatformFamily",
-            "$..PullStartedAt",
-            "$..PullStoppedAt",
-            "$..RuntimeId",
-            "$..SdkHttpMetadata",
-            "$..SdkResponseMetadata",
-            "$..StartedAt",
-            "$..StopCode",
-            "$..StoppedAt",
-            "$..StoppedReason",
-            "$..StoppingAt",
-            "$..TaskDefinitionArn",
-            "$..Version",
-            "$..parameters.Cluster",
-        ]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=_ECS_SNAPSHOT_SKIP_PATHS)
     @pytest.mark.skip(reason="ECS Provider doesn't raise failure on invalid image.")
     def test_run_task_sync_raise_failure(
         self, aws_client, infrastructure_test_run_task_sync_raise_failure, sfn_ecs_snapshot
