@@ -1885,10 +1885,10 @@ def cleanups():
 
 @pytest.fixture(scope="session")
 def account_id(aws_client):
-    if is_aws_cloud() or is_api_enabled("sts"):
-        return aws_client.sts.get_caller_identity()["Account"]
-    else:
-        return TEST_AWS_ACCOUNT_ID
+    # if is_aws_cloud() or is_api_enabled("sts"):
+    #     return aws_client.sts.get_caller_identity()["Account"]
+    # else:
+    return TEST_AWS_ACCOUNT_ID
 
 
 @pytest.fixture(scope="session")

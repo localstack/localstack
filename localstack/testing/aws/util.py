@@ -186,8 +186,8 @@ def base_aws_session() -> boto3.Session:
     # Otherwise, when running against LS, use primary test credentials to start with
     # This set here in the session so that both `aws_client` and `aws_client_factory` can work without explicit creds.
     session = boto3.Session(
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id="Jf1PNeXHwKQWTKYV2sl2",
+        aws_secret_access_key="cE3rOhVAMrgeCMf90zI9HcjfClwPlh4LZvqGeHqU",
     )
     # make sure we consider our custom data paths for legacy specs (like SQS query protocol)
     session._loader.search_paths.append(LOCALSTACK_BUILTIN_DATA_PATH)
@@ -207,7 +207,9 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
         return ExternalAwsClientFactory(session=session, config=config)
     else:
         if not config:
-            config = botocore.config.Config()
+            config = botocore.config.Config(
+                signature_version="s3v4",
+            )
 
         # Prevent this fixture from using the region configured in system config
         config = config.merge(botocore.config.Config(region_name=TEST_AWS_REGION_NAME))
