@@ -49,7 +49,13 @@ def convert_pascalcase_to_lower_camelcase(item: str) -> str:
 
 
 def keys_pascalcase_to_lower_camelcase(model: dict) -> dict:
-    return {convert_pascalcase_to_lower_camelcase(k): v for k, v in model.items()}
+    # TODO: might want to support lists here as well in the future
+    return {
+        convert_pascalcase_to_lower_camelcase(k): (
+            keys_pascalcase_to_lower_camelcase(v) if isinstance(v, dict) else v
+        )
+        for k, v in model.items()
+    }
 
 
 def transform_list_to_dict(param, key_attr_name="Key", value_attr_name="Value"):
