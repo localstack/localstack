@@ -98,15 +98,7 @@ class KinesisStreamConsumerProvider(ResourceProvider[KinesisStreamConsumerProper
 
 
         """
-        model = request.desired_state
-        kinesis = request.aws_client_factory.kinesis
-        kinesis.deregister_stream_consumer(ConsumerARN=model["ConsumerARN"])
-
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        raise NotImplementedError
 
     def delete(
         self,
@@ -117,7 +109,15 @@ class KinesisStreamConsumerProvider(ResourceProvider[KinesisStreamConsumerProper
 
 
         """
-        raise NotImplementedError
+        model = request.desired_state
+        kinesis = request.aws_client_factory.kinesis
+        kinesis.deregister_stream_consumer(ConsumerARN=model["ConsumerARN"])
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def update(
         self,

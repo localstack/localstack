@@ -91,7 +91,6 @@ class ApiGatewayUsagePlanKeyProvider(ResourceProvider[ApiGatewayUsagePlanKeyProp
         IAM permissions required:
           - apigateway:DELETE
         """
-        raise NotImplementedError
         model = request.desired_state
         apigw = request.aws_client_factory.apigateway
 
