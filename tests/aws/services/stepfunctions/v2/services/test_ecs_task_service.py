@@ -8,6 +8,7 @@ import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.testing.pytest import markers
+from localstack.utils.analytics.metadata import is_license_activated
 from tests.aws.services.stepfunctions.utils import launch_and_record_execution
 
 _ECS_SNAPSHOT_SKIP_PATHS: [list[str]] = [
@@ -51,7 +52,7 @@ _ECS_SNAPSHOT_SKIP_PATHS: [list[str]] = [
 
 
 # TODO: figure out a better way, maybe via marker? e.g. @markers.localstack.ext
-# @pytest.mark.skipif(condition=not is_license_activated(), reason="integration test with pro")
+@pytest.mark.skipif(condition=not is_license_activated(), reason="integration test with pro")
 class TestTaskServiceECS:
     STACK_NAME = "StepFunctionsEcsTaskStack"
 
