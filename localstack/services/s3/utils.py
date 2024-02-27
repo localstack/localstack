@@ -116,6 +116,12 @@ def extract_bucket_key_version_id_from_copy_source(
     :param copy_source: the S3 CopySource to parse
     :return: parsed BucketName, ObjectKey and optionally VersionId
     """
+    if "/" not in copy_source:
+        raise InvalidArgument(
+            "Invalid copy source object key",
+            ArgumentName="x-amz-copy-source",
+            ArgumentValue="x-amz-copy-source",
+        )
     copy_source_parsed = urlparser.urlparse(copy_source)
     # we need to manually replace `+` character with a space character before URL decoding, because different languages
     # don't encode their URL the same way (%20 vs +), and Python doesn't unquote + into a space char

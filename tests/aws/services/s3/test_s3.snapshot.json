@@ -11210,5 +11210,22 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_wrong_format": {
+    "recorded-date": "27-02-2024, 11:11:22",
+    "recorded-content": {
+      "copy-object-wrong-copy-source": {
+        "Error": {
+          "ArgumentName": "x-amz-copy-source",
+          "ArgumentValue": "x-amz-copy-source",
+          "Code": "InvalidArgument",
+          "Message": "Invalid copy source object key"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
