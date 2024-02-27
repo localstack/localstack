@@ -778,7 +778,41 @@ class TestDeployments:
         snapshot.match("delete-deployment-2-error", ctx.value.response)
 
 
-class TestProxyRouting:
+class TestApigatewayRouting:
+    def _create_mock_integration_with_200_response_template(
+        self, aws_client, api_id: str, resource_id: str, http_method: str, response_template: dict
+    ):
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod=http_method,
+            authorizationType="NONE",
+        )
+
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod=http_method,
+            statusCode="200",
+        )
+
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod=http_method,
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod=http_method,
+            statusCode="200",
+            selectionPattern="",
+            responseTemplates={"application/json": json.dumps(response_template)},
+        )
+
     @markers.aws.validated
     def test_proxy_routing_with_hardcoded_resource_sibling(
         self,
@@ -788,48 +822,14 @@ class TestProxyRouting:
     ):
         api_id, _, root_id = create_rest_apigw(name="test proxy routing")
 
-        def _create_mock_integration_with_200_response_template(
-            resource_id: str, http_method: str, response_template: dict
-        ):
-            aws_client.apigateway.put_method(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=http_method,
-                authorizationType="NONE",
-            )
-
-            aws_client.apigateway.put_method_response(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=http_method,
-                statusCode="200",
-            )
-
-            aws_client.apigateway.put_integration(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=http_method,
-                type="MOCK",
-                requestTemplates={"application/json": '{"statusCode": 200}'},
-            )
-
-            aws_client.apigateway.put_integration_response(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=http_method,
-                statusCode="200",
-                selectionPattern="",
-                responseTemplates={"application/json": json.dumps(response_template)},
-            )
-
         resource = aws_client.apigateway.create_resource(
             restApiId=api_id, parentId=root_id, pathPart="test"
         )
         hardcoded_resource_id = resource["id"]
 
         response_template_post = {"statusCode": 200, "message": "POST request"}
-        _create_mock_integration_with_200_response_template(
-            hardcoded_resource_id, "POST", response_template_post
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, hardcoded_resource_id, "POST", response_template_post
         )
 
         resource = aws_client.apigateway.create_resource(
@@ -838,8 +838,8 @@ class TestProxyRouting:
         any_resource_id = resource["id"]
 
         response_template_any = {"statusCode": 200, "message": "ANY request"}
-        _create_mock_integration_with_200_response_template(
-            any_resource_id, "ANY", response_template_any
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, any_resource_id, "ANY", response_template_any
         )
 
         resource = aws_client.apigateway.create_resource(
@@ -847,8 +847,8 @@ class TestProxyRouting:
         )
         proxy_resource_id = resource["id"]
         response_template_options = {"statusCode": 200, "message": "OPTIONS request"}
-        _create_mock_integration_with_200_response_template(
-            proxy_resource_id, "OPTIONS", response_template_options
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, proxy_resource_id, "OPTIONS", response_template_options
         )
 
         stage_name = "dev"
@@ -895,4 +895,77 @@ class TestProxyRouting:
             req_url=any_url,
             http_method="GET",
             expected_type="ANY",
+        )
+
+    @markers.aws.validated
+    def test_routing_with_hardcoded_resource_sibling_order(
+        self,
+        aws_client,
+        create_rest_apigw,
+        apigw_redeploy_api,
+    ):
+        api_id, _, root_id = create_rest_apigw(name="test parameter routing")
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="part1"
+        )
+        hardcoded_resource_id = resource["id"]
+
+        response_template_get = {"statusCode": 200, "message": "part1"}
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, hardcoded_resource_id, "GET", response_template_get
+        )
+
+        # define the proxy before so that it would come up as the first resource iterated over
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="{param+}"
+        )
+        proxy_resource_id = resource["id"]
+        response_template_get = {"statusCode": 200, "message": "proxy"}
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, proxy_resource_id, "GET", response_template_get
+        )
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=hardcoded_resource_id, pathPart="hardcoded-value"
+        )
+        any_resource_id = resource["id"]
+
+        response_template_get = {"statusCode": 200, "message": "hardcoded-value"}
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, any_resource_id, "GET", response_template_get
+        )
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        def _invoke_api(path: str, expected_response: str):
+            url = api_invoke_url(api_id=api_id, stage=stage_name, path=path)
+            _response = requests.get(url)
+            assert _response.ok
+            assert _response.json()["message"] == expected_response
+
+        retries = 10 if is_aws_cloud() else 3
+        sleep = 3 if is_aws_cloud() else 1
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            path="/part1",
+            expected_response="part1",
+        )
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            path="/part1/hardcoded-value",
+            expected_response="hardcoded-value",
+        )
+
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            path="/part1/random-value",
+            expected_response="proxy",
         )
