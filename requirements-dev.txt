@@ -14,7 +14,7 @@ annotated-types==0.6.0
     # via pydantic
 antlr4-python3-runtime==4.13.1
     # via localstack-core (pyproject.toml)
-apispec==6.4.0
+apispec==6.5.0
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
     # via amazon-kclpy
@@ -32,7 +32,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.128.0
+aws-cdk-lib==2.130.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.85.0
     # via
@@ -42,7 +42,7 @@ aws-xray-sdk==2.12.1
     # via moto-ext
 awscli==1.32.49
     # via localstack-core (pyproject.toml)
-awscrt==0.20.3
+awscrt==0.20.4
     # via localstack-core (pyproject.toml)
 black==23.12.1
     # via localstack-core (pyproject.toml)
@@ -66,7 +66,7 @@ botocore==1.34.49
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-cachetools==5.3.2
+cachetools==5.3.3
     # via
     #   airspeed-ext
     #   localstack-core (pyproject.toml)
@@ -104,7 +104,7 @@ coveralls==3.3.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.3
+cryptography==42.0.5
     # via
     #   joserfc
     #   localstack-core (pyproject.toml)
@@ -162,7 +162,7 @@ identify==2.5.35
     # via pre-commit
 idna==3.6
     # via requests
-importlib-resources==6.1.1
+importlib-resources==6.1.2
     # via jsii
 iniconfig==2.0.0
     # via pytest
@@ -312,13 +312,13 @@ pyasn1==0.5.1
     # via rsa
 pycparser==2.21
     # via cffi
-pydantic==2.6.1
+pydantic==2.6.2
     # via aws-sam-translator
-pydantic-core==2.16.2
+pydantic-core==2.16.3
     # via pydantic
 pygments==2.17.2
     # via rich
-pymongo==4.6.1
+pymongo==4.6.2
     # via localstack-core (pyproject.toml)
 pyopenssl==24.0.0
     # via localstack-core (pyproject.toml)
@@ -326,13 +326,13 @@ pypandoc==1.13
     # via localstack-core (pyproject.toml)
 pyparsing==3.1.1
     # via moto-ext
-pytest==8.0.1
+pytest==8.0.2
     # via
     #   localstack-core (pyproject.toml)
     #   pytest-rerunfailures
     #   pytest-split
     #   pytest-tinybird
-pytest-httpserver==1.0.9
+pytest-httpserver==1.0.10
     # via localstack-core (pyproject.toml)
 pytest-rerunfailures==13.0
     # via localstack-core (pyproject.toml)
@@ -417,7 +417,7 @@ six==1.16.0
     #   python-dateutil
     #   requests-aws4auth
     #   rfc3339-validator
-stevedore==5.1.0
+stevedore==5.2.0
     # via
     #   localstack-core (pyproject.toml)
     #   plux
@@ -433,7 +433,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-typing-extensions==4.9.0
+typing-extensions==4.10.0
     # via
     #   aws-sam-translator
     #   jsii
@@ -448,7 +448,7 @@ urllib3==2.0.7
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.25.0
+virtualenv==20.25.1
     # via pre-commit
 websocket-client==1.7.0
     # via
