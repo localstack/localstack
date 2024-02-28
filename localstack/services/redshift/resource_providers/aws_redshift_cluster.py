@@ -147,8 +147,9 @@ class RedshiftClusterProvider(ResourceProvider[RedshiftClusterProperties]):
             ][0]
             match cluster["ClusterStatus"]:
                 case "available":
-                    model["Endpoint"]["Address"] = cluster.get("Endpoint", {}).get("Address", "?")
-                    model["Endpoint"]["Port"] = str(cluster.get("Endpoint", {}).get("Port", 0))
+                    model.setdefault("Endpoint", {})
+                    model["Endpoint"]["Address"] = cluster["Endpoint"]["Address"]
+                    model["Endpoint"]["Port"] = str(cluster["Endpoint"]["Port"])
                     model["DeferMaintenanceIdentifier"] = "?"  # TODO: investigate
 
                     return ProgressEvent(
