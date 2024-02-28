@@ -29,7 +29,7 @@ commands:
             echo "export CI_JOB_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
             # workflow ID as the job name to associate the tests with workflows in TB
             echo "export CI_JOB_NAME=${CIRCLE_WORKFLOW_ID}" >> $BASH_ENV
-            echo "export CI_JOB_ID=${CIRCLE_WORKFLOW_JOB_ID}" >> $BASH_ENV
+            echo "export CI_JOB_ID=${CIRCLE_JOB}" >> $BASH_ENV
             source $BASH_ENV
 
 jobs:
@@ -605,6 +605,7 @@ workflows:
             - collect-not-implemented
             - unit-tests
       - send-stats:
+          when: always
           filters:
             branches:
               only: master
