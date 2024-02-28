@@ -504,6 +504,17 @@ jobs:
             root: /tmp/workspace
             paths:
                 - repo/stats/
+  waiter:
+    docker:
+      - image: circleci/node
+    steps:
+      - run: |
+          while [[ $(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job"| jq -r '.items[]|select(.name != "waiter" and .name != "push")|.status' | grep -c "running") -gt 0 ]]
+            do
+              sleep 5
+            done
+          curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job" --header "Circle-Token: $CCI_PROJECT_TOKEN"
+      - run: echo "All required jobs have now completed"
   send-stats:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -536,6 +547,9 @@ workflows:
   main:
     jobs:
       - save-start-time
+      - waiter:
+          requires:
+            - save-start-time
       - install:
           requires:
             - save-start-time
@@ -605,19 +619,11 @@ workflows:
             - collect-not-implemented
             - unit-tests
       - send-stats:
-          when: always
           filters:
             branches:
               only: master
           requires:
-            - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
-            - acceptance-tests
-            - docker-test-amd64
-            - docker-test-arm64
-            - collect-not-implemented
-            - unit-tests
+            - waiter
       - push:
           filters:
             branches:
