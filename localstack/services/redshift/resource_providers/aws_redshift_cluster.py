@@ -150,7 +150,8 @@ class RedshiftClusterProvider(ResourceProvider[RedshiftClusterProperties]):
                     model.setdefault("Endpoint", {})
                     model["Endpoint"]["Address"] = cluster["Endpoint"]["Address"]
                     model["Endpoint"]["Port"] = str(cluster["Endpoint"]["Port"])
-                    model["DeferMaintenanceIdentifier"] = "?"  # TODO: investigate
+                    # getting "Attribute 'DeferMaintenanceIdentifier' does not exist." on AWS
+                    # model["DeferMaintenanceIdentifier"] = "?"
 
                     return ProgressEvent(
                         status=OperationStatus.SUCCESS,
