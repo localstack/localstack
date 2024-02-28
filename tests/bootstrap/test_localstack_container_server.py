@@ -19,6 +19,10 @@ class TestLocalstackContainerServer:
 
             response = requests.get("http://localhost:4566/_localstack/health")
             assert response.ok, "expected health check to return OK: %s" % response.text
+        except Exception:
+            # get the container logs so we actually know what went wrong
+            print(server.container.get_logs())
+            raise
         finally:
             server.shutdown()
 
