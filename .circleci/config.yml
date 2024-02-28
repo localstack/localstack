@@ -547,19 +547,17 @@ jobs:
 workflows:
   main:
     jobs:
-      - save-start-time
+      - save-start-time:
+          filters:
+            branches:
+              only: master
       - waiter:
           requires:
             - save-start-time
       - send-stats:
-          filters:
-            branches:
-              only: master
           requires:
             - waiter
-      - install:
-          requires:
-            - save-start-time
+      - install
       - preflight:
           requires:
             - install

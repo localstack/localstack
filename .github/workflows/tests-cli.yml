@@ -89,8 +89,7 @@ jobs:
           python -m pytest tests/cli/
 
   push-to-tinybird:
-    # if: always() && github.ref == 'refs/heads/master'
-    if: always()
+    if: always() && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs: cli-tests
     steps:
@@ -100,4 +99,4 @@ jobs:
           workflow_id: "tests_cli"
           tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          tinybird_datasource: "ci_workflows_test"
+          tinybird_datasource: "ci_workflows"
