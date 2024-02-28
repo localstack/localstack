@@ -147,7 +147,7 @@ To start using LocalStack, check out our [documentation](https://docs.localstack
 - [LocalStack Integrations](https://docs.localstack.cloud/user-guide/integrations/)
 - [LocalStack Tools](https://docs.localstack.cloud/user-guide/tools/)
 - [Understanding LocalStack](https://docs.localstack.cloud/references/)
-- [Frequency Asked Questions](https://docs.localstack.cloud/getting-started/faq/)
+- [Frequently Asked Questions](https://docs.localstack.cloud/getting-started/faq/)
 
 To use LocalStack with a graphical user interface, you can use the following UI clients:
 
