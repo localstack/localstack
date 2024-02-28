@@ -337,7 +337,7 @@ jobs:
     needs: publish-pro-test-results
     steps:
       - name: Push to Tinybird
-        uses: localstack/tinybird-workflow-push@v3.0.0
+        uses: localstack/tinybird-workflow-push@v3
         with:
           workflow_id: "tests_pro_integration"
           tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}

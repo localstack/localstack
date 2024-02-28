@@ -94,7 +94,7 @@ jobs:
     needs: cli-tests
     steps:
       - name: Push to Tinybird
-        uses: localstack/tinybird-workflow-push@v3.0.0
+        uses: localstack/tinybird-workflow-push@v3
         with:
           workflow_id: "tests_cli"
           tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
