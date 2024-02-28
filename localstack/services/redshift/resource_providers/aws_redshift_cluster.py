@@ -139,7 +139,7 @@ class RedshiftClusterProvider(ResourceProvider[RedshiftClusterProperties]):
                 )
 
             result = redshift.create_cluster(**model)
-            model["Id"] = result["Cluster"]["ClusterIdentifier"]  # TODO: verify
+            model["Id"] = result["Cluster"]["ClusterIdentifier"]
 
         try:
             cluster = redshift.describe_clusters(ClusterIdentifier=model["ClusterIdentifier"])[
@@ -147,9 +147,9 @@ class RedshiftClusterProvider(ResourceProvider[RedshiftClusterProperties]):
             ][0]
             match cluster["ClusterStatus"]:
                 case "available":
-                    model["Endpoint"]["Port"] = str(cluster["Endpoint"]["Port"])
-                    model["Endpoint"]["Address"] = cluster["Endpoint"]["Address"]
-                    model["DeferMaintenanceIdentifier"] = "?"  # TODO: no idea
+                    model["Endpoint"]["Address"] = cluster.get("Endpoint", {}).get("Address", "?")
+                    model["Endpoint"]["Port"] = str(cluster.get("Endpoint", {}).get("Port", 0))
+                    model["DeferMaintenanceIdentifier"] = "?"  # TODO: investigate
 
                     return ProgressEvent(
                         status=OperationStatus.SUCCESS,
@@ -200,14 +200,34 @@ class RedshiftClusterProvider(ResourceProvider[RedshiftClusterProperties]):
         model = request.desired_state
         redshift = request.aws_client_factory.redshift
 
-        # TODO: async delete
+        if not request.custom_context.get(REPEATED_INVOCATION):
+            request.custom_context[REPEATED_INVOCATION] = True
+            redshift.delete_cluster(ClusterIdentifier=model["ClusterIdentifier"])
 
-        redshift.delete_cluster(ClusterIdentifier=model["ClusterIdentifier"])
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        try:
+            cluster = redshift.describe_clusters(ClusterIdentifier=model["ClusterIdentifier"])[
+                "Clusters"
+            ][0]
+            match cluster["ClusterStatus"]:
+                case "creating" | "modifying":
+                    return ProgressEvent(
+                        status=OperationStatus.FAILED,
+                        resource_model=model,
+                        custom_context=request.custom_context,
+                        message=f"Redshift cluster in unexpected status: {cluster['ClusterStatus']}",
+                    )
+                case _:
+                    return ProgressEvent(
+                        status=OperationStatus.IN_PROGRESS,
+                        resource_model=model,
+                        custom_context=request.custom_context,
+                    )
+        except redshift.exceptions.ClusterNotFoundFault:
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS,
+                resource_model={},
+                custom_context=request.custom_context,
+            )
 
     def update(
         self,
