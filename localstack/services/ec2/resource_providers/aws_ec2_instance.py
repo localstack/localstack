@@ -233,7 +233,7 @@ class EC2InstanceProvider(ResourceProvider[EC2InstanceProperties]):
             params["MinCount"] = 1
 
             if model.get("UserData"):
-                model["UserData"] = to_str(base64.b64decode(model["UserData"]))
+                params["UserData"] = to_str(base64.b64decode(model["UserData"]))
 
             response = ec2.run_instances(**params)
             model["Id"] = response["Instances"][0]["InstanceId"]
