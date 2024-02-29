@@ -321,7 +321,7 @@ class EC2InstanceProvider(ResourceProvider[EC2InstanceProperties]):
         instance = response["Reservations"][0]["Instances"][0]
         if instance["State"]["Name"] != "running":
             return ProgressEvent(
-                status=OperationStatus.desired_state,
+                status=OperationStatus.PENDING,
                 resource_model=desired_state,
                 custom_context=request.custom_context,
             )
