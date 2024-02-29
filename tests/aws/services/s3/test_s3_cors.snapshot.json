@@ -736,5 +736,26 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_options_match_partial_origin": {
+    "recorded-date": "29-02-2024, 23:37:44",
+    "recorded-content": {
+      "options_match_partial_origin": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET, PUT",
+          "Access-Control-Allow-Origin": "http://test.origin.com",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:1>",
+          "x-amz-request-id": "<x-amz-request-id:1>"
+        },
+        "StatusCode": 200
+      }
+    }
   }
 }
