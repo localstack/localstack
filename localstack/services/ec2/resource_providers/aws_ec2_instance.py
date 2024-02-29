@@ -303,4 +303,31 @@ class EC2InstanceProvider(ResourceProvider[EC2InstanceProperties]):
 
 
         """
-        raise NotImplementedError
+        desired_state = request.desired_state
+        ec2 = request.aws_client_factory.ec2
+
+        groups = desired_state.get("SecurityGroups", desired_state.get("SecurityGroupIds"))
+
+        kwargs = {}
+        if groups:
+            kwargs["Groups"] = groups
+        ec2.modify_instance_attribute(
+            InstanceId=desired_state["Id"],
+            InstanceType={"Value": desired_state["InstanceType"]},
+            **kwargs,
+        )
+
+        response = ec2.describe_instances(InstanceIds=[desired_state["Id"]])
+        instance = response["Reservations"][0]["Instances"][0]
+        if instance["State"]["Name"] != "running":
+            return ProgressEvent(
+                status=OperationStatus.desired_state,
+                resource_model=desired_state,
+                custom_context=request.custom_context,
+            )
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=desired_state,
+            custom_context=request.custom_context,
+        )
