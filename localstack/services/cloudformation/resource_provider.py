@@ -553,6 +553,8 @@ class ResourceProviderExecutor:
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
+        raise NoResourceProvider
+
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type: str, resource_type_schema: dict
     ) -> str:
