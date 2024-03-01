@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "0 0 * * *"
+    default: "* * * * *"
 
 executors:
   ubuntu-machine-amd64:
@@ -659,7 +659,7 @@ workflows:
   scheduled-workflow:
     triggers:
       - schedule:
-#          cron: << parameters.schedule-non-default-creds >>
+          cron: << parameters.schedule-non-default-creds >>
           filters:
             branches:
               only: master
