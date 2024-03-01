@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "1 12 * * *"
+    default: "35 13 * * *"
 
 executors:
   ubuntu-machine-amd64:
@@ -382,6 +382,9 @@ jobs:
             export AWS_REGIONS=("me-south-1" "me-central-1" "sa-east-1" "us-east-2" "us-west-1" "us-west-2" "eu-west-1" "eu-west-2" "eu-west-3" "ap-east-1" "ap-south-2" "ap-south-1" "ap-southeast-1" "ap-southeast-2" "ap-northeast-1" "ap-northeast-2" "ap-northeast-3" "sa-east-1" "af-south-1" "ca-central-1" "ca-west-1" "eu-central-1" "eu-south-1" "eu-south-2"	"eu-north-1" "eu-central-2" "il-central-1" )
             export TEST_AWS_REGION_NAME=${AWS_REGIONS[$RANDOM % ${#AWS_REGIONS[@]}]}
             echo "export TEST_AWS_REGION_NAME=$TEST_AWS_REGION_NAME" >> $BASH_ENV
+            echo "TEST_AWS_ACCOUNT_ID: $TEST_AWS_ACCOUNT_ID"
+            echo "TEST_AWS_ACCESS_KEY_ID: $TEST_AWS_ACCESS_KEY_ID"
+            echo "TEST_AWS_REGION_NAME: $TEST_AWS_REGION_NAME"
 
   report:
     executor: ubuntu-machine-amd64
@@ -745,6 +748,7 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
+            - generate-random-aws-credentials
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v2-provider
