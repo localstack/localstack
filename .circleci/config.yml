@@ -660,9 +660,9 @@ workflows:
     triggers:
       - schedule:
           cron: << pipeline.parameters.schedule-non-default-creds >>
-          filters:
-            branches:
-              only: master
+#          filters:
+#            branches:
+#              only: master
     jobs:
       - generate-random-aws-credentials
       - save-start-time
