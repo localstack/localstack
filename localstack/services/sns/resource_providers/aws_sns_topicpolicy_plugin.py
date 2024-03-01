@@ -1,8 +1,8 @@
 from typing import Optional, Type
 
-from localstack.services.cloudformation.resource_provider import ResourceProvider
 from localstack.services.cloudformation.resource_provider import (
     CloudFormationResourceProviderPlugin,
+    ResourceProvider,
 )
 
 
