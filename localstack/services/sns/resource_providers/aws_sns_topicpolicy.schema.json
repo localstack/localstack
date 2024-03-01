@@ -1,0 +1,61 @@
+{
+  "typeName": "AWS::SNS::TopicPolicy",
+  "description": "Schema for AWS::SNS::TopicPolicy",
+  "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-sns.git",
+  "additionalProperties": false,
+  "properties": {
+    "Id": {
+      "description": "The provider-assigned unique ID for this managed resource.",
+      "type": "string"
+    },
+    "PolicyDocument": {
+      "description": "A policy document that contains permissions to add to the specified SNS topics.",
+      "type": [
+        "object",
+        "string"
+      ]
+    },
+    "Topics": {
+      "description": "The Amazon Resource Names (ARN) of the topics to which you want to add the policy. You can use the [Ref](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-ref.html)` function to specify an [AWS::SNS::Topic](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sns-topic.html) resource.",
+      "type": "array",
+      "uniqueItems": false,
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "tagging": {
+    "taggable": false,
+    "tagOnCreate": false,
+    "tagUpdatable": false,
+    "cloudFormationSystemTags": false
+  },
+  "required": [
+    "PolicyDocument",
+    "Topics"
+  ],
+  "primaryIdentifier": [
+    "/properties/Id"
+  ],
+  "readOnlyProperties": [
+    "/properties/Id"
+  ],
+  "handlers": {
+    "create": {
+      "permissions": [
+        "sns:SetTopicAttributes"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "sns:SetTopicAttributes"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "sns:SetTopicAttributes"
+      ]
+    }
+  }
+}
