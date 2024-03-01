@@ -59,6 +59,7 @@ class CloudFormationMacroProvider(ResourceProvider[CloudFormationMacroProperties
         #  AWS::CloudFormation:: resources need special handling since they seem to require access to internal APIs
         store = get_cloudformation_store(request.account_id, request.region_name)
         store.macros[model["Name"]] = model
+        model["Id"] = model["Name"]
 
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
