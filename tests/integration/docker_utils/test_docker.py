@@ -1228,9 +1228,6 @@ class TestDockerClient:
         docker_client.restart_container(name)
         assert docker_client.is_container_running(name)
         docker_client.stop_container(name)
-        import time
-
-        time.sleep(5)
         assert not docker_client.is_container_running(name)
 
     @markers.skip_offline
