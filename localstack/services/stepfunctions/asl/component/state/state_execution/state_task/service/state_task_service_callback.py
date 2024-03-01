@@ -110,8 +110,8 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         )
 
     @staticmethod
-    def _throttle_sync_iteration():
-        time.sleep(0.5)
+    def _throttle_sync_iteration(seconds: float = 0.5):
+        time.sleep(seconds)
 
     def _is_condition(self):
         return self.resource.condition is not None
