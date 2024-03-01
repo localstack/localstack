@@ -85,6 +85,13 @@ jobs:
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
+        # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+        # (i.e. do not execute job for workflows coming from forks)
+        if: >-
+          (
+            github.event_name != 'pull_request' ||
+            github.event.pull_request.head.repo.full_name == github.repository
+          )
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -133,7 +140,13 @@ jobs:
       pull-requests: write
       contents: read
       issues: read
-    if: success() || failure()
+    # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+    # (i.e. do not execute job for workflows coming from forks)
+    if: >-
+      (success() || failure()) && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     steps:
       - name: Download AMD64 Results
         uses: actions/download-artifact@v4
