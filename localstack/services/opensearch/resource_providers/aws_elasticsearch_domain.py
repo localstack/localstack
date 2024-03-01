@@ -178,7 +178,7 @@ class ElasticsearchDomainProvider(ResourceProvider[ElasticsearchDomainProperties
         if domain["DomainStatus"]["Created"]:
             # set data
             model["Arn"] = domain["DomainStatus"]["ARN"]
-            model["Id"] = domain["DomainStatus"]["DomainId"]
+            model["Id"] = model["DomainName"]
             model["DomainArn"] = domain["DomainStatus"]["ARN"]
             model["DomainEndpoint"] = domain["DomainStatus"].get("Endpoint")
 
