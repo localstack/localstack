@@ -97,7 +97,6 @@ def delete_streams(account_id: str, region_name: str, table_arn: str) -> None:
         # we're basically asynchronously trying to delete the stream, or should we do this "synchronous" with the table deletion?
         def _delete_stream():
             try:
-                # TODO: this might fail when not in ACTIVE state yet, so we'd need to wait for it to be in active state before deleting..
                 kinesis_client = connect_to(
                     aws_access_key_id=account_id, region_name=region_name
                 ).kinesis
