@@ -64,7 +64,7 @@ class SNSTopicPolicyProvider(ResourceProvider[SNSTopicPolicyProperties]):
         )
 
         return ProgressEvent(
-            status=OperationStatus.IN_PROGRESS,
+            status=OperationStatus.SUCCESS,
             resource_model=model,
             custom_context=request.custom_context,
         )
