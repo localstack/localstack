@@ -1,0 +1,975 @@
+{
+  "Resources": {
+    "cluster611F8AFF": {
+      "Type": "AWS::ECS::Cluster"
+    },
+    "clusterVpc91107A71": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsHostnames": true,
+        "EnableDnsSupport": true,
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc"
+          }
+        ]
+      }
+    },
+    "clusterVpcPublicSubnet1Subnet3948EFCA": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.0.0/18",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PublicSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "clusterVpcPublicSubnet1RouteTable85A91E8C": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PublicSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "clusterVpcPublicSubnet1RouteTableAssociationABF3C3B6": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "clusterVpcPublicSubnet1RouteTable85A91E8C"
+        },
+        "SubnetId": {
+          "Ref": "clusterVpcPublicSubnet1Subnet3948EFCA"
+        }
+      }
+    },
+    "clusterVpcPublicSubnet1DefaultRouteF41D2737": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "clusterVpcIGW64BABB17"
+        },
+        "RouteTableId": {
+          "Ref": "clusterVpcPublicSubnet1RouteTable85A91E8C"
+        }
+      },
+      "DependsOn": [
+        "clusterVpcVPCGW9E9B1FA8"
+      ]
+    },
+    "clusterVpcPublicSubnet1EIP0E24289A": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PublicSubnet1"
+          }
+        ]
+      }
+    },
+    "clusterVpcPublicSubnet1NATGateway278CA43C": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "clusterVpcPublicSubnet1EIP0E24289A",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "clusterVpcPublicSubnet1Subnet3948EFCA"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PublicSubnet1"
+          }
+        ]
+      },
+      "DependsOn": [
+        "clusterVpcPublicSubnet1DefaultRouteF41D2737",
+        "clusterVpcPublicSubnet1RouteTableAssociationABF3C3B6"
+      ]
+    },
+    "clusterVpcPublicSubnet2SubnetEFB8E71C": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.64.0/18",
+        "MapPublicIpOnLaunch": true,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Public"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Public"
+          },
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PublicSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "clusterVpcPublicSubnet2RouteTable21948248": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PublicSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "clusterVpcPublicSubnet2RouteTableAssociation21B4DF05": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "clusterVpcPublicSubnet2RouteTable21948248"
+        },
+        "SubnetId": {
+          "Ref": "clusterVpcPublicSubnet2SubnetEFB8E71C"
+        }
+      }
+    },
+    "clusterVpcPublicSubnet2DefaultRouteC71B8373": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "clusterVpcIGW64BABB17"
+        },
+        "RouteTableId": {
+          "Ref": "clusterVpcPublicSubnet2RouteTable21948248"
+        }
+      },
+      "DependsOn": [
+        "clusterVpcVPCGW9E9B1FA8"
+      ]
+    },
+    "clusterVpcPublicSubnet2EIP6FF291E5": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PublicSubnet2"
+          }
+        ]
+      }
+    },
+    "clusterVpcPublicSubnet2NATGatewayD971ED50": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "clusterVpcPublicSubnet2EIP6FF291E5",
+            "AllocationId"
+          ]
+        },
+        "SubnetId": {
+          "Ref": "clusterVpcPublicSubnet2SubnetEFB8E71C"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PublicSubnet2"
+          }
+        ]
+      },
+      "DependsOn": [
+        "clusterVpcPublicSubnet2DefaultRouteC71B8373",
+        "clusterVpcPublicSubnet2RouteTableAssociation21B4DF05"
+      ]
+    },
+    "clusterVpcPrivateSubnet1Subnet4D445D11": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.128.0/18",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Private"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          },
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PrivateSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "clusterVpcPrivateSubnet1RouteTable6B7B6A77": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PrivateSubnet1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "clusterVpcPrivateSubnet1RouteTableAssociationDE66313E": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "clusterVpcPrivateSubnet1RouteTable6B7B6A77"
+        },
+        "SubnetId": {
+          "Ref": "clusterVpcPrivateSubnet1Subnet4D445D11"
+        }
+      }
+    },
+    "clusterVpcPrivateSubnet1DefaultRoute6A776454": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "clusterVpcPublicSubnet1NATGateway278CA43C"
+        },
+        "RouteTableId": {
+          "Ref": "clusterVpcPrivateSubnet1RouteTable6B7B6A77"
+        }
+      }
+    },
+    "clusterVpcPrivateSubnet2Subnet6DFF6572": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "CidrBlock": "10.0.192.0/18",
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "aws-cdk:subnet-name",
+            "Value": "Private"
+          },
+          {
+            "Key": "aws-cdk:subnet-type",
+            "Value": "Private"
+          },
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PrivateSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "clusterVpcPrivateSubnet2RouteTable0D967850": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc/PrivateSubnet2"
+          }
+        ],
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "clusterVpcPrivateSubnet2RouteTableAssociation0E224256": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "clusterVpcPrivateSubnet2RouteTable0D967850"
+        },
+        "SubnetId": {
+          "Ref": "clusterVpcPrivateSubnet2Subnet6DFF6572"
+        }
+      }
+    },
+    "clusterVpcPrivateSubnet2DefaultRouteF3B52CD2": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "clusterVpcPublicSubnet2NATGatewayD971ED50"
+        },
+        "RouteTableId": {
+          "Ref": "clusterVpcPrivateSubnet2RouteTable0D967850"
+        }
+      }
+    },
+    "clusterVpcIGW64BABB17": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "StepFunctionsEcsTaskStack/cluster/Vpc"
+          }
+        ]
+      }
+    },
+    "clusterVpcVPCGW9E9B1FA8": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": {
+          "Ref": "clusterVpcIGW64BABB17"
+        },
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "taskdefTaskRole1E652319": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "taskdef8C9C43DE": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "EntryPoint": [
+              "echo",
+              "hello"
+            ],
+            "Essential": true,
+            "Image": "busybox",
+            "Name": "maincontainer"
+          }
+        ],
+        "Cpu": "256",
+        "Family": "StepFunctionsEcsTaskStacktaskdefA6894239",
+        "Memory": "512",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "taskdefTaskRole1E652319",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "ecstaskSecurityGroup2F44C80F": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "StepFunctionsEcsTaskStack/ecstask/SecurityGroup",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "VpcId": {
+          "Ref": "clusterVpc91107A71"
+        }
+      }
+    },
+    "statemachineRole52044F93": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": {
+                  "Fn::FindInMap": [
+                    "ServiceprincipalMap",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "states"
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      }
+    },
+    "statemachineRoleDefaultPolicy9AE064E2": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "ecs:RunTask",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Fn::Select": [
+                          1,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          2,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          3,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          4,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          0,
+                          {
+                            "Fn::Split": [
+                              "/",
+                              {
+                                "Fn::Select": [
+                                  5,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "taskdef8C9C43DE"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "/",
+                      {
+                        "Fn::Select": [
+                          1,
+                          {
+                            "Fn::Split": [
+                              "/",
+                              {
+                                "Fn::Select": [
+                                  5,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "taskdef8C9C43DE"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Fn::Select": [
+                          1,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          2,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          3,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          4,
+                          {
+                            "Fn::Split": [
+                              ":",
+                              {
+                                "Ref": "taskdef8C9C43DE"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":",
+                      {
+                        "Fn::Select": [
+                          0,
+                          {
+                            "Fn::Split": [
+                              "/",
+                              {
+                                "Fn::Select": [
+                                  5,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "taskdef8C9C43DE"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "/",
+                      {
+                        "Fn::Select": [
+                          1,
+                          {
+                            "Fn::Split": [
+                              "/",
+                              {
+                                "Fn::Select": [
+                                  5,
+                                  {
+                                    "Fn::Split": [
+                                      ":",
+                                      {
+                                        "Ref": "taskdef8C9C43DE"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      ":*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Action": [
+                "ecs:StopTask",
+                "ecs:DescribeTasks"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            },
+            {
+              "Action": "iam:PassRole",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "taskdefTaskRole1E652319",
+                  "Arn"
+                ]
+              }
+            },
+            {
+              "Action": [
+                "events:PutTargets",
+                "events:PutRule",
+                "events:DescribeRule"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":events:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":rule/StepFunctionsGetEventsForECSTaskRule"
+                  ]
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "statemachineRoleDefaultPolicy9AE064E2",
+        "Roles": [
+          {
+            "Ref": "statemachineRole52044F93"
+          }
+        ]
+      }
+    },
+    "statemachineC5962F3E": {
+      "Type": "AWS::StepFunctions::StateMachine",
+      "Properties": {
+        "DefinitionString": {
+          "Fn::Join": [
+            "",
+            [
+              "{\"StartAt\":\"ecstask\",\"States\":{\"ecstask\":{\"End\":true,\"Type\":\"Task\",\"Resource\":\"arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":states:::ecs:runTask.sync\",\"Parameters\":{\"Cluster\":\"",
+              {
+                "Fn::GetAtt": [
+                  "cluster611F8AFF",
+                  "Arn"
+                ]
+              },
+              "\",\"TaskDefinition\":\"StepFunctionsEcsTaskStacktaskdefA6894239\",\"NetworkConfiguration\":{\"AwsvpcConfiguration\":{\"Subnets\":[\"",
+              {
+                "Ref": "clusterVpcPrivateSubnet1Subnet4D445D11"
+              },
+              "\",\"",
+              {
+                "Ref": "clusterVpcPrivateSubnet2Subnet6DFF6572"
+              },
+              "\"],\"SecurityGroups\":[\"",
+              {
+                "Fn::GetAtt": [
+                  "ecstaskSecurityGroup2F44C80F",
+                  "GroupId"
+                ]
+              },
+              "\"]}},\"LaunchType\":\"FARGATE\",\"PlatformVersion\":\"1.4.0\"}}}}"
+            ]
+          ]
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "statemachineRole52044F93",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "statemachineRoleDefaultPolicy9AE064E2",
+        "statemachineRole52044F93"
+      ],
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    }
+  },
+  "Outputs": {
+    "TaskDefinitionArn": {
+      "Value": {
+        "Ref": "taskdef8C9C43DE"
+      }
+    },
+    "ClusterArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "cluster611F8AFF",
+          "Arn"
+        ]
+      }
+    },
+    "StateMachineArn": {
+      "Value": {
+        "Ref": "statemachineC5962F3E"
+      }
+    },
+    "ClusterName": {
+      "Value": {
+        "Ref": "cluster611F8AFF"
+      }
+    },
+    "StateMachineRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "statemachineRole52044F93",
+          "Arn"
+        ]
+      }
+    },
+    "TaskDefinitionFamily": {
+      "Value": "StepFunctionsEcsTaskStacktaskdefA6894239"
+    },
+    "TaskDefinitionContainerName": {
+      "Value": "maincontainer"
+    }
+  },
+  "Mappings": {
+    "ServiceprincipalMap": {
+      "af-south-1": {
+        "states": "states.af-south-1.amazonaws.com"
+      },
+      "ap-east-1": {
+        "states": "states.ap-east-1.amazonaws.com"
+      },
+      "ap-northeast-1": {
+        "states": "states.ap-northeast-1.amazonaws.com"
+      },
+      "ap-northeast-2": {
+        "states": "states.ap-northeast-2.amazonaws.com"
+      },
+      "ap-northeast-3": {
+        "states": "states.ap-northeast-3.amazonaws.com"
+      },
+      "ap-south-1": {
+        "states": "states.ap-south-1.amazonaws.com"
+      },
+      "ap-south-2": {
+        "states": "states.ap-south-2.amazonaws.com"
+      },
+      "ap-southeast-1": {
+        "states": "states.ap-southeast-1.amazonaws.com"
+      },
+      "ap-southeast-2": {
+        "states": "states.ap-southeast-2.amazonaws.com"
+      },
+      "ap-southeast-3": {
+        "states": "states.ap-southeast-3.amazonaws.com"
+      },
+      "ap-southeast-4": {
+        "states": "states.ap-southeast-4.amazonaws.com"
+      },
+      "ca-central-1": {
+        "states": "states.ca-central-1.amazonaws.com"
+      },
+      "cn-north-1": {
+        "states": "states.cn-north-1.amazonaws.com"
+      },
+      "cn-northwest-1": {
+        "states": "states.cn-northwest-1.amazonaws.com"
+      },
+      "eu-central-1": {
+        "states": "states.eu-central-1.amazonaws.com"
+      },
+      "eu-central-2": {
+        "states": "states.eu-central-2.amazonaws.com"
+      },
+      "eu-north-1": {
+        "states": "states.eu-north-1.amazonaws.com"
+      },
+      "eu-south-1": {
+        "states": "states.eu-south-1.amazonaws.com"
+      },
+      "eu-south-2": {
+        "states": "states.eu-south-2.amazonaws.com"
+      },
+      "eu-west-1": {
+        "states": "states.eu-west-1.amazonaws.com"
+      },
+      "eu-west-2": {
+        "states": "states.eu-west-2.amazonaws.com"
+      },
+      "eu-west-3": {
+        "states": "states.eu-west-3.amazonaws.com"
+      },
+      "il-central-1": {
+        "states": "states.il-central-1.amazonaws.com"
+      },
+      "me-central-1": {
+        "states": "states.me-central-1.amazonaws.com"
+      },
+      "me-south-1": {
+        "states": "states.me-south-1.amazonaws.com"
+      },
+      "sa-east-1": {
+        "states": "states.sa-east-1.amazonaws.com"
+      },
+      "us-east-1": {
+        "states": "states.us-east-1.amazonaws.com"
+      },
+      "us-east-2": {
+        "states": "states.us-east-2.amazonaws.com"
+      },
+      "us-gov-east-1": {
+        "states": "states.us-gov-east-1.amazonaws.com"
+      },
+      "us-gov-west-1": {
+        "states": "states.us-gov-west-1.amazonaws.com"
+      },
+      "us-iso-east-1": {
+        "states": "states.amazonaws.com"
+      },
+      "us-iso-west-1": {
+        "states": "states.amazonaws.com"
+      },
+      "us-isob-east-1": {
+        "states": "states.amazonaws.com"
+      },
+      "us-west-1": {
+        "states": "states.us-west-1.amazonaws.com"
+      },
+      "us-west-2": {
+        "states": "states.us-west-2.amazonaws.com"
+      }
+    }
+  }
+}
