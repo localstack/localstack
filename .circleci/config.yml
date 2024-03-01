@@ -659,7 +659,7 @@ workflows:
   scheduled-workflow:
     triggers:
       - schedule:
-          cron: << parameters.schedule-non-default-creds >>
+          cron: << pipeline.parameters.schedule-non-default-creds >>
           filters:
             branches:
               only: master
