@@ -1,7 +1,5 @@
-import contextlib
 import logging
 import threading
-import time
 from typing import Dict
 
 from bson.json_util import dumps
@@ -92,14 +90,20 @@ def forward_events(account_id: str, region_name: str, records: dict) -> None:
 def delete_streams(account_id: str, region_name: str, table_arn: str) -> None:
     store = get_dynamodbstreams_store(account_id, region_name)
     table_name = table_name_from_table_arn(table_arn)
-    if store.ddb_streams.pop(table_name, None):
-        stream_name = get_kinesis_stream_name(table_name)
-        with contextlib.suppress(Exception):
-            connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis.delete_stream(
-                StreamName=stream_name
+    if stream := store.ddb_streams.pop(table_name, None):
+        try:
+            # TODO: this might fail when not in ACTIVE state yet, so we'd need to wait for it to be in active state before deleting..
+            kinesis_client = connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).kinesis
+            kinesis_client.delete_stream(
+                StreamARN=stream["StreamArn"], EnforceConsumerDeletion=True
             )
-            # sleep a bit, as stream deletion can take some time ...
-            time.sleep(1)
+        except Exception:
+            LOG.warning(
+                f"Failed to delete underlying kinesis stream for dynamodb table {table_arn=}",
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
 
 
 def get_kinesis_stream_name(table_name: str) -> str:
