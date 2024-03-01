@@ -1871,6 +1871,17 @@ class TestS3:
         snapshot.match("copy-success", copy_obj_all_positive)
 
     @markers.aws.validated
+    def test_s3_copy_object_wrong_format(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource="wrongformat",
+                Key="destination-key",
+            )
+        snapshot.match("copy-object-wrong-copy-source", e.value.response)
+
+    @markers.aws.validated
     @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="Behaviour is not in line with AWS, does not validate properly",

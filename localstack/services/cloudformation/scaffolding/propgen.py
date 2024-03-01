@@ -95,6 +95,7 @@ TYPE_MAP = {
     "integer": "int",
     "number": "float",
     "object": "dict",
+    "array": "list",
 }
 
 
