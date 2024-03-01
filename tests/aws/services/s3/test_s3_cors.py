@@ -350,7 +350,7 @@ class TestS3Cors:
         ]
     )
     def test_cors_options_fails_partial_origin(
-            self, s3_bucket, snapshot, aws_client, match_headers
+        self, s3_bucket, snapshot, aws_client, match_headers
     ):
         bucket_url = _bucket_url_vhost(bucket_name=s3_bucket)
         origin_url = "http://test.origin.com/"

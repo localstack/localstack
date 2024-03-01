@@ -253,10 +253,10 @@ class S3CorsHandler(Handler):
             return
 
         if "*" not in rule["AllowedOrigins"] and not any(
-                # Escapes any characters that needs escaping and replaces * with .+
-                # Transforms http://*.localhost:1234 to http://.+\\.localhost:1234
-                re.match(re.escape(allowed_origin).replace("\\*", ".+") + "$", origin)
-                for allowed_origin in rule["AllowedOrigins"]
+            # Escapes any characters that needs escaping and replaces * with .+
+            # Transforms http://*.localhost:1234 to http://.+\\.localhost:1234
+            re.match(re.escape(allowed_origin).replace("\\*", ".+") + "$", origin)
+            for allowed_origin in rule["AllowedOrigins"]
         ):
             return
 
