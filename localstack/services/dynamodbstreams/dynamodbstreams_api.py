@@ -9,6 +9,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
 from localstack.utils.aws import arns, resources
 from localstack.utils.common import now_utc
+from localstack.utils.threads import FuncThread
 
 DDB_KINESIS_STREAM_NAME_PREFIX = "__ddb_stream_"
 
@@ -91,19 +92,28 @@ def delete_streams(account_id: str, region_name: str, table_arn: str) -> None:
     store = get_dynamodbstreams_store(account_id, region_name)
     table_name = table_name_from_table_arn(table_arn)
     if stream := store.ddb_streams.pop(table_name, None):
-        try:
-            # TODO: this might fail when not in ACTIVE state yet, so we'd need to wait for it to be in active state before deleting..
-            kinesis_client = connect_to(
-                aws_access_key_id=account_id, region_name=region_name
-            ).kinesis
-            kinesis_client.delete_stream(
-                StreamARN=stream["StreamArn"], EnforceConsumerDeletion=True
-            )
-        except Exception:
-            LOG.warning(
-                f"Failed to delete underlying kinesis stream for dynamodb table {table_arn=}",
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
+        stream_arn = stream["StreamArn"]
+
+        # we're basically asynchronously trying to delete the stream, or should we do this "synchronous" with the table deletion?
+        def _delete_stream():
+            try:
+                # TODO: this might fail when not in ACTIVE state yet, so we'd need to wait for it to be in active state before deleting..
+                kinesis_client = connect_to(
+                    aws_access_key_id=account_id, region_name=region_name
+                ).kinesis
+                # needs to be active otherwise we can't delete it
+                kinesis_client.get_waiter("stream_exists").wait(StreamARN=stream_arn)
+                kinesis_client.delete_stream(
+                    StreamARN=stream["StreamArn"], EnforceConsumerDeletion=True
+                )
+                kinesis_client.get_waiter("stream_not_exists").wait(StreamARN=stream_arn)
+            except Exception:
+                LOG.warning(
+                    f"Failed to delete underlying kinesis stream for dynamodb table {table_arn=}",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+
+        FuncThread(_delete_stream).start()  # fire & forget
 
 
 def get_kinesis_stream_name(table_name: str) -> str:
