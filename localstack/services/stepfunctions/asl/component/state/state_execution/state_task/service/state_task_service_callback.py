@@ -1,5 +1,6 @@
 import abc
 import json
+import time
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
@@ -107,6 +108,10 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         raise RuntimeError(
             f"Unsupported .sync:2 callback procedure in resource {self.resource.resource_arn}"
         )
+
+    @staticmethod
+    def _throttle_sync_iteration(seconds: float = 0.5):
+        time.sleep(seconds)
 
     def _is_condition(self):
         return self.resource.condition is not None

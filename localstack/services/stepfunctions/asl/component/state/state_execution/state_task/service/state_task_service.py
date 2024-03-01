@@ -4,7 +4,7 @@ import abc
 import copy
 from typing import Any, Final, Optional
 
-from botocore.model import OperationModel, StringShape, StructureShape
+from botocore.model import ListShape, OperationModel, StringShape, StructureShape
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
@@ -130,6 +130,9 @@ class StateTaskService(StateTask, abc.ABC):
                 response_value = response.pop(response_key)
                 if isinstance(shape_member, StructureShape):
                     self._from_boto_response(response_value, shape_member)
+                elif isinstance(shape_member, ListShape) and isinstance(response_value, list):
+                    for response_value_member in response_value:
+                        self._from_boto_response(response_value_member, shape_member.member)  # noqa
                 response[norm_response_key] = response_value
 
     def _get_boto_service_name(self, boto_service_name: Optional[str] = None) -> str:
