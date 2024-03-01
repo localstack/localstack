@@ -85,8 +85,13 @@ env:
 jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
-    # This job needs secrets and cannot be executed on forks, skip it in this case
-    if: github.repository == 'localstack/localstack'
+    # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+    # (i.e. do not execute job for workflows coming from forks)
+    if: >-
+      (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -312,7 +317,13 @@ jobs:
       pull-requests: write
       contents: read
       issues: read
-    if: success() || failure()
+    # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+    # (i.e. do not execute job for workflows coming from forks)
+    if: >-
+      (success() || failure()) && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     steps:
       - name: Download Artifacts 1
         uses: actions/download-artifact@v4
