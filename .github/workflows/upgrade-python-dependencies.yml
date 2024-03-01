@@ -2,7 +2,7 @@ name: Upgrade Pinned Python Dependencies
 
 on:
   schedule:
-    - cron: 0 5 * * MON
+    - cron: 0 5 * * TUE
   workflow_dispatch:
 
 

@@ -107,10 +107,13 @@ class LambdaPermissionProvider(ResourceProvider[LambdaPermissionProperties]):
         """
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
+        try:
+            lambda_client.remove_permission(
+                FunctionName=model.get("FunctionName"), StatementId=model["Id"]
+            )
+        except lambda_client.exceptions.ResourceNotFoundException:
+            pass
 
-        lambda_client.remove_permission(
-            FunctionName=model.get("FunctionName"), StatementId=model["Id"]
-        )
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
@@ -136,9 +139,13 @@ class LambdaPermissionProvider(ResourceProvider[LambdaPermissionProperties]):
             model=model, params=["FunctionName", "Action", "Principal", "SourceArn"]
         )
 
-        lambda_client.remove_permission(
-            FunctionName=model.get("FunctionName"), StatementId=model["Id"]
-        )
+        try:
+            lambda_client.remove_permission(
+                FunctionName=model.get("FunctionName"), StatementId=model["Id"]
+            )
+        except lambda_client.exceptions.ResourceNotFoundException:
+            pass
+
         lambda_client.add_permission(StatementId=model["Id"], **params)
 
         return ProgressEvent(

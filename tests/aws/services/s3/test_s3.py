@@ -39,7 +39,6 @@ from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.utils import (
@@ -1870,6 +1869,17 @@ class TestS3:
             CopySourceIfUnmodifiedSince=now,
         )
         snapshot.match("copy-success", copy_obj_all_positive)
+
+    @markers.aws.validated
+    def test_s3_copy_object_wrong_format(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket,
+                CopySource="wrongformat",
+                Key="destination-key",
+            )
+        snapshot.match("copy-object-wrong-copy-source", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -5827,7 +5837,7 @@ class TestS3PresignedUrl:
             request.url += "?requestedBy=abcDEF123"
 
         aws_client.s3.put_object(Body="test-value", Bucket=s3_bucket, Key="test")
-        s3_presigned_client = _s3_client_custom_config(
+        s3_presigned_client = _s3_client_pre_signed_client(
             Config(signature_version="s3v4"),
             endpoint_url=_endpoint_url(),
         )
@@ -5849,7 +5859,7 @@ class TestS3PresignedUrl:
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
         host = f"{S3_VIRTUAL_HOSTNAME}:{config.GATEWAY_LISTEN[0].port}"
-        s3_presign = _s3_client_custom_config(
+        s3_presign = _s3_client_pre_signed_client(
             Config(signature_version="s3v4"),
             endpoint_url=f"http://{host}",
         )
@@ -5987,7 +5997,7 @@ class TestS3PresignedUrl:
         else:
             monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", True)
 
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version="s3v4"),
             endpoint_url=_endpoint_url(),
         )
@@ -6064,7 +6074,7 @@ class TestS3PresignedUrl:
         else:
             monkeypatch.setattr(config, "S3_SKIP_SIGNATURE_VALIDATION", True)
 
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version="s3"),
             endpoint_url=_endpoint_url(),
         )
@@ -6164,7 +6174,7 @@ class TestS3PresignedUrl:
         }
 
         s3_create_bucket(Bucket=bucket_name)
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version),
             endpoint_url=_endpoint_url(),
         )
@@ -6233,7 +6243,7 @@ class TestS3PresignedUrl:
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
         # get object and assert headers
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version),
             endpoint_url=_endpoint_url(),
         )
@@ -6279,7 +6289,7 @@ class TestS3PresignedUrl:
         object_key = "key-double-header-param"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version),
             endpoint_url=_endpoint_url(),
         )
@@ -6389,7 +6399,7 @@ class TestS3PresignedUrl:
         object_key = "key-double-header-param"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version="s3v4"),
             endpoint_url=_endpoint_url(),
         )
@@ -6449,7 +6459,7 @@ class TestS3PresignedUrl:
         object_key = "key-missing-param"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version),
             endpoint_url=_endpoint_url(),
         )
@@ -6517,10 +6527,12 @@ class TestS3PresignedUrl:
         key_name = "key"
         response = aws_client.sts.get_session_token()
         if not is_aws_cloud():
-            # moto does not respect credentials passed, and will always set hard coded values from a template here
-            # until this can be used, we are hardcoding the AccessKeyId and SecretAccessKey
-            response["Credentials"]["AccessKeyId"] = TEST_AWS_ACCESS_KEY_ID
-            response["Credentials"]["SecretAccessKey"] = TEST_AWS_SECRET_ACCESS_KEY
+            # Moto does not register the default returned value from STS as a valid IAM user, which is way we can't
+            # retrieve the secret access key
+            # we need to hardcode the secret access key to the default one
+            response["Credentials"][
+                "SecretAccessKey"
+            ] = s3_constants.DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
 
         client = boto3.client(
             "s3",
@@ -6531,6 +6543,70 @@ class TestS3PresignedUrl:
             aws_session_token=response["Credentials"]["SessionToken"],
         )
         s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name)
+        client.put_object(Body="test-value", Bucket=bucket_name, Key=key_name)
+        presigned_url = client.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": bucket_name, "Key": key_name},
+            ExpiresIn=600,
+        )
+        response = requests.get(presigned_url)
+        assert response._content == b"test-value"
+
+    @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="STS not enabled in S3 image")
+    @markers.aws.validated
+    def test_presigned_url_with_different_user_credentials(
+        self,
+        aws_client,
+        s3_create_bucket_with_client,
+        create_role_with_policy,
+        account_id,
+        wait_and_assume_role,
+        patch_s3_skip_signature_validation_false,
+    ):
+        bucket_name = f"bucket-{short_uid()}"
+        key_name = "key"
+        actions = [
+            "s3:CreateBucket",
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:DeleteBucket",
+            "s3:DeleteObject",
+        ]
+
+        assume_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {"AWS": account_id},
+                    "Effect": "Allow",
+                }
+            ],
+        }
+        assume_policy_doc = json.dumps(assume_policy_doc)
+        role_name, role_arn = create_role_with_policy(
+            effect="Allow",
+            actions=actions,
+            assume_policy_doc=assume_policy_doc,
+            resource="*",
+        )
+
+        credentials = wait_and_assume_role(role_arn=role_arn)
+
+        client = boto3.client(
+            "s3",
+            config=Config(signature_version="s3v4"),
+            endpoint_url=_endpoint_url(),
+            aws_access_key_id=credentials["AccessKeyId"],
+            aws_secret_access_key=credentials["SecretAccessKey"],
+            aws_session_token=credentials["SessionToken"],
+        )
+
+        retry(
+            lambda: s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name),
+            sleep=3 if is_aws_cloud() else 0.5,
+        )
+
         client.put_object(Body="test-value", Bucket=bucket_name, Key=key_name)
         presigned_url = client.generate_presigned_url(
             ClientMethod="get_object",
@@ -6552,7 +6628,7 @@ class TestS3PresignedUrl:
 
         # get object and assert headers
         expiry_date = "Wed, 21 Oct 2015 07:28:00 GMT"
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version), endpoint_url=_endpoint_url()
         )
 
@@ -6602,7 +6678,7 @@ class TestS3PresignedUrl:
         )
         snapshot.match("copy-obj", response)
 
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version="s3v4", s3={"payload_signing_enabled": True}),
             endpoint_url=_endpoint_url(),
         )
@@ -6676,7 +6752,7 @@ class TestS3PresignedUrl:
         aws_client.s3.put_object(Key=object_key, Bucket=bucket_name, Body="123")
 
         s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
-        client = _s3_client_custom_config(
+        client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version, s3=s3_config),
             endpoint_url=s3_endpoint_path_style,
         )
@@ -6718,7 +6794,7 @@ class TestS3PresignedUrl:
         aws_client.s3.put_object(Key=object_key, Bucket=bucket_name, Body="123")
 
         s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
-        client = _s3_client_custom_config(
+        client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version, s3=s3_config),
             endpoint_url=s3_endpoint_path_style,
         )
@@ -6825,7 +6901,7 @@ class TestS3PresignedUrl:
         object_key = "temp.txt"
 
         s3_config = {"addressing_style": "virtual"} if use_virtual_address else {}
-        client = _s3_client_custom_config(
+        client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version, s3=s3_config),
             endpoint_url=s3_endpoint_path_style,
         )
@@ -6886,7 +6962,7 @@ class TestS3PresignedUrl:
     ):
         # test that Boto does not hoist x-amz-storage-class in the query string while pre-signing
         object_key = "temp.txt"
-        client = _s3_client_custom_config(
+        client = _s3_client_pre_signed_client(
             Config(signature_version="s3v4"),
         )
         url = client.generate_presigned_url(
@@ -6917,8 +6993,8 @@ class TestS3PresignedUrl:
             handler="lambda_s3_integration_presign.handler",
             role=lambda_su_role,
             envvars={
-                "ACCESS_KEY": TEST_AWS_ACCESS_KEY_ID,
-                "SECRET_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                "ACCESS_KEY": s3_constants.DEFAULT_PRE_SIGNED_ACCESS_KEY_ID,
+                "SECRET_KEY": s3_constants.DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY,
             },
         )
         s3_create_bucket(Bucket=function_name)
@@ -6963,7 +7039,7 @@ class TestS3PresignedUrl:
         # test that Boto does not hoist x-amz-server-side-encryption in the query string while pre-signing
         # it means we would need to provide it in the request headers
         object_key = "temp.txt"
-        client = _s3_client_custom_config(
+        client = _s3_client_pre_signed_client(
             Config(signature_version="s3v4"),
         )
         url = client.generate_presigned_url(
@@ -6988,8 +7064,8 @@ class TestS3PresignedUrl:
             handler="lambda_s3_integration_sdk_v2.handler",
             role=lambda_su_role,
             envvars={
-                "ACCESS_KEY": TEST_AWS_ACCESS_KEY_ID,
-                "SECRET_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                "ACCESS_KEY": s3_constants.DEFAULT_PRE_SIGNED_ACCESS_KEY_ID,
+                "SECRET_KEY": s3_constants.DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY,
             },
         )
         s3_create_bucket(Bucket=function_name)
@@ -7038,7 +7114,7 @@ class TestS3PresignedUrl:
         aws_client.s3.put_object(Key=object_key, Bucket=s3_bucket, Body="123")
 
         s3_endpoint_path_style = _endpoint_url()
-        client = _s3_client_custom_config(
+        client = _s3_client_pre_signed_client(
             Config(signature_version="s3v4", s3={}),
             endpoint_url=s3_endpoint_path_style,
         )
@@ -7067,7 +7143,7 @@ class TestS3PresignedUrl:
         aws_client.s3.put_object(Key=object_key, Bucket=s3_bucket, Body="123")
 
         s3_endpoint_path_style = _endpoint_url()
-        client = _s3_client_custom_config(
+        client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version, s3={}),
             endpoint_url=s3_endpoint_path_style,
         )
@@ -7097,7 +7173,7 @@ class TestS3PresignedUrl:
             monkeypatch.setitem(AUTH_TYPE_MAPS, "s3v4-query", S3SigV4QueryAuth)
 
         key = "my-key"
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version="s3v4", s3={"payload_signing_enabled": True}),
             endpoint_url=_endpoint_url(),
         )
@@ -9874,7 +9950,7 @@ class TestS3PresignedPost:
     ):
         object_key = "test-presigned-malformed-policy"
 
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version),
             endpoint_url=_endpoint_url(),
         )
@@ -9920,7 +9996,7 @@ class TestS3PresignedPost:
     ):
         object_key = "test-presigned-missing-signature"
 
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version),
             endpoint_url=_endpoint_url(),
         )
@@ -9961,7 +10037,7 @@ class TestS3PresignedPost:
     ):
         object_key = "test-presigned-missing-fields"
 
-        presigned_client = _s3_client_custom_config(
+        presigned_client = _s3_client_pre_signed_client(
             Config(signature_version=signature_version),
             endpoint_url=_endpoint_url(),
         )
@@ -10268,25 +10344,126 @@ class TestS3PresignedPost:
         assert response.status_code == 400
         snapshot.match("invalid-storage-error", xmltodict.parse(response.content))
 
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..HostId"],  # FIXME: in CI, it fails sporadically and the form is empty
+    )
+    def test_post_object_with_wrong_content_type(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("HostId"),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        object_key = "test-presigned-post-key-wrong-content-type"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+            ],
+        )
+        # PostObject
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "test-body-wrong-content-type"},
+            headers={"Content-Type": "text/html"},
+            verify=False,
+        )
 
-def _s3_client_custom_config(conf: Config, endpoint_url: str = None):
+        assert response.status_code == 412
+        snapshot.match("invalid-content-type-error", xmltodict.parse(response.content))
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ContentLength",
+            "$..ETag",
+            "$..HostId",
+        ],  # FIXME: in CI, it fails sporadically and the form is empty
+    )
+    def test_post_object_with_file_as_string(self, s3_bucket, aws_client, snapshot):
+        # this is a test for https://github.com/localstack/localstack/issues/10309
+        # You can send requests with node.js with a different format than what we can with Python
+        # (the actual file would just be a regular `file` key of the form with content)
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("HostId"),
+                snapshot.transform.key_value("RequestId"),
+                snapshot.transform.key_value("Name"),
+            ]
+        )
+        object_key = "test-presigned-post-file-as-field"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+            ],
+        )
+
+        # we need to define a proper format for `files` so that we don't add the filename= field to the form
+        # see https://github.com/psf/requests/issues/1081
+
+        # PostObject
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={
+                "file": (None, "test-body-file-as-field"),
+            },
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object", head_object)
+
+        object_key = "file-as-field-${filename}"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+            ],
+        )
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={
+                "file": (None, "test-body-file-as-field-filename-replacement"),
+            },
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
+        snapshot.match("list-objects", response)
+
+
+def _s3_client_pre_signed_client(conf: Config, endpoint_url: str = None):
     if is_aws_cloud():
         return boto3.client("s3", config=conf, endpoint_url=endpoint_url)
 
-    # TODO in future this should work with aws_stack.create_external_boto_client
-    #      currently it doesn't as authenticate_presign_url_signv2 requires the secret_key to be 'test'
-    # return aws_stack.create_external_boto_client(
-    #     "s3",
-    #     config=conf,
-    #     endpoint_url=endpoint_url,
-    #     aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-    # )
+    # TODO: create a similar ClientFactory for these parameters
     return boto3.client(
         "s3",
         endpoint_url=endpoint_url,
         config=conf,
-        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=s3_constants.DEFAULT_PRE_SIGNED_ACCESS_KEY_ID,
+        aws_secret_access_key=s3_constants.DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY,
     )
 
 

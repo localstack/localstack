@@ -64,6 +64,7 @@ API_COMPOSITES = {
         "s3",
     ],
     "cognito": ["cognito-idp", "cognito-identity"],
+    "timestream": ["timestream-write", "timestream-query"],
 }
 
 
@@ -1116,7 +1117,7 @@ def configure_container(container: Container):
     else:
         container.config.additional_flags = f"{container.config.additional_flags} {user_flags}"
 
-    # get additional parameters from plugins
+    # get additional parameters from plux
     hooks.configure_localstack_container.run(container)
 
     if config.DEVELOP:

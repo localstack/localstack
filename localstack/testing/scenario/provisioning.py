@@ -319,6 +319,7 @@ class InfraProvisioner:
                 with open(template_path, "wt") as fd:
                     template_json = cdk.assertions.Template.from_stack(cdk_stack).to_json()
                     json.dump(template_json, fd, indent=2)
+                    fd.write("\n")  # add trailing newline for linter and Git compliance
 
             self.cloudformation_stacks[cdk_stack.stack_name] = {
                 "StackName": cdk_stack.stack_name,

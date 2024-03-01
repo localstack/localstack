@@ -4752,6 +4752,8 @@ class TestSNSRetrospectionEndpoints:
             msgs_url,
             params={
                 "endpointArn": endpoint_arn,
+                "region": region_name,
+                "accountId": account_id,
             },
         ).json()
         msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]
@@ -4764,6 +4766,8 @@ class TestSNSRetrospectionEndpoints:
             msgs_url,
             params={
                 "endpointArn": endpoint_arn,
+                "region": region_name,
+                "accountId": account_id,
             },
         )
         assert delete_res.status_code == 204
@@ -4771,6 +4775,8 @@ class TestSNSRetrospectionEndpoints:
             msgs_url,
             params={
                 "endpointArn": endpoint_arn,
+                "region": region_name,
+                "accountId": account_id,
             },
         ).json()
         msgs_with_endpoint = api_contents_with_endpoint["platform_endpoint_messages"]

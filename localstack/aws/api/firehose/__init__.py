@@ -21,6 +21,7 @@ BooleanObject = bool
 BucketARN = str
 ClusterJDBCURL = str
 CopyOptions = str
+CustomTimeZone = str
 DataTableColumns = str
 DataTableName = str
 DeliveryStreamARN = str
@@ -38,6 +39,7 @@ ElasticsearchTypeName = str
 ErrorCode = str
 ErrorMessage = str
 ErrorOutputPrefix = str
+FileExtension = str
 HECAcknowledgmentTimeoutInSeconds = int
 HECEndpoint = str
 HECToken = str
@@ -239,11 +241,13 @@ class ProcessorParameterName(str):
     SubRecordType = "SubRecordType"
     Delimiter = "Delimiter"
     CompressionFormat = "CompressionFormat"
+    DataMessageExtraction = "DataMessageExtraction"
 
 
 class ProcessorType(str):
     RecordDeAggregation = "RecordDeAggregation"
     Decompression = "Decompression"
+    CloudWatchLogProcessing = "CloudWatchLogProcessing"
     Lambda = "Lambda"
     MetadataExtraction = "MetadataExtraction"
     AppendDelimiterToRecord = "AppendDelimiterToRecord"
@@ -785,6 +789,8 @@ class ExtendedS3DestinationConfiguration(TypedDict, total=False):
     S3BackupConfiguration: Optional[S3DestinationConfiguration]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DeliveryStreamEncryptionConfigurationInput(TypedDict, total=False):
@@ -931,6 +937,8 @@ class ExtendedS3DestinationDescription(TypedDict, total=False):
     S3BackupDescription: Optional[S3DestinationDescription]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DestinationDescription(TypedDict, total=False):
@@ -1043,6 +1051,8 @@ class ExtendedS3DestinationUpdate(TypedDict, total=False):
     S3BackupUpdate: Optional[S3DestinationUpdate]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class HttpEndpointDestinationUpdate(TypedDict, total=False):

@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - README.md
+      - DOCKER.md
       - .github/workflows/dockerhub-description.yml
 
 jobs:
@@ -22,3 +22,4 @@ jobs:
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
         repository: localstack/localstack
         short-description: ${{ github.event.repository.description }}
+        readme-filepath: DOCKER.md

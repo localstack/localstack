@@ -924,27 +924,32 @@ class StackDeployError(Exception):
     def __init__(self, describe_res: dict, events: list[dict]):
         self.describe_result = describe_res
         self.events = events
-        super().__init__(
-            f"Describe output:\n{json.dumps(self.describe_result, cls=CustomEncoder)}\nEvents:\n{self.format_events(events)}"
-        )
+
+        encoded_describe_output = json.dumps(self.describe_result, cls=CustomEncoder)
+        if config.CFN_VERBOSE_ERRORS:
+            msg = f"Describe output:\n{encoded_describe_output}\nEvents:\n{self.format_events(events)}"
+        else:
+            msg = f"Describe output:\n{encoded_describe_output}\nFailing resources:\n{self.format_events(events)}"
+
+        super().__init__(msg)
 
     def format_events(self, events: list[dict]) -> str:
-        event_details = (
-            json.dumps(
-                {
-                    key: event.get(key)
-                    for key in [
-                        "LogicalResourceId",
-                        "ResourceType",
-                        "ResourceStatus",
-                        "ResourceStatusReason",
-                    ]
-                },
-                cls=CustomEncoder,
-            )
-            for event in events
-        )
-        return "\n".join(event_details)
+        formatted_events = []
+
+        chronological_events = sorted(events, key=lambda event: event["Timestamp"])
+        for event in chronological_events:
+            if event["ResourceStatus"].endswith("FAILED") or config.CFN_VERBOSE_ERRORS:
+                formatted_events.append(self.format_event(event))
+
+        return "\n".join(formatted_events)
+
+    @staticmethod
+    def format_event(event: dict) -> str:
+        if reason := event.get("ResourceStatusReason"):
+            reason = reason.replace("\n", "; ")
+            return f"- {event['LogicalResourceId']} ({event['ResourceType']}) -> {event['ResourceStatus']} ({reason})"
+        else:
+            return f"- {event['LogicalResourceId']} ({event['ResourceType']}) -> {event['ResourceStatus']}"
 
 
 @pytest.fixture
@@ -1417,14 +1422,14 @@ def create_user(aws_client):
 
 @pytest.fixture
 def wait_and_assume_role(aws_client):
-    def _wait_and_assume_role(role_arn: str, session_name: str = None):
+    def _wait_and_assume_role(role_arn: str, session_name: str = None, **kwargs):
         if not session_name:
             session_name = f"session-{short_uid()}"
 
         def assume_role():
-            return aws_client.sts.assume_role(RoleArn=role_arn, RoleSessionName=session_name)[
-                "Credentials"
-            ]
+            return aws_client.sts.assume_role(
+                RoleArn=role_arn, RoleSessionName=session_name, **kwargs
+            )["Credentials"]
 
         # need to retry a couple of times before we are allowed to assume this role in AWS
         keys = retry(assume_role, sleep=5, retries=4)

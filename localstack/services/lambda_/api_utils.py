@@ -104,6 +104,7 @@ def map_function_url_config(model: "FunctionUrlConfig") -> api_spec.FunctionUrlC
         LastModifiedTime=model.last_modified_time,
         Cors=model.cors,
         AuthType=model.auth_type,
+        InvokeMode=model.invoke_mode,
     )
 
 

@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 from collections import defaultdict
+from io import BytesIO
 from operator import itemgetter
 from secrets import token_urlsafe
 from typing import IO, Optional, Union
@@ -280,7 +281,7 @@ from localstack.services.s3.validation import (
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import s3_bucket_name
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -3614,6 +3615,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def post_object(
         self, context: RequestContext, bucket: BucketName, body: IO[Body] = None, **kwargs
     ) -> PostResponse:
+        if "multipart/form-data" not in context.request.headers.get("Content-Type", ""):
+            raise PreconditionFailed(
+                "At least one of the pre-conditions you specified did not hold",
+                Condition="Bucket POST must be of the enclosure-type multipart/form-data",
+            )
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
         # TODO: signature validation is not implemented for pre-signed POST
         # policy validation is not implemented either, except expiration and mandatory fields
@@ -3623,11 +3629,21 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         form = context.request.form
         validate_post_policy(form)
-
-        fileobj = context.request.files["file"]
         object_key = context.request.form.get("key")
-        if "${filename}" in object_key:
-            object_key = object_key.replace("${filename}", fileobj.filename)
+
+        if "file" in form:
+            # in AWS, you can pass the file content as a string in the form field and not as a file object
+            stream = BytesIO(to_bytes(form["file"]))
+        else:
+            # this is the default behaviour
+            fileobj = context.request.files["file"]
+            stream = fileobj.stream
+            if "${filename}" in object_key:
+                # TODO: ${filename} is actually usable in all form fields
+                # See https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/S3/PresignedPost.html
+                # > The string ${filename} is automatically replaced with the name of the file provided by the user and
+                # is recognized by all form fields.
+                object_key = object_key.replace("${filename}", fileobj.filename)
 
         if canned_acl := form.get("acl"):
             validate_canned_acl(canned_acl)
@@ -3656,7 +3672,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         }
 
         if tagging := form.get("tagging"):
-            # this is weird, as it's direct XML in the form, we need to parse it direcly
+            # this is weird, as it's direct XML in the form, we need to parse it directly
             tagging = parse_post_object_tagging_xml(tagging)
 
         if (storage_class := form.get("x-amz-storage-class")) is not None and (
@@ -3706,7 +3722,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
         s3_stored_object = self._storage_backend.open(bucket, s3_object)
-        s3_stored_object.write(fileobj.stream)
+        s3_stored_object.write(stream)
 
         if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
             self._storage_backend.remove(bucket, s3_object)
