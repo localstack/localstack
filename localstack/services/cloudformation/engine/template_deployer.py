@@ -33,6 +33,7 @@ from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
 )
 from localstack.services.cloudformation.stores import exports_map
+from localstack.utils.aws.arns import secret_value_from_ssm_arn
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe
 from localstack.utils.strings import to_bytes, to_str
@@ -215,43 +216,7 @@ def resolve_refs_recursively(
                     "Parameter"
                 ]["Value"]
             elif service_name == "secretsmanager":
-                # reference key needs to be parsed further
-                # because {{resolve:secretsmanager:secret-id:secret-string:json-key:version-stage:version-id}}
-                # we match for "secret-id:secret-string:json-key:version-stage:version-id"
-                # where
-                #   secret-id can either be the secret name or the full ARN of the secret
-                #   secret-string *must* be SecretString
-                #   all other values are optional
-                secret_id = reference_key
-                [json_key, version_stage, version_id] = [None, None, None]
-                if "SecretString" in reference_key:
-                    parts = reference_key.split(":SecretString:")
-                    secret_id = parts[0]
-                    # json-key, version-stage and version-id are optional.
-                    [json_key, version_stage, version_id] = f"{parts[1]}::".split(":")[:3]
-
-                kwargs = {}  # optional args for get_secret_value
-                if version_id:
-                    kwargs["VersionId"] = version_id
-                if version_stage:
-                    kwargs["VersionStage"] = version_stage
-
-                secretsmanager_client = connect_to(
-                    aws_access_key_id=account_id, region_name=region_name
-                ).secretsmanager
-                secret_value = secretsmanager_client.get_secret_value(SecretId=secret_id, **kwargs)[
-                    "SecretString"
-                ]
-                if json_key:
-                    json_secret = json.loads(secret_value)
-                    if json_key not in json_secret:
-                        raise DependencyNotYetSatisfied(
-                            resource_ids=secret_id,
-                            message=f"Key {json_key} is not yet available in secret {secret_id}.",
-                        )
-                    return json_secret[json_key]
-                else:
-                    return secret_value
+                return secret_value_from_ssm_arn(reference_key)
             else:
                 LOG.warning(f"Unsupported service for dynamic parameter: {service_name=}")
 

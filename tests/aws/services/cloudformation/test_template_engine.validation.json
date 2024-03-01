@@ -44,6 +44,15 @@
   "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_validate_lambda_internals": {
     "last_validated_date": "2023-01-30T19:16:45+00:00"
   },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSecretsManagerParameters::test_resolve_secretsmanager[resolve_secretsmanager.yaml]": {
+    "last_validated_date": "2024-03-01T12:52:54+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSecretsManagerParameters::test_resolve_secretsmanager[resolve_secretsmanager_full.yaml]": {
+    "last_validated_date": "2024-03-01T12:50:54+00:00"
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSecretsManagerParameters::test_resolve_secretsmanager[resolve_secretsmanager_partial.yaml]": {
+    "last_validated_date": "2024-03-01T12:51:54+00:00"
+  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
     "last_validated_date": "2023-01-15T16:54:23+00:00"
   },

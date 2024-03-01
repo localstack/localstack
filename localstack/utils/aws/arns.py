@@ -1,5 +1,6 @@
 import logging
 import re
+import json
 from functools import cache
 from typing import Optional, TypedDict
 
@@ -497,3 +498,65 @@ def sqs_queue_name(queue_arn: str) -> str:
 
 def s3_bucket_name(bucket_name_or_arn: str) -> str:
     return bucket_name_or_arn.split(":::")[-1]
+
+
+def secret_value_from_ssm_arn(ssm_arn: str) -> str:
+    # TODO: secretsmanager allows resource-based access policies so it must be possible to retrieve cross-account secrets
+    # just by ARN. But LocalStack secrets manager currently falls back to Moto and thus lacks this support.
+    # When this is implemented, use `clients.secretsmanager` instead of instantiating a new `connect_to()`
+    arn_data = parse_arn(ssm_arn)
+    secrets_manager_client = connect_to(
+        aws_access_key_id=arn_data["account"], region_name=arn_data["region"]
+    ).secretsmanager
+    arn_parts = ssm_arn.split(":")
+    # the ARN can have either 7 parts, e.g.
+    # arn:aws:secretsmanager:<region>:<account_id>::<secret-name>
+    # or 10 parts
+    # arn:aws:secretsmanager:<region>:<account_id>:secret:<secret-name>:<json-key>:<version-stage>:<version-id>
+    #
+    # note: version-stage and version-id are mutually exclusive
+    #
+    # Parts 8-10 are optional
+    # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/secrets-envvar-secrets-manager.html#secrets-envvar-secrets-manager-update-container-definition
+    base_secret_arn = ":".join(arn_parts[:7])
+    if len(arn_parts) == 7:
+        # simple case
+        return secrets_manager_client.get_secret_value(SecretId=base_secret_arn)["SecretString"]
+    elif len(arn_parts) >= 10:
+        # more complex case with optional restrictions on keys or extracting JSON values from a
+        # structured secret
+        json_key, version_stage, version_id = arn_parts[7:10]
+        value = None
+
+        match (version_stage != "", version_id != ""):
+            case False, True:
+                value = secrets_manager_client.get_secret_value(
+                    SecretId=base_secret_arn, VersionId=version_id
+                )["SecretString"]
+            case True, False:
+                value = secrets_manager_client.get_secret_value(
+                    SecretId=base_secret_arn, VersionStage=version_stage
+                )["SecretString"]
+            case False, False:
+                value = secrets_manager_client.get_secret_value(SecretId=base_secret_arn)[
+                    "SecretString"
+                ]
+            case _:
+                LOG.warning(
+                    "Invalid secret ARN %s specified. Cannot specify both version stage and version id",
+                    ssm_arn,
+                )
+                raise RuntimeError("Failed to start task, invalid secret arn")
+
+        if json_key:
+            deserialised_secret = json.loads(value)
+            value = deserialised_secret[json_key]
+
+        return value
+
+    else:
+        LOG.warning(
+            "Invalid secret ARN %s specified. Must have either 7 or 10 components separated by the `:` character",
+            ssm_arn,
+        )
+        raise RuntimeError("Failed to start task, invalid secret arn")

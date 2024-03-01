@@ -392,6 +392,58 @@ class TestSsmParameters:
 
 
 class TestSecretsManagerParameters:
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "use_secret_version_id,use_secret_version_stage",
+        [
+            (True, False),
+            (False, True),
+            (False, False),
+        ],
+    )
+    @pytest.mark.parametrize("use_arn", [True, False], ids=["use-arn", "use-name"])
+    def test_resolve_secretsmanager_arns(
+        self,
+        create_secret,
+        deploy_cfn_template,
+        use_secret_version_id,
+        use_secret_version_stage,
+        use_arn,
+    ):
+        secret_key = "mykey"
+        secret_value = "myvalue"
+        raw_secret = {secret_key: secret_value}
+        secret_contents = json.dumps(raw_secret)
+        secret_name = f"my-secret-{short_uid()}"
+        create_secret_response = create_secret(
+            Name=secret_name,
+            SecretString=secret_contents,
+        )
+        secret_arn = create_secret_response["ARN"]
+        if not use_arn:
+            secret_arn = secret_name
+        match (use_secret_version_id, use_secret_version_stage):
+            case (True, False):
+                version_id = create_secret_response["VersionId"]
+                full_secret_arn = f"{secret_arn}:SecretString:{secret_key}::{version_id}"
+            case (False, True):
+                full_secret_arn = f"{secret_arn}:SecretString:{secret_key}:AWSCURRENT:"
+            case (False, False):
+                full_secret_arn = f"{secret_arn}:SecretString:{secret_key}::"
+            case _:
+                raise ValueError("cannot specify both secret version id and stage")
+
+        result = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../templates/resolve_secretsmanager.yaml",
+            ),
+            parameters={"DynamicParameter": full_secret_arn},
+        )
+
+        topic_name = result.outputs["TopicName"]
+        assert topic_name == secret_value
+
     @pytest.mark.parametrize(
         "template_name",
         [
