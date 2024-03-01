@@ -757,5 +757,31 @@
         "StatusCode": 200
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_options_fails_partial_origin": {
+    "recorded-date": "01-03-2024, 00:50:41",
+    "recorded-content": {
+      "options_fails_partial_origin": {
+        "Body": {
+          "Error": {
+            "Code": "AccessForbidden",
+            "HostId": "<x-amz-id-2:1>",
+            "Message": "CORSResponse: This CORS request is not allowed. This is usually because the evalution of Origin, request method / Access-Control-Request-Method or Access-Control-Request-Headers are not whitelisted by the resource's CORS spec.",
+            "Method": "GET",
+            "RequestId": "<x-amz-request-id:1>",
+            "ResourceType": "BUCKET"
+          }
+        },
+        "Headers": {
+          "Content-Type": "application/xml",
+          "Transfer-Encoding": "chunked",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:1>",
+          "x-amz-request-id": "<x-amz-request-id:1>"
+        },
+        "StatusCode": 403
+      }
+    }
   }
 }
