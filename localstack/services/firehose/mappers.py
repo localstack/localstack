@@ -16,6 +16,8 @@ from localstack.aws.api.firehose import (
     HttpEndpointDestinationUpdate,
     KinesisStreamSourceConfiguration,
     KinesisStreamSourceDescription,
+    RedshiftDestinationConfiguration,
+    RedshiftDestinationDescription,
     S3DestinationConfiguration,
     S3DestinationDescription,
     S3DestinationUpdate,
@@ -156,3 +158,10 @@ def convert_source_config_to_desc(
         result = cast(KinesisStreamSourceDescription, configuration)
         result["DeliveryStartTimestamp"] = datetime.now()
         return SourceDescription(KinesisStreamSourceDescription=result)
+
+
+def convert_redshift_config_to_desc(
+    configuration: RedshiftDestinationConfiguration,
+) -> RedshiftDestinationDescription:
+    if configuration:
+        return cast(RedshiftDestinationDescription, configuration)
