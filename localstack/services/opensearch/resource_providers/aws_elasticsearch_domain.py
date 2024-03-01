@@ -1,16 +1,19 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
+from localstack.aws.api.es import CreateElasticsearchDomainRequest
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
     ResourceProvider,
     ResourceRequest,
 )
+from localstack.utils.collections import convert_to_typed_dict
 
 
 class ElasticsearchDomainProperties(TypedDict):
@@ -148,27 +151,43 @@ class ElasticsearchDomainProvider(ResourceProvider[ElasticsearchDomainProperties
         """
         model = request.desired_state
 
-        # TODO: validations
-
+        client = request.aws_client_factory.es
         if not request.custom_context.get(REPEATED_INVOCATION):
             # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
             request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
 
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+            # defaults
+            domain_name = model.get("DomainName")
+            if not domain_name:
+                model["DomainName"] = util.generate_default_name(
+                    request.stack_name, request.logical_resource_id
+                )
 
-        raise NotImplementedError
+            params = copy.deepcopy(model)
+            params = convert_to_typed_dict(CreateElasticsearchDomainRequest, params)
+            params = util.remove_none_values(params)
+            cluster_config = params.get("ElasticsearchClusterConfig")
+            if isinstance(cluster_config, dict):
+                # set defaults required for boto3 calls
+                cluster_config.setdefault("DedicatedMasterType", "m3.medium.elasticsearch")
+                cluster_config.setdefault("WarmType", "ultrawarm1.medium.elasticsearch")
+
+            client.create_elasticsearch_domain(**params)
+
+        domain = client.describe_elasticsearch_domain(DomainName=model["DomainName"])
+        if domain["DomainStatus"]["Created"]:
+            # set data
+            model["Arn"] = domain["DomainStatus"]["ARN"]
+            model["Id"] = domain["DomainStatus"]["DomainId"]
+            model["DomainArn"] = domain["DomainStatus"]["ARN"]
+            model["DomainEndpoint"] = domain["DomainStatus"].get("Endpoint")
+
+            if tags := model.get("Tags", []):
+                client.add_tags(ARN=model["Arn"], TagList=tags)
+
+            return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+        else:
+            return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
 
     def read(
         self,
@@ -190,7 +209,11 @@ class ElasticsearchDomainProvider(ResourceProvider[ElasticsearchDomainProperties
 
 
         """
-        raise NotImplementedError
+        client = request.aws_client_factory.es
+        # TODO the delete is currently synchronous;
+        #   if this changes, we should also reflect the OperationStatus here
+        client.delete_elasticsearch_domain(DomainName=request.previous_state["DomainName"])
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
 
     def update(
         self,
