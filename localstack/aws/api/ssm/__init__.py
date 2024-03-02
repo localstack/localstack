@@ -1502,6 +1502,12 @@ class ItemSizeLimitExceededException(ServiceException):
     TypeName: Optional[InventoryItemTypeName]
 
 
+class MalformedResourcePolicyDocumentException(ServiceException):
+    code: str = "MalformedResourcePolicyDocumentException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class MaxDocumentSizeExceeded(ServiceException):
     code: str = "MaxDocumentSizeExceeded"
     sender_fault: bool = False
@@ -1695,6 +1701,12 @@ class ResourceLimitExceededException(ServiceException):
     status_code: int = 400
 
 
+class ResourceNotFoundException(ServiceException):
+    code: str = "ResourceNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ResourcePolicyConflictException(ServiceException):
     code: str = "ResourcePolicyConflictException"
     sender_fault: bool = False
@@ -1717,6 +1729,12 @@ class ResourcePolicyLimitExceededException(ServiceException):
     status_code: int = 400
     Limit: Optional[Integer]
     LimitType: Optional[String]
+
+
+class ResourcePolicyNotFoundException(ServiceException):
+    code: str = "ResourcePolicyNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class ServiceSettingNotFound(ServiceException):
@@ -3772,6 +3790,7 @@ class DescribeParametersRequest(ServiceRequest):
     ParameterFilters: Optional[ParameterStringFilterList]
     MaxResults: Optional[MaxResults]
     NextToken: Optional[NextToken]
+    Shared: Optional[Boolean]
 
 
 class ParameterInlinePolicy(TypedDict, total=False):
@@ -3786,6 +3805,7 @@ PSParameterVersion = int
 
 class ParameterMetadata(TypedDict, total=False):
     Name: Optional[PSParameterName]
+    ARN: Optional[String]
     Type: Optional[ParameterType]
     KeyId: Optional[ParameterKeyId]
     LastModifiedDate: Optional[DateTime]
@@ -6155,6 +6175,7 @@ class SsmApi:
         parameter_filters: ParameterStringFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        shared: Boolean = None,
         **kwargs
     ) -> DescribeParametersResult:
         raise NotImplementedError

@@ -74,19 +74,24 @@ concurrency:
 env:
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
-  TINYBIRD_DATASOURCE: ${{ github.event.repository.name }}-tests-pro-integration
+  TINYBIRD_DATASOURCE: community_tests_pro_integration
   TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
-  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master
   TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
 
 jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
-    # This job needs secrets and cannot be executed on forks, skip it in this case
-    if: github.repository == 'localstack/localstack'
+    # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+    # (i.e. do not execute job for workflows coming from forks)
+    if: >-
+      (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -194,7 +199,7 @@ jobs:
         run: |
           sudo apt-get update
           # postgresql-14 pin is required to make explicit install of the version from the Ubuntu repos and not PGDG repos
-          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.10-0ubuntu0* postgresql-client postgresql-plpython3
+          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.11-0ubuntu0* postgresql-client postgresql-plpython3
 
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
@@ -312,7 +317,13 @@ jobs:
       pull-requests: write
       contents: read
       issues: read
-    if: success() || failure()
+    # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+    # (i.e. do not execute job for workflows coming from forks)
+    if: >-
+      (success() || failure()) && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     steps:
       - name: Download Artifacts 1
         uses: actions/download-artifact@v4
@@ -330,3 +341,16 @@ jobs:
           files: "pytest-junit-community-*.xml"
           check_name: "LocalStack Community integration with Pro"
           action_fail_on_inconclusive: true
+
+  push-to-tinybird:
+    if: always() && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    needs: publish-pro-test-results
+    steps:
+      - name: Push to Tinybird
+        uses: localstack/tinybird-workflow-push@v3
+        with:
+          workflow_id: "tests_pro_integration"
+          tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tinybird_datasource: "ci_workflows"

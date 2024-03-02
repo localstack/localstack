@@ -663,6 +663,8 @@ class SqsQueue:
                 value = func()
                 if value is not None:
                     result[attr] = value
+            elif value == "False" or value == "True":
+                result[attr] = value.lower()
             elif value is not None:
                 result[attr] = value
         return result
@@ -897,6 +899,7 @@ class FifoQueue(SqsQueue):
     message_groups: dict[str, MessageGroup]
     inflight_groups: set[MessageGroup]
     message_group_queue: Queue
+    high_throughput: bool
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
@@ -905,6 +908,15 @@ class FifoQueue(SqsQueue):
         self.message_groups = {}
         self.inflight_groups = set()
         self.message_group_queue = Queue()
+        self.high_throughput = False
+
+        # SQS does not seem to change the deduplication behaviour of fifo queues if you
+        # change to/from high-throughput mode after creation -> we need to set this on creation
+        if (
+            self.attributes[QueueAttributeName.DeduplicationScope] == "messageGroup"
+            and self.attributes[QueueAttributeName.FifoThroughputLimit] == "perMessageGroupId"
+        ):
+            self.high_throughput = True
 
     @property
     def approx_number_of_messages(self):
@@ -992,11 +1004,15 @@ class FifoQueue(SqsQueue):
             fifo_message.delay_seconds = self.delay_seconds
 
         original_message = self.deduplication.get(dedup_id)
-
         if (
             original_message
             and original_message.priority + sqs_constants.DEDUPLICATION_INTERVAL_IN_SEC
             > fifo_message.priority
+            # account for high-throughput-mode
+            and (
+                not self.high_throughput
+                or fifo_message.message_group_id == original_message.message_group_id
+            )
         ):
             message["MessageId"] = original_message.message["MessageId"]
         else:

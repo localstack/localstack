@@ -162,11 +162,11 @@
 /tests/aws/services/iam/ @dfangl @pinzon
 
 # kms
-/localstack/aws/api/kms/ @sannya-singal @silv-io
-/localstack/services/kms/ @sannya-singal @silv-io
-/localstack/services/cloudformation/models/kms.py @sannya-singal @silv-io
-/tests/aws/services/kms/ @sannya-singal @silv-io
-/tests/unit/test_kms.py @sannya-singal @silv-io
+/localstack/aws/api/kms/ @sannya-singal
+/localstack/services/kms/ @sannya-singal
+/localstack/services/cloudformation/models/kms.py @sannya-singal
+/tests/aws/services/kms/ @sannya-singal
+/tests/unit/test_kms.py @sannya-singal
 
 # lambda
 /localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl

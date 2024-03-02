@@ -235,6 +235,7 @@ class Runtime(str):
     dotnetcore2_1 = "dotnetcore2.1"
     dotnetcore3_1 = "dotnetcore3.1"
     dotnet6 = "dotnet6"
+    dotnet8 = "dotnet8"
     nodejs4_3_edge = "nodejs4.3-edge"
     go1_x = "go1.x"
     ruby2_5 = "ruby2.5"

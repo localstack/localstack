@@ -3724,10 +3724,7 @@ class TestSqsProvider:
         response = aws_sqs_client.receive_message(QueueUrl=queue_url)
         snapshot.match("same-dedup-different-grp-2", response)
 
-    @pytest.mark.xfail(
-        condition=not is_aws_cloud(), reason="High-throughput for FIFO queues not yet implemented"
-    )
-    @markers.aws.needs_fixing
+    @markers.aws.validated
     def test_fifo_high_throughput_ordering(self, aws_sqs_client, snapshot, sqs_create_queue):
         attributes = {
             "FifoQueue": "True",
@@ -3758,6 +3755,119 @@ class TestSqsProvider:
         )
         response = aws_sqs_client.receive_message(QueueUrl=queue_url)
         snapshot.match("same-dedup-different-grp-2", response)
+
+    @markers.aws.validated
+    def test_fifo_change_to_high_throughput_after_creation(
+        self, sqs_create_queue, snapshot, aws_sqs_client
+    ):
+        attributes = {
+            "FifoQueue": "True",
+            "ContentBasedDeduplication": "False",
+            "DeduplicationScope": "queue",
+        }
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}.fifo", Attributes=attributes)
+        dedup_id = "same-dedup"
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test1",
+            MessageGroupId="group1",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-1", response)
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test2",
+            MessageGroupId="group2",
+            MessageDeduplicationId=dedup_id,
+        )
+        # this should have been a duplicate
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+        snapshot.match("same-dedup-different-grp-2", response)
+
+        attributes = {
+            "DeduplicationScope": "messageGroup",
+            "FifoThroughputLimit": "perMessageGroupId",
+        }
+        aws_sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+        response = aws_sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+        snapshot.match("set-to-high-throughput", response)
+        # do we receive "old duplicates" now?
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-high-throughput", response)
+
+        # send new message that should be no duplicate now (but would have been in regular fifo mode)
+        # however, behaviour does not seem to change on AWS
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test3",
+            MessageGroupId="group3",
+            MessageDeduplicationId=dedup_id,
+        )
+
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-high-throughput-2", response)
+
+    @markers.aws.validated
+    def test_fifo_change_to_regular_throughput_after_creation(
+        self, sqs_create_queue, snapshot, aws_sqs_client
+    ):
+        attributes = {
+            "FifoQueue": "True",
+            "ContentBasedDeduplication": "False",
+            "DeduplicationScope": "messageGroup",
+            "FifoThroughputLimit": "perMessageGroupId",
+        }
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}.fifo", Attributes=attributes)
+        dedup_id = "same-dedup"
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test1",
+            MessageGroupId="group1",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-1", response)
+        receipt_handle = response["Messages"][0]["ReceiptHandle"]
+        aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test2",
+            MessageGroupId="group2",
+            MessageDeduplicationId=dedup_id,
+        )
+        # this should have been no duplicate
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        receipt_handle = response["Messages"][0]["ReceiptHandle"]
+        aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+        snapshot.match("same-dedup-different-grp-2", response)
+
+        attributes = {
+            "DeduplicationScope": "queue",
+            "FifoThroughputLimit": "perQueue",
+        }
+        aws_sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+        response = aws_sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+        snapshot.match("set-to-regular-throughput", response)
+
+        # send new message that should be a duplicate now (but wasn't in high throughput mode)
+        # however, behaviour does not seem to change on AWS
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test3",
+            MessageGroupId="group3",
+            MessageDeduplicationId=dedup_id,
+        )
+
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-regular-throughput", response)
 
     @markers.aws.validated
     def test_sse_queue_attributes(self, sqs_create_queue, snapshot, aws_sqs_client):

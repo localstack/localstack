@@ -64,6 +64,7 @@ API_COMPOSITES = {
         "s3",
     ],
     "cognito": ["cognito-idp", "cognito-identity"],
+    "timestream": ["timestream-write", "timestream-query"],
 }
 
 
