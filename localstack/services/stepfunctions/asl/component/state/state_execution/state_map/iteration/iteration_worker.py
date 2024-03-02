@@ -179,14 +179,8 @@ class IterationWorker(abc.ABC):
         self._eval_job(env=job_frame, job=job)
         worker_frame.close_frame(job_frame)
 
-        # Evaluation terminates here due to exception in job.
-        if isinstance(job.job_output, Exception):
-            self._env.close_frame(worker_frame)
-            self._job_pool.close_job(job)
-            return
-
-        # Worker was stopped.
-        if self.stopped():
+        # Evaluation terminates here due to exception in job, or worker was stopped.
+        if isinstance(job.job_output, Exception) or self.stopped():
             self._env.close_frame(worker_frame)
             self._job_pool.close_job(job)
             return

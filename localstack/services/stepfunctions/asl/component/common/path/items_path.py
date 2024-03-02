@@ -13,7 +13,7 @@ class ItemsPath(EvalComponent):
         self.items_path_src: Final[str] = items_path_src
 
     def _eval_body(self, env: Environment) -> None:
+        value = copy.deepcopy(env.stack[-1])
         if self.items_path_src != ItemsPath.DEFAULT_PATH:
-            value = copy.deepcopy(env.stack[-1])
             value = JSONPathUtils.extract_json(self.items_path_src, value)
-            env.stack.append(value)
+        env.stack.append(value)

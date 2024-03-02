@@ -7,7 +7,14 @@ from typing import Any, Final, Optional
 
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
+from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.program.program import Program
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
+    ItemSelector,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.processor_config import (
+    ProcessorConfig,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_component import (
     IterationComponent,
 )
@@ -30,14 +37,26 @@ class InlineIterationComponentEvalInput:
     state_name: Final[str]
     max_concurrency: Final[int]
     input_items: Final[list[json]]
+    parameters: Final[Optional[Parameters]]
+    item_selector: Final[Optional[ItemSelector]]
 
-    def __init__(self, state_name: str, max_concurrency: int, input_items: list[json]):
+    def __init__(
+        self,
+        state_name: str,
+        max_concurrency: int,
+        input_items: list[json],
+        parameters: Optional[Parameters],
+        item_selector: Optional[ItemSelector],
+    ):
         self.state_name = state_name
         self.max_concurrency = max_concurrency
         self.input_items = input_items
+        self.parameters = parameters
+        self.item_selector = item_selector
 
 
 class InlineIterationComponent(IterationComponent, abc.ABC):
+    _processor_config: Final[ProcessorConfig]
     _eval_input: Optional[InlineIterationComponentEvalInput]
     _job_pool: Optional[JobPool]
 
@@ -45,9 +64,11 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
         self,
         start_at: StartAt,
         states: States,
+        processor_config: ProcessorConfig,
         comment: Optional[Comment],
     ):
         super().__init__(start_at=start_at, states=states, comment=comment)
+        self._processor_config = processor_config
         self._eval_input = None
         self._job_pool = None
 
