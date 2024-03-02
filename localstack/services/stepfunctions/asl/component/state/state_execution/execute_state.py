@@ -128,6 +128,7 @@ class ExecutionState(CommonStateField, abc.ABC):
             "State Task encountered an unhandled exception that lead to a State.Runtime error."
         )
         return FailureEvent(
+            env=env,
             error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(

@@ -42,6 +42,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, ClientError):
             return FailureEvent(
+                env=env,
                 error_name=CustomErrorName(self._ERROR_NAME_CLIENT),
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(
