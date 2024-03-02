@@ -1,3 +1,4 @@
+import logging
 from typing import Final, Optional
 
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
@@ -28,6 +29,9 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramState,
     ProgramStopped,
 )
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+
+LOG = logging.getLogger(__name__)
 
 
 class DistributedItemProcessorWorker(InlineItemProcessorWorker):
@@ -92,13 +96,22 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
 
                 job_output = env.inp
 
-        except EvalTimeoutError:
+        except EvalTimeoutError as timeout_error:
+            LOG.debug(
+                f"MapRun worker Timeout Error '{timeout_error}' for input '{to_json_str(job.job_input)}'."
+            )
             self._map_run_record.item_counter.timed_out.count()
 
-        except FailureEventException:
+        except FailureEventException as failure_event_ex:
+            LOG.debug(
+                f"MapRun worker Event Exception '{to_json_str(failure_event_ex.failure_event)}' for input '{to_json_str(job.job_input)}'."
+            )
             self._map_run_record.item_counter.failed.count()
 
-        except Exception:
+        except Exception as exception:
+            LOG.debug(
+                f"MapRun worker Error '{exception}' for input '{to_json_str(job.job_input)}'."
+            )
             self._map_run_record.item_counter.failed.count()
 
         finally:
@@ -106,8 +119,6 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
             job.job_output = job_output
 
     def _eval_pool(self, job: Optional[Job], worker_frame: Environment) -> None:
-        # Note: the frame has to be closed before the job, to ensure the owner environment is correctly updated
-        #  before the evaluation continues; map states await for job termination not workers termination.
         if job is None:
             self._env.delete_frame(worker_frame)
             return
@@ -117,14 +128,8 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
         self._eval_job(env=job_frame, job=job)
         worker_frame.delete_frame(job_frame)
 
-        # Evaluation terminates here due to exception in job.
-        if isinstance(job.job_output, Exception):
-            self._env.delete_frame(worker_frame)
-            self._job_pool.close_job(job)
-            return
-
-        # Worker was stopped.
-        if self.stopped():
+        # Evaluation terminates here due to exception in job, or worker was stopped.
+        if isinstance(job.job_output, Exception) or self.stopped():
             self._env.delete_frame(worker_frame)
             self._job_pool.close_job(job)
             return
@@ -132,6 +137,8 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
         next_job: Job = self._job_pool.next_job()
         # Iteration will terminate after this job.
         if next_job is None:
+            # The frame has to be closed before the job, to ensure the owner environment is correctly updated
+            #  before the evaluation continues; map states await for job termination not workers termination.
             self._env.delete_frame(worker_frame)
             self._job_pool.close_job(job)
             return
