@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, List
 
 from rolo.gateway import Gateway
 from twisted.internet import endpoints, reactor, ssl
+from twisted.internet.interfaces import IProtocol
+from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
 from twisted.web.server import Request, Site
 from twisted.web.wsgi import WSGIResource, _WSGIResponse
 
@@ -62,6 +64,38 @@ class TwistedGatewayAdapter:
         return self.app(environ, start_response)
 
 
+class HttpsMultiplexer(TLSMemoryBIOProtocol):
+    def __init__(
+        self,
+        factory: TLSMemoryBIOFactory,
+        wrappedProtocol: IProtocol,
+        _connectWrapped: bool = True,
+    ):
+        super().__init__(factory, wrappedProtocol, _connectWrapped)
+        self._isInitialized = False
+        self._isTLS = False
+
+    def dataReceived(self, data):
+        if not self._isInitialized:
+            self._isInitialized = True
+            self._isTLS = data[0] == 22
+
+        if self._isTLS:
+            super().dataReceived(data)
+            self.dataReceived = super().dataReceived
+            self.write = super().write
+            self.writeSequence = super().writeSequence
+        else:
+            self.wrappedProtocol.dataReceived(data)
+            self.dataReceived = self.wrappedProtocol.dataReceived
+            self.write = self.transport.write
+            self.writeSequence = self.transport.writeSequence
+
+
+class HttpsMultiplexerFactory(TLSMemoryBIOFactory):
+    protocol = HttpsMultiplexer
+
+
 def serve_gateway(
     gateway: Gateway, listen: List[HostAndPort], use_ssl: bool, asynchronous: bool = False
 ):
@@ -90,7 +124,6 @@ def serve_gateway(
         install_predefined_cert_if_available()
         serial_number = listen[0].port
         _, cert_file_name, key_file_name = create_ssl_cert(serial_number=serial_number)
-        print(cert_file_name, key_file_name)
         context_factory = ssl.DefaultOpenSSLContextFactory(key_file_name, cert_file_name)
     else:
         context_factory = None
@@ -98,13 +131,14 @@ def serve_gateway(
     # setup endpoints context
     for host_and_port in listen:
         # TODO: interface = host?
-        if use_ssl:
-            # TODO: duplex socket for twisted
-            endpoint = endpoints.SSL4ServerEndpoint(reactor, host_and_port.port, context_factory)
-        else:
-            endpoint = endpoints.TCP4ServerEndpoint(reactor, host_and_port.port)
+        endpoint = endpoints.TCP4ServerEndpoint(reactor, host_and_port.port)
 
-        endpoint.listen(site)
+        if use_ssl:
+            protocol_factory = HttpsMultiplexerFactory(context_factory, False, site)
+        else:
+            protocol_factory = site
+
+        endpoint.listen(protocol_factory)
 
     if asynchronous:
         return start_worker_thread(reactor.run)
