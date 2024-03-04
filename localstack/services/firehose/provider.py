@@ -803,9 +803,7 @@ class FirehoseProvider(FirehoseApi):
         redshift_destination_description: RedshiftDestinationDescription,
     ):
         jdbcurl = redshift_destination_description.get("ClusterJDBCURL")
-        # pattern = r"jdbc:redshift://([^:/]+):(\d+)/([^/]+)(/[^/]+)?"
-        # match = re.search(pattern, jdbcurl)
-        # address, port, db_name, db_name = match.groups()
+        cluster_id = self._get_cluster_id_from_jdbc_url(jdbcurl)
         db_name = jdbcurl.split("/")[-1]
         table_name = redshift_destination_description.get("CopyCommand").get("DataTableName")
 
@@ -842,8 +840,7 @@ class FirehoseProvider(FirehoseApi):
         execute_statement = {
             "Sql": sql_insert_statement,
             "Database": db_name,
-            # TODO: how to get cluster_identifier from redshift_destination_description?
-            "ClusterIdentifier": "redshift-cluster",  # cluster_identifier in cluster create
+            "ClusterIdentifier": cluster_id,  # cluster_identifier in cluster create
         }
 
         if role_arn := redshift_destination_description.get("RoleARN"):
@@ -863,3 +860,11 @@ class FirehoseProvider(FirehoseApi):
         except Exception as e:
             LOG.exception(f"Unable to put records {records} to redshift cluster.")
             raise e
+
+    def _get_cluster_id_from_jdbc_url(self, jdbc_url: str) -> str:
+        pattern = r"://(.*?)\."
+        match = re.search(pattern, jdbc_url)
+        if match:
+            return match.group(1)
+        else:
+            raise ValueError(f"Unable to extract cluster id from jdbc url: {jdbc_url}")
