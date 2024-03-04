@@ -112,6 +112,8 @@ class TestCloudwatch:
         rs = aws_client.cloudwatch.list_metrics(Namespace=namespace, MetricName=metric_name)
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
+        assert region_name == "random_region_test"
+        assert TEST_AWS_ACCESS_KEY_ID == "random_access_key_id"
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
