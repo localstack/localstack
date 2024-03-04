@@ -742,6 +742,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         validate_failed_precondition(request, s3_object.last_modified, s3_object.etag)
 
+        # we deliberately do not call `.close()` on the s3_stored_object to keep the read lock acquired. When passing
+        # the object to Werkzeug, the handler will call `.close()` after finishing iterating over `__iter__`.
+        # TODO: we can run in a race condition if a concurrent thread updates the object between
+        #  `s3_object = s3_bucket.get_object` and the call under.
+        s3_stored_object = self._storage_backend.open(bucket_name, s3_object, mode="r")
+
         response = GetObjectOutput(
             AcceptRanges="bytes",
             **s3_object.get_system_metadata_fields(),
@@ -764,10 +770,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
-
-        # we deliberately do not call `.close()` on the s3_stored_object to keep the read lock acquired. When passing
-        # the object to Werkzeug, the handler will call `.close()` after finishing iterating over `__iter__`.
-        s3_stored_object = self._storage_backend.open(bucket_name, s3_object, mode="r")
 
         range_header = request.get("Range")
         part_number = request.get("PartNumber")
