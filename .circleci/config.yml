@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "11 8 * * *"
+    default: "35 12 * * *"
 
 executors:
   ubuntu-machine-amd64:
@@ -186,6 +186,9 @@ jobs:
             PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
             TEST_PATH: "tests/aws/services/cloudwatch/"
             COVERAGE_ARGS: "-p"
+            TEST_AWS_ACCOUNT_ID: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_ACCOUNT_ID }}
+            TEST_AWS_ACCESS_KEY_ID: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_ACCESS_KEY_ID }}
+            TEST_AWS_REGION_NAME: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_REGION_NAME }}
           command: |
             COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
@@ -386,6 +389,12 @@ jobs:
             echo "TEST_AWS_ACCESS_KEY_ID: $TEST_AWS_ACCESS_KEY_ID"
             echo "TEST_AWS_REGION_NAME: $TEST_AWS_REGION_NAME"
             source $BASH_ENV
+
+      # Then consume these output variables in subsequent jobs
+      - save_cache:
+          key: aws-credentials-{{ .Revision }}
+          paths:
+            - $BASH_ENV
 
   report:
     executor: ubuntu-machine-amd64
