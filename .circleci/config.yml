@@ -22,7 +22,7 @@ commands:
             if [[ $CIRCLE_BRANCH == "master" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             else
-              echo "export TESTSELECTION_PYTEST_ARGS='--path-filter target/testselection/test-selection.txt '" >> $BASH_ENV
+              echo "export TESTSELECTION_PYTEST_ARGS='--path-filter=target/testselection/test-selection.txt '" >> $BASH_ENV
             fi
             echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
             echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
