@@ -1,39 +1,43 @@
-"""Bindings to serve LocalStack using twisted.web.wsgi"""
+"""
+Bindings to serve LocalStack using twisted.web.wsgi.
+
+TODO: both header retaining and TLS multiplexing are implemented in a pretty hacky way.
+"""
 import logging
 from typing import TYPE_CHECKING, List
 
 from rolo.gateway import Gateway
-from twisted.internet import endpoints, reactor, ssl
-from twisted.internet.interfaces import IProtocol
+from twisted.internet import endpoints, interfaces, reactor, ssl
 from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
-from twisted.web.server import Request, Site
+from twisted.web.http import HTTPChannel, _GenericHTTPChannelProtocol
+from twisted.web.server import Request as TwistedRequest
+from twisted.web.server import Site
 from twisted.web.wsgi import WSGIResource, _WSGIResponse
 
-from localstack.aws.app import LocalstackAwsGateway
+from localstack import config
 from localstack.aws.serving.wsgi import WsgiGateway
 from localstack.config import HostAndPort
 from localstack.runtime.shutdown import ON_AFTER_SERVICE_SHUTDOWN_HANDLERS
-from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.utils.patch import patch
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 from localstack.utils.threads import start_worker_thread
 
 if TYPE_CHECKING:
-    from _typeshed.wsgi import StartResponse, WSGIApplication, WSGIEnvironment
+    from _typeshed.wsgi import WSGIEnvironment
 
 LOG = logging.getLogger(__name__)
 
-# TODO: duplex ssl socket
 # TODO: websockets
 
 
-def update_environment(environ: "WSGIEnvironment", request: Request):
+def update_environment(environ: "WSGIEnvironment", request: TwistedRequest):
     # store raw headers
     headers: list[tuple[bytes, bytes]] = []
     for k, vs in request.requestHeaders.getAllRawHeaders():
         for v in vs:
             headers.append((k, v))
     environ["asgi.headers"] = headers
+
     # create RAW_URI and REQUEST_URI
     # TODO: check if this is correct
     environ["REQUEST_URI"] = request.uri.decode("utf-8")
@@ -54,21 +58,62 @@ def _init_wsgi_response(init, self, reactor, threadpool, application, request):
     update_environment(self.environ, request)
 
 
-class TwistedGatewayAdapter:
-    app: "WSGIApplication"
+@patch(_WSGIResponse.startResponse)
+def _start_wsgi_response(startReponse, self, status, headers, excInfo=None):
+    result = startReponse(self, status, headers, excInfo)
+    # before starting the WSGI response, make sure we store the raw case mappings into the response headers
+    for header, _ in self.headers:
+        header = header.encode("latin-1")
+        self.request.responseHeaders._caseMappings[header.lower()] = header
+    return result
 
-    def __init__(self, app: "WSGIApplication"):
-        self.app = app
 
-    def __call__(self, environ: "WSGIEnvironment", start_response: "StartResponse"):
-        return self.app(environ, start_response)
+class TwistedRequestAdapter(TwistedRequest):
+    rawHeaderList: list[tuple[bytes, bytes]]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # instantiate case mappings, these are used by `getAllRawHeaders` to restore casing
+        # by default, they are class attributes, so we would override them globally
+        self.requestHeaders._caseMappings = dict(self.requestHeaders._caseMappings)
+        self.responseHeaders._caseMappings = dict(self.responseHeaders._caseMappings)
 
 
-class HttpsMultiplexer(TLSMemoryBIOProtocol):
+class HeaderPreservingHTTPChannel(HTTPChannel):
+    requestFactory = TwistedRequestAdapter
+
+    @staticmethod
+    def protocol_factory():
+        return _GenericHTTPChannelProtocol(HeaderPreservingHTTPChannel())
+
+    def headerReceived(self, line):
+        if not super().headerReceived(line):
+            return False
+
+        # remember casing of headers for requests
+        header, data = line.split(b":", 1)
+        request: TwistedRequestAdapter = self.requests[-1]
+        request.requestHeaders._caseMappings[header.lower()] = header
+        return True
+
+    def writeHeaders(self, version, code, reason, headers):
+        """Alternative implementation that writes the raw headers instead of sanitized versions."""
+        responseLine = version + b" " + code + b" " + reason + b"\r\n"
+        headerSequence = [responseLine]
+
+        for name, value in headers:
+            line = name + b": " + value + b"\r\n"
+            headerSequence.append(line)
+
+        headerSequence.append(b"\r\n")
+        self.transport.writeSequence(headerSequence)
+
+
+class TLSMultiplexer(TLSMemoryBIOProtocol):
     def __init__(
         self,
         factory: TLSMemoryBIOFactory,
-        wrappedProtocol: IProtocol,
+        wrappedProtocol: interfaces.IProtocol,
         _connectWrapped: bool = True,
     ):
         super().__init__(factory, wrappedProtocol, _connectWrapped)
@@ -76,24 +121,25 @@ class HttpsMultiplexer(TLSMemoryBIOProtocol):
         self._isTLS = False
 
     def dataReceived(self, data):
-        if not self._isInitialized:
-            self._isInitialized = True
-            self._isTLS = data[0] == 22
+        if self._isInitialized:
+            raise ValueError("Should not call this method once initialized")
+
+        self._isInitialized = True
+        self._isTLS = data[0] == 22
 
         if self._isTLS:
-            super().dataReceived(data)
             self.dataReceived = super().dataReceived
             self.write = super().write
-            self.writeSequence = super().writeSequence
         else:
-            self.wrappedProtocol.dataReceived(data)
+            # foregoes TLS wrapper
             self.dataReceived = self.wrappedProtocol.dataReceived
             self.write = self.transport.write
-            self.writeSequence = self.transport.writeSequence
+
+        self.dataReceived(data)
 
 
-class HttpsMultiplexerFactory(TLSMemoryBIOFactory):
-    protocol = HttpsMultiplexer
+class TLSMultiplexerFactory(TLSMemoryBIOFactory):
+    protocol = TLSMultiplexer
 
 
 def serve_gateway(
@@ -104,7 +150,7 @@ def serve_gateway(
     LocalstackAwsGateway.
     """
     # setup reactor
-    reactor.suggestThreadPoolSize(1000)
+    reactor.suggestThreadPoolSize(config.GATEWAY_WORKER_COUNT)
     thread_pool = reactor.getThreadPool()
 
     def _shutdown_reactor():
@@ -114,10 +160,11 @@ def serve_gateway(
     ON_AFTER_SERVICE_SHUTDOWN_HANDLERS.register(_shutdown_reactor)
 
     # setup twisted webserver Site
-    gateway = LocalstackAwsGateway(SERVICE_PLUGINS)
     wsgi = WsgiGateway(gateway)
-    resource = WSGIResource(reactor, thread_pool, TwistedGatewayAdapter(wsgi))
+    resource = WSGIResource(reactor, thread_pool, wsgi)
     site = Site(resource)
+    site.protocol = HeaderPreservingHTTPChannel.protocol_factory
+    site.requestFactory = TwistedRequestAdapter
 
     # configure ssl
     if use_ssl:
@@ -125,19 +172,14 @@ def serve_gateway(
         serial_number = listen[0].port
         _, cert_file_name, key_file_name = create_ssl_cert(serial_number=serial_number)
         context_factory = ssl.DefaultOpenSSLContextFactory(key_file_name, cert_file_name)
+        protocol_factory = TLSMultiplexerFactory(context_factory, False, site)
     else:
-        context_factory = None
+        protocol_factory = site
 
     # setup endpoints context
     for host_and_port in listen:
         # TODO: interface = host?
         endpoint = endpoints.TCP4ServerEndpoint(reactor, host_and_port.port)
-
-        if use_ssl:
-            protocol_factory = HttpsMultiplexerFactory(context_factory, False, site)
-        else:
-            protocol_factory = site
-
         endpoint.listen(protocol_factory)
 
     if asynchronous:
