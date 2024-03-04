@@ -63,7 +63,8 @@ if __name__ == "__main__":
     output_file = Path(output_file_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, "w") as fd:
-        fd.writelines(sorted(test_files))
-        fd.write("\n")
+        for test_file in test_files:
+            fd.write(test_file)
+            fd.write("\n")
 
     print(f"Successfully written test selection to {output_file_path}")
