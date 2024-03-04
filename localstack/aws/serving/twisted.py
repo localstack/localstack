@@ -82,11 +82,6 @@ class TwistedRequestAdapter(TwistedRequest):
         self.requestHeaders._caseMappings = dict(self.requestHeaders._caseMappings)
         self.responseHeaders._caseMappings = dict(self.responseHeaders._caseMappings)
 
-    def process(self):
-        super().process()
-        # super().process() sets by default the "server" header, but LocalStack tests don't like that
-        self.responseHeaders.removeHeader("server")
-
 
 class HeaderPreservingHTTPChannel(HTTPChannel):
     requestFactory = TwistedRequestAdapter
