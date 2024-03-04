@@ -76,7 +76,7 @@ def _get_service_for_module(module_name: str) -> str:
 
 
 # TODO: could cache this, but a bit premature to optimize
-def _expand_api_dependencies(svc_name: str) -> set[str]:
+def _expand_api_dependencies(svc_name: str) -> "set[str]":
     result = set()
     dependencies = API_DEPENDENCIES.get(svc_name, [])
     result.update(dependencies)
@@ -87,7 +87,7 @@ def _expand_api_dependencies(svc_name: str) -> set[str]:
     return result
 
 
-def resolve_dependencies(module_name: str) -> set[str]:
+def resolve_dependencies(module_name: str) -> "set[str]":
     svc_name = _get_service_for_module(module_name)
     return _expand_api_dependencies(svc_name)
 
@@ -97,7 +97,7 @@ def resolve_dependencies(module_name: str) -> set[str]:
 ###############################################################
 
 
-def get_affected_tests_from_changes(changed_files: [str]) -> set[str]:
+def get_affected_tests_from_changes(changed_files: [str]) -> "set[str]":
     # TODO: reduce based on inclusion (won't hurt but is a bit weird)
     # e.g. Number of affected test determined: 3
     # {'tests/aws/services/stepfunctions/',
