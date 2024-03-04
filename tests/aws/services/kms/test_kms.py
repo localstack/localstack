@@ -108,6 +108,51 @@ class TestKMS:
         assert result["KeyId"] == key_id
         assert result["Arn"].endswith(f":key/{key_id}")
 
+    @markers.aws.only_localstack
+    def test_create_key_custom_key_material_hmac(self, kms_create_key, aws_client):
+        custom_key_material = base64.b64encode(b"custom test key material").decode("utf-8")
+        key_spec = "HMAC_256"
+        mac_algo = "HMAC_SHA_256"
+        expected_mac = b"}\xa2\x95\xb8\xac\xc9*$\xe7!G\xdb\xf2\xc7:8y\xb1\xcf\xdf\xcc[5\xdcA\xd0e\x98\x13d\x88\x8e"
+
+        key_id = kms_create_key(
+            KeySpec=key_spec,
+            KeyUsage="GENERATE_VERIFY_MAC",
+            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_material}],
+        )["KeyId"]
+
+        mac = aws_client.kms.generate_mac(
+            KeyId=key_id,
+            Message="some important message",
+            MacAlgorithm=mac_algo,
+        )["Mac"]
+        assert mac == expected_mac
+
+        verify_mac_response = aws_client.kms.verify_mac(
+            KeyId=key_id,
+            Message="some important message",
+            MacAlgorithm=mac_algo,
+            Mac=expected_mac,
+        )
+        assert verify_mac_response["MacValid"]
+
+    @markers.aws.only_localstack
+    def test_create_key_custom_key_material_symmetric_decrypt(self, kms_create_key, aws_client):
+        custom_key_material = base64.b64encode(b"custom test key material").decode("utf-8")
+        algo = "SYMMETRIC_DEFAULT"
+        message = b"test message 123 !%$@ 1234567890"
+        encrypted_message = b"m\xdc\x8e\xb5\xc4\xa2\\\x9f\x02\xa3\xfd[+L2N\x06`\xe8F\x87\xa0\xebh\xac\xa0qR \xec\x8eh?\n\x84l\x8d6\x0e\xd8d75\xa313H\x1e\x16\xf9\x14\x83,onX\xc5\x9d\x82\x84\x1d\xe91\x9c:\xea\x08\xc6\xdbc\x1f\xdcB\xf4\x83R\x83\x885\xc7"
+
+        key_id = kms_create_key(
+            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_material}]
+        )["KeyId"]
+        plaintext = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=key_id.encode() + encrypted_message,
+            EncryptionAlgorithm=algo,
+        )["Plaintext"]
+        assert base64.b64decode(plaintext) == message
+
     @markers.aws.validated
     def test_get_key_in_different_region(
         self, kms_client_for_region, kms_create_key, snapshot, region_name, secondary_region_name
