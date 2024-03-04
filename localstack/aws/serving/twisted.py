@@ -197,6 +197,7 @@ def serve_gateway(
         serial_number = listen[0].port
         _, cert_file_name, key_file_name = create_ssl_cert(serial_number=serial_number)
         context_factory = ssl.DefaultOpenSSLContextFactory(key_file_name, cert_file_name)
+        context_factory.getContext().use_certificate_chain_file(cert_file_name)
         protocol_factory = TLSMultiplexerFactory(context_factory, False, site)
     else:
         protocol_factory = site

@@ -161,6 +161,15 @@ class TestWerkzeugIntegration:
         assert "X-fOO_bar" in dict(response.headers)
 
 
+class TestHttps:
+    def test_default_cert_works(self):
+        response = requests.get(
+            config.internal_service_url(host="localhost.localstack.cloud", protocol="https")
+            + "/_localstack/health",
+        )
+        assert response.ok
+
+
 class TestWebSocketIntegration:
     """
     Test for the WebSocket/HandlerChain integration.
