@@ -85,7 +85,7 @@ jobs:
           name: Execute Python Script
           command: |
             source .venv/bin/activate
-            python -m scripts.generate_test_selection.py /tmp/workspace/repo $CI_PULL_REQUEST target/testselection/test-selection.txt
+            python -m scripts.generate_test_selection /tmp/workspace/repo $CI_PULL_REQUEST target/testselection/test-selection.txt
       - run:
           name: Output list of generated test selection
           command: |
