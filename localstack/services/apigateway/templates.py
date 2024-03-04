@@ -6,8 +6,10 @@ from enum import Enum
 from typing import Any, Dict, Union
 from urllib.parse import quote_plus, unquote_plus
 
+import xmltodict
+
 from localstack import config
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, APPLICATION_XML
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import select_integration_response
 from localstack.utils.aws.templating import VelocityUtil, VtlTemplate
@@ -320,18 +322,23 @@ class ResponseTemplates(Templates):
         response.status_code = int(selected_integration_response.get("statusCode", 200))
         response_templates = selected_integration_response.get("responseTemplates", {})
 
-        # we only support JSON templates for now - if there is no template we return
-        # the response as is
-        # TODO - support other content types, besides application/json (based on `Accept` request header)
+        # we only support JSON and XML templates for now - if there is no template we return the response as is
+        # TODO - support other content types, besides application/json and application/xml
         # see https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#selecting-mapping-templates
-        template = response_templates.get(APPLICATION_JSON, {})
-        if not template:
+        accept = api_context.headers.get("accept", APPLICATION_JSON)
+        if accept not in [APPLICATION_JSON, APPLICATION_XML] or accept not in response_templates:
             return response._content
 
+        template = response_templates.get(accept, {})
         # we render the template with the context data and the response content
         variables = self.build_variables_mapping(api_context)
         # update the response body
-        response._content = self._render_as_json(template, variables)
+        response._content = self._render_as_text(template, variables)
+        if accept == APPLICATION_JSON:
+            self._validate_json(response.content)
+        elif accept == APPLICATION_XML:
+            self._validate_xml(response.content)
+
         if response_overrides := variables.get("context", {}).get("responseOverride", {}):
             response.headers.update(response_overrides.get("header", {}).items())
             response.status_code = response_overrides.get("status", 200)
@@ -339,16 +346,34 @@ class ResponseTemplates(Templates):
         LOG.debug("Endpoint response body after transformations:\n%s", response._content)
         return response._content
 
-    def _render_as_json(self, template: str, variables: dict[str, Any]) -> str:
+    def _render_as_text(self, template: str, variables: dict[str, Any]) -> str:
         """
-        Render the given Velocity template string + variables into a JSON string.
-        :raise JSONDecodeError: if template result is not valid JSON
-        :return: the template rendering result as a valid JSON string
+        Render the given Velocity template string + variables into a plain string.
+        :return: the template rendering result as a string
         """
         rendered_tpl = self.render_vtl(template, variables=variables)
-        rendered_value = rendered_tpl.strip()
+        return rendered_tpl.strip()
+
+    @staticmethod
+    def _validate_json(content: str):
+        """
+        Checks that the content received is a valid JSON.
+        :raise JSONDecodeError: if content is not valid JSON
+        """
         try:
-            return json.dumps(json.loads(rendered_value))
+            json.loads(content)
         except Exception as e:
-            LOG.info("Unable to parse template result as JSON: %s - %s", e, rendered_value)
+            LOG.info("Unable to parse template result as JSON: %s - %s", e, content)
+            raise
+
+    @staticmethod
+    def _validate_xml(content: str):
+        """
+        Checks that the content received is a valid JSON.
+        :raise JSONDecodeError: if content is not valid JSON
+        """
+        try:
+            xmltodict.parse(content)
+        except Exception as e:
+            LOG.info("Unable to parse template result as XML: %s - %s", e, content)
             raise
