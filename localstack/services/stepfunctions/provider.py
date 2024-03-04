@@ -2,17 +2,22 @@ import copy
 import datetime
 import json
 import logging
+import time
 from typing import Optional
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.stepfunctions import (
+    ActivityDoesNotExist,
     Arn,
     ConflictException,
+    CreateActivityOutput,
     CreateStateMachineInput,
     CreateStateMachineOutput,
     Definition,
+    DeleteActivityOutput,
     DeleteStateMachineOutput,
     DeleteStateMachineVersionOutput,
+    DescribeActivityOutput,
     DescribeExecutionOutput,
     DescribeMapRunOutput,
     DescribeStateMachineForExecutionOutput,
@@ -21,6 +26,7 @@ from localstack.aws.api.stepfunctions import (
     ExecutionList,
     ExecutionRedriveFilter,
     ExecutionStatus,
+    GetActivityTaskOutput,
     GetExecutionHistoryOutput,
     IncludeExecutionDataGetExecutionHistory,
     InvalidArn,
@@ -28,6 +34,7 @@ from localstack.aws.api.stepfunctions import (
     InvalidExecutionInput,
     InvalidName,
     InvalidToken,
+    ListActivitiesOutput,
     ListExecutionsOutput,
     ListExecutionsPageToken,
     ListMapRunsOutput,
@@ -80,6 +87,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     MapRunRecord,
 )
 from localstack.services.stepfunctions.asl.eval.callback.callback import (
+    ActivityCallbackEndpoint,
     CallbackConsumerTimeout,
     CallbackNotifyConsumerError,
     CallbackOutcomeFailure,
@@ -89,6 +97,7 @@ from localstack.services.stepfunctions.asl.parse.asl_parser import (
     AmazonStateLanguageParser,
     ASLParserException,
 )
+from localstack.services.stepfunctions.backend.activity import Activity, ActivityTask
 from localstack.services.stepfunctions.backend.execution import Execution
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
@@ -97,7 +106,12 @@ from localstack.services.stepfunctions.backend.state_machine import (
 )
 from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.state import StateVisitor
-from localstack.utils.aws.arns import ArnData, parse_arn, stepfunctions_state_machine_arn
+from localstack.utils.aws.arns import (
+    ArnData,
+    parse_arn,
+    stepfunctions_activity_arn,
+    stepfunctions_state_machine_arn,
+)
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
@@ -386,6 +400,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             start_date=datetime.datetime.now(tz=datetime.timezone.utc),
             input_data=input_data,
             trace_header=trace_header,
+            activity_store=self.get_store(context).activities,
         )
         self.get_store(context).executions[exec_arn] = execution
 
@@ -690,3 +705,97 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 )
                 return UpdateMapRunOutput()
         raise ResourceNotFound()
+
+    def _validate_activity_name(self, name: str) -> None:
+        invalid_chars = set(' <>{}[]?*"#%\\^|~`$&,;:/')
+        control_chars = {chr(i) for i in range(32)} | {chr(i) for i in range(127, 160)}
+        invalid_chars |= control_chars
+        for char in name:
+            if char in invalid_chars:
+                raise InvalidName(f"Invalid Name: '{name}'")
+
+    def create_activity(
+        self, context: RequestContext, name: Name, tags: TagList = None, **kwargs
+    ) -> CreateActivityOutput:
+        self._validate_activity_name(name=name)
+        activity_arn = stepfunctions_activity_arn(
+            name=name, account_id=context.account_id, region_name=context.region
+        )
+        activities = self.get_store(context).activities
+        if activity_arn not in activities:
+            activity = Activity(arn=activity_arn, name=name)
+            self.get_store(context).activities[activity_arn] = activity
+        else:
+            activity = activities[activity_arn]
+
+        return CreateActivityOutput(activityArn=activity.arn, creationDate=activity.creation_date)
+
+    def delete_activity(
+        self, context: RequestContext, activity_arn: Arn, **kwargs
+    ) -> DeleteActivityOutput:
+        self.get_store(context).activities.pop(activity_arn, None)
+        return DeleteActivityOutput()
+
+    def describe_activity(
+        self, context: RequestContext, activity_arn: Arn, **kwargs
+    ) -> DescribeActivityOutput:
+        maybe_activity: Optional[Activity] = self.get_store(context).activities.get(
+            activity_arn, None
+        )
+        if maybe_activity is None:
+            raise ActivityDoesNotExist(f"Activity Does Not Exist: '{activity_arn}'")
+        return maybe_activity.to_describe_activity_output()
+
+    def list_activities(
+        self,
+        context: RequestContext,
+        max_results: PageSize = None,
+        next_token: PageToken = None,
+        **kwargs,
+    ) -> ListActivitiesOutput:
+        activities: list[Activity] = list(self.get_store(context).activities.values())
+        return ListActivitiesOutput(
+            activities=[activity.to_activity_list_item() for activity in activities]
+        )
+
+    def _send_activity_task_started(
+        self, context: RequestContext, task_token: TaskToken, worker_name: Optional[Name]
+    ) -> None:
+        executions: list[Execution] = self._get_executions(context)
+        for execution in executions:
+            callback_endpoint = execution.exec_worker.env.callback_pool_manager.get(
+                callback_id=task_token
+            )
+            if isinstance(callback_endpoint, ActivityCallbackEndpoint):
+                callback_endpoint.notify_activity_task_start(worker_name=worker_name)
+                return
+        raise InvalidToken()
+
+    @staticmethod
+    def _pull_activity_task(activity: Activity) -> Optional[ActivityTask]:
+        seconds_left = 60
+        while seconds_left > 0:
+            try:
+                return activity.get_task()
+            except IndexError:
+                time.sleep(1)
+                seconds_left -= 1
+        return None
+
+    def get_activity_task(
+        self, context: RequestContext, activity_arn: Arn, worker_name: Name = None, **kwargs
+    ) -> GetActivityTaskOutput:
+        maybe_activity = self.get_store(context).activities.get(activity_arn)
+        if maybe_activity is None:
+            raise ActivityDoesNotExist(f"Activity Does Not Exist: '{activity_arn}'")
+
+        maybe_task: Optional[ActivityTask] = self._pull_activity_task(activity=maybe_activity)
+        if maybe_task is not None:
+            self._send_activity_task_started(
+                context, maybe_task.task_token, worker_name=worker_name
+            )
+            return GetActivityTaskOutput(
+                taskToken=maybe_task.task_token, input=maybe_task.task_input
+            )
+
+        return GetActivityTaskOutput(taskToken=None, input=None)

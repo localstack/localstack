@@ -1,0 +1,62 @@
+{
+  "Comment": "HEARTBEAT_ID_ACTIVITY_CONSUMER",
+  "TimeoutSeconds": 600,
+  "StartAt": "GetActivityTask",
+  "States": {
+    "GetActivityTask": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:getActivityTask",
+      "Parameters": {
+        "ActivityArn.$": "$.ActivityArn",
+        "WorkerName": "BASE_ID_ACTIVITY_CONSUMER",
+      },
+      "ResultPath": "$.GetActivityTaskOutput",
+      "Next": "CheckTaskToken"
+    },
+    "CheckTaskToken": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.GetActivityTaskOutput.TaskToken",
+          "IsPresent": true,
+          "Next": "TaskReceived"
+        }
+      ],
+      "Default": "NoTaskReceived"
+    },
+    "TaskReceived": {
+      "Type": "Wait",
+      "Seconds": 2,
+      "Next": "SendHeartbeat"
+    },
+    "SendHeartbeat": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskHeartbeat",
+      "Parameters": {
+        "TaskToken.$": "$.GetActivityTaskOutput.TaskToken"
+      },
+      "ResultPath": "$.SendHeartbeatOutput",
+      "Next": "WaitBeforeSuccess"
+    },
+    "WaitBeforeSuccess": {
+      "Type": "Wait",
+      "Seconds": 2,
+      "Next": "SendSuccess"
+    },
+    "SendSuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+      "Parameters": {
+        "Output.$": "$.GetActivityTaskOutput.Input",
+        "TaskToken.$": "$.GetActivityTaskOutput.TaskToken"
+      },
+      "End": true
+    },
+    "NoTaskReceived": {
+      "Type": "Wait",
+      "Seconds": 1,
+      "OutputPath": "$.ActivityArn",
+      "Next": "GetActivityTask"
+    }
+  }
+}

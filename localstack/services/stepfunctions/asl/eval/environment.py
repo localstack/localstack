@@ -5,7 +5,7 @@ import logging
 import threading
 from typing import Any, Final, Optional
 
-from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, Timestamp
+from localstack.aws.api.stepfunctions import Arn, ExecutionFailedEventDetails, Timestamp
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
     MapRunRecordPoolManager,
 )
@@ -28,6 +28,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramStopped,
     ProgramTimedOut,
 )
+from localstack.services.stepfunctions.backend.activity import Activity
 
 LOG = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ class Environment:
     callback_pool_manager: CallbackPoolManager
     map_run_record_pool_manager: MapRunRecordPoolManager
     context_object_manager: Final[ContextObjectManager]
+    activity_store: Final[dict[Arn, Activity]]
 
     _frames: Final[list[Environment]]
     _is_frame: bool = False
@@ -56,6 +58,7 @@ class Environment:
         aws_execution_details: AWSExecutionDetails,
         context_object_init: ContextObjectInitData,
         event_history_context: EventHistoryContext,
+        activity_store: dict[Arn, Activity],
     ):
         super(Environment, self).__init__()
         self._state_mutex = threading.RLock()
@@ -65,7 +68,7 @@ class Environment:
         self.event_history = EventHistory()
         self.event_history_context = event_history_context
         self.aws_execution_details = aws_execution_details
-        self.callback_pool_manager = CallbackPoolManager()
+        self.callback_pool_manager = CallbackPoolManager(activity_store=activity_store)
         self.map_run_record_pool_manager = MapRunRecordPoolManager()
         self.context_object_manager = ContextObjectManager(
             context_object=ContextObject(
@@ -73,6 +76,7 @@ class Environment:
                 StateMachine=context_object_init["StateMachine"],
             )
         )
+        self.activity_store = activity_store
 
         self._frames = list()
         self._is_frame = False
@@ -91,6 +95,7 @@ class Environment:
             aws_execution_details=env.aws_execution_details,
             context_object_init=context_object_init,
             event_history_context=event_history_frame_cache,
+            activity_store=env.activity_store,
         )
         frame._is_frame = True
         frame.event_history = env.event_history
