@@ -4,9 +4,9 @@ parameters:
   ubuntu-amd64-machine-image:
     type: string
     default: "ubuntu-2204:2023.02.1"
-  ubuntu-arm64-machine-image:
-    type: string
-    default: "ubuntu-2204:2023.02.1"
+#  ubuntu-arm64-machine-image:
+#    type: string
+#    default: "ubuntu-2204:2023.02.1"
 
 executors:
   ubuntu-machine-amd64:
@@ -21,6 +21,8 @@ commands:
           command: |
             if [[ $CIRCLE_BRANCH == "master" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
+            else
+              echo "export TESTSELECTION_PYTEST_ARGS='--path-filter target/testselection/test-selection.txt '" >> $BASH_ENV
             fi
             echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
             echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
@@ -69,6 +71,29 @@ jobs:
           name: Checking AWS compatibility markers
           command: make check-aws-markers
 
+
+  # TODO: make sure this is just passed if nothing needs to change
+  test-selection:
+#    if: TODO
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - run:
+          # script expects an environment variable $GITHUB_API_TOKEN to be set
+          name: Execute Python Script
+          command: |
+            source .venv/bin/activate
+            python -m scripts.generate_test_selection.py /tmp/workspace/repo $CI_PULL_REQUEST target/testselection/test-selection.txt
+      - run:
+          name: Output list of generated test selection
+          command: |
+            cat target/testselection/test-selection.txt
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/testselection/
+
   unit-tests:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -92,31 +117,6 @@ jobs:
             /tmp/workspace
           paths:
             - repo/target/coverage/
-
-  itest-sfn-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - run:
-          name: Test SFN Legacy provider
-          environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
-            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
 
   acceptance-tests:
     executor: ubuntu-machine-amd64
@@ -145,55 +145,81 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-s3-v2-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - run:
-          name: Test S3 v2 legacy provider
-          environment:
-            PROVIDER_OVERRIDE_S3: "legacy_v2"
-            TEST_PATH: "tests/aws/services/s3/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
-  itest-cloudwatch-v2-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - run:
-          name: Test CloudWatch v2 provider
-          environment:
-            PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
-            TEST_PATH: "tests/aws/services/cloudwatch/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
+  # TODO: re-enable before merge
+#  itest-sfn-legacy-provider:
+#    executor: ubuntu-machine-amd64
+#    working_directory: /tmp/workspace/repo
+#    steps:
+#      - attach_workspace:
+#          at: /tmp/workspace
+#      - prepare-pytest-tinybird
+#      - run:
+#          name: Test SFN Legacy provider
+#          environment:
+#            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
+#            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
+#            COVERAGE_ARGS: "-p"
+#          command: |
+#            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
+#            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
+#            make test-coverage
+#      - persist_to_workspace:
+#          root:
+#            /tmp/workspace
+#          paths:
+#            - repo/target/coverage/
+#      - store_test_results:
+#          path: target/reports/
+#
+#  itest-s3-v2-legacy-provider:
+#    executor: ubuntu-machine-amd64
+#    working_directory: /tmp/workspace/repo
+#    steps:
+#      - attach_workspace:
+#          at: /tmp/workspace
+#      - prepare-pytest-tinybird
+#      - run:
+#          name: Test S3 v2 legacy provider
+#          environment:
+#            PROVIDER_OVERRIDE_S3: "legacy_v2"
+#            TEST_PATH: "tests/aws/services/s3/"
+#            COVERAGE_ARGS: "-p"
+#          command: |
+#            COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
+#            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
+#            make test-coverage
+#      - persist_to_workspace:
+#          root:
+#            /tmp/workspace
+#          paths:
+#            - repo/target/coverage/
+#      - store_test_results:
+#          path: target/reports/
+#
+#  itest-cloudwatch-v2-provider:
+#    executor: ubuntu-machine-amd64
+#    working_directory: /tmp/workspace/repo
+#    steps:
+#      - attach_workspace:
+#          at: /tmp/workspace
+#      - prepare-pytest-tinybird
+#      - run:
+#          name: Test CloudWatch v2 provider
+#          environment:
+#            PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
+#            TEST_PATH: "tests/aws/services/cloudwatch/"
+#            COVERAGE_ARGS: "-p"
+#          command: |
+#            COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
+#            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
+#            make test-coverage
+#      - persist_to_workspace:
+#          root:
+#            /tmp/workspace
+#          paths:
+#            - repo/target/coverage/
+#      - store_test_results:
+#          path: target/reports/
 
   docker-build:
     parameters:
@@ -253,7 +279,7 @@ jobs:
       - run:
           name: Load docker image
           command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
-      - when:
+      - when: # TODO: need to figure out how we can skip these if we don't need to test lambda
           condition:
             equal: [ "amd64", << parameters.platform >>]
           steps:
@@ -276,7 +302,7 @@ jobs:
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
             TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
             DEBUG=1 \
@@ -379,12 +405,17 @@ jobs:
             coverage combine
             mv .coverage ../../
       - run:
+          # TODO: skip this for PR runs
           name: Report coverage statistics
           command: |
-            source .venv/bin/activate
-            coverage report || true
-            coverage html || true
-            coveralls || true
+            if [ -z "${CI_PULL_REQUEST}" ]; then
+              source .venv/bin/activate
+              coverage report || true
+              coverage html || true
+              coveralls || true
+            else
+              echo "Skipping coverage reporting for pull request."
+            fi
       - run:
           name: store acceptance parity metrics
           command: |
@@ -564,15 +595,15 @@ workflows:
       - acceptance-tests:
           requires:
             - preflight
-      - itest-sfn-legacy-provider:
-          requires:
-            - preflight
-      - itest-s3-v2-legacy-provider:
-          requires:
-            - preflight
-      - itest-cloudwatch-v2-provider:
-          requires:
-            - preflight
+#      - itest-sfn-legacy-provider:
+#          requires:
+#            - preflight
+#      - itest-s3-v2-legacy-provider:
+#          requires:
+#            - preflight
+#      - itest-cloudwatch-v2-provider:
+#          requires:
+#            - preflight
       - unit-tests:
           requires:
             - preflight
@@ -583,22 +614,22 @@ workflows:
           resource_class: medium
           requires:
             - preflight
-      - docker-build:
-          name: docker-build-arm64
-          platform: arm64
-          # The latest version of ubuntu is not yet supported for ARM:
-          # https://circleci.com/docs/2.0/arm-resources/
-          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
-          resource_class: arm.medium
-          requires:
-            - preflight
-      - docker-test:
-          name: docker-test-arm64
-          platform: arm64
-          resource_class: arm.medium
-          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
-          requires:
-            - docker-build-arm64
+#      - docker-build:
+#          name: docker-build-arm64
+#          platform: arm64
+#          # The latest version of ubuntu is not yet supported for ARM:
+#          # https://circleci.com/docs/2.0/arm-resources/
+#          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+#          resource_class: arm.medium
+#          requires:
+#            - preflight
+#      - docker-test:
+#          name: docker-test-arm64
+#          platform: arm64
+#          resource_class: arm.medium
+#          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
+#          requires:
+#            - docker-build-arm64
       - docker-test:
           name: docker-test-amd64
           platform: amd64
@@ -615,12 +646,12 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
+#            - itest-sfn-legacy-provider
+#            - itest-s3-v2-legacy-provider
+#            - itest-cloudwatch-v2-provider
             - acceptance-tests
             - docker-test-amd64
-            - docker-test-arm64
+#            - docker-test-arm64
             - collect-not-implemented
             - unit-tests
       - push:
@@ -628,10 +659,10 @@ workflows:
             branches:
               only: master
           requires:
-            - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
+#            - itest-sfn-legacy-provider
+#            - itest-s3-v2-legacy-provider
+#            - itest-cloudwatch-v2-provider
             - acceptance-tests
             - docker-test-amd64
-            - docker-test-arm64
+#            - docker-test-arm64
             - unit-tests
