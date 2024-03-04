@@ -594,6 +594,9 @@ workflows:
       - preflight:
           requires:
             - install
+      - test-selection:
+          requires:
+            - install
       - acceptance-tests:
           requires:
             - preflight
@@ -639,6 +642,7 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           requires:
             - docker-build-amd64
+            - test-selection
       - bootstrap-tests:
           requires:
             - docker-build-amd64
