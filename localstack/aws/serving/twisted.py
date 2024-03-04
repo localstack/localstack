@@ -135,6 +135,7 @@ class TLSMultiplexer(TLSMemoryBIOProtocol):
         super().__init__(factory, wrappedProtocol, _connectWrapped)
         self._isInitialized = False
         self._isTLS = False
+        self._protocol = None
 
     def isSecure(self):
         return self._isTLS
@@ -150,11 +151,21 @@ class TLSMultiplexer(TLSMemoryBIOProtocol):
             self.dataReceived = super().dataReceived
             self.write = super().write
         else:
+            # TODO: can we do proper protocol negotiation like in ALPN?
+            if data.startswith(b"PRI * HTTP/2"):
+                self._protocol = b"h2"
+
             # foregoes TLS wrapper
             self.dataReceived = self.wrappedProtocol.dataReceived
             self.write = self.transport.write
 
         self.dataReceived(data)
+
+    @property
+    def negotiatedProtocol(self):
+        if self._protocol:
+            return self._protocol
+        return super().negotiatedProtocol
 
 
 class TLSMultiplexerFactory(TLSMemoryBIOFactory):
