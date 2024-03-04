@@ -3,7 +3,7 @@ import hashlib
 import os
 import threading
 from collections import defaultdict
-from io import BytesIO
+from io import BytesIO, UnsupportedOperation
 from shutil import rmtree
 from tempfile import SpooledTemporaryFile, mkdtemp
 from threading import RLock
@@ -111,6 +111,9 @@ class EphemeralS3StoredObject(S3StoredObject):
         :param size: size to resize the stream to, or position if not given
         :return: the new file size
         """
+        if self._mode != "w":
+            raise UnsupportedOperation("S3 object is not in write mode")
+
         with self.file.position_lock:
             return self.file.truncate(size)
 
@@ -124,6 +127,9 @@ class EphemeralS3StoredObject(S3StoredObject):
         :param stream: can be a regular IO[bytes] or an EphemeralS3StoredObject
         :return: number of bytes written
         """
+        if self._mode != "w":
+            raise UnsupportedOperation("S3 object is not in write mode")
+
         if stream is None:
             stream = BytesIO()
 
@@ -158,6 +164,9 @@ class EphemeralS3StoredObject(S3StoredObject):
         :param part: EphemeralS3StoredObject
         :return: number of written bytes
         """
+        if self._mode != "w":
+            raise UnsupportedOperation("S3 object is not in write mode")
+
         read = 0
         while data := part.read(S3_CHUNK_SIZE):
             self.file.write(data)
@@ -185,7 +194,6 @@ class EphemeralS3StoredObject(S3StoredObject):
             # we didn't write or yet calculated the checksum, so calculate with what is in the underlying file
             self.checksum_hash = get_s3_checksum(self.s3_object.checksum_algorithm)
             original_pos = self._pos
-
             self._pos = 0
             while data := self.read(S3_CHUNK_SIZE):
                 self.checksum_hash.update(data)
@@ -202,12 +210,10 @@ class EphemeralS3StoredObject(S3StoredObject):
         if not self._etag:
             etag = hashlib.md5(usedforsecurity=False)
             original_pos = self._pos
-
             self._pos = 0
             while data := self.read(S3_CHUNK_SIZE):
                 etag.update(data)
             self._pos = original_pos
-
             self._etag = etag.hexdigest()
 
         return self._etag
