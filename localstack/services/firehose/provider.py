@@ -633,11 +633,11 @@ class FirehoseProvider(FirehoseApi):
                     LOG.exception(f"Unable to put Firehose records to HTTP endpoint {url}.")
                     raise e
             if "RedshiftDestinationDescription" in destination:
-                LOG.debug("\n\nREDSHIFT description loop\n\n")
                 s3_dest_desc = destination["RedshiftDestinationDescription"][
                     "S3DestinationDescription"
                 ]
                 self._put_records_to_s3_bucket(delivery_stream_name, records, s3_dest_desc)
+
                 redshift_dest_desc = destination["RedshiftDestinationDescription"]
                 self._put_to_redshift(delivery_stream_name, records, redshift_dest_desc)
         return [
