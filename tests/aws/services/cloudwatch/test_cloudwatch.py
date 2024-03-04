@@ -113,10 +113,13 @@ class TestCloudwatch:
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
 
-        from localstack.constants import TEST_AWS_REGION_NAME
+        from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
-        print("TEST_AWS_REGION_NAME:", TEST_AWS_REGION_NAME)
-        print("TEST_AWS_ACCESS_KEY_ID:", TEST_AWS_ACCESS_KEY_ID)
+        print("TEST_AWS_REGION_NAME:", TEST_AWS_REGION_NAME, os.getenv("TEST_AWS_REGION_NAME"))
+        print(
+            "TEST_AWS_ACCESS_KEY_ID:", TEST_AWS_ACCESS_KEY_ID, os.getenv("TEST_AWS_ACCESS_KEY_ID")
+        )
+        print("TEST_AWS_ACCESS_KEY_ID:", TEST_AWS_ACCOUNT_ID, os.getenv("TEST_AWS_ACCOUNT_ID"))
         assert TEST_AWS_REGION_NAME == "random_region_test"
         assert TEST_AWS_ACCESS_KEY_ID == "random_access_key_id"
 
