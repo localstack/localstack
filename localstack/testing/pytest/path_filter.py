@@ -74,3 +74,13 @@ def pytest_collection_modifyitems(config, items):
         # Update list of test items to only those selected
         items[:] = selected
         config.hook.pytest_deselected(items=deselected)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """
+    Tests might be split and thus there can be splits which don't select any tests right now
+
+    TODO: fix the split by filtering the timing file as well
+    """
+    if exitstatus == 5:
+        session.exitstatus = 0
