@@ -38,6 +38,10 @@ def update_environment(environ: "WSGIEnvironment", request: TwistedRequest):
             headers.append((k, v))
     environ["asgi.headers"] = headers
 
+    # TODO: check if twisted input streams are really properly terminated
+    # this is needed for streaming requests
+    environ["wsgi.input_terminated"] = True
+
     # create RAW_URI and REQUEST_URI
     # TODO: check if this is correct
     environ["REQUEST_URI"] = request.uri.decode("utf-8")
