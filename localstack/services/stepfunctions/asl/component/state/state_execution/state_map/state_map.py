@@ -38,12 +38,19 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_component import (
     IterationComponent,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator import (
-    Iterator,
-    IteratorEvalInput,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.distributed_iterator import (
+    DistributedIterator,
+    DistributedIteratorEvalInput,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.inline_iterator import (
+    InlineIterator,
+    InlineIteratorEvalInput,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator_decl import (
     IteratorDecl,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iterator.iterator_factory import (
+    from_iterator_decl,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
@@ -98,7 +105,7 @@ class StateMap(ExecutionState):
             raise ValueError(f"Missing ItemProcessor/Iterator definition in props '{state_props}'.")
 
         if isinstance(iteration_decl, IteratorDecl):
-            self.iteration_component = Iterator.from_declaration(iteration_decl)
+            self.iteration_component = from_iterator_decl(iteration_decl)
         elif isinstance(iteration_decl, ItemProcessorDecl):
             self.iteration_component = from_item_processor_decl(iteration_decl)
         else:
@@ -125,12 +132,22 @@ class StateMap(ExecutionState):
                 ),
             )
 
-        if isinstance(self.iteration_component, Iterator):
-            eval_input = IteratorEvalInput(
+        if isinstance(self.iteration_component, InlineIterator):
+            eval_input = InlineIteratorEvalInput(
                 state_name=self.name,
                 max_concurrency=self.max_concurrency.num,
                 input_items=input_items,
                 parameters=self.parameters,
+                item_selector=self.item_selector,
+            )
+        elif isinstance(self.iteration_component, DistributedIterator):
+            eval_input = DistributedIteratorEvalInput(
+                state_name=self.name,
+                max_concurrency=self.max_concurrency.num,
+                input_items=input_items,
+                parameters=self.parameters,
+                item_selector=self.item_selector,
+                item_reader=self.item_reader,
             )
         elif isinstance(self.iteration_component, InlineItemProcessor):
             eval_input = InlineItemProcessorEvalInput(
@@ -138,13 +155,16 @@ class StateMap(ExecutionState):
                 max_concurrency=self.max_concurrency.num,
                 input_items=input_items,
                 item_selector=self.item_selector,
+                parameters=self.parameters,
             )
         elif isinstance(self.iteration_component, DistributedItemProcessor):
             eval_input = DistributedItemProcessorEvalInput(
                 state_name=self.name,
                 max_concurrency=self.max_concurrency.num,
+                input_items=input_items,
                 item_reader=self.item_reader,
                 item_selector=self.item_selector,
+                parameters=self.parameters,
             )
         else:
             raise RuntimeError(

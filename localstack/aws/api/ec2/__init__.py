@@ -135,6 +135,7 @@ GetCapacityReservationUsageRequestMaxResults = int
 GetGroupsForCapacityReservationRequestMaxResults = int
 GetIpamPoolAllocationsMaxResults = int
 GetManagedPrefixListAssociationsMaxResults = int
+GetNetworkInsightsAccessScopeAnalysisFindingsMaxResults = int
 GetSecurityGroupsForVpcRequestMaxResults = int
 GetSubnetCidrReservationsMaxResults = int
 GpuDeviceCount = int
@@ -15359,7 +15360,7 @@ class GetManagedPrefixListEntriesResult(TypedDict, total=False):
 
 class GetNetworkInsightsAccessScopeAnalysisFindingsRequest(ServiceRequest):
     NetworkInsightsAccessScopeAnalysisId: NetworkInsightsAccessScopeAnalysisId
-    MaxResults: Optional[NetworkInsightsMaxResults]
+    MaxResults: Optional[GetNetworkInsightsAccessScopeAnalysisFindingsMaxResults]
     NextToken: Optional[NextToken]
     DryRun: Optional[Boolean]
 
@@ -23516,7 +23517,7 @@ class Ec2Api:
         self,
         context: RequestContext,
         network_insights_access_scope_analysis_id: NetworkInsightsAccessScopeAnalysisId,
-        max_results: NetworkInsightsMaxResults = None,
+        max_results: GetNetworkInsightsAccessScopeAnalysisFindingsMaxResults = None,
         next_token: NextToken = None,
         dry_run: Boolean = None,
         **kwargs

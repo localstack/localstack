@@ -66,6 +66,7 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
         else:
             return super()._from_error(env=env, ex=ex)
         return FailureEvent(
+            env=env,
             error_name=error_name,
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(

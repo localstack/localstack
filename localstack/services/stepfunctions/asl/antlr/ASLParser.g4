@@ -190,7 +190,7 @@ execution_type: STANDARD;
 
 iterator_decl: ITERATOR COLON LBRACE iterator_decl_item (COMMA iterator_decl_item)* RBRACE;
 
-iterator_decl_item: startat_decl | states_decl | comment_decl;
+iterator_decl_item: startat_decl | states_decl | comment_decl | processor_config_decl;
 
 item_selector_decl: ITEMSELECTOR COLON payload_tmpl_decl;
 

@@ -49,8 +49,9 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
             norm_ex_name += "Exception"
         return norm_ex_name
 
-    def _get_task_failure_event(self, error: str, cause: str) -> FailureEvent:
+    def _get_task_failure_event(self, env: Environment, error: str, cause: str) -> FailureEvent:
         return FailureEvent(
+            env=env,
             error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
@@ -80,7 +81,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
                 )
 
             cause: str = f"{error_message} ({', '.join(cause_details)})"
-            failure_event = self._get_task_failure_event(error=error, cause=cause)
+            failure_event = self._get_task_failure_event(env=env, error=error, cause=cause)
             return failure_event
         return super()._from_error(env=env, ex=ex)
 

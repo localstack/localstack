@@ -96,6 +96,7 @@ class BranchesDecl(EvalComponent):
             exit_error_name = exit_event_details.get("error")
             raise FailureEventException(
                 failure_event=FailureEvent(
+                    env=env,
                     error_name=CustomErrorName(error_name=exit_error_name),
                     event_type=HistoryEventType.ExecutionFailed,
                     event_details=EventDetails(executionFailedEventDetails=exit_event_details),

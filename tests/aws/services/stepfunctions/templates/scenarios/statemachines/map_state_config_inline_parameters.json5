@@ -1,0 +1,30 @@
+{
+  "StartAt": "MapState",
+  "States": {
+    "MapState": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "Parameters": {
+        "constantValue": "constant",
+        "mapValue.$": "$$.Map.Item.Value",
+        "fromInput.$": "$",
+      },
+      "ItemProcessor": {
+        "StartAt": "IteratorInner",
+        "States": {
+          "IteratorInner": {
+            "Type": "Pass",
+            "End": true
+          }
+        },
+        "ProcessorConfig": {
+          "Mode": "INLINE",
+        }
+      },
+      "Next": "Finish",
+    },
+    "Finish": {
+      "Type": "Succeed"
+    }
+  }
+}
