@@ -536,11 +536,14 @@ class TestOpensearchProvider:
             connection.putrequest(method, parsed.path, skip_accept_encoding=True)
             connection.endheaders()
             response = connection.getresponse()
-            connection.close()
-            return response
+            try:
+                return response, response.read()
+            finally:
+                response.close()
 
-        plain_response = send_plain_request("GET", opensearch_endpoint)
-        assert "cluster_name" in to_str(plain_response.read())
+        plain_response, data = send_plain_request("GET", opensearch_endpoint)
+        assert plain_response.status == 200
+        assert "cluster_name" in to_str(data)
 
         # ensure that requests with the "Accept-Encoding": "gzip" header receive gzip compressed responses
         gzip_accept_headers = {"Accept-Encoding": "gzip"}
