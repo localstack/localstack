@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "46 7 * * *"
+    default: "11 8 * * *"
 
 executors:
   ubuntu-machine-amd64:
@@ -385,6 +385,7 @@ jobs:
             echo "TEST_AWS_ACCOUNT_ID: $TEST_AWS_ACCOUNT_ID"
             echo "TEST_AWS_ACCESS_KEY_ID: $TEST_AWS_ACCESS_KEY_ID"
             echo "TEST_AWS_REGION_NAME: $TEST_AWS_REGION_NAME"
+            source $BASH_ENV
 
   report:
     executor: ubuntu-machine-amd64
