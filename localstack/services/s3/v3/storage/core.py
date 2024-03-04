@@ -1,6 +1,6 @@
 import abc
 from io import RawIOBase
-from typing import IO, Iterable, Iterator, Optional
+from typing import IO, Iterable, Iterator, Literal, Optional
 
 from localstack.aws.api.s3 import BucketName, MultipartUploadId, PartNumber
 from localstack.services.s3.utils import ObjectRange
@@ -30,6 +30,10 @@ class LimitedIterableStream(Iterable[bytes]):
                 break
 
         return
+
+    def close(self):
+        if hasattr(self.iterable, "close"):
+            self.iterable.close()
 
 
 class LimitedStream(RawIOBase):
@@ -69,8 +73,10 @@ class S3StoredObject(abc.ABC, Iterable[bytes]):
 
     s3_object: S3Object
 
-    def __init__(self, s3_object: S3Object | S3Part):
+    def __init__(self, s3_object: S3Object | S3Part, mode: Literal["r", "w"] = "r"):
         self.s3_object = s3_object
+        self._mode = mode
+        self.closed = False
 
     @abc.abstractmethod
     def close(self):
@@ -110,6 +116,16 @@ class S3StoredObject(abc.ABC, Iterable[bytes]):
     def __iter__(self) -> Iterator[bytes]:
         pass
 
+    def __enter__(self):
+        """Context management protocol.  Returns self (an instance of S3StoredObject)."""
+        if self.closed:
+            raise ValueError("I/O operation on closed S3 Object.")
+        return self
+
+    def __exit__(self, *args):
+        """Context management protocol.  Calls close()"""
+        self.close()
+
 
 class S3StoredMultipart(abc.ABC):
     """
@@ -128,7 +144,7 @@ class S3StoredMultipart(abc.ABC):
         self.parts = {}
 
     @abc.abstractmethod
-    def open(self, s3_part: S3Part) -> S3StoredObject:
+    def open(self, s3_part: S3Part, mode: Literal["r", "w"] = "r") -> S3StoredObject:
         pass
 
     @abc.abstractmethod
@@ -136,7 +152,7 @@ class S3StoredMultipart(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def complete_multipart(self, parts: list[PartNumber]) -> S3StoredObject:
+    def complete_multipart(self, parts: list[PartNumber]) -> None:
         pass
 
     @abc.abstractmethod
@@ -161,7 +177,9 @@ class S3ObjectStore(abc.ABC):
     """
 
     @abc.abstractmethod
-    def open(self, bucket: BucketName, s3_object: S3Object) -> S3StoredObject:
+    def open(
+        self, bucket: BucketName, s3_object: S3Object, mode: Literal["r", "w"] = "r"
+    ) -> S3StoredObject:
         pass
 
     @abc.abstractmethod

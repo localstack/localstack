@@ -647,27 +647,27 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             body = AwsChunkedDecoder(body, decoded_content_length, s3_object=s3_object)
 
-        s3_stored_object = self._storage_backend.open(bucket_name, s3_object)
-        s3_stored_object.write(body)
+        with self._storage_backend.open(bucket_name, s3_object, mode="w") as s3_stored_object:
+            s3_stored_object.write(body)
 
-        if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
-            self._storage_backend.remove(bucket_name, s3_object)
-            raise InvalidRequest(
-                f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
-            )
-
-        # TODO: handle ContentMD5 and ChecksumAlgorithm in a handler for all requests except requests with a streaming
-        #  body. We can use the specs to verify which operations needs to have the checksum validated
-        if content_md5 := request.get("ContentMD5"):
-            calculated_md5 = etag_to_base_64_content_md5(s3_stored_object.etag)
-            if calculated_md5 != content_md5:
+            if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
                 self._storage_backend.remove(bucket_name, s3_object)
-                raise InvalidDigest(
-                    "The Content-MD5 you specified was invalid.",
-                    Content_MD5=content_md5,
+                raise InvalidRequest(
+                    f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
                 )
 
-        s3_bucket.objects.set(key, s3_object)
+            # TODO: handle ContentMD5 and ChecksumAlgorithm in a handler for all requests except requests with a
+            #  streaming body. We can use the specs to verify which operations needs to have the checksum validated
+            if content_md5 := request.get("ContentMD5"):
+                calculated_md5 = etag_to_base_64_content_md5(s3_stored_object.etag)
+                if calculated_md5 != content_md5:
+                    self._storage_backend.remove(bucket_name, s3_object)
+                    raise InvalidDigest(
+                        "The Content-MD5 you specified was invalid.",
+                        Content_MD5=content_md5,
+                    )
+
+            s3_bucket.objects.set(key, s3_object)
 
         # in case we are overriding an object, delete the tags entry
         key_id = get_unique_key_id(bucket_name, key, version_id)
@@ -765,7 +765,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
-        s3_stored_object = self._storage_backend.open(bucket_name, s3_object)
+        # we deliberately do not call `.close()` on the s3_stored_object to keep the read lock acquired. When passing
+        # the object to Werkzeug, the handler will call `.close()` after finishing iterating over `__iter__`.
+        s3_stored_object = self._storage_backend.open(bucket_name, s3_object, mode="r")
 
         range_header = request.get("Range")
         part_number = request.get("PartNumber")
@@ -1237,18 +1239,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             owner=dest_s3_bucket.owner,
         )
 
-        s3_stored_object = self._storage_backend.copy(
+        with self._storage_backend.copy(
             src_bucket=src_bucket,
             src_object=src_s3_object,
             dest_bucket=dest_bucket,
             dest_object=s3_object,
-        )
-        s3_object.checksum_value = s3_stored_object.checksum or src_s3_object.checksum_value
-        s3_object.etag = s3_stored_object.etag or src_s3_object.etag
+        ) as s3_stored_object:
+            s3_object.checksum_value = s3_stored_object.checksum or src_s3_object.checksum_value
+            s3_object.etag = s3_stored_object.etag or src_s3_object.etag
 
-        # Object copied from Glacier object should not have expiry
-        # TODO: verify this assumption from moto?
-        dest_s3_bucket.objects.set(dest_key, s3_object)
+            dest_s3_bucket.objects.set(dest_key, s3_object)
 
         dest_key_id = get_unique_key_id(dest_bucket, dest_key, dest_version_id)
         if (request.get("TaggingDirective")) == "REPLACE":
@@ -1903,20 +1903,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             body = AwsChunkedDecoder(body, decoded_content_length, s3_part)
 
         stored_multipart = self._storage_backend.get_multipart(bucket_name, s3_multipart)
-        stored_s3_part = stored_multipart.open(s3_part)
-        try:
-            stored_s3_part.write(body)
-        except Exception:
-            stored_multipart.remove_part(s3_part)
-            raise
+        with stored_multipart.open(s3_part, mode="w") as stored_s3_part:
+            try:
+                stored_s3_part.write(body)
+            except Exception:
+                stored_multipart.remove_part(s3_part)
+                raise
 
-        if checksum_algorithm and s3_part.checksum_value != stored_s3_part.checksum:
-            stored_multipart.remove_part(s3_part)
-            raise InvalidRequest(
-                f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
-            )
+            if checksum_algorithm and s3_part.checksum_value != stored_s3_part.checksum:
+                stored_multipart.remove_part(s3_part)
+                raise InvalidRequest(
+                    f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
+                )
 
-        s3_multipart.parts[part_number] = s3_part
+            s3_multipart.parts[part_number] = s3_part
 
         response = UploadPartOutput(
             ETag=s3_part.quoted_etag,
@@ -3721,16 +3721,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             owner=s3_bucket.owner,  # TODO: for now we only have one owner, but it can depends on Bucket settings
         )
 
-        s3_stored_object = self._storage_backend.open(bucket, s3_object)
-        s3_stored_object.write(stream)
+        with self._storage_backend.open(bucket, s3_object, mode="w") as s3_stored_object:
+            s3_stored_object.write(stream)
 
-        if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
-            self._storage_backend.remove(bucket, s3_object)
-            raise InvalidRequest(
-                f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
-            )
+            if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
+                self._storage_backend.remove(bucket, s3_object)
+                raise InvalidRequest(
+                    f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
+                )
 
-        s3_bucket.objects.set(object_key, s3_object)
+            s3_bucket.objects.set(object_key, s3_object)
 
         # in case we are overriding an object, delete the tags entry
         key_id = get_unique_key_id(bucket, object_key, version_id)
