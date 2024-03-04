@@ -112,7 +112,12 @@ class TestCloudwatch:
         rs = aws_client.cloudwatch.list_metrics(Namespace=namespace, MetricName=metric_name)
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
-        assert region_name == "random_region_test"
+
+        from localstack.constants import TEST_AWS_REGION_NAME
+
+        print("TEST_AWS_REGION_NAME:", TEST_AWS_REGION_NAME)
+        print("TEST_AWS_ACCESS_KEY_ID:", TEST_AWS_ACCESS_KEY_ID)
+        assert TEST_AWS_REGION_NAME == "random_region_test"
         assert TEST_AWS_ACCESS_KEY_ID == "random_access_key_id"
 
     @markers.aws.validated
