@@ -629,13 +629,21 @@ RESPONSE_TEMPLATE_WRONG_XML = """
 
 
 class TestTemplates:
-    @pytest.mark.parametrize("template", [RequestTemplates(), ResponseTemplates()])
-    def test_render_custom_template(self, template):
+    @pytest.mark.parametrize(
+        "template,accept_content_type",
+        [
+            (RequestTemplates(), APPLICATION_JSON),
+            (ResponseTemplates(), APPLICATION_JSON),
+            (RequestTemplates(), "*/*"),
+            (ResponseTemplates(), "*/*"),
+        ],
+    )
+    def test_render_custom_template(self, template, accept_content_type):
         api_context = ApiInvocationContext(
             method="POST",
             path="/foo/bar?baz=test",
             data=b'{"spam": "eggs"}',
-            headers={"content-type": APPLICATION_JSON},
+            headers={"content-type": APPLICATION_JSON, "accept": accept_content_type},
             stage="local",
         )
         api_context.integration = {
@@ -665,7 +673,10 @@ class TestTemplates:
         assert result_as_json.get("stage") == "local"
         assert result_as_json.get("enhancedAuthContext") == {"principalId": "12233"}
         assert result_as_json.get("identity") == {"accountId": "00000", "apiKey": "11111"}
-        assert result_as_json.get("headers") == {"content-type": APPLICATION_JSON}
+        assert result_as_json.get("headers") == {
+            "content-type": APPLICATION_JSON,
+            "accept": accept_content_type,
+        }
         assert result_as_json.get("query") == {"baz": "test"}
         assert result_as_json.get("path") == {"id": "bar"}
         assert result_as_json.get("stageVariables") == {

@@ -323,20 +323,23 @@ class ResponseTemplates(Templates):
         response_templates = selected_integration_response.get("responseTemplates", {})
 
         # we only support JSON and XML templates for now - if there is no template we return the response as is
+        # If the content type is not supported we always use application/json as default value
         # TODO - support other content types, besides application/json and application/xml
         # see https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html#selecting-mapping-templates
         accept = api_context.headers.get("accept", APPLICATION_JSON)
-        if accept not in [APPLICATION_JSON, APPLICATION_XML] or accept not in response_templates:
+        supported_types = [APPLICATION_JSON, APPLICATION_XML]
+        media_type = accept if accept in supported_types else APPLICATION_JSON
+        if media_type not in response_templates:
             return response._content
 
-        template = response_templates.get(accept, {})
+        template = response_templates.get(media_type, {})
         # we render the template with the context data and the response content
         variables = self.build_variables_mapping(api_context)
         # update the response body
         response._content = self._render_as_text(template, variables)
-        if accept == APPLICATION_JSON:
+        if media_type == APPLICATION_JSON:
             self._validate_json(response.content)
-        elif accept == APPLICATION_XML:
+        elif media_type == APPLICATION_XML:
             self._validate_xml(response.content)
 
         if response_overrides := variables.get("context", {}).get("responseOverride", {}):
