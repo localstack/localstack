@@ -31,7 +31,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--path-filter",
         action="store",
-        default="pathfilter.txt",
         help="Path to the file containing path substrings for test selection",
     )
 
@@ -41,7 +40,10 @@ def pytest_addoption(parser):
 # @pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(config, items):
     pathfilter_file = config.getoption("--path-filter")
-    if pathfilter_file and not os.path.exists(pathfilter_file):
+    if not pathfilter_file:
+        return
+
+    if not os.path.exists(pathfilter_file):
         raise ValueError(f"Pathfilter file does not exist: {pathfilter_file}")
 
     with open(pathfilter_file, "r") as f:
