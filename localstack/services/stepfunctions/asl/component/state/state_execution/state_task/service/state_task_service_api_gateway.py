@@ -224,6 +224,7 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
                 response_body = dict()
 
         headers.pop("server", None)
+        headers.pop("Server", None)
         if "date" in headers:
             headers["Date"] = [headers.pop("date")]
         headers[HEADER_CONTENT_TYPE] = [APPLICATION_JSON]
