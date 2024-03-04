@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "30 6 * * *"
+    default: "15 7 * * *"
 
 executors:
   ubuntu-machine-amd64:
