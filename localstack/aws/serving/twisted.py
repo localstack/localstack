@@ -108,6 +108,13 @@ class HeaderPreservingHTTPChannel(HTTPChannel):
         headerSequence.append(b"\r\n")
         self.transport.writeSequence(headerSequence)
 
+    def isSecure(self):
+        try:
+            # will be TLSMultiplexer
+            return self.transport.isSecure()
+        except AttributeError:
+            return super().isSecure()
+
 
 class TLSMultiplexer(TLSMemoryBIOProtocol):
     def __init__(
@@ -119,6 +126,9 @@ class TLSMultiplexer(TLSMemoryBIOProtocol):
         super().__init__(factory, wrappedProtocol, _connectWrapped)
         self._isInitialized = False
         self._isTLS = False
+
+    def isSecure(self):
+        return self._isTLS
 
     def dataReceived(self, data):
         if self._isInitialized:
