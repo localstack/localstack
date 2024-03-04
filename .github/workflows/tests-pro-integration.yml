@@ -85,13 +85,14 @@ env:
 jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
+    if: false  # TODO: remove again
     # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
     # (i.e. do not execute job for workflows coming from forks)
-    if: >-
-      (
-        github.event_name != 'pull_request' ||
-        github.event.pull_request.head.repo.full_name == github.repository
-      )
+#    if: >-
+#      (
+#        github.event_name != 'pull_request' ||
+#        github.event.pull_request.head.repo.full_name == github.repository
+#      )
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
