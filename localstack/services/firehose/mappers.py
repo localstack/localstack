@@ -163,5 +163,10 @@ def convert_source_config_to_desc(
 def convert_redshift_config_to_desc(
     configuration: RedshiftDestinationConfiguration,
 ) -> RedshiftDestinationDescription:
-    if configuration:
-        return cast(RedshiftDestinationDescription, configuration)
+    if configuration is not None:
+        result = cast(RedshiftDestinationDescription, configuration)
+        result["S3DestinationDescription"] = convert_s3_config_to_desc(
+            configuration["S3Configuration"]
+        )
+        result.pop("S3Configuration", None)
+        return result

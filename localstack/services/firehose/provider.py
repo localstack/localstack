@@ -281,7 +281,6 @@ class FirehoseProvider(FirehoseApi):
                     RedshiftDestinationDescription=convert_redshift_config_to_desc(
                         redshift_destination_configuration
                     ),
-                    # TODO: convert S3Configuration of redshift to S3DestinationDescription
                 )
             )
         if amazon_open_search_serverless_destination_configuration:
