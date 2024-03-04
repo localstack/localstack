@@ -694,10 +694,14 @@ class TestS3TemporaryStorageBackend:
             parts.append(fake_s3_part)
             stored_parts.append(stored_part)
 
-        s3_stored_object = s3_stored_multipart.complete_multipart(parts=parts)
+        s3_stored_multipart.complete_multipart(parts=parts)
         temp_storage_backend.remove_multipart("test-bucket", fake_multipart)
 
-        assert s3_stored_object.read() == b"abc" * 5
+        fake_object = S3Object(key="test-multipart")
+        with temp_storage_backend.open(
+            bucket="test-bucket", s3_object=fake_object, mode="r"
+        ) as s3_stored_object:
+            assert s3_stored_object.read() == b"abc" * 5
 
         assert all(stored_part.file.closed for stored_part in stored_parts)
 
@@ -726,5 +730,18 @@ class TestS3TemporaryStorageBackend:
         temp_storage_backend.remove("test-bucket", fake_object)
         assert s3_stored_object_1.file.closed
         assert s3_stored_object_2.file.closed
+
+        temp_storage_backend.close()
+
+    def test_s3_context_manager(self, tmpdir):
+        temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
+        fake_object = S3Object(key="test-key")
+        s3_stored_object_1 = temp_storage_backend.open("test-bucket", fake_object, mode="w")
+        s3_stored_object_1.write(BytesIO(b"abc"))
+        s3_stored_object_1.close()
+        # you can't call a context manager __enter__ on a closed S3 Object
+        with pytest.raises(ValueError):
+            with s3_stored_object_1:
+                pass
 
         temp_storage_backend.close()
