@@ -232,7 +232,7 @@ class TestMessageTransformationApiGateway:
         contains_template2 = ("${foo.bar.toString().lower().contains('bar')}", "false")
         for template, expected_result in [contains_template1, contains_template2]:
             result = ApiGatewayVtlTemplate().render_vtl(template, variables=variables)
-        assert result == expected_result
+            assert result == expected_result
 
     def test_render_urlencoded_string_data(self):
         template = "MessageBody=$util.base64Encode($input.json('$'))"
