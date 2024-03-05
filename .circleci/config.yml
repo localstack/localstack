@@ -300,6 +300,10 @@ jobs:
                   - "tests/aws/services/lambda_/functions/common"
       - prepare-pytest-tinybird
       - run:
+          name: debug step to check output of tests split
+          command: |
+            echo $(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings)
+      - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
