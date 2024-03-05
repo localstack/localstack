@@ -706,7 +706,7 @@ class TestStages:
         # attempt to delete wildcard method settings (should initially fail)
         with pytest.raises(ClientError) as exc:
             _delete_wildcard()
-        snapshot.match("delete-error", exc.value)
+        snapshot.match("delete-error", exc.value.response)
 
         # run a patch operation that creates a method mapping for */*
         response = client.update_stage(
