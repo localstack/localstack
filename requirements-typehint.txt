@@ -239,7 +239,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext[all]==5.0.2.post1
+moto-ext[all]==5.0.2.post2
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
