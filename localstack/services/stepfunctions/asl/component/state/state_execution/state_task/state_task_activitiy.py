@@ -55,6 +55,7 @@ class StateTaskActivity(StateTask):
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, TimeoutError):
             return FailureEvent(
+                env=env,
                 error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
                 event_type=HistoryEventType.ActivityTimedOut,
                 event_details=EventDetails(
@@ -76,6 +77,7 @@ class StateTaskActivity(StateTask):
             error = error_name.error_name
             cause = ex.response["Error"]["Message"] if isinstance(ex, ClientError) else str(ex)
         return FailureEvent(
+            env=env,
             error_name=error_name,
             event_type=HistoryEventType.ActivityFailed,
             event_details=EventDetails(
@@ -117,16 +119,13 @@ class StateTaskActivity(StateTask):
             )
         except ActivityDoesNotExist:
             failure_event = FailureEvent(
+                env=env,
                 error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
                 event_type=HistoryEventType.ExecutionFailed,
                 event_details=EventDetails(
                     executionFailedEventDetails=ExecutionFailedEventDetails(
                         error=StatesErrorNameType.StatesRuntime.to_name(),
-                        cause=(
-                            f"An error occurred while executing the state '{self.name}' "
-                            f"(entered at the event id #{env.event_history_context.source_event_id}). "
-                            f"The activity activity_arn does not exist."
-                        ),
+                        cause="The activity activity_arn does not exist.",
                     )
                 ),
             )
