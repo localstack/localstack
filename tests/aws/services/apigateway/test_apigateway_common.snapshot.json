@@ -256,7 +256,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestStages::test_create_update_stages": {
-    "recorded-date": "11-10-2023, 17:39:23",
+    "recorded-date": "05-03-2024, 18:54:23",
     "recorded-content": {
       "create-stage": {
         "cacheClusterEnabled": false,
@@ -383,49 +383,6 @@
         }
       },
       "update-stage-override": {
-        "cacheClusterEnabled": false,
-        "cacheClusterStatus": "NOT_AVAILABLE",
-        "createdDate": "datetime",
-        "deploymentId": "<deployment-id:1>",
-        "description": "stage new",
-        "documentationVersion": "v123",
-        "lastUpdatedDate": "datetime",
-        "methodSettings": {
-          "*/*": {
-            "cacheDataEncrypted": false,
-            "cacheTtlInSeconds": 300,
-            "cachingEnabled": true,
-            "dataTraceEnabled": false,
-            "metricsEnabled": false,
-            "requireAuthorizationForCacheControl": true,
-            "throttlingBurstLimit": 100,
-            "throttlingRateLimit": 10000.0,
-            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
-          },
-          "test/GET": {
-            "cacheDataEncrypted": false,
-            "cacheTtlInSeconds": 300,
-            "cachingEnabled": true,
-            "dataTraceEnabled": false,
-            "metricsEnabled": false,
-            "requireAuthorizationForCacheControl": true,
-            "throttlingBurstLimit": 124,
-            "throttlingRateLimit": 10000.0,
-            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
-          }
-        },
-        "stageName": "s1",
-        "tracingEnabled": true,
-        "variables": {
-          "var1": "test",
-          "var2": "test2"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get-stage-override": {
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
         "createdDate": "datetime",
@@ -928,6 +885,104 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_common.py::TestStages::test_update_stage_remove_wildcard": {
+    "recorded-date": "05-03-2024, 18:58:45",
+    "recorded-content": {
+      "create-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-error": "An error occurred (BadRequestException) when calling the UpdateStage operation: Cannot remove method setting */* because there is no method setting for this method ",
+      "update-stage": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {
+          "*/*": {
+            "cacheDataEncrypted": false,
+            "cacheTtlInSeconds": 300,
+            "cachingEnabled": true,
+            "dataTraceEnabled": false,
+            "metricsEnabled": false,
+            "requireAuthorizationForCacheControl": true,
+            "throttlingBurstLimit": 5000,
+            "throttlingRateLimit": 10000.0,
+            "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER"
+          }
+        },
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-stage-reset": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-stage-after-reset": {
+        "cacheClusterEnabled": false,
+        "cacheClusterStatus": "NOT_AVAILABLE",
+        "createdDate": "datetime",
+        "deploymentId": "<deployment-id:1>",
+        "description": "my stage",
+        "documentationVersion": "v123",
+        "lastUpdatedDate": "datetime",
+        "methodSettings": {},
+        "stageName": "s1",
+        "tracingEnabled": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
