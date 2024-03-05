@@ -1,7 +1,5 @@
-import contextlib
 import logging
 import threading
-import time
 from typing import Dict
 
 from bson.json_util import dumps
@@ -11,6 +9,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
 from localstack.utils.aws import arns, resources
 from localstack.utils.common import now_utc
+from localstack.utils.threads import FuncThread
 
 DDB_KINESIS_STREAM_NAME_PREFIX = "__ddb_stream_"
 
@@ -94,12 +93,25 @@ def delete_streams(account_id: str, region_name: str, table_arn: str) -> None:
     table_name = table_name_from_table_arn(table_arn)
     if store.ddb_streams.pop(table_name, None):
         stream_name = get_kinesis_stream_name(table_name)
-        with contextlib.suppress(Exception):
-            connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis.delete_stream(
-                StreamName=stream_name
-            )
-            # sleep a bit, as stream deletion can take some time ...
-            time.sleep(1)
+        # stream_arn = stream["StreamArn"]
+
+        # we're basically asynchronously trying to delete the stream, or should we do this "synchronous" with the table deletion?
+        def _delete_stream(*args, **kwargs):
+            try:
+                kinesis_client = connect_to(
+                    aws_access_key_id=account_id, region_name=region_name
+                ).kinesis
+                # needs to be active otherwise we can't delete it
+                kinesis_client.get_waiter("stream_exists").wait(StreamName=stream_name)
+                kinesis_client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
+                kinesis_client.get_waiter("stream_not_exists").wait(StreamName=stream_name)
+            except Exception:
+                LOG.warning(
+                    f"Failed to delete underlying kinesis stream for dynamodb table {table_arn=}",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+
+        FuncThread(_delete_stream).start()  # fire & forget
 
 
 def get_kinesis_stream_name(table_name: str) -> str:

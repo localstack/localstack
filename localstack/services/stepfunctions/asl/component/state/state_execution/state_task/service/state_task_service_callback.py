@@ -116,10 +116,13 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
     def _is_condition(self):
         return self.resource.condition is not None
 
-    def _get_callback_outcome_failure_event(self, ex: CallbackOutcomeFailureError) -> FailureEvent:
+    def _get_callback_outcome_failure_event(
+        self, env: Environment, ex: CallbackOutcomeFailureError
+    ) -> FailureEvent:
         callback_outcome_failure: CallbackOutcomeFailure = ex.callback_outcome_failure
         error: str = callback_outcome_failure.error
         return FailureEvent(
+            env=env,
             error_name=CustomErrorName(error_name=callback_outcome_failure.error),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
@@ -134,7 +137,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, CallbackOutcomeFailureError):
-            return self._get_callback_outcome_failure_event(ex=ex)
+            return self._get_callback_outcome_failure_event(env=env, ex=ex)
         return super()._from_error(env=env, ex=ex)
 
     def _after_eval_execution(
