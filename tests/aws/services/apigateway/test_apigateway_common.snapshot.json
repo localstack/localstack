@@ -890,7 +890,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestStages::test_update_stage_remove_wildcard": {
-    "recorded-date": "05-03-2024, 18:58:45",
+    "recorded-date": "05-03-2024, 21:10:56",
     "recorded-content": {
       "create-stage": {
         "cacheClusterEnabled": false,
@@ -924,7 +924,17 @@
           "HTTPStatusCode": 200
         }
       },
-      "delete-error": "An error occurred (BadRequestException) when calling the UpdateStage operation: Cannot remove method setting */* because there is no method setting for this method ",
+      "delete-error": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Cannot remove method setting */* because there is no method setting for this method "
+        },
+        "message": "Cannot remove method setting */* because there is no method setting for this method ",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "update-stage": {
         "cacheClusterEnabled": false,
         "cacheClusterStatus": "NOT_AVAILABLE",
