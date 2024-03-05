@@ -19,6 +19,7 @@ from tests.aws.services.stepfunctions.utils import (
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestSnfBase:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount", "$..redriveStatus"])
     def test_state_fail(
         self,
         aws_client,
@@ -37,6 +38,7 @@ class TestSnfBase:
             sfn_snapshot,
             definition,
             exec_input,
+            verify_execution_description=True,
         )
 
     @markers.aws.validated
@@ -82,6 +84,7 @@ class TestSnfBase:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount", "$..redriveStatus"])
     def test_state_fail_empty(
         self,
         aws_client,
@@ -100,6 +103,7 @@ class TestSnfBase:
             sfn_snapshot,
             definition,
             exec_input,
+            verify_execution_description=True,
         )
 
     @markers.aws.validated

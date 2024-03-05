@@ -247,6 +247,7 @@ def launch_and_record_execution(
     sfn_snapshot,
     state_machine_arn,
     execution_input,
+    verify_execution_description=False,
 ):
     exec_resp = stepfunctions_client.start_execution(
         stateMachineArn=state_machine_arn, input=execution_input
@@ -257,6 +258,10 @@ def launch_and_record_execution(
     await_execution_terminated(
         stepfunctions_client=stepfunctions_client, execution_arn=execution_arn
     )
+
+    if verify_execution_description:
+        describe_execution = stepfunctions_client.describe_execution(executionArn=execution_arn)
+        sfn_snapshot.match("describe_execution", describe_execution)
 
     get_execution_history = stepfunctions_client.get_execution_history(executionArn=execution_arn)
 
@@ -282,6 +287,7 @@ def create_and_record_execution(
     sfn_snapshot,
     definition,
     execution_input,
+    verify_execution_description=False,
 ):
     state_machine_arn = create(
         create_iam_role_for_sfn, create_state_machine, sfn_snapshot, definition
@@ -291,6 +297,7 @@ def create_and_record_execution(
         sfn_snapshot,
         state_machine_arn,
         execution_input,
+        verify_execution_description,
     )
 
 
