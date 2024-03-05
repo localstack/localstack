@@ -1,9 +1,4 @@
-"""
-This module provides a method to select tests based on detected changes in the git history
-"""
-
 import re
-import subprocess
 
 from localstack.utils.bootstrap import API_DEPENDENCIES
 
@@ -28,20 +23,6 @@ NO_TEST = [
     "README.md",
 ]
 
-
-def get_changed_files_from_git_diff(repo: str, base_ref: str, head_ref: str) -> [str]:
-    """
-    Find list of files that are affected by changes made on head_ref in comparison to the base_ref.
-    The base_ref is usually a merge-base of the actual base ref (just like how GitHub shows you the changes in comparison to latest master)
-    """
-    cmd = ["git", "-C", repo, "diff", "--name-only", base_ref, head_ref]
-    output = subprocess.check_output(cmd, encoding="UTF-8")
-    return [line.strip() for line in output.splitlines() if line.strip()]
-
-
-###############################################################
-####################  UTILS              ######################
-###############################################################
 REGEX_SERVICE = "localstack/services/([^/]+)/.+"
 REGEX_TEST = r"^tests/.+\.py$"
 
@@ -62,10 +43,6 @@ def determine_service_test(changed_file: str) -> str:
 def is_test(changed_file: str) -> bool:
     return bool(re.match(REGEX_TEST, changed_file))
 
-
-###############################################################
-####################  SERVICE EXPANSION  ######################
-###############################################################
 
 PACKAGE_TO_SVC_MAP = {"lambda_": "lambda"}
 
@@ -92,11 +69,6 @@ def resolve_dependencies(module_name: str) -> "set[str]":
     return _expand_api_dependencies(svc_name)
 
 
-###############################################################
-#################### CHANGE COLLECTION   ######################
-###############################################################
-
-
 def get_affected_tests_from_changes(changed_files: [str]) -> "set[str]":
     # TODO: reduce based on inclusion (won't hurt but is a bit weird)
     # e.g. Number of affected test determined: 3
@@ -118,9 +90,3 @@ def get_affected_tests_from_changes(changed_files: [str]) -> "set[str]":
             # only execute that one file
             result.add(changed_file)
     return result
-
-
-def find_merge_base(repo: str, base_branch: str, head_branch: str) -> str:
-    cmd = ["git", "-C", repo, "merge-base", base_branch, head_branch]
-    output = subprocess.check_output(cmd, encoding="UTF-8")
-    return output.strip()

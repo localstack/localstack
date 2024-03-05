@@ -1,32 +1,14 @@
+"""
+USAGE: $ GITHUB_API_TOKEN=<your-token> python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr <git-root-dir> <pull-request-url> <output-file-path>
+"""
+
 import os
 import sys
 from pathlib import Path
 
-import requests
-
-from localstack.testing import testselection
-
-
-def get_pr_details(repo_name: str, pr_number: str, token: str) -> (str, str):
-    """
-    Fetch the base commit SHA, and the head commit SHA of a given pull request number from a GitHub repository.
-    """
-    url = f"https://api.github.com/repos/{repo_name}/pulls/{pr_number}"
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
-    pr_data = requests.get(url, headers=headers).json()
-    return pr_data["base"]["sha"], pr_data["head"]["sha"]
-
-
-def get_pr_details_from_url(pr_url: str, token: str) -> (str, str):
-    """
-    Extract base and head sha from a given PR URL
-    Example pr_url: https://github.com/localstack/localstack/pull/1
-    """
-    parts = pr_url.split("/")
-    repo_name = f"{parts[-4]}/{parts[-3]}"
-    pr_number = parts[-1]
-    return get_pr_details(repo_name, pr_number, token)
-
+from localstack.testing.testselection.git import find_merge_base, get_changed_files_from_git_diff
+from localstack.testing.testselection.github import get_pr_details_from_url
+from localstack.testing.testselection.testselection import get_affected_tests_from_changes
 
 if __name__ == "__main__":
     output_file_path = sys.argv[-1]
@@ -40,13 +22,11 @@ if __name__ == "__main__":
     print(f"Base Commit SHA: {base_commit_sha}")
     print(f"Head Commit SHA: {head_commit_sha}")
 
-    merge_base_commit = testselection.find_merge_base(
-        repo_root_path, base_commit_sha, head_commit_sha
-    )
-    changed_files = testselection.get_changed_files_from_git_diff(
+    merge_base_commit = find_merge_base(repo_root_path, base_commit_sha, head_commit_sha)
+    changed_files = get_changed_files_from_git_diff(
         repo_root_path, merge_base_commit, head_commit_sha
     )
-    test_files = testselection.get_affected_tests_from_changes(changed_files)
+    test_files = get_affected_tests_from_changes(changed_files)
 
     print(f"Number of changed files detected: {len(changed_files)}")
     for cf in sorted(changed_files):
