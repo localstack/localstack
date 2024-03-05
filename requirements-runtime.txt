@@ -32,7 +32,7 @@ aws-xray-sdk==2.12.1
     # via moto-ext
 awscli==1.32.54
     # via localstack-core (pyproject.toml)
-awscrt==0.20.4
+awscrt==0.20.5
     # via localstack-core (pyproject.toml)
 blinker==1.7.0
     # via
@@ -65,7 +65,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.85.2
+cfn-lint==0.86.0
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -139,7 +139,7 @@ joserfc==0.9.0
     # via moto-ext
 jschema-to-python==1.2.3
     # via cfn-lint
-json5==0.9.17
+json5==0.9.20
     # via localstack-core (pyproject.toml)
 jsondiff==2.0.0
     # via moto-ext
@@ -221,7 +221,7 @@ pyasn1==0.5.1
     # via rsa
 pycparser==2.21
     # via cffi
-pydantic==2.6.2
+pydantic==2.6.3
     # via aws-sam-translator
 pydantic-core==2.16.3
     # via pydantic
@@ -233,7 +233,7 @@ pyopenssl==24.0.0
     # via localstack-core (pyproject.toml)
 pyparsing==3.1.1
     # via moto-ext
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   moto-ext
@@ -275,7 +275,7 @@ responses==0.25.0
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==13.7.0
+rich==13.7.1
     # via localstack-core (pyproject.toml)
 rolo==0.3.0
     # via localstack-core (pyproject.toml)
