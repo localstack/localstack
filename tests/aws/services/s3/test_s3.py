@@ -4605,6 +4605,10 @@ class TestS3:
             (StorageClass.DEEP_ARCHIVE, False),
         ],
     )
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..ServerSideEncryption"],
+    )
     def test_put_object_storage_class(
         self, s3_bucket, snapshot, storage_class, is_retrievable, aws_client
     ):
