@@ -416,7 +416,7 @@ class ResourceProviderExecutor:
 
                 event = self.execute_action(resource_provider, payload)
 
-                match OperationStatus:
+                match event.status:
                     case OperationStatus.FAILED:
                         return event
                     case OperationStatus.SUCCESS:
