@@ -83,6 +83,8 @@ class TestTimeouts:
             exec_input,
         )
 
+    # FIXME: https://app.circleci.com/pipelines/github/localstack/localstack/22941/workflows/ed5c7ca1-f354-4e6a-b4c2-c85007d2cceb/jobs/186457?invite=true#step-104-3159
+    @pytest.mark.skip(reason="flaky")
     @markers.aws.validated
     def test_fixed_timeout_service_lambda_with_path(
         self,
