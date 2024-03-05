@@ -744,9 +744,20 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # we deliberately do not call `.close()` on the s3_stored_object to keep the read lock acquired. When passing
         # the object to Werkzeug, the handler will call `.close()` after finishing iterating over `__iter__`.
-        # TODO: we can run in a race condition if a concurrent thread updates the object between
-        #  `s3_object = s3_bucket.get_object` and the call under.
         s3_stored_object = self._storage_backend.open(bucket_name, s3_object, mode="r")
+
+        # TODO: remove this with 3.3, this is for persistence reason
+        if not hasattr(s3_object, "internal_last_modified"):
+            s3_object.internal_last_modified = s3_stored_object.last_modified
+        # this is a hacky way to verify the object hasn't been modified between `s3_object = s3_bucket.get_object`
+        # and the storage backend call. If it has been modified, now that we're in the read lock, we can safely fetch
+        # the object again
+        if s3_stored_object.last_modified != s3_object.internal_last_modified:
+            s3_object = s3_bucket.get_object(
+                key=object_key,
+                version_id=version_id,
+                http_method="GET",
+            )
 
         response = GetObjectOutput(
             AcceptRanges="bytes",

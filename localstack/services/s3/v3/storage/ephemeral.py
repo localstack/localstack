@@ -2,6 +2,7 @@ import base64
 import hashlib
 import os
 import threading
+import time
 from collections import defaultdict
 from io import BytesIO, UnsupportedOperation
 from shutil import rmtree
@@ -36,6 +37,7 @@ class LockedFileMixin:
         # currently iterating over it.
         # see:
         self.readwrite_lock = rwlock.RWLockWrite()
+        self.internal_last_modified = 0
 
 
 class LockedSpooledTemporaryFile(LockedFileMixin, SpooledTemporaryFile):
@@ -115,7 +117,11 @@ class EphemeralS3StoredObject(S3StoredObject):
             raise UnsupportedOperation("S3 object is not in write mode")
 
         with self.file.position_lock:
-            return self.file.truncate(size)
+            truncate = self.file.truncate(size)
+            self.s3_object.internal_last_modified = (
+                self.file.internal_last_modified
+            ) = time.time_ns()
+            return truncate
 
     def write(self, stream: IO[bytes] | "EphemeralS3StoredObject" | LimitedStream) -> int:
         """
@@ -152,6 +158,9 @@ class EphemeralS3StoredObject(S3StoredObject):
             etag = etag.hexdigest()
             self.size = self.s3_object.size = file.tell()
             self._etag = self.s3_object.etag = etag
+            self.s3_object.internal_last_modified = (
+                self.file.internal_last_modified
+            ) = time.time_ns()
 
             self._pos = file.seek(0)
 
@@ -174,12 +183,17 @@ class EphemeralS3StoredObject(S3StoredObject):
 
         self.size += read
         self.s3_object.size = self.size
+        self.s3_object.internal_last_modified = self.file.internal_last_modified = time.time_ns()
         return read
 
     def close(self):
         """We only release the lock, because closing the underlying file object will delete it"""
         self._lock.release()
         self.closed = True
+
+    @property
+    def last_modified(self) -> int:
+        return self.file.internal_last_modified
 
     @property
     def checksum(self) -> Optional[str]:

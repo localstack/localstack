@@ -103,6 +103,11 @@ class S3StoredObject(abc.ABC, Iterable[bytes]):
 
     @property
     @abc.abstractmethod
+    def last_modified(self) -> int:
+        pass
+
+    @property
+    @abc.abstractmethod
     def checksum(self) -> Optional[str]:
         if not self.s3_object.checksum_algorithm:
             return None
