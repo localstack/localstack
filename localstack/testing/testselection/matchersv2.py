@@ -114,22 +114,23 @@ def generic_service_tests(t: str) -> list[str]:
     return []
 
 
+# TODO: most are disabled for now so we don't run the full test suite on the initial PR
 MATCHING_RULES = [
     # CI
-    Matchers.glob(".github").full_suite(),
-    Matchers.glob(".circleci").full_suite(),
-    # dependencies / project setup
-    Matchers.glob("requirements*.txt").full_suite(),
-    Matchers.glob("setup.cfg").full_suite(),
-    Matchers.glob("pyproject.toml").full_suite(),
-    # testing
-    Matchers.glob("localstack/testing/**").full_suite(),
-    Matchers.glob("**/conftest.py").full_suite(),
-    Matchers.glob("**/fixtures.py").full_suite(),
-    # generic tests (a change in a test file should always at least test that file)
-    Matchers.glob("tests/**/test_*.py").passthrough(),
-    # ignore
-    Matchers.glob("**/.md").ignore(),
+    # Matchers.glob(".github").full_suite(),
+    # Matchers.glob(".circleci").full_suite(),
+    # # dependencies / project setup
+    # Matchers.glob("requirements*.txt").full_suite(),
+    # Matchers.glob("setup.cfg").full_suite(),
+    # Matchers.glob("pyproject.toml").full_suite(),
+    # # testing
+    # Matchers.glob("localstack/testing/**").full_suite(),
+    # Matchers.glob("**/conftest.py").full_suite(),
+    # Matchers.glob("**/fixtures.py").full_suite(),
+    # # generic tests (a change in a test file should always at least test that file)
+    # Matchers.glob("tests/**/test_*.py").passthrough(),
+    # # ignore
+    # Matchers.glob("**/.md").ignore(),
     # services
     generic_service_tests,  # always *at least* the service tests and dependencies
     # lambda
