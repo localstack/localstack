@@ -416,36 +416,41 @@ class ResourceProviderExecutor:
 
                 event = self.execute_action(resource_provider, payload)
 
-                if event.status == OperationStatus.FAILED:
-                    return event
-
-                if event.status == OperationStatus.SUCCESS:
-                    if not hasattr(resource_provider, "SCHEMA"):
-                        raise Exception(
-                            "A ResourceProvider should always have a SCHEMA property defined."
+                match OperationStatus:
+                    case OperationStatus.FAILED:
+                        return event
+                    case OperationStatus.SUCCESS:
+                        if not hasattr(resource_provider, "SCHEMA"):
+                            raise Exception(
+                                "A ResourceProvider should always have a SCHEMA property defined."
+                            )
+                        resource_type_schema = resource_provider.SCHEMA
+                        physical_resource_id = (
+                            self.extract_physical_resource_id_from_model_with_schema(
+                                event.resource_model,
+                                raw_payload["resourceType"],
+                                resource_type_schema,
+                            )
                         )
 
-                    resource_type_schema = resource_provider.SCHEMA
-                    physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
-                        event.resource_model,
-                        raw_payload["resourceType"],
-                        resource_type_schema,
-                    )
+                        resource["PhysicalResourceId"] = physical_resource_id
+                        resource["Properties"] = event.resource_model
+                        resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
+                        return event
+                    case OperationStatus.IN_PROGRESS:
+                        # update the shared state
+                        context = {**payload["callbackContext"], **event.custom_context}
+                        payload["callbackContext"] = context
+                        payload["requestData"]["resourceProperties"] = event.resource_model
 
-                    resource["PhysicalResourceId"] = physical_resource_id
-                    resource["Properties"] = event.resource_model
-                    resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
-                    return event
-
-                # update the shared state
-                context = {**payload["callbackContext"], **event.custom_context}
-                payload["callbackContext"] = context
-                payload["requestData"]["resourceProperties"] = event.resource_model
-
-                if current_iteration == 0:
-                    time.sleep(0)
-                else:
-                    time.sleep(sleep_time)
+                        if current_iteration == 0:
+                            time.sleep(0)
+                        else:
+                            time.sleep(sleep_time)
+                    case invalid_status:
+                        raise ValueError(
+                            f"Invalid OperationStatus ({invalid_status}) returned for resource {raw_payload['requestData']['logicalResourceId']} (type {raw_payload['resourceType']})"
+                        )
 
             except NoResourceProvider:
                 log_not_available_message(
@@ -460,7 +465,9 @@ class ResourceProviderExecutor:
                     raise  # re-raise here if explicitly enabled
 
         else:
-            raise TimeoutError("Could not perform deploy loop action")
+            raise TimeoutError(
+                f"Resource deployment for resource {raw_payload['requestData']['logicalResourceId']} (type {raw_payload['resourceType']}) timed out."
+            )
 
     def execute_action(
         self, resource_provider: ResourceProvider, raw_payload: ResourceProviderPayload
