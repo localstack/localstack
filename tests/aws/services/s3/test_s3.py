@@ -4605,9 +4605,9 @@ class TestS3:
             (StorageClass.DEEP_ARCHIVE, False),
         ],
     )
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_provider,
-        paths=["$..ServerSideEncryption"],
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="GLACIER_IR is considered as an archive class in Moto and raises an exception",
     )
     def test_put_object_storage_class(
         self, s3_bucket, snapshot, storage_class, is_retrievable, aws_client
