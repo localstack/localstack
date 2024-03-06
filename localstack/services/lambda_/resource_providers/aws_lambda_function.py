@@ -161,7 +161,7 @@ def send(event, context, responseStatus, responseData, physicalResourceId=None, 
 """
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
-NODEJS_CFN_RESPONSE_CONTENT = """
+NODEJS_CFN_RESPONSE_CONTENT = r"""
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
