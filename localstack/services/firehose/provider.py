@@ -807,31 +807,8 @@ class FirehoseProvider(FirehoseApi):
         db_name = jdbcurl.split("/")[-1]
         table_name = redshift_destination_description.get("CopyCommand").get("DataTableName")
 
-        columns_str = None
-        rows_to_insert = []
-        for record in records:
-            data = base64.b64decode(record.get("Data") or record.get("data"))
-            data = to_str(data)
-            data = json.loads(data)
-
-            if columns_str is None:
-                columns_str = ", ".join(data.keys())
-
-            values = []
-            for value in data.values():
-                if isinstance(value, str):
-                    # Escaping single quotes by doubling them
-                    value = value.replace("\t", " ")
-                    value = f"'{value}'"
-                elif value is None:
-                    value = "NULL"
-                else:
-                    value = str(value)
-                values.append(value)
-
-            value_str = ",".join(values)
-            rows_to_insert.append(value_str)
-
+        rows_to_insert = [self._prepare_records_for_redshift(record) for record in records]
+        columns_str = self._extract_columns(records[0])
         sql_insert_statement = f"INSERT INTO {table_name} ({columns_str}) VALUES "
         for row in rows_to_insert:
             sql_insert_statement += f"({row}),"
@@ -866,3 +843,33 @@ class FirehoseProvider(FirehoseApi):
             return match.group(1)
         else:
             raise ValueError(f"Unable to extract cluster id from jdbc url: {jdbc_url}")
+
+    def _decode_record(self, record: Dict) -> Dict:
+        data = base64.b64decode(record.get("Data") or record.get("data"))
+        data = to_str(data)
+        data = json.loads(data)
+        return data
+
+    def _prepare_records_for_redshift(self, record: Dict) -> str:
+        data = self._decode_record(record)
+
+        values = []
+        for value in data.values():
+            if isinstance(value, str):
+                # Escaping single quotes by doubling them
+                value = value.replace("\t", " ")
+                value = f"'{value}'"
+            elif value is None:
+                value = "NULL"
+            else:
+                value = str(value)
+            values.append(value)
+
+        value_str = ",".join(values)
+
+        return value_str
+
+    def _extract_columns(self, record: Dict) -> List[str]:
+        data = self._decode_record(record)
+        columns_str = ", ".join(data.keys())
+        return columns_str
