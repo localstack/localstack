@@ -1,7 +1,8 @@
 """
-Bindings to serve LocalStack using twisted.web.wsgi.
+Bindings to serve LocalStack using ``twisted.web``.
 
 TODO: both header retaining and TLS multiplexing are implemented in a pretty hacky way.
+TODO: websocket support
 """
 import logging
 from typing import TYPE_CHECKING, List
@@ -27,10 +28,14 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
-# TODO: websockets
-
 
 def update_environment(environ: "WSGIEnvironment", request: TwistedRequest):
+    """
+    Update the pre-populated WSGI environment with additional data, needed by rolo, from the webserver request object.
+
+    :param environ: the environment to update
+    :param request: the webserver request object
+    """
     # store raw headers
     headers: list[tuple[bytes, bytes]] = []
     for k, vs in request.requestHeaders.getAllRawHeaders():
@@ -72,6 +77,10 @@ def _start_wsgi_response(startReponse, self, status, headers, excInfo=None):
 
 
 class TwistedRequestAdapter(TwistedRequest):
+    """
+    Custom twisted server Request object to handle header casing.
+    """
+
     rawHeaderList: list[tuple[bytes, bytes]]
 
     def __init__(self, *args, **kwargs):
@@ -83,6 +92,11 @@ class TwistedRequestAdapter(TwistedRequest):
 
 
 class HeaderPreservingHTTPChannel(HTTPChannel):
+    """
+    Special HTTPChannel implementation that uses ``Headers._caseMappings`` to retain header casing both for request
+    headers (server -> WSGI), and  response headers (WSGI -> client).
+    """
+
     requestFactory = TwistedRequestAdapter
 
     @staticmethod
@@ -112,14 +126,26 @@ class HeaderPreservingHTTPChannel(HTTPChannel):
         self.transport.writeSequence(headerSequence)
 
     def isSecure(self):
+        # used to determine the WSGI url scheme (http vs https)
         try:
-            # will be TLSMultiplexer
+            # ``self.transport`` will be a ``TLSMultiplexer`` instance in our case
             return self.transport.isSecure()
         except AttributeError:
             return super().isSecure()
 
 
 class TLSMultiplexer(TLSMemoryBIOProtocol):
+    """
+    Custom protocol to multiplex HTTPS and HTTP connections over the same port. This is the equivalent of
+    ``DuplexSocket``, but since twisted use its own SSL layer and doesn't use `ssl.SSLSocket``, we need to implement
+    the multiplexing behavior in the Twisted layer.
+
+    The protocol implementation is a bit hacky, since it executes several control paths not relevant for SSL
+    connections, but until data is received from the socket and we can actually make the determination, we have to
+    assume every connection may be an HTTPS connection to later have all the SSL setup done in case we receive
+    encrypted data. The main idea is therefore to
+    """
+
     def __init__(
         self,
         factory: TLSMemoryBIOFactory,
@@ -136,17 +162,23 @@ class TLSMultiplexer(TLSMemoryBIOProtocol):
         return self._isTLS
 
     def dataReceived(self, data):
+        """
+        This method is only executed once - the first time data is received. Then the ``dataReceived`` attribute is
+        re-configured to either use the original TLS control paths, or directly call the underlying transport (which
+        will be directly the ``HTTPChannel`` in the case of HTTP).
+        """
         if self._isInitialized:
             raise ValueError("Should not call this method once initialized")
 
         self._isInitialized = True
-        self._isTLS = data[0] == 22
+        self._isTLS = data[0] == 22  # 0x16 is the marker byte identifying a TLS handshake
 
         if self._isTLS:
             self.dataReceived = super().dataReceived
             self.write = super().write
         else:
             # TODO: can we do proper protocol negotiation like in ALPN?
+            # in the TLS case, this is determined by the ALPN procedure by OpenSSL.
             if data.startswith(b"PRI * HTTP/2"):
                 self._protocol = b"h2"
 
