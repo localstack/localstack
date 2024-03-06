@@ -1,14 +1,12 @@
 import sys
 
-from localstack.testing.testselection.matchersv2 import SENTINEL_ALL_TESTS
-
 
 def filter_files(filter_content: list[str]):
     """Filter stdin files by content, matching against target_content."""
     lines = [line.strip() for line in sys.stdin]
 
     # TODO: SENTINEL_NO_TESTS ... not sure how we'd handle it here without failing the circleci selection
-    if SENTINEL_ALL_TESTS in filter_content:
+    if "SENTINEL_ALL_TESTS" in filter_content:
         for line in lines:
             print(line)
         return
