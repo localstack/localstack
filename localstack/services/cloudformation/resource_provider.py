@@ -389,12 +389,9 @@ class ResourceProviderExecutor:
         *,
         stack_name: str,
         stack_id: str,
-        provider_config: dict[str, str],
-        # FIXME: legacy
     ):
         self.stack_name = stack_name
         self.stack_id = stack_id
-        self.provider_config = provider_config
 
     def deploy_loop(
         self,

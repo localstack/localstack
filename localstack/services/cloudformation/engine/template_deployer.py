@@ -794,15 +794,6 @@ class TemplateDeployer:
         self.account_id = account_id
         self.region_name = region_name
 
-        try:
-            self.provider_config = json.loads(config.CFN_RESOURCE_PROVIDER_OVERRIDES)
-        except json.JSONDecodeError:
-            LOG.warning(
-                "Failed to parse CFN_RESOURCE_PROVIDER_OVERRIDES config. Not a valid JSON document.",
-                exc_info=True,
-            )
-            raise
-
     @property
     def resources(self):
         return self.stack.resources
@@ -1397,7 +1388,6 @@ class TemplateDeployer:
         return ResourceProviderExecutor(
             stack_name=self.stack.stack_name,
             stack_id=self.stack.stack_id,
-            provider_config=self.provider_config,
         )
 
     def create_resource_provider_payload(
