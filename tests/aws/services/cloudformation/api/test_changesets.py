@@ -995,3 +995,31 @@ def test_name_conflicts(aws_client, snapshot, cleanups):
         ChangeSetName=second_initial_changeset_id
     )
     snapshot.match("second_initial_changeset_id_desc", second_initial_changeset_id_desc)
+
+
+@markers.aws.validated
+def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aws_client):
+    stack_name = f"stack-{short_uid()}"
+
+    # deploy a stack
+    template_path = os.path.join(os.path.dirname(__file__), "../../../templates/ec2_keypair.yml")
+    template_body = load_template_raw(template_path)
+    deploy_cfn_template(
+        stack_name=stack_name,
+        template=template_body,
+    )
+
+    # delete the stack
+    aws_client.cloudformation.delete_stack(StackName=stack_name)
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+
+    # deploy a new stack with the same name
+    stack = deploy_cfn_template(
+        stack_name=stack_name,
+        template=template_body,
+    )
+
+    # ensure that the correct changeset is returned when requested by stack name
+    assert aws_client.cloudformation.describe_change_set(
+        ChangeSetName=stack.change_set_id, StackName=stack_name
+    )
