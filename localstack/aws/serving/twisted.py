@@ -43,7 +43,6 @@ def update_environment(environ: "WSGIEnvironment", request: TwistedRequest):
     environ["wsgi.input_terminated"] = True
 
     # create RAW_URI and REQUEST_URI
-    # TODO: check if this is correct
     environ["REQUEST_URI"] = request.uri.decode("utf-8")
     environ["RAW_URI"] = request.uri.decode("utf-8")
     # client addr/port
@@ -125,9 +124,10 @@ class TLSMultiplexer(TLSMemoryBIOProtocol):
         self,
         factory: TLSMemoryBIOFactory,
         wrappedProtocol: interfaces.IProtocol,
-        _connectWrapped: bool = True,
+        *args,
+        **kwargs,
     ):
-        super().__init__(factory, wrappedProtocol, _connectWrapped)
+        super().__init__(factory, wrappedProtocol, *args, **kwargs)
         self._isInitialized = False
         self._isTLS = False
         self._protocol = None
@@ -155,6 +155,16 @@ class TLSMultiplexer(TLSMemoryBIOProtocol):
             self.write = self.transport.write
 
         self.dataReceived(data)
+
+    def loseConnection(self):
+        if not self._isTLS:
+            # when the underlying connection is not really using SSL, then this control path would (correctly) lead
+            # to an ``self.abortConnection()`` call, because, which we need to forego because it would terminate the
+            # connection unexpectedly and lead to client errors.
+            self.disconnecting = True
+            self._shutdownTLS()
+        else:
+            super().loseConnection()
 
     @property
     def negotiatedProtocol(self):
