@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "2 7 * * *"
+    default: "12 7 * * *"
 
 executors:
   ubuntu-machine-amd64:
@@ -186,10 +186,10 @@ jobs:
       - run:
           name: Set up AWS credentials for non-default credentials
           command: |
-            if [ "CIRCLE_WORKFLOW_ID" == "scheduled-workflow" ]; then
+#            if [ "CIRCLE_WORKFLOW_ID" == "scheduled-workflow" ]; then
             source $BASH_ENV
             cat $BASH_ENV
-            fi
+#            fi
       - run:
           name: Test CloudWatch v2 provider
           environment:
