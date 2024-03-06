@@ -4,7 +4,7 @@ import logging
 import re
 import traceback
 import uuid
-from typing import Literal, Optional, Type, TypedDict
+from typing import Literal, Optional, TypedDict
 
 from localstack import config
 from localstack.aws.connect import connect_to
@@ -31,12 +31,10 @@ from localstack.services.cloudformation.resource_provider import (
 )
 from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
-    GenericBaseModel,
 )
 from localstack.services.cloudformation.stores import exports_map
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe
-from localstack.utils.objects import get_all_subclasses
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
@@ -55,12 +53,6 @@ LOG = logging.getLogger(__name__)
 
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ["AWS::Region", "AWS::Partition", "AWS::StackName", "AWS::AccountId"]
-
-# FIXME: remove
-# maps resource type string to model class
-RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
-    model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)
-}
 
 
 class NoStackUpdates(Exception):
