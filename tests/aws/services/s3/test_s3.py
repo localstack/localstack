@@ -6700,7 +6700,7 @@ class TestS3PresignedUrl:
 
     @markers.aws.only_localstack
     def test_s3_get_response_case_sensitive_headers(self, s3_bucket, aws_client):
-        # Test that ETag headers is canse sensitive
+        # Test that ETag headers is case sensitive
         object_key = "key-by-hostname"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 

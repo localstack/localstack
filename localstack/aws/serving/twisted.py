@@ -246,8 +246,7 @@ def serve_gateway(
     gateway: Gateway, listen: List[HostAndPort], use_ssl: bool, asynchronous: bool = False
 ):
     """
-    Implementation of the edge.do_start_edge_proxy interface to start a Hypercorn server instance serving the
-    LocalstackAwsGateway.
+    Serve a Gateway instance using twisted.
     """
     # setup reactor
     reactor.suggestThreadPoolSize(config.GATEWAY_WORKER_COUNT)
