@@ -915,7 +915,6 @@ class RedshiftDestinationDescription(TypedDict, total=False):
     ClusterJDBCURL: ClusterJDBCURL
     CopyCommand: CopyCommand
     Username: Username
-    Password: Password
     RetryOptions: Optional[RedshiftRetryOptions]
     S3DestinationDescription: S3DestinationDescription
     ProcessingConfiguration: Optional[ProcessingConfiguration]
