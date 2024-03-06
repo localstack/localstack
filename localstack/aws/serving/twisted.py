@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, List
 
 from rolo.gateway import Gateway
 from twisted.internet import endpoints, interfaces, reactor, ssl
+from twisted.protocols.policies import ProtocolWrapper
 from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
 from twisted.web.http import HTTPChannel, _GenericHTTPChannelProtocol
 from twisted.web.server import Request as TwistedRequest
@@ -143,7 +144,12 @@ class TLSMultiplexer(TLSMemoryBIOProtocol):
     The protocol implementation is a bit hacky, since it executes several control paths not relevant for SSL
     connections, but until data is received from the socket and we can actually make the determination, we have to
     assume every connection may be an HTTPS connection to later have all the SSL setup done in case we receive
-    encrypted data. The main idea is therefore to
+    encrypted data.
+
+    TODO: a better way would be to not inherit from TLSMemoryBIOProtocol, since it will always create an SSL context and
+     attempt a handshake. instead we should create a ``TLSMemoryBIOFactory`` and call ``makeConnection`` after the first
+     data have been received. this is a bit trickier and requires better understanding of twisted, which I currently
+     don't have, so I'm stuck with the silly implementation for now.
     """
 
     def __init__(
@@ -185,18 +191,32 @@ class TLSMultiplexer(TLSMemoryBIOProtocol):
             # foregoes TLS wrapper
             self.dataReceived = self.wrappedProtocol.dataReceived
             self.write = self.transport.write
+            self._tlsConnection = None  # TODO is there some open SLS state we may need to close?
 
         self.dataReceived(data)
 
     def loseConnection(self):
-        if not self._isTLS:
-            # when the underlying connection is not really using SSL, then this control path would (correctly) lead
-            # to an ``self.abortConnection()`` call, because, which we need to forego because it would terminate the
-            # connection unexpectedly and lead to client errors.
-            self.disconnecting = True
-            self._shutdownTLS()
-        else:
+        if self._isTLS:
             super().loseConnection()
+            return
+
+        # when the underlying connection is not really using SSL, then this control path would (correctly) lead
+        # to an ``self.abortConnection()`` call, because, which we need to forego because it would terminate the
+        # connection unexpectedly and lead to client errors.
+        ProtocolWrapper.loseConnection(self)
+
+    def connectionLost(self, reason):
+        if self._isTLS:
+            super().connectionLost(reason)
+            return
+
+        self.connected = False
+        self._tlsConnection = None
+        ProtocolWrapper.connectionLost(self, reason)
+
+    def abortConnection(self):
+        LOG.info("instructed to abort connection")
+        super().abortConnection()
 
     @property
     def negotiatedProtocol(self):
