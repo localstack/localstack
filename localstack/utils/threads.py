@@ -135,7 +135,7 @@ def cleanup_threads_and_processes(quiet=True):
             kill_process_tree(proc.pid)
             # proc.terminate()
         except Exception as e:
-            LOG.debug("[shutdown] Error process thread %s: %s", proc, e)
+            LOG.debug("[shutdown] Error cleaning up process tree %s: %s", proc, e)
     # clean up async tasks
     try:
         import asyncio
@@ -144,7 +144,7 @@ def cleanup_threads_and_processes(quiet=True):
             try:
                 task.cancel()
             except Exception as e:
-                LOG.debug("[shutdown] Error cancelling task %s: %s", task, e)
+                LOG.debug("[shutdown] Error cancelling asyncio task %s: %s", task, e)
     except Exception:
         pass
     LOG.debug("[shutdown] Done cleaning up threads / processes / tasks")
