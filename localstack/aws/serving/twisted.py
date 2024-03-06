@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING, List
 
 from rolo.gateway import Gateway
 from twisted.internet import endpoints, interfaces, reactor, ssl
-from twisted.protocols.policies import ProtocolWrapper
-from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
+from twisted.protocols.policies import ProtocolWrapper, WrappingFactory
+from twisted.protocols.tls import BufferingTLSTransport, TLSMemoryBIOFactory
 from twisted.python.threadpool import ThreadPool
 from twisted.web.http import HTTPChannel, _GenericHTTPChannelProtocol
 from twisted.web.server import Request as TwistedRequest
@@ -137,94 +137,61 @@ class HeaderPreservingHTTPChannel(HTTPChannel):
             return super().isSecure()
 
 
-class TLSMultiplexer(TLSMemoryBIOProtocol):
+class TLSMultiplexer(ProtocolWrapper):
     """
     Custom protocol to multiplex HTTPS and HTTP connections over the same port. This is the equivalent of
     ``DuplexSocket``, but since twisted use its own SSL layer and doesn't use `ssl.SSLSocket``, we need to implement
     the multiplexing behavior in the Twisted layer.
 
-    The protocol implementation is a bit hacky, since it executes several control paths not relevant for SSL
-    connections, but until data is received from the socket and we can actually make the determination, we have to
-    assume every connection may be an HTTPS connection to later have all the SSL setup done in case we receive
-    encrypted data.
-
-    TODO: a better way would be to not inherit from TLSMemoryBIOProtocol, since it will always create an SSL context and
-     attempt a handshake. instead we should create a ``TLSMemoryBIOFactory`` and call ``makeConnection`` after the first
-     data have been received. this is a bit trickier and requires better understanding of twisted, which I currently
-     don't have, so I'm stuck with the silly implementation for now.
+    The basic idea is to defer the ``makeConnection`` call until the first data are received, and then re-configure
+    the underlying ``wrappedProtocol`` if needed with a TLS wrapper.
     """
+
+    tlsProtocol = BufferingTLSTransport
 
     def __init__(
         self,
-        factory: TLSMemoryBIOFactory,
+        factory: "WrappingFactory",
         wrappedProtocol: interfaces.IProtocol,
-        *args,
-        **kwargs,
     ):
-        super().__init__(factory, wrappedProtocol, *args, **kwargs)
+        super().__init__(factory, wrappedProtocol)
         self._isInitialized = False
-        self._isTLS = False
-        self._protocol = None
+        self._isTLS = None
+        self._negotiatedProtocol = None
 
-    def isSecure(self):
-        return self._isTLS
+    def makeConnection(self, transport):
+        self.connected = 1
+        self.transport = transport
+        # we defer the actual makeConnection call to the first invocation of dataReceived
 
-    def dataReceived(self, data):
-        """
-        This method is only executed once - the first time data is received. Then the ``dataReceived`` attribute is
-        re-configured to either use the original TLS control paths, or directly call the underlying transport (which
-        will be directly the ``HTTPChannel`` in the case of HTTP).
-        """
+    def dataReceived(self, data: bytes) -> None:
         if self._isInitialized:
-            raise ValueError("Should not call this method once initialized")
+            super().dataReceived(data)
+            return
 
+        # once the first data have been received, we can check whether it's a TLS handshake, then we need to run the
+        # actual makeConnection procedure.
         self._isInitialized = True
         self._isTLS = data[0] == 22  # 0x16 is the marker byte identifying a TLS handshake
 
         if self._isTLS:
-            self.dataReceived = super().dataReceived
-            self.write = super().write
+            # wrap protocol again in tls protocol
+            self.wrappedProtocol = self.tlsProtocol(self.factory, self.wrappedProtocol)
         else:
-            # TODO: can we do proper protocol negotiation like in ALPN?
-            # in the TLS case, this is determined by the ALPN procedure by OpenSSL.
             if data.startswith(b"PRI * HTTP/2"):
-                self._protocol = b"h2"
+                # TODO: can we do proper protocol negotiation like in ALPN?
+                # in the TLS case, this is determined by the ALPN procedure by OpenSSL.
+                self._negotiatedProtocol = b"h2"
 
-            # foregoes TLS wrapper
-            self.dataReceived = self.wrappedProtocol.dataReceived
-            self.write = self.transport.write
-            self._tlsConnection = None  # TODO is there some open SLS state we may need to close?
-
-        self.dataReceived(data)
-
-    def loseConnection(self):
-        if self._isTLS:
-            super().loseConnection()
-            return
-
-        # when the underlying connection is not really using SSL, then this control path would (correctly) lead
-        # to an ``self.abortConnection()`` call, because, which we need to forego because it would terminate the
-        # connection unexpectedly and lead to client errors.
-        ProtocolWrapper.loseConnection(self)
-
-    def connectionLost(self, reason):
-        if self._isTLS:
-            super().connectionLost(reason)
-            return
-
-        self.connected = False
-        self._tlsConnection = None
-        ProtocolWrapper.connectionLost(self, reason)
-
-    def abortConnection(self):
-        LOG.info("instructed to abort connection")
-        super().abortConnection()
+        # now that we've set the real wrapped protocol, run the make connection procedure
+        super().makeConnection(self.transport)
+        super().dataReceived(data)
 
     @property
-    def negotiatedProtocol(self):
-        if self._protocol:
-            return self._protocol
-        return super().negotiatedProtocol
+    def negotiatedProtocol(self) -> str | None:
+        if self._negotiatedProtocol:
+            return self._negotiatedProtocol
+        return self.wrappedProtocol.negotiatedProtocol
 
 
 class TLSMultiplexerFactory(TLSMemoryBIOFactory):
