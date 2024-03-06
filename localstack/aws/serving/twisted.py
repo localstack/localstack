@@ -5,12 +5,14 @@ TODO: both header retaining and TLS multiplexing are implemented in a pretty hac
 TODO: websocket support
 """
 import logging
+import time
 from typing import TYPE_CHECKING, List
 
 from rolo.gateway import Gateway
 from twisted.internet import endpoints, interfaces, reactor, ssl
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.protocols.tls import TLSMemoryBIOFactory, TLSMemoryBIOProtocol
+from twisted.python.threadpool import ThreadPool
 from twisted.web.http import HTTPChannel, _GenericHTTPChannelProtocol
 from twisted.web.server import Request as TwistedRequest
 from twisted.web.server import Site
@@ -229,6 +231,46 @@ class TLSMultiplexerFactory(TLSMemoryBIOFactory):
     protocol = TLSMultiplexer
 
 
+def stop_thread_pool(self: ThreadPool, stop, timeout: float = None):
+    """
+    Patch for a custom shutdown procedure for a ThreadPool that waits a given amount of time for all threads.
+
+    :param self: the pool to shut down
+    :param stop: the original function
+    :param timeout: the maximum amount of time to wait
+    """
+    # copied from ThreadPool.stop()
+    if self.joined:
+        return
+    if not timeout:
+        stop()
+        return
+
+    self.joined = True
+    self.started = False
+    self._team.quit()
+
+    # our own joining logic with timeout
+    remaining = timeout
+    total_waited = 0
+
+    for thread in self.threads:
+        then = time.time()
+
+        LOG.info("[shutdown] Joining thread %s", thread)
+        thread.join(remaining)
+
+        waited = time.time() - then
+        total_waited += waited
+        remaining -= waited
+
+        if thread.is_alive():
+            LOG.warning("[shutdown] Thread %s still alive after %.2f seconds", thread, total_waited)
+
+        if remaining <= 0:
+            remaining = 0
+
+
 def serve_gateway(
     gateway: Gateway, listen: List[HostAndPort], use_ssl: bool, asynchronous: bool = False
 ):
@@ -239,9 +281,11 @@ def serve_gateway(
     # setup reactor
     reactor.suggestThreadPoolSize(config.GATEWAY_WORKER_COUNT)
     thread_pool = reactor.getThreadPool()
+    patch(thread_pool.stop)(stop_thread_pool)
 
     def _shutdown_reactor():
         LOG.debug("[shutdown] Shutting down twisted reactor serving the gateway")
+        thread_pool.stop(timeout=10)
         reactor.stop()
 
     ON_AFTER_SERVICE_SHUTDOWN_HANDLERS.register(_shutdown_reactor)
