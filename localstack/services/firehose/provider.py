@@ -843,20 +843,18 @@ class FirehoseProvider(FirehoseApi):
             "ClusterIdentifier": cluster_id,  # cluster_identifier in cluster create
         }
 
-        if role_arn := redshift_destination_description.get("RoleARN"):
-            factory = connect_to.with_assumed_role(
-                role_arn=role_arn, service_principal=ServicePrincipal.firehose
-            )
-        else:
-            factory = connect_to()
-        redshift = factory.redshift_data.request_metadata(
-            source_arn=stream_name, service_principal=ServicePrincipal.firehose
-        )
+        role_arn = redshift_destination_description.get("RoleARN")
+        account_id = extract_account_id_from_arn(role_arn)
+        region_name = extract_region_from_arn(role_arn)
+        redshift_data = connect_to(
+            aws_access_key_id=account_id, region_name=region_name
+        ).redshift_data
+
         try:
             LOG.debug(
                 "Publishing to Redshift destination: %s. Data: %s", jdbcurl, sql_insert_statement
             )
-            redshift.execute_statement(**execute_statement)
+            redshift_data.execute_statement(**execute_statement)
         except Exception as e:
             LOG.exception(f"Unable to put records {records} to redshift cluster.")
             raise e
