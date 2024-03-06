@@ -189,7 +189,7 @@ exports.send = function(event, context, responseStatus, responseData, physicalRe
     var parsedUrl = url.parse(event.ResponseURL);
     var options = {
         hostname: parsedUrl.hostname,
-        port: 443,
+        port: parsedUrl.port,
         path: parsedUrl.path,
         method: "PUT",
         headers: {
