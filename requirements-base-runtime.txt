@@ -6,6 +6,12 @@
 #
 aiofiles==23.2.1
     # via quart
+attrs==23.2.0
+    # via
+    #   automat
+    #   twisted
+automat==22.10.0
+    # via twisted
 awscrt==0.20.5
     # via localstack-core (pyproject.toml)
 blinker==1.7.0
@@ -34,6 +40,8 @@ click==8.1.7
     #   flask
     #   localstack-core (pyproject.toml)
     #   quart
+constantly==23.10.4
+    # via twisted
 cryptography==42.0.5
     # via
     #   localstack-core (pyproject.toml)
@@ -64,8 +72,14 @@ hypercorn==0.16.0
     #   quart
 hyperframe==6.0.1
     # via h2
+hyperlink==21.0.0
+    # via twisted
 idna==3.6
-    # via requests
+    # via
+    #   hyperlink
+    #   requests
+incremental==22.10.0
+    # via twisted
 itsdangerous==2.1.2
     # via
     #   flask
@@ -135,6 +149,7 @@ semver==3.0.2
     # via localstack-core (pyproject.toml)
 six==1.16.0
     # via
+    #   automat
     #   python-dateutil
     #   requests-aws4auth
 stevedore==5.2.0
@@ -143,8 +158,12 @@ stevedore==5.2.0
     #   plux
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
+twisted==24.3.0
+    # via localstack-core (pyproject.toml)
 typing-extensions==4.10.0
-    # via readerwriterlock
+    # via
+    #   readerwriterlock
+    #   twisted
 urllib3==2.0.7
     # via
     #   botocore
@@ -163,3 +182,8 @@ wsproto==1.2.0
     # via hypercorn
 xmltodict==0.13.0
     # via localstack-core (pyproject.toml)
+zope-interface==6.2
+    # via twisted
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

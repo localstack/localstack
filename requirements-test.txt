@@ -20,12 +20,16 @@ argparse==1.4.0
     # via amazon-kclpy
 attrs==23.2.0
     # via
+    #   automat
     #   cattrs
     #   jschema-to-python
     #   jsii
     #   jsonschema
     #   referencing
     #   sarif-om
+    #   twisted
+automat==22.10.0
+    # via twisted
 aws-cdk-asset-awscli-v1==2.2.202
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.2
@@ -89,6 +93,8 @@ click==8.1.7
     #   quart
 colorama==0.4.4
     # via awscli
+constantly==23.10.4
+    # via twisted
 constructs==10.3.0
     # via aws-cdk-lib
 coverage[toml]==7.4.3
@@ -141,10 +147,16 @@ hypercorn==0.16.0
     #   quart
 hyperframe==6.0.1
     # via h2
+hyperlink==21.0.0
+    # via twisted
 idna==3.6
-    # via requests
+    # via
+    #   hyperlink
+    #   requests
 importlib-resources==6.1.2
     # via jsii
+incremental==22.10.0
+    # via twisted
 iniconfig==2.0.0
     # via pytest
 itsdangerous==2.1.2
@@ -164,7 +176,7 @@ joserfc==0.9.0
     # via moto-ext
 jschema-to-python==1.2.3
     # via cfn-lint
-jsii==1.94.0
+jsii==1.95.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
@@ -364,6 +376,7 @@ semver==3.0.2
 six==1.16.0
     # via
     #   airspeed-ext
+    #   automat
     #   jsonpath-rw
     #   junit-xml
     #   opensearch-py
@@ -377,6 +390,8 @@ stevedore==5.2.0
 sympy==1.12
     # via cfn-lint
 tailer==0.4.1
+    # via localstack-core (pyproject.toml)
+twisted==24.3.0
     # via localstack-core (pyproject.toml)
 typeguard==2.13.3
     # via
@@ -393,6 +408,7 @@ typing-extensions==4.10.0
     #   pydantic
     #   pydantic-core
     #   readerwriterlock
+    #   twisted
 urllib3==2.0.7
     # via
     #   botocore
@@ -421,6 +437,8 @@ xmltodict==0.13.0
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
+zope-interface==6.2
+    # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

@@ -20,10 +20,14 @@ argparse==1.4.0
     # via amazon-kclpy
 attrs==23.2.0
     # via
+    #   automat
     #   jschema-to-python
     #   jsonschema
     #   referencing
     #   sarif-om
+    #   twisted
+automat==22.10.0
+    # via twisted
 aws-sam-translator==1.85.0
     # via
     #   cfn-lint
@@ -76,6 +80,8 @@ click==8.1.7
     #   quart
 colorama==0.4.4
     # via awscli
+constantly==23.10.4
+    # via twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
 cryptography==42.0.5
@@ -120,8 +126,14 @@ hypercorn==0.16.0
     #   quart
 hyperframe==6.0.1
     # via h2
+hyperlink==21.0.0
+    # via twisted
 idna==3.6
-    # via requests
+    # via
+    #   hyperlink
+    #   requests
+incremental==22.10.0
+    # via twisted
 itsdangerous==2.1.2
     # via
     #   flask
@@ -296,6 +308,7 @@ semver==3.0.2
 six==1.16.0
     # via
     #   airspeed-ext
+    #   automat
     #   jsonpath-rw
     #   junit-xml
     #   opensearch-py
@@ -310,12 +323,15 @@ sympy==1.12
     # via cfn-lint
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
+twisted==24.3.0
+    # via localstack-core (pyproject.toml)
 typing-extensions==4.10.0
     # via
     #   aws-sam-translator
     #   pydantic
     #   pydantic-core
     #   readerwriterlock
+    #   twisted
 urllib3==2.0.7
     # via
     #   botocore
@@ -341,6 +357,8 @@ xmltodict==0.13.0
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
+zope-interface==6.2
+    # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
