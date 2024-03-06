@@ -267,6 +267,9 @@ jobs:
         # Entrypoints need to be generated _after_ the community edition has been linked into the venv
         run: |
           make entrypoints
+          make dist
+          ls -la dist/
+          ls -la localstack_ext.egg-info
           cat localstack_ext.egg-info/entry_points.txt
 
       - name: Test Pro Startup
