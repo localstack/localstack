@@ -257,7 +257,7 @@ def stop_thread_pool(self: ThreadPool, stop, timeout: float = None):
     for thread in self.threads:
         then = time.time()
 
-        LOG.info("[shutdown] Joining thread %s", thread)
+        # LOG.info("[shutdown] Joining thread %s", thread)
         thread.join(remaining)
 
         waited = time.time() - then
@@ -265,7 +265,11 @@ def stop_thread_pool(self: ThreadPool, stop, timeout: float = None):
         remaining -= waited
 
         if thread.is_alive():
-            LOG.warning("[shutdown] Thread %s still alive after %.2f seconds", thread, total_waited)
+            LOG.warning(
+                "[shutdown] Request thread %s still alive after %.2f seconds",
+                thread,
+                total_waited,
+            )
 
         if remaining <= 0:
             remaining = 0
