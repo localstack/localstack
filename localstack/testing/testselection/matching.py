@@ -100,8 +100,8 @@ MATCHING_RULES: list[MatchingRule] = [
         "tests/**/test_*.py"
     ).passthrough(),  # changes in a test file should always at least test that file
     # CI
-    Matchers.glob(".github").full_suite(),
-    Matchers.glob(".circleci").full_suite(),
+    Matchers.glob(".github/**").full_suite(),
+    Matchers.glob(".circleci/**").full_suite(),
     # dependencies / project setup
     Matchers.glob("requirements*.txt").full_suite(),
     Matchers.glob("setup.cfg").full_suite(),
