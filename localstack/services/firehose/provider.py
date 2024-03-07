@@ -808,8 +808,8 @@ class FirehoseProvider(FirehoseApi):
         table_name = redshift_destination_description.get("CopyCommand").get("DataTableName")
 
         rows_to_insert = [self._prepare_records_for_redshift(record) for record in records]
-        columns_str = self._extract_columns(records[0])
-        sql_insert_statement = f"INSERT INTO {table_name} ({columns_str}) VALUES "
+        columns_placeholder_str = self._extract_columns(records[0])
+        sql_insert_statement = f"INSERT INTO {table_name} VALUES ({columns_placeholder_str})"
         for row in rows_to_insert:
             sql_insert_statement += f"({row}),"
         sql_insert_statement = sql_insert_statement.rstrip(",") + ";"
@@ -869,7 +869,8 @@ class FirehoseProvider(FirehoseApi):
 
         return value_str
 
-    def _extract_columns(self, record: Dict) -> List[str]:
+    def _extract_columns(self, record: Dict) -> str:
         data = self._decode_record(record)
-        columns_str = ", ".join(data.keys())
-        return columns_str
+        placeholders = [f":{key}" for key in data]
+        placeholder_str = ", ".join(placeholders)
+        return placeholder_str
