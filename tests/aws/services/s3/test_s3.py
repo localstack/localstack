@@ -55,7 +55,6 @@ from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.run import run
-from localstack.utils.server import http2_server
 from localstack.utils.strings import (
     checksum_crc32,
     checksum_crc32c,
@@ -6700,28 +6699,19 @@ class TestS3PresignedUrl:
         assert request_response.status_code == 200
 
     @markers.aws.only_localstack
-    @pytest.mark.parametrize("case_sensitive_headers", [True, False])
-    def test_s3_get_response_case_sensitive_headers(
-        self, s3_bucket, case_sensitive_headers, aws_client
-    ):
-        # Test that RETURN_CASE_SENSITIVE_HEADERS is respected
+    def test_s3_get_response_case_sensitive_headers(self, s3_bucket, aws_client):
+        # Test that ETag headers is case sensitive
         object_key = "key-by-hostname"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
         # get object and assert headers
-        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
-        try:
-            url = aws_client.s3.generate_presigned_url(
-                "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
-            )
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
-            response = requests.get(url, verify=False)
-            # expect that Etag is contained
-            header_names = list(response.headers.keys())
-            expected_etag = "ETag" if case_sensitive_headers else "etag"
-            assert expected_etag in header_names
-        finally:
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
+        url = aws_client.s3.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+        )
+        response = requests.get(url, verify=False)
+        # expect that Etag is contained
+        header_names = list(response.headers.keys())
+        assert "ETag" in header_names
 
     @pytest.mark.parametrize(
         "signature_version, use_virtual_address",

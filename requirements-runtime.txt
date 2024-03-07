@@ -22,6 +22,7 @@ attrs==23.2.0
     # via
     #   jschema-to-python
     #   jsonschema
+    #   localstack-twisted
     #   referencing
     #   sarif-om
 aws-sam-translator==1.85.0
@@ -76,6 +77,8 @@ click==8.1.7
     #   quart
 colorama==0.4.4
     # via awscli
+constantly==23.10.4
+    # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
 cryptography==42.0.5
@@ -111,7 +114,9 @@ h11==0.14.0
     #   hypercorn
     #   wsproto
 h2==4.1.0
-    # via hypercorn
+    # via
+    #   hypercorn
+    #   localstack-twisted
 hpack==4.0.0
     # via h2
 hypercorn==0.16.0
@@ -120,8 +125,15 @@ hypercorn==0.16.0
     #   quart
 hyperframe==6.0.1
     # via h2
+hyperlink==21.0.0
+    # via localstack-twisted
 idna==3.6
-    # via requests
+    # via
+    #   hyperlink
+    #   localstack-twisted
+    #   requests
+incremental==22.10.0
+    # via localstack-twisted
 itsdangerous==2.1.2
     # via
     #   flask
@@ -171,6 +183,8 @@ junit-xml==1.9
     # via cfn-lint
 lazy-object-proxy==1.10.0
     # via openapi-spec-validator
+localstack-twisted==24.3.0
+    # via localstack-core (pyproject.toml)
 markdown-it-py==3.0.0
     # via rich
 markupsafe==2.1.5
@@ -211,8 +225,10 @@ ply==3.11
     # via
     #   jsonpath-ng
     #   jsonpath-rw
-priority==2.0.0
-    # via hypercorn
+priority==1.3.0
+    # via
+    #   hypercorn
+    #   localstack-twisted
 psutil==5.9.8
     # via localstack-core (pyproject.toml)
 py-partiql-parser==0.5.1
@@ -230,8 +246,10 @@ pygments==2.17.2
 pymongo==4.6.2
     # via localstack-core (pyproject.toml)
 pyopenssl==24.0.0
-    # via localstack-core (pyproject.toml)
-pyparsing==3.1.1
+    # via
+    #   localstack-core (pyproject.toml)
+    #   localstack-twisted
+pyparsing==3.1.2
     # via moto-ext
 python-dateutil==2.9.0.post0
     # via
@@ -313,6 +331,7 @@ tailer==0.4.1
 typing-extensions==4.10.0
     # via
     #   aws-sam-translator
+    #   localstack-twisted
     #   pydantic
     #   pydantic-core
     #   readerwriterlock
@@ -341,6 +360,8 @@ xmltodict==0.13.0
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
+zope-interface==6.2
+    # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

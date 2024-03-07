@@ -89,5 +89,5 @@ def pytest_sessionfinish(session: Session):
     start_thread(_stop_infra)
     LOG.info("waiting for infra to stop")
 
-    if not events.infra_stopped.wait(timeout=10):
+    if not events.infra_stopped.wait(timeout=20):
         LOG.warning("gave up waiting for infra to stop, returning anyway")

@@ -657,7 +657,7 @@ def populate_edge_configuration(
 
 GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
 
-# the gateway server that should be used (supported: hypercorn, dev: werkzeug)
+# the gateway server that should be used (supported: hypercorn, twisted dev: werkzeug)
 GATEWAY_SERVER = os.environ.get("GATEWAY_SERVER", "").strip() or "hypercorn"
 
 # IP of the docker bridge used to enable access between containers
