@@ -810,9 +810,6 @@ class FirehoseProvider(FirehoseApi):
         rows_to_insert = [self._prepare_records_for_redshift(record) for record in records]
         columns_placeholder_str = self._extract_columns(records[0])
         sql_insert_statement = f"INSERT INTO {table_name} VALUES ({columns_placeholder_str})"
-        for row in rows_to_insert:
-            sql_insert_statement += f"({row}),"
-        sql_insert_statement = sql_insert_statement.rstrip(",") + ";"
 
         execute_statement = {
             "Sql": sql_insert_statement,
@@ -827,14 +824,15 @@ class FirehoseProvider(FirehoseApi):
             aws_access_key_id=account_id, region_name=region_name
         ).redshift_data
 
-        try:
-            LOG.debug(
-                "Publishing to Redshift destination: %s. Data: %s", jdbcurl, sql_insert_statement
-            )
-            redshift_data.execute_statement(**execute_statement)
-        except Exception as e:
-            LOG.exception(f"Unable to put records {records} to redshift cluster.")
-            raise e
+        for row_to_insert in rows_to_insert:  # redsift_data only allows single row inserts
+            try:
+                LOG.debug(
+                    "Publishing to Redshift destination: %s. Data: %s", jdbcurl, row_to_insert
+                )
+                redshift_data.execute_statement(Parameters=row_to_insert, **execute_statement)
+            except Exception as e:
+                LOG.exception(f"Unable to put records {row_to_insert} to redshift cluster.")
+                raise e
 
     def _get_cluster_id_from_jdbc_url(self, jdbc_url: str) -> str:
         pattern = r"://(.*?)\."
