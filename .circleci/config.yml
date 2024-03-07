@@ -281,7 +281,7 @@ jobs:
       - run:
           name: Load docker image
           command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
-      - when: # TODO: need to figure out how we can skip these if we don't need to test lambda
+      - when:
           condition:
             equal: [ "amd64", << parameters.platform >>]
           steps:
@@ -415,7 +415,6 @@ jobs:
             coverage combine
             mv .coverage ../../
       - run:
-          # TODO: skip this for PR runs
           name: Report coverage statistics
           command: |
             if [ -z "${CI_PULL_REQUEST}" ]; then

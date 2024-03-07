@@ -16,12 +16,12 @@ def _get_service_for_module(module_name: str) -> str:
     return PACKAGE_TO_SVC_MAP.get(module_name)
 
 
-def resolve_dependencies(module_name: str) -> "set[str]":
+def resolve_dependencies(module_name: str) -> set[str]:
     svc_name = _get_service_for_module(module_name)
     return _expand_api_dependencies(svc_name)
 
 
-def _expand_api_dependencies(svc_name: str) -> "set[str]":
+def _expand_api_dependencies(svc_name: str) -> set[str]:
     result = set()
     dependencies = API_DEPENDENCIES.get(svc_name, [])
     result.update(dependencies)
@@ -46,7 +46,7 @@ class Matcher:
     def ignore(self):
         return lambda t: [SENTINEL_NO_TEST] if self.matching_func(t) else []
 
-    def service_tests(self, services: "list[str]"):
+    def service_tests(self, services: list[str]):
         return (
             lambda t: [get_test_dir_for_service(svc) for svc in services]
             if self.matching_func(t)
@@ -71,7 +71,7 @@ class Matchers:
         return Matcher(lambda t: t.startswith(prefix))
 
 
-def generic_service_tests(t: str) -> "list[str]":
+def generic_service_tests(t: str) -> list[str]:
     """
     Generic matching of changes in service files to their tests
     """

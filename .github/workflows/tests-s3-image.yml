@@ -65,7 +65,6 @@ env:
 
 jobs:
   build-test-s3:
-    if: false  # TODO: remove again
     strategy:
       matrix:
         include:
