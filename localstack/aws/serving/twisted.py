@@ -162,6 +162,7 @@ class TLSMultiplexer(ProtocolWrapper):
     def makeConnection(self, transport):
         self.connected = 1
         self.transport = transport
+        self.factory.registerProtocol(self)  # this is idempotent
         # we defer the actual makeConnection call to the first invocation of dataReceived
 
     def dataReceived(self, data: bytes) -> None:

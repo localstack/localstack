@@ -539,6 +539,7 @@ class TestOpensearchProvider:
             try:
                 return response, response.read()
             finally:
+                # make sure to close the connectio *after* we've called ``response.read()``.
                 response.close()
 
         plain_response, data = send_plain_request("GET", opensearch_endpoint)
