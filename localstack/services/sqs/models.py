@@ -205,7 +205,9 @@ class MessageMoveTask:
 
     # configurable fields
     source_arn: str
-    destination_arn: str
+    """The arn of the DLQ the messages are currently in."""
+    destination_arn: str | None = None
+    """If the DestinationArn is not specified, the original source arn will be used as target."""
     max_number_of_messages_per_second: int | None = None
 
     # dynamic fields
