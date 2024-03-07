@@ -10,7 +10,15 @@ from localstack.testing.testselection.git import find_merge_base, get_changed_fi
 from localstack.testing.testselection.github import get_pr_details_from_url
 from localstack.testing.testselection.testselection import get_affected_tests_from_changes
 
-if __name__ == "__main__":
+
+def main():
+    if len(sys.argv) != 5:
+        print(
+            "Usage: python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr <git-root-dir> <pull-request-url> <output-file-path>",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     output_file_path = sys.argv[-1]
     pull_request_url = sys.argv[-2]
     repo_root_path = sys.argv[-3]
@@ -48,3 +56,7 @@ if __name__ == "__main__":
             fd.write("\n")
 
     print(f"Successfully written test selection to {output_file_path}")
+
+
+if __name__ == "__main__":
+    main()

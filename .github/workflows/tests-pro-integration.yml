@@ -288,8 +288,6 @@ jobs:
         working-directory: localstack
         run: |
           . ../localstack-ext/.venv/bin/activate
-          git show ${{ github.event.pull_request.base.sha }}
-          git show ${{ github.event.pull_request.head.sha }}
           python -m localstack.testing.testselection.scripts.generate_test_selection_from_commits $(pwd) ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} target/testselection/test-selection.txt
 
       - name: Run Community Integration Tests

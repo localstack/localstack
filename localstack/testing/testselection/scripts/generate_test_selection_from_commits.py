@@ -8,7 +8,15 @@ from pathlib import Path
 from localstack.testing.testselection.git import find_merge_base, get_changed_files_from_git_diff
 from localstack.testing.testselection.testselection import get_affected_tests_from_changes
 
-if __name__ == "__main__":
+
+def main():
+    if len(sys.argv) != 5:
+        print(
+            "Usage: python -m localstack.testing.testselection.scripts.generate_test_selection_from_commits <repo_root_path> <base-commit-sha> <head-commit-sha> <output_file_path>",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     output_file_path = sys.argv[-1]
     head_commit_sha = sys.argv[-2]
     base_commit_sha = sys.argv[-3]
@@ -43,3 +51,7 @@ if __name__ == "__main__":
             fd.write("\n")
 
     print(f"Successfully written test selection to {output_file_path}")
+
+
+if __name__ == "__main__":
+    main()

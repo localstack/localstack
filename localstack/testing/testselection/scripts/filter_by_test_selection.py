@@ -18,7 +18,10 @@ def filter_files(filter_content: list[str]):
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: filter_by_test_selection.py <file>", file=sys.stderr)
+        print(
+            "Usage: python -m localstack.testing.testselection.scripts.filter_by_test_selection <file>",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     file_path = sys.argv[1]
