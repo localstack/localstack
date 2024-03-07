@@ -1,4 +1,4 @@
-from localstack.testing.testselection.matchersv2 import MATCHING_RULES
+from localstack.testing.testselection.matching import MATCHING_RULES
 
 
 def get_affected_tests_from_changes(changed_files: [str]) -> "set[str]":

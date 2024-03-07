@@ -2,6 +2,7 @@ import fnmatch
 import re
 from typing import Callable
 
+# TODO: extract API Dependencies and composites to constants or similar
 from localstack.utils.bootstrap import API_DEPENDENCIES
 
 SENTINEL_NO_TEST = "SENTINEL_NO_TEST"  # a line item which signals that we don't default to everything, we just don't want to actually want to run a test => useful to differentiate between empty / nothing
@@ -88,9 +89,11 @@ def generic_service_tests(t: str) -> "list[str]":
     return []
 
 
+MatchingRule = Callable[[str], list[str]]
+
 # TODO: maintenance utils
 # TODO: build util that shows rules that don't cover a single file
-MATCHING_RULES = [
+MATCHING_RULES: list[MatchingRule] = [
     # Generic rules
     generic_service_tests,  # always *at least* the service tests and dependencies
     Matchers.glob(

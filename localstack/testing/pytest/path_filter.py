@@ -24,7 +24,7 @@ If any change in category a) is detected, ALL tests will be executed.
 
 import os
 
-from localstack.testing.testselection.matchersv2 import SENTINEL_ALL_TESTS, SENTINEL_NO_TEST
+from localstack.testing.testselection.matching import SENTINEL_ALL_TESTS, SENTINEL_NO_TEST
 
 
 def pytest_addoption(parser):
