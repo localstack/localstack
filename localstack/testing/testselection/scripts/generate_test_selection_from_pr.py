@@ -13,7 +13,7 @@ from localstack.testing.testselection.testselection import get_affected_tests_fr
 
 
 def main():
-    if len(sys.argv) != 5:
+    if len(sys.argv) != 4:
         print(
             "Usage: python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr <git-root-dir> <pull-request-url> <output-file-path>",
             file=sys.stderr,
