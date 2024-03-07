@@ -505,9 +505,9 @@ class FirehoseProvider(FirehoseApi):
             )
 
         if amazonopensearchservice_destination_update:
-            destination[
-                "AmazonopensearchserviceDestinationDescription"
-            ] = convert_opensearch_update_to_desc(amazonopensearchservice_destination_update)
+            destination["AmazonopensearchserviceDestinationDescription"] = (
+                convert_opensearch_update_to_desc(amazonopensearchservice_destination_update)
+            )
 
         if s3_destination_update:
             destination["S3DestinationDescription"] = convert_s3_update_to_desc(
@@ -639,7 +639,7 @@ class FirehoseProvider(FirehoseApi):
                 self._put_records_to_s3_bucket(delivery_stream_name, records, s3_dest_desc)
 
                 redshift_dest_desc = destination["RedshiftDestinationDescription"]
-                self._put_to_redshift(delivery_stream_name, records, redshift_dest_desc)
+                self._put_to_redshift(records, redshift_dest_desc)
         return [
             PutRecordBatchResponseEntry(RecordId=str(uuid.uuid4())) for _ in unprocessed_records
         ]
@@ -798,7 +798,6 @@ class FirehoseProvider(FirehoseApi):
 
     def _put_to_redshift(
         self,
-        stream_name: str,
         records: List[Dict],
         redshift_destination_description: RedshiftDestinationDescription,
     ):
