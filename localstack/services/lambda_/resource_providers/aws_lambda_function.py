@@ -189,7 +189,7 @@ exports.send = function(event, context, responseStatus, responseData, physicalRe
     var parsedUrl = url.parse(event.ResponseURL);
     var options = {
         hostname: parsedUrl.hostname,
-        port: parsedUrl.port,
+        port: parsedUrl.port, // Modified line: LS uses port 4566 for https; hard coded 443 causes error
         path: parsedUrl.path,
         method: "PUT",
         headers: {
