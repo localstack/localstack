@@ -1,18 +1,17 @@
 import sys
 
 
-def filter_files(filter_content: list[str]):
-    """Filter stdin files by content, matching against target_content."""
-    lines = [line.strip() for line in sys.stdin]
+def filter_test_files(tests: list[str], selected_tests: list[str]):
+    """Filter list of test files by test selection file. Result is written to stdout"""
 
     # TODO: SENTINEL_NO_TESTS ... not sure how we'd handle it here without failing the circleci selection
-    if "SENTINEL_ALL_TESTS" in filter_content:
-        for line in lines:
+    if "SENTINEL_ALL_TESTS" in selected_tests:
+        for line in tests:
             print(line)
         return
 
-    for line in lines:
-        if any(fc in line for fc in filter_content):
+    for line in tests:
+        if any(fc in line for fc in selected_tests):
             print(line)
 
 
@@ -24,10 +23,11 @@ def main():
         )
         sys.exit(1)
 
-    file_path = sys.argv[1]
-    with open(file_path, "r") as file:
-        filter_content = [line.strip() for line in file.readlines() if line.strip()]
-        filter_files(filter_content)
+    testselection_file_path = sys.argv[1]
+    with open(testselection_file_path, "r") as file:
+        selected_tests = [line.strip() for line in file.readlines() if line.strip()]
+        test_files = [line.strip() for line in sys.stdin]
+        filter_test_files(test_files, selected_tests)
 
 
 if __name__ == "__main__":
