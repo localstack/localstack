@@ -850,24 +850,22 @@ class FirehoseProvider(FirehoseApi):
         data = json.loads(data)
         return data
 
-    def _prepare_records_for_redshift(self, record: Dict) -> str:
+    def _prepare_records_for_redshift(self, record: Dict) -> List[Dict]:
         data = self._decode_record(record)
 
-        values = []
-        for value in data.values():
+        parameters = []
+        for key, value in data.items():
             if isinstance(value, str):
-                # Escaping single quotes by doubling them
                 value = value.replace("\t", " ")
-                value = f"'{value}'"
+                value = value.replace("\n", " ")
             elif value is None:
                 value = "NULL"
             else:
                 value = str(value)
-            values.append(value)
+            parameters.append({"name": key, "value": value})
+            # required to work with execute_statement in community (moto) and ext (localstack native)
 
-        value_str = ",".join(values)
-
-        return value_str
+        return parameters
 
     def _extract_columns(self, record: Dict) -> str:
         data = self._decode_record(record)
