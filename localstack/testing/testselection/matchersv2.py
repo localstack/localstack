@@ -97,7 +97,7 @@ class Matchers:
         return Matcher(lambda t: t.startswith(prefix))
 
 
-def generic_service_tests(t: str) -> list[str]:
+def generic_service_tests(t: str) -> "list[str]":
     """
     Generic matching of changes in service files to their tests
     """
