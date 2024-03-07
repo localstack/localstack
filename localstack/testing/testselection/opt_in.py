@@ -5,5 +5,14 @@ A test selection will only be effective if all files that would be selected unde
 """
 
 OPT_IN = [
+    # SFN
+    "localstack/services/stepfunctions",
+    "tests/aws/services/stepfunctions",
+    # CFn
+    # probably the riskiest here since CFn tests are not as isolated as the rest
+    "localstack/services/cloudformation",
+    "tests/aws/services/cloudformation",
+    # Lambda
     "localstack/services/lambda_",
+    "tests/aws/services/lambda_",
 ]
