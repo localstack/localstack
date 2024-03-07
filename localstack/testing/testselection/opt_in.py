@@ -16,6 +16,11 @@ OPT_IN = [
     # Lambda
     "localstack/services/lambda_/**",
     "tests/aws/services/lambda_/**",
+    # TODO: remove again, just used for testing to make sure we still default to execute all tests
+    ".github/**",
+    ".circleci/**",
+    "tests/**",
+    "localstack/testing/**",
 ]
 
 

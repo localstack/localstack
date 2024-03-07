@@ -74,6 +74,7 @@ def generic_service_tests(t: str) -> "list[str]":
     """
     Generic matching of changes in service files to their tests
     """
+    # TODO: also match /aws/api/
     # TODO: consider API_DEPENDENCIES, API_COMPOSITES
     # TODO: consider "safety-mapping"
     # service_name = service_name.replace("-", "_")
@@ -87,25 +88,36 @@ def generic_service_tests(t: str) -> "list[str]":
     return []
 
 
-# TODO: most are disabled for now so we don't run the full test suite on the initial PR
+# TODO: maintenance utils
+# TODO: build util that shows rules that don't cover a single file
 MATCHING_RULES = [
-    # CI
-    # Matchers.glob(".github").full_suite(),
-    # Matchers.glob(".circleci").full_suite(),
-    # # dependencies / project setup
-    # Matchers.glob("requirements*.txt").full_suite(),
-    # Matchers.glob("setup.cfg").full_suite(),
-    # Matchers.glob("pyproject.toml").full_suite(),
-    # # testing
-    # Matchers.glob("localstack/testing/**").full_suite(),
-    # Matchers.glob("**/conftest.py").full_suite(),
-    # Matchers.glob("**/fixtures.py").full_suite(),
-    # # generic tests (a change in a test file should always at least test that file)
-    # Matchers.glob("tests/**/test_*.py").passthrough(),
-    # # ignore
-    # Matchers.glob("**/.md").ignore(),
-    # services
+    # Generic rules
     generic_service_tests,  # always *at least* the service tests and dependencies
+    Matchers.glob(
+        "tests/**/test_*.py"
+    ).passthrough(),  # changes in a test file should always at least test that file
+    # CI
+    Matchers.glob(".github").full_suite(),
+    Matchers.glob(".circleci").full_suite(),
+    # dependencies / project setup
+    Matchers.glob("requirements*.txt").full_suite(),
+    Matchers.glob("setup.cfg").full_suite(),
+    Matchers.glob("setup.py").full_suite(),
+    Matchers.glob("pyproject.toml").full_suite(),
+    Matchers.glob("Dockerfile").full_suite(),
+    Matchers.glob("Makefile").full_suite(),
+    Matchers.glob("bin/**").full_suite(),
+    Matchers.glob("localstack/config.py").full_suite(),
+    Matchers.glob("localstack/constants.py").full_suite(),
+    Matchers.glob("localstack/plugins.py").full_suite(),
+    Matchers.glob("localstack/utils.py").full_suite(),
+    # testing
+    Matchers.glob("localstack/testing/**").full_suite(),
+    Matchers.glob("**/conftest.py").full_suite(),
+    Matchers.glob("**/fixtures.py").full_suite(),
+    # ignore
+    Matchers.glob("**/.md").ignore(),
+    Matchers.glob("doc/**").ignore(),
     # lambda
     Matchers.glob("tests/aws/services/lambda_/functions/**").service_tests(services=["lambda"]),
 ]
