@@ -287,13 +287,24 @@ def do_start_infra(asynchronous, apis, is_in_docker):
             debugpy.wait_for_client()
 
     if config.ENABLE_PROFILING:
-        from localstack.packages.functiontrace import functiontrace_package
+        from localstack.packages.functiontrace import (
+            functiontrace_package,
+            functiontrace_server_package,
+        )
+
+        functiontrace_server_package.install()
+
+        # functiontrace-server must be on the PATH
+        os.environ["PATH"] += os.pathsep + functiontrace_server_package.get_installed_dir()
+        LOG.debug("Setting new path to %s", os.environ["PATH"])
 
         functiontrace_package.install()
+
         import functiontrace
         import _functiontrace
 
-        output_dir = os.path.join(config.dirs.data, "profiles")
+        output_dir = os.path.join(config.dirs.cache, "profiles")
+        LOG.debug("storing profiles to %s", output_dir)
         os.makedirs(output_dir, exist_ok=True)
 
         functiontrace.setup_dependencies()

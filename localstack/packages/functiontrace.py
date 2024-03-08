@@ -1,7 +1,13 @@
+import logging
 from typing import List
 
 from localstack.packages import InstallTarget, Package, PackageInstaller
+from localstack.packages.core import (
+    PermissionDownloadInstaller,
+)
 from localstack.utils.run import run
+
+LOG = logging.getLogger(__name__)
 
 
 class FunctionTracePackage(Package):
@@ -39,4 +45,23 @@ class FunctionTracePackageInstaller(PackageInstaller):
         run(cmd)
 
 
+class FunctionTraceServerPackage(Package):
+    def __init__(self):
+        super().__init__("FunctionTraceServer", "latest")
+
+    def get_versions(self) -> List[str]:
+        return ["latest"]
+
+    def _get_installer(self, version: str) -> PackageInstaller:
+        return FunctionTraceServerPackageInstaller("functiontrace-server", version)
+
+
+class FunctionTraceServerPackageInstaller(PermissionDownloadInstaller):
+    # TODO: migrate this to the upcoming pip installer
+
+    def _get_download_url(self) -> str:
+        return "http://172.17.0.1:8000/functiontrace-server"
+
+
 functiontrace_package = FunctionTracePackage()
+functiontrace_server_package = FunctionTraceServerPackage()
