@@ -39,6 +39,7 @@ from localstack.aws.api.dynamodb import (
     CreateGlobalTableOutput,
     CreateTableInput,
     CreateTableOutput,
+    Delete,
     DeleteItemInput,
     DeleteItemOutput,
     DeleteRequest,
@@ -71,6 +72,7 @@ from localstack.aws.api.dynamodb import (
     PointInTimeRecoveryStatus,
     PositiveIntegerObject,
     ProvisionedThroughputExceededException,
+    Put,
     PutItemInput,
     PutItemOutput,
     PutRequest,
@@ -95,8 +97,10 @@ from localstack.aws.api.dynamodb import (
     TimeToLiveSpecification,
     TransactGetItemList,
     TransactGetItemsOutput,
+    TransactWriteItem,
     TransactWriteItemsInput,
     TransactWriteItemsOutput,
+    Update,
     UpdateContinuousBackupsOutput,
     UpdateGlobalTableOutput,
     UpdateItemInput,
@@ -1181,17 +1185,18 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # TODO: refactor to apply the same logic as in `BatchWriteItem`: don't prep records if not stream enabled
         existing_items = []
         for item in transact_write_items_input["TransactItems"]:
+            item: TransactWriteItem
             for key in ["Put", "Update", "Delete"]:
-                inner_item = item.get(key)
+                inner_item: Put | Delete | Update = item.get(key)
                 if inner_item:
-                    item = ItemFinder.find_existing_item(
+                    existing_item = ItemFinder.find_existing_item(
                         put_item=inner_item,
                         table_name=inner_item["TableName"],
                         account_id=context.account_id,
                         region_name=context.region,
                         endpoint_url=self.server.url,
                     )
-                    existing_items.append(item)
+                    existing_items.append(existing_item)
 
         client_token: str | None = transact_write_items_input.get("ClientRequestToken")
 
