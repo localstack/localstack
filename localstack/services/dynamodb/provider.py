@@ -946,7 +946,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # if the request doesn't ask for ReturnValues and we have stream enabled, we need to modify the request to
         # force DDBLocal to return those values
         if not has_return_values and streams_enabled:
-            # TODO: we could manually override ReturnValues to return the old value?
             service_req = copy.copy(context.service_request)
             service_req["ReturnValues"] = "ALL_OLD"
             result = self._forward_request(
@@ -994,7 +993,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         update_item_input: UpdateItemInput,
     ) -> UpdateItemOutput:
         # TODO: UpdateItem is harder to use ReturnValues for Streams, because it needs the Before and After images.
-        #  optimize ItemFinder to directly access ddblocal
         table_name = update_item_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
 
@@ -1861,7 +1859,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             for write_request in request_items[table_name]:
                 for key, request in write_request.items():
                     if key == "PutRequest":
-                        # TODO: find existing item if possible by extracting the key
                         keys = SchemaExtractor.extract_keys(
                             item=request["Item"],
                             table_name=table_name,
@@ -1886,7 +1883,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         records.append(new_record)
 
                     elif key == "DeleteRequest":
-                        # TODO: find existing item if from the "Key"
                         keys = request["Key"]
                         if not (existing_item := find_existing_item_for_keys_values(keys)):
                             continue
