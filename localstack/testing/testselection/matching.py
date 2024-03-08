@@ -1,6 +1,8 @@
 import fnmatch
 import re
-from typing import Callable
+from typing import Callable, Iterable
+
+from localstack.aws.scaffold import is_keyword
 
 # TODO: extract API Dependencies and composites to constants or similar
 from localstack.utils.bootstrap import API_DEPENDENCIES
@@ -8,16 +10,31 @@ from localstack.utils.bootstrap import API_DEPENDENCIES
 SENTINEL_NO_TEST = "SENTINEL_NO_TEST"  # a line item which signals that we don't default to everything, we just don't want to actually want to run a test => useful to differentiate between empty / nothing
 SENTINEL_ALL_TESTS = "SENTINEL_ALL_TESTS"  # a line item which signals that we don't default to everything, we just don't want to actually want to run a test => useful to differentiate between empty / nothing
 
-PACKAGE_TO_SVC_MAP = {"lambda_": "lambda"}
+
+def _map_to_module_name(service_name: str) -> str:
+    """sanitize a service name like we're doing when scaffolding, e.g. lambda => lambda_"""
+    service_name = service_name.replace("-", "_")
+    # handle service names which are reserved keywords in python (f.e. lambda)
+    if is_keyword(service_name):
+        service_name += "_"
+    return service_name
 
 
-def _get_service_for_module(module_name: str) -> str:
-    # TODO: might need to do some generic string manipulation if svc not found in map (e.g. - to _)
-    return PACKAGE_TO_SVC_MAP.get(module_name)
+def _map_to_service_name(module_name: str) -> str:
+    """map a sanitized module name to a service name, e.g. lambda_ => lambda"""
+    if module_name.endswith("_"):
+        return module_name[:-1]
+    return module_name.replace("_", "-")
 
 
 def resolve_dependencies(module_name: str) -> set[str]:
-    svc_name = _get_service_for_module(module_name)
+    """
+    Resolves dependencies for a given service module name
+
+    :param module_name: the name of the service to resolve (e.g. lambda_)
+    :return: set of resolved _service names_ that the service depends on (e.g. sts)
+    """
+    svc_name = _map_to_service_name(module_name)
     return _expand_api_dependencies(svc_name)
 
 
@@ -71,31 +88,37 @@ class Matchers:
         return Matcher(lambda t: t.startswith(prefix))
 
 
-def generic_service_tests(t: str) -> list[str]:
+def generic_service_test_matching_rule(changed_file_path: str) -> set[str]:
     """
     Generic matching of changes in service files to their tests
+
+    :param changed_file_path: the file path of the detected change
+    :return: list of partial test file path filters for the matching service and all services it depends on
     """
-    # TODO: also match /aws/api/
-    # TODO: consider API_DEPENDENCIES, API_COMPOSITES
-    # TODO: consider "safety-mapping"
-    # service_name = service_name.replace("-", "_")
-    # # handle service names which are reserved keywords in python (f.e. lambda)
-    # if is_keyword(service_name):
-    #     service_name += "_"
-    match = re.findall("localstack/services/([^/]+)/.+", t)
+    # TODO: consider API_COMPOSITES
+
+    match = re.findall("localstack/services/([^/]+)/.+", changed_file_path)
+    if not match:
+        match = re.findall(r"localstack/aws/api/([^/]+)/__init__\.py", changed_file_path)
+
     if match:
-        svc = match[0]
-        return [f"tests/aws/services/{svc}/"]
-    return []
+        changed_service = match[0]
+        changed_services = [changed_service]
+        service_dependencies = resolve_dependencies(changed_service)
+        changed_services.extend(service_dependencies)
+        changed_service_module_names = [_map_to_module_name(svc) for svc in changed_services]
+        return {f"tests/aws/services/{svc}/" for svc in changed_service_module_names}
+
+    return set()
 
 
-MatchingRule = Callable[[str], list[str]]
+MatchingRule = Callable[[str], Iterable[str]]
 
 # TODO: maintenance utils
 # TODO: build util that shows rules that don't cover a single file
 MATCHING_RULES: list[MatchingRule] = [
     # Generic rules
-    generic_service_tests,  # always *at least* the service tests and dependencies
+    generic_service_test_matching_rule,  # always *at least* the service tests and dependencies
     Matchers.glob(
         "tests/**/test_*.py"
     ).passthrough(),  # changes in a test file should always at least test that file
