@@ -6,7 +6,6 @@ import os
 
 from localstack.aws.api.lambda_ import Runtime
 
-# adding a comment TODO: remove this
 # Custom logger for proactive deprecation hints related to the migration from the old to the new lambda provider
 HINT_LOG = logging.getLogger("localstack.services.lambda_.hints")
 
