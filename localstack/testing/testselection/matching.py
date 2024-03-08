@@ -114,8 +114,15 @@ def generic_service_test_matching_rule(changed_file_path: str) -> set[str]:
 
 MatchingRule = Callable[[str], Iterable[str]]
 
-# TODO: maintenance utils
-# TODO: build util that shows rules that don't cover a single file
+
+def check_rule_has_matches(rule: MatchingRule, files: Iterable[str]) -> bool:
+    """maintenance utility to check if a rule has any matches at all in the given directory"""
+    detected_tests = set()
+    for file in files:
+        detected_tests.update(rule(file))
+    return len(detected_tests) > 0
+
+
 MATCHING_RULES: list[MatchingRule] = [
     # Generic rules
     generic_service_test_matching_rule,  # always *at least* the service tests and dependencies
@@ -136,13 +143,13 @@ MATCHING_RULES: list[MatchingRule] = [
     Matchers.glob("localstack/config.py").full_suite(),
     Matchers.glob("localstack/constants.py").full_suite(),
     Matchers.glob("localstack/plugins.py").full_suite(),
-    Matchers.glob("localstack/utils.py").full_suite(),
+    Matchers.glob("localstack/utils/**").full_suite(),
     # testing
     Matchers.glob("localstack/testing/**").full_suite(),
     Matchers.glob("**/conftest.py").full_suite(),
     Matchers.glob("**/fixtures.py").full_suite(),
     # ignore
-    Matchers.glob("**/.md").ignore(),
+    Matchers.glob("**/*.md").ignore(),
     Matchers.glob("doc/**").ignore(),
     # lambda
     Matchers.glob("tests/aws/services/lambda_/functions/**").service_tests(services=["lambda"]),
