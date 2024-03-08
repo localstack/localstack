@@ -1849,8 +1849,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
             def find_existing_item_for_keys_values(item_keys: dict) -> AttributeMap | None:
                 """
-                This looks up
-                :param item_keys:
+                This function looks up in the existing items for the provided item keys subset. If present, returns the
+                full item.
+                :param item_keys: the request item keys
                 :return:
                 """
                 for item in existing_items_for_table_unordered:
