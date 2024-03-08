@@ -3073,5 +3073,62 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_message_attributes": {
+    "recorded-date": "08-03-2024, 22:24:07",
+    "recorded-content": {
+      "dlq-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+      "sourcen-arn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+      "rec-pre-dlq": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
+          "Body": "message-1",
+          "Attributes": {
+            "ApproximateFirstReceiveTimestamp": "timestamp",
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "timestamp"
+          }
+        },
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "95ef155b66299d14edf7ed57c468c13b",
+          "Body": "message-2",
+          "Attributes": {
+            "ApproximateFirstReceiveTimestamp": "timestamp",
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "timestamp"
+          }
+        }
+      ],
+      "dlq-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:3>",
+          "MD5OfBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
+          "Body": "message-1",
+          "Attributes": {
+            "ApproximateFirstReceiveTimestamp": "timestamp",
+            "ApproximateReceiveCount": "2",
+            "SentTimestamp": "timestamp",
+            "DeadLetterQueueSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          }
+        },
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:4>",
+          "MD5OfBody": "95ef155b66299d14edf7ed57c468c13b",
+          "Body": "message-2",
+          "Attributes": {
+            "ApproximateFirstReceiveTimestamp": "timestamp",
+            "ApproximateReceiveCount": "2",
+            "SentTimestamp": "timestamp",
+            "DeadLetterQueueSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          }
+        }
+      ]
+    }
   }
 }

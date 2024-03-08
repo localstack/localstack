@@ -32,6 +32,8 @@ from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
+from .utils import sqs_collect_messages
+
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
 
@@ -2801,6 +2803,67 @@ class TestSqsProvider:
             aws_sqs_client.receive_message(QueueUrl=dl_queue_url)["Messages"][0]["MessageId"]
             == result_send["MessageId"]
         )
+
+    @markers.aws.validated
+    def test_dead_letter_queue_message_attributes(
+        self,
+        aws_client,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        snapshot,
+    ):
+        sqs = aws_client.sqs
+
+        queue_name = f"queue-{short_uid()}"
+        dead_letter_queue_name = f"dl-queue-{short_uid()}"
+        dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
+        dl_queue_arn = sqs_get_queue_arn(dl_queue_url)
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "RedrivePolicy": json.dumps(
+                    {"deadLetterTargetArn": dl_queue_arn, "maxReceiveCount": 1}
+                )
+            },
+        )
+
+        snapshot.match("dlq-arn", dl_queue_arn)
+        snapshot.match("sourcen-arn", sqs_get_queue_arn(queue_url))
+
+        # send a messages
+        sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
+        sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
+
+        # receive each message two times to move them into the dlq
+        messages = []
+        for i in range(4):
+            result = sqs.receive_message(
+                QueueUrl=queue_url,
+                VisibilityTimeout=0,
+                AttributeNames=["All"],
+                MessageAttributeNames=["All"],
+            )
+            messages.extend(result.get("Messages", []))
+        messages.sort(key=lambda m: m["Body"])
+        for message in messages:
+            # FIXME: SenderId = account and is messing up the snapshot matching somehow
+            del message["Attributes"]["SenderId"]
+
+        snapshot.match("rec-pre-dlq", messages)
+
+        messages = sqs_collect_messages(
+            sqs,
+            dl_queue_url,
+            expected=2,
+            timeout=10,
+            attribute_names=["All"],
+            message_attribute_names=["All"],
+        )
+        messages.sort(key=lambda m: m["Body"])
+        for message in messages:
+            del message["Attributes"]["SenderId"]
+
+        snapshot.match("dlq-messages", messages)
 
     @markers.aws.needs_fixing
     def test_dead_letter_queue_chain(

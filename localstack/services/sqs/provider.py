@@ -468,34 +468,24 @@ class MessageMoveTaskManager:
 
     def _run(self, move_task: MessageMoveTask):
         try:
-            while not move_task.cancel_event.is_set():
-                # look up queues every time in case they are removed
-                source_queue = self._get_queue_by_arn(move_task.source_arn)
-
-                if move_task.destination_arn:
-                    target_queue = self._get_queue_by_arn(move_task.destination_arn)
-                else:
-                    queues = self._get_original_source_queues(move_task.source_arn)
-                    if not queues:
-                        raise ValueError(
-                            f"No source queue found that uses DLQ {move_task.source_arn}"
-                        )
-                    if len(queues) > 1:
-                        # TODO: to implement this, we need to implement some sort provenance mechanism to
-                        #  figure out which queue the message being re-driven originally came from (see
-                        #  test_move_task_workflow_with_multiple_sources_as_default_destination)
-                        raise NotImplementedError(
-                            f"Tried to redrive from {move_task.source_arn} into multiple original source "
-                            f"queues, but redrive to multiple target queues is not implemented yet."
-                        )
-                    target_queue = queues[0]
-
+            if move_task.destination_arn:
                 LOG.info(
                     "Move task started %s (%s -> %s)",
                     move_task.task_id,
                     move_task.source_arn,
                     move_task.destination_arn,
                 )
+            else:
+                LOG.info(
+                    "Move task started %s (%s -> original sources)",
+                    move_task.task_id,
+                    move_task.source_arn,
+                )
+
+            while not move_task.cancel_event.is_set():
+                # look up queues for every message in case they are removed
+                source_queue = self._get_queue_by_arn(move_task.source_arn)
+
                 receive_result = source_queue.receive(num_messages=1, visibility_timeout=1)
 
                 if receive_result.dead_letter_messages:
@@ -507,7 +497,18 @@ class MessageMoveTaskManager:
 
                 message = receive_result.successful[0]
                 receipt_handle = receive_result.receipt_handles[0]
-                target_queue.put(message=message.message)
+
+                if move_task.destination_arn:
+                    target_queue = self._get_queue_by_arn(move_task.destination_arn)
+                else:
+                    # we assume that dead_letter_source_arn is set since the message comes from a DLQ
+                    target_queue = self._get_queue_by_arn(message.dead_letter_queue_source_arn)
+
+                target_queue.put(
+                    message=message.message,
+                    message_group_id=message.message_group_id,
+                    message_deduplication_id=message.message_deduplication_id,
+                )
                 source_queue.remove(receipt_handle)
                 move_task.approximate_number_of_messages_moved += 1
 
@@ -523,23 +524,6 @@ class MessageMoveTaskManager:
             else:
                 LOG.info("Move task completed successfully %s", move_task.task_id)
                 move_task.status = MessageMoveTaskStatus.COMPLETED
-
-    def _get_original_source_queues(self, dl_queue_arn: str) -> list[SqsQueue]:
-        """
-        Iterate all queues in the store and find the queues that have the given dl_queue_arn as target
-        :param dl_queue_arn:
-        :return:
-        """
-        original_source_queues = []
-
-        for _, _, store in self.stores.iter_stores():
-            for queue in store.queues.values():
-                if not queue.redrive_policy:
-                    continue
-                if queue.redrive_policy.get("deadLetterTargetArn") == dl_queue_arn:
-                    original_source_queues.append(queue)
-
-        return original_source_queues
 
     def _get_queue_by_arn(self, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
@@ -742,7 +726,7 @@ class SqsDeveloperEndpoints:
         messages = []
 
         for sqs_message in sqs_messages:
-            message: Message = to_sqs_api_message(sqs_message, QueueAttributeName.All, ["All"])
+            message: Message = to_sqs_api_message(sqs_message, [QueueAttributeName.All], ["All"])
             # these are all non-standard fields so we squelch the linter
             if show_invisible:
                 message["Attributes"]["IsVisible"] = str(sqs_message.is_visible).lower()  # noqa
@@ -1236,9 +1220,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             dl_queue = self._require_queue_by_arn(context, dead_letter_target_arn)
             # TODO: does this need to be atomic?
             for standard_message in result.dead_letter_messages:
-                message = to_sqs_api_message(
-                    standard_message, attribute_names, message_attribute_names
-                )
+                message = standard_message.message
+                message["Attributes"][
+                    MessageSystemAttributeName.DeadLetterQueueSourceArn
+                ] = queue.arn
                 dl_queue.put(
                     message=message,
                     message_deduplication_id=standard_message.message_deduplication_id,
@@ -1767,9 +1752,6 @@ def to_sqs_api_message(
     message = copy.deepcopy(standard_message.message)
 
     # update system attributes of the message copy
-    message["Attributes"][MessageSystemAttributeName.ApproximateReceiveCount] = str(
-        (standard_message.receive_count or 0)
-    )
     message["Attributes"][MessageSystemAttributeName.ApproximateFirstReceiveTimestamp] = str(
         int((standard_message.first_received or 0) * 1000)
     )
@@ -1803,7 +1785,7 @@ def message_filter_attributes(message: Message, names: Optional[AttributeNameLis
         del message["Attributes"]
         return
 
-    if "All" in names:
+    if QueueAttributeName.All in names:
         return
 
     for k in list(message["Attributes"].keys()):

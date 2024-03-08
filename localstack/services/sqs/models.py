@@ -16,6 +16,7 @@ from localstack.aws.api.sqs import (
     AttributeNameList,
     InvalidAttributeName,
     Message,
+    MessageSystemAttributeName,
     QueueAttributeMap,
     QueueAttributeName,
     ReceiptHandleIsInvalid,
@@ -97,15 +98,30 @@ class SqsMessage:
 
     @property
     def message_group_id(self) -> Optional[str]:
-        return self.message["Attributes"].get("MessageGroupId")
+        return self.message["Attributes"].get(MessageSystemAttributeName.MessageGroupId)
 
     @property
     def message_deduplication_id(self) -> Optional[str]:
-        return self.message["Attributes"].get("MessageDeduplicationId")
+        return self.message["Attributes"].get(MessageSystemAttributeName.MessageDeduplicationId)
+
+    @property
+    def dead_letter_queue_source_arn(self) -> Optional[str]:
+        return self.message["Attributes"].get(MessageSystemAttributeName.DeadLetterQueueSourceArn)
 
     @property
     def message_id(self):
         return self.message["MessageId"]
+
+    def increment_approximate_receive_count(self):
+        """
+        Increment the message system attribute ``ApproximateReceiveCount``.
+        """
+        # TODO: need better handling of system attributes
+        cnt = int(
+            self.message["Attributes"].get(MessageSystemAttributeName.ApproximateReceiveCount, "0")
+        )
+        cnt += 1
+        self.message["Attributes"][MessageSystemAttributeName.ApproximateReceiveCount] = str(cnt)
 
     def set_last_received(self, timestamp: float):
         """
@@ -702,7 +718,7 @@ class SqsQueue:
 
 
 class StandardQueue(SqsQueue):
-    visible: PriorityQueue
+    visible: PriorityQueue[SqsMessage]
     inflight: Set[SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
@@ -824,6 +840,7 @@ class StandardQueue(SqsQueue):
                 result.dead_letter_messages.append(message)
             else:
                 result.successful.append(message)
+                message.increment_approximate_receive_count()
 
                 # now we can return
                 if len(result.successful) == num_messages:
@@ -1151,6 +1168,7 @@ class FifoQueue(SqsQueue):
                         result.dead_letter_messages.append(message)
                     else:
                         result.successful.append(message)
+                        message.increment_approximate_receive_count()
 
                         # now we can break the inner loop
                         if len(result.successful) == num_messages:
