@@ -81,7 +81,7 @@ env:
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master
   TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
-  TESTSELECTION_PYTEST_ARGS: "${{ github.ref != 'refs/heads/master' && '--path-filter=../localstack/target/testselection/test-selection.txt ' || '' }}"
+  TESTSELECTION_PYTEST_ARGS: "${{ github.event_name == 'pull_request' && '--path-filter=../localstack/target/testselection/test-selection.txt ' || '' }}"
 
 jobs:
   test-pro:
@@ -283,7 +283,6 @@ jobs:
           bin/test_localstack_pro.sh
 
       - name: Determine test selection
-#        if: todo
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
         working-directory: localstack
         run: |
