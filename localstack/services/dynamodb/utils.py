@@ -27,6 +27,17 @@ LOG = logging.getLogger(__name__)
 SCHEMA_CACHE = TTLCache(maxsize=50, ttl=20)
 
 
+def get_ddb_access_key(account_id: str, region_name: str) -> str:
+    """
+    Get the access key to be used while communicating with DynamoDB Local.
+
+    DDBLocal supports namespacing as an undocumented feature. It works based on the value of the `Credentials`
+    field of the `Authorization` header. We use a concatenated value of account ID and region to achieve
+    namespacing.
+    """
+    return f"{account_id}{region_name}".replace("-", "")
+
+
 class ItemSet:
     """Represents a set of items and provides utils to find individual items in the set"""
 
@@ -129,9 +140,8 @@ class SchemaExtractor:
 class ItemFinder:
     @staticmethod
     def get_ddb_local_client(account_id: str, region_name: str, endpoint_url: str):
-        ddb_local_access_key = f"{account_id}{region_name}".replace("-", "")
         ddb_client = connect_to(
-            aws_access_key_id=ddb_local_access_key,
+            aws_access_key_id=get_ddb_access_key(account_id, region_name),
             region_name=region_name,
             endpoint_url=endpoint_url,
         ).dynamodb

@@ -127,6 +127,7 @@ from localstack.services.dynamodb.utils import (
     SchemaExtractor,
     de_dynamize_record,
     extract_table_name_from_partiql_update,
+    get_ddb_access_key,
 )
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.services.dynamodbstreams.dynamodbstreams_api import (
@@ -367,7 +368,7 @@ def modify_context_region(context: RequestContext, region: str):
     original_region = context.region
     original_authorization = context.request.headers.get("Authorization")
 
-    key = DynamoDBProvider.ddb_access_key(context.account_id, region)
+    key = get_ddb_access_key(context.account_id, region)
 
     context.region = region
     context.request.headers["Authorization"] = re.sub(
@@ -1604,18 +1605,18 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     # Helpers
     #
 
-    @staticmethod
-    def ddb_access_key(account_id: str, region_name: str) -> str:
-        """
-        Get the access key to be used while communicating with DynamoDB Local.
-
-        DDBLocal supports namespacing as an undocumented feature. It works based on the value of the `Credentials`
-        field of the `Authorization` header. We use a concatenated value of account ID and region to achieve
-        namespacing.
-        """
-        return "{account_id}{region_name}".format(
-            account_id=account_id, region_name=region_name
-        ).replace("-", "")
+    # @staticmethod
+    # def ddb_access_key(account_id: str, region_name: str) -> str:
+    #     """
+    #     Get the access key to be used while communicating with DynamoDB Local.
+    #
+    #     DDBLocal supports namespacing as an undocumented feature. It works based on the value of the `Credentials`
+    #     field of the `Authorization` header. We use a concatenated value of account ID and region to achieve
+    #     namespacing.
+    #     """
+    #     return "{account_id}{region_name}".format(
+    #         account_id=account_id, region_name=region_name
+    #     ).replace("-", "")
 
     @staticmethod
     def ddb_region_name(region_name: str) -> str:
@@ -1680,7 +1681,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         Modify the Credentials field of Authorization header to achieve namespacing in DynamoDBLocal.
         """
         region_name = DynamoDBProvider.ddb_region_name(region_name)
-        key = DynamoDBProvider.ddb_access_key(account_id, region_name)
+        key = get_ddb_access_key(account_id, region_name)
 
         # DynamoDBLocal namespaces based on the value of Credentials
         # Since we want to namespace by both account ID and region, use an aggregate key
