@@ -12,16 +12,33 @@ from localstack.testing.testselection.matching import (
 )
 
 
-def test_service_dependency_resolving():
+def test_service_dependency_resolving_no_deps():
     svc_including_deps = resolve_dependencies("lambda_")
-    assert svc_including_deps == {"s3", "sts", "sqs"}
+    assert len(svc_including_deps) == 0
+
+
+def test_service_dependency_resolving_with_dependencies():
+    svc_including_deps = resolve_dependencies("s3")
+    assert svc_including_deps == {"lambda", "cloudformation", "transcribe"}
+
+
+def test_service_dependency_resolving():
+    svc_including_deps = resolve_dependencies("kinesis")
+    assert svc_including_deps == {"dynamodbstreams", "dynamodb", "firehose"}
 
 
 def test_generic_service_matching_rule():
     assert generic_service_test_matching_rule("localstack/aws/api/cloudformation/__init__.py") == {
         "tests/aws/services/cloudformation/",
+    }
+
+
+def test_generic_service_matching_rule_with_dependencies():
+    assert generic_service_test_matching_rule("localstack/aws/api/s3/__init__.py") == {
+        "tests/aws/services/cloudformation/",
+        "tests/aws/services/lambda_/",
         "tests/aws/services/s3/",
-        "tests/aws/services/sts/",
+        "tests/aws/services/transcribe/",
     }
 
 

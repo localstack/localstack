@@ -38,9 +38,23 @@ def resolve_dependencies(module_name: str) -> set[str]:
     return _expand_api_dependencies(svc_name)
 
 
+# TODO: might want to cache that, but for now it shouldn't be too much overhead
+def _reverse_dependency_map(dependency_map: dict[str, dict]) -> dict[str, set[str]]:
+    """
+    The current API_DEPENDENCIES actually maps the services to their own dependencies.
+    In our case here we need the inverse of this, we need to of which other services this service is a dependency of.
+    """
+    result = {}
+    for svc, deps in dependency_map.items():
+        for dep in deps:
+            result.setdefault(dep, set()).add(svc)
+    return result
+
+
 def _expand_api_dependencies(svc_name: str) -> set[str]:
     result = set()
-    dependencies = API_DEPENDENCIES.get(svc_name, [])
+
+    dependencies = _reverse_dependency_map(API_DEPENDENCIES).get(svc_name, [])
     result.update(dependencies)
 
     for dep in dependencies:
