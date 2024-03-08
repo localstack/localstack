@@ -6,6 +6,7 @@ from localstack.services.sqs import provider
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
 from localstack.services.sqs.provider import _create_message_attribute_hash
 from localstack.services.sqs.utils import (
+    guess_endpoint_strategy_and_host,
     is_sqs_queue_url,
     parse_queue_url,
 )
@@ -175,3 +176,20 @@ def test_is_sqs_queue_url():
     assert is_sqs_queue_url("http://us-east-1.queue.foo.bar:4566/111111111111/foo") is True
     assert is_sqs_queue_url("http://queue.foo.bar:4566/111111111111/foo") is True
     assert is_sqs_queue_url("http://sqs.us-east-1.foo.bar:4566/111111111111/foo") is True
+
+
+def test_guess_endpoint_strategy_and_host():
+    assert guess_endpoint_strategy_and_host("localhost:4566") == ("path", "localhost:4566")
+    assert guess_endpoint_strategy_and_host("example.com") == ("path", "example.com")
+    assert guess_endpoint_strategy_and_host("sqs.us-east-1.amazonaws.com") == (
+        "standard",
+        "amazonaws.com",
+    )
+    assert guess_endpoint_strategy_and_host("queue.localhost.localstack.cloud") == (
+        "domain",
+        "localhost.localstack.cloud",
+    )
+    assert guess_endpoint_strategy_and_host("us-east-1.queue.localhost.localstack.cloud") == (
+        "domain",
+        "localhost.localstack.cloud",
+    )

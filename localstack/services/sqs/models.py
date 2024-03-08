@@ -32,6 +32,7 @@ from localstack.services.sqs.utils import (
     encode_move_task_handle,
     encode_receipt_handle,
     global_message_sequence,
+    guess_endpoint_strategy_and_host,
     is_message_deduplication_id_required,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
@@ -328,34 +329,34 @@ class SqsQueue:
         * otherwise: http://localhost.localstack.cloud:4566/000000000000/myqueue
         """
 
-        scheme = config.get_protocol()
+        scheme = config.get_protocol()  # TODO: should probably change to context.request.scheme
         host_definition = localstack_host()
+        host_and_port = host_definition.host_and_port()
 
-        if config.SQS_ENDPOINT_STRATEGY == "standard":
+        endpoint_strategy = config.SQS_ENDPOINT_STRATEGY
+
+        if endpoint_strategy == "dynamic":
+            scheme = context.request.scheme
+            endpoint_strategy, host_and_port = guess_endpoint_strategy_and_host(
+                context.request.host
+            )
+
+        if endpoint_strategy == "standard":
             # Region is always part of the queue URL
             # sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/my-queue
             scheme = context.request.scheme
-            host_definition = localstack_host()
-            host_url = f"{scheme}://sqs.{self.region}.{host_definition.host_and_port()}"
-
-        elif config.SQS_ENDPOINT_STRATEGY == "domain":
+            host_url = f"{scheme}://sqs.{self.region}.{host_and_port}"
+        elif endpoint_strategy == "domain":
             # Legacy style
             # queue.localhost.localstack.cloud:4566/000000000000/my-queue (us-east-1)
             # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
             region = "" if self.region == "us-east-1" else self.region + "."
-
-            host_url = f"{scheme}://{region}queue.{host_definition.host_and_port()}"
-        elif config.SQS_ENDPOINT_STRATEGY == "path":
+            host_url = f"{scheme}://{region}queue.{host_and_port}"
+        elif endpoint_strategy == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
-            host_url = f"{scheme}://{host_definition.host_and_port()}/queue/{self.region}"
-        elif config.SQS_ENDPOINT_STRATEGY == "dynamic":
-            # undocumented strategy to help unblock folks who depended on the feature previously,
-            # especially when running localstack in the container on a different port than the one exposed
-            # by docker (let's say :<random-port>->:4566/tcp.). however, this should be handled in a more
-            # fundamental way in localstack.
-            host_url = f"{context.request.host_url.rstrip('/')}/queue/{self.region}"
+            host_url = f"{scheme}://{host_and_port}/queue/{self.region}"
         else:
-            host_url = f"{scheme}://{host_definition.host_and_port()}"
+            host_url = f"{scheme}://{host_and_port}"
 
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),
