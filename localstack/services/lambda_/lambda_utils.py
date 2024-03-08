@@ -10,6 +10,7 @@ from localstack.aws.api.lambda_ import Runtime
 HINT_LOG = logging.getLogger("localstack.services.lambda_.hints")
 
 
+# TODO: remove me again
 def get_handler_file_from_name(handler_name: str, runtime: str = None):
     # Previously used DEFAULT_LAMBDA_RUNTIME here but that is only relevant for testing and this helper is still used in
     # a CloudFormation model in localstack.services.cloudformation.models.lambda_.LambdaFunction.get_lambda_code_param
