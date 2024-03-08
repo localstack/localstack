@@ -27,9 +27,11 @@ from localstack.aws.api import (
     handler,
 )
 from localstack.aws.api.dynamodb import (
+    AttributeMap,
     BatchExecuteStatementOutput,
     BatchGetItemOutput,
     BatchGetRequestMap,
+    BatchGetResponseMap,
     BatchWriteItemInput,
     BatchWriteItemOutput,
     BatchWriteItemRequestMap,
@@ -1827,7 +1829,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         region_name: str,
         streamed_tables: list[str],
         request_items: BatchWriteItemRequestMap,
-        existing_items,
+        existing_items: BatchGetResponseMap,
     ) -> list:
         records = []
         record = self.get_record_template(region_name)
@@ -1843,23 +1845,32 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             if stream_spec:
                 record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
 
-            existing_items_for_table = existing_items.get(table_name, [])
-            for index, write_request in enumerate(request_items[table_name]):
-                if len(existing_items_for_table) > index:
-                    existing_item = existing_items_for_table[index]
-                else:
-                    existing_item = None
+            existing_items_for_table_unordered = existing_items.get(table_name, [])
+
+            def find_existing_item_for_keys_values(item_keys: dict) -> AttributeMap | None:
+                """
+                This looks up
+                :param item_keys:
+                :return:
+                """
+                for item in existing_items_for_table_unordered:
+                    if all(item.get(k) == v for k, v in item_keys.items()):
+                        return item
+
+            for write_request in request_items[table_name]:
                 for key, request in write_request.items():
                     if key == "PutRequest":
-                        if existing_item == request["Item"]:
-                            # if the item is the same as the previous version, AWS does not send an event
-                            continue
+                        # TODO: find existing item if possible by extracting the key
                         keys = SchemaExtractor.extract_keys(
                             item=request["Item"],
                             table_name=table_name,
                             account_id=account_id,
                             region_name=region_name,
                         )
+                        existing_item = find_existing_item_for_keys_values(keys)
+                        if existing_item == request["Item"]:
+                            # if the item is the same as the previous version, AWS does not send an event
+                            continue
                         new_record = copy.deepcopy(record)
                         new_record["eventID"] = short_uid()
                         new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(request["Item"])
@@ -1873,8 +1884,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         )
                         records.append(new_record)
 
-                    elif key == "DeleteRequest" and existing_item:
+                    elif key == "DeleteRequest":
+                        # TODO: find existing item if from the "Key"
                         keys = request["Key"]
+                        if not (existing_item := find_existing_item_for_keys_values(keys)):
+                            continue
+
                         new_record = copy.deepcopy(record)
                         new_record["eventID"] = short_uid()
                         new_record["eventName"] = "REMOVE"
