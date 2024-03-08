@@ -329,10 +329,9 @@ class ResponseTemplates(Templates):
         accept = api_context.headers.get("accept", APPLICATION_JSON)
         supported_types = [APPLICATION_JSON, APPLICATION_XML]
         media_type = accept if accept in supported_types else APPLICATION_JSON
-        if media_type not in response_templates:
+        if not (template := response_templates.get(media_type, {})):
             return response._content
 
-        template = response_templates.get(media_type, {})
         # we render the template with the context data and the response content
         variables = self.build_variables_mapping(api_context)
         # update the response body
