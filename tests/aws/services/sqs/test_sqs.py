@@ -2830,8 +2830,21 @@ class TestSqsProvider:
         snapshot.match("dlq-arn", dl_queue_arn)
         snapshot.match("sourcen-arn", sqs_get_queue_arn(queue_url))
 
+        # check that attributes are retained
+        msg_attrs = {"MyAttribute": {"StringValue": "foobar", "DataType": "String"}}
+        msg_system_attrs = {
+            "AWSTraceHeader": {
+                "StringValue": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1",
+                "DataType": "String",
+            }
+        }
         # send a messages
-        sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
+        sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody="message-1",
+            MessageSystemAttributes=msg_system_attrs,
+            MessageAttributes=msg_attrs,
+        )
         sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
 
         # receive each message two times to move them into the dlq
@@ -3378,6 +3391,7 @@ class TestSqsProvider:
         self, sqs_create_queue, create_lambda_function, aws_sqs_client, region_name
     ):
         # TODO: lambda triggered dead letter delivery does not preserve the message id
+        # FIXME: message id is now preserved, but test is broken
         # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = "dl-queue-{}".format(short_uid())

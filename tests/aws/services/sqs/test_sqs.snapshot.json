@@ -3075,7 +3075,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_message_attributes": {
-    "recorded-date": "08-03-2024, 22:24:07",
+    "recorded-date": "08-03-2024, 23:14:22",
     "recorded-content": {
       "dlq-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
       "sourcen-arn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
@@ -3088,7 +3088,15 @@
           "Attributes": {
             "ApproximateFirstReceiveTimestamp": "timestamp",
             "ApproximateReceiveCount": "1",
-            "SentTimestamp": "timestamp"
+            "SentTimestamp": "timestamp",
+            "AWSTraceHeader": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1"
+          },
+          "MD5OfMessageAttributes": "adb59cd4678ea5a855436b949cd07ab6",
+          "MessageAttributes": {
+            "MyAttribute": {
+              "StringValue": "foobar",
+              "DataType": "String"
+            }
           }
         },
         {
@@ -3113,7 +3121,15 @@
             "ApproximateFirstReceiveTimestamp": "timestamp",
             "ApproximateReceiveCount": "2",
             "SentTimestamp": "timestamp",
+            "AWSTraceHeader": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1",
             "DeadLetterQueueSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          },
+          "MD5OfMessageAttributes": "adb59cd4678ea5a855436b949cd07ab6",
+          "MessageAttributes": {
+            "MyAttribute": {
+              "StringValue": "foobar",
+              "DataType": "String"
+            }
           }
         },
         {
