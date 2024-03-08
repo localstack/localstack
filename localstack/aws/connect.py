@@ -6,6 +6,7 @@ LocalStack providers.
 """
 import json
 import logging
+import os
 import re
 import threading
 from abc import ABC, abstractmethod
@@ -102,6 +103,31 @@ def attribute_name_to_service_name(attribute_name):
         attribute_name = attribute_name[:-1]
     # replace all _ with -: cognito_idp -> cognito-idp
     return attribute_name.replace("_", "-")
+
+
+@lru_cache()
+def get_endpoint_config() -> dict[str, str]:
+    target_path = os.path.join(localstack_config.dirs.config, "client-endpoints.json")
+    if not os.path.exists(target_path):
+        LOG.error("Distributed endpoint config not found. Defaulting to single mode")
+        return {"default": localstack_config.internal_service_url()}
+    with open(target_path, mode="rt") as f:
+        return json.load(f)
+
+
+def get_service_endpoint(service_name: str) -> str:
+    """
+    Returns the endpoint the service should target.
+
+    :param service_name: Service name
+    :return: Endpoint url
+    """
+    if not localstack_config.DISTRIBUTED_MODE:
+        return localstack_config.internal_service_url()
+
+    endpoint_config = get_endpoint_config()
+    endpoint = endpoint_config.get(service_name, endpoint_config.get("default"))
+    return endpoint
 
 
 #
@@ -474,7 +500,7 @@ class InternalClientFactory(ClientFactory):
         else:
             config = self._config.merge(config)
 
-        endpoint_url = endpoint_url or get_local_service_url(service_name)
+        endpoint_url = endpoint_url or get_service_endpoint(service_name)
         if service_name == "s3":
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")

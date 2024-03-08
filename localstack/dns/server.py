@@ -1,5 +1,6 @@
 import argparse
 import copy
+import json
 import logging
 import os
 import re
@@ -472,13 +473,15 @@ class Resolver(DnsServerProtocol):
             # no direct zone so look for an SOA record for a higher level zone
             for zone_label, zone_records in self.zones.items():
                 # try regex match
-                pattern = re.sub(r"(^|[^.])\*", ".*", str(zone_label))
+                pattern = re.sub(r"(^|[^.\]])\*", ".*", str(zone_label))
                 if re.match(pattern, str(request.q.qname)):
                     for record in zone_records:
                         rr = converter.to_record(record).try_rr(request.q)
                         if rr:
                             found = True
                             reply.add_answer(rr)
+                    if found:
+                        break
                 # try suffix match
                 elif request.q.qname.matchSuffix(to_bytes(zone_label)):
                     try:
@@ -859,6 +862,20 @@ def revert_network_configuration():
         revert_resolv_entry()
 
 
+def add_hosts_from_config_file(dns_server: DnsServer, config_file: str) -> None:
+    target_path = os.path.join(config.dirs.config, config_file)
+    if not os.path.exists(target_path):
+        LOG.error("DNS config not found.")
+        return
+    with open(target_path, mode="rt") as f:
+        dns_config = json.load(f)
+    for host, value in dns_config.items():
+        record = TargetRecord(
+            record_type=RecordType[value.get("RecordType")], target=value.get("Target")
+        )
+        dns_server.add_host(host, record)
+
+
 def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
     global DNS_SERVER
 
@@ -869,6 +886,9 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
 
     LOG.debug("Starting DNS servers (tcp/udp port %s on %s)..." % (port, host))
     dns_server = DnsServer(port, protocols=["tcp", "udp"], host=host, upstream_dns=upstream_dns)
+
+    # config file hosts should override everything else
+    add_hosts_from_config_file(dns_server, config_file="dns-routing.json")
 
     for name in NAME_PATTERNS_POINTING_TO_LOCALSTACK:
         dns_server.add_host_pointing_to_localstack(name)

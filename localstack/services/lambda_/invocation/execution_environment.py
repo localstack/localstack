@@ -11,7 +11,7 @@ from typing import Callable, Dict, Optional
 
 from localstack import config
 from localstack.aws.api.lambda_ import TracingMode
-from localstack.aws.connect import connect_to
+from localstack.aws.connect import connect_to, get_endpoint_config
 from localstack.services.lambda_.invocation.lambda_models import (
     Credentials,
     FunctionVersion,
@@ -151,9 +151,19 @@ class ExecutionEnvironment:
         }
         # Conditionally added environment variables
         if not config.LAMBDA_DISABLE_AWS_ENDPOINT_URL:
-            env_vars[
-                "AWS_ENDPOINT_URL"
-            ] = f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}"
+            if not config.DISTRIBUTED_MODE:
+                env_vars[
+                    "AWS_ENDPOINT_URL"
+                ] = f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}"
+            else:
+                for key, value in get_endpoint_config().items():
+                    endpoint_key = (
+                        "AWS_ENDPOINT_URL"
+                        if key == "default"
+                        else f"AWS_ENDPOINT_URL_{key.upper()}"
+                    )
+                    env_vars[endpoint_key] = value
+
         # config.handler is None for image lambdas and will be populated at runtime (e.g., by RIE)
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler
