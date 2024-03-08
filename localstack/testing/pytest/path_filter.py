@@ -24,6 +24,9 @@ If any change in category a) is detected, ALL tests will be executed.
 
 import os
 
+import pytest
+from _pytest.main import Session
+
 from localstack.testing.testselection.matching import SENTINEL_ALL_TESTS, SENTINEL_NO_TEST
 
 
@@ -35,9 +38,9 @@ def pytest_addoption(parser):
     )
 
 
-# TODO: should we add an explicit order? e.g. first/last?
 # tryfirst would IMO make the most sense since I don't see a reason why other plugins should operate on the other tests at all
-# @pytest.hookimpl(trylast=True)
+# the pytest-split plugin is executed with trylast=True, so it should come after this one
+@pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
     pathfilter_file = config.getoption("--path-filter")
     if not pathfilter_file:
@@ -77,11 +80,12 @@ def pytest_collection_modifyitems(config, items):
         config.hook.pytest_deselected(items=deselected)
 
 
-def pytest_sessionfinish(session, exitstatus):
+def pytest_sessionfinish(session: Session, exitstatus):
     """
     Tests might be split and thus there can be splits which don't select any tests right now
 
-    TODO: fix the split by filtering the timing file as well
+    This is only applied if we're actually using the plugin
     """
-    if exitstatus == 5:
+    pathfilter_file = session.config.getoption("--path-filter")
+    if pathfilter_file and exitstatus == 5:
         session.exitstatus = 0

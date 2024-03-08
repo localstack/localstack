@@ -80,11 +80,11 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
-      # script expects an environment variable $GITHUB_API_TOKEN to be set to fetch PR details
       - run:
-          name: Execute Python Script
+          # script expects an environment variable $GITHUB_API_TOKEN to be set to fetch PR details
+          name: Generate test selection filters from changed files
           command: |
-            if [[ $CIRCLE_BRANCH == "master" ]] ; then
+            if [[ -z "$CI_PULL_REQUEST" ]] ; then
               echo "Skipping test selection"
             else
               source .venv/bin/activate
