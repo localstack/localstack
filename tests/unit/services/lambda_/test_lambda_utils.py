@@ -142,3 +142,9 @@ class TestFilterStreamRecords:
         ]
 
         assert [] == filter_stream_records(self.records, filters)
+
+    def test_no_match_exists_dict(self):
+        filters = [
+            {"Filters": [{"Pattern": json.dumps({"data": {"Foo": {"S": [{"exists": True}]}}})}]}
+        ]
+        assert [] == filter_stream_records(self.records, filters)
