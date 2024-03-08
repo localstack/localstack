@@ -1,12 +1,7 @@
-exports.handler = async (event, context, callback) => {
-    const {
-        S3Client,
-        PutObjectCommand,
-    } = require("@aws-sdk/client-s3");
-    const {
-        getSignedUrl
-    } = require('@aws-sdk/s3-request-presigner');
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
+export const handler = async (event, context) => {
     const BUCKET_NAME = process.env.AWS_LAMBDA_FUNCTION_NAME;
     const bodyMd5AsBase64 = '4QrcOUm6Wau+VuBX8g+IPg=='; // body should be '123456'
 
