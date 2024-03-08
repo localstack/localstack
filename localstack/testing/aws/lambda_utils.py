@@ -48,6 +48,7 @@ PACKAGE_FOR_RUNTIME = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "java"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "provided"),
+    "dotnet8": "dotnet8",
     "dotnet6": "dotnet6",
 }
 
