@@ -8,6 +8,7 @@ import threading
 import time
 import traceback
 from binascii import crc32
+from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
 from operator import itemgetter
@@ -190,7 +191,7 @@ class EventForwarder:
             records_to_kinesis = copy.deepcopy(records)
             cls.forward_to_kinesis_stream(records_to_kinesis)
 
-            # forward to lambda and ddb_streams
+            # forward to ddb_streams
             forward_records = cls.prepare_records_to_forward_to_ddb_stream(records)
             records_to_ddb = copy.deepcopy(forward_records)
             cls.forward_to_ddb_stream(account_id, region_name, records_to_ddb)
@@ -205,10 +206,13 @@ class EventForwarder:
 
     @staticmethod
     def forward_to_kinesis_stream(records):
+        kinesis_records = defaultdict(list)
+
         for record in records:
             event_source_arn = record.get("eventSourceARN")
             if not event_source_arn:
                 continue
+
             table_name = event_source_arn.split("/", 1)[-1]
             account_id = extract_account_id_from_arn(event_source_arn)
             region_name = extract_region_from_arn(event_source_arn)
@@ -216,6 +220,7 @@ class EventForwarder:
             table_def = store.table_definitions.get(table_name) or {}
             if table_def.get("KinesisDataStreamDestinationStatus") != "ACTIVE":
                 continue
+
             stream_arn = table_def["KinesisDataStreamDestinations"][-1]["StreamArn"]
             record["tableName"] = table_name
             record.pop("eventSourceARN", None)
@@ -227,6 +232,14 @@ class EventForwarder:
             # TODO: reverse properly how AWS creates the partition key, it seems to be an MD5 hash
             kinesis_partition_key = md5(f"{table_name}{hash_keys[0]['AttributeName']}")
 
+            kinesis_records[(stream_arn, event_source_arn)].append(
+                {
+                    "Data": json.dumps(record, cls=BytesEncoder),
+                    "PartitionKey": kinesis_partition_key,
+                }
+            )
+
+        for (stream_arn, event_source_arn), records in kinesis_records.items():
             stream_account_id = extract_account_id_from_arn(stream_arn)
             stream_region_name = extract_region_from_arn(stream_arn)
             kinesis = connect_to(
@@ -234,10 +247,10 @@ class EventForwarder:
                 aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
                 region_name=stream_region_name,
             ).kinesis.request_metadata(service_principal="dynamodb", source_arn=event_source_arn)
-            kinesis.put_record(
+
+            kinesis.put_records(
                 StreamARN=stream_arn,
-                Data=json.dumps(record, cls=BytesEncoder),
-                PartitionKey=kinesis_partition_key,
+                Records=records,
             )
 
     @classmethod

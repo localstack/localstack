@@ -1,5 +1,6 @@
 import logging
 import threading
+from collections import defaultdict
 from typing import Dict
 
 from bson.json_util import dumps
@@ -76,16 +77,30 @@ def get_stream_for_table(account_id: str, region_name: str, table_arn: str) -> d
 
 def forward_events(account_id: str, region_name: str, records: dict) -> None:
     kinesis = connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis
+    # cache to avoid calling the store if all the records are from the same table (often the case)
+    tables_streams = {}
+    kinesis_records = defaultdict(list)
     for record in records:
         table_arn = record.pop("eventSourceARN", "")
-        if stream := get_stream_for_table(account_id, region_name, table_arn):
-            table_name = table_name_from_stream_arn(stream["StreamArn"])
-            stream_name = get_kinesis_stream_name(table_name)
-            kinesis.put_record(
-                StreamName=stream_name,
-                Data=dumps(record),
-                PartitionKey="TODO",
-            )
+        if not (stream := tables_streams.get(table_arn)):
+            if not (stream := get_stream_for_table(account_id, region_name, table_arn)):
+                continue
+            tables_streams[table_arn] = stream
+
+        table_name = table_name_from_stream_arn(stream["StreamArn"])
+        stream_name = get_kinesis_stream_name(table_name)
+        kinesis_records[stream_name].append(
+            {
+                "Data": dumps(record),
+                "PartitionKey": "TODO",
+            }
+        )
+
+    for stream_name, records in kinesis_records.items():
+        kinesis.put_records(
+            StreamName=stream_name,
+            Records=records,
+        )
 
 
 def delete_streams(account_id: str, region_name: str, table_arn: str) -> None:
