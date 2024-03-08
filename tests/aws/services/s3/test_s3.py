@@ -3612,7 +3612,7 @@ class TestS3:
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
-            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint fast-xml-parser",
+            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
         )
 
         function_name = f"func-integration-{short_uid()}"
@@ -6972,7 +6972,7 @@ class TestS3PresignedUrl:
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
-            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint fast-xml-parser",
+            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
         )
 
         function_name = f"func-integration-{short_uid()}"
