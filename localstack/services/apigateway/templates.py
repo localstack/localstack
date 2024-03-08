@@ -371,8 +371,8 @@ class ResponseTemplates(Templates):
     @staticmethod
     def _validate_xml(content: str):
         """
-        Checks that the content received is a valid JSON.
-        :raise JSONDecodeError: if content is not valid JSON
+        Checks that the content received is a valid XML.
+        :raise xml.parsers.expat.ExpatError: if content is not valid XML
         """
         try:
             xmltodict.parse(content)
