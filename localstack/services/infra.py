@@ -286,6 +286,19 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         if config.WAIT_FOR_DEBUGGER:
             debugpy.wait_for_client()
 
+    if config.ENABLE_PROFILING:
+        from localstack.packages.functiontrace import functiontrace_package
+
+        functiontrace_package.install()
+        import functiontrace
+        import _functiontrace
+
+        output_dir = os.path.join(config.dirs.data, "profiles")
+        os.makedirs(output_dir, exist_ok=True)
+
+        functiontrace.setup_dependencies()
+        _functiontrace.begin_tracing(output_dir)
+
     @log_duration()
     def prepare_environment():
         # enable the HTTP/HTTPS duplex socket
