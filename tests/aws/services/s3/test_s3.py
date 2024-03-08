@@ -3608,18 +3608,18 @@ class TestS3:
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration.mjs"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
-            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
+            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint fast-xml-parser",
         )
 
         function_name = f"func-integration-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_s3_integration.handler",
             role=lambda_su_role,
         )
@@ -6968,18 +6968,18 @@ class TestS3PresignedUrl:
         assert "bar-complicated-no-random" not in url
 
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.mjs"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
-            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
+            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint fast-xml-parser",
         )
 
         function_name = f"func-integration-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_s3_integration_presign.handler",
             role=lambda_su_role,
             envvars={
@@ -7041,16 +7041,14 @@ class TestS3PresignedUrl:
         handler_file = os.path.join(
             os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_sdk_v2.js"
         )
-        temp_folder = create_tmp_folder_lambda(
-            handler_file,
-            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
-        )
+        temp_folder = create_tmp_folder_lambda(handler_file)
 
         function_name = f"func-integration-{short_uid()}"
+        # we need the AWS SDK v2, and Node 16 still has it by default
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs16_x,
             handler="lambda_s3_integration_sdk_v2.handler",
             role=lambda_su_role,
             envvars={
