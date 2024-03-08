@@ -4592,19 +4592,25 @@ class TestS3:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "storage_class",
+        "storage_class, is_retrievable",
         [
-            StorageClass.STANDARD,
-            StorageClass.STANDARD_IA,
-            StorageClass.GLACIER,
-            StorageClass.GLACIER_IR,
-            StorageClass.REDUCED_REDUNDANCY,
-            StorageClass.ONEZONE_IA,
-            StorageClass.INTELLIGENT_TIERING,
-            StorageClass.DEEP_ARCHIVE,
+            (StorageClass.STANDARD, True),
+            (StorageClass.STANDARD_IA, True),
+            (StorageClass.GLACIER, False),
+            (StorageClass.GLACIER_IR, True),
+            (StorageClass.REDUCED_REDUNDANCY, True),
+            (StorageClass.ONEZONE_IA, True),
+            (StorageClass.INTELLIGENT_TIERING, True),
+            (StorageClass.DEEP_ARCHIVE, False),
         ],
     )
-    def test_put_object_storage_class(self, s3_bucket, snapshot, storage_class, aws_client):
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="GLACIER_IR is considered as an archive class in Moto and raises an exception",
+    )
+    def test_put_object_storage_class(
+        self, s3_bucket, snapshot, storage_class, is_retrievable, aws_client
+    ):
         key_name = "test-put-object-storage-class"
         aws_client.s3.put_object(
             Bucket=s3_bucket,
@@ -4619,6 +4625,14 @@ class TestS3:
             ObjectAttributes=["StorageClass"],
         )
         snapshot.match("get-object-storage-class", response)
+
+        if is_retrievable:
+            response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+            snapshot.match("get-object", response)
+        else:
+            with pytest.raises(ClientError) as e:
+                aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+            snapshot.match("get-object", e.value.response)
 
     @markers.aws.validated
     def test_put_object_storage_class_outposts(

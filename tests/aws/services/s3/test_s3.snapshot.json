@@ -4311,8 +4311,8 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD]": {
-    "recorded-date": "03-08-2023, 04:24:40",
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD-True]": {
+    "recorded-date": "05-03-2024, 17:17:29",
     "recorded-content": {
       "get-object-storage-class": {
         "LastModified": "datetime",
@@ -4321,11 +4321,25 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "body-test",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"43ad557eaff4fdc42b9886b5a68147ab\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA]": {
-    "recorded-date": "03-08-2023, 04:24:42",
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA-True]": {
+    "recorded-date": "05-03-2024, 17:17:31",
     "recorded-content": {
       "get-object-storage-class": {
         "LastModified": "datetime",
@@ -4334,11 +4348,26 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "body-test",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"43ad557eaff4fdc42b9886b5a68147ab\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "StorageClass": "STANDARD_IA",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER]": {
-    "recorded-date": "03-08-2023, 04:24:44",
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER-False]": {
+    "recorded-date": "05-03-2024, 17:17:34",
     "recorded-content": {
       "get-object-storage-class": {
         "LastModified": "datetime",
@@ -4347,11 +4376,23 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "get-object": {
+        "Error": {
+          "Code": "InvalidObjectState",
+          "Message": "The operation is not valid for the object's storage class",
+          "StorageClass": "GLACIER"
+        },
+        "StorageClass": "GLACIER",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR]": {
-    "recorded-date": "03-08-2023, 04:24:46",
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR-True]": {
+    "recorded-date": "05-03-2024, 17:17:36",
     "recorded-content": {
       "get-object-storage-class": {
         "LastModified": "datetime",
@@ -4360,15 +4401,17 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      }
-    }
-  },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY]": {
-    "recorded-date": "03-08-2023, 04:24:48",
-    "recorded-content": {
-      "get-object-storage-class": {
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "body-test",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"43ad557eaff4fdc42b9886b5a68147ab\"",
         "LastModified": "datetime",
-        "StorageClass": "REDUCED_REDUNDANCY",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "StorageClass": "GLACIER_IR",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4376,8 +4419,8 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA]": {
-    "recorded-date": "03-08-2023, 04:24:50",
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA-True]": {
+    "recorded-date": "05-03-2024, 17:17:40",
     "recorded-content": {
       "get-object-storage-class": {
         "LastModified": "datetime",
@@ -4386,11 +4429,26 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "body-test",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"43ad557eaff4fdc42b9886b5a68147ab\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "StorageClass": "ONEZONE_IA",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING]": {
-    "recorded-date": "03-08-2023, 04:24:52",
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING-True]": {
+    "recorded-date": "05-03-2024, 17:17:42",
     "recorded-content": {
       "get-object-storage-class": {
         "LastModified": "datetime",
@@ -4399,15 +4457,70 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "body-test",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"43ad557eaff4fdc42b9886b5a68147ab\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "StorageClass": "INTELLIGENT_TIERING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE]": {
-    "recorded-date": "03-08-2023, 04:24:54",
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE-False]": {
+    "recorded-date": "05-03-2024, 17:17:44",
     "recorded-content": {
       "get-object-storage-class": {
         "LastModified": "datetime",
         "StorageClass": "DEEP_ARCHIVE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "Error": {
+          "Code": "InvalidObjectState",
+          "Message": "The operation is not valid for the object's storage class",
+          "StorageClass": "DEEP_ARCHIVE"
+        },
+        "StorageClass": "DEEP_ARCHIVE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY-True]": {
+    "recorded-date": "05-03-2024, 17:17:38",
+    "recorded-content": {
+      "get-object-storage-class": {
+        "LastModified": "datetime",
+        "StorageClass": "REDUCED_REDUNDANCY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object": {
+        "AcceptRanges": "bytes",
+        "Body": "body-test",
+        "ContentLength": 9,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"43ad557eaff4fdc42b9886b5a68147ab\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "StorageClass": "REDUCED_REDUNDANCY",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
