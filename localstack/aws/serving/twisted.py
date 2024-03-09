@@ -6,17 +6,35 @@ TODO: websocket support
 """
 import logging
 import time
-from typing import TYPE_CHECKING, List
+import typing as t
+from io import BytesIO
+from queue import Queue
+from typing import List
 
 from rolo.gateway import Gateway
+from rolo.websocket.websocket import (
+    WebSocketDisconnectedError,
+    WebSocketProtocolError,
+)
+from rolo.websocket.websocket import (
+    WebSocketRequest as _WebSocketRequest,
+)
 from twisted.internet import endpoints, interfaces, reactor, ssl
+from twisted.internet.epollreactor import EPollReactor
+from twisted.internet.protocol import Protocol
 from twisted.protocols.policies import ProtocolWrapper, WrappingFactory
 from twisted.protocols.tls import BufferingTLSTransport, TLSMemoryBIOFactory
+from twisted.python.components import proxyForInterface
 from twisted.python.threadpool import ThreadPool
 from twisted.web.http import HTTPChannel, _GenericHTTPChannelProtocol
+from twisted.web.resource import IResource
+from twisted.web.server import NOT_DONE_YET, Request, Site
 from twisted.web.server import Request as TwistedRequest
-from twisted.web.server import Site
-from twisted.web.wsgi import WSGIResource, _WSGIResponse
+from twisted.web.wsgi import WSGIResource, _WSGIResponse, _wsgiString
+from werkzeug import Response
+from werkzeug.datastructures import Headers
+from wsproto import ConnectionType, WSConnection, events
+from zope.interface import implementer
 
 from localstack import config
 from localstack.aws.serving.wsgi import WsgiGateway
@@ -26,10 +44,297 @@ from localstack.utils.patch import patch
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 from localstack.utils.threads import start_worker_thread
 
-if TYPE_CHECKING:
+if t.TYPE_CHECKING:
     from _typeshed.wsgi import WSGIEnvironment
+    from hypercorn.typing import (
+        WebsocketAcceptEvent,
+        WebsocketCloseEvent,
+        WebsocketConnectEvent,
+        WebsocketDisconnectEvent,
+        WebsocketReceiveEvent,
+        WebsocketResponseBodyEvent,
+        WebsocketResponseStartEvent,
+        WebsocketSendEvent,
+    )
+
+    _WebsocketResponse = t.Union[
+        WebsocketAcceptEvent,
+        WebsocketSendEvent,
+        WebsocketResponseStartEvent,
+        WebsocketResponseBodyEvent,
+        WebsocketCloseEvent,
+    ]
+
+    _WebsocketRequest = t.Union[
+        WebsocketConnectEvent,
+        WebsocketReceiveEvent,
+        WebsocketDisconnectEvent,
+    ]
+
+    reactor: EPollReactor
+
 
 LOG = logging.getLogger(__name__)
+
+
+@implementer(IResource)
+class WebsocketResourceDecorator(proxyForInterface(IResource)):
+    isLeaf = True
+    original: WSGIResource
+
+    def __init__(
+        self,
+        original: WSGIResource,
+        onWebsocketRequestCallback: t.Callable[["WebSocketRequest"], None],
+    ):
+        super().__init__(original)
+        self.onWebsocketRequestCallback = onWebsocketRequestCallback
+        self.channel = None
+
+    def render(self, request: Request):
+        if upgrade := request.getHeader("upgrade"):
+            if upgrade.lower() == "websocket":
+                self._processWebsocket(request)
+                return NOT_DONE_YET
+
+        return super().render(request)
+
+    def _processWebsocket(self, request: Request):
+        self.channel = WebSocketChannel(request)
+        if isinstance(request.channel.transport, ProtocolWrapper):
+            request.transport.wrappedProtocol = self.channel
+        else:
+            request.transport.protocol = self.channel
+
+        self.channel.initiateUpgrade()
+
+        request = WebSocketRequest(self._toWsgiEnvironment(request))
+        self.original._threadpool.callInThread(self.onWebsocketRequestCallback, request)
+
+    def _toWsgiEnvironment(self, request: Request) -> dict[str, t.Any]:
+        environ = to_websocket_environment(request)
+        environ["websocket"] = self.channel
+        return environ
+
+
+def to_websocket_environment(request: Request) -> dict[str, t.Any]:
+    """
+    Creates a pseudo WSGI environment to be used for the rolo WebsocketRequest.
+
+    :param request: the twisted webserver request
+    :return: a WSGI-like environment for rolo
+    """
+    if request.prepath:
+        scriptName = b"/" + b"/".join(request.prepath)
+    else:
+        scriptName = b""
+
+    if request.postpath:
+        pathInfo = b"/" + b"/".join(request.postpath)
+    else:
+        pathInfo = b""
+
+    parts = request.uri.split(b"?", 1)
+    if len(parts) == 1:
+        queryString = b""
+    else:
+        queryString = parts[1]
+
+    # store raw headers
+    headers: list[tuple[bytes, bytes]] = []
+    for k, vs in request.requestHeaders.getAllRawHeaders():
+        for v in vs:
+            headers.append((k, v))
+
+    environ = {
+        "REQUEST_METHOD": "WEBSOCKET",
+        "REMOTE_ADDR": _wsgiString(request.getClientAddress().host),
+        "REMOTE_PORT": _wsgiString(str(request.getClientAddress().port)),
+        "SCRIPT_NAME": _wsgiString(scriptName),
+        "PATH_INFO": _wsgiString(pathInfo),
+        "QUERY_STRING": _wsgiString(queryString),
+        "CONTENT_TYPE": _wsgiString(request.getHeader(b"content-type") or ""),
+        "CONTENT_LENGTH": _wsgiString(request.getHeader(b"content-length") or ""),
+        "SERVER_NAME": _wsgiString(request.getRequestHostname()),
+        "SERVER_PORT": _wsgiString(str(request.getHost().port)),
+        "SERVER_PROTOCOL": _wsgiString(request.clientproto),
+        "REQUEST_URI": request.uri.decode("utf-8"),
+        "RAW_URI": request.uri.decode("utf-8"),
+        "asgi.headers": headers,
+    }
+
+    # WSGI headers
+    for name, values in request.requestHeaders.getAllRawHeaders():
+        name = "HTTP_" + _wsgiString(name).upper().replace("-", "_")
+        environ[name] = ",".join(_wsgiString(v) for v in values).replace("\n", " ")
+
+    environ.update(
+        {
+            "wsgi.version": (1, 0),
+            "wsgi.url_scheme": request.isSecure() and "https" or "http",
+            "wsgi.run_once": False,
+            "wsgi.multithread": True,
+            "wsgi.multiprocess": False,
+            "wsgi.errors": BytesIO(),
+            "wsgi.input": BytesIO(),
+        }
+    )
+
+    return environ
+
+
+class WebSocketChannel(Protocol):
+    def __init__(self, request: Request):
+        self.request = request
+        self.wsproto = WSConnection(ConnectionType.SERVER)
+        self.queue = Queue()
+
+    def initiateUpgrade(self):
+        headers = [(k, v) for k, vs in self.request.requestHeaders.getAllRawHeaders() for v in vs]
+        self.wsproto.initiate_upgrade_connection(headers, self.request.path)
+        self.request.startedWriting = 1
+
+        for event in self.wsproto.events():
+            self.queue.put(event)
+            if isinstance(event, events.CloseConnection):
+                self.close()
+
+    def connectionLost(self, reason):
+        self.close()
+
+    def dataReceived(self, data: bytes) -> None:
+        LOG.debug("DATA RECEIVED %s", data)
+        self.wsproto.receive_data(data)
+        for event in self.wsproto.events():
+            self.queue.put(event)
+            if isinstance(event, events.CloseConnection):
+                self.close()
+
+    def _writeEvent(self, event: events.Event):
+        if self.request.finished:
+            return
+        data = self.wsproto.send(event)
+        LOG.debug("sending data to transport %s", data)
+        self.request.transport.write(data)
+
+    def wsSend(self, data: str | bytes):
+        if isinstance(data, str):
+            self._writeEvent(events.TextMessage(data))
+        else:
+            self._writeEvent(events.BytesMessage(data))
+
+    def wsReceiveData(self, timeout: float = None):
+        # TODO: receiving on closed event
+        event = self.wsReceive(timeout)
+
+        if isinstance(event, events.TextMessage):
+            return event.data
+        if isinstance(event, events.BytesMessage):
+            return event.data
+
+        raise WebSocketProtocolError(f"Unexpected websocket event type {event.__class__.__name__}")
+
+    def wsClose(self, code: int = 1000, reason: t.Optional[str] = None, timeout: float = None):
+        try:
+            self._writeEvent(events.CloseConnection(code, reason))
+        finally:
+            self.close()
+
+    def close(self):
+        if not self.request.finished:
+            self.request.finish()
+
+    def wsReceive(self, timeout: float = None) -> events.Event:
+        LOG.debug("waiting for event...")
+        event = self.queue.get(timeout=timeout)
+        if isinstance(event, events.CloseConnection):
+            raise WebSocketDisconnectedError(event.code)
+        return event
+
+    def wsAccept(self, subprotocol, headers, timeout):
+        # TODO: arguments
+        LOG.debug("Accepting connection...")
+        self._writeEvent(events.AcceptConnection())
+
+    def wsRespond(
+        self,
+        statusCode: int,
+        headers: list[tuple[str, str]],
+        data: t.Iterator[bytes],
+    ):
+        # TODO: headers
+        self.request.setResponseCode(statusCode)
+        for b in data:
+            self.request.write(b)
+        self.close()
+
+
+class WebSocket:
+    request: "WebSocketRequest"
+
+    def __init__(self, request: "WebSocketRequest", channel: WebSocketChannel):
+        self.request = request
+        self.channel = channel
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def send(self, text_or_bytes: str | bytes, timeout: float = None):
+        self.channel.wsSend(text_or_bytes)
+
+    def receive(self, timeout: float = None) -> str | bytes:
+        return self.channel.wsReceiveData(timeout)
+
+    def close(self, code: int = 1000, reason: t.Optional[str] = None, timeout: float = None):
+        self.channel.wsClose(code, reason, timeout)
+        self.channel.close()
+
+
+class WebSocketRequest(_WebSocketRequest):
+    @property
+    def socket(self) -> WebSocketChannel:
+        return self.environ["websocket"]
+
+    def accept(
+        self, subprotocol: str = None, headers: Headers = None, timeout: float = None
+    ) -> WebSocket:
+        if self._upgraded:
+            raise ValueError("Websocket connection already upgraded")
+        if self._rejected:
+            raise ValueError("Websocket connection already rejected")
+
+        # FIXME: headers
+        event = self.socket.wsReceive(timeout)
+        if isinstance(event, events.Request):
+            headers = headers or {}
+            asgi_headers = [(k.encode("latin1"), v.encode("latin1")) for k, v in headers.items()]
+
+            self.socket.wsAccept(subprotocol, asgi_headers, timeout)
+            self._upgraded = True
+            return WebSocket(self, self.socket)
+
+        else:
+            self.socket.wsClose(1003, f"Unexpected event {event}", timeout)
+            raise WebSocketProtocolError(f"Unexpected event {event}")
+
+    def reject(self, response: Response):
+        if self._upgraded:
+            raise ValueError("Websocket connection already upgraded")
+        if self._rejected:
+            raise ValueError("Websocket connection already rejected")
+
+        self.socket.wsRespond(
+            response.status_code,
+            response.headers.to_wsgi_list(),
+            response.iter_encoded(),
+        )
+        self._rejected = True
+
+    def close(self, code: int = 1000, reason: t.Optional[str] = None, timeout: float = None):
+        self.socket.wsClose(code, reason, timeout)
 
 
 def update_environment(environ: "WSGIEnvironment", request: TwistedRequest):
@@ -243,6 +548,28 @@ def stop_thread_pool(self: ThreadPool, stop, timeout: float = None):
             remaining = 0
 
 
+class GatewayResource(proxyForInterface(IResource)):
+    """
+    Compound Resource to serve the Gateway.
+    """
+
+    def __init__(self, gateway: Gateway, reactor, threadpool):
+        super().__init__(
+            WebsocketResourceDecorator(
+                original=WSGIResource(reactor, threadpool, WsgiGateway(gateway)),
+                onWebsocketRequestCallback=gateway.accept,
+            )
+        )
+
+
+class GatewaySite(Site):
+    def __init__(self, gateway: Gateway):
+        super().__init__(
+            GatewayResource(gateway, reactor, reactor.getThreadPool()), TwistedRequestAdapter
+        )
+        self.protocol = HeaderPreservingHTTPChannel.protocol_factory
+
+
 def serve_gateway(
     gateway: Gateway, listen: List[HostAndPort], use_ssl: bool, asynchronous: bool = False
 ):
@@ -262,11 +589,7 @@ def serve_gateway(
     ON_AFTER_SERVICE_SHUTDOWN_HANDLERS.register(_shutdown_reactor)
 
     # setup twisted webserver Site
-    wsgi = WsgiGateway(gateway)
-    resource = WSGIResource(reactor, thread_pool, wsgi)
-    site = Site(resource)
-    site.protocol = HeaderPreservingHTTPChannel.protocol_factory
-    site.requestFactory = TwistedRequestAdapter
+    site = GatewaySite(gateway)
 
     # configure ssl
     if use_ssl:
