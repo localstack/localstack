@@ -171,7 +171,7 @@ class TestHttps:
 
 
 @pytest.mark.xfail(
-    condition=config.GATEWAY_SERVER not in ["hypercorn"],
+    condition=config.GATEWAY_SERVER not in ["hypercorn", "twisted"],
     reason=f"websockets not supported with {config.GATEWAY_SERVER}",
 )
 class TestWebSocketIntegration:

@@ -12,12 +12,13 @@ from queue import Queue
 from typing import List
 
 from rolo.gateway import Gateway
-from rolo.websocket.websocket import (
+from rolo.websocket import (
     WebSocketDisconnectedError,
     WebSocketProtocolError,
+    WebSocketRequest,
 )
-from rolo.websocket.websocket import (
-    WebSocketRequest as _WebSocketRequest,
+from rolo.websocket import (
+    adapter as rolows,
 )
 from twisted.internet import endpoints, interfaces, reactor, ssl
 from twisted.internet.epollreactor import EPollReactor
@@ -31,7 +32,6 @@ from twisted.web.resource import IResource
 from twisted.web.server import NOT_DONE_YET, Request, Site
 from twisted.web.server import Request as TwistedRequest
 from twisted.web.wsgi import WSGIResource, _WSGIResponse, _wsgiString
-from werkzeug import Response
 from werkzeug.datastructures import Headers
 from wsproto import ConnectionType, WSConnection, events
 from zope.interface import implementer
@@ -79,8 +79,8 @@ LOG = logging.getLogger(__name__)
 
 @implementer(IResource)
 class WebsocketResourceDecorator(proxyForInterface(IResource)):
-    isLeaf = True
     original: WSGIResource
+    isLeaf = True
 
     def __init__(
         self,
@@ -113,7 +113,7 @@ class WebsocketResourceDecorator(proxyForInterface(IResource)):
 
     def _toWsgiEnvironment(self, request: Request) -> dict[str, t.Any]:
         environ = to_websocket_environment(request)
-        environ["websocket"] = self.channel
+        environ["rolo.websocket"] = TwistedWebSocketAdapter(self.channel)
         return environ
 
 
@@ -183,19 +183,77 @@ def to_websocket_environment(request: Request) -> dict[str, t.Any]:
     return environ
 
 
+class TwistedWebSocketAdapter(rolows.WebSocketAdapter):
+    channel: "WebSocketChannel"
+
+    def __init__(self, channel: "WebSocketChannel"):
+        self.channel = channel
+
+    def receive(self, timeout: float = None) -> rolows.CreateConnection | rolows.Message:
+        event = self.channel.eventQueue.get(timeout=timeout)
+
+        if isinstance(event, events.Request):
+            return rolows.CreateConnection()
+        if isinstance(event, events.BytesMessage):
+            return rolows.BytesMessage(event.data)
+        elif isinstance(event, events.TextMessage):
+            return rolows.TextMessage(event.data)
+        elif isinstance(event, events.CloseConnection):
+            raise WebSocketDisconnectedError(event.code)
+        else:
+            raise WebSocketProtocolError(f"Unexpected event type {event.__class__.__name__}")
+
+    def send(self, event: rolows.Message, timeout: float = None):
+        if isinstance(event, rolows.TextMessage):
+            self.channel.wsSend(events.TextMessage(event.data))
+        elif isinstance(event, rolows.BytesMessage):
+            self.channel.wsSend(events.BytesMessage(event.data))
+        else:
+            raise TypeError(f"Unexpected event type {event.__class__.__name__}")
+
+    def respond(
+        self,
+        status_code: int,
+        headers: Headers = None,
+        body: t.Iterable[bytes] = None,
+        timeout: float = None,
+    ):
+        # TODO: headers
+        self.channel.wsRespond(status_code, headers, body)
+
+    def accept(
+        self,
+        subprotocol: str = None,
+        extensions: list[str] = None,
+        extra_headers: Headers = None,
+        timeout: float = None,
+    ):
+        # TODO: extensions and extra headers
+        self.channel.wsSend(events.AcceptConnection(subprotocol, extensions=[], extra_headers=[]))
+
+    def close(self, code: int = 1001, reason: str = None, timeout: float = None):
+        if not self.channel.closed:
+            self.channel.wsClose(code, reason)
+
+
 class WebSocketChannel(Protocol):
+    eventQueue: Queue[events.Event]
+
     def __init__(self, request: Request):
         self.request = request
         self.wsproto = WSConnection(ConnectionType.SERVER)
-        self.queue = Queue()
+        self.eventQueue = Queue()
+
+    @property
+    def closed(self):
+        return self.request.finished
 
     def initiateUpgrade(self):
         headers = [(k, v) for k, vs in self.request.requestHeaders.getAllRawHeaders() for v in vs]
         self.wsproto.initiate_upgrade_connection(headers, self.request.path)
-        self.request.startedWriting = 1
 
         for event in self.wsproto.events():
-            self.queue.put(event)
+            self.eventQueue.put(event)
             if isinstance(event, events.CloseConnection):
                 self.close()
 
@@ -203,143 +261,62 @@ class WebSocketChannel(Protocol):
         self.close()
 
     def dataReceived(self, data: bytes) -> None:
-        LOG.debug("DATA RECEIVED %s", data)
         self.wsproto.receive_data(data)
         for event in self.wsproto.events():
-            self.queue.put(event)
+            if isinstance(event, events.Ping):
+                self.wsSend(events.Pong(event.payload))
+                continue
+            # TODO: filter other evet types that are not expected by WebSocketAdapter
             if isinstance(event, events.CloseConnection):
                 self.close()
+            self.eventQueue.put_nowait(event)
 
-    def _writeEvent(self, event: events.Event):
-        if self.request.finished:
+    def wsSend(self, event: events.Event):
+        request = self.request
+        if request.finished:
             return
         data = self.wsproto.send(event)
         LOG.debug("sending data to transport %s", data)
-        self.request.transport.write(data)
+        request.transport.write(data)
 
-    def wsSend(self, data: str | bytes):
-        if isinstance(data, str):
-            self._writeEvent(events.TextMessage(data))
-        else:
-            self._writeEvent(events.BytesMessage(data))
+    def wsRespond(
+        self,
+        statusCode: int,
+        extraHeaders: Headers,
+        body: t.Iterator[bytes] | None = None,
+    ):
+        # we could also use self.wsSend(events.RejectConnection(statusCode, ...)) and write manually to the
+        # transport, but instead we re-use twisted's request/response mechanism.
 
-    def wsReceiveData(self, timeout: float = None):
-        # TODO: receiving on closed event
-        event = self.wsReceive(timeout)
+        # TODO: set default twisted headers
+        request = self.request
 
-        if isinstance(event, events.TextMessage):
-            return event.data
-        if isinstance(event, events.BytesMessage):
-            return event.data
+        request.setResponseCode(statusCode)
+        for k, v in extraHeaders.to_wsgi_list():
+            request.responseHeaders.addRawHeader(k, v)
 
-        raise WebSocketProtocolError(f"Unexpected websocket event type {event.__class__.__name__}")
+        if body:
+            for b in body:
+                request.write(b)
 
-    def wsClose(self, code: int = 1000, reason: t.Optional[str] = None, timeout: float = None):
+        self.close()
+
+    def wsClose(self, code: int = 1000, reason: t.Optional[str] = None):
         try:
-            self._writeEvent(events.CloseConnection(code, reason))
+            self.wsSend(events.CloseConnection(code, reason))
         finally:
             self.close()
 
     def close(self):
         if not self.request.finished:
             self.request.finish()
-
-    def wsReceive(self, timeout: float = None) -> events.Event:
-        LOG.debug("waiting for event...")
-        event = self.queue.get(timeout=timeout)
-        if isinstance(event, events.CloseConnection):
-            raise WebSocketDisconnectedError(event.code)
-        return event
-
-    def wsAccept(self, subprotocol, headers, timeout):
-        # TODO: arguments
-        LOG.debug("Accepting connection...")
-        self._writeEvent(events.AcceptConnection())
-
-    def wsRespond(
-        self,
-        statusCode: int,
-        headers: list[tuple[str, str]],
-        data: t.Iterator[bytes],
-    ):
-        # TODO: headers
-        self.request.setResponseCode(statusCode)
-        for b in data:
-            self.request.write(b)
-        self.close()
-
-
-class WebSocket:
-    request: "WebSocketRequest"
-
-    def __init__(self, request: "WebSocketRequest", channel: WebSocketChannel):
-        self.request = request
-        self.channel = channel
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
-    def send(self, text_or_bytes: str | bytes, timeout: float = None):
-        self.channel.wsSend(text_or_bytes)
-
-    def receive(self, timeout: float = None) -> str | bytes:
-        return self.channel.wsReceiveData(timeout)
-
-    def close(self, code: int = 1000, reason: t.Optional[str] = None, timeout: float = None):
-        self.channel.wsClose(code, reason, timeout)
-        self.channel.close()
-
-
-class WebSocketRequest(_WebSocketRequest):
-    @property
-    def socket(self) -> WebSocketChannel:
-        return self.environ["websocket"]
-
-    def accept(
-        self, subprotocol: str = None, headers: Headers = None, timeout: float = None
-    ) -> WebSocket:
-        if self._upgraded:
-            raise ValueError("Websocket connection already upgraded")
-        if self._rejected:
-            raise ValueError("Websocket connection already rejected")
-
-        # FIXME: headers
-        event = self.socket.wsReceive(timeout)
-        if isinstance(event, events.Request):
-            headers = headers or {}
-            asgi_headers = [(k.encode("latin1"), v.encode("latin1")) for k, v in headers.items()]
-
-            self.socket.wsAccept(subprotocol, asgi_headers, timeout)
-            self._upgraded = True
-            return WebSocket(self, self.socket)
-
-        else:
-            self.socket.wsClose(1003, f"Unexpected event {event}", timeout)
-            raise WebSocketProtocolError(f"Unexpected event {event}")
-
-    def reject(self, response: Response):
-        if self._upgraded:
-            raise ValueError("Websocket connection already upgraded")
-        if self._rejected:
-            raise ValueError("Websocket connection already rejected")
-
-        self.socket.wsRespond(
-            response.status_code,
-            response.headers.to_wsgi_list(),
-            response.iter_encoded(),
-        )
-        self._rejected = True
-
-    def close(self, code: int = 1000, reason: t.Optional[str] = None, timeout: float = None):
-        self.socket.wsClose(code, reason, timeout)
+            self.eventQueue.put_nowait(events.CloseConnection(0))
 
 
 def update_environment(environ: "WSGIEnvironment", request: TwistedRequest):
     """
-    Update the pre-populated WSGI environment with additional data, needed by rolo, from the webserver request object.
+    Update the pre-populated WSGI environment with additional data, needed by rolo, from the webserver
+    request object.
 
     :param environ: the environment to update
     :param request: the webserver request object
@@ -367,8 +344,8 @@ def update_environment(environ: "WSGIEnvironment", request: TwistedRequest):
 @patch(_WSGIResponse.__init__)
 def _init_wsgi_response(init, self, reactor, threadpool, application, request):
     """
-    Patch to populate the environment with additional variables we need in LocalStack that the server is not setting by
-    default.
+    Patch to populate the environment with additional variables we need in LocalStack that the server is
+    not setting by default.
     """
     init(self, reactor, threadpool, application, request)
     update_environment(self.environ, request)
@@ -401,8 +378,8 @@ class TwistedRequestAdapter(TwistedRequest):
 
 class HeaderPreservingHTTPChannel(HTTPChannel):
     """
-    Special HTTPChannel implementation that uses ``Headers._caseMappings`` to retain header casing both for request
-    headers (server -> WSGI), and  response headers (WSGI -> client).
+    Special HTTPChannel implementation that uses ``Headers._caseMappings`` to retain header casing both for
+    request headers (server -> WSGI), and  response headers (WSGI -> client).
     """
 
     requestFactory = TwistedRequestAdapter
@@ -445,11 +422,11 @@ class HeaderPreservingHTTPChannel(HTTPChannel):
 class TLSMultiplexer(ProtocolWrapper):
     """
     Custom protocol to multiplex HTTPS and HTTP connections over the same port. This is the equivalent of
-    ``DuplexSocket``, but since twisted use its own SSL layer and doesn't use `ssl.SSLSocket``, we need to implement
-    the multiplexing behavior in the Twisted layer.
+    ``DuplexSocket``, but since twisted use its own SSL layer and doesn't use `ssl.SSLSocket``, we need to
+    implement the multiplexing behavior in the Twisted layer.
 
-    The basic idea is to defer the ``makeConnection`` call until the first data are received, and then re-configure
-    the underlying ``wrappedProtocol`` if needed with a TLS wrapper.
+    The basic idea is to defer the ``makeConnection`` call until the first data are received, and then
+    re-configure the underlying ``wrappedProtocol`` if needed with a TLS wrapper.
     """
 
     tlsProtocol = BufferingTLSTransport
@@ -475,8 +452,8 @@ class TLSMultiplexer(ProtocolWrapper):
             super().dataReceived(data)
             return
 
-        # once the first data have been received, we can check whether it's a TLS handshake, then we need to run the
-        # actual makeConnection procedure.
+        # once the first data have been received, we can check whether it's a TLS handshake, then we need
+        # to run the actual makeConnection procedure.
         self._isInitialized = True
         self._isTLS = data[0] == 22  # 0x16 is the marker byte identifying a TLS handshake
 
