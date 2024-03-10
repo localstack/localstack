@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 import logging
 from typing import Final, Optional
 
@@ -16,7 +17,6 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventList,
     InvalidName,
     SensitiveCause,
-    SensitiveData,
     SensitiveError,
     StartExecutionOutput,
     Timestamp,
@@ -55,14 +55,12 @@ class BaseExecutionWorkerComm(ExecutionWorkerComm):
     def __init__(self, execution: Execution):
         self.execution: Execution = execution
 
-    def terminated(self) -> None:
+    def _reflect_execution_status(self):
         exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
         self.execution.stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
         if isinstance(exit_program_state, ProgramEnded):
             self.execution.exec_status = ExecutionStatus.SUCCEEDED
-            self.execution.output = to_json_str(
-                self.execution.exec_worker.env.inp, separators=(",", ":")
-            )
+            self.execution.output = self.execution.exec_worker.env.inp
         elif isinstance(exit_program_state, ProgramStopped):
             self.execution.exec_status = ExecutionStatus.ABORTED
         elif isinstance(exit_program_state, ProgramError):
@@ -75,7 +73,10 @@ class BaseExecutionWorkerComm(ExecutionWorkerComm):
             raise RuntimeWarning(
                 f"Execution ended with unsupported ProgramState type '{type(exit_program_state)}'."
             )
-        self.execution._publish_execution_status_change_event()
+
+    def terminated(self) -> None:
+        self._reflect_execution_status()
+        self.execution.publish_execution_status_change_event()
 
 
 class Execution:
@@ -88,14 +89,14 @@ class Execution:
 
     state_machine: Final[StateMachineInstance]
     start_date: Final[Timestamp]
-    input_data: Final[Optional[dict]]
+    input_data: Final[Optional[json]]
     input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]]
     trace_header: Final[Optional[TraceHeader]]
 
     exec_status: Optional[ExecutionStatus]
     stop_date: Optional[Timestamp]
 
-    output: Optional[SensitiveData]
+    output: Optional[json]
     output_details: Optional[CloudWatchEventsExecutionDataDetails]
 
     error: Optional[SensitiveError]
@@ -152,7 +153,7 @@ class Execution:
             traceHeader=self.trace_header,
         )
         if describe_output["status"] == ExecutionStatus.SUCCEEDED:
-            describe_output["output"] = self.output
+            describe_output["output"] = to_json_str(self.output, separators=(",", ":"))
             describe_output["outputDetails"] = self.output_details
         if self.error is not None:
             describe_output["error"] = self.error
@@ -213,33 +214,45 @@ class Execution:
             f'{timestamp.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
         )
 
+    def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerComm:
+        return BaseExecutionWorkerComm(self)
+
+    def _get_start_context_object_init_data(self) -> ContextObjectInitData:
+        return ContextObjectInitData(
+            Execution=ContextObjectExecution(
+                Id=self.exec_arn,
+                Input=self.input_data,
+                Name=self.name,
+                RoleArn=self.role_arn,
+                StartTime=self._to_serialized_date(self.start_date),
+            ),
+            StateMachine=ContextObjectStateMachine(
+                Id=self.state_machine.arn,
+                Name=self.state_machine.name,
+            ),
+        )
+
+    def _get_start_aws_execution_details(self) -> AWSExecutionDetails:
+        return AWSExecutionDetails(
+            account=self.account_id, region=self.region_name, role_arn=self.role_arn
+        )
+
+    def _get_start_execution_worker(self) -> ExecutionWorker:
+        return ExecutionWorker(
+            definition=self.state_machine.definition,
+            input_data=self.input_data,
+            exec_comm=self._get_start_execution_worker_comm(),
+            context_object_init=self._get_start_context_object_init_data(),
+            aws_execution_details=self._get_start_aws_execution_details(),
+        )
+
     def start(self) -> None:
         # TODO: checks exec_worker does not exists already?
         if self.exec_worker:
             raise InvalidName()  # TODO.
-        self.exec_worker = ExecutionWorker(
-            definition=self.state_machine.definition,
-            input_data=self.input_data,
-            exec_comm=BaseExecutionWorkerComm(self),
-            context_object_init=ContextObjectInitData(
-                Execution=ContextObjectExecution(
-                    Id=self.exec_arn,
-                    Input=self.input_data,
-                    Name=self.name,
-                    RoleArn=self.role_arn,
-                    StartTime=self._to_serialized_date(self.start_date),
-                ),
-                StateMachine=ContextObjectStateMachine(
-                    Id=self.state_machine.arn,
-                    Name=self.state_machine.name,
-                ),
-            ),
-            aws_execution_details=AWSExecutionDetails(
-                account=self.account_id, region=self.region_name, role_arn=self.role_arn
-            ),
-        )
+        self.exec_worker = self._get_start_execution_worker()
         self.exec_status = ExecutionStatus.RUNNING
-        self._publish_execution_status_change_event()
+        self.publish_execution_status_change_event()
         self.exec_worker.start()
 
     def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
@@ -248,11 +261,13 @@ class Execution:
             raise RuntimeError("No running executions.")
         exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
 
-    def _publish_execution_status_change_event(self):
+    def publish_execution_status_change_event(self):
         input_value = (
             dict() if not self.input_data else to_json_str(self.input_data, separators=(",", ":"))
         )
-        output_value = self.output
+        output_value = (
+            None if self.output is None else to_json_str(self.output, separators=(",", ":"))
+        )
         output_details = None if output_value is None else self.output_details
         entry = PutEventsRequestEntry(
             Source="aws.states",

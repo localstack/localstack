@@ -46,7 +46,6 @@ class StateChoice(CommonStateField):
         if self.default_state:
             self._next_state_name = self.default_state.state_name
 
-        # TODO: Lazy evaluation?
         for rule in self.choices_decl.rules:
             rule.eval(env)
             res = env.stack.pop()
