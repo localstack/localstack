@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_lambda": {
-    "recorded-date": "22-06-2023, 13:42:57",
+    "recorded-date": "10-03-2024, 16:23:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -44,7 +44,7 @@
                 "truncated": false
               },
               "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_1_name>",
-              "timeoutInSeconds": 1
+              "timeoutInSeconds": 5
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -83,7 +83,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda": {
-    "recorded-date": "22-06-2023, 13:42:21",
+    "recorded-date": "10-03-2024, 16:47:40",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -91,7 +91,8 @@
             "executionStartedEventDetails": {
               "input": {
                 "FunctionName": "<lambda_function_1_name>",
-                "Payload": null
+                "Payload": null,
+                "TimeoutSecondsValue": 5
               },
               "inputDetails": {
                 "truncated": false
@@ -109,7 +110,8 @@
             "stateEnteredEventDetails": {
               "input": {
                 "FunctionName": "<lambda_function_1_name>",
-                "Payload": null
+                "Payload": null,
+                "TimeoutSecondsValue": 5
               },
               "inputDetails": {
                 "truncated": false
@@ -130,7 +132,7 @@
               "region": "<region>",
               "resource": "invoke",
               "resourceType": "lambda",
-              "timeoutInSeconds": 1
+              "timeoutInSeconds": 5
             },
             "timestamp": "timestamp",
             "type": "TaskScheduled"
@@ -174,7 +176,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_service_lambda_map_timeout": {
-    "recorded-date": "26-05-2023, 12:48:33",
+    "recorded-date": "10-03-2024, 16:23:46",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -421,7 +423,7 @@
           },
           {
             "id": 16,
-            "previousEventId": 13,
+            "previousEventId": 9,
             "taskStartedEventDetails": {
               "resource": "invoke",
               "resourceType": "lambda"
@@ -441,7 +443,7 @@
           },
           {
             "id": 18,
-            "previousEventId": 15,
+            "previousEventId": 13,
             "taskStartedEventDetails": {
               "resource": "invoke",
               "resourceType": "lambda"
@@ -451,7 +453,7 @@
           },
           {
             "id": 19,
-            "previousEventId": 9,
+            "previousEventId": 15,
             "taskStartedEventDetails": {
               "resource": "invoke",
               "resourceType": "lambda"
@@ -483,17 +485,6 @@
           },
           {
             "id": 22,
-            "previousEventId": 19,
-            "taskTimedOutEventDetails": {
-              "error": "States.Timeout",
-              "resource": "invoke",
-              "resourceType": "lambda"
-            },
-            "timestamp": "timestamp",
-            "type": "TaskTimedOut"
-          },
-          {
-            "id": 23,
             "previousEventId": 17,
             "taskTimedOutEventDetails": {
               "error": "States.Timeout",
@@ -504,14 +495,25 @@
             "type": "TaskTimedOut"
           },
           {
+            "id": 23,
+            "previousEventId": 19,
+            "taskTimedOutEventDetails": {
+              "error": "States.Timeout",
+              "resource": "invoke",
+              "resourceType": "lambda"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskTimedOut"
+          },
+          {
             "id": 24,
-            "mapIterationAbortedEventDetails": {
+            "mapIterationFailedEventDetails": {
               "index": 0,
               "name": "MapWait"
             },
             "previousEventId": 20,
             "timestamp": "timestamp",
-            "type": "MapIterationAborted"
+            "type": "MapIterationFailed"
           },
           {
             "id": 25,
@@ -537,13 +539,13 @@
           },
           {
             "id": 28,
-            "mapIterationFailedEventDetails": {
+            "mapIterationAbortedEventDetails": {
               "index": 2,
               "name": "MapWait"
             },
             "previousEventId": 20,
             "timestamp": "timestamp",
-            "type": "MapIterationFailed"
+            "type": "MapIterationAborted"
           },
           {
             "id": 29,
@@ -591,14 +593,14 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_fixed_timeout_service_lambda_with_path": {
-    "recorded-date": "22-06-2023, 13:42:39",
+    "recorded-date": "10-03-2024, 16:23:06",
     "recorded-content": {
       "get_execution_history": {
         "events": [
           {
             "executionStartedEventDetails": {
               "input": {
-                "TimeoutSecondsValue": 1,
+                "TimeoutSecondsValue": 5,
                 "FunctionName": "<lambda_function_1_name>",
                 "Payload": null
               },
@@ -617,7 +619,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "TimeoutSecondsValue": 1,
+                "TimeoutSecondsValue": 5,
                 "FunctionName": "<lambda_function_1_name>",
                 "Payload": null
               },
@@ -640,7 +642,7 @@
               "region": "<region>",
               "resource": "invoke",
               "resourceType": "lambda",
-              "timeoutInSeconds": 1
+              "timeoutInSeconds": 5
             },
             "timestamp": "timestamp",
             "type": "TaskScheduled"
@@ -684,7 +686,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/timeouts/test_timeouts.py::TestTimeouts::test_global_timeout": {
-    "recorded-date": "29-08-2023, 13:08:44",
+    "recorded-date": "10-03-2024, 16:22:15",
     "recorded-content": {
       "describe_execution": {
         "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<execution-name>",
@@ -693,6 +695,8 @@
           "included": true
         },
         "name": "<execution-name>",
+        "redriveCount": 0,
+        "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
         "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "TIMED_OUT",

@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_timeout": {
-    "recorded-date": "26-06-2023, 09:12:29",
+    "recorded-date": "10-03-2024, 16:39:54",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -40,7 +40,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 1,
+              "heartbeatInSeconds": 5,
               "parameters": {
                 "MessageBody": {
                   "Message": "test_message_txt",
@@ -71,24 +71,28 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "fb73571f092a3f4109111810ab3831d8",
+                "MD5OfMessageBody": "2e28057614d59d8f7dfcdb8c9ac712f0",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -136,7 +140,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_path_timeout": {
-    "recorded-date": "26-06-2023, 09:12:45",
+    "recorded-date": "10-03-2024, 16:40:13",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -145,7 +149,7 @@
               "input": {
                 "QueueUrl": "<sqs_queue_url>",
                 "Message": "test_message_txt",
-                "HeartbeatSecondsPath": 1
+                "HeartbeatSecondsPath": 5
               },
               "inputDetails": {
                 "truncated": false
@@ -164,7 +168,7 @@
               "input": {
                 "QueueUrl": "<sqs_queue_url>",
                 "Message": "test_message_txt",
-                "HeartbeatSecondsPath": 1
+                "HeartbeatSecondsPath": 5
               },
               "inputDetails": {
                 "truncated": false
@@ -178,7 +182,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 1,
+              "heartbeatInSeconds": 5,
               "parameters": {
                 "MessageBody": {
                   "Message": "test_message_txt",
@@ -209,24 +213,28 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "25de2160ee3d3f24143ab58c6d94d338",
+                "MD5OfMessageBody": "e23368b7448139be32aa2f1fbd962673",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -274,7 +282,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_no_timeout": {
-    "recorded-date": "26-06-2023, 09:13:01",
+    "recorded-date": "10-03-2024, 16:40:31",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -314,7 +322,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 1,
+              "heartbeatInSeconds": 5,
               "parameters": {
                 "MessageBody": {
                   "Message": "test_message_txt",
@@ -344,24 +352,28 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "50275e94a825e3cea0c549f06c752088",
+                "MD5OfMessageBody": "54d831cd55f1c29412fd982a3f7cb682",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },

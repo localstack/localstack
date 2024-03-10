@@ -4,7 +4,7 @@
   "States": {
     "Start": {
       "Type": "Task",
-      "TimeoutSeconds": 1,
+      "TimeoutSeconds": 5,
       "Resource": "__tbc__",
       "Parameters": {
         "Payload.$": "$.Payload",
