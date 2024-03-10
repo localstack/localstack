@@ -14,6 +14,7 @@ from typing import List
 from rolo.gateway import Gateway
 from rolo.websocket import (
     WebSocketDisconnectedError,
+    WebSocketListener,
     WebSocketProtocolError,
     WebSocketRequest,
 )
@@ -85,10 +86,10 @@ class WebsocketResourceDecorator(proxyForInterface(IResource)):
     def __init__(
         self,
         original: WSGIResource,
-        onWebsocketRequestCallback: t.Callable[["WebSocketRequest"], None],
+        websocketListener: WebSocketListener,
     ):
         super().__init__(original)
-        self.onWebsocketRequestCallback = onWebsocketRequestCallback
+        self.websocketListener = websocketListener
         self.channel = None
 
     def render(self, request: Request):
@@ -108,8 +109,8 @@ class WebsocketResourceDecorator(proxyForInterface(IResource)):
 
         self.channel.initiateUpgrade()
 
-        request = WebSocketRequest(self._toWsgiEnvironment(request))
-        self.original._threadpool.callInThread(self.onWebsocketRequestCallback, request)
+        environment = self._toWsgiEnvironment(request)
+        self.original._threadpool.callInThread(self.websocketListener, environment)
 
     def _toWsgiEnvironment(self, request: Request) -> dict[str, t.Any]:
         environ = to_websocket_environment(request)
@@ -218,7 +219,6 @@ class TwistedWebSocketAdapter(rolows.WebSocketAdapter):
         body: t.Iterable[bytes] = None,
         timeout: float = None,
     ):
-        # TODO: headers
         self.channel.wsRespond(status_code, headers, body)
 
     def accept(
@@ -310,7 +310,8 @@ class WebSocketChannel(Protocol):
     def close(self):
         if not self.request.finished:
             self.request.finish()
-            self.eventQueue.put_nowait(events.CloseConnection(0))
+            # special internal poison pill
+            self.eventQueue.put_nowait(events.CloseConnection(None))
 
 
 def update_environment(environ: "WSGIEnvironment", request: TwistedRequest):
@@ -531,10 +532,11 @@ class GatewayResource(proxyForInterface(IResource)):
     """
 
     def __init__(self, gateway: Gateway, reactor, threadpool):
+        self.gateway = gateway
         super().__init__(
             WebsocketResourceDecorator(
                 original=WSGIResource(reactor, threadpool, WsgiGateway(gateway)),
-                onWebsocketRequestCallback=gateway.accept,
+                websocketListener=WebSocketRequest.listener(gateway.accept),
             )
         )
 
