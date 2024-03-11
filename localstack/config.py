@@ -424,6 +424,9 @@ DEVELOP = is_env_true("DEVELOP")
 # whether to enable profiling
 ENABLE_PROFILING = is_env_true("ENABLE_PROFILING")
 
+# Whether to automatically upload the captured profile to the firefox profiler
+ENABLE_PROFILING_REPORT_UPLOAD = is_env_true("ENABLE_PROFILING_REPORT_UPLOAD")
+
 # PORT FOR DEBUGGER
 DEVELOP_PORT = int(os.environ.get("DEVELOP_PORT", "").strip() or DEFAULT_DEVELOP_PORT)
 
@@ -1130,6 +1133,7 @@ CONFIG_ENV_VARS = [
     "EAGER_SERVICE_LOADING",
     "ENABLE_CONFIG_UPDATES",
     "ENABLE_PROFILING",
+    "ENABLE_PROFILING_REPORT_UPLOAD",
     "EXTRA_CORS_ALLOWED_HEADERS",
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",

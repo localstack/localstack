@@ -286,11 +286,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         if config.WAIT_FOR_DEBUGGER:
             debugpy.wait_for_client()
 
-    if config.ENABLE_PROFILING:
-        from localstack.profiler.start import start_profiling
-
-        start_profiling()
-
     @log_duration()
     def prepare_environment():
         # enable the HTTP/HTTPS duplex socket
