@@ -229,12 +229,16 @@ class DynamoDBGlobalTableProvider(ResourceProvider[DynamoDBGlobalTableProperties
                     "SSESpecification",
                     "StreamSpecification",
                     "TableName",
-                    "TimeToLiveSpecification",
                     "WriteProvisionedThroughputSettings",
                 ],
             )
 
             replicas = create_params.pop("Replicas", [])
+
+            if sse_specification := create_params.get("SSESpecification"):
+                # rename bool attribute to fit boto call
+                sse_specification["Enabled"] = sse_specification["SSEEnabled"]
+                del sse_specification["SSEEnabled"]
 
             creation_response = request.aws_client_factory.dynamodb.create_table(**create_params)
             model["Arn"] = creation_response["TableDescription"]["TableArn"]
@@ -259,6 +263,13 @@ class DynamoDBGlobalTableProvider(ResourceProvider[DynamoDBGlobalTableProperties
 
                 request.aws_client_factory.dynamodb.update_table(
                     ReplicaUpdates=replicas_to_create, TableName=model["TableName"]
+                )
+
+            # add TTL config
+            if ttl_config := model.get("TimeToLiveSpecification"):
+                request.aws_client_factory.dynamodb.update_time_to_live(
+                    TableName=model["TableName"],
+                    TimeToLiveSpecification=ttl_config
                 )
 
             return ProgressEvent(
