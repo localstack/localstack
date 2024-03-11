@@ -96,6 +96,11 @@ class SqsMessage:
         else:
             self.message["Attributes"] = attributes
 
+        # set attribute default values if not set
+        self.message["Attributes"].setdefault(
+            MessageSystemAttributeName.ApproximateReceiveCount, "0"
+        )
+
     @property
     def message_group_id(self) -> Optional[str]:
         return self.message["Attributes"].get(MessageSystemAttributeName.MessageGroupId)
