@@ -16,7 +16,14 @@ from tests.aws.services.stepfunctions.utils import (
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..loggingConfiguration",
+        "$..tracingConfiguration",
+        "$..redriveCount",
+        "$..redriveStatus",
+    ]
+)
 class TestTimeouts:
     @markers.aws.validated
     def test_global_timeout(
@@ -29,7 +36,7 @@ class TestTimeouts:
         snf_role_arn = create_iam_role_for_sfn()
 
         template = TT.load_sfn_template(BaseTemplate.BASE_WAIT_1_MIN)
-        template["TimeoutSeconds"] = 1
+        template["TimeoutSeconds"] = 5
         definition = json.dumps(template)
 
         creation_resp = create_state_machine(
@@ -73,7 +80,9 @@ class TestTimeouts:
         template = TT.load_sfn_template(TT.SERVICE_LAMBDA_WAIT_WITH_TIMEOUT_SECONDS)
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
+        exec_input = json.dumps(
+            {"FunctionName": function_name, "Payload": None, "TimeoutSecondsValue": 5}
+        )
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -83,8 +92,6 @@ class TestTimeouts:
             exec_input,
         )
 
-    # FIXME: https://app.circleci.com/pipelines/github/localstack/localstack/22941/workflows/ed5c7ca1-f354-4e6a-b4c2-c85007d2cceb/jobs/186457?invite=true#step-104-3159
-    @pytest.mark.skip(reason="flaky")
     @markers.aws.validated
     def test_fixed_timeout_service_lambda_with_path(
         self,
@@ -108,7 +115,7 @@ class TestTimeouts:
         definition = json.dumps(template)
 
         exec_input = json.dumps(
-            {"TimeoutSecondsValue": 1, "FunctionName": function_name, "Payload": None}
+            {"TimeoutSecondsValue": 5, "FunctionName": function_name, "Payload": None}
         )
         create_and_record_execution(
             aws_client.stepfunctions,

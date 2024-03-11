@@ -6,7 +6,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
       "TimeoutSeconds": 600,
-      "HeartbeatSeconds": 1,
+      "HeartbeatSeconds": 5,
       "Parameters": {
         "QueueUrl.$": "$.QueueUrl",
         "MessageBody": {
