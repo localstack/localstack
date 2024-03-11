@@ -122,6 +122,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
     @staticmethod
     def _validate_state_machine_arn(state_machine_arn: str) -> None:
+        # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
         if not StepFunctionsProvider._STATE_MACHINE_ARN_REGEX.match(state_machine_arn):
             raise InvalidArn(f"Invalid arn: '{state_machine_arn}'")
 
@@ -130,6 +131,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
 
     def _validate_state_machine_execution_arn(self, execution_arn: str) -> None:
+        # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
         if not StepFunctionsProvider._STATE_MACHINE_EXECUTION_ARN_REGEX.match(execution_arn):
             raise InvalidArn(f"Invalid arn: '{execution_arn}'")
 
