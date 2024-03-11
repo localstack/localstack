@@ -3,10 +3,8 @@ from typing import List
 
 from localstack.constants import ARTIFACTS_REPO
 from localstack.packages import InstallTarget, Package, PackageInstaller
-from localstack.packages.core import (
-    PermissionDownloadInstaller,
-)
-from localstack.utils.files import mkdir, chmod_r
+from localstack.packages.core import PermissionDownloadInstaller
+from localstack.utils.files import chmod_r, mkdir
 from localstack.utils.http import download_github_artifact
 from localstack.utils.run import run
 

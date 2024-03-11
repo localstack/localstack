@@ -3,10 +3,7 @@ import os
 from pathlib import Path
 
 from localstack import config
-from localstack.packages.functiontrace import (
-    functiontrace_package,
-    functiontrace_server_package,
-)
+from localstack.packages.functiontrace import functiontrace_package, functiontrace_server_package
 from localstack.profiler.upload import upload_profile
 
 LOG = logging.getLogger(__name__)
