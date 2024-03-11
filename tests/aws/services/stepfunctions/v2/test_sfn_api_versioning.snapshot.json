@@ -790,5 +790,23 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_publish_state_machine_version_no_such_machine": {
+    "recorded-date": "08-03-2024, 11:05:48",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "StateMachineDoesNotExist",
+        "exception_value": "An error occurred (StateMachineDoesNotExist) when calling the PublishStateMachineVersion operation: State Machine Does Not Exist: 'ssm_nonexistent_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_publish_state_machine_version_invalid_arn": {
+    "recorded-date": "08-03-2024, 11:10:04",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the PublishStateMachineVersion operation: Invalid Arn: 'Invalid ARN prefix: invalid_arn'"
+      }
+    }
   }
 }
