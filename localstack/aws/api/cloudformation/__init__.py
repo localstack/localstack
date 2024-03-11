@@ -257,6 +257,11 @@ class DeprecatedStatus(str):
     DEPRECATED = "DEPRECATED"
 
 
+class DetailedStatus(str):
+    CONFIGURATION_COMPLETE = "CONFIGURATION_COMPLETE"
+    VALIDATION_FAILED = "VALIDATION_FAILED"
+
+
 class DifferenceType(str):
     ADD = "ADD"
     REMOVE = "REMOVE"
@@ -495,6 +500,7 @@ class StackInstanceDetailedStatus(str):
     CANCELLED = "CANCELLED"
     INOPERABLE = "INOPERABLE"
     SKIPPED_SUSPENDED_ACCOUNT = "SKIPPED_SUSPENDED_ACCOUNT"
+    FAILED_IMPORT = "FAILED_IMPORT"
 
 
 class StackInstanceFilterName(str):
@@ -1441,6 +1447,7 @@ class StackEvent(TypedDict, total=False):
     HookStatusReason: Optional[HookStatusReason]
     HookInvocationPoint: Optional[HookInvocationPoint]
     HookFailureMode: Optional[HookFailureMode]
+    DetailedStatus: Optional[DetailedStatus]
 
 
 StackEvents = List[StackEvent]
@@ -1702,6 +1709,7 @@ class Stack(TypedDict, total=False):
     RootId: Optional[StackId]
     DriftInformation: Optional[StackDriftInformation]
     RetainExceptOnCreate: Optional[RetainExceptOnCreate]
+    DetailedStatus: Optional[DetailedStatus]
 
 
 Stacks = List[Stack]
