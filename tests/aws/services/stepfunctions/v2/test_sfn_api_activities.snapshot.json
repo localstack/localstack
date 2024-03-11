@@ -88,5 +88,23 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_describe_activity_invalid_arn": {
+    "recorded-date": "11-03-2024, 20:38:07",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the DescribeActivity operation: Invalid Arn: 'Invalid ARN prefix: no_an_activity_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_get_activity_task_invalid_arn": {
+    "recorded-date": "11-03-2024, 20:40:26",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the GetActivityTask operation: Invalid Arn: 'Invalid ARN prefix: no_an_activity_arn'"
+      }
+    }
   }
 }

@@ -77,6 +77,19 @@ class TestSnfApiActivities:
         sfn_snapshot.match("invalid_name", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
+    def test_describe_activity_invalid_arn(
+        self,
+        sfn_snapshot,
+        aws_client,
+    ):
+        with pytest.raises(ClientError) as exc:
+            aws_client.stepfunctions.describe_activity(activityArn="no_an_activity_arn")
+        sfn_snapshot.match(
+            "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
+        )
+
+    @markers.aws.validated
     def test_get_activity_task_deleted(
         self,
         create_activity,
@@ -92,3 +105,16 @@ class TestSnfApiActivities:
         with pytest.raises(ClientError) as e:
             aws_client.stepfunctions.get_activity_task(activityArn=activity_arn)
         sfn_snapshot.match("invalid_name", e.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
+    def test_get_activity_task_invalid_arn(
+        self,
+        sfn_snapshot,
+        aws_client,
+    ):
+        with pytest.raises(ClientError) as exc:
+            aws_client.stepfunctions.get_activity_task(activityArn="no_an_activity_arn")
+        sfn_snapshot.match(
+            "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
+        )

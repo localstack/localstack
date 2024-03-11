@@ -657,7 +657,7 @@ def populate_edge_configuration(
 
 GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
 
-# the gateway server that should be used (supported: hypercorn, dev: werkzeug)
+# the gateway server that should be used (supported: hypercorn, twisted dev: werkzeug)
 GATEWAY_SERVER = os.environ.get("GATEWAY_SERVER", "").strip() or "hypercorn"
 
 # IP of the docker bridge used to enable access between containers
@@ -1041,10 +1041,6 @@ CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 # EXPERIMENTAL
 CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES")
 
-# Selectively enable/disable new resource providers
-# e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
-CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
-
 # bind address of local DNS server
 DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
 # port of the local DNS server
@@ -1099,7 +1095,6 @@ CONFIG_ENV_VARS = [
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
     "CFN_VERBOSE_ERRORS",
-    "CFN_RESOURCE_PROVIDER_OVERRIDES",
     "CI",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",

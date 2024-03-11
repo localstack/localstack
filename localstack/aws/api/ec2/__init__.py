@@ -5681,6 +5681,7 @@ class CopyImageRequest(ServiceRequest):
     DestinationOutpostArn: Optional[String]
     DryRun: Optional[Boolean]
     CopyImageTags: Optional[Boolean]
+    TagSpecifications: Optional[TagSpecificationList]
 
 
 class CopyImageResult(TypedDict, total=False):
@@ -17316,6 +17317,7 @@ class RegisterImageRequest(ServiceRequest):
     TpmSupport: Optional[TpmSupportValues]
     UefiData: Optional[StringType]
     ImdsSupport: Optional[ImdsSupportValues]
+    TagSpecifications: Optional[TagSpecificationList]
 
 
 class RegisterImageResult(TypedDict, total=False):
@@ -18776,6 +18778,7 @@ class Ec2Api:
         destination_outpost_arn: String = None,
         dry_run: Boolean = None,
         copy_image_tags: Boolean = None,
+        tag_specifications: TagSpecificationList = None,
         **kwargs
     ) -> CopyImageResult:
         raise NotImplementedError
@@ -24907,6 +24910,7 @@ class Ec2Api:
         tpm_support: TpmSupportValues = None,
         uefi_data: StringType = None,
         imds_support: ImdsSupportValues = None,
+        tag_specifications: TagSpecificationList = None,
         **kwargs
     ) -> RegisterImageResult:
         raise NotImplementedError

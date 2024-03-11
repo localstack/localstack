@@ -55,7 +55,6 @@ from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.run import run
-from localstack.utils.server import http2_server
 from localstack.utils.strings import (
     checksum_crc32,
     checksum_crc32c,
@@ -3609,7 +3608,7 @@ class TestS3:
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration.mjs"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -3620,7 +3619,7 @@ class TestS3:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_s3_integration.handler",
             role=lambda_su_role,
         )
@@ -4593,19 +4592,25 @@ class TestS3:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "storage_class",
+        "storage_class, is_retrievable",
         [
-            StorageClass.STANDARD,
-            StorageClass.STANDARD_IA,
-            StorageClass.GLACIER,
-            StorageClass.GLACIER_IR,
-            StorageClass.REDUCED_REDUNDANCY,
-            StorageClass.ONEZONE_IA,
-            StorageClass.INTELLIGENT_TIERING,
-            StorageClass.DEEP_ARCHIVE,
+            (StorageClass.STANDARD, True),
+            (StorageClass.STANDARD_IA, True),
+            (StorageClass.GLACIER, False),
+            (StorageClass.GLACIER_IR, True),
+            (StorageClass.REDUCED_REDUNDANCY, True),
+            (StorageClass.ONEZONE_IA, True),
+            (StorageClass.INTELLIGENT_TIERING, True),
+            (StorageClass.DEEP_ARCHIVE, False),
         ],
     )
-    def test_put_object_storage_class(self, s3_bucket, snapshot, storage_class, aws_client):
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="GLACIER_IR is considered as an archive class in Moto and raises an exception",
+    )
+    def test_put_object_storage_class(
+        self, s3_bucket, snapshot, storage_class, is_retrievable, aws_client
+    ):
         key_name = "test-put-object-storage-class"
         aws_client.s3.put_object(
             Bucket=s3_bucket,
@@ -4620,6 +4625,14 @@ class TestS3:
             ObjectAttributes=["StorageClass"],
         )
         snapshot.match("get-object-storage-class", response)
+
+        if is_retrievable:
+            response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+            snapshot.match("get-object", response)
+        else:
+            with pytest.raises(ClientError) as e:
+                aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+            snapshot.match("get-object", e.value.response)
 
     @markers.aws.validated
     def test_put_object_storage_class_outposts(
@@ -6700,28 +6713,19 @@ class TestS3PresignedUrl:
         assert request_response.status_code == 200
 
     @markers.aws.only_localstack
-    @pytest.mark.parametrize("case_sensitive_headers", [True, False])
-    def test_s3_get_response_case_sensitive_headers(
-        self, s3_bucket, case_sensitive_headers, aws_client
-    ):
-        # Test that RETURN_CASE_SENSITIVE_HEADERS is respected
+    def test_s3_get_response_case_sensitive_headers(self, s3_bucket, aws_client):
+        # Test that ETag headers is case sensitive
         object_key = "key-by-hostname"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
         # get object and assert headers
-        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
-        try:
-            url = aws_client.s3.generate_presigned_url(
-                "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
-            )
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
-            response = requests.get(url, verify=False)
-            # expect that Etag is contained
-            header_names = list(response.headers.keys())
-            expected_etag = "ETag" if case_sensitive_headers else "etag"
-            assert expected_etag in header_names
-        finally:
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
+        url = aws_client.s3.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+        )
+        response = requests.get(url, verify=False)
+        # expect that Etag is contained
+        header_names = list(response.headers.keys())
+        assert "ETag" in header_names
 
     @pytest.mark.parametrize(
         "signature_version, use_virtual_address",
@@ -6978,7 +6982,7 @@ class TestS3PresignedUrl:
         assert "bar-complicated-no-random" not in url
 
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.mjs"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -6989,7 +6993,7 @@ class TestS3PresignedUrl:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_s3_integration_presign.handler",
             role=lambda_su_role,
             envvars={
@@ -7051,16 +7055,14 @@ class TestS3PresignedUrl:
         handler_file = os.path.join(
             os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_sdk_v2.js"
         )
-        temp_folder = create_tmp_folder_lambda(
-            handler_file,
-            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
-        )
+        temp_folder = create_tmp_folder_lambda(handler_file)
 
         function_name = f"func-integration-{short_uid()}"
+        # we need the AWS SDK v2, and Node 16 still has it by default
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs16_x,
             handler="lambda_s3_integration_sdk_v2.handler",
             role=lambda_su_role,
             envvars={

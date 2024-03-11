@@ -194,29 +194,29 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[SHA256]": {
     "last_validated_date": "2023-10-05T18:33:43+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE]": {
-    "last_validated_date": "2023-08-03T02:24:54+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE-False]": {
+    "last_validated_date": "2024-03-05T17:17:44+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER]": {
-    "last_validated_date": "2023-08-03T02:24:44+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER-False]": {
+    "last_validated_date": "2024-03-05T17:17:33+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR]": {
-    "last_validated_date": "2023-08-03T02:24:46+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR-True]": {
+    "last_validated_date": "2024-03-05T17:17:36+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING]": {
-    "last_validated_date": "2023-08-03T02:24:52+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING-True]": {
+    "last_validated_date": "2024-03-05T17:17:42+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA]": {
-    "last_validated_date": "2023-08-03T02:24:50+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA-True]": {
+    "last_validated_date": "2024-03-05T17:17:40+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY]": {
-    "last_validated_date": "2023-08-03T02:24:48+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY-True]": {
+    "last_validated_date": "2024-03-05T17:17:38+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD]": {
-    "last_validated_date": "2023-08-03T02:24:40+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD-True]": {
+    "last_validated_date": "2024-03-05T17:17:29+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA]": {
-    "last_validated_date": "2023-08-03T02:24:42+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA-True]": {
+    "last_validated_date": "2024-03-05T17:17:31+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class_outposts": {
     "last_validated_date": "2023-08-03T02:24:56+00:00"
@@ -354,7 +354,7 @@
     "last_validated_date": "2023-08-03T02:26:19+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_lambda_integration": {
-    "last_validated_date": "2023-08-03T02:18:58+00:00"
+    "last_validated_date": "2024-03-08T01:15:54+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_multipart_upload_acls": {
     "last_validated_date": "2023-08-03T14:53:20+00:00"
@@ -584,8 +584,11 @@
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3v4-True]": {
     "last_validated_date": "2023-08-04T22:00:20+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_v4_signed_headers_in_qs": {
+    "last_validated_date": "2024-03-08T01:01:09+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_v4_x_amz_in_qs": {
-    "last_validated_date": "2023-11-17T14:56:39+00:00"
+    "last_validated_date": "2024-03-08T01:17:39+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_with_different_user_credentials": {
     "last_validated_date": "2024-02-19T11:00:08+00:00"

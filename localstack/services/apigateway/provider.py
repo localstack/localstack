@@ -985,6 +985,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         patch_operations = copy.deepcopy(patch_operations) or []
         for patch_operation in patch_operations:
             patch_path = patch_operation["path"]
+
+            # special case: handle updates (op=remove) for wildcard method settings
+            patch_path_stripped = patch_path.strip("/")
+            if patch_path_stripped == "*/*" and patch_operation["op"] == "remove":
+                if not moto_stage.method_settings.pop(patch_path_stripped, None):
+                    raise BadRequestException(
+                        "Cannot remove method setting */* because there is no method setting for this method "
+                    )
+                response = moto_stage.to_json()
+                self._patch_stage_response(response)
+                return response
+
             path_valid = patch_path in STAGE_UPDATE_PATHS or any(
                 re.match(regex, patch_path) for regex in path_regexes
             )

@@ -12,7 +12,7 @@
     "last_validated_date": "2023-06-25T12:30:26+00:00"
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_timeout": {
-    "last_validated_date": "2023-06-25T12:30:43+00:00"
+    "last_validated_date": "2024-03-10T16:42:16+00:00"
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_start_execution_sync": {
     "last_validated_date": "2023-06-30T12:42:19+00:00"

@@ -583,39 +583,53 @@ class TestDocumentations:
 
 
 class TestStages:
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
-    def test_create_update_stages(
+    @pytest.fixture
+    def _create_api_with_stage(
         self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot
     ):
         client = aws_client.apigateway
 
-        # create API, method, integration, deployment
-        api_id, api_name, root_id = create_rest_apigw()
-        client.put_method(
-            restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
-        )
-        client.put_integration(restApiId=api_id, resourceId=root_id, httpMethod="GET", type="MOCK")
-        response = client.create_deployment(restApiId=api_id)
-        deployment_id = response["id"]
+        def _create():
+            # create API, method, integration, deployment
+            api_id, api_name, root_id = create_rest_apigw()
+            client.put_method(
+                restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
+            )
+            client.put_integration(
+                restApiId=api_id, resourceId=root_id, httpMethod="GET", type="MOCK"
+            )
+            response = client.create_deployment(restApiId=api_id)
+            deployment_id = response["id"]
 
-        # create documentation
-        client.create_documentation_part(
-            restApiId=api_id,
-            location={"type": "API"},
-            properties=json.dumps({"foo": "bar"}),
-        )
-        client.create_documentation_version(restApiId=api_id, documentationVersion="v123")
+            # create documentation
+            client.create_documentation_part(
+                restApiId=api_id,
+                location={"type": "API"},
+                properties=json.dumps({"foo": "bar"}),
+            )
+            client.create_documentation_version(restApiId=api_id, documentationVersion="v123")
 
-        # create stage
-        response = client.create_stage(
-            restApiId=api_id,
-            stageName="s1",
-            deploymentId=deployment_id,
-            description="my stage",
-            documentationVersion="v123",
-        )
-        snapshot.match("create-stage", response)
+            # create stage
+            response = client.create_stage(
+                restApiId=api_id,
+                stageName="s1",
+                deploymentId=deployment_id,
+                description="my stage",
+                documentationVersion="v123",
+            )
+            snapshot.match("create-stage", response)
+
+            return api_id
+
+        return _create
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
+    def test_create_update_stages(
+        self, _create_api_with_stage, aws_client, create_rest_apigw, snapshot
+    ):
+        client = aws_client.apigateway
+        api_id = _create_api_with_stage()
 
         # negative tests for immutable/non-updateable attributes
 
@@ -658,8 +672,8 @@ class TestStages:
         response = client.get_stage(restApiId=api_id, stageName="s1")
         snapshot.match("get-stage", response)
 
-        # show that updating */* does not override previously set values, only provides default values then like shown
-        # above
+        # show that updating */* does not override previously set values, only
+        # provides default values then like shown above
         response = client.update_stage(
             restApiId=api_id,
             stageName="s1",
@@ -668,6 +682,48 @@ class TestStages:
             ],
         )
         snapshot.match("update-stage-override", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
+    def test_update_stage_remove_wildcard(self, aws_client, _create_api_with_stage, snapshot):
+        client = aws_client.apigateway
+        api_id = _create_api_with_stage()
+
+        response = client.get_stage(restApiId=api_id, stageName="s1")
+        snapshot.match("get-stage", response)
+
+        def _delete_wildcard():
+            # remove all attributes at path */* (this is an operation Terraform executes when deleting APIs)
+            response = client.update_stage(
+                restApiId=api_id,
+                stageName="s1",
+                patchOperations=[
+                    {"op": "remove", "path": "/*/*"},
+                ],
+            )
+            snapshot.match("update-stage-reset", response)
+
+        # attempt to delete wildcard method settings (should initially fail)
+        with pytest.raises(ClientError) as exc:
+            _delete_wildcard()
+        snapshot.match("delete-error", exc.value.response)
+
+        # run a patch operation that creates a method mapping for */*
+        response = client.update_stage(
+            restApiId=api_id,
+            stageName="s1",
+            patchOperations=[
+                {"op": "replace", "path": "/*/*/caching/enabled", "value": "true"},
+            ],
+        )
+        snapshot.match("update-stage", response)
+
+        # delete wildcard method settings (should now succeed)
+        _delete_wildcard()
+
+        # assert the content of the stage after the update
+        response = client.get_stage(restApiId=api_id, stageName="s1")
+        snapshot.match("get-stage-after-reset", response)
 
 
 class TestDeployments:

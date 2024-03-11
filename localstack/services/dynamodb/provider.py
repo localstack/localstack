@@ -8,6 +8,7 @@ import threading
 import time
 import traceback
 from binascii import crc32
+from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime
 from operator import itemgetter
@@ -26,9 +27,11 @@ from localstack.aws.api import (
     handler,
 )
 from localstack.aws.api.dynamodb import (
+    AttributeMap,
     BatchExecuteStatementOutput,
     BatchGetItemOutput,
     BatchGetRequestMap,
+    BatchGetResponseMap,
     BatchWriteItemInput,
     BatchWriteItemOutput,
     BatchWriteItemRequestMap,
@@ -38,8 +41,10 @@ from localstack.aws.api.dynamodb import (
     CreateGlobalTableOutput,
     CreateTableInput,
     CreateTableOutput,
+    Delete,
     DeleteItemInput,
     DeleteItemOutput,
+    DeleteRequest,
     DeleteTableOutput,
     DescribeContinuousBackupsOutput,
     DescribeGlobalTableOutput,
@@ -69,8 +74,10 @@ from localstack.aws.api.dynamodb import (
     PointInTimeRecoveryStatus,
     PositiveIntegerObject,
     ProvisionedThroughputExceededException,
+    Put,
     PutItemInput,
     PutItemOutput,
+    PutRequest,
     QueryInput,
     QueryOutput,
     RegionName,
@@ -92,8 +99,10 @@ from localstack.aws.api.dynamodb import (
     TimeToLiveSpecification,
     TransactGetItemList,
     TransactGetItemsOutput,
+    TransactWriteItem,
     TransactWriteItemsInput,
     TransactWriteItemsOutput,
+    Update,
     UpdateContinuousBackupsOutput,
     UpdateGlobalTableOutput,
     UpdateItemInput,
@@ -101,6 +110,7 @@ from localstack.aws.api.dynamodb import (
     UpdateTableInput,
     UpdateTableOutput,
     UpdateTimeToLiveOutput,
+    WriteRequest,
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import (
@@ -117,6 +127,7 @@ from localstack.services.dynamodb.utils import (
     SchemaExtractor,
     de_dynamize_record,
     extract_table_name_from_partiql_update,
+    get_ddb_access_key,
 )
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.services.dynamodbstreams.dynamodbstreams_api import (
@@ -187,7 +198,7 @@ class EventForwarder:
             records_to_kinesis = copy.deepcopy(records)
             cls.forward_to_kinesis_stream(records_to_kinesis)
 
-            # forward to lambda and ddb_streams
+            # forward to ddb_streams
             forward_records = cls.prepare_records_to_forward_to_ddb_stream(records)
             records_to_ddb = copy.deepcopy(forward_records)
             cls.forward_to_ddb_stream(account_id, region_name, records_to_ddb)
@@ -202,10 +213,13 @@ class EventForwarder:
 
     @staticmethod
     def forward_to_kinesis_stream(records):
+        kinesis_records = defaultdict(list)
+
         for record in records:
             event_source_arn = record.get("eventSourceARN")
             if not event_source_arn:
                 continue
+
             table_name = event_source_arn.split("/", 1)[-1]
             account_id = extract_account_id_from_arn(event_source_arn)
             region_name = extract_region_from_arn(event_source_arn)
@@ -213,6 +227,7 @@ class EventForwarder:
             table_def = store.table_definitions.get(table_name) or {}
             if table_def.get("KinesisDataStreamDestinationStatus") != "ACTIVE":
                 continue
+
             stream_arn = table_def["KinesisDataStreamDestinations"][-1]["StreamArn"]
             record["tableName"] = table_name
             record.pop("eventSourceARN", None)
@@ -224,6 +239,14 @@ class EventForwarder:
             # TODO: reverse properly how AWS creates the partition key, it seems to be an MD5 hash
             kinesis_partition_key = md5(f"{table_name}{hash_keys[0]['AttributeName']}")
 
+            kinesis_records[(stream_arn, event_source_arn)].append(
+                {
+                    "Data": json.dumps(record, cls=BytesEncoder),
+                    "PartitionKey": kinesis_partition_key,
+                }
+            )
+
+        for (stream_arn, event_source_arn), records in kinesis_records.items():
             stream_account_id = extract_account_id_from_arn(stream_arn)
             stream_region_name = extract_region_from_arn(stream_arn)
             kinesis = connect_to(
@@ -231,10 +254,10 @@ class EventForwarder:
                 aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
                 region_name=stream_region_name,
             ).kinesis.request_metadata(service_principal="dynamodb", source_arn=event_source_arn)
-            kinesis.put_record(
+
+            kinesis.put_records(
                 StreamARN=stream_arn,
-                Data=json.dumps(record, cls=BytesEncoder),
-                PartitionKey=kinesis_partition_key,
+                Records=records,
             )
 
     @classmethod
@@ -345,7 +368,7 @@ def modify_context_region(context: RequestContext, region: str):
     original_region = context.region
     original_authorization = context.request.headers.get("Authorization")
 
-    key = DynamoDBProvider.ddb_access_key(context.account_id, region)
+    key = get_ddb_access_key(context.account_id, region)
 
     context.region = region
     context.request.headers["Authorization"] = re.sub(
@@ -534,7 +557,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # update x-amz-crc32 header required by some clients
         response.headers["x-amz-crc32"] = crc32(response.data) & 0xFFFFFFFF
 
-    def _forward_request(self, context: RequestContext, region: str | None) -> ServiceResponse:
+    def _forward_request(
+        self,
+        context: RequestContext,
+        region: str | None,
+        service_request: ServiceRequest | None = None,
+    ) -> ServiceResponse:
         """
         Modify the context region and then forward request to DynamoDB Local.
 
@@ -543,8 +571,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         """
         if region:
             with modify_context_region(context, region):
-                return self.forward_request(context)
-        return self.forward_request(context)
+                return self.forward_request(context, service_request=service_request)
+        return self.forward_request(context, service_request=service_request)
 
     def forward_request(
         self, context: RequestContext, service_request: ServiceRequest = None
@@ -843,23 +871,25 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     @handler("PutItem", expand=False)
     def put_item(self, context: RequestContext, put_item_input: PutItemInput) -> PutItemOutput:
         table_name = put_item_input["TableName"]
-
-        existing_item = None
-        if streams_enabled := has_streams_enabled(context.account_id, context.region, table_name):
-            # TODO: we could manually override ReturnValues to return the old value?
-            existing_item = ItemFinder.find_existing_item(
-                put_item_input,
-                table_name,
-                account_id=context.account_id,
-                region_name=context.region,
-            )
-
         global_table_region = self.get_global_table_region(context, table_name)
-        result = self._forward_request(context=context, region=global_table_region)
+
+        has_return_values = put_item_input.get("ReturnValues") == "ALL_OLD"
+        streams_enabled = has_streams_enabled(context.account_id, context.region, table_name)
+
+        # if the request doesn't ask for ReturnValues and we have stream enabled, we need to modify the request to
+        # force DDBLocal to return those values
+        if not has_return_values and streams_enabled:
+            service_req = copy.copy(context.service_request)
+            service_req["ReturnValues"] = "ALL_OLD"
+            result = self._forward_request(
+                context=context, region=global_table_region, service_request=service_req
+            )
+        else:
+            result = self._forward_request(context=context, region=global_table_region)
 
         # Since this operation makes use of global table region, we need to use the same region for all
         # calls made via the inter-service client. This is taken care of by passing the account ID and
-        # region, eg. when getting the stream spec
+        # region, e.g. when getting the stream spec
 
         # Get stream specifications details for the table
         if streams_enabled:
@@ -876,6 +906,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 account_id=context.account_id,
                 region_name=global_table_region,
             )
+            # because we modified the request, we will always have the ReturnValues if we have streams enabled
+            if has_return_values:
+                existing_item = result.get("Attributes")
+            else:
+                # remove the ReturnValues if the client didn't ask for it
+                existing_item = result.pop("Attributes", None)
+
             # create record
             record = self.get_record_template(context.region)
             record["eventName"] = "INSERT" if not existing_item else "MODIFY"
@@ -904,20 +941,30 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_name = delete_item_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
 
-        existing_item = None
-        if has_streams_enabled(context.account_id, context.region, table_name):
-            existing_item = ItemFinder.find_existing_item(
-                delete_item_input, table_name, context.account_id, context.region
-            )
+        has_return_values = delete_item_input.get("ReturnValues") == "ALL_OLD"
+        streams_enabled = has_streams_enabled(context.account_id, context.region, table_name)
 
-        result = self._forward_request(context=context, region=global_table_region)
+        # if the request doesn't ask for ReturnValues and we have stream enabled, we need to modify the request to
+        # force DDBLocal to return those values
+        if not has_return_values and streams_enabled:
+            service_req = copy.copy(context.service_request)
+            service_req["ReturnValues"] = "ALL_OLD"
+            result = self._forward_request(
+                context=context, region=global_table_region, service_request=service_req
+            )
+        else:
+            result = self._forward_request(context=context, region=global_table_region)
 
         # determine and forward stream record
-        if existing_item:
-            event_sources_or_streams_enabled = has_streams_enabled(
-                context.account_id, context.region, table_name
-            )
-            if event_sources_or_streams_enabled:
+        if streams_enabled:
+            # because we modified the request, we will always have the ReturnValues if we have streams enabled
+            if has_return_values:
+                existing_item = result.get("Attributes")
+            else:
+                # remove the ReturnValues if the client didn't ask for it
+                existing_item = result.pop("Attributes", None)
+
+            if existing_item:
                 # create record
                 record = self.get_record_template(context.region)
                 record["eventName"] = "REMOVE"
@@ -946,6 +993,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         update_item_input: UpdateItemInput,
     ) -> UpdateItemOutput:
+        # TODO: UpdateItem is harder to use ReturnValues for Streams, because it needs the Before and After images.
         table_name = update_item_input["TableName"]
         global_table_region = self.get_global_table_region(context, table_name)
 
@@ -954,9 +1002,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             context.account_id, context.region, table_name
         )
         if event_sources_or_streams_enabled:
-            # TODO: we could manually override ReturnValues to return the old value?
             existing_item = ItemFinder.find_existing_item(
-                update_item_input, table_name, context.account_id, context.region
+                put_item=update_item_input,
+                table_name=table_name,
+                account_id=context.account_id,
+                region_name=context.region,
+                endpoint_url=self.server.url,
             )
 
         result = self._forward_request(context=context, region=global_table_region)
@@ -964,7 +1015,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # construct and forward stream record
         if event_sources_or_streams_enabled:
             updated_item = ItemFinder.find_existing_item(
-                update_item_input, table_name, context.account_id, context.region
+                put_item=update_item_input,
+                table_name=table_name,
+                account_id=context.account_id,
+                region_name=context.region,
+                endpoint_url=self.server.url,
             )
             if updated_item:
                 record = self.get_record_template(context.region)
@@ -1036,6 +1091,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> BatchWriteItemOutput:
         # TODO: add global table support
         existing_items = {}
+        existing_items_to_fetch: BatchWriteItemRequestMap = {}
         # UnprocessedItems should have the same format as RequestItems
         unprocessed_items = {}
         request_items = batch_write_item_input["RequestItems"]
@@ -1049,18 +1105,26 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 tables_with_stream.append(table_name)
 
             for request in items:
+                request: WriteRequest
                 for key, inner_request in request.items():
+                    inner_request: PutRequest | DeleteRequest
                     if self.should_throttle("BatchWriteItem"):
                         unprocessed_items_for_table = unprocessed_items.setdefault(table_name, [])
                         unprocessed_items_for_table.append(request)
 
                     elif stream_enabled:
-                        # TODO: we should BatchRead those values instead of individually checking them
-                        item = ItemFinder.find_existing_item(
-                            inner_request, table_name, context.account_id, context.region
+                        existing_items_to_fetch_for_table = existing_items_to_fetch.setdefault(
+                            table_name, []
                         )
-                        existing_items_for_table = existing_items.setdefault(table_name, [])
-                        existing_items_for_table.append(item)
+                        existing_items_to_fetch_for_table.append(inner_request)
+
+        if existing_items_to_fetch:
+            existing_items = ItemFinder.find_existing_items(
+                put_items_per_table=existing_items_to_fetch,
+                account_id=context.account_id,
+                region_name=context.region,
+                endpoint_url=self.server.url,
+            )
 
         try:
             result = self.forward_request(context)
@@ -1122,14 +1186,18 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # TODO: refactor to apply the same logic as in `BatchWriteItem`: don't prep records if not stream enabled
         existing_items = []
         for item in transact_write_items_input["TransactItems"]:
+            item: TransactWriteItem
             for key in ["Put", "Update", "Delete"]:
-                inner_item = item.get(key)
+                inner_item: Put | Delete | Update = item.get(key)
                 if inner_item:
-                    existing_items.append(
-                        ItemFinder.find_existing_item(
-                            inner_item, inner_item["TableName"], context.account_id, context.region
-                        )
+                    existing_item = ItemFinder.find_existing_item(
+                        put_item=inner_item,
+                        table_name=inner_item["TableName"],
+                        account_id=context.account_id,
+                        region_name=context.region,
+                        endpoint_url=self.server.url,
                     )
+                    existing_items.append(existing_item)
 
         client_token: str | None = transact_write_items_input.get("ClientRequestToken")
 
@@ -1181,6 +1249,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         context: RequestContext,
         execute_statement_input: ExecuteStatementInput,
     ) -> ExecuteStatementOutput:
+        # TODO: this operation is still really slow with streams enabled
+        #  find a way to make it better, same way as the other operations, by using returnvalues
+        # see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.update.html
         statement = execute_statement_input["Statement"]
         table_name = extract_table_name_from_partiql_update(statement)
         existing_items = None
@@ -1188,7 +1259,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             # Note: fetching the entire list of items is hugely inefficient, especially for larger tables
             # TODO: find a mechanism to hook into the PartiQL update mechanism of DynamoDB Local directly!
             existing_items = ItemFinder.list_existing_items_for_statement(
-                context.account_id, context.region, statement
+                partiql_statement=statement,
+                account_id=context.account_id,
+                region_name=context.region,
+                endpoint_url=self.server.url,
             )
 
         result = self.forward_request(context)
@@ -1199,7 +1273,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
         if event_sources_or_streams_enabled:
             records = get_updated_records(
-                context.account_id, context.region, table_name, existing_items
+                account_id=context.account_id,
+                region_name=context.region,
+                table_name=table_name,
+                existing_items=existing_items,
+                server_url=self.server.url,
             )
             self.forward_stream_records(
                 context.account_id, context.region, records, table_name=table_name
@@ -1527,18 +1605,18 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     # Helpers
     #
 
-    @staticmethod
-    def ddb_access_key(account_id: str, region_name: str) -> str:
-        """
-        Get the access key to be used while communicating with DynamoDB Local.
-
-        DDBLocal supports namespacing as an undocumented feature. It works based on the value of the `Credentials`
-        field of the `Authorization` header. We use a concatenated value of account ID and region to achieve
-        namespacing.
-        """
-        return "{account_id}{region_name}".format(
-            account_id=account_id, region_name=region_name
-        ).replace("-", "")
+    # @staticmethod
+    # def ddb_access_key(account_id: str, region_name: str) -> str:
+    #     """
+    #     Get the access key to be used while communicating with DynamoDB Local.
+    #
+    #     DDBLocal supports namespacing as an undocumented feature. It works based on the value of the `Credentials`
+    #     field of the `Authorization` header. We use a concatenated value of account ID and region to achieve
+    #     namespacing.
+    #     """
+    #     return "{account_id}{region_name}".format(
+    #         account_id=account_id, region_name=region_name
+    #     ).replace("-", "")
 
     @staticmethod
     def ddb_region_name(region_name: str) -> str:
@@ -1603,7 +1681,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         Modify the Credentials field of Authorization header to achieve namespacing in DynamoDBLocal.
         """
         region_name = DynamoDBProvider.ddb_region_name(region_name)
-        key = DynamoDBProvider.ddb_access_key(account_id, region_name)
+        key = get_ddb_access_key(account_id, region_name)
 
         # DynamoDBLocal namespaces based on the value of Credentials
         # Since we want to namespace by both account ID and region, use an aggregate key
@@ -1682,7 +1760,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 table_name = update_request["TableName"]
                 keys = update_request["Key"]
                 updated_item = ItemFinder.find_existing_item(
-                    update_request, table_name, account_id, region_name
+                    put_item=update_request,
+                    table_name=table_name,
+                    account_id=account_id,
+                    region_name=region_name,
+                    endpoint_url=self.server.url,
                 )
                 if not updated_item:
                     return []
@@ -1746,7 +1828,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         region_name: str,
         streamed_tables: list[str],
         request_items: BatchWriteItemRequestMap,
-        existing_items,
+        existing_items: BatchGetResponseMap,
     ) -> list:
         records = []
         record = self.get_record_template(region_name)
@@ -1762,23 +1844,32 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             if stream_spec:
                 record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
 
-            existing_items_for_table = existing_items.get(table_name, [])
-            for index, write_request in enumerate(request_items[table_name]):
-                if len(existing_items_for_table) > index:
-                    existing_item = existing_items_for_table[index]
-                else:
-                    existing_item = None
+            existing_items_for_table_unordered = existing_items.get(table_name, [])
+
+            def find_existing_item_for_keys_values(item_keys: dict) -> AttributeMap | None:
+                """
+                This function looks up in the existing items for the provided item keys subset. If present, returns the
+                full item.
+                :param item_keys: the request item keys
+                :return:
+                """
+                for item in existing_items_for_table_unordered:
+                    if all(item.get(k) == v for k, v in item_keys.items()):
+                        return item
+
+            for write_request in request_items[table_name]:
                 for key, request in write_request.items():
                     if key == "PutRequest":
-                        if existing_item == request["Item"]:
-                            # if the item is the same as the previous version, AWS does not send an event
-                            continue
                         keys = SchemaExtractor.extract_keys(
                             item=request["Item"],
                             table_name=table_name,
                             account_id=account_id,
                             region_name=region_name,
                         )
+                        existing_item = find_existing_item_for_keys_values(keys)
+                        if existing_item == request["Item"]:
+                            # if the item is the same as the previous version, AWS does not send an event
+                            continue
                         new_record = copy.deepcopy(record)
                         new_record["eventID"] = short_uid()
                         new_record["dynamodb"]["SizeBytes"] = _get_size_bytes(request["Item"])
@@ -1792,8 +1883,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         )
                         records.append(new_record)
 
-                    elif key == "DeleteRequest" and existing_item:
+                    elif key == "DeleteRequest":
                         keys = request["Key"]
+                        if not (existing_item := find_existing_item_for_keys_values(keys)):
+                            continue
+
                         new_record = copy.deepcopy(record)
                         new_record["eventID"] = short_uid()
                         new_record["eventName"] = "REMOVE"
@@ -1934,7 +2028,11 @@ def has_streams_enabled(account_id: str, region_name: str, table_name_or_arn: st
 
 
 def get_updated_records(
-    account_id: str, region_name: str, table_name: str, existing_items: List
+    account_id: str,
+    region_name: str,
+    table_name: str,
+    existing_items: List,
+    server_url: str,
 ) -> List:
     """
     Determine the list of record updates, to be sent to a DDB stream after a PartiQL update operation.
@@ -1951,9 +2049,13 @@ def get_updated_records(
 
     key_schema = SchemaExtractor.get_key_schema(table_name, account_id, region_name)
     before = ItemSet(existing_items, key_schema=key_schema)
-    after = ItemSet(
-        ItemFinder.get_all_table_items(account_id, region_name, table_name), key_schema=key_schema
+    all_table_items = ItemFinder.get_all_table_items(
+        account_id=account_id,
+        region_name=region_name,
+        table_name=table_name,
+        endpoint_url=server_url,
     )
+    after = ItemSet(all_table_items, key_schema=key_schema)
 
     def _add_record(item, comparison_set: ItemSet):
         matching_item = comparison_set.find_item(item)

@@ -92,6 +92,7 @@ from localstack.services.sqs.utils import (
     is_message_deduplication_id_required,
     parse_queue_url,
 )
+from localstack.services.stores import AccountRegionBundle
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.bootstrap import is_api_enabled
@@ -428,9 +429,12 @@ class MessageMoveTaskManager:
      transactional move, foregoing the API layer but using receipt handles and transactions.
 
     TODO: restoring move tasks from persistence doesn't work, may be a fringe case though
+
+    TODO: re-drive into multiple original source queues
     """
 
-    def __init__(self) -> None:
+    def __init__(self, stores: AccountRegionBundle[SqsStore] = None) -> None:
+        self.stores = stores or sqs_stores
         self.mutex = threading.RLock()
         self.move_tasks: dict[str, MessageMoveTask] = dict()
         self.executor = ThreadPoolExecutor(max_workers=100, thread_name_prefix="sqs-move-message")
@@ -464,17 +468,34 @@ class MessageMoveTaskManager:
 
     def _run(self, move_task: MessageMoveTask):
         try:
-            LOG.info(
-                "Move task started %s (%s -> %s)",
-                move_task.task_id,
-                move_task.source_arn,
-                move_task.destination_arn,
-            )
             while not move_task.cancel_event.is_set():
                 # look up queues every time in case they are removed
                 source_queue = self._get_queue_by_arn(move_task.source_arn)
-                destination_queue = self._get_queue_by_arn(move_task.destination_arn)
 
+                if move_task.destination_arn:
+                    target_queue = self._get_queue_by_arn(move_task.destination_arn)
+                else:
+                    queues = self._get_original_source_queues(move_task.source_arn)
+                    if not queues:
+                        raise ValueError(
+                            f"No source queue found that uses DLQ {move_task.source_arn}"
+                        )
+                    if len(queues) > 1:
+                        # TODO: to implement this, we need to implement some sort provenance mechanism to
+                        #  figure out which queue the message being re-driven originally came from (see
+                        #  test_move_task_workflow_with_multiple_sources_as_default_destination)
+                        raise NotImplementedError(
+                            f"Tried to redrive from {move_task.source_arn} into multiple original source "
+                            f"queues, but redrive to multiple target queues is not implemented yet."
+                        )
+                    target_queue = queues[0]
+
+                LOG.info(
+                    "Move task started %s (%s -> %s)",
+                    move_task.task_id,
+                    move_task.source_arn,
+                    move_task.destination_arn,
+                )
                 receive_result = source_queue.receive(num_messages=1, visibility_timeout=1)
 
                 if receive_result.dead_letter_messages:
@@ -486,7 +507,7 @@ class MessageMoveTaskManager:
 
                 message = receive_result.successful[0]
                 receipt_handle = receive_result.receipt_handles[0]
-                destination_queue.put(message=message.message)
+                target_queue.put(message=message.message)
                 source_queue.remove(receipt_handle)
                 move_task.approximate_number_of_messages_moved += 1
 
@@ -502,6 +523,23 @@ class MessageMoveTaskManager:
             else:
                 LOG.info("Move task completed successfully %s", move_task.task_id)
                 move_task.status = MessageMoveTaskStatus.COMPLETED
+
+    def _get_original_source_queues(self, dl_queue_arn: str) -> list[SqsQueue]:
+        """
+        Iterate all queues in the store and find the queues that have the given dl_queue_arn as target
+        :param dl_queue_arn:
+        :return:
+        """
+        original_source_queues = []
+
+        for _, _, store in self.stores.iter_stores():
+            for queue in store.queues.values():
+                if not queue.redrive_policy:
+                    continue
+                if queue.redrive_policy.get("deadLetterTargetArn") == dl_queue_arn:
+                    original_source_queues.append(queue)
+
+        return original_source_queues
 
     def _get_queue_by_arn(self, queue_arn: str) -> SqsQueue:
         arn = parse_arn(queue_arn)
@@ -1418,15 +1456,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 status_code=404,
             ) from e
 
-        # check that destination queue exists
-        try:
-            self._require_queue_by_arn(context, destination_arn)
-        except QueueDoesNotExist as e:
-            raise ResourceNotFoundException(
-                "The resource that you specified for the DestinationArn parameter doesn't exist.",
-                status_code=404,
-            ) from e
-
         # check that the source queue is the dlq of some other queue
         is_dlq = False
         for _, _, store in sqs_stores.iter_stores():
@@ -1442,6 +1471,17 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             raise InvalidParameterValueException(
                 "Source queue must be configured as a Dead Letter Queue."
             )
+
+        # If destination_arn is left blank, the messages will be redriven back to their respective original
+        # source queues.
+        if destination_arn:
+            try:
+                self._require_queue_by_arn(context, destination_arn)
+            except QueueDoesNotExist as e:
+                raise ResourceNotFoundException(
+                    "The resource that you specified for the DestinationArn parameter doesn't exist.",
+                    status_code=404,
+                ) from e
 
         # check that only one active task exists
         with self._message_move_task_manager.mutex:
@@ -1459,10 +1499,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             ]
             if len(tasks) > 0:
                 raise InvalidParameterValueException(
-                    "There is already a task running. Only one active task is allowed for a source queue arn at a given time."
+                    "There is already a task running. Only one active task is allowed for a source queue "
+                    "arn at a given time."
                 )
 
-            task = MessageMoveTask(source_arn, destination_arn, max_number_of_messages_per_second)
+            task = MessageMoveTask(
+                source_arn,
+                destination_arn,
+                max_number_of_messages_per_second,
+            )
             store.move_tasks[task.task_id] = task
 
         self._message_move_task_manager.submit(task)

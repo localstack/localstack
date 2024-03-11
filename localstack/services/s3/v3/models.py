@@ -268,6 +268,7 @@ class S3Object:
     is_current: bool
     parts: Optional[dict[int, tuple[int, int]]]
     restore: Optional[Restore]
+    internal_last_modified: int
 
     def __init__(
         self,
@@ -318,6 +319,7 @@ class S3Object:
         self.parts = {}
         self.restore = None
         self.owner = owner
+        self.internal_last_modified = 0
 
     def get_system_metadata_fields(self) -> dict:
         headers = {

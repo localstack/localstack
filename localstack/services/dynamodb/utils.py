@@ -6,7 +6,15 @@ from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 from cachetools import TTLCache
 from moto.core.exceptions import JsonRESTError
 
-from localstack.aws.api.dynamodb import ResourceNotFoundException
+from localstack.aws.api.dynamodb import (
+    AttributeMap,
+    BatchGetRequestMap,
+    BatchGetResponseMap,
+    DeleteRequest,
+    PutRequest,
+    ResourceNotFoundException,
+    TableName,
+)
 from localstack.aws.connect import connect_to
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws.arns import dynamodb_table_arn
@@ -17,6 +25,17 @@ LOG = logging.getLogger(__name__)
 
 # cache schema definitions
 SCHEMA_CACHE = TTLCache(maxsize=50, ttl=20)
+
+
+def get_ddb_access_key(account_id: str, region_name: str) -> str:
+    """
+    Get the access key to be used while communicating with DynamoDB Local.
+
+    DDBLocal supports namespacing as an undocumented feature. It works based on the value of the `Credentials`
+    field of the `Authorization` header. We use a concatenated value of account ID and region to achieve
+    namespacing.
+    """
+    return f"{account_id}{region_name}".replace("-", "")
 
 
 class ItemSet:
@@ -120,15 +139,25 @@ class SchemaExtractor:
 
 class ItemFinder:
     @staticmethod
+    def get_ddb_local_client(account_id: str, region_name: str, endpoint_url: str):
+        ddb_client = connect_to(
+            aws_access_key_id=get_ddb_access_key(account_id, region_name),
+            region_name=region_name,
+            endpoint_url=endpoint_url,
+        ).dynamodb
+        return ddb_client
+
+    @staticmethod
     def find_existing_item(
-        put_item: Dict, table_name: str, account_id: str, region_name: str
-    ) -> Optional[Dict]:
+        put_item: Dict,
+        table_name: str,
+        account_id: str,
+        region_name: str,
+        endpoint_url: str,
+    ) -> Optional[AttributeMap]:
         from localstack.services.dynamodb.provider import ValidationException
 
-        ddb_client = connect_to(
-            aws_access_key_id=account_id,
-            region_name=region_name,
-        ).dynamodb
+        ddb_client = ItemFinder.get_ddb_local_client(account_id, region_name, endpoint_url)
 
         search_key = {}
         if "Key" in put_item:
@@ -167,22 +196,73 @@ class ItemFinder:
             return
         return existing_item.get("Item")
 
+    @staticmethod
+    def find_existing_items(
+        put_items_per_table: dict[TableName, list[PutRequest | DeleteRequest]],
+        account_id: str,
+        region_name: str,
+        endpoint_url: str,
+    ) -> BatchGetResponseMap:
+        from localstack.services.dynamodb.provider import ValidationException
+
+        ddb_client = ItemFinder.get_ddb_local_client(account_id, region_name, endpoint_url)
+
+        get_items_request: BatchGetRequestMap = {}
+        for table_name, put_item_reqs in put_items_per_table.items():
+            table_schema = None
+            for put_item in put_item_reqs:
+                search_key = {}
+                if "Key" in put_item:
+                    search_key = put_item["Key"]
+                else:
+                    if not table_schema:
+                        table_schema = SchemaExtractor.get_table_schema(
+                            table_name, account_id, region_name
+                        )
+
+                    schemas = [table_schema["Table"]["KeySchema"]]
+                    for index in table_schema["Table"].get("GlobalSecondaryIndexes", []):
+                        # TODO
+                        # schemas.append(index['KeySchema'])
+                        pass
+                    for schema in schemas:
+                        for key in schema:
+                            key_name = key["AttributeName"]
+                            key_value = put_item["Item"].get(key_name)
+                            if not key_value:
+                                raise ValidationException(
+                                    "The provided key element does not match the schema"
+                                )
+                            search_key[key_name] = key_value
+                    if not search_key:
+                        continue
+                table_keys = get_items_request.setdefault(table_name, {"Keys": []})
+                table_keys["Keys"].append(search_key)
+
+        existing_items = ddb_client.batch_get_item(RequestItems=get_items_request)
+
+        return existing_items.get("Responses", {})
+
     @classmethod
     def list_existing_items_for_statement(
-        cls, account_id: str, region_name: str, partiql_statement: str
+        cls, partiql_statement: str, account_id: str, region_name: str, endpoint_url: str
     ) -> List:
         table_name = extract_table_name_from_partiql_update(partiql_statement)
         if not table_name:
             return []
-        all_items = cls.get_all_table_items(account_id, region_name, table_name)
+        all_items = cls.get_all_table_items(
+            account_id=account_id,
+            region_name=region_name,
+            table_name=table_name,
+            endpoint_url=endpoint_url,
+        )
         return all_items
 
     @staticmethod
-    def get_all_table_items(account_id: str, region_name: str, table_name: str) -> List:
-        ddb_client = connect_to(
-            aws_access_key_id=account_id,
-            region_name=region_name,
-        ).dynamodb
+    def get_all_table_items(
+        account_id: str, region_name: str, table_name: str, endpoint_url: str
+    ) -> List:
+        ddb_client = ItemFinder.get_ddb_local_client(account_id, region_name, endpoint_url)
         dynamodb_kwargs = {"TableName": table_name}
         all_items = list_all_resources(
             lambda kwargs: ddb_client.scan(**{**kwargs, **dynamodb_kwargs}),
