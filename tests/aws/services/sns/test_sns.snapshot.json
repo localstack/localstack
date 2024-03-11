@@ -343,7 +343,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_wrong_arn_format": {
-    "recorded-date": "24-08-2023, 22:31:40",
+    "recorded-date": "11-03-2024, 10:36:34",
     "recorded-content": {
       "invalid-topic-arn": {
         "Error": {
@@ -360,6 +360,17 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 2",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "empty-topic": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 1",
           "Type": "Sender"
         },
         "ResponseMetadata": {
