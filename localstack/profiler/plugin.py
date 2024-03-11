@@ -1,5 +1,5 @@
-from localstack.runtime import hooks
 from localstack import config
+from localstack.runtime import hooks
 
 
 @hooks.on_infra_start()

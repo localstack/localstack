@@ -22,8 +22,8 @@ def start_profiling():
 
     functiontrace_package.install()
 
-    import functiontrace
     import _functiontrace
+    import functiontrace
 
     LOG.debug("storing profiles to %s", OUTPUT_DIR)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
