@@ -214,8 +214,14 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
                 "LocalSecondaryIndexes",
                 "GlobalSecondaryIndexes",
                 "Tags",
+                "SSESpecification",
             ]
             create_params = util.select_attributes(model, properties)
+
+            if sse_specification := create_params.get("SSESpecification"):
+                # rename bool attribute to fit boto call
+                sse_specification["Enabled"] = sse_specification["SSEEnabled"]
+                del sse_specification["SSEEnabled"]
 
             if stream_spec := model.get("StreamSpecification"):
                 create_params["StreamSpecification"] = {
@@ -229,6 +235,12 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
             if model.get("KinesisStreamSpecification"):
                 request.aws_client_factory.dynamodb.enable_kinesis_streaming_destination(
                     **self.get_ddb_kinesis_stream_specification(model)
+                )
+
+            # add TTL config
+            if ttl_config := model.get("TimeToLiveSpecification"):
+                request.aws_client_factory.dynamodb.update_time_to_live(
+                    TableName=model["TableName"], TimeToLiveSpecification=ttl_config
                 )
 
             return ProgressEvent(

@@ -268,8 +268,7 @@ class DynamoDBGlobalTableProvider(ResourceProvider[DynamoDBGlobalTableProperties
             # add TTL config
             if ttl_config := model.get("TimeToLiveSpecification"):
                 request.aws_client_factory.dynamodb.update_time_to_live(
-                    TableName=model["TableName"],
-                    TimeToLiveSpecification=ttl_config
+                    TableName=model["TableName"], TimeToLiveSpecification=ttl_config
                 )
 
             return ProgressEvent(
