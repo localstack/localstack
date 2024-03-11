@@ -337,6 +337,7 @@ class SqsQueue:
 
         if endpoint_strategy == "dynamic":
             scheme = context.request.scheme
+            # determine the endpoint strategy that should be used, and determine the host dynamically
             endpoint_strategy, host_and_port = guess_endpoint_strategy_and_host(
                 context.request.host
             )
