@@ -203,7 +203,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_table_with_ttl_and_sse": {
-    "recorded-date": "12-03-2024, 08:42:55",
+    "recorded-date": "12-03-2024, 15:42:18",
     "recorded-content": {
       "table_description": {
         "Table": {
@@ -236,7 +236,7 @@
             "WriteCapacityUnits": 1
           },
           "SSEDescription": {
-            "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/fd3bef5d-0b5d-4ad0-8ebf-d96535e795d9",
+            "KMSMasterKeyArn": "<kms-arn:1>",
             "SSEType": "KMS",
             "Status": "ENABLED"
           },
@@ -254,7 +254,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_global_table_with_ttl_and_sse": {
-    "recorded-date": "12-03-2024, 08:58:25",
+    "recorded-date": "12-03-2024, 15:44:36",
     "recorded-content": {
       "table_description": {
         "Table": {
@@ -326,7 +326,7 @@
             "WriteCapacityUnits": 0
           },
           "SSEDescription": {
-            "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/fd3bef5d-0b5d-4ad0-8ebf-d96535e795d9",
+            "KMSMasterKeyArn": "<kms-arn:1>",
             "SSEType": "KMS",
             "Status": "ENABLED"
           },

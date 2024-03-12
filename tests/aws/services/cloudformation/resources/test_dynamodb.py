@@ -166,12 +166,12 @@ def test_ttl_cdk(aws_client, snapshot, infrastructure_setup):
 
 
 @markers.aws.validated
+# We return field bellow, while AWS doesn't return them
 @markers.snapshot.skip_snapshot_verify(
     [
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
         "$..Table.Replicas",
-        "$..Table.SSEDescription.KMSMasterKeyArn",
     ]
 )
 def test_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client):
@@ -182,17 +182,17 @@ def test_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client):
         ),
     )
     snapshot.add_transformer(snapshot.transform.key_value("TableName", "table-name"))
+    snapshot.add_transformer(snapshot.transform.key_value("KMSMasterKeyArn", "kms-arn"))
     response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
     snapshot.match("table_description", response)
 
 
 @markers.aws.validated
+# We return field bellow, while AWS doesn't return them
 @markers.snapshot.skip_snapshot_verify(
     [
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
-        "$..Table.Replicas",
-        "$..Table.SSEDescription.KMSMasterKeyArn",
     ]
 )
 def test_global_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client):
@@ -203,5 +203,7 @@ def test_global_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client
         ),
     )
     snapshot.add_transformer(snapshot.transform.key_value("TableName", "table-name"))
+    snapshot.add_transformer(snapshot.transform.key_value("KMSMasterKeyArn", "kms-arn"))
+
     response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
     snapshot.match("table_description", response)
