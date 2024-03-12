@@ -20,7 +20,7 @@ class DebugPyPackageInstaller(PackageInstaller):
 
     def is_installed(self) -> bool:
         try:
-            import debugpy
+            import debugpy  # noqa: T100
 
             assert debugpy
             return True
