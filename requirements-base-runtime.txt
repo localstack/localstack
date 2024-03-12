@@ -106,7 +106,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-packaging==23.2
+packaging==24.0
     # via docker
 pbr==6.0.0
     # via stevedore
@@ -122,7 +122,7 @@ pycparser==2.21
     # via cffi
 pygments==2.17.2
     # via rich
-pyopenssl==24.0.0
+pyopenssl==24.1.0
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
@@ -146,7 +146,7 @@ requests-aws4auth==1.2.3
     # via localstack-core (pyproject.toml)
 rich==13.7.1
     # via localstack-core (pyproject.toml)
-rolo==0.3.0
+rolo==0.4.0
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.0
     # via boto3
