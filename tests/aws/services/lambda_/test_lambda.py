@@ -782,6 +782,7 @@ class TestLambdaBehavior:
             "$..Payload.environment.LOCALSTACK_USER",
             "$..Payload.environment.LOCALSTACK_POST_INVOKE_WAIT_MS",
             "$..Payload.environment.LOCALSTACK_MAX_PAYLOAD_SIZE",
+            "$..Payload.environment.LOCALSTACK_CHMOD_PATHS",
             # internal AWS lambda functionality
             "$..Payload.environment._AWS_XRAY_DAEMON_ADDRESS",
             "$..Payload.environment._LAMBDA_CONSOLE_SOCKET",
