@@ -486,7 +486,7 @@ class InternalClientFactory(ClientFactory):
             config = self._config.merge(config)
 
         endpoint_url = endpoint_url or get_service_endpoint()
-        if service_name == "s3":
+        if service_name == "s3" and endpoint_url:
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
 
@@ -623,7 +623,7 @@ class ExternalAwsClientFactory(ClientFactory):
         )
 
 
-connect_to = InternalClientFactory()
+connect_to = InternalClientFactory(use_ssl=localstack_config.DISTRIBUTED_MODE)
 connect_externally_to = ExternalClientFactory()
 
 #
