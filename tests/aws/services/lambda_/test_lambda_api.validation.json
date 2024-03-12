@@ -42,7 +42,7 @@
     "last_validated_date": "2023-12-15T09:58:47+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "last_validated_date": "2023-11-20T15:47:00+00:00"
+    "last_validated_date": "2024-03-12T14:49:19+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
     "last_validated_date": "2023-11-20T15:46:21+00:00"
@@ -153,7 +153,7 @@
     "last_validated_date": "2023-11-21T16:59:41+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "last_validated_date": "2023-11-20T16:02:39+00:00"
+    "last_validated_date": "2024-03-12T14:51:38+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_function_exceptions": {
     "last_validated_date": "2023-11-20T16:03:22+00:00"

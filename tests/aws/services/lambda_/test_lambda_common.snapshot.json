@@ -2724,11 +2724,11 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.8]": {
-    "recorded-date": "04-12-2023, 14:46:04",
+    "recorded-date": "12-03-2024, 15:10:12",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.9]": {
-    "recorded-date": "04-12-2023, 14:45:58",
+    "recorded-date": "12-03-2024, 15:10:18",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs12.x]": {
@@ -2736,15 +2736,15 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs14.x]": {
-    "recorded-date": "04-12-2023, 14:45:39",
+    "recorded-date": "12-03-2024, 14:56:37",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs16.x]": {
-    "recorded-date": "04-12-2023, 14:45:33",
+    "recorded-date": "12-03-2024, 15:10:18",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[ruby2.7]": {
-    "recorded-date": "04-12-2023, 14:46:44",
+    "recorded-date": "12-03-2024, 14:55:58",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java8]": {
@@ -2780,7 +2780,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs18.x]": {
-    "recorded-date": "04-12-2023, 14:45:28",
+    "recorded-date": "12-03-2024, 15:10:18",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs18.x]": {
@@ -3515,7 +3515,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.10]": {
-    "recorded-date": "04-12-2023, 14:45:53",
+    "recorded-date": "12-03-2024, 15:10:18",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.10]": {
@@ -3908,7 +3908,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[ruby3.2]": {
-    "recorded-date": "04-12-2023, 14:46:39",
+    "recorded-date": "12-03-2024, 15:10:18",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[ruby3.2]": {
@@ -4111,7 +4111,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.11]": {
-    "recorded-date": "04-12-2023, 14:45:49",
+    "recorded-date": "12-03-2024, 15:10:12",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.11]": {
@@ -4311,11 +4311,11 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs20.x]": {
-    "recorded-date": "04-12-2023, 14:45:24",
+    "recorded-date": "12-03-2024, 15:10:12",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[python3.12]": {
-    "recorded-date": "04-12-2023, 14:45:44",
+    "recorded-date": "12-03-2024, 15:10:19",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[java21]": {

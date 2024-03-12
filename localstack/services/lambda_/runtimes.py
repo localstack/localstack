@@ -1,6 +1,11 @@
 """This Lambda Runtimes reference defines everything around Lambda runtimes to facilitate adding new runtimes."""
 from localstack.aws.api.lambda_ import Runtime
 
+# LocalStack Lambda runtimes support policy
+# We support all Lambda runtimes currently actively supported at AWS.
+# Further, we aim to provide best-effort support for deprecated runtimes at least until function updates are blocked,
+# ideally a bit longer to help users migrate their Lambda runtimes.
+
 # HOWTO add a new Lambda runtime:
 # 1. Update botocore and generate the Lambda API stubs using `python3 -m localstack.aws.scaffold upgrade`
 # => This usually happens automatically through the Github Action "Update ASF APIs"
@@ -25,46 +30,52 @@ from localstack.aws.api.lambda_ import Runtime
 # a) AWS Lambda runtimes: https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
 # b) Amazon ECR Lambda images: https://gallery.ecr.aws/lambda
 # => Synchronize the order with the "Supported runtimes" under "AWS Lambda runtimes" (a)
-# => Add comments for deprecated runtimes using <Phase 1> => <Phase 2>
+# => Add comments for deprecated runtimes using <Deprecation date> => <Block function create> => <Block function update>
 IMAGE_MAPPING: dict[Runtime, str] = {
     # "nodejs22.x": "nodejs:22", expected November 2024
     Runtime.nodejs20_x: "nodejs:20",
     Runtime.nodejs18_x: "nodejs:18",
     Runtime.nodejs16_x: "nodejs:16",
-    Runtime.nodejs14_x: "nodejs:14",
-    Runtime.nodejs12_x: "nodejs:12",  # deprecated Mar 31, 2023 => Apr 30, 2023
+    Runtime.nodejs14_x: "nodejs:14",  # deprecated Dec 4, 2023  => Jan 9, 2024  => Feb 8, 2024
+    Runtime.nodejs12_x: "nodejs:12",  # deprecated Mar 31, 2023 => Mar 31, 2023 => Apr 30, 2023
     # "python3.13": "python:3.13", expected November 2024
     Runtime.python3_12: "python:3.12",
     Runtime.python3_11: "python:3.11",
     Runtime.python3_10: "python:3.10",
     Runtime.python3_9: "python:3.9",
     Runtime.python3_8: "python:3.8",
-    Runtime.python3_7: "python:3.7",
+    Runtime.python3_7: "python:3.7",  # deprecated Dec 4, 2023 => Jan 9, 2024 => Feb 8, 2024
     Runtime.java21: "java:21",
     Runtime.java17: "java:17",
     Runtime.java11: "java:11",
     Runtime.java8_al2: "java:8.al2",
-    Runtime.java8: "java:8",
+    Runtime.java8: "java:8",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
     # "dotnet8": "dotnet:8", expected January 2024
     # dotnet7 (container only)
     Runtime.dotnet6: "dotnet:6",
-    Runtime.dotnetcore3_1: "dotnet:core3.1",  # deprecated Apr 3, 2023 => May 3, 2023
-    Runtime.go1_x: "go:1",
+    Runtime.dotnetcore3_1: "dotnet:core3.1",  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
+    Runtime.go1_x: "go:1",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
     # "ruby3.3": "ruby:3.3", expected March 2024
     Runtime.ruby3_2: "ruby:3.2",
-    Runtime.ruby2_7: "ruby:2.7",
+    Runtime.ruby2_7: "ruby:2.7",  # deprecated Dec 7, 2023 => Jan 9, 2024 => Feb 8, 2024
     Runtime.provided_al2023: "provided:al2023",
     Runtime.provided_al2: "provided:al2",
-    Runtime.provided: "provided:alami",
+    Runtime.provided: "provided:alami",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
 }
 
-# An unordered list of all deprecated Lambda runtimes that are still supported in LocalStack.
+# A list of all deprecated Lambda runtimes, ideally ordered by deprecation date (following the AWS docs).
+# LocalStack can still provide best-effort support.
 DEPRECATED_RUNTIMES: list[Runtime] = [
-    Runtime.nodejs12_x,  # deprecated Mar 31, 2023 => Apr 30, 2023
-    Runtime.dotnetcore3_1,  # deprecated Apr 3, 2023 => May 3, 2023
-    # deprecate once snapshot tests show that it really happened
-    # Runtime.python3_7,  # deprecated Nov 27, 2023 => ???
-    # Runtime.nodejs14_x,  # deprecated Nov 27, 2023 => ???
+    # TODO: remove once the snapshot tests show they are actually gone (java8, go1_x, provided still working 2024-03-12)
+    # Runtime.java8,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    # Runtime.go1_x,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    # Runtime.provided,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    Runtime.ruby2_7,  # deprecated Dec 7, 2023 => Jan 9, 2024 => Feb 8, 2024
+    Runtime.nodejs14_x,  # deprecated Dec 4, 2023  => Jan 9, 2024  => Feb 8, 2024
+    # TODO: remove once the snapshot tests show they are actually gone (python3.7 still working 2024-03-12)
+    # Runtime.python3_7,  # deprecated Dec 4, 2023 => Jan 9, 2024 => Feb 8, 2024
+    Runtime.dotnetcore3_1,  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
+    Runtime.nodejs12_x,  # deprecated Mar 31, 2023 => Mar 31, 2023 => Apr 30, 2023
 ]
 # An unordered list of all AWS-supported runtimes.
 SUPPORTED_RUNTIMES: list[Runtime] = list(set(IMAGE_MAPPING.keys()) - set(DEPRECATED_RUNTIMES))
@@ -79,7 +90,6 @@ RUNTIMES_AGGREGATED = {
         Runtime.nodejs20_x,
         Runtime.nodejs18_x,
         Runtime.nodejs16_x,
-        Runtime.nodejs14_x,
     ],
     "python": [
         Runtime.python3_12,
@@ -98,7 +108,6 @@ RUNTIMES_AGGREGATED = {
     ],
     "ruby": [
         Runtime.ruby3_2,
-        Runtime.ruby2_7,
     ],
     "dotnet": [Runtime.dotnet6],
     "go": [Runtime.go1_x],
@@ -119,6 +128,6 @@ TESTED_RUNTIMES: list[Runtime] = [
 SNAP_START_SUPPORTED_RUNTIMES = [Runtime.java11, Runtime.java17, Runtime.java21]
 
 # An ordered list of all Lambda runtimes considered valid by AWS. Matching snapshots in test_create_lambda_exceptions
-VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, java21, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9]"
+VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9]"
 # An ordered list of all Lambda runtimes for layers considered valid by AWS. Matching snapshots in test_layer_exceptions
-VALID_LAYER_RUNTIMES: str = "[ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby2.5, python3.6, python2.7]"
+VALID_LAYER_RUNTIMES: str = "[ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java17, nodejs, nodejs4.3, java8.al2, go1.x, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, python3.10, java8, nodejs12.x, python3.11, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby2.5, python3.6, python2.7]"
