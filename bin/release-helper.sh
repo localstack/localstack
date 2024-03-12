@@ -159,8 +159,8 @@ function cmd-set-dep-ver() {
     dep=$1
     ver=$2
 
-    egrep -h "^(\s*)${dep}(\[[a-zA-Z0-9]+\])?(>|=|<)(.*)" ${DEPENDENCY_FILE} || { echo "dependency ${dep} not found in ${DEPENDENCY_FILE}"; return 1; }
-    sed -i -r "s/^(\s*)(${dep})(\[[a-zA-Z0-9,]+\])?(>|=|<)(.*)/\1\2\3${ver}/g" ${DEPENDENCY_FILE}
+    grep -Eh "^(\s*\")${dep}(\[[a-zA-Z0-9]+\])?(>|=|<)(.*\",)" ${DEPENDENCY_FILE} || { echo "dependency ${dep} not found in ${DEPENDENCY_FILE}"; return 1; }
+    sed -i -r "s/^(\s*\")(${dep})(\[[a-zA-Z0-9,]+\])?(>|=|<)(.*\",)/\1\2\3${ver}\",/g" ${DEPENDENCY_FILE}
 }
 
 function cmd-github-outputs() {
