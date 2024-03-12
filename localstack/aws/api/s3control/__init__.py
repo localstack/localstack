@@ -2276,7 +2276,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         identity_center_arn: IdentityCenterArn,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2292,7 +2292,7 @@ class S3ControlApi:
         application_arn: IdentityCenterApplicationArn = None,
         s3_prefix_type: S3PrefixType = None,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateAccessGrantResult:
         raise NotImplementedError
 
@@ -2303,7 +2303,7 @@ class S3ControlApi:
         account_id: AccountId,
         identity_center_arn: IdentityCenterArn = None,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateAccessGrantsInstanceResult:
         raise NotImplementedError
 
@@ -2315,7 +2315,7 @@ class S3ControlApi:
         location_scope: S3Prefix,
         iam_role_arn: IAMRoleArn,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateAccessGrantsLocationResult:
         raise NotImplementedError
 
@@ -2329,7 +2329,7 @@ class S3ControlApi:
         vpc_configuration: VpcConfiguration = None,
         public_access_block_configuration: PublicAccessBlockConfiguration = None,
         bucket_account_id: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> CreateAccessPointResult:
         raise NotImplementedError
 
@@ -2340,7 +2340,7 @@ class S3ControlApi:
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
         configuration: ObjectLambdaConfiguration,
-        **kwargs
+        **kwargs,
     ) -> CreateAccessPointForObjectLambdaResult:
         raise NotImplementedError
 
@@ -2358,7 +2358,7 @@ class S3ControlApi:
         grant_write_acp: GrantWriteACP = None,
         object_lock_enabled_for_bucket: ObjectLockEnabledForBucket = None,
         outpost_id: NonEmptyMaxLength64String = None,
-        **kwargs
+        **kwargs,
     ) -> CreateBucketResult:
         raise NotImplementedError
 
@@ -2377,7 +2377,7 @@ class S3ControlApi:
         description: NonEmptyMaxLength256String = None,
         tags: S3TagSet = None,
         manifest_generator: JobManifestGenerator = None,
-        **kwargs
+        **kwargs,
     ) -> CreateJobResult:
         raise NotImplementedError
 
@@ -2388,7 +2388,7 @@ class S3ControlApi:
         account_id: AccountId,
         client_token: MultiRegionAccessPointClientToken,
         details: CreateMultiRegionAccessPointInput,
-        **kwargs
+        **kwargs,
     ) -> CreateMultiRegionAccessPointResult:
         raise NotImplementedError
 
@@ -2399,7 +2399,7 @@ class S3ControlApi:
         account_id: AccountId,
         storage_lens_group: StorageLensGroup,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2409,7 +2409,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         access_grant_id: AccessGrantId,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2431,7 +2431,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         access_grants_location_id: AccessGrantsLocationId,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2447,7 +2447,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2463,7 +2463,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2510,7 +2510,7 @@ class S3ControlApi:
         account_id: AccountId,
         client_token: MultiRegionAccessPointClientToken,
         details: DeleteMultiRegionAccessPointInput,
-        **kwargs
+        **kwargs,
     ) -> DeleteMultiRegionAccessPointResult:
         raise NotImplementedError
 
@@ -2550,7 +2550,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         request_token_arn: AsyncRequestTokenARN,
-        **kwargs
+        **kwargs,
     ) -> DescribeMultiRegionAccessPointOperationResult:
         raise NotImplementedError
 
@@ -2566,7 +2566,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         access_grant_id: AccessGrantId,
-        **kwargs
+        **kwargs,
     ) -> GetAccessGrantResult:
         raise NotImplementedError
 
@@ -2594,7 +2594,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         access_grants_location_id: AccessGrantsLocationId,
-        **kwargs
+        **kwargs,
     ) -> GetAccessGrantsLocationResult:
         raise NotImplementedError
 
@@ -2610,7 +2610,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
-        **kwargs
+        **kwargs,
     ) -> GetAccessPointConfigurationForObjectLambdaResult:
         raise NotImplementedError
 
@@ -2620,7 +2620,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
-        **kwargs
+        **kwargs,
     ) -> GetAccessPointForObjectLambdaResult:
         raise NotImplementedError
 
@@ -2636,7 +2636,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
-        **kwargs
+        **kwargs,
     ) -> GetAccessPointPolicyForObjectLambdaResult:
         raise NotImplementedError
 
@@ -2652,7 +2652,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
-        **kwargs
+        **kwargs,
     ) -> GetAccessPointPolicyStatusForObjectLambdaResult:
         raise NotImplementedError
 
@@ -2702,7 +2702,7 @@ class S3ControlApi:
         duration_seconds: DurationSeconds = None,
         privilege: Privilege = None,
         target_type: S3PrefixType = None,
-        **kwargs
+        **kwargs,
     ) -> GetDataAccessResult:
         raise NotImplementedError
 
@@ -2718,7 +2718,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         name: MultiRegionAccessPointName,
-        **kwargs
+        **kwargs,
     ) -> GetMultiRegionAccessPointResult:
         raise NotImplementedError
 
@@ -2728,7 +2728,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         name: MultiRegionAccessPointName,
-        **kwargs
+        **kwargs,
     ) -> GetMultiRegionAccessPointPolicyResult:
         raise NotImplementedError
 
@@ -2738,7 +2738,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         name: MultiRegionAccessPointName,
-        **kwargs
+        **kwargs,
     ) -> GetMultiRegionAccessPointPolicyStatusResult:
         raise NotImplementedError
 
@@ -2748,7 +2748,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         mrap: MultiRegionAccessPointId,
-        **kwargs
+        **kwargs,
     ) -> GetMultiRegionAccessPointRoutesResult:
         raise NotImplementedError
 
@@ -2788,7 +2788,7 @@ class S3ControlApi:
         permission: Permission = None,
         grant_scope: S3Prefix = None,
         application_arn: IdentityCenterApplicationArn = None,
-        **kwargs
+        **kwargs,
     ) -> ListAccessGrantsResult:
         raise NotImplementedError
 
@@ -2799,7 +2799,7 @@ class S3ControlApi:
         account_id: AccountId,
         next_token: ContinuationToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListAccessGrantsInstancesResult:
         raise NotImplementedError
 
@@ -2811,7 +2811,7 @@ class S3ControlApi:
         next_token: ContinuationToken = None,
         max_results: MaxResults = None,
         location_scope: S3Prefix = None,
-        **kwargs
+        **kwargs,
     ) -> ListAccessGrantsLocationsResult:
         raise NotImplementedError
 
@@ -2823,7 +2823,7 @@ class S3ControlApi:
         bucket: BucketName = None,
         next_token: NonEmptyMaxLength1024String = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListAccessPointsResult:
         raise NotImplementedError
 
@@ -2834,7 +2834,7 @@ class S3ControlApi:
         account_id: AccountId,
         next_token: NonEmptyMaxLength1024String = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListAccessPointsForObjectLambdaResult:
         raise NotImplementedError
 
@@ -2846,7 +2846,7 @@ class S3ControlApi:
         job_statuses: JobStatusList = None,
         next_token: StringForNextToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListJobsResult:
         raise NotImplementedError
 
@@ -2857,7 +2857,7 @@ class S3ControlApi:
         account_id: AccountId,
         next_token: NonEmptyMaxLength1024String = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListMultiRegionAccessPointsResult:
         raise NotImplementedError
 
@@ -2869,7 +2869,7 @@ class S3ControlApi:
         next_token: NonEmptyMaxLength1024String = None,
         max_results: MaxResults = None,
         outpost_id: NonEmptyMaxLength64String = None,
-        **kwargs
+        **kwargs,
     ) -> ListRegionalBucketsResult:
         raise NotImplementedError
 
@@ -2879,7 +2879,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         next_token: ContinuationToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListStorageLensConfigurationsResult:
         raise NotImplementedError
 
@@ -2889,7 +2889,7 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         next_token: ContinuationToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListStorageLensGroupsResult:
         raise NotImplementedError
 
@@ -2906,7 +2906,7 @@ class S3ControlApi:
         account_id: AccountId,
         policy: PolicyDocument,
         organization: Organization = None,
-        **kwargs
+        **kwargs,
     ) -> PutAccessGrantsInstanceResourcePolicyResult:
         raise NotImplementedError
 
@@ -2917,7 +2917,7 @@ class S3ControlApi:
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
         configuration: ObjectLambdaConfiguration,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2928,7 +2928,7 @@ class S3ControlApi:
         account_id: AccountId,
         name: AccessPointName,
         policy: Policy,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2939,7 +2939,7 @@ class S3ControlApi:
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
         policy: ObjectLambdaPolicy,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2950,7 +2950,7 @@ class S3ControlApi:
         account_id: AccountId,
         bucket: BucketName,
         lifecycle_configuration: LifecycleConfiguration = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2962,7 +2962,7 @@ class S3ControlApi:
         bucket: BucketName,
         policy: Policy,
         confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2973,7 +2973,7 @@ class S3ControlApi:
         account_id: AccountId,
         bucket: BucketName,
         replication_configuration: ReplicationConfiguration,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2984,7 +2984,7 @@ class S3ControlApi:
         account_id: AccountId,
         bucket: BucketName,
         tagging: Tagging,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2996,7 +2996,7 @@ class S3ControlApi:
         bucket: BucketName,
         versioning_configuration: VersioningConfiguration,
         mfa: MFA = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3007,7 +3007,7 @@ class S3ControlApi:
         account_id: AccountId,
         job_id: JobId,
         tags: S3TagSet,
-        **kwargs
+        **kwargs,
     ) -> PutJobTaggingResult:
         raise NotImplementedError
 
@@ -3018,7 +3018,7 @@ class S3ControlApi:
         account_id: AccountId,
         client_token: MultiRegionAccessPointClientToken,
         details: PutMultiRegionAccessPointPolicyInput,
-        **kwargs
+        **kwargs,
     ) -> PutMultiRegionAccessPointPolicyResult:
         raise NotImplementedError
 
@@ -3028,7 +3028,7 @@ class S3ControlApi:
         context: RequestContext,
         public_access_block_configuration: PublicAccessBlockConfiguration,
         account_id: AccountId,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3040,7 +3040,7 @@ class S3ControlApi:
         account_id: AccountId,
         storage_lens_configuration: StorageLensConfiguration,
         tags: StorageLensTags = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3051,7 +3051,7 @@ class S3ControlApi:
         config_id: ConfigId,
         account_id: AccountId,
         tags: StorageLensTags,
-        **kwargs
+        **kwargs,
     ) -> PutStorageLensConfigurationTaggingResult:
         raise NotImplementedError
 
@@ -3062,7 +3062,7 @@ class S3ControlApi:
         account_id: AccountId,
         mrap: MultiRegionAccessPointId,
         route_updates: RouteList,
-        **kwargs
+        **kwargs,
     ) -> SubmitMultiRegionAccessPointRoutesResult:
         raise NotImplementedError
 
@@ -3073,7 +3073,7 @@ class S3ControlApi:
         account_id: AccountId,
         resource_arn: S3ResourceArn,
         tags: TagList,
-        **kwargs
+        **kwargs,
     ) -> TagResourceResult:
         raise NotImplementedError
 
@@ -3084,7 +3084,7 @@ class S3ControlApi:
         account_id: AccountId,
         resource_arn: S3ResourceArn,
         tag_keys: TagKeyList,
-        **kwargs
+        **kwargs,
     ) -> UntagResourceResult:
         raise NotImplementedError
 
@@ -3095,7 +3095,7 @@ class S3ControlApi:
         account_id: AccountId,
         access_grants_location_id: AccessGrantsLocationId,
         iam_role_arn: IAMRoleArn,
-        **kwargs
+        **kwargs,
     ) -> UpdateAccessGrantsLocationResult:
         raise NotImplementedError
 
@@ -3106,7 +3106,7 @@ class S3ControlApi:
         account_id: AccountId,
         job_id: JobId,
         priority: JobPriority,
-        **kwargs
+        **kwargs,
     ) -> UpdateJobPriorityResult:
         raise NotImplementedError
 
@@ -3118,7 +3118,7 @@ class S3ControlApi:
         job_id: JobId,
         requested_job_status: RequestedJobStatus,
         status_update_reason: JobStatusUpdateReason = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateJobStatusResult:
         raise NotImplementedError
 
@@ -3129,6 +3129,6 @@ class S3ControlApi:
         name: StorageLensGroupName,
         account_id: AccountId,
         storage_lens_group: StorageLensGroup,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError

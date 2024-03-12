@@ -1381,7 +1381,7 @@ class SesApi:
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         original_rule_set_name: ReceiptRuleSetName,
-        **kwargs
+        **kwargs,
     ) -> CloneReceiptRuleSetResponse:
         raise NotImplementedError
 
@@ -1397,7 +1397,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         event_destination: EventDestination,
-        **kwargs
+        **kwargs,
     ) -> CreateConfigurationSetEventDestinationResponse:
         raise NotImplementedError
 
@@ -1407,7 +1407,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         tracking_options: TrackingOptions,
-        **kwargs
+        **kwargs,
     ) -> CreateConfigurationSetTrackingOptionsResponse:
         raise NotImplementedError
 
@@ -1421,7 +1421,7 @@ class SesApi:
         template_content: TemplateContent,
         success_redirection_url: SuccessRedirectionURL,
         failure_redirection_url: FailureRedirectionURL,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1438,7 +1438,7 @@ class SesApi:
         rule_set_name: ReceiptRuleSetName,
         rule: ReceiptRule,
         after: ReceiptRuleName = None,
-        **kwargs
+        **kwargs,
     ) -> CreateReceiptRuleResponse:
         raise NotImplementedError
 
@@ -1466,7 +1466,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         event_destination_name: EventDestinationName,
-        **kwargs
+        **kwargs,
     ) -> DeleteConfigurationSetEventDestinationResponse:
         raise NotImplementedError
 
@@ -1506,7 +1506,7 @@ class SesApi:
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         rule_name: ReceiptRuleName,
-        **kwargs
+        **kwargs,
     ) -> DeleteReceiptRuleResponse:
         raise NotImplementedError
 
@@ -1540,7 +1540,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         configuration_set_attribute_names: ConfigurationSetAttributeList = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConfigurationSetResponse:
         raise NotImplementedError
 
@@ -1550,7 +1550,7 @@ class SesApi:
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         rule_name: ReceiptRuleName,
-        **kwargs
+        **kwargs,
     ) -> DescribeReceiptRuleResponse:
         raise NotImplementedError
 
@@ -1622,7 +1622,7 @@ class SesApi:
         context: RequestContext,
         next_token: NextToken = None,
         max_items: MaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListConfigurationSetsResponse:
         raise NotImplementedError
 
@@ -1632,7 +1632,7 @@ class SesApi:
         context: RequestContext,
         next_token: NextToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListCustomVerificationEmailTemplatesResponse:
         raise NotImplementedError
 
@@ -1643,7 +1643,7 @@ class SesApi:
         identity_type: IdentityType = None,
         next_token: NextToken = None,
         max_items: MaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListIdentitiesResponse:
         raise NotImplementedError
 
@@ -1669,7 +1669,7 @@ class SesApi:
         context: RequestContext,
         next_token: NextToken = None,
         max_items: MaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListTemplatesResponse:
         raise NotImplementedError
 
@@ -1685,7 +1685,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         delivery_options: DeliveryOptions = None,
-        **kwargs
+        **kwargs,
     ) -> PutConfigurationSetDeliveryOptionsResponse:
         raise NotImplementedError
 
@@ -1696,7 +1696,7 @@ class SesApi:
         identity: Identity,
         policy_name: PolicyName,
         policy: Policy,
-        **kwargs
+        **kwargs,
     ) -> PutIdentityPolicyResponse:
         raise NotImplementedError
 
@@ -1706,7 +1706,7 @@ class SesApi:
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         rule_names: ReceiptRuleNamesList,
-        **kwargs
+        **kwargs,
     ) -> ReorderReceiptRuleSetResponse:
         raise NotImplementedError
 
@@ -1720,7 +1720,7 @@ class SesApi:
         explanation: Explanation = None,
         message_dsn: MessageDsn = None,
         bounce_sender_arn: AmazonResourceName = None,
-        **kwargs
+        **kwargs,
     ) -> SendBounceResponse:
         raise NotImplementedError
 
@@ -1739,7 +1739,7 @@ class SesApi:
         default_tags: MessageTagList = None,
         template_arn: AmazonResourceName = None,
         default_template_data: TemplateData = None,
-        **kwargs
+        **kwargs,
     ) -> SendBulkTemplatedEmailResponse:
         raise NotImplementedError
 
@@ -1750,7 +1750,7 @@ class SesApi:
         email_address: Address,
         template_name: TemplateName,
         configuration_set_name: ConfigurationSetName = None,
-        **kwargs
+        **kwargs,
     ) -> SendCustomVerificationEmailResponse:
         raise NotImplementedError
 
@@ -1767,7 +1767,7 @@ class SesApi:
         return_path_arn: AmazonResourceName = None,
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
-        **kwargs
+        **kwargs,
     ) -> SendEmailResponse:
         raise NotImplementedError
 
@@ -1783,7 +1783,7 @@ class SesApi:
         return_path_arn: AmazonResourceName = None,
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
-        **kwargs
+        **kwargs,
     ) -> SendRawEmailResponse:
         raise NotImplementedError
 
@@ -1802,7 +1802,7 @@ class SesApi:
         tags: MessageTagList = None,
         configuration_set_name: ConfigurationSetName = None,
         template_arn: AmazonResourceName = None,
-        **kwargs
+        **kwargs,
     ) -> SendTemplatedEmailResponse:
         raise NotImplementedError
 
@@ -1831,7 +1831,7 @@ class SesApi:
         identity: Identity,
         notification_type: NotificationType,
         enabled: Enabled,
-        **kwargs
+        **kwargs,
     ) -> SetIdentityHeadersInNotificationsEnabledResponse:
         raise NotImplementedError
 
@@ -1842,7 +1842,7 @@ class SesApi:
         identity: Identity,
         mail_from_domain: MailFromDomainName = None,
         behavior_on_mx_failure: BehaviorOnMXFailure = None,
-        **kwargs
+        **kwargs,
     ) -> SetIdentityMailFromDomainResponse:
         raise NotImplementedError
 
@@ -1853,7 +1853,7 @@ class SesApi:
         identity: Identity,
         notification_type: NotificationType,
         sns_topic: NotificationTopic = None,
-        **kwargs
+        **kwargs,
     ) -> SetIdentityNotificationTopicResponse:
         raise NotImplementedError
 
@@ -1864,7 +1864,7 @@ class SesApi:
         rule_set_name: ReceiptRuleSetName,
         rule_name: ReceiptRuleName,
         after: ReceiptRuleName = None,
-        **kwargs
+        **kwargs,
     ) -> SetReceiptRulePositionResponse:
         raise NotImplementedError
 
@@ -1874,7 +1874,7 @@ class SesApi:
         context: RequestContext,
         template_name: TemplateName,
         template_data: TemplateData,
-        **kwargs
+        **kwargs,
     ) -> TestRenderTemplateResponse:
         raise NotImplementedError
 
@@ -1890,7 +1890,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         event_destination: EventDestination,
-        **kwargs
+        **kwargs,
     ) -> UpdateConfigurationSetEventDestinationResponse:
         raise NotImplementedError
 
@@ -1900,7 +1900,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         enabled: Enabled,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1910,7 +1910,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         enabled: Enabled,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1920,7 +1920,7 @@ class SesApi:
         context: RequestContext,
         configuration_set_name: ConfigurationSetName,
         tracking_options: TrackingOptions,
-        **kwargs
+        **kwargs,
     ) -> UpdateConfigurationSetTrackingOptionsResponse:
         raise NotImplementedError
 
@@ -1934,7 +1934,7 @@ class SesApi:
         template_content: TemplateContent = None,
         success_redirection_url: SuccessRedirectionURL = None,
         failure_redirection_url: FailureRedirectionURL = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1944,7 +1944,7 @@ class SesApi:
         context: RequestContext,
         rule_set_name: ReceiptRuleSetName,
         rule: ReceiptRule,
-        **kwargs
+        **kwargs,
     ) -> UpdateReceiptRuleResponse:
         raise NotImplementedError
 

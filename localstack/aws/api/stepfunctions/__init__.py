@@ -1262,7 +1262,7 @@ class StepfunctionsApi:
         name: CharacterRestrictedName,
         routing_configuration: RoutingConfigurationList,
         description: AliasDescription = None,
-        **kwargs
+        **kwargs,
     ) -> CreateStateMachineAliasOutput:
         raise NotImplementedError
 
@@ -1341,7 +1341,7 @@ class StepfunctionsApi:
         reverse_order: ReverseOrder = None,
         next_token: PageToken = None,
         include_execution_data: IncludeExecutionDataGetExecutionHistory = None,
-        **kwargs
+        **kwargs,
     ) -> GetExecutionHistoryOutput:
         raise NotImplementedError
 
@@ -1351,7 +1351,7 @@ class StepfunctionsApi:
         context: RequestContext,
         max_results: PageSize = None,
         next_token: PageToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListActivitiesOutput:
         raise NotImplementedError
 
@@ -1365,7 +1365,7 @@ class StepfunctionsApi:
         next_token: ListExecutionsPageToken = None,
         map_run_arn: LongArn = None,
         redrive_filter: ExecutionRedriveFilter = None,
-        **kwargs
+        **kwargs,
     ) -> ListExecutionsOutput:
         raise NotImplementedError
 
@@ -1376,7 +1376,7 @@ class StepfunctionsApi:
         execution_arn: Arn,
         max_results: PageSize = None,
         next_token: PageToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListMapRunsOutput:
         raise NotImplementedError
 
@@ -1387,7 +1387,7 @@ class StepfunctionsApi:
         state_machine_arn: Arn,
         next_token: PageToken = None,
         max_results: PageSize = None,
-        **kwargs
+        **kwargs,
     ) -> ListStateMachineAliasesOutput:
         raise NotImplementedError
 
@@ -1398,7 +1398,7 @@ class StepfunctionsApi:
         state_machine_arn: Arn,
         next_token: PageToken = None,
         max_results: PageSize = None,
-        **kwargs
+        **kwargs,
     ) -> ListStateMachineVersionsOutput:
         raise NotImplementedError
 
@@ -1408,7 +1408,7 @@ class StepfunctionsApi:
         context: RequestContext,
         max_results: PageSize = None,
         next_token: PageToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListStateMachinesOutput:
         raise NotImplementedError
 
@@ -1425,7 +1425,7 @@ class StepfunctionsApi:
         state_machine_arn: Arn,
         revision_id: RevisionId = None,
         description: VersionDescription = None,
-        **kwargs
+        **kwargs,
     ) -> PublishStateMachineVersionOutput:
         raise NotImplementedError
 
@@ -1435,7 +1435,7 @@ class StepfunctionsApi:
         context: RequestContext,
         execution_arn: Arn,
         client_token: ClientToken = None,
-        **kwargs
+        **kwargs,
     ) -> RedriveExecutionOutput:
         raise NotImplementedError
 
@@ -1446,7 +1446,7 @@ class StepfunctionsApi:
         task_token: TaskToken,
         error: SensitiveError = None,
         cause: SensitiveCause = None,
-        **kwargs
+        **kwargs,
     ) -> SendTaskFailureOutput:
         raise NotImplementedError
 
@@ -1470,7 +1470,7 @@ class StepfunctionsApi:
         name: Name = None,
         input: SensitiveData = None,
         trace_header: TraceHeader = None,
-        **kwargs
+        **kwargs,
     ) -> StartExecutionOutput:
         raise NotImplementedError
 
@@ -1482,7 +1482,7 @@ class StepfunctionsApi:
         name: Name = None,
         input: SensitiveData = None,
         trace_header: TraceHeader = None,
-        **kwargs
+        **kwargs,
     ) -> StartSyncExecutionOutput:
         raise NotImplementedError
 
@@ -1493,7 +1493,7 @@ class StepfunctionsApi:
         execution_arn: Arn,
         error: SensitiveError = None,
         cause: SensitiveCause = None,
-        **kwargs
+        **kwargs,
     ) -> StopExecutionOutput:
         raise NotImplementedError
 
@@ -1512,7 +1512,7 @@ class StepfunctionsApi:
         input: SensitiveData = None,
         inspection_level: InspectionLevel = None,
         reveal_secrets: RevealSecrets = None,
-        **kwargs
+        **kwargs,
     ) -> TestStateOutput:
         raise NotImplementedError
 
@@ -1530,7 +1530,7 @@ class StepfunctionsApi:
         max_concurrency: MaxConcurrency = None,
         tolerated_failure_percentage: ToleratedFailurePercentage = None,
         tolerated_failure_count: ToleratedFailureCount = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateMapRunOutput:
         raise NotImplementedError
 
@@ -1545,7 +1545,7 @@ class StepfunctionsApi:
         tracing_configuration: TracingConfiguration = None,
         publish: Publish = None,
         version_description: VersionDescription = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateStateMachineOutput:
         raise NotImplementedError
 
@@ -1556,6 +1556,6 @@ class StepfunctionsApi:
         state_machine_alias_arn: Arn,
         description: AliasDescription = None,
         routing_configuration: RoutingConfigurationList = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateStateMachineAliasOutput:
         raise NotImplementedError

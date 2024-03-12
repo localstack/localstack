@@ -1466,7 +1466,7 @@ class SwfApi:
         type_filter: WorkflowTypeFilter = None,
         tag_filter: TagFilter = None,
         close_status_filter: CloseStatusFilter = None,
-        **kwargs
+        **kwargs,
     ) -> WorkflowExecutionCount:
         raise NotImplementedError
 
@@ -1479,7 +1479,7 @@ class SwfApi:
         type_filter: WorkflowTypeFilter = None,
         tag_filter: TagFilter = None,
         execution_filter: WorkflowExecutionFilter = None,
-        **kwargs
+        **kwargs,
     ) -> WorkflowExecutionCount:
         raise NotImplementedError
 
@@ -1542,7 +1542,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
-        **kwargs
+        **kwargs,
     ) -> History:
         raise NotImplementedError
 
@@ -1556,7 +1556,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
-        **kwargs
+        **kwargs,
     ) -> ActivityTypeInfos:
         raise NotImplementedError
 
@@ -1574,7 +1574,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
-        **kwargs
+        **kwargs,
     ) -> WorkflowExecutionInfos:
         raise NotImplementedError
 
@@ -1586,7 +1586,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
-        **kwargs
+        **kwargs,
     ) -> DomainInfos:
         raise NotImplementedError
 
@@ -1602,7 +1602,7 @@ class SwfApi:
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
         execution_filter: WorkflowExecutionFilter = None,
-        **kwargs
+        **kwargs,
     ) -> WorkflowExecutionInfos:
         raise NotImplementedError
 
@@ -1622,7 +1622,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
-        **kwargs
+        **kwargs,
     ) -> WorkflowTypeInfos:
         raise NotImplementedError
 
@@ -1633,7 +1633,7 @@ class SwfApi:
         domain: DomainName,
         task_list: TaskList,
         identity: Identity = None,
-        **kwargs
+        **kwargs,
     ) -> ActivityTask:
         raise NotImplementedError
 
@@ -1648,7 +1648,7 @@ class SwfApi:
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
         start_at_previous_started_event: StartAtPreviousStartedEvent = None,
-        **kwargs
+        **kwargs,
     ) -> DecisionTask:
         raise NotImplementedError
 
@@ -1672,7 +1672,7 @@ class SwfApi:
         default_task_priority: TaskPriority = None,
         default_task_schedule_to_start_timeout: DurationInSecondsOptional = None,
         default_task_schedule_to_close_timeout: DurationInSecondsOptional = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1684,7 +1684,7 @@ class SwfApi:
         workflow_execution_retention_period_in_days: DurationInDays,
         description: Description = None,
         tags: ResourceTagList = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1702,7 +1702,7 @@ class SwfApi:
         default_task_priority: TaskPriority = None,
         default_child_policy: ChildPolicy = None,
         default_lambda_role: Arn = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1713,7 +1713,7 @@ class SwfApi:
         domain: DomainName,
         workflow_id: WorkflowId,
         run_id: WorkflowRunIdOptional = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1736,7 +1736,7 @@ class SwfApi:
         task_token: TaskToken,
         reason: FailureReason = None,
         details: Data = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1749,7 +1749,7 @@ class SwfApi:
         execution_context: Data = None,
         task_list: TaskList = None,
         task_list_schedule_to_start_timeout: DurationInSecondsOptional = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1762,7 +1762,7 @@ class SwfApi:
         signal_name: SignalName,
         run_id: WorkflowRunIdOptional = None,
         input: Data = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1781,7 +1781,7 @@ class SwfApi:
         task_start_to_close_timeout: DurationInSecondsOptional = None,
         child_policy: ChildPolicy = None,
         lambda_role: Arn = None,
-        **kwargs
+        **kwargs,
     ) -> Run:
         raise NotImplementedError
 
@@ -1801,7 +1801,7 @@ class SwfApi:
         reason: TerminateReason = None,
         details: Data = None,
         child_policy: ChildPolicy = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 

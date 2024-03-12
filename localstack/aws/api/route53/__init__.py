@@ -1915,7 +1915,7 @@ class Route53Api:
         hosted_zone_id: ResourceId,
         vpc: VPC,
         comment: AssociateVPCComment = None,
-        **kwargs
+        **kwargs,
     ) -> AssociateVPCWithHostedZoneResponse:
         raise NotImplementedError
 
@@ -1926,7 +1926,7 @@ class Route53Api:
         id: UUID,
         changes: CidrCollectionChanges,
         collection_version: CollectionVersion = None,
-        **kwargs
+        **kwargs,
     ) -> ChangeCidrCollectionResponse:
         raise NotImplementedError
 
@@ -1936,7 +1936,7 @@ class Route53Api:
         context: RequestContext,
         hosted_zone_id: ResourceId,
         change_batch: ChangeBatch,
-        **kwargs
+        **kwargs,
     ) -> ChangeResourceRecordSetsResponse:
         raise NotImplementedError
 
@@ -1948,7 +1948,7 @@ class Route53Api:
         resource_id: TagResourceId,
         add_tags: TagList = None,
         remove_tag_keys: TagKeyList = None,
-        **kwargs
+        **kwargs,
     ) -> ChangeTagsForResourceResponse:
         raise NotImplementedError
 
@@ -1964,7 +1964,7 @@ class Route53Api:
         context: RequestContext,
         caller_reference: HealthCheckNonce,
         health_check_config: HealthCheckConfig,
-        **kwargs
+        **kwargs,
     ) -> CreateHealthCheckResponse:
         raise NotImplementedError
 
@@ -1977,7 +1977,7 @@ class Route53Api:
         vpc: VPC = None,
         hosted_zone_config: HostedZoneConfig = None,
         delegation_set_id: ResourceId = None,
-        **kwargs
+        **kwargs,
     ) -> CreateHostedZoneResponse:
         raise NotImplementedError
 
@@ -1990,7 +1990,7 @@ class Route53Api:
         key_management_service_arn: SigningKeyString,
         name: SigningKeyName,
         status: SigningKeyStatus,
-        **kwargs
+        **kwargs,
     ) -> CreateKeySigningKeyResponse:
         raise NotImplementedError
 
@@ -2000,7 +2000,7 @@ class Route53Api:
         context: RequestContext,
         hosted_zone_id: ResourceId,
         cloud_watch_logs_log_group_arn: CloudWatchLogsLogGroupArn,
-        **kwargs
+        **kwargs,
     ) -> CreateQueryLoggingConfigResponse:
         raise NotImplementedError
 
@@ -2010,7 +2010,7 @@ class Route53Api:
         context: RequestContext,
         caller_reference: Nonce,
         hosted_zone_id: ResourceId = None,
-        **kwargs
+        **kwargs,
     ) -> CreateReusableDelegationSetResponse:
         raise NotImplementedError
 
@@ -2021,7 +2021,7 @@ class Route53Api:
         name: TrafficPolicyName,
         document: TrafficPolicyDocument,
         comment: TrafficPolicyComment = None,
-        **kwargs
+        **kwargs,
     ) -> CreateTrafficPolicyResponse:
         raise NotImplementedError
 
@@ -2034,7 +2034,7 @@ class Route53Api:
         ttl: TTL,
         traffic_policy_id: TrafficPolicyId,
         traffic_policy_version: TrafficPolicyVersion,
-        **kwargs
+        **kwargs,
     ) -> CreateTrafficPolicyInstanceResponse:
         raise NotImplementedError
 
@@ -2045,7 +2045,7 @@ class Route53Api:
         id: TrafficPolicyId,
         document: TrafficPolicyDocument,
         comment: TrafficPolicyComment = None,
-        **kwargs
+        **kwargs,
     ) -> CreateTrafficPolicyVersionResponse:
         raise NotImplementedError
 
@@ -2128,7 +2128,7 @@ class Route53Api:
         hosted_zone_id: ResourceId,
         vpc: VPC,
         comment: DisassociateVPCComment = None,
-        **kwargs
+        **kwargs,
     ) -> DisassociateVPCFromHostedZoneResponse:
         raise NotImplementedError
 
@@ -2167,7 +2167,7 @@ class Route53Api:
         continent_code: GeoLocationContinentCode = None,
         country_code: GeoLocationCountryCode = None,
         subdivision_code: GeoLocationSubdivisionCode = None,
-        **kwargs
+        **kwargs,
     ) -> GetGeoLocationResponse:
         raise NotImplementedError
 
@@ -2257,7 +2257,7 @@ class Route53Api:
         location_name: CidrLocationNameDefaultNotAllowed = None,
         next_token: PaginationToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListCidrBlocksResponse:
         raise NotImplementedError
 
@@ -2267,7 +2267,7 @@ class Route53Api:
         context: RequestContext,
         next_token: PaginationToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListCidrCollectionsResponse:
         raise NotImplementedError
 
@@ -2278,7 +2278,7 @@ class Route53Api:
         collection_id: UUID,
         next_token: PaginationToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListCidrLocationsResponse:
         raise NotImplementedError
 
@@ -2290,7 +2290,7 @@ class Route53Api:
         start_country_code: GeoLocationCountryCode = None,
         start_subdivision_code: GeoLocationSubdivisionCode = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListGeoLocationsResponse:
         raise NotImplementedError
 
@@ -2300,7 +2300,7 @@ class Route53Api:
         context: RequestContext,
         marker: PageMarker = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListHealthChecksResponse:
         raise NotImplementedError
 
@@ -2312,7 +2312,7 @@ class Route53Api:
         max_items: PageMaxItems = None,
         delegation_set_id: ResourceId = None,
         hosted_zone_type: HostedZoneType = None,
-        **kwargs
+        **kwargs,
     ) -> ListHostedZonesResponse:
         raise NotImplementedError
 
@@ -2323,7 +2323,7 @@ class Route53Api:
         dns_name: DNSName = None,
         hosted_zone_id: ResourceId = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListHostedZonesByNameResponse:
         raise NotImplementedError
 
@@ -2335,7 +2335,7 @@ class Route53Api:
         vpc_region: VPCRegion,
         max_items: PageMaxItems = None,
         next_token: PaginationToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListHostedZonesByVPCResponse:
         raise NotImplementedError
 
@@ -2346,7 +2346,7 @@ class Route53Api:
         hosted_zone_id: ResourceId = None,
         next_token: PaginationToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListQueryLoggingConfigsResponse:
         raise NotImplementedError
 
@@ -2359,7 +2359,7 @@ class Route53Api:
         start_record_type: RRType = None,
         start_record_identifier: ResourceRecordSetIdentifier = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListResourceRecordSetsResponse:
         raise NotImplementedError
 
@@ -2369,7 +2369,7 @@ class Route53Api:
         context: RequestContext,
         marker: PageMarker = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListReusableDelegationSetsResponse:
         raise NotImplementedError
 
@@ -2379,7 +2379,7 @@ class Route53Api:
         context: RequestContext,
         resource_type: TagResourceType,
         resource_id: TagResourceId,
-        **kwargs
+        **kwargs,
     ) -> ListTagsForResourceResponse:
         raise NotImplementedError
 
@@ -2389,7 +2389,7 @@ class Route53Api:
         context: RequestContext,
         resource_type: TagResourceType,
         resource_ids: TagResourceIdList,
-        **kwargs
+        **kwargs,
     ) -> ListTagsForResourcesResponse:
         raise NotImplementedError
 
@@ -2399,7 +2399,7 @@ class Route53Api:
         context: RequestContext,
         traffic_policy_id_marker: TrafficPolicyId = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListTrafficPoliciesResponse:
         raise NotImplementedError
 
@@ -2411,7 +2411,7 @@ class Route53Api:
         traffic_policy_instance_name_marker: DNSName = None,
         traffic_policy_instance_type_marker: RRType = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListTrafficPolicyInstancesResponse:
         raise NotImplementedError
 
@@ -2423,7 +2423,7 @@ class Route53Api:
         traffic_policy_instance_name_marker: DNSName = None,
         traffic_policy_instance_type_marker: RRType = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListTrafficPolicyInstancesByHostedZoneResponse:
         raise NotImplementedError
 
@@ -2437,7 +2437,7 @@ class Route53Api:
         traffic_policy_instance_name_marker: DNSName = None,
         traffic_policy_instance_type_marker: RRType = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListTrafficPolicyInstancesByPolicyResponse:
         raise NotImplementedError
 
@@ -2448,7 +2448,7 @@ class Route53Api:
         id: TrafficPolicyId,
         traffic_policy_version_marker: TrafficPolicyVersionMarker = None,
         max_items: PageMaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListTrafficPolicyVersionsResponse:
         raise NotImplementedError
 
@@ -2459,7 +2459,7 @@ class Route53Api:
         hosted_zone_id: ResourceId,
         next_token: PaginationToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListVPCAssociationAuthorizationsResponse:
         raise NotImplementedError
 
@@ -2473,7 +2473,7 @@ class Route53Api:
         resolver_ip: IPAddress = None,
         edns0_client_subnet_ip: IPAddress = None,
         edns0_client_subnet_mask: SubnetMask = None,
-        **kwargs
+        **kwargs,
     ) -> TestDNSAnswerResponse:
         raise NotImplementedError
 
@@ -2498,7 +2498,7 @@ class Route53Api:
         alarm_identifier: AlarmIdentifier = None,
         insufficient_data_health_status: InsufficientDataHealthStatus = None,
         reset_elements: ResettableElementNameList = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateHealthCheckResponse:
         raise NotImplementedError
 
@@ -2515,7 +2515,7 @@ class Route53Api:
         id: TrafficPolicyId,
         version: TrafficPolicyVersion,
         comment: TrafficPolicyComment,
-        **kwargs
+        **kwargs,
     ) -> UpdateTrafficPolicyCommentResponse:
         raise NotImplementedError
 
@@ -2527,6 +2527,6 @@ class Route53Api:
         ttl: TTL,
         traffic_policy_id: TrafficPolicyId,
         traffic_policy_version: TrafficPolicyVersion,
-        **kwargs
+        **kwargs,
     ) -> UpdateTrafficPolicyInstanceResponse:
         raise NotImplementedError
