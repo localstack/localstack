@@ -833,7 +833,7 @@ SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 # Used to toggle MessageRetentionPeriod functionality in SQS queues
 SQS_ENABLE_MESSAGE_RETENTION_PERIOD = is_env_true("SQS_ENABLE_MESSAGE_RETENTION_PERIOD")
 
-# Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", or "path"
+# Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", "path", or "dynamic"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "standard"
 
 # Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
