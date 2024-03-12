@@ -54,6 +54,7 @@ def get_cloudformation_store(account_id: str, region_name: str) -> CloudFormatio
 
 # TODO: rework / fix usage of this
 def find_stack(account_id: str, region_name: str, stack_name: str) -> Stack | None:
+    # Warning: This function may not return the correct stack if multiple stacks with same name exist.
     state = get_cloudformation_store(account_id, region_name)
     return (
         [s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None]
@@ -63,16 +64,13 @@ def find_stack(account_id: str, region_name: str, stack_name: str) -> Stack | No
 def find_change_set(
     account_id: str, region_name: str, cs_name: str, stack_name: Optional[str] = None
 ) -> Optional[StackChangeSet]:
-    state = get_cloudformation_store(account_id, region_name)
-    stack = find_stack(account_id, region_name, stack_name)
-    stacks = [stack] if stack else state.stacks.values()
-    result = [
-        cs
-        for s in stacks
-        for cs in s.change_sets
-        if cs_name in [cs.change_set_id, cs.change_set_name]
-    ]
-    return (result or [None])[0]
+    store = get_cloudformation_store(account_id, region_name)
+    for stack in store.stacks.values():
+        if stack_name in (stack.stack_name, stack.stack_id, None):
+            for change_set in stack.change_sets:
+                if cs_name in (change_set.change_set_id, change_set.change_set_name):
+                    return change_set
+    return None
 
 
 def exports_map(account_id: str, region_name: str):

@@ -17,6 +17,9 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::test_describe_change_set_nonexisting": {
     "last_validated_date": "2022-08-11T11:22:01+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_describe_change_set_with_similarly_named_stacks": {
+    "last_validated_date": "2024-03-06T13:56:47+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_empty_changeset": {
     "last_validated_date": "2022-08-10T08:52:55+00:00"
   },
