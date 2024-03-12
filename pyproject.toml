@@ -250,4 +250,6 @@ log_cli_format = "%(asctime)s.%(msecs)03d %(levelname)5s --- [%(threadName)12s] 
 log_cli_date_format = "%Y-%m-%dT%H:%M:%S"
 
 [tool.pip-tools]
+# adding localstack-core itself here because it is referenced in the pyproject.toml for stacking the extras
+# pip, setuptools, and distribute are pip-tools defaults which need to be set again here
 unsafe-package = ["localstack-core", "pip", "setuptools", "distribute"] # packages that should not be pinned
