@@ -2172,7 +2172,7 @@ class OpensearchApi:
         name: DataSourceName,
         data_source_type: DataSourceType,
         description: DataSourceDescription = None,
-        **kwargs
+        **kwargs,
     ) -> AddDataSourceResponse:
         raise NotImplementedError
 
@@ -2227,7 +2227,7 @@ class OpensearchApi:
         auto_tune_options: AutoTuneOptionsInput = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
-        **kwargs
+        **kwargs,
     ) -> CreateDomainResponse:
         raise NotImplementedError
 
@@ -2240,7 +2240,7 @@ class OpensearchApi:
         connection_alias: ConnectionAlias,
         connection_mode: ConnectionMode = None,
         connection_properties: ConnectionProperties = None,
-        **kwargs
+        **kwargs,
     ) -> CreateOutboundConnectionResponse:
         raise NotImplementedError
 
@@ -2252,7 +2252,7 @@ class OpensearchApi:
         package_type: PackageType,
         package_source: PackageSource,
         package_description: PackageDescription = None,
-        **kwargs
+        **kwargs,
     ) -> CreatePackageResponse:
         raise NotImplementedError
 
@@ -2263,7 +2263,7 @@ class OpensearchApi:
         domain_arn: DomainArn,
         vpc_options: VPCOptions,
         client_token: ClientToken = None,
-        **kwargs
+        **kwargs,
     ) -> CreateVpcEndpointResponse:
         raise NotImplementedError
 
@@ -2316,7 +2316,7 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDomainAutoTunesResponse:
         raise NotImplementedError
 
@@ -2357,7 +2357,7 @@ class OpensearchApi:
         domain_name: DomainName,
         dry_run_id: GUID = None,
         load_dry_run_config: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDryRunProgressResponse:
         raise NotImplementedError
 
@@ -2368,7 +2368,7 @@ class OpensearchApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeInboundConnectionsResponse:
         raise NotImplementedError
 
@@ -2379,7 +2379,7 @@ class OpensearchApi:
         instance_type: OpenSearchPartitionInstanceType,
         engine_version: VersionString,
         domain_name: DomainName = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeInstanceTypeLimitsResponse:
         raise NotImplementedError
 
@@ -2390,7 +2390,7 @@ class OpensearchApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeOutboundConnectionsResponse:
         raise NotImplementedError
 
@@ -2401,7 +2401,7 @@ class OpensearchApi:
         filters: DescribePackagesFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribePackagesResponse:
         raise NotImplementedError
 
@@ -2412,7 +2412,7 @@ class OpensearchApi:
         reserved_instance_offering_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeReservedInstanceOfferingsResponse:
         raise NotImplementedError
 
@@ -2423,7 +2423,7 @@ class OpensearchApi:
         reserved_instance_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeReservedInstancesResponse:
         raise NotImplementedError
 
@@ -2464,7 +2464,7 @@ class OpensearchApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetPackageVersionHistoryResponse:
         raise NotImplementedError
 
@@ -2475,7 +2475,7 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetUpgradeHistoryResponse:
         raise NotImplementedError
 
@@ -2500,7 +2500,7 @@ class OpensearchApi:
         status: MaintenanceStatus = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListDomainMaintenancesResponse:
         raise NotImplementedError
 
@@ -2517,7 +2517,7 @@ class OpensearchApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListDomainsForPackageResponse:
         raise NotImplementedError
 
@@ -2531,7 +2531,7 @@ class OpensearchApi:
         next_token: NextToken = None,
         retrieve_azs: Boolean = None,
         instance_type: InstanceTypeString = None,
-        **kwargs
+        **kwargs,
     ) -> ListInstanceTypeDetailsResponse:
         raise NotImplementedError
 
@@ -2542,7 +2542,7 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListPackagesForDomainResponse:
         raise NotImplementedError
 
@@ -2553,7 +2553,7 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListScheduledActionsResponse:
         raise NotImplementedError
 
@@ -2567,7 +2567,7 @@ class OpensearchApi:
         context: RequestContext,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListVersionsResponse:
         raise NotImplementedError
 
@@ -2577,7 +2577,7 @@ class OpensearchApi:
         context: RequestContext,
         domain_name: DomainName,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListVpcEndpointAccessResponse:
         raise NotImplementedError
 
@@ -2593,7 +2593,7 @@ class OpensearchApi:
         context: RequestContext,
         domain_name: DomainName,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListVpcEndpointsForDomainResponse:
         raise NotImplementedError
 
@@ -2604,7 +2604,7 @@ class OpensearchApi:
         reserved_instance_offering_id: GUID,
         reservation_name: ReservationToken,
         instance_count: InstanceCount = None,
-        **kwargs
+        **kwargs,
     ) -> PurchaseReservedInstanceOfferingResponse:
         raise NotImplementedError
 
@@ -2633,7 +2633,7 @@ class OpensearchApi:
         domain_name: DomainName,
         action: MaintenanceType,
         node_id: NodeId = None,
-        **kwargs
+        **kwargs,
     ) -> StartDomainMaintenanceResponse:
         raise NotImplementedError
 
@@ -2644,7 +2644,7 @@ class OpensearchApi:
         domain_name: DomainName,
         schedule_at: ScheduleAt = None,
         desired_start_time: Long = None,
-        **kwargs
+        **kwargs,
     ) -> StartServiceSoftwareUpdateResponse:
         raise NotImplementedError
 
@@ -2656,7 +2656,7 @@ class OpensearchApi:
         name: DataSourceName,
         data_source_type: DataSourceType,
         description: DataSourceDescription = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateDataSourceResponse:
         raise NotImplementedError
 
@@ -2683,7 +2683,7 @@ class OpensearchApi:
         dry_run_mode: DryRunMode = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateDomainConfigResponse:
         raise NotImplementedError
 
@@ -2695,7 +2695,7 @@ class OpensearchApi:
         package_source: PackageSource,
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
-        **kwargs
+        **kwargs,
     ) -> UpdatePackageResponse:
         raise NotImplementedError
 
@@ -2708,7 +2708,7 @@ class OpensearchApi:
         action_type: ActionType,
         schedule_at: ScheduleAt,
         desired_start_time: Long = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateScheduledActionResponse:
         raise NotImplementedError
 
@@ -2718,7 +2718,7 @@ class OpensearchApi:
         context: RequestContext,
         vpc_endpoint_id: VpcEndpointId,
         vpc_options: VPCOptions,
-        **kwargs
+        **kwargs,
     ) -> UpdateVpcEndpointResponse:
         raise NotImplementedError
 
@@ -2730,6 +2730,6 @@ class OpensearchApi:
         target_version: VersionString,
         perform_check_only: Boolean = None,
         advanced_options: AdvancedOptions = None,
-        **kwargs
+        **kwargs,
     ) -> UpgradeDomainResponse:
         raise NotImplementedError

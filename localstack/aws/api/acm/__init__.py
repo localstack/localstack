@@ -561,7 +561,7 @@ class AcmApi:
         certificate_arn: Arn = None,
         certificate_chain: CertificateChainBlob = None,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> ImportCertificateResponse:
         raise NotImplementedError
 
@@ -575,7 +575,7 @@ class AcmApi:
         max_items: MaxItems = None,
         sort_by: SortBy = None,
         sort_order: SortOrder = None,
-        **kwargs
+        **kwargs,
     ) -> ListCertificatesResponse:
         raise NotImplementedError
 
@@ -591,7 +591,7 @@ class AcmApi:
         context: RequestContext,
         idempotency_token: IdempotencyToken,
         expiry_events: ExpiryEventsConfiguration = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -618,7 +618,7 @@ class AcmApi:
         certificate_authority_arn: PcaArn = None,
         tags: TagList = None,
         key_algorithm: KeyAlgorithm = None,
-        **kwargs
+        **kwargs,
     ) -> RequestCertificateResponse:
         raise NotImplementedError
 
@@ -629,7 +629,7 @@ class AcmApi:
         certificate_arn: Arn,
         domain: DomainNameString,
         validation_domain: DomainNameString,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 

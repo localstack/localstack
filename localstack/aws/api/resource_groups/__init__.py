@@ -429,7 +429,7 @@ class ResourceGroupsApi:
         resource_query: ResourceQuery = None,
         tags: Tags = None,
         configuration: GroupConfigurationList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateGroupOutput:
         raise NotImplementedError
 
@@ -439,7 +439,7 @@ class ResourceGroupsApi:
         context: RequestContext,
         group_name: GroupName = None,
         group: GroupString = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteGroupOutput:
         raise NotImplementedError
 
@@ -453,7 +453,7 @@ class ResourceGroupsApi:
         context: RequestContext,
         group_name: GroupName = None,
         group: GroupString = None,
-        **kwargs
+        **kwargs,
     ) -> GetGroupOutput:
         raise NotImplementedError
 
@@ -469,7 +469,7 @@ class ResourceGroupsApi:
         context: RequestContext,
         group_name: GroupName = None,
         group: GroupString = None,
-        **kwargs
+        **kwargs,
     ) -> GetGroupQueryOutput:
         raise NotImplementedError
 
@@ -492,7 +492,7 @@ class ResourceGroupsApi:
         filters: ResourceFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListGroupResourcesOutput:
         raise NotImplementedError
 
@@ -503,7 +503,7 @@ class ResourceGroupsApi:
         filters: GroupFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListGroupsOutput:
         raise NotImplementedError
 
@@ -513,7 +513,7 @@ class ResourceGroupsApi:
         context: RequestContext,
         group: GroupString = None,
         configuration: GroupConfigurationList = None,
-        **kwargs
+        **kwargs,
     ) -> PutGroupConfigurationOutput:
         raise NotImplementedError
 
@@ -524,7 +524,7 @@ class ResourceGroupsApi:
         resource_query: ResourceQuery,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> SearchResourcesOutput:
         raise NotImplementedError
 
@@ -549,7 +549,7 @@ class ResourceGroupsApi:
         self,
         context: RequestContext,
         group_lifecycle_events_desired_status: GroupLifecycleEventsDesiredStatus = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateAccountSettingsOutput:
         raise NotImplementedError
 
@@ -560,7 +560,7 @@ class ResourceGroupsApi:
         group_name: GroupName = None,
         group: GroupString = None,
         description: Description = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateGroupOutput:
         raise NotImplementedError
 
@@ -571,6 +571,6 @@ class ResourceGroupsApi:
         resource_query: ResourceQuery,
         group_name: GroupName = None,
         group: GroupString = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateGroupQueryOutput:
         raise NotImplementedError

@@ -9,6 +9,7 @@ authors = [
         { name = "LocalStack Contributors", email = "info@localstack.cloud" }
 ]
 description = "The core library and runtime of LocalStack"
+requires-python = ">=3.8"
 dependencies = [
     "build",
     "click>=7.1",

@@ -6,7 +6,7 @@ Installing additional types locally:
 
 pip install "boto3-stubs[application-autoscaling]"
 
-Ideally please add them to the list below and in our setup.cfg typehint dependencies as well
+Ideally please add them to the list below and in our pyproject.toml typehint dependencies as well
 
 """
 if TYPE_CHECKING:
