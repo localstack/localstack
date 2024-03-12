@@ -295,7 +295,7 @@ rfc3339-validator==0.1.4
     # via openapi-schema-validator
 rich==13.7.1
     # via localstack-core (pyproject.toml)
-rolo==0.3.0
+rolo==0.4.0
     # via localstack-core (pyproject.toml)
 rpds-py==0.18.0
     # via
