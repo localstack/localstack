@@ -1,5 +1,5 @@
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:11@sha256:80d72d2b0e1afef5b99b9bb2f75db73e54ca427ad6423434f711e0920c7547e6 as java-builder
+FROM eclipse-temurin:11@sha256:f416a2bd444c251d40756cf6f4f880380b20c38ef21bff3c1a13b0f4476d7d18 as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
