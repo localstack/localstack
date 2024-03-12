@@ -1,12 +1,15 @@
 """
 Custom pytest mark typings
 """
+import logging
 import os
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 import pytest
 from _pytest.config import PytestPluginManager
 from _pytest.config.argparsing import Parser
+
+LOG = logging.getLogger(__name__)
 
 
 class AwsCompatibilityMarkers:
@@ -119,6 +122,9 @@ def filter_by_markers(config: "Config", items: List[pytest.Item]):
     is_offline = config.getoption("--offline")
     is_in_docker = localstack_config.is_in_docker
     is_in_ci = in_ci()
+    # TODO: remove debug logging
+    print(f"{is_in_ci=}")
+    LOG.error(f"{is_in_ci=}")
     is_amd64 = get_arch() == Arch.amd64
     is_arm64 = get_arch() == Arch.arm64
     # Inlining `is_aws_cloud()` here because localstack.testing.aws.util imports boto3,
