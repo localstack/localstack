@@ -201,5 +201,149 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_table_with_ttl_and_sse": {
+    "recorded-date": "12-03-2024, 08:42:55",
+    "recorded-content": {
+      "table_description": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "pk",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "sk",
+              "AttributeType": "S"
+            }
+          ],
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "pk",
+              "KeyType": "HASH"
+            },
+            {
+              "AttributeName": "sk",
+              "KeyType": "RANGE"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 1,
+            "WriteCapacityUnits": 1
+          },
+          "SSEDescription": {
+            "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/fd3bef5d-0b5d-4ad0-8ebf-d96535e795d9",
+            "SSEType": "KMS",
+            "Status": "ENABLED"
+          },
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<table-name:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_global_table_with_ttl_and_sse": {
+    "recorded-date": "12-03-2024, 08:58:25",
+    "recorded-content": {
+      "table_description": {
+        "Table": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "gsi1pk",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "gsi1sk",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "pk",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "sk",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST",
+            "LastUpdateToPayPerRequestDateTime": "datetime"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "GlobalSecondaryIndexes": [
+            {
+              "IndexArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>/index/GSI1",
+              "IndexName": "GSI1",
+              "IndexSizeBytes": 0,
+              "IndexStatus": "ACTIVE",
+              "ItemCount": 0,
+              "KeySchema": [
+                {
+                  "AttributeName": "gsi1pk",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "gsi1sk",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              },
+              "ProvisionedThroughput": {
+                "NumberOfDecreasesToday": 0,
+                "ReadCapacityUnits": 0,
+                "WriteCapacityUnits": 0
+              }
+            }
+          ],
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "pk",
+              "KeyType": "HASH"
+            },
+            {
+              "AttributeName": "sk",
+              "KeyType": "RANGE"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "SSEDescription": {
+            "KMSMasterKeyArn": "arn:aws:kms:<region>:111111111111:key/fd3bef5d-0b5d-4ad0-8ebf-d96535e795d9",
+            "SSEType": "KMS",
+            "Status": "ENABLED"
+          },
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<table-name:1>",
+          "TableClassSummary": {
+            "TableClass": "STANDARD"
+          },
+          "TableId": "<uuid:1>",
+          "TableName": "<table-name:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "ACTIVE"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

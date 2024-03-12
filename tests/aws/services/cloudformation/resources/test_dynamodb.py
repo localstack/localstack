@@ -163,3 +163,45 @@ def test_ttl_cdk(aws_client, snapshot, infrastructure_setup):
         table_name = outputs["TableName"]
         table = aws_client.dynamodb.describe_time_to_live(TableName=table_name)
         snapshot.match("table", table)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    [
+        "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+        "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+        "$..Table.Replicas",
+        "$..Table.SSEDescription.KMSMasterKeyArn",
+    ]
+)
+def test_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.dynamodb_api())
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/dynamodb_table_sse_enabled.yml"
+        ),
+    )
+    snapshot.add_transformer(snapshot.transform.key_value("TableName", "table-name"))
+    response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
+    snapshot.match("table_description", response)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    [
+        "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+        "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+        "$..Table.Replicas",
+        "$..Table.SSEDescription.KMSMasterKeyArn",
+    ]
+)
+def test_global_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.dynamodb_api())
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/dynamodb_global_table_sse_enabled.yml"
+        ),
+    )
+    snapshot.add_transformer(snapshot.transform.key_value("TableName", "table-name"))
+    response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
+    snapshot.match("table_description", response)
