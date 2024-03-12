@@ -14,6 +14,8 @@ annotated-types==0.6.0
     # via pydantic
 antlr4-python3-runtime==4.13.1
     # via localstack-core
+anyio==4.3.0
+    # via httpx
 apispec==6.5.0
     # via localstack-core
 argparse==1.4.0
@@ -80,6 +82,8 @@ cbor2==5.6.2
     # via localstack-core
 certifi==2024.2.2
     # via
+    #   httpcore
+    #   httpx
     #   opensearch-py
     #   requests
 cffi==1.16.0
@@ -144,14 +148,20 @@ graphql-core==3.2.3
     # via moto-ext
 h11==0.14.0
     # via
+    #   httpcore
     #   hypercorn
     #   wsproto
 h2==4.1.0
     # via
+    #   httpx
     #   hypercorn
     #   localstack-twisted
 hpack==4.0.0
     # via h2
+httpcore==1.0.4
+    # via httpx
+httpx[http2]==0.27.0
+    # via localstack-core (pyproject.toml)
 hypercorn==0.16.0
     # via
     #   localstack-core
@@ -162,10 +172,12 @@ hyperlink==21.0.0
     # via localstack-twisted
 idna==3.6
     # via
+    #   anyio
+    #   httpx
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.1.3
+importlib-resources==6.3.0
     # via jsii
 incremental==22.10.0
     # via localstack-twisted
@@ -306,7 +318,7 @@ pyasn1==0.5.1
     # via rsa
 pycparser==2.21
     # via cffi
-pydantic==2.6.3
+pydantic==2.6.4
     # via aws-sam-translator
 pydantic-core==2.16.3
     # via pydantic
@@ -415,6 +427,10 @@ six==1.16.0
     #   python-dateutil
     #   requests-aws4auth
     #   rfc3339-validator
+sniffio==1.3.1
+    # via
+    #   anyio
+    #   httpx
 stevedore==5.2.0
     # via
     #   localstack-core
