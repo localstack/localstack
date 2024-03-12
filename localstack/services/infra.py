@@ -278,13 +278,13 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         from localstack.packages.debugpy import debugpy_package
 
         debugpy_package.install()
-        import debugpy
+        import debugpy  # noqa: T100
 
         LOG.info("Starting debug server at: %s:%s", constants.BIND_HOST, config.DEVELOP_PORT)
-        debugpy.listen((constants.BIND_HOST, config.DEVELOP_PORT))
+        debugpy.listen((constants.BIND_HOST, config.DEVELOP_PORT))  # noqa: T100
 
         if config.WAIT_FOR_DEBUGGER:
-            debugpy.wait_for_client()
+            debugpy.wait_for_client()  # noqa: T100
 
     @log_duration()
     def prepare_environment():

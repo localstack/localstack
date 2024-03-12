@@ -25,11 +25,11 @@ attrs==23.2.0
     #   localstack-twisted
     #   referencing
     #   sarif-om
-aws-sam-translator==1.85.0
+aws-sam-translator==1.86.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
-aws-xray-sdk==2.12.1
+aws-xray-sdk==2.13.0
     # via moto-ext
 awscli==1.32.59
     # via localstack-core (pyproject.toml)
@@ -151,7 +151,7 @@ joserfc==0.9.0
     # via moto-ext
 jschema-to-python==1.2.3
     # via cfn-lint
-json5==0.9.20
+json5==0.9.22
     # via localstack-core (pyproject.toml)
 jsondiff==2.0.0
     # via moto-ext
@@ -208,7 +208,7 @@ openapi-spec-validator==0.7.1
     # via moto-ext
 opensearch-py==2.4.2
     # via localstack-core (pyproject.toml)
-packaging==23.2
+packaging==24.0
     # via
     #   apispec
     #   docker
@@ -245,7 +245,7 @@ pygments==2.17.2
     # via rich
 pymongo==4.6.2
     # via localstack-core (pyproject.toml)
-pyopenssl==24.0.0
+pyopenssl==24.1.0
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
@@ -295,7 +295,7 @@ rfc3339-validator==0.1.4
     # via openapi-schema-validator
 rich==13.7.1
     # via localstack-core (pyproject.toml)
-rolo==0.3.0
+rolo==0.4.0
     # via localstack-core (pyproject.toml)
 rpds-py==0.18.0
     # via
