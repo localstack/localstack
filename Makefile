@@ -23,7 +23,7 @@ VENV_RUN = . $(VENV_ACTIVATE)
 usage:                    ## Show this help
 	@grep -Fh "##" $(MAKEFILE_LIST) | grep -Fv fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-25s %s\n", $$1, $$2 }'
 
-$(VENV_ACTIVATE): setup.py setup.cfg
+$(VENV_ACTIVATE): pyproject.toml
 	test -d $(VENV_DIR) || $(VENV_BIN) $(VENV_DIR)
 	$(VENV_RUN); $(PIP_CMD) install --upgrade pip setuptools wheel plux
 	touch $(VENV_ACTIVATE)
@@ -76,7 +76,7 @@ entrypoints:              ## Run plux to build entry points
 	@test -s localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
 
 dist: entrypoints        ## Build source and built (wheel) distributions of the current version
-	$(VENV_RUN); pip install --upgrade twine; python setup.py sdist bdist_wheel
+	$(VENV_RUN); pip install --upgrade twine; python -m build
 
 publish: clean-dist dist  ## Publish the library to the central PyPi repository
 	# make sure the dist archive contains a non-empty entry_points.txt file before uploading
@@ -238,7 +238,7 @@ test-docker-mount-code:
 
 lint:              		  ## Run code linter to check code style, check if formatter would make changes and check if dependency pins need to be updated
 	($(VENV_RUN); python -m ruff check --output-format=full . && python -m black --check .)
-	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files setup.cfg # run pre-commit hook manually here to ensure that this check runs in CI as well
+	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files pyproject.toml # run pre-commit hook manually here to ensure that this check runs in CI as well
 
 
 lint-modified:     		  ## Run code linter to check code style, check if formatter would make changes on modified files, and check if dependency pins need to be updated because of modified files

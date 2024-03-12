@@ -3,7 +3,7 @@
 set -e
 
 VERSION_FILE=${VERSION_FILE-*/__init__.py}
-DEPENDENCY_FILE=${DEPENDENCY_FILE-setup.cfg}
+DEPENDENCY_FILE=${DEPENDENCY_FILE-pyproject.toml}
 
 function usage() {
     echo "A set of commands that facilitate release automation"
