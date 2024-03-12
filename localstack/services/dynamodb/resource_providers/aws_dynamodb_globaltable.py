@@ -237,8 +237,7 @@ class DynamoDBGlobalTableProvider(ResourceProvider[DynamoDBGlobalTableProperties
 
             if sse_specification := create_params.get("SSESpecification"):
                 # rename bool attribute to fit boto call
-                sse_specification["Enabled"] = sse_specification["SSEEnabled"]
-                del sse_specification["SSEEnabled"]
+                sse_specification["Enabled"] = sse_specification.pop("SSEEnabled")
 
             creation_response = request.aws_client_factory.dynamodb.create_table(**create_params)
             model["Arn"] = creation_response["TableDescription"]["TableArn"]

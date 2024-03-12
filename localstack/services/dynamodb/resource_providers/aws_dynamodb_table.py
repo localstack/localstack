@@ -220,8 +220,7 @@ class DynamoDBTableProvider(ResourceProvider[DynamoDBTableProperties]):
 
             if sse_specification := create_params.get("SSESpecification"):
                 # rename bool attribute to fit boto call
-                sse_specification["Enabled"] = sse_specification["SSEEnabled"]
-                del sse_specification["SSEEnabled"]
+                sse_specification["Enabled"] = sse_specification.pop("SSEEnabled")
 
             if stream_spec := model.get("StreamSpecification"):
                 create_params["StreamSpecification"] = {
