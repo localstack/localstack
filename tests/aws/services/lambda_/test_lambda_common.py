@@ -127,6 +127,8 @@ class TestLambdaRuntimesCommon:
     # skip snapshots of LS specific env variables
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            # TODO: implement logging config
+            "$..LoggingConfig",
             # LocalStack API
             "$..environment.LOCALSTACK_HOSTNAME",
             "$..environment.EDGE_PORT",
@@ -152,6 +154,10 @@ class TestLambdaRuntimesCommon:
             "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
             "$..environment.LC_CTYPE",  # Only python3.11 (part of a broken image rollout, likely rolled back)
+            # Newer Nodejs images explicitly disable a temporary performance workaround for Nodejs 20 on certain hosts:
+            # https://nodejs.org/api/cli.html#uv_use_io_uringvalue
+            # https://techfindings.net/archives/6469
+            "$..environment.UV_USE_IO_URING",  # Only Nodejs runtimes
         ]
     )
     @markers.aws.validated
@@ -187,6 +193,8 @@ class TestLambdaRuntimesCommon:
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            # TODO: implement logging config
+            "$..LoggingConfig",
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
@@ -215,6 +223,8 @@ class TestLambdaRuntimesCommon:
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            # TODO: implement logging config
+            "$..LoggingConfig",
             "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )

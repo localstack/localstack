@@ -7451,7 +7451,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "12-03-2024, 14:49:19",
+    "recorded-date": "12-03-2024, 15:42:35",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7523,7 +7523,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_update_lambda_exceptions": {
-    "recorded-date": "20-11-2023, 16:47:02",
+    "recorded-date": "12-03-2024, 16:08:14",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7538,10 +7538,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, java21, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, java21, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7550,10 +7550,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, java21, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, provided, nodejs16.x, nodejs14.x, ruby2.7, python3.10, java11, python3.11, dotnet6, go1.x, java21, nodejs18.x, provided.al2, java8, java8.al2, ruby3.2, python3.7, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7835,7 +7835,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "recorded-date": "12-03-2024, 14:51:38",
+    "recorded-date": "12-03-2024, 15:42:16",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13082,7 +13082,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "recorded-date": "21-11-2023, 17:59:36",
+    "recorded-date": "12-03-2024, 15:41:52",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13123,7 +13123,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "recorded-date": "21-11-2023, 17:59:41",
+    "recorded-date": "12-03-2024, 15:41:55",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
