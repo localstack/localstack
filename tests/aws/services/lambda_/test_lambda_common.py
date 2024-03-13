@@ -48,13 +48,8 @@ def snapshot_transformers(snapshot):
     )
 
 
-# TODO: remove this once all non-arm compatible runtimes are deprecated by the end of 2023
+# TODO: debug and fix ARM builds in CI (works locally on ARM mac)
 RUNTIMES_SKIP_ARM = [
-    Runtime.python3_7,
-    Runtime.java8,
-    Runtime.go1_x,
-    Runtime.provided,
-    # TODO: debug and fix ARM Lambda building and packaging in CI (works locally on ARM mac)
     Runtime.java8_al2,
     Runtime.java11,
     Runtime.java17,
@@ -285,13 +280,13 @@ class TestLambdaCallingLocalstack:
     # These temporary runtime selections are only relevant for test_manual_endpoint_injection
     x86_runtimes = [
         "dotnet6",
-        "go",
+        # TODO: test Go + add to ARM as well
+        # "provided_go",
         # java17 and java21 do not ship the AWS SDK v1 anymore.
-        # Therefore, we create a specific directory and bundle the SDK v1 separately because the SDK v2 does not
+        # Therefore, we bundle the SDK v1 separately because the SDK v2 does not
         # support DISABLE_CERT_CHECKING_SYSTEM_PROPERTY anymore.
         "java",
-        # nodejs18.x and nodejs20.x do not ship the AWS SDK v1 anymore.
-        # Therefore, we create a specific directory and use the SDK v2 instead.
+        # nodejs18.x and nodejs20.x do not ship the AWS SDK v1 anymore. Therefore, we use the SDK v2 instead.
         "nodejs",
         "python",
         "ruby",

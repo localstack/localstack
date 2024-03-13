@@ -55,6 +55,7 @@ class LambdaJavaTestlibsPackageInstaller(DownloadInstaller):
         )
 
 
+# TODO: inline this outdated dependency into test build
 lambda_java_testlibs_package = LambdaJavaTestlibsPackage()
 
 parametrize_python_runtimes = pytest.mark.parametrize("runtime", PYTHON_TEST_RUNTIMES)

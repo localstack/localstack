@@ -35,10 +35,10 @@ HANDLERS = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "index.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "echo.Handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("custom"), "function.handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "main"),
-    "dotnetcore3.1": "dotnetcore31::dotnetcore31.Function::FunctionHandler",  # TODO lets see if we can accumulate those
-    "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "function.handler"),
+    # TODO: check if provided go works
+    # **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided_go"), "main"),
+    "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",  # TODO lets see if we can accumulate those
 }
 
 PACKAGE_FOR_RUNTIME = {
@@ -46,10 +46,9 @@ PACKAGE_FOR_RUNTIME = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "nodejs"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "java"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("custom"), "provided"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "go"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "provided"),
+    # **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided_go"), "provided_go"),
     "dotnet6": "dotnet6",
-    "dotnetcore3.1": "dotnetcore3.1",
 }
 
 

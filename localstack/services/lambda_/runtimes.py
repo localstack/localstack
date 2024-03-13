@@ -4,7 +4,7 @@ from localstack.aws.api.lambda_ import Runtime
 # LocalStack Lambda runtimes support policy
 # We support all Lambda runtimes currently actively supported at AWS.
 # Further, we aim to provide best-effort support for deprecated runtimes at least until function updates are blocked,
-# ideally a bit longer to help users migrate their Lambda runtimes.
+# ideally a bit longer to help users migrate their Lambda runtimes. However, we do not actively test them anymore.
 
 # HOWTO add a new Lambda runtime:
 # 1. Update botocore and generate the Lambda API stubs using `python3 -m localstack.aws.scaffold upgrade`
@@ -50,12 +50,12 @@ IMAGE_MAPPING: dict[Runtime, str] = {
     Runtime.java11: "java:11",
     Runtime.java8_al2: "java:8.al2",
     Runtime.java8: "java:8",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
-    # "dotnet8": "dotnet:8", expected January 2024
+    # Runtime.dotnet8: "dotnet:8",  # TODO
     # dotnet7 (container only)
     Runtime.dotnet6: "dotnet:6",
     Runtime.dotnetcore3_1: "dotnet:core3.1",  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
     Runtime.go1_x: "go:1",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
-    # "ruby3.3": "ruby:3.3", expected March 2024
+    # "ruby3.3": "ruby:3.3", expected April 2024
     Runtime.ruby3_2: "ruby:3.2",
     Runtime.ruby2_7: "ruby:2.7",  # deprecated Dec 7, 2023 => Jan 9, 2024 => Feb 8, 2024
     Runtime.provided_al2023: "provided:al2023",
@@ -66,19 +66,21 @@ IMAGE_MAPPING: dict[Runtime, str] = {
 # A list of all deprecated Lambda runtimes, ideally ordered by deprecation date (following the AWS docs).
 # LocalStack can still provide best-effort support.
 DEPRECATED_RUNTIMES: list[Runtime] = [
-    # TODO: remove once the snapshot tests show they are actually gone (java8, go1_x, provided still working 2024-03-12)
-    # Runtime.java8,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
-    # Runtime.go1_x,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
-    # Runtime.provided,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    Runtime.java8,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    Runtime.go1_x,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
+    Runtime.provided,  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
     Runtime.ruby2_7,  # deprecated Dec 7, 2023 => Jan 9, 2024 => Feb 8, 2024
     Runtime.nodejs14_x,  # deprecated Dec 4, 2023  => Jan 9, 2024  => Feb 8, 2024
-    # TODO: remove once the snapshot tests show they are actually gone (python3.7 still working 2024-03-12)
-    # Runtime.python3_7,  # deprecated Dec 4, 2023 => Jan 9, 2024 => Feb 8, 2024
+    Runtime.python3_7,  # deprecated Dec 4, 2023 => Jan 9, 2024 => Feb 8, 2024
     Runtime.dotnetcore3_1,  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
     Runtime.nodejs12_x,  # deprecated Mar 31, 2023 => Mar 31, 2023 => Apr 30, 2023
 ]
 # An unordered list of all AWS-supported runtimes.
 SUPPORTED_RUNTIMES: list[Runtime] = list(set(IMAGE_MAPPING.keys()) - set(DEPRECATED_RUNTIMES))
+
+# A temporary list of missing runtimes not yet supported in LocalStack. Used for modular updates.
+# TODO: add Dotnet8 runtime
+MISSING_RUNTIMES = [Runtime.dotnet8]
 
 # An unordered list of all Lambda runtimes supported by LocalStack.
 ALL_RUNTIMES: list[Runtime] = list(IMAGE_MAPPING.keys())
@@ -97,25 +99,22 @@ RUNTIMES_AGGREGATED = {
         Runtime.python3_10,
         Runtime.python3_9,
         Runtime.python3_8,
-        Runtime.python3_7,
     ],
     "java": [
         Runtime.java21,
         Runtime.java17,
         Runtime.java11,
         Runtime.java8_al2,
-        Runtime.java8,
     ],
     "ruby": [
         Runtime.ruby3_2,
     ],
-    "dotnet": [Runtime.dotnet6],
-    "go": [Runtime.go1_x],
-    "custom": [
+    "dotnet": [Runtime.dotnet6],  # TODO: Runtime.dotnet8
+    "provided": [
         Runtime.provided_al2023,
         Runtime.provided_al2,
-        Runtime.provided,
     ],
+    # "provided_go": [Runtime.provided_al2023],
 }
 
 # An unordered list of all tested runtimes listed in `RUNTIMES_AGGREGATED`
