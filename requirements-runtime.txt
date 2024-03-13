@@ -254,7 +254,7 @@ pyasn1==0.5.1
     # via rsa
 pycparser==2.21
     # via cffi
-pydantic==2.6.3
+pydantic==2.6.4
     # via aws-sam-translator
 pydantic-core==2.16.3
     # via pydantic

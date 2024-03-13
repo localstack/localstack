@@ -1,140 +1,25 @@
 """
-Bindings to serve LocalStack using ``twisted.web``.
-
-TODO: both header retaining and TLS multiplexing are implemented in a pretty hacky way.
-TODO: websocket support
+Bindings to serve LocalStack using twisted.
 """
 import logging
 import time
-from typing import TYPE_CHECKING, List
+from typing import List
 
 from rolo.gateway import Gateway
+from rolo.serving.twisted import TwistedGateway
 from twisted.internet import endpoints, interfaces, reactor, ssl
 from twisted.protocols.policies import ProtocolWrapper, WrappingFactory
 from twisted.protocols.tls import BufferingTLSTransport, TLSMemoryBIOFactory
 from twisted.python.threadpool import ThreadPool
-from twisted.web.http import HTTPChannel, _GenericHTTPChannelProtocol
-from twisted.web.server import Request as TwistedRequest
-from twisted.web.server import Site
-from twisted.web.wsgi import WSGIResource, _WSGIResponse
 
 from localstack import config
-from localstack.aws.serving.wsgi import WsgiGateway
 from localstack.config import HostAndPort
 from localstack.runtime.shutdown import ON_AFTER_SERVICE_SHUTDOWN_HANDLERS
 from localstack.utils.patch import patch
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
 from localstack.utils.threads import start_worker_thread
 
-if TYPE_CHECKING:
-    from _typeshed.wsgi import WSGIEnvironment
-
 LOG = logging.getLogger(__name__)
-
-
-def update_environment(environ: "WSGIEnvironment", request: TwistedRequest):
-    """
-    Update the pre-populated WSGI environment with additional data, needed by rolo, from the webserver request object.
-
-    :param environ: the environment to update
-    :param request: the webserver request object
-    """
-    # store raw headers
-    headers: list[tuple[bytes, bytes]] = []
-    for k, vs in request.requestHeaders.getAllRawHeaders():
-        for v in vs:
-            headers.append((k, v))
-    environ["asgi.headers"] = headers
-
-    # TODO: check if twisted input streams are really properly terminated
-    # this is needed for streaming requests
-    environ["wsgi.input_terminated"] = True
-
-    # create RAW_URI and REQUEST_URI
-    environ["REQUEST_URI"] = request.uri.decode("utf-8")
-    environ["RAW_URI"] = request.uri.decode("utf-8")
-    # client addr/port
-    addr = request.getClientAddress()
-    environ["REMOTE_ADDR"] = addr.host
-    environ["REMOTE_PORT"] = str(addr.port)
-
-
-@patch(_WSGIResponse.__init__)
-def _init_wsgi_response(init, self, reactor, threadpool, application, request):
-    """
-    Patch to populate the environment with additional variables we need in LocalStack that the server is not setting by
-    default.
-    """
-    init(self, reactor, threadpool, application, request)
-    update_environment(self.environ, request)
-
-
-@patch(_WSGIResponse.startResponse)
-def _start_wsgi_response(startReponse, self, status, headers, excInfo=None):
-    result = startReponse(self, status, headers, excInfo)
-    # before starting the WSGI response, make sure we store the raw case mappings into the response headers
-    for header, _ in self.headers:
-        header = header.encode("latin-1")
-        self.request.responseHeaders._caseMappings[header.lower()] = header
-    return result
-
-
-class TwistedRequestAdapter(TwistedRequest):
-    """
-    Custom twisted server Request object to handle header casing.
-    """
-
-    rawHeaderList: list[tuple[bytes, bytes]]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # instantiate case mappings, these are used by `getAllRawHeaders` to restore casing
-        # by default, they are class attributes, so we would override them globally
-        self.requestHeaders._caseMappings = dict(self.requestHeaders._caseMappings)
-        self.responseHeaders._caseMappings = dict(self.responseHeaders._caseMappings)
-
-
-class HeaderPreservingHTTPChannel(HTTPChannel):
-    """
-    Special HTTPChannel implementation that uses ``Headers._caseMappings`` to retain header casing both for request
-    headers (server -> WSGI), and  response headers (WSGI -> client).
-    """
-
-    requestFactory = TwistedRequestAdapter
-
-    @staticmethod
-    def protocol_factory():
-        return _GenericHTTPChannelProtocol(HeaderPreservingHTTPChannel())
-
-    def headerReceived(self, line):
-        if not super().headerReceived(line):
-            return False
-
-        # remember casing of headers for requests
-        header, data = line.split(b":", 1)
-        request: TwistedRequestAdapter = self.requests[-1]
-        request.requestHeaders._caseMappings[header.lower()] = header
-        return True
-
-    def writeHeaders(self, version, code, reason, headers):
-        """Alternative implementation that writes the raw headers instead of sanitized versions."""
-        responseLine = version + b" " + code + b" " + reason + b"\r\n"
-        headerSequence = [responseLine]
-
-        for name, value in headers:
-            line = name + b": " + value + b"\r\n"
-            headerSequence.append(line)
-
-        headerSequence.append(b"\r\n")
-        self.transport.writeSequence(headerSequence)
-
-    def isSecure(self):
-        # used to determine the WSGI url scheme (http vs https)
-        try:
-            # ``self.transport`` will be a ``TLSMultiplexer`` instance in our case
-            return self.transport.isSecure()
-        except AttributeError:
-            return super().isSecure()
 
 
 class TLSMultiplexer(ProtocolWrapper):
@@ -262,11 +147,7 @@ def serve_gateway(
     ON_AFTER_SERVICE_SHUTDOWN_HANDLERS.register(_shutdown_reactor)
 
     # setup twisted webserver Site
-    wsgi = WsgiGateway(gateway)
-    resource = WSGIResource(reactor, thread_pool, wsgi)
-    site = Site(resource)
-    site.protocol = HeaderPreservingHTTPChannel.protocol_factory
-    site.requestFactory = TwistedRequestAdapter
+    site = TwistedGateway(gateway)
 
     # configure ssl
     if use_ssl:
@@ -279,7 +160,7 @@ def serve_gateway(
     else:
         protocol_factory = site
 
-    # setup endpoints context
+    # add endpoint for each host/port combination
     for host_and_port in listen:
         # TODO: interface = host?
         endpoint = endpoints.TCP4ServerEndpoint(reactor, host_and_port.port)

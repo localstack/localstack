@@ -14,6 +14,8 @@ annotated-types==0.6.0
     # via pydantic
 antlr4-python3-runtime==4.13.1
     # via localstack-core
+anyio==4.3.0
+    # via httpx
 apispec==6.5.0
     # via localstack-core
 argparse==1.4.0
@@ -58,7 +60,7 @@ boto3==1.34.59
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.60
+boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.61
     # via localstack-core (pyproject.toml)
 botocore==1.34.59
     # via
@@ -69,7 +71,7 @@ botocore==1.34.59
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.34.60
+botocore-stubs==1.34.61
     # via boto3-stubs
 build==1.1.1
     # via
@@ -86,6 +88,8 @@ cbor2==5.6.2
     # via localstack-core
 certifi==2024.2.2
     # via
+    #   httpcore
+    #   httpx
     #   opensearch-py
     #   requests
 cffi==1.16.0
@@ -165,14 +169,20 @@ graphql-core==3.2.3
     # via moto-ext
 h11==0.14.0
     # via
+    #   httpcore
     #   hypercorn
     #   wsproto
 h2==4.1.0
     # via
+    #   httpx
     #   hypercorn
     #   localstack-twisted
 hpack==4.0.0
     # via h2
+httpcore==1.0.4
+    # via httpx
+httpx[http2]==0.27.0
+    # via localstack-core
 hypercorn==0.16.0
     # via
     #   localstack-core
@@ -185,10 +195,12 @@ identify==2.5.35
     # via pre-commit
 idna==3.6
     # via
+    #   anyio
+    #   httpx
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.1.3
+importlib-resources==6.3.0
     # via jsii
 incremental==22.10.0
     # via localstack-twisted
@@ -301,7 +313,7 @@ mypy-boto3-ce==1.34.52
     # via boto3-stubs
 mypy-boto3-cloudcontrol==1.34.0
     # via boto3-stubs
-mypy-boto3-cloudformation==1.34.55
+mypy-boto3-cloudformation==1.34.61
     # via boto3-stubs
 mypy-boto3-cloudfront==1.34.0
     # via boto3-stubs
@@ -323,7 +335,7 @@ mypy-boto3-dynamodb==1.34.57
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.34.0
     # via boto3-stubs
-mypy-boto3-ec2==1.34.58
+mypy-boto3-ec2==1.34.61
     # via boto3-stubs
 mypy-boto3-ecr==1.34.0
     # via boto3-stubs
@@ -367,7 +379,7 @@ mypy-boto3-iotanalytics==1.34.0
     # via boto3-stubs
 mypy-boto3-iotwireless==1.34.0
     # via boto3-stubs
-mypy-boto3-kafka==1.34.0
+mypy-boto3-kafka==1.34.61
     # via boto3-stubs
 mypy-boto3-kinesis==1.34.0
     # via boto3-stubs
@@ -445,7 +457,7 @@ mypy-boto3-sns==1.34.44
     # via boto3-stubs
 mypy-boto3-sqs==1.34.0
     # via boto3-stubs
-mypy-boto3-ssm==1.34.47
+mypy-boto3-ssm==1.34.61
     # via boto3-stubs
 mypy-boto3-sso-admin==1.34.0
     # via boto3-stubs
@@ -541,7 +553,7 @@ pyasn1==0.5.1
     # via rsa
 pycparser==2.21
     # via cffi
-pydantic==2.6.3
+pydantic==2.6.4
     # via aws-sam-translator
 pydantic-core==2.16.3
     # via pydantic
@@ -658,6 +670,10 @@ six==1.16.0
     #   python-dateutil
     #   requests-aws4auth
     #   rfc3339-validator
+sniffio==1.3.1
+    # via
+    #   anyio
+    #   httpx
 stevedore==5.2.0
     # via
     #   localstack-core
