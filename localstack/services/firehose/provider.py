@@ -505,9 +505,9 @@ class FirehoseProvider(FirehoseApi):
             )
 
         if amazonopensearchservice_destination_update:
-            destination["AmazonopensearchserviceDestinationDescription"] = (
-                convert_opensearch_update_to_desc(amazonopensearchservice_destination_update)
-            )
+            destination[
+                "AmazonopensearchserviceDestinationDescription"
+            ] = convert_opensearch_update_to_desc(amazonopensearchservice_destination_update)
 
         if s3_destination_update:
             destination["S3DestinationDescription"] = convert_s3_update_to_desc(
