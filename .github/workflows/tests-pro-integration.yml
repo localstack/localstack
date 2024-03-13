@@ -114,6 +114,9 @@ jobs:
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@v10
+
       - name: Checkout Community
         uses: actions/checkout@v4
         with:
