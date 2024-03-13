@@ -83,8 +83,8 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
-      - when:
-          unless: << pipeline.parameters.skip_test_selection >>
+      - unless:
+          condition: << pipeline.parameters.skip_test_selection >>
           steps:
             - run:
                 # script expects an environment variable $GITHUB_API_TOKEN to be set to fetch PR details
