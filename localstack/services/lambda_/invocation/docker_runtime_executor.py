@@ -17,6 +17,7 @@ from localstack.services.lambda_.invocation.executor_endpoint import (
 )
 from localstack.services.lambda_.invocation.lambda_models import FunctionVersion
 from localstack.services.lambda_.invocation.runtime_executor import (
+    ChmodPath,
     LambdaPrebuildContext,
     LambdaRuntimeException,
     RuntimeExecutor,
@@ -40,7 +41,7 @@ from localstack.utils.container_utils.container_client import (
     VolumeMappings,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
-from localstack.utils.files import rm_rf
+from localstack.utils.files import chmod_r, rm_rf
 from localstack.utils.net import get_free_tcp_port
 from localstack.utils.strings import short_uid, truncate
 
@@ -218,11 +219,15 @@ def prepare_image(function_version: FunctionVersion, platform: DockerPlatform) -
     init_destination_path.chmod(0o755)
 
     # copy function code
+    context_code_path = prebuild_context.context_path / "code"
     shutil.copytree(
         f"{str(code_path)}/",
-        str(prebuild_context.context_path / "code"),
+        str(context_code_path),
         dirs_exist_ok=True,
     )
+    # if layers are present, permissions should be 0755
+    if prebuild_context.function_version.config.layers:
+        chmod_r(str(context_code_path), 0o755)
 
     try:
         image_name = get_image_name_for_function(function_version)
@@ -319,6 +324,9 @@ class DockerRuntimeExecutor(RuntimeExecutor):
                     )
                 )
 
+        # always chmod /tmp to 700
+        chmod_paths = [ChmodPath(path="/tmp", mode="0700")]
+
         # set the dns server of the lambda container to the LocalStack container IP
         # the dns server will automatically respond with the right target for transparent endpoint injection
         if config.LAMBDA_DOCKER_DNS:
@@ -348,6 +356,19 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             if not container_config.ports:
                 container_config.ports = PortMappings()
             container_config.ports.add(config.LAMBDA_INIT_DELVE_PORT, config.LAMBDA_INIT_DELVE_PORT)
+
+        if (
+            self.function_version.config.layers
+            and not config.LAMBDA_PREBUILD_IMAGES
+            and self.function_version.config.package_type == PackageType.Zip
+        ):
+            # avoid chmod on mounted code paths
+            hot_reloading_env = container_config.env_vars.get(HOT_RELOADING_ENV_VARIABLE, "")
+            if "/opt" not in hot_reloading_env:
+                chmod_paths.append(ChmodPath(path="/opt", mode="0755"))
+            if "/var/task" not in hot_reloading_env:
+                chmod_paths.append(ChmodPath(path="/var/task", mode="0755"))
+        container_config.env_vars["LOCALSTACK_CHMOD_PATHS"] = json.dumps(chmod_paths)
 
         CONTAINER_CLIENT.create_container_from_config(container_config)
         if (
