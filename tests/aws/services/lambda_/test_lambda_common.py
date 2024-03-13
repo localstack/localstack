@@ -48,6 +48,7 @@ def snapshot_transformers(snapshot):
     )
 
 
+# TODO: these runtime skips should only apply in CI and definitely not when running against AWS
 # TODO: debug and fix ARM builds in CI (works locally on ARM mac)
 RUNTIMES_SKIP_ARM = [
     Runtime.java8_al2,
