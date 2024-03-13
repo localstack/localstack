@@ -228,9 +228,9 @@ jobs:
           path: |
             localstack-ext/.venv
           # include the matrix group (to re-use the venv used in the specific test group)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.ref}}-group-${{ matrix.group }}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-refs/heads/master-group-${{ matrix.group }}
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-refs/heads/master
 
       - name: Cache Ext Dependencies (libs)
         if: inputs.disableCaching != true
@@ -239,7 +239,7 @@ jobs:
           path: |
             localstack/.filesystem/var/lib/localstack
           # include the matrix group (to re-use the var-libs used in the specific test group)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ '**/packages.py', '**/packages/*') }}-${{steps.determine-companion-ref.outputs.ref}}-group-${{ matrix.group }}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
           restore-keys: |
             community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-refs/heads/master-group-${{ matrix.group }}
 
