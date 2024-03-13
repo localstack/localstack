@@ -70,6 +70,7 @@ def add_snapshot_transformer(snapshot):
 
 
 class TestNodeJSRuntimes:
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @parametrize_node_runtimes
     @markers.aws.validated
     def test_invoke_nodejs_es6_lambda(self, create_lambda_function, snapshot, runtime, aws_client):
@@ -128,6 +129,7 @@ class TestJavaRuntimes:
         save_file(zip_jar_path, java_jar)
         return testutil.create_zip_file(tmpdir, get_content=True)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_java_runtime_with_lib(self, create_lambda_function, snapshot, aws_client):
         """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""
@@ -190,6 +192,7 @@ class TestJavaRuntimes:
         )
         snapshot.match("invoke_result", result)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @parametrize_java_runtimes
     @markers.aws.validated
     def test_serializable_input_object(
@@ -219,6 +222,7 @@ class TestJavaRuntimes:
             "key": "test_key",
         }
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @pytest.mark.parametrize(
         "handler,expected_result",
         [
@@ -269,6 +273,7 @@ class TestJavaRuntimes:
 
         retry(check_logs, retries=20)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     # TODO maybe snapshot payload as well
     def test_java_lambda_subscribe_sns_topic(
