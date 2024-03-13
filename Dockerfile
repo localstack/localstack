@@ -133,7 +133,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install the latest version of awslocal globally
 RUN --mount=type=cache,target=/root/.cache \
-    pip3 install --upgrade awscli awscli-local requests
+    pip3 install --upgrade awscli awscli-local requests aws-sam-cli-local
 
 
 
