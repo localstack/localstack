@@ -114,16 +114,12 @@ jobs:
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
     steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@v10
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@v1.3.1
         with:
-          root-reserve-mb: 30000
-          remove-dotnet: true
-          remove-android: true
-          remove-haskell: true
-          remove-codeql: true
-          remove-docker-images: true
-        continue-on-error: true
+          # don't perform all optimizations to decrease action execution time
+          large-packages: false
+          docker-images: false
 
       - name: Checkout Community
         uses: actions/checkout@v4
