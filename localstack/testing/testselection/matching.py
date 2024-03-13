@@ -1,11 +1,10 @@
 import fnmatch
 import re
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Optional
 
 from localstack.aws.scaffold import is_keyword
 
 # TODO: extract API Dependencies and composites to constants or similar
-from localstack.utils.bootstrap import API_DEPENDENCIES
 
 SENTINEL_NO_TEST = "SENTINEL_NO_TEST"  # a line item which signals that we don't default to everything, we just don't want to actually want to run a test => useful to differentiate between empty / nothing
 SENTINEL_ALL_TESTS = "SENTINEL_ALL_TESTS"  # a line item which signals that we don't default to everything, we just don't want to actually want to run a test => useful to differentiate between empty / nothing
@@ -27,7 +26,7 @@ def _map_to_service_name(module_name: str) -> str:
     return module_name.replace("_", "-")
 
 
-def resolve_dependencies(module_name: str) -> set[str]:
+def resolve_dependencies(module_name: str, api_dependencies) -> set[str]:
     """
     Resolves dependencies for a given service module name
 
@@ -35,7 +34,7 @@ def resolve_dependencies(module_name: str) -> set[str]:
     :return: set of resolved _service names_ that the service depends on (e.g. sts)
     """
     svc_name = _map_to_service_name(module_name)
-    return _expand_api_dependencies(svc_name)
+    return _expand_api_dependencies(svc_name, api_dependencies)
 
 
 # TODO: might want to cache that, but for now it shouldn't be too much overhead
@@ -51,14 +50,14 @@ def _reverse_dependency_map(dependency_map: dict[str, dict]) -> dict[str, set[st
     return result
 
 
-def _expand_api_dependencies(svc_name: str) -> set[str]:
+def _expand_api_dependencies(svc_name: str, api_dependencies) -> set[str]:
     result = set()
 
-    dependencies = _reverse_dependency_map(API_DEPENDENCIES).get(svc_name, [])
+    dependencies = _reverse_dependency_map(api_dependencies).get(svc_name, [])
     result.update(dependencies)
 
     for dep in dependencies:
-        sub_deps = _expand_api_dependencies(dep)  # recursive call
+        sub_deps = _expand_api_dependencies(dep, api_dependencies)  # recursive call
         result.update(sub_deps)
     return result
 
@@ -102,14 +101,22 @@ class Matchers:
         return Matcher(lambda t: t.startswith(prefix))
 
 
-def generic_service_test_matching_rule(changed_file_path: str) -> set[str]:
+def generic_service_test_matching_rule(
+    changed_file_path: str, api_dependencies: Optional[dict] = None
+) -> set[str]:
     """
     Generic matching of changes in service files to their tests
 
+    :param api_dependencies: dict of API dependencies where each key is the service and its value a list of services it depends on
     :param changed_file_path: the file path of the detected change
     :return: list of partial test file path filters for the matching service and all services it depends on
     """
     # TODO: consider API_COMPOSITES
+
+    if api_dependencies is None:
+        from localstack.utils.bootstrap import API_DEPENDENCIES
+
+        api_dependencies = API_DEPENDENCIES
 
     match = re.findall("localstack/services/([^/]+)/.+", changed_file_path)
     if not match:
@@ -118,7 +125,7 @@ def generic_service_test_matching_rule(changed_file_path: str) -> set[str]:
     if match:
         changed_service = match[0]
         changed_services = [changed_service]
-        service_dependencies = resolve_dependencies(changed_service)
+        service_dependencies = resolve_dependencies(changed_service, api_dependencies)
         changed_services.extend(service_dependencies)
         changed_service_module_names = [_map_to_module_name(svc) for svc in changed_services]
         return {f"tests/aws/services/{svc}/" for svc in changed_service_module_names}
@@ -165,6 +172,9 @@ MATCHING_RULES: list[MatchingRule] = [
     # ignore
     Matchers.glob("**/*.md").ignore(),
     Matchers.glob("doc/**").ignore(),
+    Matchers.glob("CODEOWNERS").ignore(),
+    Matchers.glob(".gitignore").ignore(),
+    Matchers.glob(".git-blame-ignore-revs").ignore(),
     # lambda
     Matchers.glob("tests/aws/services/lambda_/functions/**").service_tests(services=["lambda"]),
 ]

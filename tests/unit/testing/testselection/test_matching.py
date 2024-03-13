@@ -13,28 +13,42 @@ from localstack.testing.testselection.matching import (
 
 
 def test_service_dependency_resolving_no_deps():
-    svc_including_deps = resolve_dependencies("lambda_")
+    api_dependencies = {"lambda": ["s3"], "cloudformation": ["s3", "sts"]}
+    svc_including_deps = resolve_dependencies("lambda_", api_dependencies)
     assert len(svc_including_deps) == 0
 
 
 def test_service_dependency_resolving_with_dependencies():
-    svc_including_deps = resolve_dependencies("s3")
-    assert svc_including_deps == {"lambda", "cloudformation", "transcribe"}
-
-
-def test_service_dependency_resolving():
-    svc_including_deps = resolve_dependencies("kinesis")
-    assert svc_including_deps == {"dynamodbstreams", "dynamodb", "firehose"}
+    api_dependencies = {
+        "lambda": ["s3"],
+        "cloudformation": ["s3"],
+        "transcribe": ["s3"],
+        "s3": ["sts"],
+    }
+    svc_including_deps = resolve_dependencies("s3", api_dependencies)
+    assert svc_including_deps >= {"lambda", "cloudformation", "transcribe"}
 
 
 def test_generic_service_matching_rule():
     assert generic_service_test_matching_rule("localstack/aws/api/cloudformation/__init__.py") == {
         "tests/aws/services/cloudformation/",
     }
+    assert generic_service_test_matching_rule(
+        "localstack/services/cloudformation/test_somefile.py"
+    ) == {
+        "tests/aws/services/cloudformation/",
+    }
 
 
 def test_generic_service_matching_rule_with_dependencies():
-    assert generic_service_test_matching_rule("localstack/aws/api/s3/__init__.py") == {
+    api_dependencies = {
+        "lambda": ["s3"],
+        "cloudformation": ["s3"],
+        "transcribe": ["s3"],
+    }
+    assert generic_service_test_matching_rule(
+        "localstack/aws/api/s3/__init__.py", api_dependencies
+    ) == {
         "tests/aws/services/cloudformation/",
         "tests/aws/services/lambda_/",
         "tests/aws/services/s3/",

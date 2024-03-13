@@ -96,7 +96,6 @@ env:
 jobs:
   test-pro:
     name: "Community Integration Tests against Pro"
-#    if: false  # TODO: remove again
     # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
     # (i.e. do not execute job for workflows coming from forks)
     if: >-
