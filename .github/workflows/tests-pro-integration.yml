@@ -116,6 +116,12 @@ jobs:
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 30720
+          remove-dotnet: true
+          remove-android: true
+          remove-haskell: true
+          remove-codeql: true
 
       - name: Checkout Community
         uses: actions/checkout@v4
