@@ -154,7 +154,7 @@ exclude = ["tests*"]
     "*.md",
     "Makefile"
 ]
-"localstack_ext" = [
+"localstack" = [
     "aws/**/*.json",
     "services/**/*.html",
     "services/**/resource_providers/*.schema.json",
