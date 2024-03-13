@@ -4,6 +4,7 @@ plugins {
 
 java {
     // Target oldest tested Java runtime
+    // VERSION_21 requires a Gradle update, which is incompatible with VERSION_1_8
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }

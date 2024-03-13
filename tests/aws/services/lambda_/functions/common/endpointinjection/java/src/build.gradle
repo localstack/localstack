@@ -3,9 +3,8 @@ plugins {
 }
 
 java {
-    // VERSION_21 requires Gradle update but the update deprecates VERSION_1_8 still used by the java8 runtimes
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 repositories {
