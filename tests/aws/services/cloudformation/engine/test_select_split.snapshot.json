@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudformation/engine/test_select_split.py::test_select_split_stack_id": {
+    "recorded-date": "13-03-2024, 14:53:20",
+    "recorded-content": {
+      "outputs": {
+        "SelectedOutput": "68494ac0-e149-11ee-80ab-0a41b9c91b2d",
+        "StackID": "arn:aws:cloudformation:<region>:111111111111:stack/stack-004e00f4/68494ac0-e149-11ee-80ab-0a41b9c91b2d"
+      }
+    }
+  }
+}

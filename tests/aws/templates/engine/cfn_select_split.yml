@@ -1,0 +1,12 @@
+# we need to have at least resource for the stack to deploy
+Resources:
+  MyResource:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: unimportant
+Outputs:
+  SelectedOutput:
+    Value: !Select [2, !Split ["/", !Ref "AWS::StackId"]]
+  StackID:
+    Value: !Ref "AWS::StackId"
