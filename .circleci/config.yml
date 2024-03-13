@@ -92,17 +92,18 @@ jobs:
                 command: |
                   if [[ -z "$CI_PULL_REQUEST" ]] ; then
                     echo "Skipping test selection"
+                    circleci-agent step halt
                   else
                     source .venv/bin/activate
                     python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr /tmp/workspace/repo $CI_PULL_REQUEST target/testselection/test-selection.txt
                     cat target/testselection/test-selection.txt
                   fi
 
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/testselection/
+            - persist_to_workspace:
+                root:
+                  /tmp/workspace
+                paths:
+                  - repo/target/testselection/
 
   unit-tests:
     executor: ubuntu-machine-amd64
