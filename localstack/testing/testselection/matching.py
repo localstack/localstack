@@ -121,6 +121,8 @@ def generic_service_test_matching_rule(
     match = re.findall("localstack/services/([^/]+)/.+", changed_file_path)
     if not match:
         match = re.findall(r"localstack/aws/api/([^/]+)/__init__\.py", changed_file_path)
+    if not match:
+        match = re.findall(r"tests/aws/services/([^/]+)/.+", changed_file_path)
 
     if match:
         changed_service = match[0]

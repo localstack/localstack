@@ -38,6 +38,11 @@ def test_generic_service_matching_rule():
     ) == {
         "tests/aws/services/cloudformation/",
     }
+    assert generic_service_test_matching_rule(
+        "tests/aws/services/cloudformation/templates/sometemplate.yaml"
+    ) == {
+        "tests/aws/services/cloudformation/",
+    }
 
 
 def test_generic_service_matching_rule_with_dependencies():
