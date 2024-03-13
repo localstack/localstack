@@ -7,6 +7,11 @@ on:
         required: false
         type: boolean
         default: false
+      disableTestSelection:
+        description: 'Disable Test Selection'
+        required: false
+        type: boolean
+        default: false
       targetRef:
         description: 'LocalStack Pro Ref'
         required: false
@@ -15,6 +20,11 @@ on:
     inputs:
       disableCaching:
         description: 'Disable Caching'
+        required: false
+        type: boolean
+        default: false
+      disableTestSelection:
+        description: 'Disable Test Selection'
         required: false
         type: boolean
         default: false
@@ -81,7 +91,7 @@ env:
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master
   TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
-  TESTSELECTION_PYTEST_ARGS: "${{ github.event_name == 'pull_request' && '--path-filter=../localstack/target/testselection/test-selection.txt ' || '' }}"
+  TESTSELECTION_PYTEST_ARGS: "${{ github.event_name == 'pull_request' && inputs.disableTestSelection && '--path-filter=../localstack/target/testselection/test-selection.txt ' || '' }}"
 
 jobs:
   test-pro:
