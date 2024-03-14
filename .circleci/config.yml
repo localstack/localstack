@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "3 12 * * *"
+    default: "6 12 * * *"
 #  skip_test_selection:
 #    type: boolean
 #    default: false
@@ -421,15 +421,15 @@ jobs:
             echo "TEST_AWS_REGION_NAME: $TEST_AWS_REGION_NAME"
             cat $BASH_ENV
             source $BASH_ENV
-#            echo "TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" > aws_credentials.env
-#            echo "TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" > aws_credentials.env
-#            echo "TEST_AWS_ACCOUNT_ID=${TEST_AWS_ACCOUNT_ID}" > aws_credentials.env
             echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> aws_credentials.env
             echo "export TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" >> aws_credentials.env
             echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> aws_credentials.env
             source aws_credentials.env
             cat aws_credentials.env  # For debugging
 #            source $BASH_ENV
+#            echo "TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" > aws_credentials.env
+#            echo "TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" > aws_credentials.env
+#            echo "TEST_AWS_ACCOUNT_ID=${TEST_AWS_ACCOUNT_ID}" > aws_credentials.env
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
