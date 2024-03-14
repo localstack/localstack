@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "26 11 * * *"
+    default: "49 11 * * *"
 #  skip_test_selection:
 #    type: boolean
 #    default: false
@@ -189,8 +189,11 @@ jobs:
       - run:
           name: Set up AWS credentials for non-default credentials
           command: |
-            source aws_credentials.env
             cat aws_credentials.env  # For debugging
+            source aws_credentials.env
+            echo "TEST_AWS_REGION_NAME: ${TEST_AWS_REGION_NAME}"  # Debugging
+            echo "TEST_AWS_ACCESS_KEY_ID: ${TEST_AWS_ACCESS_KEY_ID}"  # Debugging
+            echo "TEST_AWS_ACCOUNT_ID: ${TEST_AWS_ACCOUNT_ID}"  # Debugging
 #            source $BASH_ENV
 #            cat $BASH_ENV
 #            if [ "CIRCLE_WORKFLOW_ID" == "scheduled-workflow" ]; then
@@ -420,6 +423,7 @@ jobs:
             source $BASH_ENV
             echo "TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" > aws_credentials.env
             echo "TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> aws_credentials.env
+            echo "TEST_AWS_ACCOUNT_ID=${TEST_AWS_ACCOUNT_ID}" > aws_credentials.env
             cat aws_credentials.env  # For debugging
 #            source $BASH_ENV
       - persist_to_workspace:
