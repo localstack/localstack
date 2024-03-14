@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "4 18 * * *"
+    default: "16 18 * * *"
 #  skip_test_selection:
 #    type: boolean
 #    default: false
@@ -189,9 +189,6 @@ jobs:
             PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
             TEST_PATH: "tests/aws/services/cloudwatch/"
             COVERAGE_ARGS: "-p"
-            TEST_AWS_REGION_NAME: ${TEST_AWS_REGION_NAME}
-            TEST_AWS_ACCESS_KEY_ID: ${TEST_AWS_ACCESS_KEY_ID}
-            TEST_AWS_ACCOUNT_ID: ${TEST_AWS_ACCOUNT_ID}
           command: |
             source aws_credentials.env
             COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
@@ -396,12 +393,6 @@ jobs:
           root: /tmp/workspace
           paths:
             - repo/aws_credentials.env
-
-      # Then consume these output variables in subsequent jobs
-      - save_cache:
-          key: aws-credentials-{{ .Revision }}
-          paths:
-            - $BASH_ENV
 
 
   report:
