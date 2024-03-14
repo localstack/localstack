@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "16 18 * * *"
+    default: "24 18 * * *"
 #  skip_test_selection:
 #    type: boolean
 #    default: false
@@ -190,7 +190,11 @@ jobs:
             TEST_PATH: "tests/aws/services/cloudwatch/"
             COVERAGE_ARGS: "-p"
           command: |
-            source aws_credentials.env
+            if [ -f aws_credentials.env ]; then
+              source aws_credentials.env
+            else
+              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
+            fi
             COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
             make test-coverage
