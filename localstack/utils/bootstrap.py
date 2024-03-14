@@ -48,7 +48,7 @@ API_DEPENDENCIES = {
     "es": ["opensearch"],
     "cloudformation": ["s3", "sts"],
     "lambda": ["s3", "sqs", "sts"],
-    "firehose": ["kinesis"],
+    "firehose": ["kinesis", "opensearch", "es"],
     "transcribe": ["s3"],
 }
 # composites define an abstract name like "serverless" that maps to a set of services

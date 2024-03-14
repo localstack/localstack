@@ -7,16 +7,25 @@ import fnmatch
 from typing import Iterable, Optional
 
 OPT_IN = [
-    # SFN
-    "localstack/services/stepfunctions/**",
-    "tests/aws/services/stepfunctions/**",
-    # CFn
+    # acm
+    "localstack/services/acm/**",
+    "tests/aws/services/acm/**",
+    # cloudformation
     # probably the riskiest here since CFn tests are not as isolated as the rest
     "localstack/services/cloudformation/**",
     "tests/aws/services/cloudformation/**",
-    # Lambda
+    # elasticsearch
+    "localstack/services/es/**",
+    "tests/aws/services/es/**",
+    # lambda
     "localstack/services/lambda_/**",
     "tests/aws/services/lambda_/**",
+    # opensearch
+    "localstack/services/opensearch/**",
+    "tests/aws/services/opensearch/**",
+    # stepfunctions
+    "localstack/services/stepfunctions/**",
+    "tests/aws/services/stepfunctions/**",
 ]
 
 
