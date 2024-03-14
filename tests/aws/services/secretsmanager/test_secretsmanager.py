@@ -387,7 +387,7 @@ class TestSecretsManager:
             RotationRules={
                 "AutomaticallyAfterDays": 1,
             },
-            **rotation_kwargs
+            **rotation_kwargs,
         )
 
         sm_snapshot.match("rotate_secret_immediately", rot_res)
