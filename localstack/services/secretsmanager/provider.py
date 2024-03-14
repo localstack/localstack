@@ -232,7 +232,8 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         secret_id = request["SecretId"]
         self._raise_if_invalid_secret_id(secret_id)
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
-        backend.put_resource_policy(request["SecretId"], request["ResourcePolicy"])
+        arn, name = backend.put_resource_policy(secret_id, request["ResourcePolicy"])
+        return PutResourcePolicyResponse(ARN=arn, Name=name)
 
     @handler("PutSecretValue", expand=False)
     def put_secret_value(
