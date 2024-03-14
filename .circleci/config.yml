@@ -10,9 +10,9 @@ parameters:
   schedule-non-default-creds:
     type: string
     default: "49 11 * * *"
-#  skip_test_selection:
-#    type: boolean
-#    default: false
+  skip_test_selection:
+    type: boolean
+    default: false
 
 executors:
   ubuntu-machine-amd64:
