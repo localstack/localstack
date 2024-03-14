@@ -6,7 +6,9 @@ def get_pr_details(repo_name: str, pr_number: str, token: str) -> (str, str):
     Fetch the base commit SHA, and the head commit SHA of a given pull request number from a GitHub repository.
     """
     url = f"https://api.github.com/repos/{repo_name}/pulls/{pr_number}"
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    if token:
+        headers["Authorization"] = f"token {token}"
     pr_data = requests.get(url, headers=headers).json()
     return pr_data["base"]["sha"], pr_data["head"]["sha"]
 
