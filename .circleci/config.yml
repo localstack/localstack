@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "6 12 * * *"
+    default: "40 16 * * *"
 #  skip_test_selection:
 #    type: boolean
 #    default: false
@@ -216,6 +216,7 @@ jobs:
 #            TEST_AWS_ACCESS_KEY_ID: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_ACCESS_KEY_ID }}
 #            TEST_AWS_REGION_NAME: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_REGION_NAME }}
           command: |
+            source aws_credentials.env
             COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
             make test-coverage
@@ -423,7 +424,7 @@ jobs:
             source $BASH_ENV
             echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> aws_credentials.env
             echo "export TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" >> aws_credentials.env
-            echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> aws_credentials.env
+            echo "export TEST_AWS_ACCOUNT_ID=${TEST_AWS_ACCOUNT_ID}" >> aws_credentials.env
             source aws_credentials.env
             cat aws_credentials.env  # For debugging
 #            source $BASH_ENV
