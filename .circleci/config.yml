@@ -9,7 +9,10 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "55 7 * * *"
+    default: "26 11 * * *"
+#  skip_test_selection:
+#    type: boolean
+#    default: false
 
 executors:
   ubuntu-machine-amd64:
@@ -188,8 +191,8 @@ jobs:
           command: |
             source aws_credentials.env
             cat aws_credentials.env  # For debugging
-            source $BASH_ENV
-            cat $BASH_ENV
+#            source $BASH_ENV
+#            cat $BASH_ENV
 #            if [ "CIRCLE_WORKFLOW_ID" == "scheduled-workflow" ]; then
 #            source $BASH_ENV
 #            cat $BASH_ENV
@@ -204,7 +207,8 @@ jobs:
 #            TEST_AWS_REGION_NAME: "us-west-1"
 #            TEST_AWS_ACCOUNT_ID: ${TEST_AWS_ACCESS_KEY_ID}
             TEST_AWS_REGION_NAME: ${TEST_AWS_REGION_NAME}
-            TEST_AWS_ACCESS_KEY_ID: "${TEST_AWS_ACCESS_KEY_ID}"
+            TEST_AWS_ACCESS_KEY_ID: ${TEST_AWS_ACCESS_KEY_ID}
+            TEST_AWS_ACCOUNT_ID: ${TEST_AWS_ACCOUNT_ID}
 #            TEST_AWS_ACCOUNT_ID: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_ACCOUNT_ID }}
 #            TEST_AWS_ACCESS_KEY_ID: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_ACCESS_KEY_ID }}
 #            TEST_AWS_REGION_NAME: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_REGION_NAME }}
