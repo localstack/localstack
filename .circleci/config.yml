@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "37 7 * * *"
+    default: "15 7 * * *"
 
 executors:
   ubuntu-machine-amd64:
@@ -198,8 +198,9 @@ jobs:
             PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
             TEST_PATH: "tests/aws/services/cloudwatch/"
             COVERAGE_ARGS: "-p"
-            TEST_AWS_ACCESS_KEY_ID: "100000000000"
+#            TEST_AWS_ACCESS_KEY_ID: "100000000000"
             TEST_AWS_REGION_NAME: "us-west-1"
+            TEST_AWS_ACCOUNT_ID: ${TEST_AWS_ACCESS_KEY_ID}
 #            TEST_AWS_ACCOUNT_ID: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_ACCOUNT_ID }}
 #            TEST_AWS_ACCESS_KEY_ID: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_ACCESS_KEY_ID }}
 #            TEST_AWS_REGION_NAME: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_REGION_NAME }}
