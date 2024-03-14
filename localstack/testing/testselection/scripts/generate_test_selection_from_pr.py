@@ -24,7 +24,7 @@ def main():
     pull_request_url = sys.argv[-2]
     repo_root_path = sys.argv[-3]
 
-    github_token = os.environ["GITHUB_API_TOKEN"]
+    github_token = os.environ.get("GITHUB_API_TOKEN")
 
     base_commit_sha, head_commit_sha = get_pr_details_from_url(pull_request_url, github_token)
     print(f"Pull request: {pull_request_url}")
