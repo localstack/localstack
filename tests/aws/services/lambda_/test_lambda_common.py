@@ -54,7 +54,7 @@ RUNTIMES_SKIP_ARM = [
     Runtime.java8,
     Runtime.go1_x,
     Runtime.provided,
-    # TODO: debug and fix ARM builds in CI (works locally on ARM mac)
+    # TODO: debug and fix ARM Lambda building and packaging in CI (works locally on ARM mac)
     Runtime.java8_al2,
     Runtime.java11,
     Runtime.java17,

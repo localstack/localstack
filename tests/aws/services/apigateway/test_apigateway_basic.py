@@ -38,7 +38,6 @@ from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.json import clone
-from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from localstack.utils.urls import localstack_host
@@ -1720,8 +1719,8 @@ class TestTagging:
         assert tags == tags_saved
 
 
-@pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
 @markers.aws.unknown
+@markers.only_on_amd64
 def test_apigateway_rust_lambda(
     create_rest_apigw, create_lambda_function, create_iam_role_with_policy, aws_client
 ):
