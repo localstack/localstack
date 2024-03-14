@@ -225,7 +225,7 @@ jobs:
         with:
           path: |
             localstack-ext/.venv
-          # include the matrix group (to re-use the venv used in the specific test group)
+          # include the matrix group (to re-use the venv)
           key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
           restore-keys: |
             community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-refs/heads/master
