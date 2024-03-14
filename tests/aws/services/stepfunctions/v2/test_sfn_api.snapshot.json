@@ -1616,7 +1616,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_state_machine_status_filter": {
-    "recorded-date": "20-12-2023, 16:18:45",
+    "recorded-date": "14-03-2024, 18:37:36",
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
@@ -1646,6 +1646,7 @@
           {
             "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
             "name": "<ExecArnPart_0idx>",
+            "redriveCount": 0,
             "startDate": "datetime",
             "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
             "status": "SUCCEEDED",

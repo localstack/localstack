@@ -890,6 +890,7 @@ class TestSnfApi:
 
         aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount"])
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..redriveCount", "$..redriveStatus", "$..redriveStatusReason"]
