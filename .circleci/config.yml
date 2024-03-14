@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "44 18 * * *"
+    default: "30 19 * * *"
 #  skip_test_selection:
 #    type: boolean
 #    default: false
@@ -253,6 +253,16 @@ jobs:
       - run:
           name: Save docker image
           command: PLATFORM="<< parameters.platform >>" make docker-save-image
+      - run:
+          name: Setup non-default AWS credentials
+          command: |
+              cat aws_credentials.env
+              source aws_credentials.env
+              if [ -f aws_credentials.env ]; then
+                source aws_credentials.env
+              else
+                echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
+              fi
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -306,6 +316,8 @@ jobs:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
+            source aws_credentials.env
+            cat aws_credentials.env
             if [ -f aws_credentials.env ]; then
               source aws_credentials.env
             else
