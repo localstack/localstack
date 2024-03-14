@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "15 7 * * *"
+    default: "30 7 * * *"
 
 executors:
   ubuntu-machine-amd64:
@@ -186,6 +186,8 @@ jobs:
       - run:
           name: Set up AWS credentials for non-default credentials
           command: |
+            source aws_credentials.env
+            cat aws_credentials.env  # For debugging
             source $BASH_ENV
             cat $BASH_ENV
 #            if [ "CIRCLE_WORKFLOW_ID" == "scheduled-workflow" ]; then
@@ -199,8 +201,10 @@ jobs:
             TEST_PATH: "tests/aws/services/cloudwatch/"
             COVERAGE_ARGS: "-p"
 #            TEST_AWS_ACCESS_KEY_ID: "100000000000"
-            TEST_AWS_REGION_NAME: "us-west-1"
-            TEST_AWS_ACCOUNT_ID: ${TEST_AWS_ACCESS_KEY_ID}
+#            TEST_AWS_REGION_NAME: "us-west-1"
+#            TEST_AWS_ACCOUNT_ID: ${TEST_AWS_ACCESS_KEY_ID}
+            TEST_AWS_REGION_NAME: ${TEST_AWS_REGION_NAME}
+            TEST_AWS_ACCESS_KEY_ID: "${TEST_AWS_ACCESS_KEY_ID}"
 #            TEST_AWS_ACCOUNT_ID: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_ACCOUNT_ID }}
 #            TEST_AWS_ACCESS_KEY_ID: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_ACCESS_KEY_ID }}
 #            TEST_AWS_REGION_NAME: ${{ steps.generate-random-aws-credentials.outputs.TEST_AWS_REGION_NAME }}
@@ -406,13 +410,23 @@ jobs:
             echo "TEST_AWS_REGION_NAME: $TEST_AWS_REGION_NAME"
             cat $BASH_ENV
             source $BASH_ENV
+#
+            echo "TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" > aws_credentials.env
+            echo "TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> aws_credentials.env
+            cat aws_credentials.env  # For debugging
+            #
 #            source $BASH_ENV
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths:
+            - aws_credentials.env
 
       # Then consume these output variables in subsequent jobs
       - save_cache:
           key: aws-credentials-{{ .Revision }}
           paths:
             - $BASH_ENV
+
 
   report:
     executor: ubuntu-machine-amd64
