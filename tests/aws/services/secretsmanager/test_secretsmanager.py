@@ -349,6 +349,10 @@ class TestSecretsManager:
         aws_client,
         rotate_immediately,
     ):
+        """
+        Tests secret rotation via a lambda function.
+        Parametrization ensures we test the default behavior which is an immediate rotation.
+        """
         cre_res = create_secret(
             Name=secret_name,
             SecretString="my_secret",
@@ -374,13 +378,17 @@ class TestSecretsManager:
             Principal="secretsmanager.amazonaws.com",
         )
 
+        rotation_kwargs = {}
+        if rotate_immediately is not None:
+            rotation_kwargs["RotateImmediately"] = rotate_immediately
         rot_res = aws_client.secretsmanager.rotate_secret(
             SecretId=secret_name,
             RotationLambdaARN=function_arn,
             RotationRules={
                 "AutomaticallyAfterDays": 1,
             },
-            RotateImmediately=rotate_immediately,
+            **rotation_kwargs
+            # RotateImmediately=False,
         )
 
         sm_snapshot.match("rotate_secret_immediately", rot_res)
