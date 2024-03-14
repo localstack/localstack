@@ -1,4 +1,5 @@
-"""Lambda scenario tests for different runtimes (i.e., multiruntime tests).
+"""Testing different runtimes focusing on common functionality that should work across all runtimes (e.g., echo invoke).
+Internally, these tests are also known as multiruntime tests.
 
 Directly correlates to the structure found in tests.aws.lambda_.functions.common
 Each scenario has the following folder structure: ./common/<scenario>/runtime/
@@ -281,8 +282,6 @@ class TestLambdaCallingLocalstack:
     # These temporary runtime selections are only relevant for test_manual_endpoint_injection
     x86_runtimes = [
         "dotnet6",
-        # TODO: test Go + add to ARM as well
-        # "provided_go",
         # java17 and java21 do not ship the AWS SDK v1 anymore.
         # Therefore, we bundle the SDK v1 separately because the SDK v2 does not
         # support DISABLE_CERT_CHECKING_SYSTEM_PROPERTY anymore.

@@ -328,6 +328,7 @@ jobs:
           name: Load docker image
           command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
       - when:
+#          TODO: remove this condition + add platform suffix to cache key
           condition:
             equal: [ "amd64", << parameters.platform >>]
           steps:

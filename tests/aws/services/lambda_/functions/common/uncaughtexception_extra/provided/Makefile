@@ -5,7 +5,7 @@ DOCKER_GOLANG_IMAGE ?= golang:1.19.6
 
 build:
 	mkdir -p build && \
-	docker run --rm --platform $(DOCKER_PLATFORM) -v $$(pwd)/src:/app -v $$(pwd)/build:/out $(DOCKER_GOLANG_IMAGE) /bin/bash -c "cd /app && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags=-buildid= -o /out/main main.go && chown $$(id -u):$$(id -g) /out/main"
+	docker run --rm --platform $(DOCKER_PLATFORM) -v $$(pwd)/src:/app -v $$(pwd)/build:/out $(DOCKER_GOLANG_IMAGE) /bin/bash -c "cd /app && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags=-buildid= -o /out/bootstrap main.go && chown $$(id -u):$$(id -g) /out/bootstrap"
 
 clean:
 	$(RM) -r build handler.zip

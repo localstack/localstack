@@ -20,6 +20,7 @@ ARM_CROSS_BUILD_WORKAROUND ?= --config net.git-fetch-with-cli=true
 # ARM support for aarch64-unknown-linux-gnu pending: https://github.com/rust-lang/rust/issues/77071
 RUST_TARGET ?= x86_64-unknown-linux-musl
 
+# TODO: check if zipping step is needed because the `lambda_utils.py` might do it automatically
 build:
 	mkdir -p build && \
 	docker run --rm --platform=$(DOCKER_PLATFORM) -v $$(pwd)/src:/app -v $$(pwd)/build:/out:cached $(DOCKER_RUST_IMAGE) bash -c "rustup target add $(RUST_TARGET) && mkdir -p /app2 && cp -r /app/* /app2 && cd /app2 && cargo build $(ARM_CROSS_BUILD_WORKAROUND) --release --target $(RUST_TARGET) && cp ./target/$(RUST_TARGET)/release/bootstrap /out && chown $$(id -u):$$(id -g) /out/bootstrap" && \

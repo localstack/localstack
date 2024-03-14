@@ -15,6 +15,7 @@ from localstack.aws.api.lambda_ import Runtime
 # c) `SNAP_START_SUPPORTED_RUNTIMES` if supported (currently only new Java runtimes)
 # 3. Re-create snapshots for Lambda tests with the marker @markers.lambda_runtime_update
 # => Filter the tests using pytest -m lambda_runtime_update (i.e., additional arguments in PyCharm)
+# Depending on the runtime, `test_lambda_runtimes.py` might require further snapshot updates.
 # 4. Add the new runtime to these variables below:
 # a) `VALID_RUNTIMES` matching the order of the snapshots
 # b) `VALID_LAYER_RUNTIMES` matching the order of the snapshots
@@ -114,7 +115,6 @@ RUNTIMES_AGGREGATED = {
         Runtime.provided_al2023,
         Runtime.provided_al2,
     ],
-    # "provided_go": [Runtime.provided_al2023],
 }
 
 # An unordered list of all tested runtimes listed in `RUNTIMES_AGGREGATED`

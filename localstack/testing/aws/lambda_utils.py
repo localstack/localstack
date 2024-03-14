@@ -35,9 +35,8 @@ HANDLERS = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "index.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "echo.Handler"),
+    # TODO: check if "function.handler" is relevant; or just main or bootstrap?!
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "function.handler"),
-    # TODO: check if provided go works
-    # **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided_go"), "main"),
     "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",  # TODO lets see if we can accumulate those
 }
 
@@ -47,7 +46,6 @@ PACKAGE_FOR_RUNTIME = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "java"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "provided"),
-    # **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided_go"), "provided_go"),
     "dotnet6": "dotnet6",
 }
 
@@ -93,7 +91,7 @@ def package_for_lang(scenario: str, runtime: str, root_folder: Path) -> str:
     generic_runtime_dir_candidate = scenario_dir / runtime_folder
 
     # if a more specific folder exists, use that one
-    # otherwise: try to fall back to generic runtime (e.g. python for python3.9)
+    # otherwise: try to fall back to generic runtime (e.g. python for python3.12)
     if runtime_dir_candidate.exists() and runtime_dir_candidate.is_dir():
         runtime_dir = runtime_dir_candidate
     else:
@@ -108,6 +106,7 @@ def package_for_lang(scenario: str, runtime: str, root_folder: Path) -> str:
         return package_path
 
     # packaging
+    # TODO: add arch support: tricky to determine because it is x86 by default but might differ with ignore architecture
     result = subprocess.run(["make", "build"], cwd=runtime_dir)
     if result.returncode != 0:
         raise Exception(

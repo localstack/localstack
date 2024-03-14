@@ -1,4 +1,16 @@
 {
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_manual_endpoint_injection[provided.al2023]": {
+    "last_validated_date": "2024-03-14T17:19:04+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_manual_endpoint_injection[provided.al2]": {
+    "last_validated_date": "2024-03-14T17:19:09+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_uncaught_exception_invoke[provided.al2023]": {
+    "last_validated_date": "2024-03-14T17:15:53+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_uncaught_exception_invoke[provided.al2]": {
+    "last_validated_date": "2024-03-14T17:15:56+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom-INTERFACE]": {
     "last_validated_date": "2024-03-13T08:55:53+00:00"
   },

@@ -1004,5 +1004,135 @@
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.8]": {
     "recorded-date": "13-03-2024, 08:56:57",
     "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_uncaught_exception_invoke[provided.al2023]": {
+    "recorded-date": "14-03-2024, 17:15:53",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<<code-sha-256>:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "function.handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "provided.al2023",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "error_result": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Error: some_error_msg",
+          "errorType": "errorString"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_uncaught_exception_invoke[provided.al2]": {
+    "recorded-date": "14-03-2024, 17:15:56",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<<code-sha-256>:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "function.handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "provided.al2",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "error_result": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Error: some_error_msg",
+          "errorType": "errorString"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_manual_endpoint_injection[provided.al2023]": {
+    "recorded-date": "14-03-2024, 17:19:05",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_manual_endpoint_injection[provided.al2]": {
+    "recorded-date": "14-03-2024, 17:19:10",
+    "recorded-content": {}
   }
 }
