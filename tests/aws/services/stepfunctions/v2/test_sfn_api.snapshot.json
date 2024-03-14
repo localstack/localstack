@@ -1616,7 +1616,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_state_machine_status_filter": {
-    "recorded-date": "14-03-2024, 18:37:36",
+    "recorded-date": "14-03-2024, 21:58:24",
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
@@ -1663,6 +1663,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "list_executions_filter_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'succeeded' at 'statusFilter' failed to satisfy constraint: Member must satisfy enum value set: [SUCCEEDED, TIMED_OUT, PENDING_REDRIVE, ABORTED, FAILED, RUNNING]"
+        },
+        "message": "1 validation error detected: Value 'succeeded' at 'statusFilter' failed to satisfy constraint: Member must satisfy enum value set: [SUCCEEDED, TIMED_OUT, PENDING_REDRIVE, ABORTED, FAILED, RUNNING]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

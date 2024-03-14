@@ -890,7 +890,6 @@ class TestSnfApi:
 
         aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount"])
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..redriveCount", "$..redriveStatus", "$..redriveStatusReason"]
@@ -1007,6 +1006,7 @@ class TestSnfApi:
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount"])
     @markers.aws.validated
     def test_state_machine_status_filter(
         self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
@@ -1014,7 +1014,7 @@ class TestSnfApi:
         snf_role_arn = create_iam_role_for_sfn()
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
 
-        sm_name: str = f"statemachine_{short_uid()}"
+        sm_name = f"statemachine_{short_uid()}"
         definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
 
@@ -1052,9 +1052,8 @@ class TestSnfApi:
         )
         sfn_snapshot.match("list_running_when_complete", list_response)
 
-        with pytest.raises(
-            ClientError, match="Value 'succeeded' at 'statusFilter' failed to satisfy constraint"
-        ):
+        with pytest.raises(ClientError) as e:
             aws_client.stepfunctions.list_executions(
                 stateMachineArn=state_machine_arn, statusFilter="succeeded"
             )
+        sfn_snapshot.match("list_executions_filter_exc", e.value.response)
