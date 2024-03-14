@@ -155,6 +155,28 @@ def await_execution_success(stepfunctions_client, execution_arn: str):
     )
 
 
+def await_list_execution_status(
+    stepfunctions_client, state_machine_arn: str, execution_arn: str, status: str
+):
+    """required as there is some eventual consistency in list_executions vs describe_execution and get_execution_history"""
+
+    def _run_check():
+        list_resp = stepfunctions_client.list_executions(
+            stateMachineArn=state_machine_arn, statusFilter=status
+        )
+        for execution in list_resp.get("executions", []):
+            if execution["executionArn"] != execution_arn or execution["status"] != status:
+                continue
+            return True
+        return False
+
+    success = poll_condition(condition=_run_check, timeout=120, interval=1)
+    if not success:
+        LOG.warning(
+            f"Timed out whilst awaiting for execution status {status} to satisfy condition for execution '{execution_arn}'."
+        )
+
+
 def await_execution_terminated(stepfunctions_client, execution_arn: str):
     def _check_last_is_terminal(events: HistoryEventList) -> bool:
         if len(events) > 0:
