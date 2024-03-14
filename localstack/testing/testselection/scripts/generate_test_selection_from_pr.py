@@ -2,6 +2,7 @@
 USAGE: $ GITHUB_API_TOKEN=<your-token> python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr <git-root-dir> <pull-request-url> <output-file-path>
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -23,9 +24,7 @@ def main():
     pull_request_url = sys.argv[-2]
     repo_root_path = sys.argv[-3]
 
-    # TODO change to the right env var again
-    # github_token = os.environ.get("GITHUB_API_TOKEN")
-    github_token = None
+    github_token = os.environ.get("GITHUB_API_TOKEN")
 
     base_commit_sha, head_commit_sha = get_pr_details_from_url(pull_request_url, github_token)
     print(f"Pull request: {pull_request_url}")
