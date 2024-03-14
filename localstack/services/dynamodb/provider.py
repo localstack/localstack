@@ -9,6 +9,7 @@ import time
 import traceback
 from binascii import crc32
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime
 from operator import itemgetter
@@ -149,7 +150,7 @@ from localstack.utils.common import short_uid, to_bytes
 from localstack.utils.json import BytesEncoder, canonical_json
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import long_uid, md5, to_str
-from localstack.utils.threads import FuncThread, start_thread, start_worker_thread
+from localstack.utils.threads import FuncThread, start_thread
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -189,23 +190,34 @@ def dynamodb_table_exists(table_name: str, client=None):
 
 
 class EventForwarder:
-    @classmethod
+    def __init__(self, num_thread: int = 20):
+        self.executor = ThreadPoolExecutor(num_thread, thread_name_prefix="ddb_stream_fwd")
+
+    def shutdown(self):
+        self.executor.shutdown(wait=False)
+
     def forward_to_targets(
-        cls, account_id: str, region_name: str, records: List[Dict], background: bool = True
+        self, account_id: str, region_name: str, records: List[Dict], background: bool = True
     ):
-        def _forward(*args):
-            # forward to kinesis stream
-            records_to_kinesis = copy.deepcopy(records)
-            cls.forward_to_kinesis_stream(records_to_kinesis)
-
-            # forward to ddb_streams
-            forward_records = cls.prepare_records_to_forward_to_ddb_stream(records)
-            records_to_ddb = copy.deepcopy(forward_records)
-            cls.forward_to_ddb_stream(account_id, region_name, records_to_ddb)
-
         if background:
-            return start_worker_thread(_forward)
-        _forward()
+            self.executor.submit(
+                self._forward,
+                account_id=account_id,
+                region_name=region_name,
+                records=records,
+            )
+        else:
+            self._forward(account_id, region_name, records)
+
+    def _forward(self, account_id: str, region_name: str, records: List[Dict]):
+        # forward to kinesis stream
+        records_to_kinesis = copy.deepcopy(records)
+        self.forward_to_kinesis_stream(records_to_kinesis)
+
+        # forward to ddb_streams
+        forward_records = self.prepare_records_to_forward_to_ddb_stream(records)
+        records_to_ddb = copy.deepcopy(forward_records)
+        self.forward_to_ddb_stream(account_id, region_name, records_to_ddb)
 
     @staticmethod
     def forward_to_ddb_stream(account_id: str, region_name: str, records):
@@ -491,6 +503,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self.server = self._new_dynamodb_server()
         self._expired_items_worker = ExpiredItemsWorker()
         self._router_rules = []
+        self._event_forwarder = EventForwarder()
 
     def on_before_start(self):
         self.server.start_dynamodb()
@@ -501,6 +514,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def on_before_stop(self):
         self._expired_items_worker.stop()
         ROUTER.remove(self._router_rules)
+        self._event_forwarder.shutdown()
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(dynamodb_stores)
@@ -1460,7 +1474,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> KinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
-        stream = EventForwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
+        stream = self._event_forwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
         if not stream:
             raise ValidationException("User does not have a permission to use kinesis stream")
 
@@ -1506,7 +1520,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     ) -> KinesisStreamingDestinationOutput:
         self.ensure_table_exists(context.account_id, context.region, table_name)
 
-        stream = EventForwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
+        stream = self._event_forwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
         if not stream:
             raise ValidationException(
                 "User does not have a permission to use kinesis stream",
@@ -1910,7 +1924,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     record["eventSourceARN"] = arns.dynamodb_table_arn(
                         table_name, account_id=account_id, region_name=region_name
                     )
-            EventForwarder.forward_to_targets(account_id, region_name, records, background=True)
+            self._event_forwarder.forward_to_targets(
+                account_id, region_name, records, background=True
+            )
 
     def get_record_template(self, region_name: str) -> Dict:
         return {
