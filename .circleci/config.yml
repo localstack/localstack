@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "24 18 * * *"
+    default: "41 18 * * *"
 #  skip_test_selection:
 #    type: boolean
 #    default: false
@@ -88,6 +88,11 @@ jobs:
             TEST_PATH: "tests/unit"
             COVERAGE_ARGS: "-p"
           command: |
+            if [ -f aws_credentials.env ]; then
+              source aws_credentials.env
+            else
+              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
+            fi
             COVERAGE_FILE="target/coverage/.coverage.unit.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" \
             make test-coverage
@@ -113,6 +118,11 @@ jobs:
             TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
             COVERAGE_ARGS: "-p"
           command: |
+            if [ -f aws_credentials.env ]; then
+              source aws_credentials.env
+            else
+              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
+            fi
             COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
             make test-coverage
@@ -138,6 +148,11 @@ jobs:
             COVERAGE_ARGS: "-p"
             LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
           command: |
+            if [ -f aws_credentials.env ]; then
+              source aws_credentials.env
+            else
+              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
+            fi
             COVERAGE_FILE="target/coverage/.coverage.acceptance.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance_test.xml -o junit_suite_name='acceptance_test'" \
             make test-coverage
@@ -165,6 +180,11 @@ jobs:
             TEST_PATH: "tests/aws/services/s3/"
             COVERAGE_ARGS: "-p"
           command: |
+            if [ -f aws_credentials.env ]; then
+              source aws_credentials.env
+            else
+              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
+            fi
             COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
             make test-coverage
@@ -286,6 +306,11 @@ jobs:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
+            if [ -f aws_credentials.env ]; then
+              source aws_credentials.env
+            else
+              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
+            fi
             TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
@@ -318,6 +343,11 @@ jobs:
             TEST_PATH: "tests/bootstrap"
             COVERAGE_ARGS: "-p"
           command: |
+            if [ -f aws_credentials.env ]; then
+              source aws_credentials.env
+            else
+              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
+            fi
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/bootstrap-tests.xml -o junit_suite_name=bootstrap-tests" make test-coverage
       - store_test_results:
           path: target/reports/

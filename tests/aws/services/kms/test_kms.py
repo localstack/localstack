@@ -1348,6 +1348,19 @@ class TestKMSGenerateKeys:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
     def test_encryption_context_generate_data_key_pair(self, kms_key, aws_client, snapshot):
+        import os
+
+        from localstack.constants import (
+            TEST_AWS_ACCESS_KEY_ID,
+            TEST_AWS_ACCOUNT_ID,
+            TEST_AWS_REGION_NAME,
+        )
+
+        print("TEST_AWS_REGION_NAME:", TEST_AWS_REGION_NAME, os.getenv("TEST_AWS_REGION_NAME"))
+        print(
+            "TEST_AWS_ACCESS_KEY_ID:", TEST_AWS_ACCESS_KEY_ID, os.getenv("TEST_AWS_ACCESS_KEY_ID")
+        )
+        print("TEST_AWS_ACCOUNT_KEY_ID:", TEST_AWS_ACCOUNT_ID, os.getenv("TEST_AWS_ACCOUNT_ID"))
         encryption_context = {"context-key": "context-value"}
         key_id = kms_key["KeyId"]
         result = aws_client.kms.generate_data_key_pair(
