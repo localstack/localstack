@@ -388,7 +388,6 @@ class TestSecretsManager:
                 "AutomaticallyAfterDays": 1,
             },
             **rotation_kwargs
-            # RotateImmediately=False,
         )
 
         sm_snapshot.match("rotate_secret_immediately", rot_res)
