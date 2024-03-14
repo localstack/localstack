@@ -114,6 +114,13 @@ jobs:
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
     steps:
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          # don't perform all optimizations to decrease action execution time
+          large-packages: false
+          docker-images: false
+
       - name: Checkout Community
         uses: actions/checkout@v4
         with:
@@ -212,17 +219,16 @@ jobs:
           sudo apt-get update
           # postgresql-14 pin is required to make explicit install of the version from the Ubuntu repos and not PGDG repos
           sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.11-0ubuntu0* postgresql-client postgresql-plpython3
-
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
         uses: actions/cache@v4
         with:
           path: |
             localstack-ext/.venv
-          # include the matrix group (to re-use the var-libs used in the specific test group)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt', 'localstack/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
+          # include the matrix group (to re-use the venv)
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt', 'localstack/requirements-test.txt') }}-refs/heads/master
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/requirements-test.txt') }}-refs/heads/master
 
       - name: Cache Ext Dependencies (libs)
         if: inputs.disableCaching != true
@@ -231,10 +237,9 @@ jobs:
           path: |
             localstack/.filesystem/var/lib/localstack
           # include the matrix group (to re-use the var-libs used in the specific test group)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('localstack-ext/**/packages.py','localstack-ext/packages/*.py', 'localstack/**/packages.py',  'localstack/packages/*.py') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('localstack-ext/**/packages.py','localstack-ext/packages/*.py','localstack/**/packages.py',  'localstack/packages/*.py') }}-refs/heads/master-group-${{ matrix.group }}
-
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-refs/heads/master-group-${{ matrix.group }}
 
       - name: Restore Lambda common runtime packages
         id: cached-lambda-common-restore
