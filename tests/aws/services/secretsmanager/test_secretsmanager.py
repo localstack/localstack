@@ -337,11 +337,22 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
 
+    @pytest.mark.parametrize("rotate_immediately", [True, None])
     @markers.snapshot.skip_snapshot_verify(paths=["$..Versions..KmsKeyIds"])
     @markers.aws.validated
     def test_rotate_secret_with_lambda_success(
-        self, sm_snapshot, secret_name, create_secret, create_lambda_function, aws_client
+        self,
+        sm_snapshot,
+        secret_name,
+        create_secret,
+        create_lambda_function,
+        aws_client,
+        rotate_immediately,
     ):
+        """
+        Tests secret rotation via a lambda function.
+        Parametrization ensures we test the default behavior which is an immediate rotation.
+        """
         cre_res = create_secret(
             Name=secret_name,
             SecretString="my_secret",
@@ -367,13 +378,16 @@ class TestSecretsManager:
             Principal="secretsmanager.amazonaws.com",
         )
 
+        rotation_kwargs = {}
+        if rotate_immediately is not None:
+            rotation_kwargs["RotateImmediately"] = rotate_immediately
         rot_res = aws_client.secretsmanager.rotate_secret(
             SecretId=secret_name,
             RotationLambdaARN=function_arn,
             RotationRules={
                 "AutomaticallyAfterDays": 1,
             },
-            RotateImmediately=True,
+            **rotation_kwargs,
         )
 
         sm_snapshot.match("rotate_secret_immediately", rot_res)
