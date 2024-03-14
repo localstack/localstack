@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "54 7 * * *"
+    default: "55 7 * * *"
 
 executors:
   ubuntu-machine-amd64:
@@ -217,6 +217,7 @@ jobs:
             /tmp/workspace
           paths:
             - repo/target/coverage/
+            - repo/aws_credentials.env
       - store_test_results:
           path: target/reports/
 
@@ -385,7 +386,7 @@ jobs:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
-      - - attach_workspace:
+      - attach_workspace:
             at: /tmp/workspace
       - run:
           name: Generate Random AWS Account ID
