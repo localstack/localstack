@@ -477,6 +477,7 @@ class SupportApi:
         context: RequestContext,
         attachments: Attachments,
         attachment_set_id: AttachmentSetId = None,
+        **kwargs,
     ) -> AddAttachmentsToSetResponse:
         raise NotImplementedError
 
@@ -488,6 +489,7 @@ class SupportApi:
         case_id: CaseId = None,
         cc_email_addresses: CcEmailAddressList = None,
         attachment_set_id: AttachmentSetId = None,
+        **kwargs,
     ) -> AddCommunicationToCaseResponse:
         raise NotImplementedError
 
@@ -504,12 +506,13 @@ class SupportApi:
         language: Language = None,
         issue_type: IssueType = None,
         attachment_set_id: AttachmentSetId = None,
+        **kwargs,
     ) -> CreateCaseResponse:
         raise NotImplementedError
 
     @handler("DescribeAttachment")
     def describe_attachment(
-        self, context: RequestContext, attachment_id: AttachmentId
+        self, context: RequestContext, attachment_id: AttachmentId, **kwargs
     ) -> DescribeAttachmentResponse:
         raise NotImplementedError
 
@@ -526,6 +529,7 @@ class SupportApi:
         max_results: MaxResults = None,
         language: Language = None,
         include_communications: IncludeCommunications = None,
+        **kwargs,
     ) -> DescribeCasesResponse:
         raise NotImplementedError
 
@@ -538,6 +542,7 @@ class SupportApi:
         after_time: AfterTime = None,
         next_token: NextToken = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> DescribeCommunicationsResponse:
         raise NotImplementedError
 
@@ -549,6 +554,7 @@ class SupportApi:
         service_code: ServiceCode,
         language: Language,
         category_code: CategoryCode,
+        **kwargs,
     ) -> DescribeCreateCaseOptionsResponse:
         raise NotImplementedError
 
@@ -558,12 +564,13 @@ class SupportApi:
         context: RequestContext,
         service_code_list: ServiceCodeList = None,
         language: Language = None,
+        **kwargs,
     ) -> DescribeServicesResponse:
         raise NotImplementedError
 
     @handler("DescribeSeverityLevels")
     def describe_severity_levels(
-        self, context: RequestContext, language: Language = None
+        self, context: RequestContext, language: Language = None, **kwargs
     ) -> DescribeSeverityLevelsResponse:
         raise NotImplementedError
 
@@ -574,39 +581,42 @@ class SupportApi:
         issue_type: ValidatedIssueTypeString,
         service_code: ValidatedServiceCode,
         category_code: ValidatedCategoryCode,
+        **kwargs,
     ) -> DescribeSupportedLanguagesResponse:
         raise NotImplementedError
 
     @handler("DescribeTrustedAdvisorCheckRefreshStatuses")
     def describe_trusted_advisor_check_refresh_statuses(
-        self, context: RequestContext, check_ids: StringList
+        self, context: RequestContext, check_ids: StringList, **kwargs
     ) -> DescribeTrustedAdvisorCheckRefreshStatusesResponse:
         raise NotImplementedError
 
     @handler("DescribeTrustedAdvisorCheckResult")
     def describe_trusted_advisor_check_result(
-        self, context: RequestContext, check_id: String, language: String = None
+        self, context: RequestContext, check_id: String, language: String = None, **kwargs
     ) -> DescribeTrustedAdvisorCheckResultResponse:
         raise NotImplementedError
 
     @handler("DescribeTrustedAdvisorCheckSummaries")
     def describe_trusted_advisor_check_summaries(
-        self, context: RequestContext, check_ids: StringList
+        self, context: RequestContext, check_ids: StringList, **kwargs
     ) -> DescribeTrustedAdvisorCheckSummariesResponse:
         raise NotImplementedError
 
     @handler("DescribeTrustedAdvisorChecks")
     def describe_trusted_advisor_checks(
-        self, context: RequestContext, language: String
+        self, context: RequestContext, language: String, **kwargs
     ) -> DescribeTrustedAdvisorChecksResponse:
         raise NotImplementedError
 
     @handler("RefreshTrustedAdvisorCheck")
     def refresh_trusted_advisor_check(
-        self, context: RequestContext, check_id: String
+        self, context: RequestContext, check_id: String, **kwargs
     ) -> RefreshTrustedAdvisorCheckResponse:
         raise NotImplementedError
 
     @handler("ResolveCase")
-    def resolve_case(self, context: RequestContext, case_id: CaseId = None) -> ResolveCaseResponse:
+    def resolve_case(
+        self, context: RequestContext, case_id: CaseId = None, **kwargs
+    ) -> ResolveCaseResponse:
         raise NotImplementedError

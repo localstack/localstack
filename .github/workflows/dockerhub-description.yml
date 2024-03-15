@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - README.md
+      - DOCKER.md
       - .github/workflows/dockerhub-description.yml
 
 jobs:
@@ -16,9 +16,10 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Docker Hub Description
-      uses: peter-evans/dockerhub-description@v3
+      uses: peter-evans/dockerhub-description@v4
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
         repository: localstack/localstack
         short-description: ${{ github.event.repository.description }}
+        readme-filepath: DOCKER.md

@@ -3,7 +3,7 @@
     "last_validated_date": "2023-11-09T20:04:02+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy": {
-    "last_validated_date": "2023-11-09T20:05:40+00:00"
+    "last_validated_date": "2024-01-25T18:07:57+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_for_batch": {
     "last_validated_date": "2023-11-09T20:01:32+00:00"
@@ -60,7 +60,7 @@
     "last_validated_date": "2023-08-24T20:31:46+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_wrong_arn_format": {
-    "last_validated_date": "2023-08-24T20:31:40+00:00"
+    "last_validated_date": "2024-03-11T10:36:34+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_topic_publish_another_region": {
     "last_validated_date": "2023-11-17T17:14:28+00:00"

@@ -2,6 +2,9 @@
   "tests/aws/services/cloudformation/resources/test_s3.py::test_cors_configuration": {
     "last_validated_date": "2023-04-20T18:17:17+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_object_lock_configuration": {
+    "last_validated_date": "2024-01-15T02:31:58+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_s3.py::test_website_configuration": {
     "last_validated_date": "2023-06-02T16:24:39+00:00"
   }

@@ -310,7 +310,7 @@ class CloudcontrolApi:
 
     @handler("CancelResourceRequest")
     def cancel_resource_request(
-        self, context: RequestContext, request_token: RequestToken
+        self, context: RequestContext, request_token: RequestToken, **kwargs
     ) -> CancelResourceRequestOutput:
         raise NotImplementedError
 
@@ -323,6 +323,7 @@ class CloudcontrolApi:
         type_version_id: TypeVersionId = None,
         role_arn: RoleArn = None,
         client_token: ClientToken = None,
+        **kwargs,
     ) -> CreateResourceOutput:
         raise NotImplementedError
 
@@ -335,6 +336,7 @@ class CloudcontrolApi:
         type_version_id: TypeVersionId = None,
         role_arn: RoleArn = None,
         client_token: ClientToken = None,
+        **kwargs,
     ) -> DeleteResourceOutput:
         raise NotImplementedError
 
@@ -346,12 +348,13 @@ class CloudcontrolApi:
         identifier: Identifier,
         type_version_id: TypeVersionId = None,
         role_arn: RoleArn = None,
+        **kwargs,
     ) -> GetResourceOutput:
         raise NotImplementedError
 
     @handler("GetResourceRequestStatus")
     def get_resource_request_status(
-        self, context: RequestContext, request_token: RequestToken
+        self, context: RequestContext, request_token: RequestToken, **kwargs
     ) -> GetResourceRequestStatusOutput:
         raise NotImplementedError
 
@@ -362,6 +365,7 @@ class CloudcontrolApi:
         max_results: MaxResults = None,
         next_token: NextToken = None,
         resource_request_status_filter: ResourceRequestStatusFilter = None,
+        **kwargs,
     ) -> ListResourceRequestsOutput:
         raise NotImplementedError
 
@@ -375,6 +379,7 @@ class CloudcontrolApi:
         next_token: HandlerNextToken = None,
         max_results: MaxResults = None,
         resource_model: Properties = None,
+        **kwargs,
     ) -> ListResourcesOutput:
         raise NotImplementedError
 
@@ -388,5 +393,6 @@ class CloudcontrolApi:
         type_version_id: TypeVersionId = None,
         role_arn: RoleArn = None,
         client_token: ClientToken = None,
+        **kwargs,
     ) -> UpdateResourceOutput:
         raise NotImplementedError

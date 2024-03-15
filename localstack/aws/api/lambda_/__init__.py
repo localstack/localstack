@@ -235,6 +235,7 @@ class Runtime(str):
     dotnetcore2_1 = "dotnetcore2.1"
     dotnetcore3_1 = "dotnetcore3.1"
     dotnet6 = "dotnet6"
+    dotnet8 = "dotnet8"
     nodejs4_3_edge = "nodejs4.3-edge"
     go1_x = "go1.x"
     ruby2_5 = "ruby2.5"
@@ -1759,6 +1760,7 @@ class LambdaApi:
         principal: LayerPermissionAllowedPrincipal,
         organization_id: OrganizationId = None,
         revision_id: String = None,
+        **kwargs,
     ) -> AddLayerVersionPermissionResponse:
         raise NotImplementedError
 
@@ -1777,6 +1779,7 @@ class LambdaApi:
         revision_id: String = None,
         principal_org_id: PrincipalOrgID = None,
         function_url_auth_type: FunctionUrlAuthType = None,
+        **kwargs,
     ) -> AddPermissionResponse:
         raise NotImplementedError
 
@@ -1789,6 +1792,7 @@ class LambdaApi:
         function_version: Version,
         description: Description = None,
         routing_config: AliasRoutingConfiguration = None,
+        **kwargs,
     ) -> AliasConfiguration:
         raise NotImplementedError
 
@@ -1799,6 +1803,7 @@ class LambdaApi:
         allowed_publishers: AllowedPublishers,
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
+        **kwargs,
     ) -> CreateCodeSigningConfigResponse:
         raise NotImplementedError
 
@@ -1829,6 +1834,7 @@ class LambdaApi:
         self_managed_kafka_event_source_config: SelfManagedKafkaEventSourceConfig = None,
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
+        **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
@@ -1860,6 +1866,7 @@ class LambdaApi:
         ephemeral_storage: EphemeralStorage = None,
         snap_start: SnapStart = None,
         logging_config: LoggingConfig = None,
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -1872,48 +1879,57 @@ class LambdaApi:
         qualifier: FunctionUrlQualifier = None,
         cors: Cors = None,
         invoke_mode: InvokeMode = None,
+        **kwargs,
     ) -> CreateFunctionUrlConfigResponse:
         raise NotImplementedError
 
     @handler("DeleteAlias")
     def delete_alias(
-        self, context: RequestContext, function_name: FunctionName, name: Alias
+        self, context: RequestContext, function_name: FunctionName, name: Alias, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteCodeSigningConfig")
     def delete_code_signing_config(
-        self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn
+        self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn, **kwargs
     ) -> DeleteCodeSigningConfigResponse:
         raise NotImplementedError
 
     @handler("DeleteEventSourceMapping")
     def delete_event_source_mapping(
-        self, context: RequestContext, uuid: String
+        self, context: RequestContext, uuid: String, **kwargs
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
     @handler("DeleteFunction")
     def delete_function(
-        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: Qualifier = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteFunctionCodeSigningConfig")
     def delete_function_code_signing_config(
-        self, context: RequestContext, function_name: FunctionName
+        self, context: RequestContext, function_name: FunctionName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteFunctionConcurrency")
     def delete_function_concurrency(
-        self, context: RequestContext, function_name: FunctionName
+        self, context: RequestContext, function_name: FunctionName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteFunctionEventInvokeConfig")
     def delete_function_event_invoke_config(
-        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: Qualifier = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1923,43 +1939,45 @@ class LambdaApi:
         context: RequestContext,
         function_name: FunctionName,
         qualifier: FunctionUrlQualifier = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteLayerVersion")
     def delete_layer_version(
-        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
+        self,
+        context: RequestContext,
+        layer_name: LayerName,
+        version_number: LayerVersionNumber,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteProvisionedConcurrencyConfig")
     def delete_provisioned_concurrency_config(
-        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("GetAccountSettings")
-    def get_account_settings(
-        self,
-        context: RequestContext,
-    ) -> GetAccountSettingsResponse:
+    def get_account_settings(self, context: RequestContext, **kwargs) -> GetAccountSettingsResponse:
         raise NotImplementedError
 
     @handler("GetAlias")
     def get_alias(
-        self, context: RequestContext, function_name: FunctionName, name: Alias
+        self, context: RequestContext, function_name: FunctionName, name: Alias, **kwargs
     ) -> AliasConfiguration:
         raise NotImplementedError
 
     @handler("GetCodeSigningConfig")
     def get_code_signing_config(
-        self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn
+        self, context: RequestContext, code_signing_config_arn: CodeSigningConfigArn, **kwargs
     ) -> GetCodeSigningConfigResponse:
         raise NotImplementedError
 
     @handler("GetEventSourceMapping")
     def get_event_source_mapping(
-        self, context: RequestContext, uuid: String
+        self, context: RequestContext, uuid: String, **kwargs
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
@@ -1969,18 +1987,19 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
+        **kwargs,
     ) -> GetFunctionResponse:
         raise NotImplementedError
 
     @handler("GetFunctionCodeSigningConfig")
     def get_function_code_signing_config(
-        self, context: RequestContext, function_name: FunctionName
+        self, context: RequestContext, function_name: FunctionName, **kwargs
     ) -> GetFunctionCodeSigningConfigResponse:
         raise NotImplementedError
 
     @handler("GetFunctionConcurrency")
     def get_function_concurrency(
-        self, context: RequestContext, function_name: FunctionName
+        self, context: RequestContext, function_name: FunctionName, **kwargs
     ) -> GetFunctionConcurrencyResponse:
         raise NotImplementedError
 
@@ -1990,12 +2009,17 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
     @handler("GetFunctionEventInvokeConfig")
     def get_function_event_invoke_config(
-        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        qualifier: Qualifier = None,
+        **kwargs,
     ) -> FunctionEventInvokeConfig:
         raise NotImplementedError
 
@@ -2005,24 +2029,33 @@ class LambdaApi:
         context: RequestContext,
         function_name: FunctionName,
         qualifier: FunctionUrlQualifier = None,
+        **kwargs,
     ) -> GetFunctionUrlConfigResponse:
         raise NotImplementedError
 
     @handler("GetLayerVersion")
     def get_layer_version(
-        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
+        self,
+        context: RequestContext,
+        layer_name: LayerName,
+        version_number: LayerVersionNumber,
+        **kwargs,
     ) -> GetLayerVersionResponse:
         raise NotImplementedError
 
     @handler("GetLayerVersionByArn")
     def get_layer_version_by_arn(
-        self, context: RequestContext, arn: LayerVersionArn
+        self, context: RequestContext, arn: LayerVersionArn, **kwargs
     ) -> GetLayerVersionResponse:
         raise NotImplementedError
 
     @handler("GetLayerVersionPolicy")
     def get_layer_version_policy(
-        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
+        self,
+        context: RequestContext,
+        layer_name: LayerName,
+        version_number: LayerVersionNumber,
+        **kwargs,
     ) -> GetLayerVersionPolicyResponse:
         raise NotImplementedError
 
@@ -2032,12 +2065,13 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
+        **kwargs,
     ) -> GetPolicyResponse:
         raise NotImplementedError
 
     @handler("GetProvisionedConcurrencyConfig")
     def get_provisioned_concurrency_config(
-        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier, **kwargs
     ) -> GetProvisionedConcurrencyConfigResponse:
         raise NotImplementedError
 
@@ -2047,6 +2081,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
+        **kwargs,
     ) -> GetRuntimeManagementConfigResponse:
         raise NotImplementedError
 
@@ -2060,6 +2095,7 @@ class LambdaApi:
         client_context: String = None,
         payload: IO[Blob] = None,
         qualifier: Qualifier = None,
+        **kwargs,
     ) -> InvocationResponse:
         raise NotImplementedError
 
@@ -2069,6 +2105,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         invoke_args: IO[BlobStream],
+        **kwargs,
     ) -> InvokeAsyncResponse:
         raise NotImplementedError
 
@@ -2082,6 +2119,7 @@ class LambdaApi:
         client_context: String = None,
         qualifier: Qualifier = None,
         payload: IO[Blob] = None,
+        **kwargs,
     ) -> InvokeWithResponseStreamResponse:
         raise NotImplementedError
 
@@ -2093,12 +2131,17 @@ class LambdaApi:
         function_version: Version = None,
         marker: String = None,
         max_items: MaxListItems = None,
+        **kwargs,
     ) -> ListAliasesResponse:
         raise NotImplementedError
 
     @handler("ListCodeSigningConfigs")
     def list_code_signing_configs(
-        self, context: RequestContext, marker: String = None, max_items: MaxListItems = None
+        self,
+        context: RequestContext,
+        marker: String = None,
+        max_items: MaxListItems = None,
+        **kwargs,
     ) -> ListCodeSigningConfigsResponse:
         raise NotImplementedError
 
@@ -2110,6 +2153,7 @@ class LambdaApi:
         function_name: FunctionName = None,
         marker: String = None,
         max_items: MaxListItems = None,
+        **kwargs,
     ) -> ListEventSourceMappingsResponse:
         raise NotImplementedError
 
@@ -2120,6 +2164,7 @@ class LambdaApi:
         function_name: FunctionName,
         marker: String = None,
         max_items: MaxFunctionEventInvokeConfigListItems = None,
+        **kwargs,
     ) -> ListFunctionEventInvokeConfigsResponse:
         raise NotImplementedError
 
@@ -2130,6 +2175,7 @@ class LambdaApi:
         function_name: FunctionName,
         marker: String = None,
         max_items: MaxItems = None,
+        **kwargs,
     ) -> ListFunctionUrlConfigsResponse:
         raise NotImplementedError
 
@@ -2141,6 +2187,7 @@ class LambdaApi:
         function_version: FunctionVersion = None,
         marker: String = None,
         max_items: MaxListItems = None,
+        **kwargs,
     ) -> ListFunctionsResponse:
         raise NotImplementedError
 
@@ -2151,6 +2198,7 @@ class LambdaApi:
         code_signing_config_arn: CodeSigningConfigArn,
         marker: String = None,
         max_items: MaxListItems = None,
+        **kwargs,
     ) -> ListFunctionsByCodeSigningConfigResponse:
         raise NotImplementedError
 
@@ -2163,6 +2211,7 @@ class LambdaApi:
         marker: String = None,
         max_items: MaxLayerListItems = None,
         compatible_architecture: Architecture = None,
+        **kwargs,
     ) -> ListLayerVersionsResponse:
         raise NotImplementedError
 
@@ -2174,6 +2223,7 @@ class LambdaApi:
         marker: String = None,
         max_items: MaxLayerListItems = None,
         compatible_architecture: Architecture = None,
+        **kwargs,
     ) -> ListLayersResponse:
         raise NotImplementedError
 
@@ -2184,11 +2234,14 @@ class LambdaApi:
         function_name: FunctionName,
         marker: String = None,
         max_items: MaxProvisionedConcurrencyConfigListItems = None,
+        **kwargs,
     ) -> ListProvisionedConcurrencyConfigsResponse:
         raise NotImplementedError
 
     @handler("ListTags")
-    def list_tags(self, context: RequestContext, resource: FunctionArn) -> ListTagsResponse:
+    def list_tags(
+        self, context: RequestContext, resource: FunctionArn, **kwargs
+    ) -> ListTagsResponse:
         raise NotImplementedError
 
     @handler("ListVersionsByFunction")
@@ -2198,6 +2251,7 @@ class LambdaApi:
         function_name: NamespacedFunctionName,
         marker: String = None,
         max_items: MaxListItems = None,
+        **kwargs,
     ) -> ListVersionsByFunctionResponse:
         raise NotImplementedError
 
@@ -2211,6 +2265,7 @@ class LambdaApi:
         compatible_runtimes: CompatibleRuntimes = None,
         license_info: LicenseInfo = None,
         compatible_architectures: CompatibleArchitectures = None,
+        **kwargs,
     ) -> PublishLayerVersionResponse:
         raise NotImplementedError
 
@@ -2222,6 +2277,7 @@ class LambdaApi:
         code_sha256: String = None,
         description: Description = None,
         revision_id: String = None,
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2231,6 +2287,7 @@ class LambdaApi:
         context: RequestContext,
         code_signing_config_arn: CodeSigningConfigArn,
         function_name: FunctionName,
+        **kwargs,
     ) -> PutFunctionCodeSigningConfigResponse:
         raise NotImplementedError
 
@@ -2240,6 +2297,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: FunctionName,
         reserved_concurrent_executions: ReservedConcurrentExecutions,
+        **kwargs,
     ) -> Concurrency:
         raise NotImplementedError
 
@@ -2252,6 +2310,7 @@ class LambdaApi:
         maximum_retry_attempts: MaximumRetryAttempts = None,
         maximum_event_age_in_seconds: MaximumEventAgeInSeconds = None,
         destination_config: DestinationConfig = None,
+        **kwargs,
     ) -> FunctionEventInvokeConfig:
         raise NotImplementedError
 
@@ -2262,6 +2321,7 @@ class LambdaApi:
         function_name: FunctionName,
         qualifier: Qualifier,
         provisioned_concurrent_executions: PositiveInteger,
+        **kwargs,
     ) -> PutProvisionedConcurrencyConfigResponse:
         raise NotImplementedError
 
@@ -2273,6 +2333,7 @@ class LambdaApi:
         update_runtime_on: UpdateRuntimeOn,
         qualifier: Qualifier = None,
         runtime_version_arn: RuntimeVersionArn = None,
+        **kwargs,
     ) -> PutRuntimeManagementConfigResponse:
         raise NotImplementedError
 
@@ -2284,6 +2345,7 @@ class LambdaApi:
         version_number: LayerVersionNumber,
         statement_id: StatementId,
         revision_id: String = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2295,16 +2357,19 @@ class LambdaApi:
         statement_id: NamespacedStatementId,
         qualifier: Qualifier = None,
         revision_id: String = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("TagResource")
-    def tag_resource(self, context: RequestContext, resource: FunctionArn, tags: Tags) -> None:
+    def tag_resource(
+        self, context: RequestContext, resource: FunctionArn, tags: Tags, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource: FunctionArn, tag_keys: TagKeyList
+        self, context: RequestContext, resource: FunctionArn, tag_keys: TagKeyList, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2318,6 +2383,7 @@ class LambdaApi:
         description: Description = None,
         routing_config: AliasRoutingConfiguration = None,
         revision_id: String = None,
+        **kwargs,
     ) -> AliasConfiguration:
         raise NotImplementedError
 
@@ -2329,6 +2395,7 @@ class LambdaApi:
         description: Description = None,
         allowed_publishers: AllowedPublishers = None,
         code_signing_policies: CodeSigningPolicies = None,
+        **kwargs,
     ) -> UpdateCodeSigningConfigResponse:
         raise NotImplementedError
 
@@ -2352,6 +2419,7 @@ class LambdaApi:
         function_response_types: FunctionResponseTypeList = None,
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
+        **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
@@ -2369,6 +2437,7 @@ class LambdaApi:
         dry_run: Boolean = None,
         revision_id: String = None,
         architectures: ArchitecturesList = None,
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2395,6 +2464,7 @@ class LambdaApi:
         ephemeral_storage: EphemeralStorage = None,
         snap_start: SnapStart = None,
         logging_config: LoggingConfig = None,
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2407,6 +2477,7 @@ class LambdaApi:
         maximum_retry_attempts: MaximumRetryAttempts = None,
         maximum_event_age_in_seconds: MaximumEventAgeInSeconds = None,
         destination_config: DestinationConfig = None,
+        **kwargs,
     ) -> FunctionEventInvokeConfig:
         raise NotImplementedError
 
@@ -2419,5 +2490,6 @@ class LambdaApi:
         auth_type: FunctionUrlAuthType = None,
         cors: Cors = None,
         invoke_mode: InvokeMode = None,
+        **kwargs,
     ) -> UpdateFunctionUrlConfigResponse:
         raise NotImplementedError

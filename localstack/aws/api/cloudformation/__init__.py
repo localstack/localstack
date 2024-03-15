@@ -36,6 +36,8 @@ ExportValue = str
 FailedStackInstancesCount = int
 FailureToleranceCount = int
 FailureTolerancePercentage = int
+GeneratedTemplateId = str
+GeneratedTemplateName = str
 HookInvocationCount = int
 HookStatusReason = str
 HookTargetTypeName = str
@@ -50,12 +52,15 @@ IncludeNestedStacks = bool
 IsActivated = bool
 IsDefaultConfiguration = bool
 IsDefaultVersion = bool
+JazzResourceIdentifierPropertyKey = str
+JazzResourceIdentifierPropertyValue = str
 Key = str
 LimitName = str
 LimitValue = int
 LogGroupName = str
 LogicalIdHierarchy = str
 LogicalResourceId = str
+ManagedByStack = bool
 ManagedExecutionNullable = bool
 MaxConcurrentCount = int
 MaxConcurrentPercentage = int
@@ -65,6 +70,7 @@ MonitoringTimeInMinutes = int
 NextToken = str
 NoEcho = bool
 NotificationARN = str
+NumberOfResources = int
 OperationResultFilterValues = str
 OptionalSecureUrl = str
 OrganizationalUnitId = str
@@ -73,9 +79,11 @@ OutputValue = str
 ParameterKey = str
 ParameterType = str
 ParameterValue = str
+PercentageCompleted = float
 PhysicalResourceId = str
 PrivateTypeArn = str
 Properties = str
+PropertyDescription = str
 PropertyName = str
 PropertyPath = str
 PropertyValue = str
@@ -84,17 +92,30 @@ PublisherId = str
 PublisherName = str
 PublisherProfile = str
 Reason = str
+RefreshAllResources = bool
 Region = str
 RegistrationToken = str
 RequestToken = str
+RequiredProperty = bool
+ResourceIdentifier = str
 ResourceIdentifierPropertyKey = str
 ResourceIdentifierPropertyValue = str
 ResourceModel = str
 ResourceProperties = str
+ResourceScanId = str
+ResourceScanStatusReason = str
+ResourceScannerMaxResults = int
 ResourceSignalUniqueId = str
 ResourceStatusReason = str
 ResourceToSkip = str
 ResourceType = str
+ResourceTypePrefix = str
+ResourcesFailed = int
+ResourcesPending = int
+ResourcesProcessing = int
+ResourcesRead = int
+ResourcesScanned = int
+ResourcesSucceeded = int
 RetainExceptOnCreate = bool
 RetainStacks = bool
 RetainStacksNullable = bool
@@ -126,10 +147,12 @@ TagKey = str
 TagValue = str
 TemplateBody = str
 TemplateDescription = str
+TemplateStatusReason = str
 TemplateURL = str
 ThirdPartyTypeArn = str
 TimeoutMinutes = int
 TotalStackInstancesCount = int
+TotalWarnings = int
 TransformName = str
 TreatUnrecognizedResourceTypesAsWarnings = bool
 Type = str
@@ -234,6 +257,11 @@ class DeprecatedStatus(str):
     DEPRECATED = "DEPRECATED"
 
 
+class DetailedStatus(str):
+    CONFIGURATION_COMPLETE = "CONFIGURATION_COMPLETE"
+    VALIDATION_FAILED = "VALIDATION_FAILED"
+
+
 class DifferenceType(str):
     ADD = "ADD"
     REMOVE = "REMOVE"
@@ -252,6 +280,34 @@ class ExecutionStatus(str):
     EXECUTE_COMPLETE = "EXECUTE_COMPLETE"
     EXECUTE_FAILED = "EXECUTE_FAILED"
     OBSOLETE = "OBSOLETE"
+
+
+class GeneratedTemplateDeletionPolicy(str):
+    DELETE = "DELETE"
+    RETAIN = "RETAIN"
+
+
+class GeneratedTemplateResourceStatus(str):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETE = "COMPLETE"
+
+
+class GeneratedTemplateStatus(str):
+    CREATE_PENDING = "CREATE_PENDING"
+    UPDATE_PENDING = "UPDATE_PENDING"
+    DELETE_PENDING = "DELETE_PENDING"
+    CREATE_IN_PROGRESS = "CREATE_IN_PROGRESS"
+    UPDATE_IN_PROGRESS = "UPDATE_IN_PROGRESS"
+    DELETE_IN_PROGRESS = "DELETE_IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETE = "COMPLETE"
+
+
+class GeneratedTemplateUpdateReplacePolicy(str):
+    DELETE = "DELETE"
+    RETAIN = "RETAIN"
 
 
 class HandlerErrorCode(str):
@@ -386,6 +442,13 @@ class ResourceAttribute(str):
     Tags = "Tags"
 
 
+class ResourceScanStatus(str):
+    IN_PROGRESS = "IN_PROGRESS"
+    FAILED = "FAILED"
+    COMPLETE = "COMPLETE"
+    EXPIRED = "EXPIRED"
+
+
 class ResourceSignalStatus(str):
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
@@ -437,6 +500,7 @@ class StackInstanceDetailedStatus(str):
     CANCELLED = "CANCELLED"
     INOPERABLE = "INOPERABLE"
     SKIPPED_SUSPENDED_ACCOUNT = "SKIPPED_SUSPENDED_ACCOUNT"
+    FAILED_IMPORT = "FAILED_IMPORT"
 
 
 class StackInstanceFilterName(str):
@@ -527,6 +591,11 @@ class StackStatus(str):
     IMPORT_ROLLBACK_COMPLETE = "IMPORT_ROLLBACK_COMPLETE"
 
 
+class TemplateFormat(str):
+    JSON = "JSON"
+    YAML = "YAML"
+
+
 class TemplateStage(str):
     Original = "Original"
     Processed = "Processed"
@@ -555,6 +624,12 @@ class Visibility(str):
     PRIVATE = "PRIVATE"
 
 
+class WarningType(str):
+    MUTUALLY_EXCLUSIVE_PROPERTIES = "MUTUALLY_EXCLUSIVE_PROPERTIES"
+    UNSUPPORTED_PROPERTIES = "UNSUPPORTED_PROPERTIES"
+    MUTUALLY_EXCLUSIVE_TYPES = "MUTUALLY_EXCLUSIVE_TYPES"
+
+
 class AlreadyExistsException(ServiceException):
     code: str = "AlreadyExistsException"
     sender_fault: bool = True
@@ -573,10 +648,22 @@ class ChangeSetNotFoundException(ServiceException):
     status_code: int = 404
 
 
+class ConcurrentResourcesLimitExceededException(ServiceException):
+    code: str = "ConcurrentResourcesLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 429
+
+
 class CreatedButModifiedException(ServiceException):
     code: str = "CreatedButModifiedException"
     sender_fault: bool = True
     status_code: int = 409
+
+
+class GeneratedTemplateNotFoundException(ServiceException):
+    code: str = "GeneratedTemplateNotFound"
+    sender_fault: bool = True
+    status_code: int = 404
 
 
 class InsufficientCapabilitiesException(ServiceException):
@@ -635,6 +722,24 @@ class OperationNotFoundException(ServiceException):
 
 class OperationStatusCheckFailedException(ServiceException):
     code: str = "ConditionalCheckFailed"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class ResourceScanInProgressException(ServiceException):
+    code: str = "ResourceScanInProgress"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class ResourceScanLimitExceededException(ServiceException):
+    code: str = "ResourceScanLimitExceeded"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class ResourceScanNotFoundException(ServiceException):
+    code: str = "ResourceScanNotFound"
     sender_fault: bool = True
     status_code: int = 400
 
@@ -965,6 +1070,31 @@ class CreateChangeSetOutput(TypedDict, total=False):
     StackId: Optional[StackId]
 
 
+class TemplateConfiguration(TypedDict, total=False):
+    DeletionPolicy: Optional[GeneratedTemplateDeletionPolicy]
+    UpdateReplacePolicy: Optional[GeneratedTemplateUpdateReplacePolicy]
+
+
+class ResourceDefinition(TypedDict, total=False):
+    ResourceType: ResourceType
+    LogicalResourceId: Optional[LogicalResourceId]
+    ResourceIdentifier: ResourceIdentifierProperties
+
+
+ResourceDefinitions = List[ResourceDefinition]
+
+
+class CreateGeneratedTemplateInput(ServiceRequest):
+    Resources: Optional[ResourceDefinitions]
+    GeneratedTemplateName: GeneratedTemplateName
+    StackName: Optional[StackName]
+    TemplateConfiguration: Optional[TemplateConfiguration]
+
+
+class CreateGeneratedTemplateOutput(TypedDict, total=False):
+    GeneratedTemplateId: Optional[GeneratedTemplateId]
+
+
 class CreateStackInput(ServiceRequest):
     StackName: StackName
     TemplateBody: Optional[TemplateBody]
@@ -1081,6 +1211,10 @@ class DeleteChangeSetOutput(TypedDict, total=False):
     pass
 
 
+class DeleteGeneratedTemplateInput(ServiceRequest):
+    GeneratedTemplateName: GeneratedTemplateName
+
+
 RetainResources = List[LogicalResourceId]
 
 
@@ -1185,6 +1319,63 @@ class DescribeChangeSetOutput(TypedDict, total=False):
     ImportExistingResources: Optional[ImportExistingResources]
 
 
+class DescribeGeneratedTemplateInput(ServiceRequest):
+    GeneratedTemplateName: GeneratedTemplateName
+
+
+class TemplateProgress(TypedDict, total=False):
+    ResourcesSucceeded: Optional[ResourcesSucceeded]
+    ResourcesFailed: Optional[ResourcesFailed]
+    ResourcesProcessing: Optional[ResourcesProcessing]
+    ResourcesPending: Optional[ResourcesPending]
+
+
+LastUpdatedTime = datetime
+
+
+class WarningProperty(TypedDict, total=False):
+    PropertyPath: Optional[PropertyPath]
+    Required: Optional[RequiredProperty]
+    Description: Optional[PropertyDescription]
+
+
+WarningProperties = List[WarningProperty]
+
+
+class WarningDetail(TypedDict, total=False):
+    Type: Optional[WarningType]
+    Properties: Optional[WarningProperties]
+
+
+WarningDetails = List[WarningDetail]
+
+
+class ResourceDetail(TypedDict, total=False):
+    ResourceType: Optional[ResourceType]
+    LogicalResourceId: Optional[LogicalResourceId]
+    ResourceIdentifier: Optional[ResourceIdentifierProperties]
+    ResourceStatus: Optional[GeneratedTemplateResourceStatus]
+    ResourceStatusReason: Optional[ResourceStatusReason]
+    Warnings: Optional[WarningDetails]
+
+
+ResourceDetails = List[ResourceDetail]
+
+
+class DescribeGeneratedTemplateOutput(TypedDict, total=False):
+    GeneratedTemplateId: Optional[GeneratedTemplateId]
+    GeneratedTemplateName: Optional[GeneratedTemplateName]
+    Resources: Optional[ResourceDetails]
+    Status: Optional[GeneratedTemplateStatus]
+    StatusReason: Optional[TemplateStatusReason]
+    CreationTime: Optional[CreationTime]
+    LastUpdatedTime: Optional[LastUpdatedTime]
+    Progress: Optional[TemplateProgress]
+    StackId: Optional[StackId]
+    TemplateConfiguration: Optional[TemplateConfiguration]
+    TotalWarnings: Optional[TotalWarnings]
+
+
 class DescribeOrganizationsAccessInput(ServiceRequest):
     CallAs: Optional[CallAs]
 
@@ -1202,6 +1393,22 @@ class DescribePublisherOutput(TypedDict, total=False):
     PublisherStatus: Optional[PublisherStatus]
     IdentityProvider: Optional[IdentityProvider]
     PublisherProfile: Optional[PublisherProfile]
+
+
+class DescribeResourceScanInput(ServiceRequest):
+    ResourceScanId: ResourceScanId
+
+
+class DescribeResourceScanOutput(TypedDict, total=False):
+    ResourceScanId: Optional[ResourceScanId]
+    Status: Optional[ResourceScanStatus]
+    StatusReason: Optional[ResourceScanStatusReason]
+    StartTime: Optional[Timestamp]
+    EndTime: Optional[Timestamp]
+    PercentageCompleted: Optional[PercentageCompleted]
+    ResourceTypes: Optional[ResourceTypes]
+    ResourcesScanned: Optional[ResourcesScanned]
+    ResourcesRead: Optional[ResourcesRead]
 
 
 class DescribeStackDriftDetectionStatusInput(ServiceRequest):
@@ -1240,6 +1447,7 @@ class StackEvent(TypedDict, total=False):
     HookStatusReason: Optional[HookStatusReason]
     HookInvocationPoint: Optional[HookInvocationPoint]
     HookFailureMode: Optional[HookFailureMode]
+    DetailedStatus: Optional[DetailedStatus]
 
 
 StackEvents = List[StackEvent]
@@ -1475,7 +1683,6 @@ class Output(TypedDict, total=False):
 
 
 Outputs = List[Output]
-LastUpdatedTime = datetime
 
 
 class Stack(TypedDict, total=False):
@@ -1502,6 +1709,7 @@ class Stack(TypedDict, total=False):
     RootId: Optional[StackId]
     DriftInformation: Optional[StackDriftInformation]
     RetainExceptOnCreate: Optional[RetainExceptOnCreate]
+    DetailedStatus: Optional[DetailedStatus]
 
 
 Stacks = List[Stack]
@@ -1638,6 +1846,16 @@ class Export(TypedDict, total=False):
 Exports = List[Export]
 
 
+class GetGeneratedTemplateInput(ServiceRequest):
+    Format: Optional[TemplateFormat]
+    GeneratedTemplateName: GeneratedTemplateName
+
+
+class GetGeneratedTemplateOutput(TypedDict, total=False):
+    Status: Optional[GeneratedTemplateStatus]
+    TemplateBody: Optional[TemplateBody]
+
+
 class GetStackPolicyInput(ServiceRequest):
     StackName: StackName
 
@@ -1737,6 +1955,10 @@ class ImportStacksToStackSetOutput(TypedDict, total=False):
 
 
 Imports = List[StackName]
+JazzLogicalResourceIds = List[LogicalResourceId]
+JazzResourceIdentifierProperties = Dict[
+    JazzResourceIdentifierPropertyKey, JazzResourceIdentifierPropertyValue
+]
 
 
 class ListChangeSetsInput(ServiceRequest):
@@ -1758,6 +1980,29 @@ class ListExportsOutput(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListGeneratedTemplatesInput(ServiceRequest):
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[MaxResults]
+
+
+class TemplateSummary(TypedDict, total=False):
+    GeneratedTemplateId: Optional[GeneratedTemplateId]
+    GeneratedTemplateName: Optional[GeneratedTemplateName]
+    Status: Optional[GeneratedTemplateStatus]
+    StatusReason: Optional[TemplateStatusReason]
+    CreationTime: Optional[CreationTime]
+    LastUpdatedTime: Optional[LastUpdatedTime]
+    NumberOfResources: Optional[NumberOfResources]
+
+
+TemplateSummaries = List[TemplateSummary]
+
+
+class ListGeneratedTemplatesOutput(TypedDict, total=False):
+    Summaries: Optional[TemplateSummaries]
+    NextToken: Optional[NextToken]
+
+
 class ListImportsInput(ServiceRequest):
     ExportName: ExportName
     NextToken: Optional[NextToken]
@@ -1765,6 +2010,75 @@ class ListImportsInput(ServiceRequest):
 
 class ListImportsOutput(TypedDict, total=False):
     Imports: Optional[Imports]
+    NextToken: Optional[NextToken]
+
+
+class ScannedResourceIdentifier(TypedDict, total=False):
+    ResourceType: ResourceType
+    ResourceIdentifier: JazzResourceIdentifierProperties
+
+
+ScannedResourceIdentifiers = List[ScannedResourceIdentifier]
+
+
+class ListResourceScanRelatedResourcesInput(ServiceRequest):
+    ResourceScanId: ResourceScanId
+    Resources: ScannedResourceIdentifiers
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[BoxedMaxResults]
+
+
+class ScannedResource(TypedDict, total=False):
+    ResourceType: Optional[ResourceType]
+    ResourceIdentifier: Optional[JazzResourceIdentifierProperties]
+    ManagedByStack: Optional[ManagedByStack]
+
+
+RelatedResources = List[ScannedResource]
+
+
+class ListResourceScanRelatedResourcesOutput(TypedDict, total=False):
+    RelatedResources: Optional[RelatedResources]
+    NextToken: Optional[NextToken]
+
+
+class ListResourceScanResourcesInput(ServiceRequest):
+    ResourceScanId: ResourceScanId
+    ResourceIdentifier: Optional[ResourceIdentifier]
+    ResourceTypePrefix: Optional[ResourceTypePrefix]
+    TagKey: Optional[TagKey]
+    TagValue: Optional[TagValue]
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[ResourceScannerMaxResults]
+
+
+ScannedResources = List[ScannedResource]
+
+
+class ListResourceScanResourcesOutput(TypedDict, total=False):
+    Resources: Optional[ScannedResources]
+    NextToken: Optional[NextToken]
+
+
+class ListResourceScansInput(ServiceRequest):
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[ResourceScannerMaxResults]
+
+
+class ResourceScanSummary(TypedDict, total=False):
+    ResourceScanId: Optional[ResourceScanId]
+    Status: Optional[ResourceScanStatus]
+    StatusReason: Optional[ResourceScanStatusReason]
+    StartTime: Optional[Timestamp]
+    EndTime: Optional[Timestamp]
+    PercentageCompleted: Optional[PercentageCompleted]
+
+
+ResourceScanSummaries = List[ResourceScanSummary]
+
+
+class ListResourceScansOutput(TypedDict, total=False):
+    ResourceScanSummaries: Optional[ResourceScanSummaries]
     NextToken: Optional[NextToken]
 
 
@@ -2169,6 +2483,14 @@ class SignalResourceInput(ServiceRequest):
     Status: ResourceSignalStatus
 
 
+class StartResourceScanInput(ServiceRequest):
+    ClientRequestToken: Optional[ClientRequestToken]
+
+
+class StartResourceScanOutput(TypedDict, total=False):
+    ResourceScanId: Optional[ResourceScanId]
+
+
 class StopStackSetOperationInput(ServiceRequest):
     StackSetName: StackSetName
     OperationId: ClientRequestToken
@@ -2199,6 +2521,19 @@ class TestTypeInput(ServiceRequest):
 
 class TestTypeOutput(TypedDict, total=False):
     TypeVersionArn: Optional[TypeArn]
+
+
+class UpdateGeneratedTemplateInput(ServiceRequest):
+    GeneratedTemplateName: GeneratedTemplateName
+    NewGeneratedTemplateName: Optional[GeneratedTemplateName]
+    AddResources: Optional[ResourceDefinitions]
+    RemoveResources: Optional[JazzLogicalResourceIds]
+    RefreshAllResources: Optional[RefreshAllResources]
+    TemplateConfiguration: Optional[TemplateConfiguration]
+
+
+class UpdateGeneratedTemplateOutput(TypedDict, total=False):
+    GeneratedTemplateId: Optional[GeneratedTemplateId]
 
 
 class UpdateStackInput(ServiceRequest):
@@ -2295,20 +2630,22 @@ class CloudformationApi:
 
     @handler("ActivateOrganizationsAccess")
     def activate_organizations_access(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> ActivateOrganizationsAccessOutput:
         raise NotImplementedError
 
     @handler("ActivateType", expand=False)
     def activate_type(
-        self, context: RequestContext, request: ActivateTypeInput
+        self, context: RequestContext, request: ActivateTypeInput, **kwargs
     ) -> ActivateTypeOutput:
         raise NotImplementedError
 
     @handler("BatchDescribeTypeConfigurations")
     def batch_describe_type_configurations(
-        self, context: RequestContext, type_configuration_identifiers: TypeConfigurationIdentifiers
+        self,
+        context: RequestContext,
+        type_configuration_identifiers: TypeConfigurationIdentifiers,
+        **kwargs,
     ) -> BatchDescribeTypeConfigurationsOutput:
         raise NotImplementedError
 
@@ -2318,6 +2655,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackName,
         client_request_token: ClientRequestToken = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2329,6 +2667,7 @@ class CloudformationApi:
         role_arn: RoleARN = None,
         resources_to_skip: ResourcesToSkip = None,
         client_request_token: ClientRequestToken = None,
+        **kwargs,
     ) -> ContinueUpdateRollbackOutput:
         raise NotImplementedError
 
@@ -2355,7 +2694,20 @@ class CloudformationApi:
         include_nested_stacks: IncludeNestedStacks = None,
         on_stack_failure: OnStackFailure = None,
         import_existing_resources: ImportExistingResources = None,
+        **kwargs,
     ) -> CreateChangeSetOutput:
+        raise NotImplementedError
+
+    @handler("CreateGeneratedTemplate")
+    def create_generated_template(
+        self,
+        context: RequestContext,
+        generated_template_name: GeneratedTemplateName,
+        resources: ResourceDefinitions = None,
+        stack_name: StackName = None,
+        template_configuration: TemplateConfiguration = None,
+        **kwargs,
+    ) -> CreateGeneratedTemplateOutput:
         raise NotImplementedError
 
     @handler("CreateStack")
@@ -2380,6 +2732,7 @@ class CloudformationApi:
         client_request_token: ClientRequestToken = None,
         enable_termination_protection: EnableTerminationProtection = None,
         retain_except_on_create: RetainExceptOnCreate = None,
+        **kwargs,
     ) -> CreateStackOutput:
         raise NotImplementedError
 
@@ -2395,6 +2748,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs,
     ) -> CreateStackInstancesOutput:
         raise NotImplementedError
 
@@ -2417,19 +2771,19 @@ class CloudformationApi:
         call_as: CallAs = None,
         client_request_token: ClientRequestToken = None,
         managed_execution: ManagedExecution = None,
+        **kwargs,
     ) -> CreateStackSetOutput:
         raise NotImplementedError
 
     @handler("DeactivateOrganizationsAccess")
     def deactivate_organizations_access(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> DeactivateOrganizationsAccessOutput:
         raise NotImplementedError
 
     @handler("DeactivateType", expand=False)
     def deactivate_type(
-        self, context: RequestContext, request: DeactivateTypeInput
+        self, context: RequestContext, request: DeactivateTypeInput, **kwargs
     ) -> DeactivateTypeOutput:
         raise NotImplementedError
 
@@ -2439,7 +2793,14 @@ class CloudformationApi:
         context: RequestContext,
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
+        **kwargs,
     ) -> DeleteChangeSetOutput:
+        raise NotImplementedError
+
+    @handler("DeleteGeneratedTemplate")
+    def delete_generated_template(
+        self, context: RequestContext, generated_template_name: GeneratedTemplateName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteStack")
@@ -2450,6 +2811,7 @@ class CloudformationApi:
         retain_resources: RetainResources = None,
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2465,24 +2827,29 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs,
     ) -> DeleteStackInstancesOutput:
         raise NotImplementedError
 
     @handler("DeleteStackSet")
     def delete_stack_set(
-        self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetName,
+        call_as: CallAs = None,
+        **kwargs,
     ) -> DeleteStackSetOutput:
         raise NotImplementedError
 
     @handler("DeregisterType", expand=False)
     def deregister_type(
-        self, context: RequestContext, request: DeregisterTypeInput
+        self, context: RequestContext, request: DeregisterTypeInput, **kwargs
     ) -> DeregisterTypeOutput:
         raise NotImplementedError
 
     @handler("DescribeAccountLimits")
     def describe_account_limits(
-        self, context: RequestContext, next_token: NextToken = None
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> DescribeAccountLimitsOutput:
         raise NotImplementedError
 
@@ -2493,6 +2860,7 @@ class CloudformationApi:
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeChangeSetOutput:
         raise NotImplementedError
 
@@ -2504,30 +2872,47 @@ class CloudformationApi:
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
         logical_resource_id: LogicalResourceId = None,
+        **kwargs,
     ) -> DescribeChangeSetHooksOutput:
+        raise NotImplementedError
+
+    @handler("DescribeGeneratedTemplate")
+    def describe_generated_template(
+        self, context: RequestContext, generated_template_name: GeneratedTemplateName, **kwargs
+    ) -> DescribeGeneratedTemplateOutput:
         raise NotImplementedError
 
     @handler("DescribeOrganizationsAccess")
     def describe_organizations_access(
-        self, context: RequestContext, call_as: CallAs = None
+        self, context: RequestContext, call_as: CallAs = None, **kwargs
     ) -> DescribeOrganizationsAccessOutput:
         raise NotImplementedError
 
     @handler("DescribePublisher")
     def describe_publisher(
-        self, context: RequestContext, publisher_id: PublisherId = None
+        self, context: RequestContext, publisher_id: PublisherId = None, **kwargs
     ) -> DescribePublisherOutput:
+        raise NotImplementedError
+
+    @handler("DescribeResourceScan")
+    def describe_resource_scan(
+        self, context: RequestContext, resource_scan_id: ResourceScanId, **kwargs
+    ) -> DescribeResourceScanOutput:
         raise NotImplementedError
 
     @handler("DescribeStackDriftDetectionStatus")
     def describe_stack_drift_detection_status(
-        self, context: RequestContext, stack_drift_detection_id: StackDriftDetectionId
+        self, context: RequestContext, stack_drift_detection_id: StackDriftDetectionId, **kwargs
     ) -> DescribeStackDriftDetectionStatusOutput:
         raise NotImplementedError
 
     @handler("DescribeStackEvents")
     def describe_stack_events(
-        self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeStackEventsOutput:
         raise NotImplementedError
 
@@ -2539,12 +2924,17 @@ class CloudformationApi:
         stack_instance_account: Account,
         stack_instance_region: Region,
         call_as: CallAs = None,
+        **kwargs,
     ) -> DescribeStackInstanceOutput:
         raise NotImplementedError
 
     @handler("DescribeStackResource")
     def describe_stack_resource(
-        self, context: RequestContext, stack_name: StackName, logical_resource_id: LogicalResourceId
+        self,
+        context: RequestContext,
+        stack_name: StackName,
+        logical_resource_id: LogicalResourceId,
+        **kwargs,
     ) -> DescribeStackResourceOutput:
         raise NotImplementedError
 
@@ -2556,6 +2946,7 @@ class CloudformationApi:
         stack_resource_drift_status_filters: StackResourceDriftStatusFilters = None,
         next_token: NextToken = None,
         max_results: BoxedMaxResults = None,
+        **kwargs,
     ) -> DescribeStackResourceDriftsOutput:
         raise NotImplementedError
 
@@ -2566,12 +2957,17 @@ class CloudformationApi:
         stack_name: StackName = None,
         logical_resource_id: LogicalResourceId = None,
         physical_resource_id: PhysicalResourceId = None,
+        **kwargs,
     ) -> DescribeStackResourcesOutput:
         raise NotImplementedError
 
     @handler("DescribeStackSet")
     def describe_stack_set(
-        self, context: RequestContext, stack_set_name: StackSetName, call_as: CallAs = None
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetName,
+        call_as: CallAs = None,
+        **kwargs,
     ) -> DescribeStackSetOutput:
         raise NotImplementedError
 
@@ -2582,24 +2978,29 @@ class CloudformationApi:
         stack_set_name: StackSetName,
         operation_id: ClientRequestToken,
         call_as: CallAs = None,
+        **kwargs,
     ) -> DescribeStackSetOperationOutput:
         raise NotImplementedError
 
     @handler("DescribeStacks")
     def describe_stacks(
-        self, context: RequestContext, stack_name: StackName = None, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> DescribeStacksOutput:
         raise NotImplementedError
 
     @handler("DescribeType", expand=False)
     def describe_type(
-        self, context: RequestContext, request: DescribeTypeInput
+        self, context: RequestContext, request: DescribeTypeInput, **kwargs
     ) -> DescribeTypeOutput:
         raise NotImplementedError
 
     @handler("DescribeTypeRegistration")
     def describe_type_registration(
-        self, context: RequestContext, registration_token: RegistrationToken
+        self, context: RequestContext, registration_token: RegistrationToken, **kwargs
     ) -> DescribeTypeRegistrationOutput:
         raise NotImplementedError
 
@@ -2609,6 +3010,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackNameOrId,
         logical_resource_ids: LogicalResourceIds = None,
+        **kwargs,
     ) -> DetectStackDriftOutput:
         raise NotImplementedError
 
@@ -2618,6 +3020,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackNameOrId,
         logical_resource_id: LogicalResourceId,
+        **kwargs,
     ) -> DetectStackResourceDriftOutput:
         raise NotImplementedError
 
@@ -2629,6 +3032,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs,
     ) -> DetectStackSetDriftOutput:
         raise NotImplementedError
 
@@ -2639,6 +3043,7 @@ class CloudformationApi:
         template_body: TemplateBody = None,
         template_url: TemplateURL = None,
         parameters: Parameters = None,
+        **kwargs,
     ) -> EstimateTemplateCostOutput:
         raise NotImplementedError
 
@@ -2651,12 +3056,23 @@ class CloudformationApi:
         client_request_token: ClientRequestToken = None,
         disable_rollback: DisableRollback = None,
         retain_except_on_create: RetainExceptOnCreate = None,
+        **kwargs,
     ) -> ExecuteChangeSetOutput:
+        raise NotImplementedError
+
+    @handler("GetGeneratedTemplate")
+    def get_generated_template(
+        self,
+        context: RequestContext,
+        generated_template_name: GeneratedTemplateName,
+        format: TemplateFormat = None,
+        **kwargs,
+    ) -> GetGeneratedTemplateOutput:
         raise NotImplementedError
 
     @handler("GetStackPolicy")
     def get_stack_policy(
-        self, context: RequestContext, stack_name: StackName
+        self, context: RequestContext, stack_name: StackName, **kwargs
     ) -> GetStackPolicyOutput:
         raise NotImplementedError
 
@@ -2667,6 +3083,7 @@ class CloudformationApi:
         stack_name: StackName = None,
         change_set_name: ChangeSetNameOrId = None,
         template_stage: TemplateStage = None,
+        **kwargs,
     ) -> GetTemplateOutput:
         raise NotImplementedError
 
@@ -2680,6 +3097,7 @@ class CloudformationApi:
         stack_set_name: StackSetNameOrId = None,
         call_as: CallAs = None,
         template_summary_config: TemplateSummaryConfig = None,
+        **kwargs,
     ) -> GetTemplateSummaryOutput:
         raise NotImplementedError
 
@@ -2694,25 +3112,81 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs,
     ) -> ImportStacksToStackSetOutput:
         raise NotImplementedError
 
     @handler("ListChangeSets")
     def list_change_sets(
-        self, context: RequestContext, stack_name: StackNameOrId, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        stack_name: StackNameOrId,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> ListChangeSetsOutput:
         raise NotImplementedError
 
     @handler("ListExports")
     def list_exports(
-        self, context: RequestContext, next_token: NextToken = None
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListExportsOutput:
+        raise NotImplementedError
+
+    @handler("ListGeneratedTemplates")
+    def list_generated_templates(
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        **kwargs,
+    ) -> ListGeneratedTemplatesOutput:
         raise NotImplementedError
 
     @handler("ListImports")
     def list_imports(
-        self, context: RequestContext, export_name: ExportName, next_token: NextToken = None
+        self,
+        context: RequestContext,
+        export_name: ExportName,
+        next_token: NextToken = None,
+        **kwargs,
     ) -> ListImportsOutput:
+        raise NotImplementedError
+
+    @handler("ListResourceScanRelatedResources")
+    def list_resource_scan_related_resources(
+        self,
+        context: RequestContext,
+        resource_scan_id: ResourceScanId,
+        resources: ScannedResourceIdentifiers,
+        next_token: NextToken = None,
+        max_results: BoxedMaxResults = None,
+        **kwargs,
+    ) -> ListResourceScanRelatedResourcesOutput:
+        raise NotImplementedError
+
+    @handler("ListResourceScanResources")
+    def list_resource_scan_resources(
+        self,
+        context: RequestContext,
+        resource_scan_id: ResourceScanId,
+        resource_identifier: ResourceIdentifier = None,
+        resource_type_prefix: ResourceTypePrefix = None,
+        tag_key: TagKey = None,
+        tag_value: TagValue = None,
+        next_token: NextToken = None,
+        max_results: ResourceScannerMaxResults = None,
+        **kwargs,
+    ) -> ListResourceScanResourcesOutput:
+        raise NotImplementedError
+
+    @handler("ListResourceScans")
+    def list_resource_scans(
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        max_results: ResourceScannerMaxResults = None,
+        **kwargs,
+    ) -> ListResourceScansOutput:
         raise NotImplementedError
 
     @handler("ListStackInstanceResourceDrifts")
@@ -2727,6 +3201,7 @@ class CloudformationApi:
         max_results: MaxResults = None,
         stack_instance_resource_drift_statuses: StackResourceDriftStatusFilters = None,
         call_as: CallAs = None,
+        **kwargs,
     ) -> ListStackInstanceResourceDriftsOutput:
         raise NotImplementedError
 
@@ -2741,12 +3216,13 @@ class CloudformationApi:
         stack_instance_account: Account = None,
         stack_instance_region: Region = None,
         call_as: CallAs = None,
+        **kwargs,
     ) -> ListStackInstancesOutput:
         raise NotImplementedError
 
     @handler("ListStackResources")
     def list_stack_resources(
-        self, context: RequestContext, stack_name: StackName, next_token: NextToken = None
+        self, context: RequestContext, stack_name: StackName, next_token: NextToken = None, **kwargs
     ) -> ListStackResourcesOutput:
         raise NotImplementedError
 
@@ -2760,6 +3236,7 @@ class CloudformationApi:
         max_results: MaxResults = None,
         call_as: CallAs = None,
         filters: OperationResultFilters = None,
+        **kwargs,
     ) -> ListStackSetOperationResultsOutput:
         raise NotImplementedError
 
@@ -2771,6 +3248,7 @@ class CloudformationApi:
         next_token: NextToken = None,
         max_results: MaxResults = None,
         call_as: CallAs = None,
+        **kwargs,
     ) -> ListStackSetOperationsOutput:
         raise NotImplementedError
 
@@ -2782,6 +3260,7 @@ class CloudformationApi:
         max_results: MaxResults = None,
         status: StackSetStatus = None,
         call_as: CallAs = None,
+        **kwargs,
     ) -> ListStackSetsOutput:
         raise NotImplementedError
 
@@ -2791,27 +3270,32 @@ class CloudformationApi:
         context: RequestContext,
         next_token: NextToken = None,
         stack_status_filter: StackStatusFilter = None,
+        **kwargs,
     ) -> ListStacksOutput:
         raise NotImplementedError
 
     @handler("ListTypeRegistrations", expand=False)
     def list_type_registrations(
-        self, context: RequestContext, request: ListTypeRegistrationsInput
+        self, context: RequestContext, request: ListTypeRegistrationsInput, **kwargs
     ) -> ListTypeRegistrationsOutput:
         raise NotImplementedError
 
     @handler("ListTypeVersions", expand=False)
     def list_type_versions(
-        self, context: RequestContext, request: ListTypeVersionsInput
+        self, context: RequestContext, request: ListTypeVersionsInput, **kwargs
     ) -> ListTypeVersionsOutput:
         raise NotImplementedError
 
     @handler("ListTypes", expand=False)
-    def list_types(self, context: RequestContext, request: ListTypesInput) -> ListTypesOutput:
+    def list_types(
+        self, context: RequestContext, request: ListTypesInput, **kwargs
+    ) -> ListTypesOutput:
         raise NotImplementedError
 
     @handler("PublishType", expand=False)
-    def publish_type(self, context: RequestContext, request: PublishTypeInput) -> PublishTypeOutput:
+    def publish_type(
+        self, context: RequestContext, request: PublishTypeInput, **kwargs
+    ) -> PublishTypeOutput:
         raise NotImplementedError
 
     @handler("RecordHandlerProgress")
@@ -2825,6 +3309,7 @@ class CloudformationApi:
         error_code: HandlerErrorCode = None,
         resource_model: ResourceModel = None,
         client_request_token: ClientRequestToken = None,
+        **kwargs,
     ) -> RecordHandlerProgressOutput:
         raise NotImplementedError
 
@@ -2834,12 +3319,13 @@ class CloudformationApi:
         context: RequestContext,
         accept_terms_and_conditions: AcceptTermsAndConditions = None,
         connection_arn: ConnectionArn = None,
+        **kwargs,
     ) -> RegisterPublisherOutput:
         raise NotImplementedError
 
     @handler("RegisterType", expand=False)
     def register_type(
-        self, context: RequestContext, request: RegisterTypeInput
+        self, context: RequestContext, request: RegisterTypeInput, **kwargs
     ) -> RegisterTypeOutput:
         raise NotImplementedError
 
@@ -2851,6 +3337,7 @@ class CloudformationApi:
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
         retain_except_on_create: RetainExceptOnCreate = None,
+        **kwargs,
     ) -> RollbackStackOutput:
         raise NotImplementedError
 
@@ -2861,18 +3348,19 @@ class CloudformationApi:
         stack_name: StackName,
         stack_policy_body: StackPolicyBody = None,
         stack_policy_url: StackPolicyURL = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("SetTypeConfiguration", expand=False)
     def set_type_configuration(
-        self, context: RequestContext, request: SetTypeConfigurationInput
+        self, context: RequestContext, request: SetTypeConfigurationInput, **kwargs
     ) -> SetTypeConfigurationOutput:
         raise NotImplementedError
 
     @handler("SetTypeDefaultVersion", expand=False)
     def set_type_default_version(
-        self, context: RequestContext, request: SetTypeDefaultVersionInput
+        self, context: RequestContext, request: SetTypeDefaultVersionInput, **kwargs
     ) -> SetTypeDefaultVersionOutput:
         raise NotImplementedError
 
@@ -2884,7 +3372,14 @@ class CloudformationApi:
         logical_resource_id: LogicalResourceId,
         unique_id: ResourceSignalUniqueId,
         status: ResourceSignalStatus,
+        **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("StartResourceScan")
+    def start_resource_scan(
+        self, context: RequestContext, client_request_token: ClientRequestToken = None, **kwargs
+    ) -> StartResourceScanOutput:
         raise NotImplementedError
 
     @handler("StopStackSetOperation")
@@ -2894,11 +3389,28 @@ class CloudformationApi:
         stack_set_name: StackSetName,
         operation_id: ClientRequestToken,
         call_as: CallAs = None,
+        **kwargs,
     ) -> StopStackSetOperationOutput:
         raise NotImplementedError
 
     @handler("TestType", expand=False)
-    def test_type(self, context: RequestContext, request: TestTypeInput) -> TestTypeOutput:
+    def test_type(
+        self, context: RequestContext, request: TestTypeInput, **kwargs
+    ) -> TestTypeOutput:
+        raise NotImplementedError
+
+    @handler("UpdateGeneratedTemplate")
+    def update_generated_template(
+        self,
+        context: RequestContext,
+        generated_template_name: GeneratedTemplateName,
+        new_generated_template_name: GeneratedTemplateName = None,
+        add_resources: ResourceDefinitions = None,
+        remove_resources: JazzLogicalResourceIds = None,
+        refresh_all_resources: RefreshAllResources = None,
+        template_configuration: TemplateConfiguration = None,
+        **kwargs,
+    ) -> UpdateGeneratedTemplateOutput:
         raise NotImplementedError
 
     @handler("UpdateStack")
@@ -2923,6 +3435,7 @@ class CloudformationApi:
         disable_rollback: DisableRollback = None,
         client_request_token: ClientRequestToken = None,
         retain_except_on_create: RetainExceptOnCreate = None,
+        **kwargs,
     ) -> UpdateStackOutput:
         raise NotImplementedError
 
@@ -2938,6 +3451,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
+        **kwargs,
     ) -> UpdateStackInstancesOutput:
         raise NotImplementedError
 
@@ -2964,6 +3478,7 @@ class CloudformationApi:
         regions: RegionList = None,
         call_as: CallAs = None,
         managed_execution: ManagedExecution = None,
+        **kwargs,
     ) -> UpdateStackSetOutput:
         raise NotImplementedError
 
@@ -2973,6 +3488,7 @@ class CloudformationApi:
         context: RequestContext,
         enable_termination_protection: EnableTerminationProtection,
         stack_name: StackNameOrId,
+        **kwargs,
     ) -> UpdateTerminationProtectionOutput:
         raise NotImplementedError
 
@@ -2982,5 +3498,6 @@ class CloudformationApi:
         context: RequestContext,
         template_body: TemplateBody = None,
         template_url: TemplateURL = None,
+        **kwargs,
     ) -> ValidateTemplateOutput:
         raise NotImplementedError

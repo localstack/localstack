@@ -135,7 +135,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 raise InvalidParameterException("Invalid parameter: TopicArn")
 
     def get_topic_attributes(
-        self, context: RequestContext, topic_arn: topicARN
+        self, context: RequestContext, topic_arn: topicARN, **kwargs
     ) -> GetTopicAttributesResponse:
         # get the Topic from moto manually first, because Moto does not handle well the case where the ARN is malformed
         # (raises ValueError: not enough values to unpack (expected 6, got 1))
@@ -161,6 +161,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         context: RequestContext,
         topic_arn: topicARN,
         publish_batch_request_entries: PublishBatchRequestEntryList,
+        **kwargs,
     ) -> PublishBatchResponse:
         if len(publish_batch_request_entries) > 10:
             raise TooManyEntriesInBatchRequestException(
@@ -253,6 +254,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         subscription_arn: subscriptionARN,
         attribute_name: attributeName,
         attribute_value: attributeValue = None,
+        **kwargs,
     ) -> None:
         store = self.get_store(account_id=context.account_id, region_name=context.region)
         sub = store.subscriptions.get(subscription_arn)
@@ -275,7 +277,9 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         if attribute_name == "FilterPolicy":
             store = self.get_store(account_id=context.account_id, region_name=context.region)
-            store.subscription_filter_policy[subscription_arn] = json.loads(attribute_value)
+            store.subscription_filter_policy[subscription_arn] = (
+                json.loads(attribute_value) if attribute_value else None
+            )
 
         sub[attribute_name] = attribute_value
 
@@ -285,6 +289,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         topic_arn: topicARN,
         token: String,
         authenticate_on_unsubscribe: authenticateOnUnsubscribe = None,
+        **kwargs,
     ) -> ConfirmSubscriptionResponse:
         # TODO: validate format on the token (seems to be 288 hex chars)
         # this request can come from any http client, it might not be signed (we would need to implement
@@ -320,7 +325,11 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return ConfirmSubscriptionResponse(SubscriptionArn=subscription_arn)
 
     def untag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs,
     ) -> UntagResourceResponse:
         call_moto(context)
         # TODO: probably get the account_id and region from the `resource_arn`
@@ -330,7 +339,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return UntagResourceResponse()
 
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
     ) -> ListTagsForResourceResponse:
         # TODO: probably get the account_id and region from the `resource_arn`
         store = self.get_store(context.account_id, context.region)
@@ -338,7 +347,12 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return ListTagsForResourceResponse(Tags=tags)
 
     def create_platform_application(
-        self, context: RequestContext, name: String, platform: String, attributes: MapStringToString
+        self,
+        context: RequestContext,
+        name: String,
+        platform: String,
+        attributes: MapStringToString,
+        **kwargs,
     ) -> CreatePlatformApplicationResponse:
         # TODO: validate platform
         # see https://docs.aws.amazon.com/cli/latest/reference/sns/create-platform-application.html
@@ -354,12 +368,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         token: String,
         custom_user_data: String = None,
         attributes: MapStringToString = None,
+        **kwargs,
     ) -> CreateEndpointResponse:
         # TODO: support mobile app events
         # see https://docs.aws.amazon.com/sns/latest/dg/application-event-notifications.html
         return call_moto(context)
 
-    def unsubscribe(self, context: RequestContext, subscription_arn: subscriptionARN) -> None:
+    def unsubscribe(
+        self, context: RequestContext, subscription_arn: subscriptionARN, **kwargs
+    ) -> None:
         count = len(subscription_arn.split(":"))
         try:
             parsed_arn = parse_arn(subscription_arn)
@@ -413,15 +430,16 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store.subscriptions.pop(subscription_arn, None)
 
     def get_subscription_attributes(
-        self, context: RequestContext, subscription_arn: subscriptionARN
+        self, context: RequestContext, subscription_arn: subscriptionARN, **kwargs
     ) -> GetSubscriptionAttributesResponse:
         store = self.get_store(account_id=context.account_id, region_name=context.region)
         sub = store.subscriptions.get(subscription_arn)
         if not sub:
             raise NotFoundException("Subscription does not exist")
         removed_attrs = ["sqs_queue_url"]
-        if "FilterPolicyScope" in sub and "FilterPolicy" not in sub:
+        if "FilterPolicyScope" in sub and not sub.get("FilterPolicy"):
             removed_attrs.append("FilterPolicyScope")
+            removed_attrs.append("FilterPolicy")
         elif "FilterPolicy" in sub and "FilterPolicyScope" not in sub:
             sub["FilterPolicyScope"] = "MessageAttributes"
 
@@ -440,6 +458,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         message_attributes: MessageAttributeMap = None,
         message_deduplication_id: String = None,
         message_group_id: String = None,
+        **kwargs,
     ) -> PublishResponse:
         if subject == "":
             raise InvalidParameterException("Invalid parameter: Subject")
@@ -563,6 +582,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         endpoint: String = None,
         attributes: SubscriptionAttributesMap = None,
         return_subscription_arn: boolean = None,
+        **kwargs,
     ) -> SubscribeResponse:
         if not endpoint:
             # TODO: check AWS behaviour (because endpoint is optional)
@@ -638,8 +658,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         if attributes:
             subscription.update(attributes)
             if "FilterPolicy" in attributes:
-                store.subscription_filter_policy[subscription_arn] = json.loads(
-                    attributes["FilterPolicy"]
+                store.subscription_filter_policy[subscription_arn] = (
+                    json.loads(attributes["FilterPolicy"]) if attributes["FilterPolicy"] else None
                 )
 
         store.subscriptions[subscription_arn] = subscription
@@ -683,7 +703,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         return SubscribeResponse(SubscriptionArn=subscription_arn)
 
     def tag_resource(
-        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
     ) -> TagResourceResponse:
         # each tag key must be unique
         # https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html#tag-best-practices
@@ -711,7 +731,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store.sns_tags[resource_arn] = existing_tags
         return TagResourceResponse()
 
-    def delete_topic(self, context: RequestContext, topic_arn: topicARN) -> None:
+    def delete_topic(self, context: RequestContext, topic_arn: topicARN, **kwargs) -> None:
         call_moto(context)
         parsed_arn = parse_and_validate_topic_arn(topic_arn)
         store = self.get_store(account_id=parsed_arn["account"], region_name=context.region)
@@ -728,6 +748,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attributes: TopicAttributesMap = None,
         tags: TagList = None,
         data_protection_policy: attributeValue = None,
+        **kwargs,
     ) -> CreateTopicResponse:
         moto_response = call_moto(context)
         store = self.get_store(account_id=context.account_id, region_name=context.region)
@@ -890,7 +911,8 @@ def extract_tags(
     return True
 
 
-def parse_and_validate_topic_arn(topic_arn: str) -> ArnData:
+def parse_and_validate_topic_arn(topic_arn: str | None) -> ArnData:
+    topic_arn = topic_arn or ""
     try:
         return parse_arn(topic_arn)
     except InvalidArnException:

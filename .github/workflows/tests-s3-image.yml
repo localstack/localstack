@@ -15,6 +15,7 @@ on:
       - localstack/*.py
       - tests/aws/services/s3/**
       - Dockerfile.s3
+      - requirements-*.txt
       - setup.cfg
       - Makefile
     branches:
@@ -33,6 +34,7 @@ on:
       - localstack/*.py
       - tests/aws/services/s3/**
       - Dockerfile.s3
+      - requirements-*.txt
       - setup.cfg
       - Makefile
   workflow_dispatch:
@@ -52,11 +54,11 @@ concurrency:
 env:
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
-  TINYBIRD_DATASOURCE: ${{ github.event.repository.name }}-tests-s3-image
+  TINYBIRD_DATASOURCE: community_tests_s3_image
   TINYBIRD_TOKEN: ${{ secrets.TINYBIRD_CI_TOKEN }}
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
-  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master
   TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
 
@@ -80,6 +82,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+        # (i.e. do not execute job for workflows coming from forks)
+        if: >-
+          (
+            github.event_name != 'pull_request' ||
+            github.event.pull_request.head.repo.full_name == github.repository
+          )
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build S3 Docker Image
         env:
@@ -125,7 +140,13 @@ jobs:
       pull-requests: write
       contents: read
       issues: read
-    if: success() || failure()
+    # If this is triggered by a pull_request, make sure the PR head repo name is the same as the target repo name
+    # (i.e. do not execute job for workflows coming from forks)
+    if: >-
+      (success() || failure()) && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     steps:
       - name: Download AMD64 Results
         uses: actions/download-artifact@v4
@@ -203,3 +224,16 @@ jobs:
         with:
           name: localstack-s3-*
           failOnError: false
+
+  push-to-tinybird:
+    if: always() && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    needs: push-s3-image
+    steps:
+      - name: Push to Tinybird
+        uses: localstack/tinybird-workflow-push@v3
+        with:
+          workflow_id: "tests_s3_image"
+          tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tinybird_datasource: "ci_workflows"

@@ -347,6 +347,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     if (uri.startswith("arn:aws:apigateway:") and ":lambda:path" in uri) or uri.startswith(
         "arn:aws:lambda"
     ):
+        invocation_context.context = helpers.get_event_request_context(invocation_context)
         if integration_type == "AWS_PROXY":
             return LambdaProxyIntegration().invoke(invocation_context)
         elif integration_type == "AWS":

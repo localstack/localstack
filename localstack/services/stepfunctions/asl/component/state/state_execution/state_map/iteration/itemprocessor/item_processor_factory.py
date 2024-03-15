@@ -32,4 +32,4 @@ def from_item_processor_decl(item_processor_decl: ItemProcessorDecl) -> Iteratio
                 processor_config=item_processor_decl.processor_config,
             )
         case unknown:
-            raise ValueError(f"Unknown Mode value '{unknown}'.")
+            raise ValueError(f"Unknown Map state processing mode: '{unknown}'.")

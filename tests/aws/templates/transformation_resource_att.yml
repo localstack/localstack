@@ -1,0 +1,20 @@
+Parameters:
+  Input:
+    Type: String
+
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::Transform:
+          Name: GenerateRandom
+          Parameters:
+            Prefix: !Ref Input
+Outputs:
+  Parameter:
+    Value:
+      Fn::GetAtt:
+        - Parameter
+        - Value

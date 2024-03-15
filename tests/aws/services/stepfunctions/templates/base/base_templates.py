@@ -12,6 +12,12 @@ class BaseTemplate(TemplateLoader):
     BASE_TASK_SEQ_2: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/task_seq_2.json5")
     BASE_WAIT_1_MIN: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_1_min.json5")
     BASE_RAISE_FAILURE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/raise_failure.json5")
+    BASE_RAISE_FAILURE_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/raise_failure_path.json5"
+    )
+    BASE_RAISE_FAILURE_INTRINSIC: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/raise_failure_path_intrinsic.json5"
+    )
     DECL_VERSION_1_0: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/decl_version_1_0.json5"
     )
@@ -25,6 +31,15 @@ class BaseTemplate(TemplateLoader):
     PASS_RESULT_NULL_INPUT_OUTPUT_PATHS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/pass_result_null_input_output_paths.json5"
     )
+    PASS_RESULT_REGEX_JSON_PATH_BASE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/pass_result_regex_json_path_base.json5"
+    )
+    PASS_RESULT_REGEX_JSON_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/pass_result_regex_json_path.json5"
+    )
     PASS_START_TIME: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/pass_start_time_format.json5"
+    )
+    WAIT_TIMESTAMPPATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/wait_timestamppath.json5"
     )

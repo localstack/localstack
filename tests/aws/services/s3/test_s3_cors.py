@@ -1,5 +1,3 @@
-import os
-
 import pytest
 import requests
 import xmltodict
@@ -12,8 +10,8 @@ from localstack.constants import (
     AWS_REGION_US_EAST_1,
     LOCALHOST_HOSTNAME,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_REGION_NAME,
 )
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import short_uid
@@ -22,7 +20,7 @@ from localstack.utils.strings import short_uid
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
     if not region:
         region = AWS_REGION_US_EAST_1
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+    if is_aws_cloud():
         if region == "us-east-1":
             return f"https://{bucket_name}.s3.amazonaws.com"
         else:
@@ -168,7 +166,7 @@ class TestS3Cors:
         assert response.headers["Access-Control-Allow-Origin"] == origin
 
     @markers.aws.only_localstack
-    def test_cors_list_buckets(self):
+    def test_cors_list_buckets(self, region_name):
         # ListBuckets is an operation outside S3 CORS configuration management
         # it should follow the default rules of LocalStack
 
@@ -177,7 +175,9 @@ class TestS3Cors:
         # we need to "sign" the request so that our service name parser recognize ListBuckets as an S3 operation
         # if the request isn't signed, AWS will redirect to https://aws.amazon.com/s3/
         headers = mock_aws_request_headers(
-            "s3", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "s3",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         headers["Origin"] = origin
         response = requests.options(
@@ -316,6 +316,59 @@ class TestS3Cors:
         match_headers("opt-random-wildcard-origin", opt_req)
         get_req = requests.get(key_url, headers={"Origin": "http://random:1234"})
         match_headers("get-random-wildcard-origin", get_req)
+
+    @markers.aws.validated
+    def test_cors_options_match_partial_origin(self, s3_bucket, aws_client, match_headers):
+        bucket_url = _bucket_url_vhost(bucket_name=s3_bucket)
+        origin_url = "http://test.origin.com"
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["http://*.origin.com"],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["*"],
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+        response = requests.options(
+            bucket_url, headers={"Origin": origin_url, "Access-Control-Request-Method": "GET"}
+        )
+        match_headers("options_match_partial_origin", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Body.Error.ResourceType",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.HostId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
+            "$..Headers.Transfer-Encoding",
+            # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
+        ]
+    )
+    def test_cors_options_fails_partial_origin(
+        self, s3_bucket, snapshot, aws_client, match_headers
+    ):
+        bucket_url = _bucket_url_vhost(bucket_name=s3_bucket)
+        origin_url = "http://test.origin.com/"
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["http://*.origin.com"],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["*"],
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+        response = requests.options(
+            bucket_url, headers={"Origin": origin_url, "Access-Control-Request-Method": "GET"}
+        )
+        match_headers("options_fails_partial_origin", response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

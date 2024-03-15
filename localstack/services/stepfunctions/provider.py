@@ -2,9 +2,10 @@ import copy
 import datetime
 import json
 import logging
-from typing import Optional
+import re
+from typing import Final, Optional
 
-from localstack.aws.api import RequestContext
+from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.stepfunctions import (
     Arn,
     ConflictException,
@@ -111,10 +112,33 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(sfn_stores)
 
+    _STATE_MACHINE_ARN_REGEX: Final[re.Pattern] = re.compile(
+        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:stateMachine:[a-zA-Z0-9-_]+(:\d+)?$"
+    )
+
+    _STATE_MACHINE_EXECUTION_ARN_REGEX: Final[re.Pattern] = re.compile(
+        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:(stateMachine|execution):[a-zA-Z0-9-_]+(:\d+)?(:[a-zA-Z0-9-_]+)?$"
+    )
+
+    @staticmethod
+    def _validate_state_machine_arn(state_machine_arn: str) -> None:
+        # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
+        if not StepFunctionsProvider._STATE_MACHINE_ARN_REGEX.match(state_machine_arn):
+            raise InvalidArn(f"Invalid arn: '{state_machine_arn}'")
+
+    @staticmethod
+    def _raise_state_machine_does_not_exist(state_machine_arn: str) -> None:
+        raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
+
+    def _validate_state_machine_execution_arn(self, execution_arn: str) -> None:
+        # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
+        if not StepFunctionsProvider._STATE_MACHINE_EXECUTION_ARN_REGEX.match(execution_arn):
+            raise InvalidArn(f"Invalid arn: '{execution_arn}'")
+
     def _get_execution(self, context: RequestContext, execution_arn: Arn) -> Execution:
         execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
         if not execution:
-            raise InvalidName()  # TODO
+            raise ExecutionDoesNotExist(f"Execution Does Not Exist: '{execution_arn}'")
         return execution
 
     def _get_executions(
@@ -185,7 +209,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             raise invalid_definition
 
     def create_state_machine(
-        self, context: RequestContext, request: CreateStateMachineInput
+        self, context: RequestContext, request: CreateStateMachineInput, **kwargs
     ) -> CreateStateMachineOutput:
         if not request.get("publish", False) and request.get("versionDescription"):
             raise ValidationException("Version description can only be set when publish is true")
@@ -253,25 +277,23 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return create_output
 
     def describe_state_machine(
-        self, context: RequestContext, state_machine_arn: Arn
+        self, context: RequestContext, state_machine_arn: Arn, **kwargs
     ) -> DescribeStateMachineOutput:
-        # TODO: add arn validation.
+        self._validate_state_machine_arn(state_machine_arn)
         state_machine = self.get_store(context).state_machines.get(state_machine_arn)
         if state_machine is None:
-            raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
+            self._raise_state_machine_does_not_exist(state_machine_arn)
         return state_machine.describe()
 
     def describe_state_machine_for_execution(
-        self, context: RequestContext, execution_arn: Arn
+        self, context: RequestContext, execution_arn: Arn, **kwargs
     ) -> DescribeStateMachineForExecutionOutput:
-        # TODO: add arn validation.
-        execution: Optional[Execution] = self.get_store(context).executions.get(execution_arn)
-        if not execution:
-            raise ExecutionDoesNotExist()
+        self._validate_state_machine_execution_arn(execution_arn)
+        execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
         return execution.to_describe_state_machine_for_execution_output()
 
     def send_task_heartbeat(
-        self, context: RequestContext, task_token: TaskToken
+        self, context: RequestContext, task_token: TaskToken, **kwargs
     ) -> SendTaskHeartbeatOutput:
         running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
         for execution in running_executions:
@@ -288,7 +310,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         raise InvalidToken()
 
     def send_task_success(
-        self, context: RequestContext, task_token: TaskToken, output: SensitiveData
+        self, context: RequestContext, task_token: TaskToken, output: SensitiveData, **kwargs
     ) -> SendTaskSuccessOutput:
         outcome = CallbackOutcomeSuccess(callback_id=task_token, output=output)
         running_executions: list[Execution] = self._get_executions(context, ExecutionStatus.RUNNING)
@@ -311,6 +333,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         task_token: TaskToken,
         error: SensitiveError = None,
         cause: SensitiveCause = None,
+        **kwargs,
     ) -> SendTaskFailureOutput:
         outcome = CallbackOutcomeFailure(callback_id=task_token, error=error, cause=cause)
         store = self.get_store(context)
@@ -334,12 +357,14 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         name: Name = None,
         input: SensitiveData = None,
         trace_header: TraceHeader = None,
+        **kwargs,
     ) -> StartExecutionOutput:
+        self._validate_state_machine_arn(state_machine_arn)
         state_machine: Optional[StateMachineInstance] = self.get_store(context).state_machines.get(
             state_machine_arn
         )
         if not state_machine:
-            raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
+            self._raise_state_machine_does_not_exist(state_machine_arn)
 
         # Update event change parameters about the state machine and should not affect those about this execution.
         state_machine_clone = copy.deepcopy(state_machine)
@@ -391,10 +416,22 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return execution.to_start_output()
 
     def describe_execution(
-        self, context: RequestContext, execution_arn: Arn
+        self, context: RequestContext, execution_arn: Arn, **kwargs
     ) -> DescribeExecutionOutput:
+        self._validate_state_machine_execution_arn(execution_arn)
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
         return execution.to_describe_output()
+
+    @staticmethod
+    def _list_execution_filter(
+        ex: Execution, state_machine_arn: str | None, status_filter: str | None
+    ) -> bool:
+        if state_machine_arn and ex.state_machine.arn != state_machine_arn:
+            return False
+
+        if not status_filter:
+            return True
+        return ex.exec_status == status_filter
 
     def list_executions(
         self,
@@ -405,17 +442,55 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         next_token: ListExecutionsPageToken = None,
         map_run_arn: LongArn = None,
         redrive_filter: ExecutionRedriveFilter = None,
+        **kwargs,
     ) -> ListExecutionsOutput:
-        # TODO: add support for paging and filtering.
+        self._validate_state_machine_arn(state_machine_arn)
+
+        state_machine = self.get_store(context).state_machines.get(state_machine_arn)
+        if state_machine is None:
+            self._raise_state_machine_does_not_exist(state_machine_arn)
+
+        # TODO: add support for paging
+
+        allowed_execution_status = [
+            ExecutionStatus.SUCCEEDED,
+            ExecutionStatus.TIMED_OUT,
+            ExecutionStatus.PENDING_REDRIVE,
+            ExecutionStatus.ABORTED,
+            ExecutionStatus.FAILED,
+            ExecutionStatus.RUNNING,
+        ]
+
+        validation_errors = []
+
+        if status_filter and status_filter not in allowed_execution_status:
+            validation_errors.append(
+                f"Value '{status_filter}' at 'statusFilter' failed to satisfy constraint: Member must satisfy enum value set: [{', '.join(allowed_execution_status)}]"
+            )
+
+        if not state_machine_arn and not map_run_arn:
+            validation_errors.append("Must provide a StateMachine ARN or MapRun ARN")
+
+        if validation_errors:
+            errors_message = "; ".join(validation_errors)
+            message = f"{len(validation_errors)} validation {'errors' if len(validation_errors) > 1 else 'error'} detected: {errors_message}"
+            raise CommonServiceException(message=message, code="ValidationException")
+
         executions: ExecutionList = [
             execution.to_execution_list_item()
             for execution in self.get_store(context).executions.values()
-            if execution.state_machine.arn == state_machine_arn
+            if self._list_execution_filter(
+                execution, state_machine_arn=state_machine_arn, status_filter=status_filter
+            )
         ]
         return ListExecutionsOutput(executions=executions)
 
     def list_state_machines(
-        self, context: RequestContext, max_results: PageSize = None, next_token: PageToken = None
+        self,
+        context: RequestContext,
+        max_results: PageSize = None,
+        next_token: PageToken = None,
+        **kwargs,
     ) -> ListStateMachinesOutput:
         # TODO: add paging support.
         state_machines: StateMachineList = [
@@ -432,12 +507,15 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_machine_arn: Arn,
         next_token: PageToken = None,
         max_results: PageSize = None,
+        **kwargs,
     ) -> ListStateMachineVersionsOutput:
         # TODO: add paging support.
+        self._validate_state_machine_arn(state_machine_arn)
+
         state_machines = self.get_store(context).state_machines
         state_machine_revision = state_machines.get(state_machine_arn)
         if not isinstance(state_machine_revision, StateMachineRevision):
-            raise InvalidArn()
+            raise InvalidArn(f"Invalid arn: {state_machine_arn}")
 
         state_machine_version_items = list()
         for version_arn in state_machine_revision.versions.values():
@@ -460,16 +538,21 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         reverse_order: ReverseOrder = None,
         next_token: PageToken = None,
         include_execution_data: IncludeExecutionDataGetExecutionHistory = None,
+        **kwargs,
     ) -> GetExecutionHistoryOutput:
         # TODO: add support for paging, ordering, and other manipulations.
+        self._validate_state_machine_execution_arn(execution_arn)
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
         history: GetExecutionHistoryOutput = execution.to_history_output()
+        if reverse_order:
+            history["events"].reverse()
         return history
 
     def delete_state_machine(
-        self, context: RequestContext, state_machine_arn: Arn
+        self, context: RequestContext, state_machine_arn: Arn, **kwargs
     ) -> DeleteStateMachineOutput:
         # TODO: halt executions?
+        self._validate_state_machine_arn(state_machine_arn)
         state_machines = self.get_store(context).state_machines
         state_machine = state_machines.get(state_machine_arn)
         if isinstance(state_machine, StateMachineRevision):
@@ -479,8 +562,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return DeleteStateMachineOutput()
 
     def delete_state_machine_version(
-        self, context: RequestContext, state_machine_version_arn: LongArn
+        self, context: RequestContext, state_machine_version_arn: LongArn, **kwargs
     ) -> DeleteStateMachineVersionOutput:
+        self._validate_state_machine_arn(state_machine_version_arn)
         state_machines = self.get_store(context).state_machines
         state_machine_version = state_machines.get(state_machine_version_arn)
         if isinstance(state_machine_version, StateMachineVersion):
@@ -497,7 +581,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         execution_arn: Arn,
         error: SensitiveError = None,
         cause: SensitiveCause = None,
+        **kwargs,
     ) -> StopExecutionOutput:
+        self._validate_state_machine_execution_arn(execution_arn)
         execution: Execution = self._get_execution(context=context, execution_arn=execution_arn)
         stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
         execution.stop(stop_date=stop_date, cause=cause, error=error)
@@ -513,12 +599,14 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         tracing_configuration: TracingConfiguration = None,
         publish: Publish = None,
         version_description: VersionDescription = None,
+        **kwargs,
     ) -> UpdateStateMachineOutput:
+        self._validate_state_machine_arn(state_machine_arn)
         state_machines = self.get_store(context).state_machines
 
         state_machine = state_machines.get(state_machine_arn)
         if not isinstance(state_machine, StateMachineRevision):
-            raise StateMachineDoesNotExist(f"State Machine Does Not Exist: '{state_machine_arn}'")
+            self._raise_state_machine_does_not_exist(state_machine_arn)
 
         if not any([definition, role_arn, logging_configuration]):
             raise MissingRequiredParameter(
@@ -555,12 +643,14 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_machine_arn: Arn,
         revision_id: RevisionId = None,
         description: VersionDescription = None,
+        **kwargs,
     ) -> PublishStateMachineVersionOutput:
+        self._validate_state_machine_arn(state_machine_arn)
         state_machines = self.get_store(context).state_machines
 
         state_machine_revision = state_machines.get(state_machine_arn)
         if not isinstance(state_machine_revision, StateMachineRevision):
-            raise InvalidArn()
+            self._raise_state_machine_does_not_exist(state_machine_arn)
 
         if revision_id is not None and state_machine_revision.revision_id != revision_id:
             raise ConflictException(
@@ -582,7 +672,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         )
 
     def tag_resource(
-        self, context: RequestContext, resource_arn: Arn, tags: TagList
+        self, context: RequestContext, resource_arn: Arn, tags: TagList, **kwargs
     ) -> TagResourceOutput:
         # TODO: add tagging for activities.
         state_machines = self.get_store(context).state_machines
@@ -594,7 +684,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return TagResourceOutput()
 
     def untag_resource(
-        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList
+        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceOutput:
         # TODO: add untagging for activities.
         state_machines = self.get_store(context).state_machines
@@ -606,7 +696,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return UntagResourceOutput()
 
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: Arn
+        self, context: RequestContext, resource_arn: Arn, **kwargs
     ) -> ListTagsForResourceOutput:
         # TODO: add untagging for activities.
         state_machines = self.get_store(context).state_machines
@@ -618,7 +708,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return ListTagsForResourceOutput(tags=tags)
 
     def describe_map_run(
-        self, context: RequestContext, map_run_arn: LongArn
+        self, context: RequestContext, map_run_arn: LongArn, **kwargs
     ) -> DescribeMapRunOutput:
         store = self.get_store(context)
         for execution in store.executions.values():
@@ -635,6 +725,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         execution_arn: Arn,
         max_results: PageSize = None,
         next_token: PageToken = None,
+        **kwargs,
     ) -> ListMapRunsOutput:
         # TODO: add support for paging.
         execution = self._get_execution(context=context, execution_arn=execution_arn)
@@ -652,6 +743,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         max_concurrency: MaxConcurrency = None,
         tolerated_failure_percentage: ToleratedFailurePercentage = None,
         tolerated_failure_count: ToleratedFailureCount = None,
+        **kwargs,
     ) -> UpdateMapRunOutput:
         if tolerated_failure_percentage is not None or tolerated_failure_count is not None:
             raise NotImplementedError(

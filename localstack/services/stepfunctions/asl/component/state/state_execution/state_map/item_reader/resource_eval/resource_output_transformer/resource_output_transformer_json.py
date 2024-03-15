@@ -33,6 +33,7 @@ class ResourceOutputTransformerJson(ResourceOutputTransformer):
         if not isinstance(json_list, list):
             error_name = StatesErrorName(typ=StatesErrorNameType.StatesItemReaderFailed)
             failure_event = FailureEvent(
+                env=env,
                 error_name=error_name,
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(

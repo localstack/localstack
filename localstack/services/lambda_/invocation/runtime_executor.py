@@ -1,8 +1,10 @@
+import dataclasses
 import logging
 from abc import ABC, abstractmethod
-from typing import Type
+from pathlib import Path
+from typing import Type, TypedDict
 
-from plugin import PluginManager
+from plux import PluginManager
 
 from localstack import config
 from localstack.services.lambda_.invocation.lambda_models import FunctionVersion, InvocationResult
@@ -117,6 +119,18 @@ class RuntimeExecutor(ABC):
 class LambdaRuntimeException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
+
+
+@dataclasses.dataclass
+class LambdaPrebuildContext:
+    docker_file_content: str
+    context_path: Path
+    function_version: FunctionVersion
+
+
+class ChmodPath(TypedDict):
+    path: str
+    mode: str
 
 
 EXECUTOR_PLUGIN_MANAGER: PluginManager[Type[RuntimeExecutor]] = PluginManager(

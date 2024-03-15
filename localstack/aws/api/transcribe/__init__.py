@@ -1218,6 +1218,7 @@ class TranscribeApi:
         category_name: CategoryName,
         rules: RuleList,
         input_type: InputType = None,
+        **kwargs,
     ) -> CreateCallAnalyticsCategoryResponse:
         raise NotImplementedError
 
@@ -1230,6 +1231,7 @@ class TranscribeApi:
         model_name: ModelName,
         input_data_config: InputDataConfig,
         tags: TagList = None,
+        **kwargs,
     ) -> CreateLanguageModelResponse:
         raise NotImplementedError
 
@@ -1241,6 +1243,7 @@ class TranscribeApi:
         language_code: LanguageCode,
         vocabulary_file_uri: Uri,
         tags: TagList = None,
+        **kwargs,
     ) -> CreateMedicalVocabularyResponse:
         raise NotImplementedError
 
@@ -1254,6 +1257,7 @@ class TranscribeApi:
         vocabulary_file_uri: Uri = None,
         tags: TagList = None,
         data_access_role_arn: DataAccessRoleArn = None,
+        **kwargs,
     ) -> CreateVocabularyResponse:
         raise NotImplementedError
 
@@ -1267,116 +1271,131 @@ class TranscribeApi:
         vocabulary_filter_file_uri: Uri = None,
         tags: TagList = None,
         data_access_role_arn: DataAccessRoleArn = None,
+        **kwargs,
     ) -> CreateVocabularyFilterResponse:
         raise NotImplementedError
 
     @handler("DeleteCallAnalyticsCategory")
     def delete_call_analytics_category(
-        self, context: RequestContext, category_name: CategoryName
+        self, context: RequestContext, category_name: CategoryName, **kwargs
     ) -> DeleteCallAnalyticsCategoryResponse:
         raise NotImplementedError
 
     @handler("DeleteCallAnalyticsJob")
     def delete_call_analytics_job(
-        self, context: RequestContext, call_analytics_job_name: CallAnalyticsJobName
+        self, context: RequestContext, call_analytics_job_name: CallAnalyticsJobName, **kwargs
     ) -> DeleteCallAnalyticsJobResponse:
         raise NotImplementedError
 
     @handler("DeleteLanguageModel")
-    def delete_language_model(self, context: RequestContext, model_name: ModelName) -> None:
+    def delete_language_model(
+        self, context: RequestContext, model_name: ModelName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteMedicalScribeJob")
     def delete_medical_scribe_job(
-        self, context: RequestContext, medical_scribe_job_name: TranscriptionJobName
+        self, context: RequestContext, medical_scribe_job_name: TranscriptionJobName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteMedicalTranscriptionJob")
     def delete_medical_transcription_job(
-        self, context: RequestContext, medical_transcription_job_name: TranscriptionJobName
+        self,
+        context: RequestContext,
+        medical_transcription_job_name: TranscriptionJobName,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteMedicalVocabulary")
     def delete_medical_vocabulary(
-        self, context: RequestContext, vocabulary_name: VocabularyName
+        self, context: RequestContext, vocabulary_name: VocabularyName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteTranscriptionJob")
     def delete_transcription_job(
-        self, context: RequestContext, transcription_job_name: TranscriptionJobName
+        self, context: RequestContext, transcription_job_name: TranscriptionJobName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteVocabulary")
-    def delete_vocabulary(self, context: RequestContext, vocabulary_name: VocabularyName) -> None:
+    def delete_vocabulary(
+        self, context: RequestContext, vocabulary_name: VocabularyName, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteVocabularyFilter")
     def delete_vocabulary_filter(
-        self, context: RequestContext, vocabulary_filter_name: VocabularyFilterName
+        self, context: RequestContext, vocabulary_filter_name: VocabularyFilterName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DescribeLanguageModel")
     def describe_language_model(
-        self, context: RequestContext, model_name: ModelName
+        self, context: RequestContext, model_name: ModelName, **kwargs
     ) -> DescribeLanguageModelResponse:
         raise NotImplementedError
 
     @handler("GetCallAnalyticsCategory")
     def get_call_analytics_category(
-        self, context: RequestContext, category_name: CategoryName
+        self, context: RequestContext, category_name: CategoryName, **kwargs
     ) -> GetCallAnalyticsCategoryResponse:
         raise NotImplementedError
 
     @handler("GetCallAnalyticsJob")
     def get_call_analytics_job(
-        self, context: RequestContext, call_analytics_job_name: CallAnalyticsJobName
+        self, context: RequestContext, call_analytics_job_name: CallAnalyticsJobName, **kwargs
     ) -> GetCallAnalyticsJobResponse:
         raise NotImplementedError
 
     @handler("GetMedicalScribeJob")
     def get_medical_scribe_job(
-        self, context: RequestContext, medical_scribe_job_name: TranscriptionJobName
+        self, context: RequestContext, medical_scribe_job_name: TranscriptionJobName, **kwargs
     ) -> GetMedicalScribeJobResponse:
         raise NotImplementedError
 
     @handler("GetMedicalTranscriptionJob")
     def get_medical_transcription_job(
-        self, context: RequestContext, medical_transcription_job_name: TranscriptionJobName
+        self,
+        context: RequestContext,
+        medical_transcription_job_name: TranscriptionJobName,
+        **kwargs,
     ) -> GetMedicalTranscriptionJobResponse:
         raise NotImplementedError
 
     @handler("GetMedicalVocabulary")
     def get_medical_vocabulary(
-        self, context: RequestContext, vocabulary_name: VocabularyName
+        self, context: RequestContext, vocabulary_name: VocabularyName, **kwargs
     ) -> GetMedicalVocabularyResponse:
         raise NotImplementedError
 
     @handler("GetTranscriptionJob")
     def get_transcription_job(
-        self, context: RequestContext, transcription_job_name: TranscriptionJobName
+        self, context: RequestContext, transcription_job_name: TranscriptionJobName, **kwargs
     ) -> GetTranscriptionJobResponse:
         raise NotImplementedError
 
     @handler("GetVocabulary")
     def get_vocabulary(
-        self, context: RequestContext, vocabulary_name: VocabularyName
+        self, context: RequestContext, vocabulary_name: VocabularyName, **kwargs
     ) -> GetVocabularyResponse:
         raise NotImplementedError
 
     @handler("GetVocabularyFilter")
     def get_vocabulary_filter(
-        self, context: RequestContext, vocabulary_filter_name: VocabularyFilterName
+        self, context: RequestContext, vocabulary_filter_name: VocabularyFilterName, **kwargs
     ) -> GetVocabularyFilterResponse:
         raise NotImplementedError
 
     @handler("ListCallAnalyticsCategories")
     def list_call_analytics_categories(
-        self, context: RequestContext, next_token: NextToken = None, max_results: MaxResults = None
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        **kwargs,
     ) -> ListCallAnalyticsCategoriesResponse:
         raise NotImplementedError
 
@@ -1388,6 +1407,7 @@ class TranscribeApi:
         job_name_contains: CallAnalyticsJobName = None,
         next_token: NextToken = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListCallAnalyticsJobsResponse:
         raise NotImplementedError
 
@@ -1399,6 +1419,7 @@ class TranscribeApi:
         name_contains: ModelName = None,
         next_token: NextToken = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListLanguageModelsResponse:
         raise NotImplementedError
 
@@ -1410,6 +1431,7 @@ class TranscribeApi:
         job_name_contains: TranscriptionJobName = None,
         next_token: NextToken = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListMedicalScribeJobsResponse:
         raise NotImplementedError
 
@@ -1421,6 +1443,7 @@ class TranscribeApi:
         job_name_contains: TranscriptionJobName = None,
         next_token: NextToken = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListMedicalTranscriptionJobsResponse:
         raise NotImplementedError
 
@@ -1432,12 +1455,13 @@ class TranscribeApi:
         max_results: MaxResults = None,
         state_equals: VocabularyState = None,
         name_contains: VocabularyName = None,
+        **kwargs,
     ) -> ListMedicalVocabulariesResponse:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: TranscribeArn
+        self, context: RequestContext, resource_arn: TranscribeArn, **kwargs
     ) -> ListTagsForResourceResponse:
         raise NotImplementedError
 
@@ -1449,6 +1473,7 @@ class TranscribeApi:
         job_name_contains: TranscriptionJobName = None,
         next_token: NextToken = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListTranscriptionJobsResponse:
         raise NotImplementedError
 
@@ -1460,6 +1485,7 @@ class TranscribeApi:
         max_results: MaxResults = None,
         state_equals: VocabularyState = None,
         name_contains: VocabularyName = None,
+        **kwargs,
     ) -> ListVocabulariesResponse:
         raise NotImplementedError
 
@@ -1470,6 +1496,7 @@ class TranscribeApi:
         next_token: NextToken = None,
         max_results: MaxResults = None,
         name_contains: VocabularyFilterName = None,
+        **kwargs,
     ) -> ListVocabularyFiltersResponse:
         raise NotImplementedError
 
@@ -1484,6 +1511,7 @@ class TranscribeApi:
         data_access_role_arn: DataAccessRoleArn = None,
         settings: CallAnalyticsJobSettings = None,
         channel_definitions: ChannelDefinitions = None,
+        **kwargs,
     ) -> StartCallAnalyticsJobResponse:
         raise NotImplementedError
 
@@ -1500,12 +1528,13 @@ class TranscribeApi:
         kms_encryption_context: KMSEncryptionContextMap = None,
         channel_definitions: MedicalScribeChannelDefinitions = None,
         tags: TagList = None,
+        **kwargs,
     ) -> StartMedicalScribeJobResponse:
         raise NotImplementedError
 
     @handler("StartMedicalTranscriptionJob", expand=False)
     def start_medical_transcription_job(
-        self, context: RequestContext, request: StartMedicalTranscriptionJobRequest
+        self, context: RequestContext, request: StartMedicalTranscriptionJobRequest, **kwargs
     ) -> StartMedicalTranscriptionJobResponse:
         raise NotImplementedError
 
@@ -1533,18 +1562,19 @@ class TranscribeApi:
         tags: TagList = None,
         language_id_settings: LanguageIdSettingsMap = None,
         toxicity_detection: ToxicityDetection = None,
+        **kwargs,
     ) -> StartTranscriptionJobResponse:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: TranscribeArn, tags: TagList
+        self, context: RequestContext, resource_arn: TranscribeArn, tags: TagList, **kwargs
     ) -> TagResourceResponse:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: TranscribeArn, tag_keys: TagKeyList
+        self, context: RequestContext, resource_arn: TranscribeArn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceResponse:
         raise NotImplementedError
 
@@ -1555,6 +1585,7 @@ class TranscribeApi:
         category_name: CategoryName,
         rules: RuleList,
         input_type: InputType = None,
+        **kwargs,
     ) -> UpdateCallAnalyticsCategoryResponse:
         raise NotImplementedError
 
@@ -1565,6 +1596,7 @@ class TranscribeApi:
         vocabulary_name: VocabularyName,
         language_code: LanguageCode,
         vocabulary_file_uri: Uri,
+        **kwargs,
     ) -> UpdateMedicalVocabularyResponse:
         raise NotImplementedError
 
@@ -1577,6 +1609,7 @@ class TranscribeApi:
         phrases: Phrases = None,
         vocabulary_file_uri: Uri = None,
         data_access_role_arn: DataAccessRoleArn = None,
+        **kwargs,
     ) -> UpdateVocabularyResponse:
         raise NotImplementedError
 
@@ -1588,5 +1621,6 @@ class TranscribeApi:
         words: Words = None,
         vocabulary_filter_file_uri: Uri = None,
         data_access_role_arn: DataAccessRoleArn = None,
+        **kwargs,
     ) -> UpdateVocabularyFilterResponse:
         raise NotImplementedError

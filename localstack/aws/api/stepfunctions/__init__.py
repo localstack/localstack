@@ -1245,13 +1245,13 @@ class StepfunctionsApi:
 
     @handler("CreateActivity")
     def create_activity(
-        self, context: RequestContext, name: Name, tags: TagList = None
+        self, context: RequestContext, name: Name, tags: TagList = None, **kwargs
     ) -> CreateActivityOutput:
         raise NotImplementedError
 
     @handler("CreateStateMachine", expand=False)
     def create_state_machine(
-        self, context: RequestContext, request: CreateStateMachineInput
+        self, context: RequestContext, request: CreateStateMachineInput, **kwargs
     ) -> CreateStateMachineOutput:
         raise NotImplementedError
 
@@ -1262,70 +1262,73 @@ class StepfunctionsApi:
         name: CharacterRestrictedName,
         routing_configuration: RoutingConfigurationList,
         description: AliasDescription = None,
+        **kwargs,
     ) -> CreateStateMachineAliasOutput:
         raise NotImplementedError
 
     @handler("DeleteActivity")
-    def delete_activity(self, context: RequestContext, activity_arn: Arn) -> DeleteActivityOutput:
+    def delete_activity(
+        self, context: RequestContext, activity_arn: Arn, **kwargs
+    ) -> DeleteActivityOutput:
         raise NotImplementedError
 
     @handler("DeleteStateMachine")
     def delete_state_machine(
-        self, context: RequestContext, state_machine_arn: Arn
+        self, context: RequestContext, state_machine_arn: Arn, **kwargs
     ) -> DeleteStateMachineOutput:
         raise NotImplementedError
 
     @handler("DeleteStateMachineAlias")
     def delete_state_machine_alias(
-        self, context: RequestContext, state_machine_alias_arn: Arn
+        self, context: RequestContext, state_machine_alias_arn: Arn, **kwargs
     ) -> DeleteStateMachineAliasOutput:
         raise NotImplementedError
 
     @handler("DeleteStateMachineVersion")
     def delete_state_machine_version(
-        self, context: RequestContext, state_machine_version_arn: LongArn
+        self, context: RequestContext, state_machine_version_arn: LongArn, **kwargs
     ) -> DeleteStateMachineVersionOutput:
         raise NotImplementedError
 
     @handler("DescribeActivity")
     def describe_activity(
-        self, context: RequestContext, activity_arn: Arn
+        self, context: RequestContext, activity_arn: Arn, **kwargs
     ) -> DescribeActivityOutput:
         raise NotImplementedError
 
     @handler("DescribeExecution")
     def describe_execution(
-        self, context: RequestContext, execution_arn: Arn
+        self, context: RequestContext, execution_arn: Arn, **kwargs
     ) -> DescribeExecutionOutput:
         raise NotImplementedError
 
     @handler("DescribeMapRun")
     def describe_map_run(
-        self, context: RequestContext, map_run_arn: LongArn
+        self, context: RequestContext, map_run_arn: LongArn, **kwargs
     ) -> DescribeMapRunOutput:
         raise NotImplementedError
 
     @handler("DescribeStateMachine")
     def describe_state_machine(
-        self, context: RequestContext, state_machine_arn: Arn
+        self, context: RequestContext, state_machine_arn: Arn, **kwargs
     ) -> DescribeStateMachineOutput:
         raise NotImplementedError
 
     @handler("DescribeStateMachineAlias")
     def describe_state_machine_alias(
-        self, context: RequestContext, state_machine_alias_arn: Arn
+        self, context: RequestContext, state_machine_alias_arn: Arn, **kwargs
     ) -> DescribeStateMachineAliasOutput:
         raise NotImplementedError
 
     @handler("DescribeStateMachineForExecution")
     def describe_state_machine_for_execution(
-        self, context: RequestContext, execution_arn: Arn
+        self, context: RequestContext, execution_arn: Arn, **kwargs
     ) -> DescribeStateMachineForExecutionOutput:
         raise NotImplementedError
 
     @handler("GetActivityTask")
     def get_activity_task(
-        self, context: RequestContext, activity_arn: Arn, worker_name: Name = None
+        self, context: RequestContext, activity_arn: Arn, worker_name: Name = None, **kwargs
     ) -> GetActivityTaskOutput:
         raise NotImplementedError
 
@@ -1338,12 +1341,17 @@ class StepfunctionsApi:
         reverse_order: ReverseOrder = None,
         next_token: PageToken = None,
         include_execution_data: IncludeExecutionDataGetExecutionHistory = None,
+        **kwargs,
     ) -> GetExecutionHistoryOutput:
         raise NotImplementedError
 
     @handler("ListActivities")
     def list_activities(
-        self, context: RequestContext, max_results: PageSize = None, next_token: PageToken = None
+        self,
+        context: RequestContext,
+        max_results: PageSize = None,
+        next_token: PageToken = None,
+        **kwargs,
     ) -> ListActivitiesOutput:
         raise NotImplementedError
 
@@ -1357,6 +1365,7 @@ class StepfunctionsApi:
         next_token: ListExecutionsPageToken = None,
         map_run_arn: LongArn = None,
         redrive_filter: ExecutionRedriveFilter = None,
+        **kwargs,
     ) -> ListExecutionsOutput:
         raise NotImplementedError
 
@@ -1367,6 +1376,7 @@ class StepfunctionsApi:
         execution_arn: Arn,
         max_results: PageSize = None,
         next_token: PageToken = None,
+        **kwargs,
     ) -> ListMapRunsOutput:
         raise NotImplementedError
 
@@ -1377,6 +1387,7 @@ class StepfunctionsApi:
         state_machine_arn: Arn,
         next_token: PageToken = None,
         max_results: PageSize = None,
+        **kwargs,
     ) -> ListStateMachineAliasesOutput:
         raise NotImplementedError
 
@@ -1387,18 +1398,23 @@ class StepfunctionsApi:
         state_machine_arn: Arn,
         next_token: PageToken = None,
         max_results: PageSize = None,
+        **kwargs,
     ) -> ListStateMachineVersionsOutput:
         raise NotImplementedError
 
     @handler("ListStateMachines")
     def list_state_machines(
-        self, context: RequestContext, max_results: PageSize = None, next_token: PageToken = None
+        self,
+        context: RequestContext,
+        max_results: PageSize = None,
+        next_token: PageToken = None,
+        **kwargs,
     ) -> ListStateMachinesOutput:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: Arn
+        self, context: RequestContext, resource_arn: Arn, **kwargs
     ) -> ListTagsForResourceOutput:
         raise NotImplementedError
 
@@ -1409,12 +1425,17 @@ class StepfunctionsApi:
         state_machine_arn: Arn,
         revision_id: RevisionId = None,
         description: VersionDescription = None,
+        **kwargs,
     ) -> PublishStateMachineVersionOutput:
         raise NotImplementedError
 
     @handler("RedriveExecution")
     def redrive_execution(
-        self, context: RequestContext, execution_arn: Arn, client_token: ClientToken = None
+        self,
+        context: RequestContext,
+        execution_arn: Arn,
+        client_token: ClientToken = None,
+        **kwargs,
     ) -> RedriveExecutionOutput:
         raise NotImplementedError
 
@@ -1425,18 +1446,19 @@ class StepfunctionsApi:
         task_token: TaskToken,
         error: SensitiveError = None,
         cause: SensitiveCause = None,
+        **kwargs,
     ) -> SendTaskFailureOutput:
         raise NotImplementedError
 
     @handler("SendTaskHeartbeat")
     def send_task_heartbeat(
-        self, context: RequestContext, task_token: TaskToken
+        self, context: RequestContext, task_token: TaskToken, **kwargs
     ) -> SendTaskHeartbeatOutput:
         raise NotImplementedError
 
     @handler("SendTaskSuccess")
     def send_task_success(
-        self, context: RequestContext, task_token: TaskToken, output: SensitiveData
+        self, context: RequestContext, task_token: TaskToken, output: SensitiveData, **kwargs
     ) -> SendTaskSuccessOutput:
         raise NotImplementedError
 
@@ -1448,6 +1470,7 @@ class StepfunctionsApi:
         name: Name = None,
         input: SensitiveData = None,
         trace_header: TraceHeader = None,
+        **kwargs,
     ) -> StartExecutionOutput:
         raise NotImplementedError
 
@@ -1459,6 +1482,7 @@ class StepfunctionsApi:
         name: Name = None,
         input: SensitiveData = None,
         trace_header: TraceHeader = None,
+        **kwargs,
     ) -> StartSyncExecutionOutput:
         raise NotImplementedError
 
@@ -1469,12 +1493,13 @@ class StepfunctionsApi:
         execution_arn: Arn,
         error: SensitiveError = None,
         cause: SensitiveCause = None,
+        **kwargs,
     ) -> StopExecutionOutput:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: Arn, tags: TagList
+        self, context: RequestContext, resource_arn: Arn, tags: TagList, **kwargs
     ) -> TagResourceOutput:
         raise NotImplementedError
 
@@ -1487,12 +1512,13 @@ class StepfunctionsApi:
         input: SensitiveData = None,
         inspection_level: InspectionLevel = None,
         reveal_secrets: RevealSecrets = None,
+        **kwargs,
     ) -> TestStateOutput:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList
+        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceOutput:
         raise NotImplementedError
 
@@ -1504,6 +1530,7 @@ class StepfunctionsApi:
         max_concurrency: MaxConcurrency = None,
         tolerated_failure_percentage: ToleratedFailurePercentage = None,
         tolerated_failure_count: ToleratedFailureCount = None,
+        **kwargs,
     ) -> UpdateMapRunOutput:
         raise NotImplementedError
 
@@ -1518,6 +1545,7 @@ class StepfunctionsApi:
         tracing_configuration: TracingConfiguration = None,
         publish: Publish = None,
         version_description: VersionDescription = None,
+        **kwargs,
     ) -> UpdateStateMachineOutput:
         raise NotImplementedError
 
@@ -1528,5 +1556,6 @@ class StepfunctionsApi:
         state_machine_alias_arn: Arn,
         description: AliasDescription = None,
         routing_configuration: RoutingConfigurationList = None,
+        **kwargs,
     ) -> UpdateStateMachineAliasOutput:
         raise NotImplementedError

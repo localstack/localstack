@@ -233,9 +233,6 @@ class FileType(Enum):
     plugin = auto()
     provider = auto()
 
-    # meta test files
-    conftest = auto()
-
     # test files
     integration_test = auto()
     getatt_test = auto()
@@ -285,7 +282,6 @@ class TemplateRenderer:
             FileType.integration_test: "test_integration_template.py.j2",
             # FileType.cloudcontrol_test: "test_cloudcontrol_template.py.j2",
             FileType.parity_test: "test_parity_template.py.j2",
-            FileType.conftest: "conftest.py.j2",
         }
         kwargs = dict(
             name=resource_name.full_name,  # AWS::SNS::Topic
@@ -353,8 +349,6 @@ class TemplateRenderer:
             # case FileType.cloudcontrol_test:
             case FileType.parity_test:
                 kwargs["parity_test_filename"] = "test_parity.py"
-            case FileType.conftest:
-                pass
             case _:
                 raise NotImplementedError(f"Rendering template of type {file_type}")
 
@@ -564,11 +558,6 @@ class FileWriter:
                 self.resource_name.path_compatible_full_name(),
                 "test_parity.py",
             ),
-            FileType.conftest: tests_root_dir(self.pro).joinpath(
-                self.resource_name.python_compatible_service_name.lower(),
-                self.resource_name.path_compatible_full_name(),
-                "conftest.py",
-            ),
         }
 
         # output files that are templates
@@ -602,12 +591,6 @@ class FileWriter:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written plugin to {file_destination}")
-
-            # tests meta
-            case FileType.conftest:
-                self.ensure_python_init_files(destination_path)
-                self.write_text(contents, file_destination)
-                self.console.print(f"Written pytest conftest to {file_destination}")
 
             # tests
             case FileType.integration_test:
@@ -823,7 +806,6 @@ def generate(
                 FileType.integration_test,
                 FileType.getatt_test,
                 FileType.parity_test,
-                FileType.conftest,
                 FileType.minimal_template,
                 FileType.update_without_replacement_template,
                 FileType.attribute_template,

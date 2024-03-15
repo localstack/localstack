@@ -1215,19 +1215,19 @@ class KmsApi:
 
     @handler("CancelKeyDeletion")
     def cancel_key_deletion(
-        self, context: RequestContext, key_id: KeyIdType
+        self, context: RequestContext, key_id: KeyIdType, **kwargs
     ) -> CancelKeyDeletionResponse:
         raise NotImplementedError
 
     @handler("ConnectCustomKeyStore")
     def connect_custom_key_store(
-        self, context: RequestContext, custom_key_store_id: CustomKeyStoreIdType
+        self, context: RequestContext, custom_key_store_id: CustomKeyStoreIdType, **kwargs
     ) -> ConnectCustomKeyStoreResponse:
         raise NotImplementedError
 
     @handler("CreateAlias")
     def create_alias(
-        self, context: RequestContext, alias_name: AliasNameType, target_key_id: KeyIdType
+        self, context: RequestContext, alias_name: AliasNameType, target_key_id: KeyIdType, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1245,6 +1245,7 @@ class KmsApi:
         xks_proxy_vpc_endpoint_service_name: XksProxyVpcEndpointServiceNameType = None,
         xks_proxy_authentication_credential: XksProxyAuthenticationCredentialType = None,
         xks_proxy_connectivity: XksProxyConnectivityType = None,
+        **kwargs,
     ) -> CreateCustomKeyStoreResponse:
         raise NotImplementedError
 
@@ -1260,6 +1261,7 @@ class KmsApi:
         grant_tokens: GrantTokenList = None,
         name: GrantNameType = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> CreateGrantResponse:
         raise NotImplementedError
 
@@ -1278,6 +1280,7 @@ class KmsApi:
         tags: TagList = None,
         multi_region: NullableBooleanType = None,
         xks_key_id: XksKeyIdType = None,
+        **kwargs,
     ) -> CreateKeyResponse:
         raise NotImplementedError
 
@@ -1292,21 +1295,24 @@ class KmsApi:
         encryption_algorithm: EncryptionAlgorithmSpec = None,
         recipient: RecipientInfo = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> DecryptResponse:
         raise NotImplementedError
 
     @handler("DeleteAlias")
-    def delete_alias(self, context: RequestContext, alias_name: AliasNameType) -> None:
+    def delete_alias(self, context: RequestContext, alias_name: AliasNameType, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeleteCustomKeyStore")
     def delete_custom_key_store(
-        self, context: RequestContext, custom_key_store_id: CustomKeyStoreIdType
+        self, context: RequestContext, custom_key_store_id: CustomKeyStoreIdType, **kwargs
     ) -> DeleteCustomKeyStoreResponse:
         raise NotImplementedError
 
     @handler("DeleteImportedKeyMaterial")
-    def delete_imported_key_material(self, context: RequestContext, key_id: KeyIdType) -> None:
+    def delete_imported_key_material(
+        self, context: RequestContext, key_id: KeyIdType, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DescribeCustomKeyStores")
@@ -1317,35 +1323,40 @@ class KmsApi:
         custom_key_store_name: CustomKeyStoreNameType = None,
         limit: LimitType = None,
         marker: MarkerType = None,
+        **kwargs,
     ) -> DescribeCustomKeyStoresResponse:
         raise NotImplementedError
 
     @handler("DescribeKey")
     def describe_key(
-        self, context: RequestContext, key_id: KeyIdType, grant_tokens: GrantTokenList = None
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        grant_tokens: GrantTokenList = None,
+        **kwargs,
     ) -> DescribeKeyResponse:
         raise NotImplementedError
 
     @handler("DisableKey")
-    def disable_key(self, context: RequestContext, key_id: KeyIdType) -> None:
+    def disable_key(self, context: RequestContext, key_id: KeyIdType, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DisableKeyRotation")
-    def disable_key_rotation(self, context: RequestContext, key_id: KeyIdType) -> None:
+    def disable_key_rotation(self, context: RequestContext, key_id: KeyIdType, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DisconnectCustomKeyStore")
     def disconnect_custom_key_store(
-        self, context: RequestContext, custom_key_store_id: CustomKeyStoreIdType
+        self, context: RequestContext, custom_key_store_id: CustomKeyStoreIdType, **kwargs
     ) -> DisconnectCustomKeyStoreResponse:
         raise NotImplementedError
 
     @handler("EnableKey")
-    def enable_key(self, context: RequestContext, key_id: KeyIdType) -> None:
+    def enable_key(self, context: RequestContext, key_id: KeyIdType, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("EnableKeyRotation")
-    def enable_key_rotation(self, context: RequestContext, key_id: KeyIdType) -> None:
+    def enable_key_rotation(self, context: RequestContext, key_id: KeyIdType, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("Encrypt")
@@ -1358,6 +1369,7 @@ class KmsApi:
         grant_tokens: GrantTokenList = None,
         encryption_algorithm: EncryptionAlgorithmSpec = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> EncryptResponse:
         raise NotImplementedError
 
@@ -1372,6 +1384,7 @@ class KmsApi:
         grant_tokens: GrantTokenList = None,
         recipient: RecipientInfo = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> GenerateDataKeyResponse:
         raise NotImplementedError
 
@@ -1385,6 +1398,7 @@ class KmsApi:
         grant_tokens: GrantTokenList = None,
         recipient: RecipientInfo = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> GenerateDataKeyPairResponse:
         raise NotImplementedError
 
@@ -1397,6 +1411,7 @@ class KmsApi:
         encryption_context: EncryptionContextType = None,
         grant_tokens: GrantTokenList = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> GenerateDataKeyPairWithoutPlaintextResponse:
         raise NotImplementedError
 
@@ -1410,6 +1425,7 @@ class KmsApi:
         number_of_bytes: NumberOfBytesType = None,
         grant_tokens: GrantTokenList = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> GenerateDataKeyWithoutPlaintextResponse:
         raise NotImplementedError
 
@@ -1422,6 +1438,7 @@ class KmsApi:
         mac_algorithm: MacAlgorithmSpec,
         grant_tokens: GrantTokenList = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> GenerateMacResponse:
         raise NotImplementedError
 
@@ -1432,18 +1449,19 @@ class KmsApi:
         number_of_bytes: NumberOfBytesType = None,
         custom_key_store_id: CustomKeyStoreIdType = None,
         recipient: RecipientInfo = None,
+        **kwargs,
     ) -> GenerateRandomResponse:
         raise NotImplementedError
 
     @handler("GetKeyPolicy")
     def get_key_policy(
-        self, context: RequestContext, key_id: KeyIdType, policy_name: PolicyNameType
+        self, context: RequestContext, key_id: KeyIdType, policy_name: PolicyNameType, **kwargs
     ) -> GetKeyPolicyResponse:
         raise NotImplementedError
 
     @handler("GetKeyRotationStatus")
     def get_key_rotation_status(
-        self, context: RequestContext, key_id: KeyIdType
+        self, context: RequestContext, key_id: KeyIdType, **kwargs
     ) -> GetKeyRotationStatusResponse:
         raise NotImplementedError
 
@@ -1454,12 +1472,17 @@ class KmsApi:
         key_id: KeyIdType,
         wrapping_algorithm: AlgorithmSpec,
         wrapping_key_spec: WrappingKeySpec,
+        **kwargs,
     ) -> GetParametersForImportResponse:
         raise NotImplementedError
 
     @handler("GetPublicKey")
     def get_public_key(
-        self, context: RequestContext, key_id: KeyIdType, grant_tokens: GrantTokenList = None
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        grant_tokens: GrantTokenList = None,
+        **kwargs,
     ) -> GetPublicKeyResponse:
         raise NotImplementedError
 
@@ -1472,6 +1495,7 @@ class KmsApi:
         encrypted_key_material: CiphertextType,
         valid_to: DateType = None,
         expiration_model: ExpirationModelType = None,
+        **kwargs,
     ) -> ImportKeyMaterialResponse:
         raise NotImplementedError
 
@@ -1482,6 +1506,7 @@ class KmsApi:
         key_id: KeyIdType = None,
         limit: LimitType = None,
         marker: MarkerType = None,
+        **kwargs,
     ) -> ListAliasesResponse:
         raise NotImplementedError
 
@@ -1494,6 +1519,7 @@ class KmsApi:
         marker: MarkerType = None,
         grant_id: GrantIdType = None,
         grantee_principal: PrincipalIdType = None,
+        **kwargs,
     ) -> ListGrantsResponse:
         raise NotImplementedError
 
@@ -1504,12 +1530,13 @@ class KmsApi:
         key_id: KeyIdType,
         limit: LimitType = None,
         marker: MarkerType = None,
+        **kwargs,
     ) -> ListKeyPoliciesResponse:
         raise NotImplementedError
 
     @handler("ListKeys")
     def list_keys(
-        self, context: RequestContext, limit: LimitType = None, marker: MarkerType = None
+        self, context: RequestContext, limit: LimitType = None, marker: MarkerType = None, **kwargs
     ) -> ListKeysResponse:
         raise NotImplementedError
 
@@ -1520,6 +1547,7 @@ class KmsApi:
         key_id: KeyIdType,
         limit: LimitType = None,
         marker: MarkerType = None,
+        **kwargs,
     ) -> ListResourceTagsResponse:
         raise NotImplementedError
 
@@ -1530,6 +1558,7 @@ class KmsApi:
         retiring_principal: PrincipalIdType,
         limit: LimitType = None,
         marker: MarkerType = None,
+        **kwargs,
     ) -> ListGrantsResponse:
         raise NotImplementedError
 
@@ -1541,6 +1570,7 @@ class KmsApi:
         policy_name: PolicyNameType,
         policy: PolicyType,
         bypass_policy_lockout_safety_check: BooleanType = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1557,6 +1587,7 @@ class KmsApi:
         destination_encryption_algorithm: EncryptionAlgorithmSpec = None,
         grant_tokens: GrantTokenList = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> ReEncryptResponse:
         raise NotImplementedError
 
@@ -1570,6 +1601,7 @@ class KmsApi:
         bypass_policy_lockout_safety_check: BooleanType = None,
         description: DescriptionType = None,
         tags: TagList = None,
+        **kwargs,
     ) -> ReplicateKeyResponse:
         raise NotImplementedError
 
@@ -1581,6 +1613,7 @@ class KmsApi:
         key_id: KeyIdType = None,
         grant_id: GrantIdType = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1591,6 +1624,7 @@ class KmsApi:
         key_id: KeyIdType,
         grant_id: GrantIdType,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1600,6 +1634,7 @@ class KmsApi:
         context: RequestContext,
         key_id: KeyIdType,
         pending_window_in_days: PendingWindowInDaysType = None,
+        **kwargs,
     ) -> ScheduleKeyDeletionResponse:
         raise NotImplementedError
 
@@ -1613,22 +1648,25 @@ class KmsApi:
         message_type: MessageType = None,
         grant_tokens: GrantTokenList = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> SignResponse:
         raise NotImplementedError
 
     @handler("TagResource")
-    def tag_resource(self, context: RequestContext, key_id: KeyIdType, tags: TagList) -> None:
+    def tag_resource(
+        self, context: RequestContext, key_id: KeyIdType, tags: TagList, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, key_id: KeyIdType, tag_keys: TagKeyList
+        self, context: RequestContext, key_id: KeyIdType, tag_keys: TagKeyList, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UpdateAlias")
     def update_alias(
-        self, context: RequestContext, alias_name: AliasNameType, target_key_id: KeyIdType
+        self, context: RequestContext, alias_name: AliasNameType, target_key_id: KeyIdType, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1645,18 +1683,19 @@ class KmsApi:
         xks_proxy_vpc_endpoint_service_name: XksProxyVpcEndpointServiceNameType = None,
         xks_proxy_authentication_credential: XksProxyAuthenticationCredentialType = None,
         xks_proxy_connectivity: XksProxyConnectivityType = None,
+        **kwargs,
     ) -> UpdateCustomKeyStoreResponse:
         raise NotImplementedError
 
     @handler("UpdateKeyDescription")
     def update_key_description(
-        self, context: RequestContext, key_id: KeyIdType, description: DescriptionType
+        self, context: RequestContext, key_id: KeyIdType, description: DescriptionType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UpdatePrimaryRegion")
     def update_primary_region(
-        self, context: RequestContext, key_id: KeyIdType, primary_region: RegionType
+        self, context: RequestContext, key_id: KeyIdType, primary_region: RegionType, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1671,6 +1710,7 @@ class KmsApi:
         message_type: MessageType = None,
         grant_tokens: GrantTokenList = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> VerifyResponse:
         raise NotImplementedError
 
@@ -1684,5 +1724,6 @@ class KmsApi:
         mac: CiphertextType,
         grant_tokens: GrantTokenList = None,
         dry_run: NullableBooleanType = None,
+        **kwargs,
     ) -> VerifyMacResponse:
         raise NotImplementedError

@@ -7,6 +7,9 @@ parameters:
   ubuntu-arm64-machine-image:
     type: string
     default: "ubuntu-2204:2023.02.1"
+  skip_test_selection:
+    type: boolean
+    default: false
 
 executors:
   ubuntu-machine-amd64:
@@ -16,19 +19,29 @@ executors:
 commands:
   prepare-pytest-tinybird:
     steps:
+      - unless:
+          condition: << pipeline.parameters.skip_test_selection >>
+          steps:
+            - run:
+                name: Setup test selection environment variable
+                command: |
+                  if [[ -n "$CI_PULL_REQUEST" ]] ; then
+                    echo "export TESTSELECTION_PYTEST_ARGS='--path-filter=target/testselection/test-selection.txt '" >> $BASH_ENV
+                  fi
       - run:
           name: Setup Environment Variables
           command: |
             if [[ $CIRCLE_BRANCH == "master" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             fi
-            echo "export TINYBIRD_DATASOURCE=localstack-tests-circleci" >> $BASH_ENV
+            echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
             echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
             echo "export CI_COMMIT_BRANCH=${CIRCLE_BRANCH}" >> $BASH_ENV
             echo "export CI_COMMIT_SHA=${CIRCLE_SHA1}" >> $BASH_ENV
             echo "export CI_JOB_URL=${CIRCLE_BUILD_URL}" >> $BASH_ENV
-            echo "export CI_JOB_NAME=${CIRCLE_JOB}" >> $BASH_ENV
-            echo "export CI_JOB_ID=${CIRCLE_WORKFLOW_JOB_ID}" >> $BASH_ENV
+            # workflow ID as the job name to associate the tests with workflows in TB
+            echo "export CI_JOB_NAME=${CIRCLE_WORKFLOW_ID}" >> $BASH_ENV
+            echo "export CI_JOB_ID=${CIRCLE_JOB}" >> $BASH_ENV
             source $BASH_ENV
 
 jobs:
@@ -38,7 +51,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: python-requirements-{{ checksum "setup.cfg" }}
+          key: python-requirements-{{ checksum "requirements-dev.txt" }}
       - run:
           name: Setup environment
           command: |
@@ -46,7 +59,7 @@ jobs:
             mkdir -p target/reports
             mkdir -p target/coverage
       - save_cache:
-          key: python-requirements-{{ checksum "setup.cfg" }}
+          key: python-requirements-{{ checksum "requirements-dev.txt" }}
           paths:
             - "~/.cache/pip"
       - persist_to_workspace:
@@ -67,6 +80,36 @@ jobs:
       - run:
           name: Checking AWS compatibility markers
           command: make check-aws-markers
+
+
+  # can't completely skip it since we need the dependency from other tasks => conditional in run step
+  test-selection:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - unless:
+          condition: << pipeline.parameters.skip_test_selection >>
+          steps:
+            - run:
+                # script expects an environment variable $GITHUB_API_TOKEN to be set to fetch PR details
+                name: Generate test selection filters from changed files
+                command: |
+                  if [[ -z "$CI_PULL_REQUEST" ]] ; then
+                    echo "Skipping test selection"
+                    circleci-agent step halt
+                  else
+                    source .venv/bin/activate
+                    python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr /tmp/workspace/repo $CI_PULL_REQUEST target/testselection/test-selection.txt
+                    cat target/testselection/test-selection.txt
+                  fi
+
+            - persist_to_workspace:
+                root:
+                  /tmp/workspace
+                paths:
+                  - repo/target/testselection/
 
   unit-tests:
     executor: ubuntu-machine-amd64
@@ -91,31 +134,6 @@ jobs:
             /tmp/workspace
           paths:
             - repo/target/coverage/
-
-  itest-sfn-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - run:
-          name: Test SFN Legacy provider
-          environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
-            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
 
   acceptance-tests:
     executor: ubuntu-machine-amd64
@@ -144,6 +162,31 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-sfn-legacy-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Test SFN Legacy provider
+          environment:
+            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
+            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   itest-s3-v2-legacy-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -159,7 +202,32 @@ jobs:
             COVERAGE_ARGS: "-p"
           command: |
             COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-cloudwatch-v2-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - run:
+          name: Test CloudWatch v2 provider
+          environment:
+            PROVIDER_OVERRIDE_CLOUDWATCH: "v2"
+            TEST_PATH: "tests/aws/services/cloudwatch/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -248,14 +316,22 @@ jobs:
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
+          # if we're doing performing a test selection, we need to filter the list of files before splitting by timings
           command: |
-            TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+            if [ -z $TESTSELECTION_PYTEST_ARGS ] ; then
+              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
+            else
+              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | python -m localstack.testing.testselection.scripts.filter_by_test_selection target/testselection/test-selection.txt | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
+            fi
+            echo $TEST_FILES
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
             DEBUG=1 \
             make docker-run-tests
       - store_test_results:
+          path: target/reports/
+      - store_artifacts:
           path: target/reports/
       - persist_to_workspace:
           root:
@@ -355,10 +431,14 @@ jobs:
       - run:
           name: Report coverage statistics
           command: |
-            source .venv/bin/activate
-            coverage report || true
-            coverage html || true
-            coveralls || true
+            if [ -z "${CI_PULL_REQUEST}" ]; then
+              source .venv/bin/activate
+              coverage report || true
+              coverage html || true
+              coveralls || true
+            else
+              echo "Skipping coverage reporting for pull request."
+            fi
       - run:
           name: store acceptance parity metrics
           command: |
@@ -467,14 +547,75 @@ jobs:
             source .venv/bin/activate
             bin/release-helper.sh set-ver $(bin/release-helper.sh next-dev-ver)
             make publish
+  save-start-time:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - run:
+          name: Save start time to file
+          command: mkdir stats && echo $(date +%s) > stats/start-time.txt
+      - persist_to_workspace:
+            root: /tmp/workspace
+            paths:
+                - repo/stats/
+  waiter:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - run: |
+          while [[ $(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job"| jq -r '.items[]|select(.name != "waiter" and .name != "push" and .name != "report")|.status' | grep -c "running") -gt 0 ]]; do
+              sleep 10
+            done
+          FAILED_COUNT=$(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job" | jq -r '.items[]|.status' | grep -c "failed") || true
+          echo "failed count" $FAILED_COUNT
+          mkdir stats
+          if [[ $FAILED_COUNT -eq 0 ]]; then
+              echo "success" > stats/outcome.txt
+          else
+              echo "failure" > stats/outcome.txt
+          fi
+          cat stats/outcome.txt
+      - persist_to_workspace:
+            root: /tmp/workspace
+            paths:
+                - repo/stats/
+  send-stats:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          when: always
+          name: Load start time from file
+          command: |
+            START_TIME=$(cat stats/start-time.txt)
+            END_TIME=$(date +%s)
+            OUTCOME=$(cat stats/outcome.txt)
+            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'"}' > stats/stats.json
+            echo 'Sending: '$(cat stats/stats.json)
+            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats/stats.json
 
 
 
 workflows:
   main:
     jobs:
+      - save-start-time:
+          filters:
+            branches:
+              only: master
+      - waiter:
+          requires:
+            - save-start-time
+      - send-stats:
+          requires:
+            - waiter
       - install
       - preflight:
+          requires:
+            - install
+      - test-selection:
           requires:
             - install
       - acceptance-tests:
@@ -483,9 +624,15 @@ workflows:
       - itest-sfn-legacy-provider:
           requires:
             - preflight
+            - test-selection
       - itest-s3-v2-legacy-provider:
           requires:
             - preflight
+            - test-selection
+      - itest-cloudwatch-v2-provider:
+          requires:
+            - preflight
+            - test-selection
       - unit-tests:
           requires:
             - preflight
@@ -512,6 +659,7 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
           requires:
             - docker-build-arm64
+            - test-selection
       - docker-test:
           name: docker-test-amd64
           platform: amd64
@@ -519,6 +667,7 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           requires:
             - docker-build-amd64
+            - test-selection
       - bootstrap-tests:
           requires:
             - docker-build-amd64
@@ -530,6 +679,7 @@ workflows:
           requires:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
+            - itest-cloudwatch-v2-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
@@ -542,6 +692,7 @@ workflows:
           requires:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
+            - itest-cloudwatch-v2-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64

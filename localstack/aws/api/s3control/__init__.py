@@ -2272,7 +2272,11 @@ class S3ControlApi:
 
     @handler("AssociateAccessGrantsIdentityCenter")
     def associate_access_grants_identity_center(
-        self, context: RequestContext, account_id: AccountId, identity_center_arn: IdentityCenterArn
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        identity_center_arn: IdentityCenterArn,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2288,6 +2292,7 @@ class S3ControlApi:
         application_arn: IdentityCenterApplicationArn = None,
         s3_prefix_type: S3PrefixType = None,
         tags: TagList = None,
+        **kwargs,
     ) -> CreateAccessGrantResult:
         raise NotImplementedError
 
@@ -2298,6 +2303,7 @@ class S3ControlApi:
         account_id: AccountId,
         identity_center_arn: IdentityCenterArn = None,
         tags: TagList = None,
+        **kwargs,
     ) -> CreateAccessGrantsInstanceResult:
         raise NotImplementedError
 
@@ -2309,6 +2315,7 @@ class S3ControlApi:
         location_scope: S3Prefix,
         iam_role_arn: IAMRoleArn,
         tags: TagList = None,
+        **kwargs,
     ) -> CreateAccessGrantsLocationResult:
         raise NotImplementedError
 
@@ -2322,6 +2329,7 @@ class S3ControlApi:
         vpc_configuration: VpcConfiguration = None,
         public_access_block_configuration: PublicAccessBlockConfiguration = None,
         bucket_account_id: AccountId = None,
+        **kwargs,
     ) -> CreateAccessPointResult:
         raise NotImplementedError
 
@@ -2332,6 +2340,7 @@ class S3ControlApi:
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
         configuration: ObjectLambdaConfiguration,
+        **kwargs,
     ) -> CreateAccessPointForObjectLambdaResult:
         raise NotImplementedError
 
@@ -2349,6 +2358,7 @@ class S3ControlApi:
         grant_write_acp: GrantWriteACP = None,
         object_lock_enabled_for_bucket: ObjectLockEnabledForBucket = None,
         outpost_id: NonEmptyMaxLength64String = None,
+        **kwargs,
     ) -> CreateBucketResult:
         raise NotImplementedError
 
@@ -2367,6 +2377,7 @@ class S3ControlApi:
         description: NonEmptyMaxLength256String = None,
         tags: S3TagSet = None,
         manifest_generator: JobManifestGenerator = None,
+        **kwargs,
     ) -> CreateJobResult:
         raise NotImplementedError
 
@@ -2377,6 +2388,7 @@ class S3ControlApi:
         account_id: AccountId,
         client_token: MultiRegionAccessPointClientToken,
         details: CreateMultiRegionAccessPointInput,
+        **kwargs,
     ) -> CreateMultiRegionAccessPointResult:
         raise NotImplementedError
 
@@ -2387,22 +2399,29 @@ class S3ControlApi:
         account_id: AccountId,
         storage_lens_group: StorageLensGroup,
         tags: TagList = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccessGrant")
     def delete_access_grant(
-        self, context: RequestContext, account_id: AccountId, access_grant_id: AccessGrantId
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        access_grant_id: AccessGrantId,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccessGrantsInstance")
-    def delete_access_grants_instance(self, context: RequestContext, account_id: AccountId) -> None:
+    def delete_access_grants_instance(
+        self, context: RequestContext, account_id: AccountId, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccessGrantsInstanceResourcePolicy")
     def delete_access_grants_instance_resource_policy(
-        self, context: RequestContext, account_id: AccountId
+        self, context: RequestContext, account_id: AccountId, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -2412,66 +2431,75 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         access_grants_location_id: AccessGrantsLocationId,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccessPoint")
     def delete_access_point(
-        self, context: RequestContext, account_id: AccountId, name: AccessPointName
+        self, context: RequestContext, account_id: AccountId, name: AccessPointName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccessPointForObjectLambda")
     def delete_access_point_for_object_lambda(
-        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: ObjectLambdaAccessPointName,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccessPointPolicy")
     def delete_access_point_policy(
-        self, context: RequestContext, account_id: AccountId, name: AccessPointName
+        self, context: RequestContext, account_id: AccountId, name: AccessPointName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteAccessPointPolicyForObjectLambda")
     def delete_access_point_policy_for_object_lambda(
-        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: ObjectLambdaAccessPointName,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucket")
     def delete_bucket(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketLifecycleConfiguration")
     def delete_bucket_lifecycle_configuration(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketPolicy")
     def delete_bucket_policy(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketReplication")
     def delete_bucket_replication(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteBucketTagging")
     def delete_bucket_tagging(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteJobTagging")
     def delete_job_tagging(
-        self, context: RequestContext, account_id: AccountId, job_id: JobId
+        self, context: RequestContext, account_id: AccountId, job_id: JobId, **kwargs
     ) -> DeleteJobTaggingResult:
         raise NotImplementedError
 
@@ -2482,34 +2510,37 @@ class S3ControlApi:
         account_id: AccountId,
         client_token: MultiRegionAccessPointClientToken,
         details: DeleteMultiRegionAccessPointInput,
+        **kwargs,
     ) -> DeleteMultiRegionAccessPointResult:
         raise NotImplementedError
 
     @handler("DeletePublicAccessBlock")
-    def delete_public_access_block(self, context: RequestContext, account_id: AccountId) -> None:
+    def delete_public_access_block(
+        self, context: RequestContext, account_id: AccountId, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteStorageLensConfiguration")
     def delete_storage_lens_configuration(
-        self, context: RequestContext, config_id: ConfigId, account_id: AccountId
+        self, context: RequestContext, config_id: ConfigId, account_id: AccountId, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteStorageLensConfigurationTagging")
     def delete_storage_lens_configuration_tagging(
-        self, context: RequestContext, config_id: ConfigId, account_id: AccountId
+        self, context: RequestContext, config_id: ConfigId, account_id: AccountId, **kwargs
     ) -> DeleteStorageLensConfigurationTaggingResult:
         raise NotImplementedError
 
     @handler("DeleteStorageLensGroup")
     def delete_storage_lens_group(
-        self, context: RequestContext, name: StorageLensGroupName, account_id: AccountId
+        self, context: RequestContext, name: StorageLensGroupName, account_id: AccountId, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DescribeJob")
     def describe_job(
-        self, context: RequestContext, account_id: AccountId, job_id: JobId
+        self, context: RequestContext, account_id: AccountId, job_id: JobId, **kwargs
     ) -> DescribeJobResult:
         raise NotImplementedError
 
@@ -2519,36 +2550,41 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         request_token_arn: AsyncRequestTokenARN,
+        **kwargs,
     ) -> DescribeMultiRegionAccessPointOperationResult:
         raise NotImplementedError
 
     @handler("DissociateAccessGrantsIdentityCenter")
     def dissociate_access_grants_identity_center(
-        self, context: RequestContext, account_id: AccountId
+        self, context: RequestContext, account_id: AccountId, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("GetAccessGrant")
     def get_access_grant(
-        self, context: RequestContext, account_id: AccountId, access_grant_id: AccessGrantId
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        access_grant_id: AccessGrantId,
+        **kwargs,
     ) -> GetAccessGrantResult:
         raise NotImplementedError
 
     @handler("GetAccessGrantsInstance")
     def get_access_grants_instance(
-        self, context: RequestContext, account_id: AccountId
+        self, context: RequestContext, account_id: AccountId, **kwargs
     ) -> GetAccessGrantsInstanceResult:
         raise NotImplementedError
 
     @handler("GetAccessGrantsInstanceForPrefix")
     def get_access_grants_instance_for_prefix(
-        self, context: RequestContext, account_id: AccountId, s3_prefix: S3Prefix
+        self, context: RequestContext, account_id: AccountId, s3_prefix: S3Prefix, **kwargs
     ) -> GetAccessGrantsInstanceForPrefixResult:
         raise NotImplementedError
 
     @handler("GetAccessGrantsInstanceResourcePolicy")
     def get_access_grants_instance_resource_policy(
-        self, context: RequestContext, account_id: AccountId
+        self, context: RequestContext, account_id: AccountId, **kwargs
     ) -> GetAccessGrantsInstanceResourcePolicyResult:
         raise NotImplementedError
 
@@ -2558,84 +2594,101 @@ class S3ControlApi:
         context: RequestContext,
         account_id: AccountId,
         access_grants_location_id: AccessGrantsLocationId,
+        **kwargs,
     ) -> GetAccessGrantsLocationResult:
         raise NotImplementedError
 
     @handler("GetAccessPoint")
     def get_access_point(
-        self, context: RequestContext, account_id: AccountId, name: AccessPointName
+        self, context: RequestContext, account_id: AccountId, name: AccessPointName, **kwargs
     ) -> GetAccessPointResult:
         raise NotImplementedError
 
     @handler("GetAccessPointConfigurationForObjectLambda")
     def get_access_point_configuration_for_object_lambda(
-        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: ObjectLambdaAccessPointName,
+        **kwargs,
     ) -> GetAccessPointConfigurationForObjectLambdaResult:
         raise NotImplementedError
 
     @handler("GetAccessPointForObjectLambda")
     def get_access_point_for_object_lambda(
-        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: ObjectLambdaAccessPointName,
+        **kwargs,
     ) -> GetAccessPointForObjectLambdaResult:
         raise NotImplementedError
 
     @handler("GetAccessPointPolicy")
     def get_access_point_policy(
-        self, context: RequestContext, account_id: AccountId, name: AccessPointName
+        self, context: RequestContext, account_id: AccountId, name: AccessPointName, **kwargs
     ) -> GetAccessPointPolicyResult:
         raise NotImplementedError
 
     @handler("GetAccessPointPolicyForObjectLambda")
     def get_access_point_policy_for_object_lambda(
-        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: ObjectLambdaAccessPointName,
+        **kwargs,
     ) -> GetAccessPointPolicyForObjectLambdaResult:
         raise NotImplementedError
 
     @handler("GetAccessPointPolicyStatus")
     def get_access_point_policy_status(
-        self, context: RequestContext, account_id: AccountId, name: AccessPointName
+        self, context: RequestContext, account_id: AccountId, name: AccessPointName, **kwargs
     ) -> GetAccessPointPolicyStatusResult:
         raise NotImplementedError
 
     @handler("GetAccessPointPolicyStatusForObjectLambda")
     def get_access_point_policy_status_for_object_lambda(
-        self, context: RequestContext, account_id: AccountId, name: ObjectLambdaAccessPointName
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: ObjectLambdaAccessPointName,
+        **kwargs,
     ) -> GetAccessPointPolicyStatusForObjectLambdaResult:
         raise NotImplementedError
 
     @handler("GetBucket")
     def get_bucket(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> GetBucketResult:
         raise NotImplementedError
 
     @handler("GetBucketLifecycleConfiguration")
     def get_bucket_lifecycle_configuration(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> GetBucketLifecycleConfigurationResult:
         raise NotImplementedError
 
     @handler("GetBucketPolicy")
     def get_bucket_policy(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> GetBucketPolicyResult:
         raise NotImplementedError
 
     @handler("GetBucketReplication")
     def get_bucket_replication(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> GetBucketReplicationResult:
         raise NotImplementedError
 
     @handler("GetBucketTagging")
     def get_bucket_tagging(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> GetBucketTaggingResult:
         raise NotImplementedError
 
     @handler("GetBucketVersioning")
     def get_bucket_versioning(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName
+        self, context: RequestContext, account_id: AccountId, bucket: BucketName, **kwargs
     ) -> GetBucketVersioningResult:
         raise NotImplementedError
 
@@ -2649,60 +2702,77 @@ class S3ControlApi:
         duration_seconds: DurationSeconds = None,
         privilege: Privilege = None,
         target_type: S3PrefixType = None,
+        **kwargs,
     ) -> GetDataAccessResult:
         raise NotImplementedError
 
     @handler("GetJobTagging")
     def get_job_tagging(
-        self, context: RequestContext, account_id: AccountId, job_id: JobId
+        self, context: RequestContext, account_id: AccountId, job_id: JobId, **kwargs
     ) -> GetJobTaggingResult:
         raise NotImplementedError
 
     @handler("GetMultiRegionAccessPoint")
     def get_multi_region_access_point(
-        self, context: RequestContext, account_id: AccountId, name: MultiRegionAccessPointName
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: MultiRegionAccessPointName,
+        **kwargs,
     ) -> GetMultiRegionAccessPointResult:
         raise NotImplementedError
 
     @handler("GetMultiRegionAccessPointPolicy")
     def get_multi_region_access_point_policy(
-        self, context: RequestContext, account_id: AccountId, name: MultiRegionAccessPointName
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: MultiRegionAccessPointName,
+        **kwargs,
     ) -> GetMultiRegionAccessPointPolicyResult:
         raise NotImplementedError
 
     @handler("GetMultiRegionAccessPointPolicyStatus")
     def get_multi_region_access_point_policy_status(
-        self, context: RequestContext, account_id: AccountId, name: MultiRegionAccessPointName
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: MultiRegionAccessPointName,
+        **kwargs,
     ) -> GetMultiRegionAccessPointPolicyStatusResult:
         raise NotImplementedError
 
     @handler("GetMultiRegionAccessPointRoutes")
     def get_multi_region_access_point_routes(
-        self, context: RequestContext, account_id: AccountId, mrap: MultiRegionAccessPointId
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        mrap: MultiRegionAccessPointId,
+        **kwargs,
     ) -> GetMultiRegionAccessPointRoutesResult:
         raise NotImplementedError
 
     @handler("GetPublicAccessBlock")
     def get_public_access_block(
-        self, context: RequestContext, account_id: AccountId
+        self, context: RequestContext, account_id: AccountId, **kwargs
     ) -> GetPublicAccessBlockOutput:
         raise NotImplementedError
 
     @handler("GetStorageLensConfiguration")
     def get_storage_lens_configuration(
-        self, context: RequestContext, config_id: ConfigId, account_id: AccountId
+        self, context: RequestContext, config_id: ConfigId, account_id: AccountId, **kwargs
     ) -> GetStorageLensConfigurationResult:
         raise NotImplementedError
 
     @handler("GetStorageLensConfigurationTagging")
     def get_storage_lens_configuration_tagging(
-        self, context: RequestContext, config_id: ConfigId, account_id: AccountId
+        self, context: RequestContext, config_id: ConfigId, account_id: AccountId, **kwargs
     ) -> GetStorageLensConfigurationTaggingResult:
         raise NotImplementedError
 
     @handler("GetStorageLensGroup")
     def get_storage_lens_group(
-        self, context: RequestContext, name: StorageLensGroupName, account_id: AccountId
+        self, context: RequestContext, name: StorageLensGroupName, account_id: AccountId, **kwargs
     ) -> GetStorageLensGroupResult:
         raise NotImplementedError
 
@@ -2718,6 +2788,7 @@ class S3ControlApi:
         permission: Permission = None,
         grant_scope: S3Prefix = None,
         application_arn: IdentityCenterApplicationArn = None,
+        **kwargs,
     ) -> ListAccessGrantsResult:
         raise NotImplementedError
 
@@ -2728,6 +2799,7 @@ class S3ControlApi:
         account_id: AccountId,
         next_token: ContinuationToken = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListAccessGrantsInstancesResult:
         raise NotImplementedError
 
@@ -2739,6 +2811,7 @@ class S3ControlApi:
         next_token: ContinuationToken = None,
         max_results: MaxResults = None,
         location_scope: S3Prefix = None,
+        **kwargs,
     ) -> ListAccessGrantsLocationsResult:
         raise NotImplementedError
 
@@ -2750,6 +2823,7 @@ class S3ControlApi:
         bucket: BucketName = None,
         next_token: NonEmptyMaxLength1024String = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListAccessPointsResult:
         raise NotImplementedError
 
@@ -2760,6 +2834,7 @@ class S3ControlApi:
         account_id: AccountId,
         next_token: NonEmptyMaxLength1024String = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListAccessPointsForObjectLambdaResult:
         raise NotImplementedError
 
@@ -2771,6 +2846,7 @@ class S3ControlApi:
         job_statuses: JobStatusList = None,
         next_token: StringForNextToken = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListJobsResult:
         raise NotImplementedError
 
@@ -2781,6 +2857,7 @@ class S3ControlApi:
         account_id: AccountId,
         next_token: NonEmptyMaxLength1024String = None,
         max_results: MaxResults = None,
+        **kwargs,
     ) -> ListMultiRegionAccessPointsResult:
         raise NotImplementedError
 
@@ -2792,24 +2869,33 @@ class S3ControlApi:
         next_token: NonEmptyMaxLength1024String = None,
         max_results: MaxResults = None,
         outpost_id: NonEmptyMaxLength64String = None,
+        **kwargs,
     ) -> ListRegionalBucketsResult:
         raise NotImplementedError
 
     @handler("ListStorageLensConfigurations")
     def list_storage_lens_configurations(
-        self, context: RequestContext, account_id: AccountId, next_token: ContinuationToken = None
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        next_token: ContinuationToken = None,
+        **kwargs,
     ) -> ListStorageLensConfigurationsResult:
         raise NotImplementedError
 
     @handler("ListStorageLensGroups")
     def list_storage_lens_groups(
-        self, context: RequestContext, account_id: AccountId, next_token: ContinuationToken = None
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        next_token: ContinuationToken = None,
+        **kwargs,
     ) -> ListStorageLensGroupsResult:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, account_id: AccountId, resource_arn: S3ResourceArn
+        self, context: RequestContext, account_id: AccountId, resource_arn: S3ResourceArn, **kwargs
     ) -> ListTagsForResourceResult:
         raise NotImplementedError
 
@@ -2820,6 +2906,7 @@ class S3ControlApi:
         account_id: AccountId,
         policy: PolicyDocument,
         organization: Organization = None,
+        **kwargs,
     ) -> PutAccessGrantsInstanceResourcePolicyResult:
         raise NotImplementedError
 
@@ -2830,12 +2917,18 @@ class S3ControlApi:
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
         configuration: ObjectLambdaConfiguration,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("PutAccessPointPolicy")
     def put_access_point_policy(
-        self, context: RequestContext, account_id: AccountId, name: AccessPointName, policy: Policy
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        name: AccessPointName,
+        policy: Policy,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2846,6 +2939,7 @@ class S3ControlApi:
         account_id: AccountId,
         name: ObjectLambdaAccessPointName,
         policy: ObjectLambdaPolicy,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2856,6 +2950,7 @@ class S3ControlApi:
         account_id: AccountId,
         bucket: BucketName,
         lifecycle_configuration: LifecycleConfiguration = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2867,6 +2962,7 @@ class S3ControlApi:
         bucket: BucketName,
         policy: Policy,
         confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2877,12 +2973,18 @@ class S3ControlApi:
         account_id: AccountId,
         bucket: BucketName,
         replication_configuration: ReplicationConfiguration,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("PutBucketTagging")
     def put_bucket_tagging(
-        self, context: RequestContext, account_id: AccountId, bucket: BucketName, tagging: Tagging
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        bucket: BucketName,
+        tagging: Tagging,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2894,12 +2996,18 @@ class S3ControlApi:
         bucket: BucketName,
         versioning_configuration: VersioningConfiguration,
         mfa: MFA = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("PutJobTagging")
     def put_job_tagging(
-        self, context: RequestContext, account_id: AccountId, job_id: JobId, tags: S3TagSet
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        job_id: JobId,
+        tags: S3TagSet,
+        **kwargs,
     ) -> PutJobTaggingResult:
         raise NotImplementedError
 
@@ -2910,6 +3018,7 @@ class S3ControlApi:
         account_id: AccountId,
         client_token: MultiRegionAccessPointClientToken,
         details: PutMultiRegionAccessPointPolicyInput,
+        **kwargs,
     ) -> PutMultiRegionAccessPointPolicyResult:
         raise NotImplementedError
 
@@ -2919,6 +3028,7 @@ class S3ControlApi:
         context: RequestContext,
         public_access_block_configuration: PublicAccessBlockConfiguration,
         account_id: AccountId,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2930,6 +3040,7 @@ class S3ControlApi:
         account_id: AccountId,
         storage_lens_configuration: StorageLensConfiguration,
         tags: StorageLensTags = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2940,6 +3051,7 @@ class S3ControlApi:
         config_id: ConfigId,
         account_id: AccountId,
         tags: StorageLensTags,
+        **kwargs,
     ) -> PutStorageLensConfigurationTaggingResult:
         raise NotImplementedError
 
@@ -2950,6 +3062,7 @@ class S3ControlApi:
         account_id: AccountId,
         mrap: MultiRegionAccessPointId,
         route_updates: RouteList,
+        **kwargs,
     ) -> SubmitMultiRegionAccessPointRoutesResult:
         raise NotImplementedError
 
@@ -2960,6 +3073,7 @@ class S3ControlApi:
         account_id: AccountId,
         resource_arn: S3ResourceArn,
         tags: TagList,
+        **kwargs,
     ) -> TagResourceResult:
         raise NotImplementedError
 
@@ -2970,6 +3084,7 @@ class S3ControlApi:
         account_id: AccountId,
         resource_arn: S3ResourceArn,
         tag_keys: TagKeyList,
+        **kwargs,
     ) -> UntagResourceResult:
         raise NotImplementedError
 
@@ -2980,12 +3095,18 @@ class S3ControlApi:
         account_id: AccountId,
         access_grants_location_id: AccessGrantsLocationId,
         iam_role_arn: IAMRoleArn,
+        **kwargs,
     ) -> UpdateAccessGrantsLocationResult:
         raise NotImplementedError
 
     @handler("UpdateJobPriority")
     def update_job_priority(
-        self, context: RequestContext, account_id: AccountId, job_id: JobId, priority: JobPriority
+        self,
+        context: RequestContext,
+        account_id: AccountId,
+        job_id: JobId,
+        priority: JobPriority,
+        **kwargs,
     ) -> UpdateJobPriorityResult:
         raise NotImplementedError
 
@@ -2997,6 +3118,7 @@ class S3ControlApi:
         job_id: JobId,
         requested_job_status: RequestedJobStatus,
         status_update_reason: JobStatusUpdateReason = None,
+        **kwargs,
     ) -> UpdateJobStatusResult:
         raise NotImplementedError
 
@@ -3007,5 +3129,6 @@ class S3ControlApi:
         name: StorageLensGroupName,
         account_id: AccountId,
         storage_lens_group: StorageLensGroup,
+        **kwargs,
     ) -> None:
         raise NotImplementedError

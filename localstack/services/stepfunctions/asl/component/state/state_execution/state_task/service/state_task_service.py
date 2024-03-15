@@ -4,7 +4,7 @@ import abc
 import copy
 from typing import Any, Final, Optional
 
-from botocore.model import OperationModel, StructureShape
+from botocore.model import ListShape, OperationModel, StringShape, StructureShape
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
@@ -51,8 +51,9 @@ class StateTaskService(StateTask, abc.ABC):
     def _get_sfn_resource_type(self) -> str:
         return self.resource.service_name
 
-    def _get_timed_out_failure_event(self) -> FailureEvent:
+    def _get_timed_out_failure_event(self, env: Environment) -> FailureEvent:
         return FailureEvent(
+            env=env,
             error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
             event_type=HistoryEventType.TaskTimedOut,
             event_details=EventDetails(
@@ -87,11 +88,8 @@ class StateTaskService(StateTask, abc.ABC):
 
     def _to_boto_args(self, parameters: dict, structure_shape: StructureShape) -> None:
         shape_members = structure_shape.members
-        norm_member_binds: dict[str, tuple[str, Optional[StructureShape]]] = {
-            camel_to_snake_case(member_key): (
-                member_key,
-                member_value if isinstance(member_value, StructureShape) else None,
-            )
+        norm_member_binds: dict[str, tuple[str, StructureShape]] = {
+            camel_to_snake_case(member_key): (member_key, member_value)
             for member_key, member_value in shape_members.items()
         }
         parameters_bind_keys: list[str] = list(parameters.keys())
@@ -103,8 +101,12 @@ class StateTaskService(StateTask, abc.ABC):
             if norm_member_bind is not None:
                 norm_member_bind_key, norm_member_bind_shape = norm_member_bind
                 parameter_value = parameters.pop(parameter_key)
-                if norm_member_bind_shape is not None:
+                if isinstance(norm_member_bind_shape, StructureShape):
                     self._to_boto_args(parameter_value, norm_member_bind_shape)
+                elif isinstance(norm_member_bind_shape, StringShape) and not isinstance(
+                    parameter_value, str
+                ):
+                    parameter_value = to_json_str(parameter_value)
                 parameters[norm_member_bind_key] = parameter_value
 
     @staticmethod
@@ -129,6 +131,9 @@ class StateTaskService(StateTask, abc.ABC):
                 response_value = response.pop(response_key)
                 if isinstance(shape_member, StructureShape):
                     self._from_boto_response(response_value, shape_member)
+                elif isinstance(shape_member, ListShape) and isinstance(response_value, list):
+                    for response_value_member in response_value:
+                        self._from_boto_response(response_value_member, shape_member.member)  # noqa
                 response[norm_response_key] = response_value
 
     def _get_boto_service_name(self, boto_service_name: Optional[str] = None) -> str:

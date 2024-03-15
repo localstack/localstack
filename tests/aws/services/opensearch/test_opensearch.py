@@ -14,9 +14,9 @@ from opensearchpy.exceptions import AuthorizationException
 from localstack import config
 from localstack.aws.api.opensearch import AdvancedSecurityOptionsInput, MasterUserOptions
 from localstack.constants import (
+    ELASTICSEARCH_DEFAULT_VERSION,
     OPENSEARCH_DEFAULT_VERSION,
     OPENSEARCH_PLUGIN_LIST,
-    TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services.opensearch import provider
 from localstack.services.opensearch.cluster import CustomEndpoint, EdgeProxiedOpensearchCluster
@@ -60,9 +60,6 @@ def install_async():
             LOG.info("installing opensearch default version")
             opensearch_package.install()
             LOG.info("done installing opensearch default version")
-            LOG.info("installing opensearch 1.0")
-            opensearch_package.install(version="OpenSearch_1.0")
-            LOG.info("done installing opensearch 1.0")
             installed.set()
 
     start_worker_thread(run_install)
@@ -144,16 +141,29 @@ class TestOpensearchProvider:
         assert len(compatible_versions) >= 20
         expected_compatible_versions = [
             {
+                "SourceVersion": "OpenSearch_2.9",
+                "TargetVersions": ["OpenSearch_2.11"],
+            },
+            {
                 "SourceVersion": "OpenSearch_2.7",
-                "TargetVersions": ["OpenSearch_2.9"],
+                "TargetVersions": ["OpenSearch_2.9", "OpenSearch_2.11"],
             },
             {
                 "SourceVersion": "OpenSearch_2.5",
-                "TargetVersions": ["OpenSearch_2.7", "OpenSearch_2.9"],
+                "TargetVersions": [
+                    "OpenSearch_2.7",
+                    "OpenSearch_2.9",
+                    "OpenSearch_2.11",
+                ],
             },
             {
                 "SourceVersion": "OpenSearch_2.3",
-                "TargetVersions": ["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9"],
+                "TargetVersions": [
+                    "OpenSearch_2.5",
+                    "OpenSearch_2.7",
+                    "OpenSearch_2.9",
+                    "OpenSearch_2.11",
+                ],
             },
             {
                 "SourceVersion": "OpenSearch_1.0",
@@ -174,6 +184,7 @@ class TestOpensearchProvider:
                     "OpenSearch_2.5",
                     "OpenSearch_2.7",
                     "OpenSearch_2.9",
+                    "OpenSearch_2.11",
                 ],
             },
             {
@@ -322,16 +333,16 @@ class TestOpensearchProvider:
 
     @markers.aws.unknown
     def test_get_compatible_version_for_domain(self, opensearch_create_domain, aws_client):
-        opensearch_domain = opensearch_create_domain(EngineVersion="OpenSearch_1.0")
+        opensearch_domain = opensearch_create_domain(EngineVersion=ELASTICSEARCH_DEFAULT_VERSION)
         response = aws_client.opensearch.get_compatible_versions(DomainName=opensearch_domain)
         assert "CompatibleVersions" in response
         compatible_versions = response["CompatibleVersions"]
 
         assert len(compatible_versions) == 1
         compatibility = compatible_versions[0]
-        assert compatibility["SourceVersion"] == "OpenSearch_1.0"
+        assert compatibility["SourceVersion"] == ELASTICSEARCH_DEFAULT_VERSION
         # Just check if 1.1 is contained (not equality) to avoid breaking the test if new versions are supported
-        assert "OpenSearch_1.1" in compatibility["TargetVersions"]
+        assert "OpenSearch_1.3" in compatibility["TargetVersions"]
 
     @markers.aws.unknown
     def test_create_domain(self, opensearch_wait_for_cluster, aws_client):
@@ -360,13 +371,8 @@ class TestOpensearchProvider:
             aws_client.opensearch.delete_domain(DomainName=domain_name)
 
     @markers.aws.only_localstack
-    @pytest.mark.parametrize(
-        "engine_version",
-        # Test once per major version
-        ["OpenSearch_1.3", "OpenSearch_2.5"],
-    )
-    def test_security_plugin(self, opensearch_create_domain, engine_version, aws_client):
-        master_user_auth = ("master-user", "12345678Aa!")
+    def test_security_plugin(self, opensearch_create_domain, aws_client):
+        master_user_auth = ("master-user", "1[D3&2S)u9[G")
 
         # enable the security plugin for this test
         advanced_security_options = AdvancedSecurityOptionsInput(
@@ -377,9 +383,7 @@ class TestOpensearchProvider:
                 MasterUserPassword=master_user_auth[1],
             ),
         )
-        domain_name = opensearch_create_domain(
-            EngineVersion=engine_version, AdvancedSecurityOptions=advanced_security_options
-        )
+        domain_name = opensearch_create_domain(AdvancedSecurityOptions=advanced_security_options)
         endpoint = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"][
             "Endpoint"
         ]
@@ -417,16 +421,16 @@ class TestOpensearchProvider:
         assert response.status_code == 201
 
         # create a new user which is only mapped to the readall role
-        test_user = {"password": "test_password", "backend_roles": ["readall"]}
+        test_user_auth = ("test_user", "J2j7Gun!30Abvy")
+        test_user = {"password": test_user_auth[1], "backend_roles": ["readall"]}
         response = requests.put(
-            f"https://{endpoint}/_plugins/_security/api/internalusers/test_user",
+            f"https://{endpoint}/_plugins/_security/api/internalusers/{test_user_auth[0]}",
             json=test_user,
             auth=master_user_auth,
         )
         assert response.status_code == 201
 
         # ensure the user can only read but cannot write
-        test_user_auth = ("test_user", "test_password")
         test_user_client = OpenSearch(hosts=endpoint, http_auth=test_user_auth)
 
         def _search():
@@ -532,11 +536,15 @@ class TestOpensearchProvider:
             connection.putrequest(method, parsed.path, skip_accept_encoding=True)
             connection.endheaders()
             response = connection.getresponse()
-            connection.close()
-            return response
+            try:
+                return response, response.read()
+            finally:
+                # make sure to close the connectio *after* we've called ``response.read()``.
+                response.close()
 
-        plain_response = send_plain_request("GET", opensearch_endpoint)
-        assert "cluster_name" in to_str(plain_response.read())
+        plain_response, data = send_plain_request("GET", opensearch_endpoint)
+        assert plain_response.status == 200
+        assert "cluster_name" in to_str(data)
 
         # ensure that requests with the "Accept-Encoding": "gzip" header receive gzip compressed responses
         gzip_accept_headers = {"Accept-Encoding": "gzip"}
@@ -555,12 +563,6 @@ class TestOpensearchProvider:
         status = response["DomainStatus"]
         assert "EngineVersion" in status
         assert status["EngineVersion"] == OPENSEARCH_DEFAULT_VERSION
-        domain_name = opensearch_create_domain(EngineVersion="OpenSearch_1.0")
-        response = aws_client.opensearch.describe_domain(DomainName=domain_name)
-        assert "DomainStatus" in response
-        status = response["DomainStatus"]
-        assert "EngineVersion" in status
-        assert status["EngineVersion"] == "OpenSearch_1.0"
 
     @markers.aws.unknown
     def test_update_domain_config(self, opensearch_domain, aws_client):
@@ -707,7 +709,7 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "2.9.0"
+            assert response.json()["version"]["number"] == "2.11.1"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"
@@ -792,7 +794,7 @@ class TestEdgeProxiedOpensearchCluster:
 @markers.skip_offline
 class TestMultiClusterManager:
     @markers.aws.unknown
-    def test_multi_cluster(self, monkeypatch):
+    def test_multi_cluster(self, account_id, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
 
@@ -802,12 +804,12 @@ class TestMultiClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -840,7 +842,7 @@ class TestMultiClusterManager:
 @markers.skip_offline
 class TestMultiplexingClusterManager:
     @markers.aws.unknown
-    def test_multiplexing_cluster(self, monkeypatch):
+    def test_multiplexing_cluster(self, account_id, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
 
@@ -850,12 +852,12 @@ class TestMultiplexingClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -888,7 +890,7 @@ class TestMultiplexingClusterManager:
 @markers.skip_offline
 class TestSingletonClusterManager:
     @markers.aws.unknown
-    def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch):
+    def test_endpoint_strategy_port_singleton_cluster(self, account_id, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
 
@@ -898,12 +900,12 @@ class TestSingletonClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -934,7 +936,7 @@ class TestSingletonClusterManager:
 @markers.skip_offline
 class TestCustomBackendManager:
     @markers.aws.unknown
-    def test_custom_backend(self, httpserver, monkeypatch):
+    def test_custom_backend(self, account_id, httpserver, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_CUSTOM_BACKEND", httpserver.url_for("/"))
 
@@ -984,7 +986,7 @@ class TestCustomBackendManager:
         domain_key = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         cluster = manager.create(domain_key.arn, OPENSEARCH_DEFAULT_VERSION)
         # check that we're using the domain endpoint strategy

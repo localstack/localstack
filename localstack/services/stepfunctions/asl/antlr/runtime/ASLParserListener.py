@@ -188,12 +188,48 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#error_path_decl_path.
+    def enterError_path_decl_path(self, ctx:ASLParser.Error_path_decl_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#error_path_decl_path.
+    def exitError_path_decl_path(self, ctx:ASLParser.Error_path_decl_pathContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#error_path_decl_intrinsic.
+    def enterError_path_decl_intrinsic(self, ctx:ASLParser.Error_path_decl_intrinsicContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#error_path_decl_intrinsic.
+    def exitError_path_decl_intrinsic(self, ctx:ASLParser.Error_path_decl_intrinsicContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#cause_decl.
     def enterCause_decl(self, ctx:ASLParser.Cause_declContext):
         pass
 
     # Exit a parse tree produced by ASLParser#cause_decl.
     def exitCause_decl(self, ctx:ASLParser.Cause_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#cause_path_decl_path.
+    def enterCause_path_decl_path(self, ctx:ASLParser.Cause_path_decl_pathContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#cause_path_decl_path.
+    def exitCause_path_decl_path(self, ctx:ASLParser.Cause_path_decl_pathContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#cause_path_decl_intrinsic.
+    def enterCause_path_decl_intrinsic(self, ctx:ASLParser.Cause_path_decl_intrinsicContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#cause_path_decl_intrinsic.
+    def exitCause_path_decl_intrinsic(self, ctx:ASLParser.Cause_path_decl_intrinsicContext):
         pass
 
 
@@ -752,6 +788,24 @@ class ASLParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by ASLParser#backoff_rate_decl.
     def exitBackoff_rate_decl(self, ctx:ASLParser.Backoff_rate_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#max_delay_seconds_decl.
+    def enterMax_delay_seconds_decl(self, ctx:ASLParser.Max_delay_seconds_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#max_delay_seconds_decl.
+    def exitMax_delay_seconds_decl(self, ctx:ASLParser.Max_delay_seconds_declContext):
+        pass
+
+
+    # Enter a parse tree produced by ASLParser#jitter_strategy_decl.
+    def enterJitter_strategy_decl(self, ctx:ASLParser.Jitter_strategy_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#jitter_strategy_decl.
+    def exitJitter_strategy_decl(self, ctx:ASLParser.Jitter_strategy_declContext):
         pass
 
 

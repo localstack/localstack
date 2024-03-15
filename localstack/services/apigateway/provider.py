@@ -267,6 +267,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         stage_keys: ListOfStageKeys = None,
         customer_id: String = None,
         tags: MapOfStringToString = None,
+        **kwargs,
     ) -> ApiKey:
         api_key = call_moto(context)
 
@@ -277,7 +278,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         return api_key
 
-    def get_rest_api(self, context: RequestContext, rest_api_id: String) -> RestApi:
+    def get_rest_api(self, context: RequestContext, rest_api_id: String, **kwargs) -> RestApi:
         rest_api: RestApi = call_moto(context)
         remove_empty_attributes_from_rest_api(rest_api)
         return rest_api
@@ -287,6 +288,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         rest_api_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> RestApi:
         rest_api = get_moto_rest_api(context, rest_api_id)
 
@@ -396,6 +398,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         security_policy: SecurityPolicy = None,
         mutual_tls_authentication: MutualTlsAuthenticationInput = None,
         ownership_verification_certificate_arn: String = None,
+        **kwargs,
     ) -> DomainName:
         if not domain_name:
             raise BadRequestException("No Domain Name specified")
@@ -427,7 +430,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return domain
 
     @handler("GetDomainName")
-    def get_domain_name(self, context: RequestContext, domain_name: String) -> DomainName:
+    def get_domain_name(self, context: RequestContext, domain_name: String, **kwargs) -> DomainName:
         store: ApiGatewayStore = get_apigateway_store(context=context)
         if domain := store.domain_names.get(domain_name):
             return domain
@@ -435,19 +438,23 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("GetDomainNames")
     def get_domain_names(
-        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs,
     ) -> DomainNames:
         store = get_apigateway_store(context=context)
         domain_names = store.domain_names.values()
         return DomainNames(items=list(domain_names), position=position)
 
     @handler("DeleteDomainName")
-    def delete_domain_name(self, context: RequestContext, domain_name: String) -> None:
+    def delete_domain_name(self, context: RequestContext, domain_name: String, **kwargs) -> None:
         store: ApiGatewayStore = get_apigateway_store(context=context)
         if not store.domain_names.pop(domain_name, None):
             raise NotFoundException("Invalid domain name identifier specified")
 
-    def delete_rest_api(self, context: RequestContext, rest_api_id: String) -> None:
+    def delete_rest_api(self, context: RequestContext, rest_api_id: String, **kwargs) -> None:
         try:
             store = get_apigateway_store(context=context)
             store.rest_apis.pop(rest_api_id, None)
@@ -459,7 +466,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             ) from e
 
     def get_rest_apis(
-        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs,
     ) -> RestApis:
         response: RestApis = call_moto(context)
         for rest_api in response["items"]:
@@ -469,7 +480,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     # resources
 
     def create_resource(
-        self, context: RequestContext, rest_api_id: String, parent_id: String, path_part: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        parent_id: String,
+        path_part: String,
+        **kwargs,
     ) -> Resource:
         moto_rest_api = get_moto_rest_api(context, rest_api_id)
         parent_moto_resource: MotoResource = moto_rest_api.resources.get(parent_id, None)
@@ -504,7 +520,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return response
 
     def delete_resource(
-        self, context: RequestContext, rest_api_id: String, resource_id: String
+        self, context: RequestContext, rest_api_id: String, resource_id: String, **kwargs
     ) -> None:
         moto_rest_api = get_moto_rest_api(context, rest_api_id)
 
@@ -539,6 +555,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         http_method: String,
         status_code: StatusCode,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> IntegrationResponse:
         # XXX: THIS IS NOT A COMPLETE IMPLEMENTATION, just the minimum required to get tests going
         # TODO: validate patch operations
@@ -577,6 +594,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         resource_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> Resource:
         moto_rest_api = get_moto_rest_api(context, rest_api_id)
         moto_resource = moto_rest_api.resources.get(resource_id)
@@ -647,7 +665,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     # resource method
 
     def get_method(
-        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        **kwargs,
     ) -> Method:
         response: Method = call_moto(context)
         remove_empty_attributes_from_method(response)
@@ -687,6 +710,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         request_models: MapOfStringToString = None,
         request_validator_id: String = None,
         authorization_scopes: ListOfString = None,
+        **kwargs,
     ) -> Method:
         # TODO: add missing validation? check order of validation as well
         moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
@@ -752,6 +776,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         resource_id: String,
         http_method: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> Method:
         # see https://www.linkedin.com/pulse/updating-aws-cli-patch-operations-rest-api-yitzchak-meirovich/
         # for path construction
@@ -846,7 +871,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return response
 
     def delete_method(
-        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        **kwargs,
     ) -> None:
         moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
         moto_rest_api: MotoRestAPI = moto_backend.apis.get(rest_api_id)
@@ -867,6 +897,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
+        **kwargs,
     ) -> MethodResponse:
         # this could probably be easier in a patch?
         moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
@@ -914,13 +945,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self._patch_stage_response(response)
         return response
 
-    def get_stage(self, context: RequestContext, rest_api_id: String, stage_name: String) -> Stage:
+    def get_stage(
+        self, context: RequestContext, rest_api_id: String, stage_name: String, **kwargs
+    ) -> Stage:
         response = call_moto(context)
         self._patch_stage_response(response)
         return response
 
     def get_stages(
-        self, context: RequestContext, rest_api_id: String, deployment_id: String = None
+        self, context: RequestContext, rest_api_id: String, deployment_id: String = None, **kwargs
     ) -> Stages:
         response = call_moto(context)
         for stage in response["item"]:
@@ -936,6 +969,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         stage_name: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> Stage:
         call_moto(context)
 
@@ -951,6 +985,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         patch_operations = copy.deepcopy(patch_operations) or []
         for patch_operation in patch_operations:
             patch_path = patch_operation["path"]
+
+            # special case: handle updates (op=remove) for wildcard method settings
+            patch_path_stripped = patch_path.strip("/")
+            if patch_path_stripped == "*/*" and patch_operation["op"] == "remove":
+                if not moto_stage.method_settings.pop(patch_path_stripped, None):
+                    raise BadRequestException(
+                        "Cannot remove method setting */* because there is no method setting for this method "
+                    )
+                response = moto_stage.to_json()
+                self._patch_stage_response(response)
+                return response
+
             path_valid = patch_path in STAGE_UPDATE_PATHS or any(
                 re.match(regex, patch_path) for regex in path_regexes
             )
@@ -1018,6 +1064,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs,
     ) -> Authorizers:
         # TODO add paging, validation
         rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
@@ -1028,7 +1075,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return Authorizers(items=result)
 
     def get_authorizer(
-        self, context: RequestContext, rest_api_id: String, authorizer_id: String
+        self, context: RequestContext, rest_api_id: String, authorizer_id: String, **kwargs
     ) -> Authorizer:
         store = get_apigateway_store(context=context)
         rest_api_container = store.rest_apis.get(rest_api_id)
@@ -1042,7 +1089,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return to_authorizer_response_json(rest_api_id, authorizer)
 
     def delete_authorizer(
-        self, context: RequestContext, rest_api_id: String, authorizer_id: String
+        self, context: RequestContext, rest_api_id: String, authorizer_id: String, **kwargs
     ) -> None:
         # TODO: add validation if authorizer does not exist
         store = get_apigateway_store(context=context)
@@ -1056,6 +1103,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         authorizer_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> Authorizer:
         # TODO: add validation
         store = get_apigateway_store(context=context)
@@ -1082,16 +1130,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     # accounts
 
-    def get_account(
-        self,
-        context: RequestContext,
-    ) -> Account:
+    def get_account(self, context: RequestContext, **kwargs) -> Account:
         region_details = get_apigateway_store(context=context)
         result = to_account_response_json(region_details.account)
         return Account(**result)
 
     def update_account(
-        self, context: RequestContext, patch_operations: ListOfPatchOperation = None
+        self, context: RequestContext, patch_operations: ListOfPatchOperation = None, **kwargs
     ) -> Account:
         region_details = get_apigateway_store(context=context)
         apply_json_patch_safe(region_details.account, patch_operations, in_place=True)
@@ -1101,7 +1146,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     # documentation parts
 
     def get_documentation_parts(
-        self, context: RequestContext, request: GetDocumentationPartsRequest
+        self, context: RequestContext, request: GetDocumentationPartsRequest, **kwargs
     ) -> DocumentationParts:
         # TODO: add validation
         api_id = request["restApiId"]
@@ -1114,7 +1159,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return DocumentationParts(items=result)
 
     def get_documentation_part(
-        self, context: RequestContext, rest_api_id: String, documentation_part_id: String
+        self, context: RequestContext, rest_api_id: String, documentation_part_id: String, **kwargs
     ) -> DocumentationPart:
         # TODO: add validation
         store = get_apigateway_store(context=context)
@@ -1136,6 +1181,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         location: DocumentationPartLocation,
         properties: String,
+        **kwargs,
     ) -> DocumentationPart:
         entity_id = short_uid()[:6]  # length 6 for AWS parity / Terraform compatibility
         rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
@@ -1184,6 +1230,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         documentation_part_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> DocumentationPart:
         # TODO: add validation
         store = get_apigateway_store(context=context)
@@ -1224,7 +1271,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return to_documentation_part_response_json(rest_api_id, patched_doc_part)
 
     def delete_documentation_part(
-        self, context: RequestContext, rest_api_id: String, documentation_part_id: String
+        self, context: RequestContext, rest_api_id: String, documentation_part_id: String, **kwargs
     ) -> None:
         # TODO: add validation if document_part does not exist, or rest_api
         rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
@@ -1244,6 +1291,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         body: IO[Blob],
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
+        **kwargs,
     ) -> DocumentationPartIds:
         body_data = body.read()
         openapi_spec = parse_json_or_yaml(to_str(body_data))
@@ -1276,6 +1324,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         documentation_version: String,
         stage_name: String = None,
         description: String = None,
+        **kwargs,
     ) -> DocumentationVersion:
         rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
 
@@ -1287,7 +1336,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return result
 
     def get_documentation_version(
-        self, context: RequestContext, rest_api_id: String, documentation_version: String
+        self, context: RequestContext, rest_api_id: String, documentation_version: String, **kwargs
     ) -> DocumentationVersion:
         rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
 
@@ -1303,13 +1352,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs,
     ) -> DocumentationVersions:
         rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
         result = list(rest_api_container.documentation_versions.values())
         return DocumentationVersions(items=result)
 
     def delete_documentation_version(
-        self, context: RequestContext, rest_api_id: String, documentation_version: String
+        self, context: RequestContext, rest_api_id: String, documentation_version: String, **kwargs
     ) -> None:
         rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
 
@@ -1323,6 +1373,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         documentation_version: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> DocumentationVersion:
         rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
 
@@ -1342,6 +1393,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         domain_name: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs,
     ) -> BasePathMappings:
         region_details = get_apigateway_store(context=context)
 
@@ -1353,7 +1405,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return BasePathMappings(items=result)
 
     def get_base_path_mapping(
-        self, context: RequestContext, domain_name: String, base_path: String
+        self, context: RequestContext, domain_name: String, base_path: String, **kwargs
     ) -> BasePathMapping:
         region_details = get_apigateway_store(context=context)
 
@@ -1372,6 +1424,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         base_path: String = None,
         stage: String = None,
+        **kwargs,
     ) -> BasePathMapping:
         region_details = get_apigateway_store(context=context)
 
@@ -1396,6 +1449,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         domain_name: String,
         base_path: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> BasePathMapping:
         region_details = get_apigateway_store(context=context)
 
@@ -1422,7 +1476,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return BasePathMapping(**result)
 
     def delete_base_path_mapping(
-        self, context: RequestContext, domain_name: String, base_path: String
+        self, context: RequestContext, domain_name: String, base_path: String, **kwargs
     ) -> None:
         region_details = get_apigateway_store(context=context)
 
@@ -1437,7 +1491,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     # client certificates
 
     def get_client_certificate(
-        self, context: RequestContext, client_certificate_id: String
+        self, context: RequestContext, client_certificate_id: String, **kwargs
     ) -> ClientCertificate:
         region_details = get_apigateway_store(context=context)
         result = region_details.client_certificates.get(client_certificate_id)
@@ -1446,14 +1500,22 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return ClientCertificate(**result)
 
     def get_client_certificates(
-        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs,
     ) -> ClientCertificates:
         region_details = get_apigateway_store(context=context)
         result = list(region_details.client_certificates.values())
         return ClientCertificates(items=result)
 
     def generate_client_certificate(
-        self, context: RequestContext, description: String = None, tags: MapOfStringToString = None
+        self,
+        context: RequestContext,
+        description: String = None,
+        tags: MapOfStringToString = None,
+        **kwargs,
     ) -> ClientCertificate:
         region_details = get_apigateway_store(context=context)
         cert_id = short_uid()
@@ -1475,6 +1537,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         client_certificate_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> ClientCertificate:
         region_details = get_apigateway_store(context=context)
         entity = region_details.client_certificates.get(client_certificate_id)
@@ -1485,7 +1548,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return ClientCertificate(**result)
 
     def delete_client_certificate(
-        self, context: RequestContext, client_certificate_id: String
+        self, context: RequestContext, client_certificate_id: String, **kwargs
     ) -> None:
         region_details = get_apigateway_store(context=context)
         entity = region_details.client_certificates.pop(client_certificate_id, None)
@@ -1501,6 +1564,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         target_arns: ListOfString,
         description: String = None,
         tags: MapOfStringToString = None,
+        **kwargs,
     ) -> VpcLink:
         region_details = get_apigateway_store(context=context)
         link_id = short_uid()
@@ -1510,7 +1574,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return VpcLink(**result)
 
     def get_vpc_links(
-        self, context: RequestContext, position: String = None, limit: NullableInteger = None
+        self,
+        context: RequestContext,
+        position: String = None,
+        limit: NullableInteger = None,
+        **kwargs,
     ) -> VpcLinks:
         region_details = get_apigateway_store(context=context)
         result = region_details.vpc_links.values()
@@ -1518,7 +1586,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         result = {"items": result}
         return result
 
-    def get_vpc_link(self, context: RequestContext, vpc_link_id: String) -> VpcLink:
+    def get_vpc_link(self, context: RequestContext, vpc_link_id: String, **kwargs) -> VpcLink:
         region_details = get_apigateway_store(context=context)
         vpc_link = region_details.vpc_links.get(vpc_link_id)
         if vpc_link is None:
@@ -1531,6 +1599,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         vpc_link_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> VpcLink:
         region_details = get_apigateway_store(context=context)
         vpc_link = region_details.vpc_links.get(vpc_link_id)
@@ -1540,7 +1609,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         result = to_vpc_link_response_json(result)
         return VpcLink(**result)
 
-    def delete_vpc_link(self, context: RequestContext, vpc_link_id: String) -> None:
+    def delete_vpc_link(self, context: RequestContext, vpc_link_id: String, **kwargs) -> None:
         region_details = get_apigateway_store(context=context)
         vpc_link = region_details.vpc_links.pop(vpc_link_id, None)
         if vpc_link is None:
@@ -1554,6 +1623,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs,
     ) -> RequestValidators:
         # TODO: add validation and pagination?
         store = get_apigateway_store(context=context)
@@ -1569,7 +1639,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return RequestValidators(items=result)
 
     def get_request_validator(
-        self, context: RequestContext, rest_api_id: String, request_validator_id: String
+        self, context: RequestContext, rest_api_id: String, request_validator_id: String, **kwargs
     ) -> RequestValidator:
         store = get_apigateway_store(context=context)
         rest_api_container = store.rest_apis.get(rest_api_id)
@@ -1591,6 +1661,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         name: String = None,
         validate_request_body: Boolean = None,
         validate_request_parameters: Boolean = None,
+        **kwargs,
     ) -> RequestValidator:
         # TODO: add validation (ex: name cannot be blank)
         store = get_apigateway_store(context=context)
@@ -1617,6 +1688,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         request_validator_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> RequestValidator:
         # TODO: add validation
         store = get_apigateway_store(context=context)
@@ -1660,7 +1732,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         )
 
     def delete_request_validator(
-        self, context: RequestContext, rest_api_id: String, request_validator_id: String
+        self, context: RequestContext, rest_api_id: String, request_validator_id: String, **kwargs
     ) -> None:
         # TODO: add validation if rest api does not exist
         store = get_apigateway_store(context=context)
@@ -1680,18 +1752,19 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         resource_arn: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs,
     ) -> Tags:
         result = get_apigateway_store(context=context).TAGS.get(resource_arn, {})
         return Tags(tags=result)
 
     def tag_resource(
-        self, context: RequestContext, resource_arn: String, tags: MapOfStringToString
+        self, context: RequestContext, resource_arn: String, tags: MapOfStringToString, **kwargs
     ) -> None:
         resource_tags = get_apigateway_store(context=context).TAGS.setdefault(resource_arn, {})
         resource_tags.update(tags)
 
     def untag_resource(
-        self, context: RequestContext, resource_arn: String, tag_keys: ListOfString
+        self, context: RequestContext, resource_arn: String, tag_keys: ListOfString, **kwargs
     ) -> None:
         resource_tags = get_apigateway_store(context=context).TAGS.setdefault(resource_arn, {})
         for key in tag_keys:
@@ -1703,6 +1776,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         body: IO[Blob],
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
+        **kwargs,
     ) -> RestApi:
         body_data = body.read()
 
@@ -1740,7 +1814,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     # integrations
 
     def get_integration(
-        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        **kwargs,
     ) -> Integration:
         try:
             response: Integration = call_moto(context)
@@ -1757,7 +1836,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return response
 
     def put_integration(
-        self, context: RequestContext, request: PutIntegrationRequest
+        self, context: RequestContext, request: PutIntegrationRequest, **kwargs
     ) -> Integration:
         if (integration_type := request.get("type")) not in VALID_INTEGRATION_TYPES:
             raise CommonServiceException(
@@ -1785,7 +1864,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return response
 
     def delete_integration(
-        self, context: RequestContext, rest_api_id: String, resource_id: String, http_method: String
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        **kwargs,
     ) -> None:
         try:
             call_moto(context)
@@ -1801,6 +1885,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
+        **kwargs,
     ) -> IntegrationResponse:
         response: IntegrationResponse = call_moto(context)
         remove_empty_attributes_from_integration_response(response)
@@ -1848,6 +1933,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         export_type: String,
         parameters: MapOfStringToString = None,
         accepts: String = None,
+        **kwargs,
     ) -> ExportResponse:
         moto_rest_api = get_moto_rest_api(context, rest_api_id)
         openapi_exporter = OpenApiExporter()
@@ -1886,6 +1972,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         name_query: String = None,
         customer_id: String = None,
         include_values: NullableBoolean = None,
+        **kwargs,
     ) -> ApiKeys:
         moto_response: ApiKeys = call_moto(context=context)
         item_list = PaginatedList(moto_response["items"])
@@ -1912,6 +1999,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         api_key: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> ApiKey:
         response: ApiKey = call_moto(context)
         if "value" in response:
@@ -1930,6 +2018,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         content_type: String,
         description: String = None,
         schema: String = None,
+        **kwargs,
     ) -> Model:
         store = get_apigateway_store(context=context)
         if rest_api_id not in store.rest_apis:
@@ -1963,6 +2052,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs,
     ) -> Models:
         store = get_apigateway_store(context=context)
         if rest_api_id not in store.rest_apis:
@@ -1982,6 +2072,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         model_name: String,
         flatten: Boolean = None,
+        **kwargs,
     ) -> Model:
         store = get_apigateway_store(context=context)
         if rest_api_id not in store.rest_apis or not (
@@ -1997,6 +2088,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         model_name: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> Model:
         # manually update the model, not need for JSON patch, only 2 path supported with replace operation
         # /schema
@@ -2032,7 +2124,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return model
 
     def delete_model(
-        self, context: RequestContext, rest_api_id: String, model_name: String
+        self, context: RequestContext, rest_api_id: String, model_name: String, **kwargs
     ) -> None:
         store = get_apigateway_store(context=context)
 
@@ -2058,6 +2150,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         throttle: ThrottleSettings = None,
         quota: QuotaSettings = None,
         tags: MapOfStringToString = None,
+        **kwargs,
     ) -> UsagePlan:
         usage_plan: UsagePlan = call_moto(context=context)
         if not usage_plan.get("quota"):
@@ -2079,6 +2172,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         usage_plan_id: String,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> UsagePlan:
         usage_plan = call_moto(context=context)
         if not usage_plan.get("quota"):
@@ -2098,7 +2192,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         return usage_plan
 
-    def get_usage_plan(self, context: RequestContext, usage_plan_id: String) -> UsagePlan:
+    def get_usage_plan(self, context: RequestContext, usage_plan_id: String, **kwargs) -> UsagePlan:
         usage_plan: UsagePlan = call_moto(context=context)
         if not usage_plan.get("quota"):
             usage_plan.pop("quota", None)
@@ -2118,6 +2212,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         position: String = None,
         key_id: String = None,
         limit: NullableInteger = None,
+        **kwargs,
     ) -> UsagePlans:
         usage_plans: UsagePlans = call_moto(context=context)
         if not usage_plans.get("items"):
@@ -2144,6 +2239,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         status_code: StatusCode = None,
         response_parameters: MapOfStringToString = None,
         response_templates: MapOfStringToString = None,
+        **kwargs,
     ) -> GatewayResponse:
         # There were no validation in moto, so implementing as is
         # TODO: add validation
@@ -2171,7 +2267,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return gateway_response
 
     def get_gateway_response(
-        self, context: RequestContext, rest_api_id: String, response_type: GatewayResponseType
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        response_type: GatewayResponseType,
+        **kwargs,
     ) -> GatewayResponse:
         store = get_apigateway_store(context=context)
         if not (rest_api_container := store.rest_apis.get(rest_api_id)):
@@ -2197,6 +2297,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
+        **kwargs,
     ) -> GatewayResponses:
         store = get_apigateway_store(context=context)
         if not (rest_api_container := store.rest_apis.get(rest_api_id)):
@@ -2211,7 +2312,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         return GatewayResponses(items=gateway_responses)
 
     def delete_gateway_response(
-        self, context: RequestContext, rest_api_id: String, response_type: GatewayResponseType
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        response_type: GatewayResponseType,
+        **kwargs,
     ) -> None:
         store = get_apigateway_store(context=context)
         if not (rest_api_container := store.rest_apis.get(rest_api_id)):
@@ -2234,6 +2339,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         rest_api_id: String,
         response_type: GatewayResponseType,
         patch_operations: ListOfPatchOperation = None,
+        **kwargs,
     ) -> GatewayResponse:
         """
         Support operations table:

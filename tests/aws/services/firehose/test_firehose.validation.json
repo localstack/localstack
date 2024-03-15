@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/firehose/test_firehose.py::TestFirehoseIntegration::test_multiple_delivery_streams_with_kinesis_as_source": {
+    "last_validated_date": "2024-01-25T10:54:39+00:00"
+  }
+}

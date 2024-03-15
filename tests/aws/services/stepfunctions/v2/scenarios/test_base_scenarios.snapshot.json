@@ -12062,5 +12062,1925 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_inline": {
+    "recorded-date": "08-02-2024, 11:26:05",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": "\"Hello\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IteratorInner"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "IteratorInner",
+              "output": "\"Hello\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 7,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 8,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateEnteredEventDetails": {
+              "input": "\"World\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IteratorInner"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "name": "IteratorInner",
+              "output": "\"World\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 11,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 13,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[\"Hello\",\"World\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\",\"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[\"Hello\",\"World\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[\"Hello\",\"World\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 16,
+            "previousEventId": 15,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_distributed": {
+    "recorded-date": "08-02-2024, 11:27:15",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[\"Hello\",\"World\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\",\"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[\"Hello\",\"World\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[\"Hello\",\"World\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_distributed_parameters": {
+    "recorded-date": "08-02-2024, 20:22:08",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_distributed_item_selector": {
+    "recorded-date": "08-02-2024, 20:28:00",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_inline_parameters": {
+    "recorded-date": "08-02-2024, 21:07:39",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constantValue": "constant",
+                "mapValue": "Hello",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IteratorInner"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "IteratorInner",
+              "output": {
+                "constantValue": "constant",
+                "mapValue": "Hello",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 7,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 8,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constantValue": "constant",
+                "mapValue": "World",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IteratorInner"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "name": "IteratorInner",
+              "output": {
+                "constantValue": "constant",
+                "mapValue": "World",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 11,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 13,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "stateEnteredEventDetails": {
+              "input": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 16,
+            "previousEventId": 15,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_inline_item_selector": {
+    "recorded-date": "08-02-2024, 21:08:16",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constantValue": "constant",
+                "mapValue": "Hello",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IteratorInner"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "IteratorInner",
+              "output": {
+                "constantValue": "constant",
+                "mapValue": "Hello",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 7,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 8,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constantValue": "constant",
+                "mapValue": "World",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IteratorInner"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "name": "IteratorInner",
+              "output": {
+                "constantValue": "constant",
+                "mapValue": "World",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 11,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 13,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "stateEnteredEventDetails": {
+              "input": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 16,
+            "previousEventId": 15,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_item_selector": {
+    "recorded-date": "08-02-2024, 21:44:04",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_parameters": {
+    "recorded-date": "08-02-2024, 21:44:45",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_inline_parameters": {
+    "recorded-date": "08-02-2024, 21:46:03",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constantValue": "constant",
+                "mapValue": "Hello",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IteratorInner"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "IteratorInner",
+              "output": {
+                "constantValue": "constant",
+                "mapValue": "Hello",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 7,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 8,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateEnteredEventDetails": {
+              "input": {
+                "constantValue": "constant",
+                "mapValue": "World",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "IteratorInner"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "name": "IteratorInner",
+              "output": {
+                "constantValue": "constant",
+                "mapValue": "World",
+                "fromInput": [
+                  "Hello",
+                  "World"
+                ]
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 11,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapState"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 13,
+            "previousEventId": 11,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 14,
+            "previousEventId": 13,
+            "stateEnteredEventDetails": {
+              "input": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 15,
+            "previousEventId": 14,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 16,
+            "previousEventId": 15,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_inline_item_selector": {
+    "recorded-date": "08-02-2024, 21:47:17",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[\"Hello\", \"World\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Finish"
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "Finish",
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "SucceedStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"constantValue\":\"constant\",\"mapValue\":\"Hello\",\"fromInput\":[\"Hello\",\"World\"]},{\"constantValue\":\"constant\",\"mapValue\":\"World\",\"fromInput\":[\"Hello\",\"World\"]}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_retry_interval_features": {
+    "recorded-date": "23-02-2024, 08:36:58",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "LambdaTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 6,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 8,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 9,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 11,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_retry_interval_features_jitter_none": {
+    "recorded-date": "23-02-2024, 08:37:40",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "LambdaTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 5,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:1>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 6,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 8,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:2>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "id": 9,
+            "lambdaFunctionScheduledEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+            },
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionScheduled"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionStarted"
+          },
+          {
+            "id": 11,
+            "lambdaFunctionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "previousEventId": 10,
+            "timestamp": "timestamp",
+            "type": "LambdaFunctionFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": {
+                "errorMessage": "Some exception was raised.",
+                "errorType": "Exception",
+                "requestId": "<uuid:3>",
+                "stackTrace": [
+                  "  File \"/var/task/handler.py\", line 2, in handler\n    raise Exception(\"Some exception was raised.\")\n"
+                ]
+              },
+              "error": "Exception"
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

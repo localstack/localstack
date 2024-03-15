@@ -533,7 +533,7 @@ def rotate_secret(self) -> str:
         client_request_token=client_request_token,
         rotation_lambda_arn=rotation_lambda_arn,
         rotation_rules=rotation_rules,
-        rotate_immediately=rotate_immediately,
+        rotate_immediately=True if rotate_immediately is None else rotate_immediately,
     )
 
 

@@ -343,7 +343,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_wrong_arn_format": {
-    "recorded-date": "24-08-2023, 22:31:40",
+    "recorded-date": "11-03-2024, 10:36:34",
     "recorded-content": {
       "invalid-topic-arn": {
         "Error": {
@@ -360,6 +360,17 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 2",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "empty-topic": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 1",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -3190,7 +3201,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy": {
-    "recorded-date": "07-12-2023, 10:17:45",
+    "recorded-date": "25-01-2024, 18:07:57",
     "recorded-content": {
       "subscription-attributes": {
         "Attributes": {
@@ -3315,6 +3326,30 @@
         }
       },
       "messages-3": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-4": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "Message": "This the test message for null",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>"
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -23,26 +23,25 @@ def get_outdated_snapshots_for_directory(
     """
 
     result = {"date": date_limit}
-    date_limit = datetime.datetime.strptime(date_limit, "%d-%m-%Y")
+    date_limit = datetime.datetime.strptime(date_limit, "%d-%m-%Y").timestamp()
     outdated_snapshots = {}
 
     def do_get_outdated_snapshots(path: str):
-
         if not path.endswith("/"):
             path = f"{path}/"
         for file in os.listdir(path):
             if os.path.isdir(f"{path}{file}") and check_sub_directories:
                 do_get_outdated_snapshots(f"{path}{file}")
-            elif file.endswith(".snapshot.json"):
+            elif file.endswith(".validation.json"):
                 with open(f"{path}{file}") as f:
                     json_content: dict = json.load(f)
                     for name, recorded_snapshot_data in json_content.items():
-                        recorded_date = recorded_snapshot_data.get("recorded-date")
-                        date = datetime.datetime.strptime(recorded_date, "%d-%m-%Y, %H:%M:%S")
-                        if date < date_limit:
+                        recorded_date = recorded_snapshot_data.get("last_validated_date")
+                        date = datetime.datetime.fromisoformat(recorded_date)
+                        if date.timestamp() < date_limit:
                             outdated_snapshot_data = dict()
                             if show_date:
-                                outdated_snapshot_data["recorded-date"] = recorded_date
+                                outdated_snapshot_data["last_validation_date"] = recorded_date
                             if combine_parametrized:
                                 # change parametrized tests of the form <mytest[param_value]> to just <mytest>
                                 name = name.split("[")[0]
@@ -50,7 +49,7 @@ def get_outdated_snapshots_for_directory(
 
     do_get_outdated_snapshots(path)
     result["count"] = len(outdated_snapshots)
-    result["outdated_snapshots"] = outdated_snapshots
+    result["outdated_tests"] = outdated_snapshots
     return result
 
 
@@ -93,10 +92,10 @@ def get_snapshots(path: str, date_limit: str, check_sub_dirs, combine_parametriz
         path, date_limit, check_sub_dirs, combine_parametrized, show_date
     )
     # sorted lists are prettier to read in the console
-    snapshots["outdated_snapshots"] = dict(sorted(snapshots["outdated_snapshots"].items()))
+    snapshots["outdated_tests"] = dict(sorted(snapshots["outdated_tests"].items()))
 
     # turn the list of snapshots into a whitespace separated string usable by pytest
-    join = " ".join(snapshots["outdated_snapshots"])
+    join = " ".join(snapshots["outdated_tests"])
     snapshots["pytest_executable_list"] = join
     print(json.dumps(snapshots, default=str))
 

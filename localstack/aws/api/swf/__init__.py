@@ -1466,6 +1466,7 @@ class SwfApi:
         type_filter: WorkflowTypeFilter = None,
         tag_filter: TagFilter = None,
         close_status_filter: CloseStatusFilter = None,
+        **kwargs,
     ) -> WorkflowExecutionCount:
         raise NotImplementedError
 
@@ -1478,56 +1479,57 @@ class SwfApi:
         type_filter: WorkflowTypeFilter = None,
         tag_filter: TagFilter = None,
         execution_filter: WorkflowExecutionFilter = None,
+        **kwargs,
     ) -> WorkflowExecutionCount:
         raise NotImplementedError
 
     @handler("CountPendingActivityTasks")
     def count_pending_activity_tasks(
-        self, context: RequestContext, domain: DomainName, task_list: TaskList
+        self, context: RequestContext, domain: DomainName, task_list: TaskList, **kwargs
     ) -> PendingTaskCount:
         raise NotImplementedError
 
     @handler("CountPendingDecisionTasks")
     def count_pending_decision_tasks(
-        self, context: RequestContext, domain: DomainName, task_list: TaskList
+        self, context: RequestContext, domain: DomainName, task_list: TaskList, **kwargs
     ) -> PendingTaskCount:
         raise NotImplementedError
 
     @handler("DeprecateActivityType")
     def deprecate_activity_type(
-        self, context: RequestContext, domain: DomainName, activity_type: ActivityType
+        self, context: RequestContext, domain: DomainName, activity_type: ActivityType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DeprecateDomain")
-    def deprecate_domain(self, context: RequestContext, name: DomainName) -> None:
+    def deprecate_domain(self, context: RequestContext, name: DomainName, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("DeprecateWorkflowType")
     def deprecate_workflow_type(
-        self, context: RequestContext, domain: DomainName, workflow_type: WorkflowType
+        self, context: RequestContext, domain: DomainName, workflow_type: WorkflowType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("DescribeActivityType")
     def describe_activity_type(
-        self, context: RequestContext, domain: DomainName, activity_type: ActivityType
+        self, context: RequestContext, domain: DomainName, activity_type: ActivityType, **kwargs
     ) -> ActivityTypeDetail:
         raise NotImplementedError
 
     @handler("DescribeDomain")
-    def describe_domain(self, context: RequestContext, name: DomainName) -> DomainDetail:
+    def describe_domain(self, context: RequestContext, name: DomainName, **kwargs) -> DomainDetail:
         raise NotImplementedError
 
     @handler("DescribeWorkflowExecution")
     def describe_workflow_execution(
-        self, context: RequestContext, domain: DomainName, execution: WorkflowExecution
+        self, context: RequestContext, domain: DomainName, execution: WorkflowExecution, **kwargs
     ) -> WorkflowExecutionDetail:
         raise NotImplementedError
 
     @handler("DescribeWorkflowType")
     def describe_workflow_type(
-        self, context: RequestContext, domain: DomainName, workflow_type: WorkflowType
+        self, context: RequestContext, domain: DomainName, workflow_type: WorkflowType, **kwargs
     ) -> WorkflowTypeDetail:
         raise NotImplementedError
 
@@ -1540,6 +1542,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
+        **kwargs,
     ) -> History:
         raise NotImplementedError
 
@@ -1553,6 +1556,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
+        **kwargs,
     ) -> ActivityTypeInfos:
         raise NotImplementedError
 
@@ -1570,6 +1574,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
+        **kwargs,
     ) -> WorkflowExecutionInfos:
         raise NotImplementedError
 
@@ -1581,6 +1586,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
+        **kwargs,
     ) -> DomainInfos:
         raise NotImplementedError
 
@@ -1596,12 +1602,13 @@ class SwfApi:
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
         execution_filter: WorkflowExecutionFilter = None,
+        **kwargs,
     ) -> WorkflowExecutionInfos:
         raise NotImplementedError
 
     @handler("ListTagsForResource")
     def list_tags_for_resource(
-        self, context: RequestContext, resource_arn: Arn
+        self, context: RequestContext, resource_arn: Arn, **kwargs
     ) -> ListTagsForResourceOutput:
         raise NotImplementedError
 
@@ -1615,6 +1622,7 @@ class SwfApi:
         next_page_token: PageToken = None,
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
+        **kwargs,
     ) -> WorkflowTypeInfos:
         raise NotImplementedError
 
@@ -1625,6 +1633,7 @@ class SwfApi:
         domain: DomainName,
         task_list: TaskList,
         identity: Identity = None,
+        **kwargs,
     ) -> ActivityTask:
         raise NotImplementedError
 
@@ -1639,12 +1648,13 @@ class SwfApi:
         maximum_page_size: PageSize = None,
         reverse_order: ReverseOrder = None,
         start_at_previous_started_event: StartAtPreviousStartedEvent = None,
+        **kwargs,
     ) -> DecisionTask:
         raise NotImplementedError
 
     @handler("RecordActivityTaskHeartbeat")
     def record_activity_task_heartbeat(
-        self, context: RequestContext, task_token: TaskToken, details: LimitedData = None
+        self, context: RequestContext, task_token: TaskToken, details: LimitedData = None, **kwargs
     ) -> ActivityTaskStatus:
         raise NotImplementedError
 
@@ -1662,6 +1672,7 @@ class SwfApi:
         default_task_priority: TaskPriority = None,
         default_task_schedule_to_start_timeout: DurationInSecondsOptional = None,
         default_task_schedule_to_close_timeout: DurationInSecondsOptional = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1673,6 +1684,7 @@ class SwfApi:
         workflow_execution_retention_period_in_days: DurationInDays,
         description: Description = None,
         tags: ResourceTagList = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1690,6 +1702,7 @@ class SwfApi:
         default_task_priority: TaskPriority = None,
         default_child_policy: ChildPolicy = None,
         default_lambda_role: Arn = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1700,18 +1713,19 @@ class SwfApi:
         domain: DomainName,
         workflow_id: WorkflowId,
         run_id: WorkflowRunIdOptional = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("RespondActivityTaskCanceled")
     def respond_activity_task_canceled(
-        self, context: RequestContext, task_token: TaskToken, details: Data = None
+        self, context: RequestContext, task_token: TaskToken, details: Data = None, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("RespondActivityTaskCompleted")
     def respond_activity_task_completed(
-        self, context: RequestContext, task_token: TaskToken, result: Data = None
+        self, context: RequestContext, task_token: TaskToken, result: Data = None, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1722,6 +1736,7 @@ class SwfApi:
         task_token: TaskToken,
         reason: FailureReason = None,
         details: Data = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1734,6 +1749,7 @@ class SwfApi:
         execution_context: Data = None,
         task_list: TaskList = None,
         task_list_schedule_to_start_timeout: DurationInSecondsOptional = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1746,6 +1762,7 @@ class SwfApi:
         signal_name: SignalName,
         run_id: WorkflowRunIdOptional = None,
         input: Data = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1764,12 +1781,13 @@ class SwfApi:
         task_start_to_close_timeout: DurationInSecondsOptional = None,
         child_policy: ChildPolicy = None,
         lambda_role: Arn = None,
+        **kwargs,
     ) -> Run:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, resource_arn: Arn, tags: ResourceTagList
+        self, context: RequestContext, resource_arn: Arn, tags: ResourceTagList, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -1783,27 +1801,28 @@ class SwfApi:
         reason: TerminateReason = None,
         details: Data = None,
         child_policy: ChildPolicy = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
     @handler("UndeprecateActivityType")
     def undeprecate_activity_type(
-        self, context: RequestContext, domain: DomainName, activity_type: ActivityType
+        self, context: RequestContext, domain: DomainName, activity_type: ActivityType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UndeprecateDomain")
-    def undeprecate_domain(self, context: RequestContext, name: DomainName) -> None:
+    def undeprecate_domain(self, context: RequestContext, name: DomainName, **kwargs) -> None:
         raise NotImplementedError
 
     @handler("UndeprecateWorkflowType")
     def undeprecate_workflow_type(
-        self, context: RequestContext, domain: DomainName, workflow_type: WorkflowType
+        self, context: RequestContext, domain: DomainName, workflow_type: WorkflowType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, resource_arn: Arn, tag_keys: ResourceTagKeyList
+        self, context: RequestContext, resource_arn: Arn, tag_keys: ResourceTagKeyList, **kwargs
     ) -> None:
         raise NotImplementedError

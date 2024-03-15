@@ -17,6 +17,12 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_different_iam_keys_environment": {
     "last_validated_date": "2023-11-20T21:04:01+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_large_response": {
+    "last_validated_date": "2024-02-13T09:12:01+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_lambda_too_large_response": {
+    "last_validated_date": "2024-02-13T15:50:25+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_large_payloads": {
     "last_validated_date": "2023-11-20T22:16:40+00:00"
   },
@@ -25,6 +31,9 @@
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_cache_local[python]": {
     "last_validated_date": "2023-11-20T21:57:14+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
+    "last_validated_date": "2024-02-13T12:42:58+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_no_timeout": {
     "last_validated_date": "2023-11-20T21:04:53+00:00"
@@ -36,7 +45,7 @@
     "last_validated_date": "2023-11-20T21:04:37+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_mixed_architecture": {
-    "last_validated_date": "2023-11-20T22:14:17+00:00"
+    "last_validated_date": "2024-02-16T11:16:43+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_arm": {
     "last_validated_date": "2023-11-20T21:04:08+00:00"
@@ -137,8 +146,23 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaPermissions::test_lambda_permission_url_invocation": {
     "last_validated_date": "2023-11-20T21:05:48+00:00"
   },
-  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke": {
-    "last_validated_date": "2023-11-20T21:05:40+00:00"
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_update_function_url_config": {
+    "last_validated_date": "2024-02-19T15:49:42+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[BUFFERED]": {
+    "last_validated_date": "2024-02-19T16:25:40+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[None]": {
+    "last_validated_date": "2024-02-19T16:25:50+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[RESPONSE_STREAM]": {
+    "last_validated_date": "2024-02-19T16:28:35+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_headers_and_status": {
+    "last_validated_date": "2024-02-04T16:00:29+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invalid_invoke_mode": {
+    "last_validated_date": "2024-02-19T15:12:49+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation[boolean]": {
     "last_validated_date": "2023-11-20T21:05:35+00:00"
@@ -166,6 +190,9 @@
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_exception": {
     "last_validated_date": "2023-11-20T21:05:44+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_lambda_handler_update": {
+    "last_validated_date": "2024-02-14T14:32:31+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_lambda_versions_with_code_changes": {
     "last_validated_date": "2023-11-20T21:08:09+00:00"

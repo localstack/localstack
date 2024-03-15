@@ -223,7 +223,10 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
             if response_body == json.dumps(dict()):
                 response_body = dict()
 
+        # since we are not using a case-insensitive dict, and we want to remove a header, for server
+        # compatibility we should consider both casing variants
         headers.pop("server", None)
+        headers.pop("Server", None)
         if "date" in headers:
             headers["Date"] = [headers.pop("date")]
         headers[HEADER_CONTENT_TYPE] = [APPLICATION_JSON]
@@ -254,6 +257,7 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
             error_name = f"ApiGateway.{ex_name}"
             cause = str(ex)
         return FailureEvent(
+            env=env,
             error_name=CustomErrorName(error_name),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(

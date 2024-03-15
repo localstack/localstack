@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyDynamoDBTable:
+    Type: 'AWS::DynamoDB::GlobalTable'
+    Properties:
+      TableName: MyTable
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: gsi1pk
+                KeyType: HASH
+              - AttributeName: gsi1sk
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+        - AttributeName: gsi1pk
+          AttributeType: S
+        - AttributeName: gsi1sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      SSESpecification:
+        SSEEnabled: True
+        SSEType: KMS
+      TimeToLiveSpecification:
+        AttributeName: expire_at
+        Enabled: true
+      Replicas:
+        - PointInTimeRecoverySpecification:
+            PointInTimeRecoveryEnabled: true
+          Region: !Ref "AWS::Region"
+          TableClass: STANDARD
+Outputs:
+  TableName:
+    Value: !Ref MyDynamoDBTable

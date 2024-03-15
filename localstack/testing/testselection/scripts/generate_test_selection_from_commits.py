@@ -1,0 +1,66 @@
+"""
+USAGE: $ python -m localstack.testing.testselection.scripts.generate_test_selection_from_commits <repo_root_path> <base-commit-sha> <head-commit-sha> <output_file_path>
+"""
+
+import sys
+from pathlib import Path
+
+from localstack.testing.testselection.git import find_merge_base, get_changed_files_from_git_diff
+from localstack.testing.testselection.opt_in import complies_with_opt_in
+from localstack.testing.testselection.testselection import get_affected_tests_from_changes
+
+
+def main():
+    if len(sys.argv) != 5:
+        print(
+            "Usage: python -m localstack.testing.testselection.scripts.generate_test_selection_from_commits <repo_root_path> <base-commit-sha> <head-commit-sha> <output_file_path>",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    output_file_path = sys.argv[-1]
+    head_commit_sha = sys.argv[-2]
+    base_commit_sha = sys.argv[-3]
+    repo_root_path = sys.argv[-4]
+
+    print(f"Base Commit SHA: {base_commit_sha}")
+    print(f"Head Commit SHA: {head_commit_sha}")
+
+    merge_base_commit = find_merge_base(repo_root_path, base_commit_sha, head_commit_sha)
+    changed_files = get_changed_files_from_git_diff(
+        repo_root_path, merge_base_commit, head_commit_sha
+    )
+    # opt-in guard, can be removed after initial testing phase
+    print("Checking for confirming to opt-in guards")
+    if not complies_with_opt_in(changed_files):
+        print(
+            "Change outside of opt-in guards. Extend the list at localstack/testing/testselection/opt_in.py"
+        )
+        test_files = ["SENTINEL_ALL_TESTS"]
+    else:
+        test_files = get_affected_tests_from_changes(changed_files)
+
+    print(f"Number of changed files detected: {len(changed_files)}")
+    for cf in sorted(changed_files):
+        print(f"\t{cf}")
+    print(f"Number of affected test determined: {len(test_files)}")
+    for tf in sorted(test_files):
+        print(f"\t{tf}")
+
+    if not test_files:
+        print("No tests selected, returning")
+        sys.exit(0)
+
+    print(f"Writing test selection to {output_file_path}")
+    output_file = Path(output_file_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_file, "w") as fd:
+        for test_file in test_files:
+            fd.write(test_file)
+            fd.write("\n")
+
+    print(f"Successfully written test selection to {output_file_path}")
+
+
+if __name__ == "__main__":
+    main()

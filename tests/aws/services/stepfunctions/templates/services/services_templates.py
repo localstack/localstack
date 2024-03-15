@@ -23,6 +23,9 @@ class ServicesTemplates(TemplateLoader):
     AWS_SDK_SFN_START_EXECUTION: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/aws_sdk_sfn_start_execution.json5"
     )
+    AWS_SDK_SFN_START_EXECUTION_IMPLICIT_JSON_SERIALISATION: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/aws_sdk_sfn_start_execution_implicit_json_serialisation.json5"
+    )
     API_GATEWAY_INVOKE_BASE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/api_gateway_invoke_base.json5"
     )
@@ -37,6 +40,12 @@ class ServicesTemplates(TemplateLoader):
     )
     SQS_SEND_MESSAGE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/sqs_send_msg.json5")
     SNS_PUBLISH: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/sns_publish.json5")
+    SNS_FIFO_PUBLISH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sns_fifo_publish.json5"
+    )
+    SNS_FIFO_PUBLISH_FAIL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sns_fifo_publish_fail.json5"
+    )
     SNS_PUBLISH_MESSAGE_ATTRIBUTES: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sns_publish_message_attributes.json5"
     )

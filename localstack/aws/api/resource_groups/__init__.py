@@ -429,47 +429,57 @@ class ResourceGroupsApi:
         resource_query: ResourceQuery = None,
         tags: Tags = None,
         configuration: GroupConfigurationList = None,
+        **kwargs,
     ) -> CreateGroupOutput:
         raise NotImplementedError
 
     @handler("DeleteGroup")
     def delete_group(
-        self, context: RequestContext, group_name: GroupName = None, group: GroupString = None
+        self,
+        context: RequestContext,
+        group_name: GroupName = None,
+        group: GroupString = None,
+        **kwargs,
     ) -> DeleteGroupOutput:
         raise NotImplementedError
 
     @handler("GetAccountSettings")
-    def get_account_settings(
-        self,
-        context: RequestContext,
-    ) -> GetAccountSettingsOutput:
+    def get_account_settings(self, context: RequestContext, **kwargs) -> GetAccountSettingsOutput:
         raise NotImplementedError
 
     @handler("GetGroup")
     def get_group(
-        self, context: RequestContext, group_name: GroupName = None, group: GroupString = None
+        self,
+        context: RequestContext,
+        group_name: GroupName = None,
+        group: GroupString = None,
+        **kwargs,
     ) -> GetGroupOutput:
         raise NotImplementedError
 
     @handler("GetGroupConfiguration")
     def get_group_configuration(
-        self, context: RequestContext, group: GroupString = None
+        self, context: RequestContext, group: GroupString = None, **kwargs
     ) -> GetGroupConfigurationOutput:
         raise NotImplementedError
 
     @handler("GetGroupQuery")
     def get_group_query(
-        self, context: RequestContext, group_name: GroupName = None, group: GroupString = None
+        self,
+        context: RequestContext,
+        group_name: GroupName = None,
+        group: GroupString = None,
+        **kwargs,
     ) -> GetGroupQueryOutput:
         raise NotImplementedError
 
     @handler("GetTags")
-    def get_tags(self, context: RequestContext, arn: GroupArn) -> GetTagsOutput:
+    def get_tags(self, context: RequestContext, arn: GroupArn, **kwargs) -> GetTagsOutput:
         raise NotImplementedError
 
     @handler("GroupResources")
     def group_resources(
-        self, context: RequestContext, group: GroupString, resource_arns: ResourceArnList
+        self, context: RequestContext, group: GroupString, resource_arns: ResourceArnList, **kwargs
     ) -> GroupResourcesOutput:
         raise NotImplementedError
 
@@ -482,6 +492,7 @@ class ResourceGroupsApi:
         filters: ResourceFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> ListGroupResourcesOutput:
         raise NotImplementedError
 
@@ -492,6 +503,7 @@ class ResourceGroupsApi:
         filters: GroupFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> ListGroupsOutput:
         raise NotImplementedError
 
@@ -501,6 +513,7 @@ class ResourceGroupsApi:
         context: RequestContext,
         group: GroupString = None,
         configuration: GroupConfigurationList = None,
+        **kwargs,
     ) -> PutGroupConfigurationOutput:
         raise NotImplementedError
 
@@ -511,21 +524,24 @@ class ResourceGroupsApi:
         resource_query: ResourceQuery,
         max_results: MaxResults = None,
         next_token: NextToken = None,
+        **kwargs,
     ) -> SearchResourcesOutput:
         raise NotImplementedError
 
     @handler("Tag")
-    def tag(self, context: RequestContext, arn: GroupArn, tags: Tags) -> TagOutput:
+    def tag(self, context: RequestContext, arn: GroupArn, tags: Tags, **kwargs) -> TagOutput:
         raise NotImplementedError
 
     @handler("UngroupResources")
     def ungroup_resources(
-        self, context: RequestContext, group: GroupString, resource_arns: ResourceArnList
+        self, context: RequestContext, group: GroupString, resource_arns: ResourceArnList, **kwargs
     ) -> UngroupResourcesOutput:
         raise NotImplementedError
 
     @handler("Untag")
-    def untag(self, context: RequestContext, arn: GroupArn, keys: TagKeyList) -> UntagOutput:
+    def untag(
+        self, context: RequestContext, arn: GroupArn, keys: TagKeyList, **kwargs
+    ) -> UntagOutput:
         raise NotImplementedError
 
     @handler("UpdateAccountSettings")
@@ -533,6 +549,7 @@ class ResourceGroupsApi:
         self,
         context: RequestContext,
         group_lifecycle_events_desired_status: GroupLifecycleEventsDesiredStatus = None,
+        **kwargs,
     ) -> UpdateAccountSettingsOutput:
         raise NotImplementedError
 
@@ -543,6 +560,7 @@ class ResourceGroupsApi:
         group_name: GroupName = None,
         group: GroupString = None,
         description: Description = None,
+        **kwargs,
     ) -> UpdateGroupOutput:
         raise NotImplementedError
 
@@ -553,5 +571,6 @@ class ResourceGroupsApi:
         resource_query: ResourceQuery,
         group_name: GroupName = None,
         group: GroupString = None,
+        **kwargs,
     ) -> UpdateGroupQueryOutput:
         raise NotImplementedError

@@ -4,7 +4,7 @@ import os
 import time
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import TYPE_CHECKING, Dict, List
 
 import pytest
 from botocore.exceptions import ClientError
@@ -13,7 +13,6 @@ from werkzeug import Request, Response
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
 from localstack.testing.aws.util import is_aws_cloud
@@ -24,6 +23,8 @@ from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+
+from .conftest import assert_valid_event
 
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
@@ -113,21 +114,6 @@ def sqs_collect_messages(
 
 
 class TestEvents:
-    def assert_valid_event(self, event):
-        expected_fields = (
-            "version",
-            "id",
-            "detail-type",
-            "source",
-            "account",
-            "time",
-            "region",
-            "resources",
-            "detail",
-        )
-        for field in expected_fields:
-            assert field in event
-
     @markers.aws.validated
     def test_put_rule(self, aws_client, snapshot, clean_up):
         rule_name = f"rule-{short_uid()}"
@@ -343,112 +329,6 @@ class TestEvents:
             input_path="$.detail",
         )
 
-    @pytest.fixture
-    def put_events_with_filter_to_sqs(self, aws_client, sqs_get_queue_arn, clean_up):
-        def _put_events_with_filter_to_sqs(
-            pattern: Dict,
-            entries_asserts: List[Tuple[List[Dict], bool]],
-            input_path: str = None,
-        ):
-            queue_name = f"queue-{short_uid()}"
-            rule_name = f"rule-{short_uid()}"
-            target_id = f"target-{short_uid()}"
-            bus_name = f"bus-{short_uid()}"
-
-            sqs_client = aws_client.sqs
-            queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-            queue_arn = sqs_get_queue_arn(queue_url)
-            policy = {
-                "Version": "2012-10-17",
-                "Id": f"sqs-eventbridge-{short_uid()}",
-                "Statement": [
-                    {
-                        "Sid": f"SendMessage-{short_uid()}",
-                        "Effect": "Allow",
-                        "Principal": {"Service": "events.amazonaws.com"},
-                        "Action": "sqs:SendMessage",
-                        "Resource": queue_arn,
-                    }
-                ],
-            }
-            sqs_client.set_queue_attributes(
-                QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
-            )
-
-            events_client = aws_client.events
-            events_client.create_event_bus(Name=bus_name)
-            events_client.put_rule(
-                Name=rule_name,
-                EventBusName=bus_name,
-                EventPattern=json.dumps(pattern),
-            )
-            kwargs = {"InputPath": input_path} if input_path else {}
-            rs = events_client.put_targets(
-                Rule=rule_name,
-                EventBusName=bus_name,
-                Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
-            )
-
-            assert rs["FailedEntryCount"] == 0
-            assert rs["FailedEntries"] == []
-
-            try:
-                messages = []
-                for entry_asserts in entries_asserts:
-                    entries = entry_asserts[0]
-                    for entry in entries:
-                        entry["EventBusName"] = bus_name
-                    message = self._put_entries_assert_results_sqs(
-                        events_client,
-                        sqs_client,
-                        queue_url,
-                        entries=entries,
-                        should_match=entry_asserts[1],
-                    )
-                    if message is not None:
-                        messages.extend(message)
-            finally:
-                clean_up(
-                    bus_name=bus_name,
-                    rule_name=rule_name,
-                    target_ids=target_id,
-                    queue_url=queue_url,
-                )
-
-            return messages
-
-        yield _put_events_with_filter_to_sqs
-
-    def _put_entries_assert_results_sqs(
-        self, events_client, sqs_client, queue_url: str, entries: List[Dict], should_match: bool
-    ):
-        response = events_client.put_events(Entries=entries)
-        assert not response.get("FailedEntryCount")
-
-        def get_message(queue_url):
-            resp = sqs_client.receive_message(
-                QueueUrl=queue_url, WaitTimeSeconds=5, MaxNumberOfMessages=1
-            )
-            messages = resp.get("Messages")
-            if messages:
-                for message in messages:
-                    receipt_handle = message["ReceiptHandle"]
-                    sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
-            if should_match:
-                assert len(messages) == 1
-            return messages
-
-        messages = retry(get_message, retries=5, queue_url=queue_url)
-
-        if should_match:
-            actual_event = json.loads(messages[0]["Body"])
-            if "detail" in actual_event:
-                self.assert_valid_event(actual_event)
-            return messages
-        else:
-            assert not messages
-            return None
-
     @markers.aws.validated
     def test_put_events_with_rule_anything_but_to_sqs(
         self, put_events_with_filter_to_sqs, snapshot
@@ -606,6 +486,8 @@ class TestEvents:
         monkeypatch,
         sns_subscription,
         aws_client,
+        account_id,
+        region_name,
         clean_up,
         strategy,
     ):
@@ -620,7 +502,7 @@ class TestEvents:
         topic_arn = aws_client.sns.create_topic(Name=topic_name)["TopicArn"]
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
 
         sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
@@ -656,7 +538,7 @@ class TestEvents:
         assert len(messages) == 1
 
         actual_event = json.loads(messages[0]["Body"]).get("Message")
-        self.assert_valid_event(actual_event)
+        assert_valid_event(actual_event)
         assert json.loads(actual_event).get("detail") == EVENT_DETAIL
 
         # clean up
@@ -718,7 +600,7 @@ class TestEvents:
         assert len(messages) == 1
 
         actual_event = json.loads(messages[0]["Body"])
-        self.assert_valid_event(actual_event)
+        assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
         # clean up
@@ -787,7 +669,7 @@ class TestEvents:
             logs_client=aws_client.logs,
         )
         actual_event = events[0]
-        self.assert_valid_event(actual_event)
+        assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
     @markers.aws.validated
@@ -812,6 +694,8 @@ class TestEvents:
         sns_subscription,
         httpserver: HTTPServer,
         aws_client,
+        account_id,
+        region_name,
         clean_up,
     ):
         httpserver.expect_request("").respond_with_data(b"", 200)
@@ -821,7 +705,7 @@ class TestEvents:
         queue_name = f"queue-{short_uid()}"
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         rule_name = f"rule-{short_uid()}"
-        sm_role_arn = arns.iam_role_arn("sfn_role", account_id=TEST_AWS_ACCOUNT_ID)
+        sm_role_arn = arns.iam_role_arn("sfn_role", account_id=account_id)
         sm_name = f"state-machine-{short_uid()}"
         topic_target_id = f"target-{short_uid()}"
         sm_target_id = f"target-{short_uid()}"
@@ -865,10 +749,8 @@ class TestEvents:
             Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
         )
 
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
-        fifo_queue_arn = arns.sqs_queue_arn(
-            fifo_queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-        )
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
+        fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name, account_id, region_name)
 
         event = {"env": "testing"}
         event_json = json.dumps(event)
@@ -1121,7 +1003,7 @@ class TestEvents:
         assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
 
     @markers.aws.unknown
-    def test_put_events_with_target_firehose(self, aws_client, clean_up):
+    def test_put_events_with_target_firehose(self, aws_client, account_id, clean_up):
         s3_bucket = "s3-{}".format(short_uid())
         s3_prefix = "testeventdata"
         stream_name = "firehose-{}".format(short_uid())
@@ -1136,7 +1018,7 @@ class TestEvents:
         stream = aws_client.firehose.create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
-                "RoleARN": arns.iam_resource_arn("firehose", TEST_AWS_ACCOUNT_ID),
+                "RoleARN": arns.iam_resource_arn("firehose", account_id),
                 "BucketARN": arns.s3_bucket_arn(s3_bucket),
                 "Prefix": s3_prefix,
             },
@@ -1177,7 +1059,7 @@ class TestEvents:
         key = bucket_contents[0]["Key"]
         s3_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=key)
         actual_event = json.loads(s3_object["Body"].read().decode())
-        self.assert_valid_event(actual_event)
+        assert_valid_event(actual_event)
         assert actual_event["detail"] == EVENT_DETAIL
 
         # clean up
@@ -1188,7 +1070,9 @@ class TestEvents:
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id)
 
     @markers.aws.unknown
-    def test_put_events_with_target_sqs_new_region(self, aws_client_factory):
+    def test_put_events_with_target_sqs_new_region(
+        self, aws_client_factory, account_id, region_name
+    ):
         events_client = aws_client_factory(region_name="eu-west-1").events
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
@@ -1197,7 +1081,7 @@ class TestEvents:
 
         sqs_client = aws_client_factory(region_name="eu-west-1").sqs
         sqs_client.create_queue(QueueName=queue_name)
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
 
         events_client.create_event_bus(Name=bus_name)
 
@@ -1228,12 +1112,12 @@ class TestEvents:
         assert "EventId" in response.get("Entries")[0]
 
     @markers.aws.unknown
-    def test_put_events_with_target_kinesis(self, aws_client):
+    def test_put_events_with_target_kinesis(self, aws_client, account_id, region_name):
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
         stream_name = "stream-{}".format(short_uid())
-        stream_arn = arns.kinesis_stream_arn(stream_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        stream_arn = arns.kinesis_stream_arn(stream_name, account_id, region_name)
 
         aws_client.kinesis.create_stream(StreamName=stream_name, ShardCount=1)
 
@@ -1296,17 +1180,17 @@ class TestEvents:
 
         assert partition_key == TEST_EVENT_PATTERN["detail-type"][0]
         assert data["detail"] == EVENT_DETAIL
-        self.assert_valid_event(data)
+        assert_valid_event(data)
 
     @markers.aws.unknown
-    def test_put_events_with_input_path(self, aws_client, clean_up):
+    def test_put_events_with_input_path(self, aws_client, account_id, region_name, clean_up):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
         target_id = f"target-{short_uid()}"
         bus_name = f"bus-{short_uid()}"
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
 
         aws_client.events.create_event_bus(Name=bus_name)
         aws_client.events.put_rule(
@@ -1354,7 +1238,9 @@ class TestEvents:
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
     @markers.aws.unknown
-    def test_put_events_with_input_path_multiple(self, aws_client, clean_up):
+    def test_put_events_with_input_path_multiple(
+        self, aws_client, account_id, region_name, clean_up
+    ):
         queue_name = "queue-{}".format(short_uid())
         queue_name_1 = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
@@ -1363,10 +1249,10 @@ class TestEvents:
         bus_name = "bus-{}".format(short_uid())
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
 
         queue_url_1 = aws_client.sqs.create_queue(QueueName=queue_name_1)["QueueUrl"]
-        queue_arn_1 = arns.sqs_queue_arn(queue_name_1, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        queue_arn_1 = arns.sqs_queue_arn(queue_name_1, account_id, region_name)
 
         aws_client.events.create_event_bus(Name=bus_name)
 
@@ -1453,7 +1339,9 @@ class TestEvents:
 
     @markers.aws.unknown
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
-    def test_trigger_event_on_ssm_change(self, monkeypatch, aws_client, clean_up, strategy):
+    def test_trigger_event_on_ssm_change(
+        self, monkeypatch, aws_client, account_id, region_name, clean_up, strategy
+    ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
         rule_name = "rule-{}".format(short_uid())
@@ -1462,7 +1350,7 @@ class TestEvents:
         # create queue
         queue_name = "queue-{}".format(short_uid())
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
 
         # put rule listening on SSM changes
         ssm_prefix = "/test/local/"
@@ -1508,13 +1396,15 @@ class TestEvents:
         clean_up(rule_name=rule_name, target_ids=target_id)
 
     @markers.aws.unknown
-    def test_put_event_with_content_base_rule_in_pattern(self, aws_client, clean_up):
+    def test_put_event_with_content_base_rule_in_pattern(
+        self, aws_client, account_id, region_name, clean_up
+    ):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
         target_id = f"target-{short_uid()}"
 
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
 
         pattern = {
             "Source": [{"exists": True}],
@@ -1654,7 +1544,7 @@ class TestEvents:
         assert len(events) == 1
         event = events[0]
 
-        self.assert_valid_event(event["message"])
+        assert_valid_event(event["message"])
 
         clean_up(
             rule_name=rule_name,
@@ -1792,7 +1682,7 @@ class TestEvents:
 
         received_event = json.loads(messages[0]["Body"])
 
-        self.assert_valid_event(received_event)
+        assert_valid_event(received_event)
 
     @markers.aws.validated
     def test_put_target_id_validation(
@@ -1972,7 +1862,7 @@ class TestEvents:
         snapshot.match("non-existent-bus", e.value.response)
 
     @markers.aws.validated
-    def test_test_event_pattern(self, aws_client, snapshot, account_id, region):
+    def test_test_event_pattern(self, aws_client, snapshot, account_id, region_name):
         response = aws_client.events.test_event_pattern(
             Event=json.dumps(
                 {
@@ -1980,7 +1870,7 @@ class TestEvents:
                     "source": "order",
                     "detail-type": "Test",
                     "account": account_id,
-                    "region": region,
+                    "region": region_name,
                     "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
             ),
@@ -2001,7 +1891,7 @@ class TestEvents:
                     "source": "order",
                     "detail-type": "Test",
                     "account": account_id,
-                    "region": region,
+                    "region": region_name,
                     "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
             ),
@@ -2082,3 +1972,62 @@ class TestEvents:
 
         message_body = json.loads(messages[0]["Body"])
         assert message_body["time"] == "2022-01-01T00:00:00Z"
+
+
+class TestEventsInputTransformers:
+    @markers.aws.validated
+    def test_put_events_with_input_transformation_to_sqs(
+        self, put_events_with_filter_to_sqs, snapshot
+    ):
+        pattern = {"detail-type": ["customerCreated"]}
+        event_detail = {"command": "display-message", "payload": "baz"}
+        entries = [
+            {
+                "Source": "com.mycompany.myapp",
+                "DetailType": "customerCreated",
+                "Detail": json.dumps(event_detail),
+            }
+        ]
+        entries_asserts = [(entries, True)]
+
+        # input transformer with all keys in template present in message
+        input_path_map = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.command",
+        }
+        input_template = '"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>"'
+        input_transformer_match_all = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+        messages_match_all = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer_match_all,
+        )
+
+        # input transformer with keys in template missing from message
+        input_path_map_missing_key = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.notinmessage",
+        }
+        input_transformer_not_match_all = {
+            "InputPathsMap": input_path_map_missing_key,
+            "InputTemplate": input_template,
+        }
+        messages_not_match_all = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer_not_match_all,
+        )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("custom-variables-match-all", messages_match_all)
+        snapshot.match("custom-variables-not-match-all", messages_not_match_all)

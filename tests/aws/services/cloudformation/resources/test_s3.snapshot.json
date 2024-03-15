@@ -72,5 +72,34 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_object_lock_configuration": {
+    "recorded-date": "15-01-2024, 02:31:58",
+    "recorded-content": {
+      "object-lock-info-with-configuration": {
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled",
+          "Rule": {
+            "DefaultRetention": {
+              "Days": 2,
+              "Mode": "GOVERNANCE"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-lock-info-only-enabled": {
+        "ObjectLockConfiguration": {
+          "ObjectLockEnabled": "Enabled"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import re
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -10,12 +11,10 @@ from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
 
 import botocore
-from botocore.exceptions import UnknownServiceError
-from plugin import Plugin, PluginManager
+from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
-from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
     convert_data_types,
@@ -25,7 +24,7 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
-from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
+from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE
 
 PRO_RESOURCE_PROVIDERS = False
 try:
@@ -50,143 +49,7 @@ Properties = TypeVar("Properties")
 
 PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
 
-# by default we use the GenericBaseModel (the legacy model), unless the resource is listed below
-# add your new provider here when you want it to be the default
-PROVIDER_DEFAULTS = {
-    "AWS::ApiGateway::Account": "ResourceProvider",
-    "AWS::ApiGateway::ApiKey": "ResourceProvider",
-    "AWS::ApiGateway::Authorizer": "ResourceProvider",
-    "AWS::ApiGateway::BasePathMapping": "ResourceProvider",
-    "AWS::ApiGateway::Deployment": "ResourceProvider",
-    "AWS::ApiGateway::DomainName": "ResourceProvider",
-    "AWS::ApiGateway::GatewayResponse": "ResourceProvider",
-    "AWS::ApiGateway::Method": "ResourceProvider",
-    "AWS::ApiGateway::Model": "ResourceProvider",
-    "AWS::ApiGateway::RequestValidator": "ResourceProvider",
-    "AWS::ApiGateway::Resource": "ResourceProvider",
-    "AWS::ApiGateway::RestApi": "ResourceProvider",
-    "AWS::ApiGateway::Stage": "ResourceProvider",
-    "AWS::ApiGateway::UsagePlan": "ResourceProvider",
-    "AWS::ApiGateway::UsagePlanKey": "ResourceProvider",
-    "AWS::ApiGateway::VpcLink": "ResourceProvider",
-    "AWS::ApiGatewayV2::Api": "ResourceProvider",
-    "AWS::ApiGatewayV2::ApiMapping": "ResourceProvider",
-    "AWS::ApiGatewayV2::Authorizer": "ResourceProvider",
-    "AWS::ApiGatewayV2::Deployment": "ResourceProvider",
-    "AWS::ApiGatewayV2::DomainName": "ResourceProvider",
-    "AWS::ApiGatewayV2::Integration": "ResourceProvider",
-    "AWS::ApiGatewayV2::IntegrationResponse": "ResourceProvider",
-    "AWS::ApiGatewayV2::Route": "ResourceProvider",
-    "AWS::ApiGatewayV2::RouteResponse": "ResourceProvider",
-    "AWS::ApiGatewayV2::Stage": "ResourceProvider",
-    "AWS::ApiGatewayV2::VpcLink": "ResourceProvider",
-    "AWS::AppConfig::Application": "ResourceProvider",
-    "AWS::AppConfig::ConfigurationProfile": "ResourceProvider",
-    "AWS::AppConfig::Deployment": "ResourceProvider",
-    "AWS::AppConfig::DeploymentStrategy": "ResourceProvider",
-    "AWS::AppConfig::Environment": "ResourceProvider",
-    "AWS::AppConfig::HostedConfigurationVersion": "ResourceProvider",
-    "AWS::AppSync::ApiKey": "ResourceProvider",
-    "AWS::AppSync::DataSource": "ResourceProvider",
-    "AWS::AppSync::FunctionConfiguration": "ResourceProvider",
-    "AWS::AppSync::GraphQLApi": "ResourceProvider",
-    "AWS::AppSync::GraphQLSchema": "ResourceProvider",
-    "AWS::AppSync::Resolver": "ResourceProvider",
-    "AWS::Athena::DataCatalog": "ResourceProvider",
-    "AWS::Athena::NamedQuery": "ResourceProvider",
-    "AWS::Athena::WorkGroup": "ResourceProvider",
-    "AWS::CDK::Metadata": "ResourceProviders",
-    "AWS::CertificateManager::Certificate": "ResourceProvider",
-    "AWS::CloudFormation::Stack": "ResourceProvider",
-    "AWS::CloudWatch::Alarm": "ResourceProvider",
-    "AWS::CloudWatch::CompositeAlarm": "ResourceProvider",
-    "AWS::Cognito::UserPool": "ResourceProvider",
-    "AWS::Cognito::UserPoolGroup": "ResourceProvider",
-    "AWS::Cognito::IdentityPool": "ResourceProvider",
-    "AWS::Cognito::UserPoolClient": "ResourceProvider",
-    "AWS::Cognito::UserPoolDomain": "ResourceProvider",
-    "AWS::Cognito::IdentityPoolRoleAttachment": "ResourceProvider",
-    "AWS::Cognito::UserPoolIdentityProvider": "ResourceProvider",
-    "AWS::Cognito::UserPoolResourceServer": "ResourceProvider",
-    "AWS::DynamoDB::GlobalTable": "ResourceProvider",
-    "AWS::DynamoDB::Table": "ResourceProvider",
-    "AWS::EC2::DHCPOptions": "ResourceProvider",
-    "AWS::EC2::Instance": "ResourceProvider",
-    "AWS::EC2::InternetGateway": "ResourceProvider",
-    "AWS::EC2::NatGateway": "ResourceProvider",
-    "AWS::EC2::NetworkAcl": "ResourceProvider",
-    "AWS::EC2::Route": "ResourceProvider",
-    "AWS::EC2::RouteTable": "ResourceProvider",
-    "AWS::EC2::SecurityGroup": "ResourceProvider",
-    "AWS::EC2::Subnet": "ResourceProvider",
-    "AWS::EC2::SubnetRouteTableAssociation": "ResourceProvider",
-    "AWS::EC2::TransitGateway": "ResourceProvider",
-    "AWS::EC2::TransitGatewayAttachment": "ResourceProvider",
-    "AWS::EC2::VPC": "ResourceProvider",
-    "AWS::EC2::VPCGatewayAttachment": "ResourceProvider",
-    "AWS::ECR::Repository": "ResourceProvider",
-    "AWS::EKS::Nodegroup": "ResourceProvider",
-    "AWS::ElasticBeanstalk::Application": "ResourceProvider",
-    "AWS::ElasticBeanstalk::ApplicationVersion": "ResourceProvider",
-    "AWS::ElasticBeanstalk::ConfigurationTemplate": "ResourceProvider",
-    "AWS::ElasticBeanstalk::Environment": "ResourceProvider",
-    "AWS::Events::Connection": "ResourceProvider",
-    "AWS::Events::EventBus": "ResourceProvider",
-    "AWS::Events::EventBusPolicy": "ResourceProvider",
-    "AWS::Events::Rule": "ResourceProvider",
-    "AWS::IAM::AccessKey": "ResourceProvider",
-    "AWS::IAM::Group": "ResourceProvider",
-    "AWS::IAM::InstanceProfile": "ResourceProvider",
-    "AWS::IAM::ManagedPolicy": "ResourceProvider",
-    "AWS::IAM::Policy": "ResourceProvider",
-    "AWS::IAM::Role": "ResourceProvider",
-    "AWS::IAM::ServiceLinkedRole": "ResourceProvider",
-    "AWS::IAM::User": "ResourceProvider",
-    "AWS::KMS::Alias": "ResourceProvider",
-    "AWS::KMS::Key": "ResourceProvider",
-    "AWS::Kinesis::Stream": "ResourceProvider",
-    "AWS::Kinesis::StreamConsumer": "ResourceProvider",
-    "AWS::KinesisAnalytics::Application": "ResourceProvider",
-    "AWS::KinesisFirehose::DeliveryStream": "ResourceProvider",
-    "AWS::Lambda::Alias": "ResourceProvider",
-    "AWS::Lambda::CodeSigningConfig": "ResourceProvider",
-    "AWS::Lambda::EventInvokeConfig": "ResourceProvider",
-    "AWS::Lambda::EventSourceMapping": "ResourceProvider",
-    "AWS::Lambda::Function": "ResourceProvider",
-    "AWS::Lambda::LayerVersion": "ResourceProvider",
-    "AWS::Lambda::LayerVersionPermission": "ResourceProvider",
-    "AWS::Lambda::Permission": "ResourceProvider",
-    "AWS::Lambda::Version": "ResourceProvider",
-    "AWS::Logs::LogGroup": "ResourceProvider",
-    "AWS::Logs::LogStream": "ResourceProvider",
-    "AWS::Logs::SubscriptionFilter": "ResourceProvider",
-    "AWS::OpenSearchService::Domain": "ResourceProvider",
-    "AWS::RDS::DBCluster": "ResourceProvider",
-    "AWS::Redshift::Cluster": "ResourceProvider",
-    "AWS::Route53::HealthCheck": "ResourceProvider",
-    "AWS::Route53::RecordSet": "ResourceProvider",
-    "AWS::S3::Bucket": "ResourceProvider",
-    "AWS::S3::BucketPolicy": "ResourceProvider",
-    "AWS::SNS::Topic": "ResourceProvider",
-    "AWS::SQS::Queue": "ResourceProvider",
-    "AWS::SQS::QueuePolicy": "ResourceProvider",
-    "AWS::Scheduler::Schedule": "ResourceProvider",
-    "AWS::Scheduler::ScheduleGroup": "ResourceProvider",
-    "AWS::SecretsManager::ResourcePolicy": "ResourceProvider",
-    "AWS::SecretsManager::RotationSchedule": "ResourceProvider",
-    "AWS::SecretsManager::Secret": "ResourceProvider",
-    "AWS::SecretsManager::SecretTargetAttachment": "ResourceProvider",
-    "AWS::SES::ReceiptRule": "ResourceProvider",
-    "AWS::SES::ReceiptRuleSet": "ResourceProvider",
-    "AWS::SES::Template": "ResourceProvider",
-    "AWS::SSM::Parameter": "ResourceProvider",
-    "AWS::SSM::MaintenanceWindow": "ResourceProvider",
-    "AWS::SSM::MaintenanceWindowTarget": "ResourceProvider",
-    "AWS::SSM::MaintenanceWindowTask": "ResourceProvider",
-    "AWS::SSM::PatchBaseline": "ResourceProvider",
-    "AWS::StepFunctions::Activity": "ResourceProvider",
-    "AWS::StepFunctions::StateMachine": "ResourceProvider",
-}
+PROVIDER_DEFAULTS = {}  # TODO: remove this after removing patching in -ext
 
 
 class OperationStatus(Enum):
@@ -497,217 +360,6 @@ def resolve_resource_parameters(
     return params
 
 
-LEGACY_ACTION_MAP = {
-    "Add": "create",
-    "Remove": "delete",
-    # TODO: modify
-}
-
-
-class LegacyResourceProvider(ResourceProvider):
-    """
-    Adapter around a legacy base model to conform to the new API
-    """
-
-    def __init__(
-        self, resource_type: str, resource_provider_cls: Type[GenericBaseModel], resources: dict
-    ):
-        super().__init__()
-
-        self.resource_type = resource_type
-        self.resource_provider_cls = resource_provider_cls
-        self.all_resources = resources
-
-    def create(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        return self.create_or_delete(request)
-
-    def update(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        physical_resource_id = self.all_resources[request.logical_resource_id]["PhysicalResourceId"]
-        resource_provider = self.resource_provider_cls(
-            # TODO: other top level keys
-            resource_json={
-                "Type": self.resource_type,
-                "Properties": request.desired_state,
-                # just a temporary workaround, technically we're setting _state_ here to _last_deployed_state
-                "_state_": request.previous_state,
-                # "_last_deployed_state": request
-                "PhysicalResourceId": physical_resource_id,
-                "LogicalResourceId": request.logical_resource_id,
-            },
-            account_id=request.account_id,
-            region_name=request.region_name,
-        )
-        if not resource_provider.is_updatable():
-            LOG.warning(
-                'Unable to update resource type "%s", id "%s"',
-                self.resource_type,
-                request.logical_resource_id,
-            )
-            # TODO: should not really claim the update was successful, but the
-            #   API does not really let us signal this in any other way.
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS,
-                resource_model={**request.previous_state, **request.desired_state},
-            )
-
-        LOG.info("Updating resource %s of type %s", request.logical_resource_id, self.resource_type)
-
-        resource_provider.update_resource(
-            self.all_resources[request.logical_resource_id],
-            stack_name=request.stack_name,
-            resources=self.all_resources,
-        )
-
-        # incredibly hacky :|
-        resource_provider.resource_json["PhysicalResourceId"] = self.all_resources[
-            request.logical_resource_id
-        ]["PhysicalResourceId"]
-        resource_provider.fetch_and_update_state(
-            stack_name=request.stack_name, resources=self.all_resources
-        )
-        self.all_resources[request.logical_resource_id][
-            "_state_"
-        ] = resource_provider.resource_json["_state_"]
-
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=resource_provider.props,
-        )
-
-    def delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        return self.create_or_delete(request)
-
-    def create_or_delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        resource_provider = self.resource_provider_cls(
-            account_id=request.account_id,
-            region_name=request.region_name,
-            # TODO: other top level keys
-            resource_json={
-                "Type": self.resource_type,
-                "Properties": request.desired_state,
-                "PhysicalResourceId": self.all_resources[request.logical_resource_id].get(
-                    "PhysicalResourceId"
-                ),
-                "_state_": request.previous_state,
-                "LogicalResourceId": request.logical_resource_id,
-            },
-        )
-        # TODO: only really necessary for the create and update operation
-        resource_provider.add_defaults(
-            self.all_resources[request.logical_resource_id], request.stack_name
-        )
-        # for some reason add_defaults doesn't even change the values in the resource provider...
-        # incredibly hacky again but should take care of the defaults
-        resource_provider.resource_json["Properties"] = self.all_resources[
-            request.logical_resource_id
-        ]["Properties"]
-        resource_provider.properties = self.all_resources[request.logical_resource_id]["Properties"]
-
-        func_details = resource_provider.get_deploy_templates()
-        # TODO: be less strict about the return value of func_details
-        LOG.debug(
-            'Running action "%s" for resource type "%s" id "%s"',
-            request.action,
-            self.resource_type,
-            request.logical_resource_id,
-        )
-
-        func_details = func_details.get(LEGACY_ACTION_MAP[request.action])
-        if not func_details:
-            # TODO: raise here and see where we are missing handlers
-            LOG.debug(
-                "No resource handler for %s action on resource type %s available. Skipping.",
-                request.action,
-                self.resource_type,
-            )
-            return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
-        func_details = func_details if isinstance(func_details, list) else [func_details]
-        results = []
-        # TODO: other top level keys
-        resource = self.all_resources[request.logical_resource_id]
-
-        for func in func_details:
-            result = None
-            executed = False
-            # TODO(srw) 3 - callable function
-            if callable(func.get("function")):
-                result = func["function"](
-                    request.account_id,
-                    request.region_name,
-                    request.logical_resource_id,
-                    resource,
-                    request.stack_name,
-                )
-
-                results.append(result)
-                executed = True
-            elif not executed:
-                service = get_service_name(resource)
-                try:
-                    client = request.aws_client_factory.get_client(service=service)
-                    if client:
-                        # get the method on that function
-                        function = getattr(client, func["function"])
-
-                        # unify the resource parameters
-                        params = resolve_resource_parameters(
-                            request.account_id,
-                            request.region_name,
-                            request.stack_name,
-                            resource,
-                            self.all_resources,
-                            request.logical_resource_id,
-                            func,
-                        )
-                        if params is None:
-                            result = None
-                        else:
-                            result = invoke_function(
-                                request.account_id,
-                                request.region_name,
-                                function,
-                                params,
-                                self.resource_type,
-                                func,
-                                request.action,
-                                resource,
-                            )
-                        results.append(result)
-                        executed = True
-                except UnknownServiceError:
-                    # e.g. CDK has resources but is not a valid service
-                    return ProgressEvent(
-                        status=OperationStatus.SUCCESS, resource_model=resource["Properties"]
-                    )
-            if "result_handler" in func and executed:
-                LOG.debug(
-                    f"Executing callback method for {self.resource_type}:{request.logical_resource_id}"
-                )
-                result_handler = func["result_handler"]
-                result_handler(
-                    request.account_id,
-                    request.region_name,
-                    result,
-                    request.logical_resource_id,
-                    self.all_resources[request.logical_resource_id],
-                )
-
-        if request.action.lower() == "add":
-            resource_provider.resource_json["PhysicalResourceId"] = self.all_resources[
-                request.logical_resource_id
-            ]["PhysicalResourceId"]
-
-            # incredibly hacky :|
-            resource_provider.fetch_and_update_state(
-                stack_name=request.stack_name, resources=self.all_resources
-            )
-            self.all_resources[request.logical_resource_id][
-                "_state_"
-            ] = resource_provider.resource_json["_state_"]
-
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource_provider.props)
-
-
 class NoResourceProvider(Exception):
     pass
 
@@ -737,19 +389,16 @@ class ResourceProviderExecutor:
         *,
         stack_name: str,
         stack_id: str,
-        provider_config: dict[str, str],
-        # FIXME: legacy
-        resources: dict[str, dict],
-        legacy_base_models: dict[str, Type[GenericBaseModel]],
     ):
         self.stack_name = stack_name
         self.stack_id = stack_id
-        self.provider_config = provider_config
-        self.resources = resources
-        self.legacy_base_models = legacy_base_models
 
     def deploy_loop(
-        self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
+        self,
+        resource: dict,
+        raw_payload: ResourceProviderPayload,
+        max_iterations: int = 30,
+        sleep_time: float = 5,
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
 
@@ -760,30 +409,18 @@ class ResourceProviderExecutor:
             try:
                 resource_provider = self.load_resource_provider(resource_type)
 
-                logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
-                resource = self.resources[logical_resource_id]
-
                 resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
 
                 event = self.execute_action(resource_provider, payload)
 
-                if event.status == OperationStatus.FAILED:
-                    return event
-
-                if event.status == OperationStatus.SUCCESS:
-                    if not isinstance(resource_provider, LegacyResourceProvider):
-                        # branch for non-legacy providers
-                        # TODO: move out of if? (physical res id can be set earlier possibly)
-                        if isinstance(resource_provider, LegacyResourceProvider):
-                            raise Exception(
-                                "A GenericBaseModel should always have a PhysicalResourceId set after deployment"
-                            )
-
+                match event.status:
+                    case OperationStatus.FAILED:
+                        return event
+                    case OperationStatus.SUCCESS:
                         if not hasattr(resource_provider, "SCHEMA"):
                             raise Exception(
                                 "A ResourceProvider should always have a SCHEMA property defined."
                             )
-
                         resource_type_schema = resource_provider.SCHEMA
                         physical_resource_id = (
                             self.extract_physical_resource_id_from_model_with_schema(
@@ -795,18 +432,22 @@ class ResourceProviderExecutor:
 
                         resource["PhysicalResourceId"] = physical_resource_id
                         resource["Properties"] = event.resource_model
-                    resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
-                    return event
+                        resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
+                        return event
+                    case OperationStatus.IN_PROGRESS:
+                        # update the shared state
+                        context = {**payload["callbackContext"], **event.custom_context}
+                        payload["callbackContext"] = context
+                        payload["requestData"]["resourceProperties"] = event.resource_model
 
-                # update the shared state
-                context = {**payload["callbackContext"], **event.custom_context}
-                payload["callbackContext"] = context
-                payload["requestData"]["resourceProperties"] = event.resource_model
-
-                if current_iteration == 0:
-                    time.sleep(0)
-                else:
-                    time.sleep(sleep_time)
+                        if current_iteration == 0:
+                            time.sleep(0)
+                        else:
+                            time.sleep(sleep_time)
+                    case invalid_status:
+                        raise ValueError(
+                            f"Invalid OperationStatus ({invalid_status}) returned for resource {raw_payload['requestData']['logicalResourceId']} (type {raw_payload['resourceType']})"
+                        )
 
             except NoResourceProvider:
                 log_not_available_message(
@@ -821,7 +462,9 @@ class ResourceProviderExecutor:
                     raise  # re-raise here if explicitly enabled
 
         else:
-            raise TimeoutError("Could not perform deploy loop action")
+            raise TimeoutError(
+                f"Resource deployment for resource {raw_payload['requestData']['logicalResourceId']} (type {raw_payload['resourceType']}) timed out."
+            )
 
     def execute_action(
         self, resource_provider: ResourceProvider, raw_payload: ResourceProviderPayload
@@ -851,66 +494,89 @@ class ResourceProviderExecutor:
                     return ProgressEvent(
                         status=OperationStatus.SUCCESS, resource_model=request.previous_state
                     )
+                except Exception as e:
+                    # FIXME: this fallback should be removed after fixing updates in general (order/dependenies)
+                    # catch-all for any exception that looks like a not found exception
+                    if check_not_found_exception(e, request.resource_type, request.desired_state):
+                        return ProgressEvent(
+                            status=OperationStatus.SUCCESS, resource_model=request.previous_state
+                        )
+
+                    return ProgressEvent(
+                        status=OperationStatus.FAILED,
+                        resource_model={},
+                        message=f"Failed to delete resource with id {request.logical_resource_id} of type {request.resource_type}",
+                    )
             case "Remove":
-                return resource_provider.delete(request)
+                try:
+                    return resource_provider.delete(request)
+                except Exception as e:
+                    # catch-all for any exception that looks like a not found exception
+                    if check_not_found_exception(e, request.resource_type, request.desired_state):
+                        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
+
+                    return ProgressEvent(
+                        status=OperationStatus.FAILED,
+                        resource_model={},
+                        message=f"Failed to delete resource with id {request.logical_resource_id} of type {request.resource_type}",
+                    )
             case _:
                 raise NotImplementedError(change_type)  # TODO: change error type
 
-    def should_use_legacy_provider(self, resource_type: str) -> bool:
-        # any config overwrites take precedence over the default list
-        PROVIDER_CONFIG = {**PROVIDER_DEFAULTS, **self.provider_config}
-        if resource_type in PROVIDER_CONFIG:
-            return PROVIDER_CONFIG[resource_type] == "GenericBaseModel"
-
-        return True
-
     def load_resource_provider(self, resource_type: str) -> ResourceProvider:
-        # by default look up GenericBaseModel
-        if self.should_use_legacy_provider(resource_type):
-            return self._load_legacy_resource_provider(resource_type)
+        # TODO: unify namespace of plugins
 
+        # 1. try to load pro resource provider
         # prioritise pro resource providers
         if PRO_RESOURCE_PROVIDERS:
             try:
                 plugin = pro_plugin_manager.load(resource_type)
                 return plugin.factory()
             except ValueError:
-                # could not load the plugin
+                # could not find a plugin for that name
                 pass
             except Exception:
                 LOG.warning(
-                    "error loading plugin from plugin manager",
+                    "Failed to load PRO resource type %s as a ResourceProvider.",
+                    resource_type,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
+        # 2. try to load community resource provider
         try:
             plugin = plugin_manager.load(resource_type)
             return plugin.factory()
+        except ValueError:
+            # could not find a plugin for that name
+            pass
         except Exception:
-            LOG.warning(
-                "Failed to load resource type %s as a ResourceProvider.",
-                resource_type,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
-            )
-            raise NoResourceProvider
+            if config.CFN_VERBOSE_ERRORS:
+                LOG.warning(
+                    "Failed to load community resource type %s as a ResourceProvider.",
+                    resource_type,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
 
-    def _load_legacy_resource_provider(self, resource_type: str) -> LegacyResourceProvider:
-        if resource_type in self.legacy_base_models:
-            return LegacyResourceProvider(
-                resource_type=resource_type,
-                resource_provider_cls=self.legacy_base_models[resource_type],
-                resources=self.resources,
-            )
-        else:
-            usage.missing_resource_types.record(resource_type)
-            raise NoResourceProvider
+        raise NoResourceProvider
 
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type: str, resource_type_schema: dict
     ) -> str:
         if resource_type in PHYSICAL_RESOURCE_ID_SPECIAL_CASES:
             primary_id_path = PHYSICAL_RESOURCE_ID_SPECIAL_CASES[resource_type]
-            physical_resource_id = resolve_json_pointer(resource_model, primary_id_path)
+
+            if "<" in primary_id_path:
+                # composite quirk, e.g. something like MyRef|MyName
+                # try to extract parts
+                physical_resource_id = primary_id_path
+                find_results = re.findall("<([^>]+)>", primary_id_path)
+                for found_part in find_results:
+                    resolved_part = resolve_json_pointer(resource_model, found_part)
+                    physical_resource_id = physical_resource_id.replace(
+                        f"<{found_part}>", resolved_part
+                    )
+            else:
+                physical_resource_id = resolve_json_pointer(resource_model, primary_id_path)
         else:
             primary_id_paths = resource_type_schema["primaryIdentifier"]
             if len(primary_id_paths) > 1:

@@ -1,5 +1,4 @@
 import json
-import os
 import re
 import threading
 import time
@@ -10,16 +9,14 @@ from typing import TYPE_CHECKING, Dict
 import pytest
 import requests
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import GenericTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-    SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.sqs.constants import DEFAULT_MAXIMUM_MESSAGE_SIZE
@@ -28,13 +25,14 @@ from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
 from localstack.services.sqs.utils import parse_queue_url
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import GenericTransformer
 from localstack.utils.aws import arns
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import poll_condition, retry, short_uid, to_str
 from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
+
+from .utils import sqs_collect_messages
 
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
@@ -86,7 +84,11 @@ def aws_sqs_client(aws_client, request: str) -> "SQSClient":
 class TestSqsProvider:
     @markers.aws.only_localstack
     def test_get_queue_url_contains_localstack_host(
-        self, sqs_create_queue, monkeypatch, aws_sqs_client
+        self,
+        sqs_create_queue,
+        monkeypatch,
+        aws_sqs_client,
+        account_id,
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
@@ -98,10 +100,7 @@ class TestSqsProvider:
 
         host_definition = localstack_host()
         # our current queue pattern looks like this, but may change going forward, or may be configurable
-        assert (
-            queue_url
-            == f"http://{host_definition.host_and_port()}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
-        )
+        assert queue_url == f"http://{host_definition.host_and_port()}/{account_id}/{queue_name}"
 
     @markers.aws.validated
     def test_list_queues(self, sqs_create_queue, aws_client):
@@ -176,7 +175,12 @@ class TestSqsProvider:
 
     @markers.aws.only_localstack
     def test_create_queue_recently_deleted_cache(
-        self, sqs_create_queue, monkeypatch, aws_sqs_client
+        self,
+        sqs_create_queue,
+        monkeypatch,
+        aws_sqs_client,
+        account_id,
+        region_name,
     ):
         # this is a white-box test for the QueueDeletedRecently timeout behavior
         from localstack.services.sqs import constants
@@ -197,7 +201,7 @@ class TestSqsProvider:
         )
 
         time.sleep(1.5)
-        store = sqs_stores[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME]
+        store = sqs_stores[account_id][region_name]
         assert name in store.deleted
         assert queue_url == sqs_create_queue(QueueName=name)
         assert name not in store.deleted
@@ -1154,6 +1158,45 @@ class TestSqsProvider:
         # try to delete the expired message
         aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
 
+    @markers.aws.validated
+    def test_fifo_empty_message_groups_added_back_to_queue(
+        self, sqs_create_queue, aws_sqs_client, snapshot
+    ):
+        # https://github.com/localstack/localstack/issues/10107
+        queue_name = f"queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "FifoQueue": "True",
+            },
+        )
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageDeduplicationId="1",
+            MessageGroupId="g1",
+            MessageBody="Message 1",
+        )
+        resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("inital-fifo-receive", resp)
+
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=resp["Messages"][0]["ReceiptHandle"]
+        )
+
+        # call receive on the now empty message group
+        resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("empty-fifo-receive", resp)
+
+        # ensure FIFO queue stays functional
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageDeduplicationId="2",
+            MessageGroupId="g1",
+            MessageBody="Message 2",
+        )
+        resp = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("final-fifo-receive", resp)
+
     @markers.aws.needs_fixing
     @pytest.mark.skip("Needs AWS fixing and is now failing against LocalStack")
     def test_delete_message_batch_from_lambda(
@@ -1269,7 +1312,7 @@ class TestSqsProvider:
         assert receive_result["Messages"][0]["Body"] == message_body
 
     @markers.aws.only_localstack
-    def test_external_hostname_via_host_header(self, monkeypatch, sqs_create_queue):
+    def test_external_hostname_via_host_header(self, monkeypatch, sqs_create_queue, region_name):
         """test making a request with a different external hostname/port being returned"""
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
@@ -1277,7 +1320,9 @@ class TestSqsProvider:
         sqs_create_queue(QueueName=queue_name)
 
         headers = mock_aws_request_headers(
-            "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "sqs",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         payload = f"Action=GetQueueUrl&QueueName={queue_name}"
 
@@ -1290,14 +1335,18 @@ class TestSqsProvider:
         assert re.match(rf".*<QueueUrl>\s*{url}/[^<]+</QueueUrl>.*", content, **kwargs)
 
     @markers.aws.only_localstack
-    def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch):
+    def test_external_host_via_header_complete_message_lifecycle(
+        self, monkeypatch, account_id, region_name
+    ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "off")
 
         queue_name = f"queue-{short_uid()}"
 
         edge_url = config.internal_service_url()
         headers = mock_aws_request_headers(
-            "sqs", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "sqs",
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            region_name=region_name,
         )
         port = 12345
         hostname = "aws-local"
@@ -1307,7 +1356,7 @@ class TestSqsProvider:
         result = requests.post(edge_url, data=payload, headers=headers)
         assert result.status_code == 200
 
-        queue_url = f"http://{url}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        queue_url = f"http://{url}/{account_id}/{queue_name}"
         message_body = f"test message {short_uid()}"
         payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
         result = requests.post(edge_url, data=payload, headers=headers)
@@ -1320,14 +1369,14 @@ class TestSqsProvider:
         assert message_body in result.text
 
         # the customer said that he used to be able to access it via "127.0.0.1" instead of "aws-local" as well
-        queue_url = f"http://127.0.0.1/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        queue_url = f"http://127.0.0.1/{account_id}/{queue_name}"
 
         payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
         result = requests.post(edge_url, data=payload, headers=headers)
         assert result.status_code == 200
         assert "MD5" in result.text
 
-        queue_url = f"http://127.0.0.1/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        queue_url = f"http://127.0.0.1/{account_id}/{queue_name}"
 
         payload = f"Action=ReceiveMessage&QueueUrl={queue_url}&VisibilityTimeout=0"
         result = requests.post(edge_url, data=payload, headers=headers)
@@ -1888,7 +1937,7 @@ class TestSqsProvider:
             QueueUrl=queue_url, MaxNumberOfMessages=4, WaitTimeSeconds=1
         )
 
-        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        if is_aws_cloud():
             time.sleep(5)
 
         assert get_qsize(aws_sqs_client, queue_url) == 1
@@ -1898,7 +1947,7 @@ class TestSqsProvider:
                 QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"]
             )
 
-        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        if is_aws_cloud():
             time.sleep(5)
 
         assert get_qsize(aws_sqs_client, queue_url) == 1
@@ -2634,15 +2683,14 @@ class TestSqsProvider:
         e.match("InvalidMessageContents")
 
     @markers.aws.validated
-    def test_dead_letter_queue_config(self, sqs_create_queue):
+    def test_dead_letter_queue_config(self, sqs_create_queue, region_name):
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
         url_parts = dl_queue_url.split("/")
-        region = TEST_AWS_REGION_NAME
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[-1]
+            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         conf = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 50}
@@ -2653,12 +2701,11 @@ class TestSqsProvider:
         assert queue_url
 
     @markers.aws.validated
-    def test_dead_letter_queue_list_sources(self, sqs_create_queue, aws_sqs_client):
+    def test_dead_letter_queue_list_sources(self, sqs_create_queue, aws_sqs_client, region_name):
         dl_queue_url = sqs_create_queue()
         url_parts = dl_queue_url.split("/")
-        region = TEST_AWS_REGION_NAME
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[-1]
+            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         conf = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 50}
@@ -2720,7 +2767,9 @@ class TestSqsProvider:
         assert message["Body"] == "foobar"
 
     @markers.aws.validated
-    def test_dead_letter_queue_max_receive_count(self, sqs_create_queue, aws_sqs_client):
+    def test_dead_letter_queue_max_receive_count(
+        self, sqs_create_queue, aws_sqs_client, region_name
+    ):
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(
@@ -2732,7 +2781,7 @@ class TestSqsProvider:
         dl_target_arn = arns.sqs_queue_arn(
             url_parts[-1],
             account_id=url_parts[len(url_parts) - 2],
-            region_name=TEST_AWS_REGION_NAME,
+            region_name=region_name,
         )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
@@ -2755,8 +2804,84 @@ class TestSqsProvider:
             == result_send["MessageId"]
         )
 
+    @markers.aws.validated
+    def test_dead_letter_queue_message_attributes(
+        self,
+        aws_client,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        snapshot,
+    ):
+        sqs = aws_client.sqs
+
+        queue_name = f"queue-{short_uid()}"
+        dead_letter_queue_name = f"dl-queue-{short_uid()}"
+        dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
+        dl_queue_arn = sqs_get_queue_arn(dl_queue_url)
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "RedrivePolicy": json.dumps(
+                    {"deadLetterTargetArn": dl_queue_arn, "maxReceiveCount": 1}
+                )
+            },
+        )
+
+        snapshot.match("dlq-arn", dl_queue_arn)
+        snapshot.match("sourcen-arn", sqs_get_queue_arn(queue_url))
+
+        # check that attributes are retained
+        msg_attrs = {"MyAttribute": {"StringValue": "foobar", "DataType": "String"}}
+        msg_system_attrs = {
+            "AWSTraceHeader": {
+                "StringValue": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1",
+                "DataType": "String",
+            }
+        }
+        # send a messages
+        sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody="message-1",
+            MessageSystemAttributes=msg_system_attrs,
+            MessageAttributes=msg_attrs,
+        )
+        sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
+
+        # receive each message two times to move them into the dlq
+        messages = []
+        for i in range(4):
+            result = sqs.receive_message(
+                QueueUrl=queue_url,
+                VisibilityTimeout=0,
+                AttributeNames=["All"],
+                MessageAttributeNames=["All"],
+            )
+            messages.extend(result.get("Messages", []))
+        messages.sort(key=lambda m: m["Body"])
+        for message in messages:
+            # FIXME: SenderId = account and is messing up the snapshot matching somehow
+            del message["Attributes"]["SenderId"]
+
+        snapshot.match("rec-pre-dlq", messages)
+
+        messages = sqs_collect_messages(
+            sqs,
+            dl_queue_url,
+            expected=2,
+            timeout=10,
+            attribute_names=["All"],
+            message_attribute_names=["All"],
+        )
+        messages.sort(key=lambda m: m["Body"])
+        for message in messages:
+            del message["Attributes"]["SenderId"]
+
+        snapshot.match("dlq-messages", messages)
+
     @markers.aws.needs_fixing
-    def test_dead_letter_queue_chain(self, sqs_create_queue, aws_sqs_client):
+    def test_dead_letter_queue_chain(
+        self, sqs_create_queue, aws_sqs_client, account_id, region_name
+    ):
         # test a chain of 3 queues, with DLQ flow q1 -> q2 -> q3
 
         # create queues
@@ -2772,8 +2897,8 @@ class TestSqsProvider:
             policy = {
                 "deadLetterTargetArn": arns.sqs_queue_arn(
                     queue_names[idx + 1],
-                    account_id=TEST_AWS_ACCOUNT_ID,
-                    region_name=TEST_AWS_REGION_NAME,
+                    account_id=account_id,
+                    region_name=region_name,
                 ),
                 "maxReceiveCount": 1,
             }
@@ -2813,12 +2938,13 @@ class TestSqsProvider:
     # TODO: check if test_set_queue_attribute_at_creation == test_create_queue_with_attributes
 
     @markers.aws.validated
-    def test_get_specific_queue_attribute_response(self, sqs_create_queue, aws_sqs_client):
+    def test_get_specific_queue_attribute_response(
+        self, sqs_create_queue, aws_sqs_client, region_name
+    ):
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
-        region = TEST_AWS_REGION_NAME
         dl_result = aws_sqs_client.get_queue_attributes(
             QueueUrl=dl_queue_url, AttributeNames=["QueueArn"]
         )
@@ -2849,7 +2975,7 @@ class TestSqsProvider:
         )
         # asserts
         constructed_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[-1]
+            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
         )
         redrive_policy = json.loads(get_two_attributes.get("Attributes").get("RedrivePolicy"))
         assert message_retention_period == get_two_attributes.get("Attributes").get(
@@ -3046,7 +3172,7 @@ class TestSqsProvider:
     def test_get_list_queues_with_query_auth(self, aws_http_client_factory):
         client = aws_http_client_factory("sqs", region="us-east-1")
 
-        if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        if is_aws_cloud():
             endpoint_url = "https://queue.amazonaws.com"
         else:
             endpoint_url = config.internal_service_url()
@@ -3262,9 +3388,10 @@ class TestSqsProvider:
     @pytest.mark.skip
     @markers.aws.unknown
     def test_dead_letter_queue_execution_lambda_mapping_preserves_id(
-        self, sqs_create_queue, create_lambda_function, aws_sqs_client
+        self, sqs_create_queue, create_lambda_function, aws_sqs_client, region_name
     ):
         # TODO: lambda triggered dead letter delivery does not preserve the message id
+        # FIXME: message id is now preserved, but test is broken
         # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = "dl-queue-{}".format(short_uid())
@@ -3272,9 +3399,8 @@ class TestSqsProvider:
 
         # create arn
         url_parts = dl_queue_url.split("/")
-        region = TEST_AWS_REGION_NAME
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[-1]
+            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
@@ -3291,7 +3417,7 @@ class TestSqsProvider:
         # create arn
         url_parts = queue_url.split("/")
         queue_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[-1]
+            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
         )
         aws_sqs_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=lambda_name
@@ -3647,6 +3773,180 @@ class TestSqsProvider:
         )[0].get("MD5OfBody")
 
     @markers.aws.validated
+    def test_sqs_fifo_same_dedup_id_different_message_groups(
+        self, sqs_create_queue, aws_sqs_client, snapshot
+    ):
+        attributes = {"FifoQueue": "True", "ContentBasedDeduplication": "False"}
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}.fifo", Attributes=attributes)
+        dedup_id = "same-dedup"
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test",
+            MessageGroupId="group1",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-1", response)
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test",
+            MessageGroupId="group2",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-2", response)
+
+    @markers.aws.validated
+    def test_fifo_high_throughput_ordering(self, aws_sqs_client, snapshot, sqs_create_queue):
+        attributes = {
+            "FifoQueue": "True",
+            "ContentBasedDeduplication": "False",
+            "DeduplicationScope": "messageGroup",
+            "FifoThroughputLimit": "perMessageGroupId",
+        }
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}.fifo", Attributes=attributes)
+        dedup_id = "same-dedup"
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test1",
+            MessageGroupId="group1",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-1", response)
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test2",
+            MessageGroupId="group2",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-2", response)
+
+    @markers.aws.validated
+    def test_fifo_change_to_high_throughput_after_creation(
+        self, sqs_create_queue, snapshot, aws_sqs_client
+    ):
+        attributes = {
+            "FifoQueue": "True",
+            "ContentBasedDeduplication": "False",
+            "DeduplicationScope": "queue",
+        }
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}.fifo", Attributes=attributes)
+        dedup_id = "same-dedup"
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test1",
+            MessageGroupId="group1",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-1", response)
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test2",
+            MessageGroupId="group2",
+            MessageDeduplicationId=dedup_id,
+        )
+        # this should have been a duplicate
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+        snapshot.match("same-dedup-different-grp-2", response)
+
+        attributes = {
+            "DeduplicationScope": "messageGroup",
+            "FifoThroughputLimit": "perMessageGroupId",
+        }
+        aws_sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+        response = aws_sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+        snapshot.match("set-to-high-throughput", response)
+        # do we receive "old duplicates" now?
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-high-throughput", response)
+
+        # send new message that should be no duplicate now (but would have been in regular fifo mode)
+        # however, behaviour does not seem to change on AWS
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test3",
+            MessageGroupId="group3",
+            MessageDeduplicationId=dedup_id,
+        )
+
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-high-throughput-2", response)
+
+    @markers.aws.validated
+    def test_fifo_change_to_regular_throughput_after_creation(
+        self, sqs_create_queue, snapshot, aws_sqs_client
+    ):
+        attributes = {
+            "FifoQueue": "True",
+            "ContentBasedDeduplication": "False",
+            "DeduplicationScope": "messageGroup",
+            "FifoThroughputLimit": "perMessageGroupId",
+        }
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}.fifo", Attributes=attributes)
+        dedup_id = "same-dedup"
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test1",
+            MessageGroupId="group1",
+            MessageDeduplicationId=dedup_id,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-1", response)
+        receipt_handle = response["Messages"][0]["ReceiptHandle"]
+        aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test2",
+            MessageGroupId="group2",
+            MessageDeduplicationId=dedup_id,
+        )
+        # this should have been no duplicate
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        receipt_handle = response["Messages"][0]["ReceiptHandle"]
+        aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+        snapshot.match("same-dedup-different-grp-2", response)
+
+        attributes = {
+            "DeduplicationScope": "queue",
+            "FifoThroughputLimit": "perQueue",
+        }
+        aws_sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+        response = aws_sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+        snapshot.match("set-to-regular-throughput", response)
+
+        # send new message that should be a duplicate now (but wasn't in high throughput mode)
+        # however, behaviour does not seem to change on AWS
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test3",
+            MessageGroupId="group3",
+            MessageDeduplicationId=dedup_id,
+        )
+
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-regular-throughput", response)
+
+    @markers.aws.validated
     def test_sse_queue_attributes(self, sqs_create_queue, snapshot, aws_sqs_client):
         # KMS server-side encryption (SSE)
         queue_url = sqs_create_queue()
@@ -3984,8 +4284,8 @@ class TestSqsProvider:
 
 
 @pytest.fixture()
-def sqs_http_client(aws_http_client_factory):
-    yield aws_http_client_factory("sqs", region=TEST_AWS_REGION_NAME)
+def sqs_http_client(aws_http_client_factory, region_name):
+    yield aws_http_client_factory("sqs", region=region_name)
 
 
 class TestSqsQueryApi:
@@ -4251,6 +4551,7 @@ class TestSqsQueryApi:
         monkeypatch,
         sqs_create_queue,
         sqs_http_client,
+        account_id,
         strategy,
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
@@ -4262,7 +4563,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue_url.split("/")[-1],
-                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
+                "QueueOwnerAWSAccountId": account_id,
             },
         )
         assert f"<QueueUrl>{queue_url}</QueueUrl>" in response.text
@@ -4271,7 +4572,7 @@ class TestSqsQueryApi:
     @markers.aws.validated
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_get_queue_url_work_for_different_queue(
-        self, monkeypatch, sqs_create_queue, sqs_http_client, strategy
+        self, monkeypatch, sqs_create_queue, sqs_http_client, account_id, strategy
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
@@ -4284,7 +4585,7 @@ class TestSqsQueryApi:
             params={
                 "Action": "GetQueueUrl",
                 "QueueName": queue2_url.split("/")[-1],
-                "QueueOwnerAWSAccountId": TEST_AWS_ACCOUNT_ID,
+                "QueueOwnerAWSAccountId": account_id,
             },
         )
         assert f"<QueueUrl>{queue2_url}</QueueUrl>" in response.text
@@ -4346,12 +4647,14 @@ class TestSqsQueryApi:
         assert "foobar" in response.text
 
     @markers.aws.only_localstack
-    def test_queue_url_format_path_strategy(self, sqs_create_queue, monkeypatch):
+    def test_queue_url_format_path_strategy(
+        self, sqs_create_queue, account_id, region_name, monkeypatch
+    ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
         queue_name = f"path_queue_{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         assert (
-            f"localhost.localstack.cloud:4566/queue/{TEST_AWS_REGION_NAME}/{TEST_AWS_ACCOUNT_ID}/{queue_name}"
+            f"localhost.localstack.cloud:4566/queue/{region_name}/{account_id}/{queue_name}"
             in queue_url
         )
 
@@ -4491,14 +4794,14 @@ class TestSQSMultiAccounts:
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     @markers.aws.only_localstack
     def test_cross_account_get_queue_url(
-        self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy
+        self, monkeypatch, sqs_create_queue, secondary_aws_client, strategy, account_id, region_name
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
         queue_name = f"test-queue-cross-account-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        account_id, region_name, queue_name_from_url = parse_queue_url(queue_url)
-        assert account_id == TEST_AWS_ACCOUNT_ID
-        assert region_name == TEST_AWS_REGION_NAME
+        actual_account_id, actual_region_name, queue_name_from_url = parse_queue_url(queue_url)
+        assert actual_account_id == account_id
+        assert actual_region_name == region_name
         assert queue_name_from_url == queue_name
 
         # Get another client in the same region
@@ -4512,7 +4815,14 @@ class TestSQSMultiAccounts:
 
     @markers.aws.only_localstack
     def test_delete_queue_multi_account(
-        self, aws_sqs_client, secondary_aws_client, aws_http_client_factory, cleanups
+        self,
+        aws_sqs_client,
+        secondary_aws_client,
+        aws_http_client_factory,
+        cleanups,
+        account_id,
+        secondary_account_id,
+        region_name,
     ):
         # set up regular boto clients for creating the queues
         client1 = aws_sqs_client
@@ -4524,23 +4834,23 @@ class TestSQSMultiAccounts:
         queue2_name = f"{prefix}-queue-{short_uid()}"
         response = client1.create_queue(QueueName=queue1_name)
         queue1_url = response["QueueUrl"]
-        assert parse_queue_url(queue1_url)[0] == TEST_AWS_ACCOUNT_ID
+        assert parse_queue_url(queue1_url)[0] == account_id
 
         response = client2.create_queue(QueueName=queue2_name)
         queue2_url = response["QueueUrl"]
-        assert parse_queue_url(queue2_url)[0] == SECONDARY_TEST_AWS_ACCOUNT_ID
+        assert parse_queue_url(queue2_url)[0] == secondary_account_id
 
         # now prepare the query api clients
         client1_http = aws_http_client_factory(
             service="sqs",
-            region=TEST_AWS_REGION_NAME,
+            region=region_name,
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
 
         client2_http = aws_http_client_factory(
             service="sqs",
-            region=TEST_AWS_REGION_NAME,  # Use the same region for both clients
+            region=region_name,  # Use the same region for both clients
             aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
         )

@@ -119,9 +119,15 @@ def extract_bucket_key_version_id_from_copy_source(
     copy_source_parsed = urlparser.urlparse(copy_source)
     # we need to manually replace `+` character with a space character before URL decoding, because different languages
     # don't encode their URL the same way (%20 vs +), and Python doesn't unquote + into a space char
-    src_bucket, src_key = (
-        urlparser.unquote(copy_source_parsed.path.replace("+", " ")).lstrip("/").split("/", 1)
-    )
+    parsed_path = urlparser.unquote(copy_source_parsed.path.replace("+", " ")).lstrip("/")
+
+    if "/" not in parsed_path:
+        raise InvalidArgument(
+            "Invalid copy source object key",
+            ArgumentName="x-amz-copy-source",
+            ArgumentValue="x-amz-copy-source",
+        )
+    src_bucket, src_key = parsed_path.split("/", 1)
     src_version_id = urlparser.parse_qs(copy_source_parsed.query).get("versionId", [None])[0]
 
     return src_bucket, src_key, src_version_id

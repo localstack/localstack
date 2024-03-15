@@ -5,14 +5,8 @@ import sys
 import threading
 import traceback
 
-import boto3
-
 from localstack import config, constants
-from localstack.constants import (
-    AWS_REGION_US_EAST_1,
-    ENV_DEV,
-    LOCALSTACK_INFRA_PROCESS,
-)
+from localstack.constants import LOCALSTACK_INFRA_PROCESS
 from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.runtime import events, hooks
 from localstack.runtime.exceptions import LocalstackExit
@@ -93,8 +87,8 @@ def patch_instance_tracker_meta():
     if not find_spec("moto"):
         return
 
-    from moto.core import BaseModel
     from moto.core.base_backend import InstanceTrackerMeta
+    from moto.core.common_models import BaseModel
 
     if hasattr(InstanceTrackerMeta, "_ls_patch_applied"):
         return  # ensure we're not applying the patch multiple times
@@ -186,15 +180,6 @@ def gateway_listen_ports_info() -> str:
 
 def log_startup_message(service):
     LOG.info("Starting mock %s service on %s ...", service, gateway_listen_ports_info())
-
-
-def check_aws_credentials():
-    # Setup AWS environment vars, these are used by Boto when LocalStack makes internal cross-service calls
-    os.environ["AWS_ACCESS_KEY_ID"] = constants.DEFAULT_AWS_ACCOUNT_ID
-    os.environ["AWS_SECRET_ACCESS_KEY"] = constants.INTERNAL_AWS_SECRET_ACCESS_KEY
-    session = boto3.Session()
-    credentials = session.get_credentials()
-    assert credentials
 
 
 def signal_supervisor_restart():
@@ -293,25 +278,19 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         from localstack.packages.debugpy import debugpy_package
 
         debugpy_package.install()
-        import debugpy
+        import debugpy  # noqa: T100
 
         LOG.info("Starting debug server at: %s:%s", constants.BIND_HOST, config.DEVELOP_PORT)
-        debugpy.listen((constants.BIND_HOST, config.DEVELOP_PORT))
+        debugpy.listen((constants.BIND_HOST, config.DEVELOP_PORT))  # noqa: T100
 
         if config.WAIT_FOR_DEBUGGER:
-            debugpy.wait_for_client()
+            debugpy.wait_for_client()  # noqa: T100
 
     @log_duration()
     def prepare_environment():
         # enable the HTTP/HTTPS duplex socket
         enable_duplex_socket()
 
-        # set environment
-        os.environ["AWS_REGION"] = AWS_REGION_US_EAST_1
-        os.environ["ENV"] = ENV_DEV
-
-        # make sure AWS credentials are configured, otherwise boto3 bails on us
-        check_aws_credentials()
         patch_moto_request_handling()
 
     @log_duration()

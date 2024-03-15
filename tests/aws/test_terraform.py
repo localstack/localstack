@@ -4,7 +4,11 @@ import threading
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.packages.terraform import terraform_package
 from localstack.testing.pytest import markers
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
@@ -40,7 +44,7 @@ def check_terraform_version():
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_test():
+def setup_test(account_id, region_name):
     with INIT_LOCK:
         available, version = check_terraform_version()
 
@@ -53,12 +57,21 @@ def setup_test():
 
             return pytest.skip(msg)
 
-        run("cd %s; %s apply -input=false tfplan" % (get_base_dir(), TERRAFORM_BIN))
+        env_vars = {
+            "AWS_ACCESS_KEY_ID": account_id,
+            "AWS_SECRET_ACCESS_KEY": account_id,
+            "AWS_REGION": region_name,
+        }
+
+        run(
+            "cd %s; %s apply -input=false tfplan" % (get_base_dir(), TERRAFORM_BIN),
+            env_vars=env_vars,
+        )
 
     yield
 
     # clean up
-    run("cd %s; %s destroy -auto-approve" % (get_base_dir(), TERRAFORM_BIN))
+    run("cd %s; %s destroy -auto-approve" % (get_base_dir(), TERRAFORM_BIN), env_vars=env_vars)
 
 
 def get_base_dir():
@@ -78,8 +91,13 @@ class TestTerraform:
                 global TERRAFORM_BIN
                 TERRAFORM_BIN = terraform_package.get_installer().get_executable_path()
                 base_dir = get_base_dir()
+                env_vars = {
+                    "AWS_ACCESS_KEY_ID": TEST_AWS_ACCESS_KEY_ID,
+                    "AWS_SECRET_ACCESS_KEY": TEST_AWS_SECRET_ACCESS_KEY,
+                    "AWS_REGION": TEST_AWS_REGION_NAME,
+                }
                 if not os.path.exists(os.path.join(base_dir, ".terraform", "plugins")):
-                    run(f"cd {base_dir}; {TERRAFORM_BIN} init -input=false")
+                    run(f"cd {base_dir}; {TERRAFORM_BIN} init -input=false", env_vars=env_vars)
                 # remove any cache files from previous runs
                 for tf_file in [
                     "tfplan",
@@ -88,7 +106,10 @@ class TestTerraform:
                 ]:
                     rm_rf(os.path.join(base_dir, tf_file))
                 # create TF plan
-                run(f"cd {base_dir}; {TERRAFORM_BIN} plan -out=tfplan -input=false")
+                run(
+                    f"cd {base_dir}; {TERRAFORM_BIN} plan -out=tfplan -input=false",
+                    env_vars=env_vars,
+                )
 
         start_worker_thread(_run)
 
@@ -125,20 +146,18 @@ class TestTerraform:
 
     @markers.skip_offline
     @markers.aws.needs_fixing
-    def test_lambda(self, aws_client):
+    def test_lambda(self, aws_client, account_id):
         response = aws_client.lambda_.get_function(FunctionName=LAMBDA_NAME)
         assert response["Configuration"]["FunctionName"] == LAMBDA_NAME
         assert response["Configuration"]["Handler"] == LAMBDA_HANDLER
         assert response["Configuration"]["Runtime"] == LAMBDA_RUNTIME
-        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(
-            account_id=TEST_AWS_ACCOUNT_ID
-        )
+        assert response["Configuration"]["Role"] == LAMBDA_ROLE.format(account_id=account_id)
 
     @markers.skip_offline
     @markers.aws.needs_fixing
-    def test_event_source_mapping(self, aws_client):
-        queue_arn = QUEUE_ARN.format(account_id=TEST_AWS_ACCOUNT_ID)
-        lambda_arn = LAMBDA_ARN.format(account_id=TEST_AWS_ACCOUNT_ID, lambda_name=LAMBDA_NAME)
+    def test_event_source_mapping(self, aws_client, account_id):
+        queue_arn = QUEUE_ARN.format(account_id=account_id)
+        lambda_arn = LAMBDA_ARN.format(account_id=account_id, lambda_name=LAMBDA_NAME)
         all_mappings = aws_client.lambda_.list_event_source_mappings(
             EventSourceArn=queue_arn, FunctionName=LAMBDA_NAME
         )

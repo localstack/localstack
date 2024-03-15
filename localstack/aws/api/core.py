@@ -2,6 +2,7 @@ import functools
 from typing import Any, NamedTuple, Optional, Protocol, Type, TypedDict, Union
 
 from botocore.model import OperationModel, ServiceModel
+from rolo.gateway import RequestContext as RoloRequestContext
 
 from localstack.aws.connect import InternalRequestParameters
 from localstack.http import Request, Response
@@ -65,7 +66,7 @@ class ServiceOperation(NamedTuple):
     operation: str
 
 
-class RequestContext:
+class RequestContext(RoloRequestContext):
     """
     A RequestContext object holds the information of an HTTP request that is processed by the LocalStack Gateway. The
     context holds information about the request, such as which AWS service the request is made to, which operation is
@@ -96,12 +97,12 @@ class RequestContext:
     internal_request_params: Optional[InternalRequestParameters]
     """Data sent by client-side LocalStack during internal calls."""
 
-    def __init__(self) -> None:
+    def __init__(self, request=None) -> None:
+        super().__init__(request)
         self.service = None
         self.operation = None
         self.region = None
         self.account_id = None
-        self.request = None
         self.request_id = long_uid()
         self.service_request = None
         self.service_response = None

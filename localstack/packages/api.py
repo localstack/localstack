@@ -8,7 +8,7 @@ from inspect import getmodule
 from threading import RLock
 from typing import Callable, List, Optional, Tuple
 
-from plugin import Plugin, PluginManager, PluginSpec
+from plux import Plugin, PluginManager, PluginSpec
 
 from localstack import config
 

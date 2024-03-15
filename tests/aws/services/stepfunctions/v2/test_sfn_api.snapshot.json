@@ -1374,5 +1374,308 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_get_execution_history_reversed": {
+    "recorded-date": "28-01-2024, 19:44:43",
+    "recorded-content": {
+      "get_execution_history_reverseOrder[False]": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history_reverseOrder[True]": {
+        "events": [
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_invalid_arn_sm": {
+    "recorded-date": "08-03-2024, 10:34:51",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the DescribeStateMachine operation: Invalid Arn: 'Invalid ARN prefix: not_a_valid_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_execution_no_such_state_machine": {
+    "recorded-date": "08-03-2024, 10:51:46",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "StateMachineDoesNotExist",
+        "exception_value": "An error occurred (StateMachineDoesNotExist) when calling the ListExecutions operation: State Machine Does Not Exist: 'ssm_nonexistent_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_list_execution_invalid_arn": {
+    "recorded-date": "08-03-2024, 12:37:36",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the ListExecutions operation: Invalid Arn: 'Invalid ARN prefix: invalid_state_machine_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution": {
+    "recorded-date": "08-03-2024, 11:52:48",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "ddescribe_execution": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "input": {},
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<ExecArnPart_0idx>",
+        "output": {
+          "Arg1": "argument1"
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "redriveCount": 0,
+        "redriveStatus": "NOT_REDRIVABLE",
+        "redriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
+        "startDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution_no_such_state_machine": {
+    "recorded-date": "08-03-2024, 12:05:10",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ExecutionDoesNotExist",
+        "exception_value": "An error occurred (ExecutionDoesNotExist) when calling the DescribeExecution operation: Execution Does Not Exist: 'invalid_execution_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_get_execution_history_no_such_execution": {
+    "recorded-date": "08-03-2024, 12:34:03",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ExecutionDoesNotExist",
+        "exception_value": "An error occurred (ExecutionDoesNotExist) when calling the GetExecutionHistory operation: Execution Does Not Exist: 'invalid_execution_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_get_execution_history_invalid_arn": {
+    "recorded-date": "08-03-2024, 12:36:35",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the GetExecutionHistory operation: Invalid Arn: 'Invalid ARN prefix: invalid_state_machine_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_describe_execution_invalid_arn": {
+    "recorded-date": "08-03-2024, 12:37:23",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the DescribeExecution operation: Invalid Arn: 'Invalid ARN prefix: invalid_state_machine_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_state_machine_status_filter": {
+    "recorded-date": "14-03-2024, 21:58:24",
+    "recorded-content": {
+      "creation_resp": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_before_execution": {
+        "executions": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exec_resp": {
+        "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+        "startDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_succeeded_when_complete": {
+        "executions": [
+          {
+            "executionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+            "name": "<ExecArnPart_0idx>",
+            "redriveCount": 0,
+            "startDate": "datetime",
+            "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+            "status": "SUCCEEDED",
+            "stopDate": "datetime"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_running_when_complete": {
+        "executions": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_executions_filter_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'succeeded' at 'statusFilter' failed to satisfy constraint: Member must satisfy enum value set: [SUCCEEDED, TIMED_OUT, PENDING_REDRIVE, ABORTED, FAILED, RUNNING]"
+        },
+        "message": "1 validation error detected: Value 'succeeded' at 'statusFilter' failed to satisfy constraint: Member must satisfy enum value set: [SUCCEEDED, TIMED_OUT, PENDING_REDRIVE, ABORTED, FAILED, RUNNING]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

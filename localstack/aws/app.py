@@ -1,5 +1,6 @@
 from localstack import config
 from localstack.aws import handlers
+from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.metric_handler import MetricHandler
 from localstack.aws.handlers.service_plugin import ServiceLoader
@@ -14,7 +15,7 @@ from .handlers.service import ServiceRequestRouter
 
 class LocalstackAwsGateway(Gateway):
     def __init__(self, service_manager: ServiceManager = None) -> None:
-        super().__init__()
+        super().__init__(context_class=RequestContext)
 
         # basic server components
         self.service_manager = service_manager or ServicePluginManager()

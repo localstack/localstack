@@ -66,6 +66,9 @@ class VtlTemplate:
         # add extensions for common string functions below
 
         class ExtendedString(str):
+            def toString(self, *_, **__):
+                return self
+
             def trim(self, *args, **kwargs):
                 return ExtendedString(self.strip(*args, **kwargs))
 
@@ -74,6 +77,13 @@ class VtlTemplate:
 
             def toUpperCase(self, *_, **__):
                 return ExtendedString(self.upper())
+
+            def contains(self, *args):
+                return self.find(*args) >= 0
+
+            def replaceAll(self, regex, replacement):
+                escaped_replacement = replacement.replace("$", "\\")
+                return ExtendedString(re.sub(regex, escaped_replacement, self))
 
         def apply(obj, **_):
             if isinstance(obj, dict):

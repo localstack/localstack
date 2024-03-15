@@ -3,7 +3,7 @@ import itertools
 import json
 import re
 import time
-from typing import Optional, Tuple
+from typing import Literal, Optional, Tuple
 from urllib.parse import urlparse
 
 from localstack.aws.api.sqs import QueueAttributeName, ReceiptHandleIsInvalid
@@ -32,6 +32,37 @@ def is_sqs_queue_url(url: str) -> bool:
             LEGACY_ENDPOINT.search(url),
         ]
     )
+
+
+def guess_endpoint_strategy_and_host(
+    host: str,
+) -> Tuple[Literal["standard", "domain", "path"], str]:
+    """
+    This method is used for the dynamic endpoint strategy. It heuristically determines a tuple where the first
+    element is the endpoint strategy, and the second is the part of the host after the endpoint prefix and region.
+    For instance:
+
+      * ``sqs.us-east-1.localhost.localstack.cloud`` -> ``standard, localhost.localstack.cloud``
+      * ``queue.localhost.localstack.cloud:4566`` -> ``domain, localhost.localstack.cloud:4566``
+      * ``us-east-2.queue.amazonaws.com`` -> ``domain, amazonaws.com``
+      * ``localhost:4566`` -> ``path, localhost:443``
+      * ``amazonaws.com`` -> ``path, amazonaws.com``
+
+    :param host: the original host in the request
+    :return: endpoint strategy, host segment
+    """
+    components = host.split(".")
+
+    if host.startswith("sqs."):
+        return "standard", ".".join(components[2:])
+
+    if host.startswith("queue."):
+        return "domain", ".".join(components[1:])
+
+    if len(components) > 2 and components[1] == "queue":
+        return "domain", ".".join(components[2:])
+
+    return "path", host
 
 
 def is_message_deduplication_id_required(queue):

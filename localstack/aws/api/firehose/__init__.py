@@ -21,6 +21,7 @@ BooleanObject = bool
 BucketARN = str
 ClusterJDBCURL = str
 CopyOptions = str
+CustomTimeZone = str
 DataTableColumns = str
 DataTableName = str
 DeliveryStreamARN = str
@@ -38,6 +39,7 @@ ElasticsearchTypeName = str
 ErrorCode = str
 ErrorMessage = str
 ErrorOutputPrefix = str
+FileExtension = str
 HECAcknowledgmentTimeoutInSeconds = int
 HECEndpoint = str
 HECToken = str
@@ -71,6 +73,18 @@ RedshiftRetryDurationInSeconds = int
 RetryDurationInSeconds = int
 RoleARN = str
 SizeInMBs = int
+SnowflakeAccountUrl = str
+SnowflakeContentColumnName = str
+SnowflakeDatabase = str
+SnowflakeKeyPassphrase = str
+SnowflakeMetaDataColumnName = str
+SnowflakePrivateKey = str
+SnowflakePrivateLinkVpceId = str
+SnowflakeRetryDurationInSeconds = int
+SnowflakeRole = str
+SnowflakeSchema = str
+SnowflakeTable = str
+SnowflakeUser = str
 SplunkBufferingIntervalInSeconds = int
 SplunkBufferingSizeInMBs = int
 SplunkRetryDurationInSeconds = int
@@ -227,11 +241,13 @@ class ProcessorParameterName(str):
     SubRecordType = "SubRecordType"
     Delimiter = "Delimiter"
     CompressionFormat = "CompressionFormat"
+    DataMessageExtraction = "DataMessageExtraction"
 
 
 class ProcessorType(str):
     RecordDeAggregation = "RecordDeAggregation"
     Decompression = "Decompression"
+    CloudWatchLogProcessing = "CloudWatchLogProcessing"
     Lambda = "Lambda"
     MetadataExtraction = "MetadataExtraction"
     AppendDelimiterToRecord = "AppendDelimiterToRecord"
@@ -245,6 +261,17 @@ class RedshiftS3BackupMode(str):
 class S3BackupMode(str):
     Disabled = "Disabled"
     Enabled = "Enabled"
+
+
+class SnowflakeDataLoadingOption(str):
+    JSON_MAPPING = "JSON_MAPPING"
+    VARIANT_CONTENT_MAPPING = "VARIANT_CONTENT_MAPPING"
+    VARIANT_CONTENT_AND_METADATA_MAPPING = "VARIANT_CONTENT_AND_METADATA_MAPPING"
+
+
+class SnowflakeS3BackupMode(str):
+    FailedDataOnly = "FailedDataOnly"
+    AllData = "AllData"
 
 
 class SplunkS3BackupMode(str):
@@ -513,6 +540,40 @@ class CopyCommand(TypedDict, total=False):
     CopyOptions: Optional[CopyOptions]
 
 
+class SnowflakeRetryOptions(TypedDict, total=False):
+    DurationInSeconds: Optional[SnowflakeRetryDurationInSeconds]
+
+
+class SnowflakeVpcConfiguration(TypedDict, total=False):
+    PrivateLinkVpceId: SnowflakePrivateLinkVpceId
+
+
+class SnowflakeRoleConfiguration(TypedDict, total=False):
+    Enabled: Optional[BooleanObject]
+    SnowflakeRole: Optional[SnowflakeRole]
+
+
+class SnowflakeDestinationConfiguration(TypedDict, total=False):
+    AccountUrl: SnowflakeAccountUrl
+    PrivateKey: SnowflakePrivateKey
+    KeyPassphrase: Optional[SnowflakeKeyPassphrase]
+    User: SnowflakeUser
+    Database: SnowflakeDatabase
+    Schema: SnowflakeSchema
+    Table: SnowflakeTable
+    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
+    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
+    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
+    ContentColumnName: Optional[SnowflakeContentColumnName]
+    SnowflakeVpcConfiguration: Optional[SnowflakeVpcConfiguration]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    RoleARN: RoleARN
+    RetryOptions: Optional[SnowflakeRetryOptions]
+    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    S3Configuration: S3DestinationConfiguration
+
+
 class MSKSourceConfiguration(TypedDict, total=False):
     MSKClusterARN: MSKClusterARN
     TopicName: TopicName
@@ -728,6 +789,8 @@ class ExtendedS3DestinationConfiguration(TypedDict, total=False):
     S3BackupConfiguration: Optional[S3DestinationConfiguration]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DeliveryStreamEncryptionConfigurationInput(TypedDict, total=False):
@@ -759,6 +822,7 @@ class CreateDeliveryStreamInput(ServiceRequest):
         AmazonOpenSearchServerlessDestinationConfiguration
     ]
     MSKSourceConfiguration: Optional[MSKSourceConfiguration]
+    SnowflakeDestinationConfiguration: Optional[SnowflakeDestinationConfiguration]
 
 
 class CreateDeliveryStreamOutput(TypedDict, total=False):
@@ -778,6 +842,25 @@ class DeleteDeliveryStreamOutput(TypedDict, total=False):
 
 
 DeliveryStartTimestamp = datetime
+
+
+class SnowflakeDestinationDescription(TypedDict, total=False):
+    AccountUrl: Optional[SnowflakeAccountUrl]
+    User: Optional[SnowflakeUser]
+    Database: Optional[SnowflakeDatabase]
+    Schema: Optional[SnowflakeSchema]
+    Table: Optional[SnowflakeTable]
+    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
+    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
+    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
+    ContentColumnName: Optional[SnowflakeContentColumnName]
+    SnowflakeVpcConfiguration: Optional[SnowflakeVpcConfiguration]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    RoleARN: Optional[RoleARN]
+    RetryOptions: Optional[SnowflakeRetryOptions]
+    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    S3DestinationDescription: Optional[S3DestinationDescription]
 
 
 class HttpEndpointDescription(TypedDict, total=False):
@@ -854,6 +937,8 @@ class ExtendedS3DestinationDescription(TypedDict, total=False):
     S3BackupDescription: Optional[S3DestinationDescription]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DestinationDescription(TypedDict, total=False):
@@ -867,6 +952,7 @@ class DestinationDescription(TypedDict, total=False):
     ]
     SplunkDestinationDescription: Optional[SplunkDestinationDescription]
     HttpEndpointDestinationDescription: Optional[HttpEndpointDestinationDescription]
+    SnowflakeDestinationDescription: Optional[SnowflakeDestinationDescription]
     AmazonOpenSearchServerlessDestinationDescription: Optional[
         AmazonOpenSearchServerlessDestinationDescription
     ]
@@ -965,6 +1051,8 @@ class ExtendedS3DestinationUpdate(TypedDict, total=False):
     S3BackupUpdate: Optional[S3DestinationUpdate]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class HttpEndpointDestinationUpdate(TypedDict, total=False):
@@ -1055,6 +1143,26 @@ class RedshiftDestinationUpdate(TypedDict, total=False):
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
 
 
+class SnowflakeDestinationUpdate(TypedDict, total=False):
+    AccountUrl: Optional[SnowflakeAccountUrl]
+    PrivateKey: Optional[SnowflakePrivateKey]
+    KeyPassphrase: Optional[SnowflakeKeyPassphrase]
+    User: Optional[SnowflakeUser]
+    Database: Optional[SnowflakeDatabase]
+    Schema: Optional[SnowflakeSchema]
+    Table: Optional[SnowflakeTable]
+    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
+    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
+    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
+    ContentColumnName: Optional[SnowflakeContentColumnName]
+    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    RoleARN: Optional[RoleARN]
+    RetryOptions: Optional[SnowflakeRetryOptions]
+    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    S3Update: Optional[S3DestinationUpdate]
+
+
 class SplunkDestinationUpdate(TypedDict, total=False):
     HECEndpoint: Optional[HECEndpoint]
     HECEndpointType: Optional[HECEndpointType]
@@ -1120,6 +1228,7 @@ class UpdateDestinationInput(ServiceRequest):
     AmazonOpenSearchServerlessDestinationUpdate: Optional[
         AmazonOpenSearchServerlessDestinationUpdate
     ]
+    SnowflakeDestinationUpdate: Optional[SnowflakeDestinationUpdate]
 
 
 class UpdateDestinationOutput(TypedDict, total=False):
@@ -1148,6 +1257,8 @@ class FirehoseApi:
         tags: TagDeliveryStreamInputTagList = None,
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
+        snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
+        **kwargs,
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1157,6 +1268,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         allow_force_delete: BooleanObject = None,
+        **kwargs,
     ) -> DeleteDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1167,6 +1279,7 @@ class FirehoseApi:
         delivery_stream_name: DeliveryStreamName,
         limit: DescribeDeliveryStreamInputLimit = None,
         exclusive_start_destination_id: DestinationId = None,
+        **kwargs,
     ) -> DescribeDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1177,6 +1290,7 @@ class FirehoseApi:
         limit: ListDeliveryStreamsInputLimit = None,
         delivery_stream_type: DeliveryStreamType = None,
         exclusive_start_delivery_stream_name: DeliveryStreamName = None,
+        **kwargs,
     ) -> ListDeliveryStreamsOutput:
         raise NotImplementedError
 
@@ -1187,12 +1301,17 @@ class FirehoseApi:
         delivery_stream_name: DeliveryStreamName,
         exclusive_start_tag_key: TagKey = None,
         limit: ListTagsForDeliveryStreamInputLimit = None,
+        **kwargs,
     ) -> ListTagsForDeliveryStreamOutput:
         raise NotImplementedError
 
     @handler("PutRecord")
     def put_record(
-        self, context: RequestContext, delivery_stream_name: DeliveryStreamName, record: Record
+        self,
+        context: RequestContext,
+        delivery_stream_name: DeliveryStreamName,
+        record: Record,
+        **kwargs,
     ) -> PutRecordOutput:
         raise NotImplementedError
 
@@ -1202,6 +1321,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         records: PutRecordBatchRequestEntryList,
+        **kwargs,
     ) -> PutRecordBatchOutput:
         raise NotImplementedError
 
@@ -1211,12 +1331,13 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
+        **kwargs,
     ) -> StartDeliveryStreamEncryptionOutput:
         raise NotImplementedError
 
     @handler("StopDeliveryStreamEncryption")
     def stop_delivery_stream_encryption(
-        self, context: RequestContext, delivery_stream_name: DeliveryStreamName
+        self, context: RequestContext, delivery_stream_name: DeliveryStreamName, **kwargs
     ) -> StopDeliveryStreamEncryptionOutput:
         raise NotImplementedError
 
@@ -1226,6 +1347,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tags: TagDeliveryStreamInputTagList,
+        **kwargs,
     ) -> TagDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1235,6 +1357,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tag_keys: TagKeyList,
+        **kwargs,
     ) -> UntagDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1253,5 +1376,7 @@ class FirehoseApi:
         splunk_destination_update: SplunkDestinationUpdate = None,
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
+        snowflake_destination_update: SnowflakeDestinationUpdate = None,
+        **kwargs,
     ) -> UpdateDestinationOutput:
         raise NotImplementedError

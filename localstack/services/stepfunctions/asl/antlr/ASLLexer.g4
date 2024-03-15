@@ -122,7 +122,9 @@ NEXT: '"Next"';
 END: '"End"';
 
 CAUSE: '"Cause"';
+CAUSEPATH: '"CausePath"';
 ERROR: '"Error"';
+ERRORPATH: '"ErrorPath"';
 
 // Retry.
 RETRY: '"Retry"';
@@ -130,6 +132,10 @@ ERROREQUALS: '"ErrorEquals"';
 INTERVALSECONDS: '"IntervalSeconds"';
 MAXATTEMPTS: '"MaxAttempts"';
 BACKOFFRATE: '"BackoffRate"';
+MAXDELAYSECONDS: '"MaxDelaySeconds"';
+JITTERSTRATEGY: '"JitterStrategy"';
+FULL: '"FULL"';
+NONE: '"NONE"';
 
 // Catch.
 CATCH: '"Catch"';
@@ -152,7 +158,6 @@ ERRORNAMEStatesResultWriterFailed: '"States.ResultWriterFailed"';
 ERRORNAMEStatesRuntime: '"States.Runtime"';
 
 // Strings.
-
 STRINGDOLLAR
     : '"' (ESC | SAFECODEPOINT)* '.$"'
     ;

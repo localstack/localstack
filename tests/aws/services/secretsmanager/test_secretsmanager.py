@@ -9,6 +9,7 @@ from typing import Optional
 import pytest
 import requests
 from botocore.auth import SigV4Auth
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
@@ -21,7 +22,6 @@ from localstack.aws.api.secretsmanager import (
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_from_typed_dict
@@ -340,11 +340,22 @@ class TestSecretsManager:
         rs = aws_client.secretsmanager.delete_resource_policy(SecretId=secret_name)
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    @pytest.mark.parametrize("rotate_immediately", [True, None])
     @markers.snapshot.skip_snapshot_verify(paths=["$..Versions..KmsKeyIds"])
     @markers.aws.validated
     def test_rotate_secret_with_lambda_success(
-        self, sm_snapshot, secret_name, create_secret, create_lambda_function, aws_client
+        self,
+        sm_snapshot,
+        secret_name,
+        create_secret,
+        create_lambda_function,
+        aws_client,
+        rotate_immediately,
     ):
+        """
+        Tests secret rotation via a lambda function.
+        Parametrization ensures we test the default behavior which is an immediate rotation.
+        """
         cre_res = create_secret(
             Name=secret_name,
             SecretString="my_secret",
@@ -370,13 +381,16 @@ class TestSecretsManager:
             Principal="secretsmanager.amazonaws.com",
         )
 
+        rotation_kwargs = {}
+        if rotate_immediately is not None:
+            rotation_kwargs["RotateImmediately"] = rotate_immediately
         rot_res = aws_client.secretsmanager.rotate_secret(
             SecretId=secret_name,
             RotationLambdaARN=function_arn,
             RotationRules={
                 "AutomaticallyAfterDays": 1,
             },
-            RotateImmediately=True,
+            **rotation_kwargs,
         )
 
         sm_snapshot.match("rotate_secret_immediately", rot_res)

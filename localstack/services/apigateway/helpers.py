@@ -49,7 +49,8 @@ from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.json import try_json
-from localstack.utils.strings import long_uid, short_uid, to_bytes, to_str
+from localstack.utils.numbers import is_number
+from localstack.utils.strings import canonicalize_bool_to_str, long_uid, short_uid, to_bytes, to_str
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
@@ -381,6 +382,8 @@ class RequestParametersResolver:
     """
     Integration request data mapping expressions
     https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html
+
+    Note: Use on REST APIs only
     """
 
     def resolve(self, context: ApiInvocationContext) -> IntegrationParameters:
@@ -401,8 +404,7 @@ class RequestParametersResolver:
         # }
         request_params = context.integration.get("requestParameters", {})
 
-        # resolve all integration request parameters with the already resolved method
-        # request parameters
+        # resolve all integration request parameters with the already resolved method request parameters
         integrations_parameters = {}
         for k, v in request_params.items():
             if v.lower() in method_request_params:
@@ -439,7 +441,6 @@ class RequestParametersResolver:
         """
         params: Dict[str, str] = {}
 
-        # TODO: add support for context variables - include in apiinvocationcontext
         # TODO: add support for multi-values headers and multi-values querystring
 
         for k, v in context.query_params().items():
@@ -453,6 +454,32 @@ class RequestParametersResolver:
 
         for k, v in context.stage_variables.items():
             params[f"stagevariables.{k}"] = v
+
+        # TODO: add support for missing context variables, use `context.context` which contains most of the variables
+        #  see https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference
+        #  - all `context.identity` fields
+        #  - protocol
+        #  - requestId, extendedRequestId
+        #  - all requestOverride, responseOverride
+        #  - requestTime, requestTimeEpoch
+        #  - resourcePath
+        #  - wafResponseCode, webaclArn
+        params["context.accountId"] = context.account_id
+        params["context.apiId"] = context.api_id
+        params["context.domainName"] = context.domain_name
+        params["context.httpMethod"] = context.method
+        params["context.path"] = context.path
+        params["context.resourceId"] = context.resource_id
+        params["context.stage"] = context.stage
+
+        auth_context_authorizer = context.auth_context.get("authorizer") or {}
+        for k, v in auth_context_authorizer.items():
+            if isinstance(v, bool):
+                v = canonicalize_bool_to_str(v)
+            elif is_number(v):
+                v = str(v)
+
+            params[f"context.authorizer.{k.lower()}"] = v
 
         if context.data:
             params["method.request.body"] = context.data
@@ -591,7 +618,7 @@ def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str
     ).apigateway
     try:
         response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
-        return response.get("variables")
+        return response.get("variables", {})
     except Exception:
         LOG.info("Failed to get stage %s for API id %s", context.stage, context.api_id)
         return {}
@@ -711,34 +738,50 @@ def get_resource_for_path(
 
     # if there are no matches, it's not worth to proceed, bail here!
     if not matches:
+        LOG.debug(f"No match found for path: '{path}' and method: '{method}'")
         return None, None
 
-    # so we have matches and perhaps more than one, e.g
+    if len(matches) == 1:
+        LOG.debug(f"Match found for path: '{path}' and method: '{method}'")
+        return matches[0]
+
+    # so we have more than one match
     # /{proxy+} and /api/{proxy+} for inputs like /api/foo/bar
     # /foo/{param1}/baz and /foo/{param1}/{param2} for inputs like /for/bar/baz
-    if len(matches) > 1:
-        filtered_matches = []
-        for match in matches:
-            match_methods = list(match[1].get("resourceMethods", {}).keys())
-            # only look for path matches if the request method is in the resource
-            if method.upper() in match_methods or "ANY" in match_methods:
-                # check if we have an exact match (exact matches take precedence) if the method is the same
-                if match[0] == path or path_matches_pattern(path, match[0]):
-                    # either an exact match or not an exact match but parameters can fit in
-                    return match
+    proxy_matches = []
+    param_matches = []
+    for match in matches:
+        match_methods = list(match[1].get("resourceMethods", {}).keys())
+        # only look for path matches if the request method is in the resource
+        if method.upper() in match_methods or "ANY" in match_methods:
+            # check if we have an exact match (exact matches take precedence) if the method is the same
+            if match[0] == path:
+                return match
 
-                filtered_matches.append(match)
+            elif path_matches_pattern(path, match[0]):
+                # parameters can fit in
+                param_matches.append(match)
+                continue
 
-        # if there are no matches with a method that would match, return
-        if not filtered_matches:
-            return None, None
+            proxy_matches.append(match)
 
-        # at this stage, we have more than one match, but we have an eager example like
-        # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length, only if they have a method that
-        # could match
-        sorted_matches = sorted(filtered_matches, key=lambda x: len(x[0]), reverse=True)
+    if param_matches:
+        # count the amount of parameters, return the one with the least which is the most precise
+        sorted_matches = sorted(param_matches, key=lambda x: x[0].count("{"))
+        LOG.debug(f"Match found for path: '{path}' and method: '{method}'")
         return sorted_matches[0]
-    return matches[0]
+
+    if proxy_matches:
+        # at this stage, we still have more than one match, but we have an eager example like
+        # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length, only if they have a method
+        # that could match
+        sorted_matches = sorted(proxy_matches, key=lambda x: len(x[0]), reverse=True)
+        LOG.debug(f"Match found for path: '{path}' and method: '{method}'")
+        return sorted_matches[0]
+
+    # if there are no matches with a method that would match, return
+    LOG.debug(f"No match found for method: '{method}' for matched path: {path}")
+    return None, None
 
 
 def path_matches_pattern(path, api_path):
@@ -1381,6 +1424,17 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
     return methods.get(invocation_context.method.upper()) or methods.get("ANY")
 
 
+def event_type_from_route_key(invocation_context):
+    action = invocation_context.route["RouteKey"]
+    return (
+        "CONNECT"
+        if action == "$connect"
+        else "DISCONNECT"
+        if action == "$disconnect"
+        else "MESSAGE"
+    )
+
+
 def get_event_request_context(invocation_context: ApiInvocationContext):
     method = invocation_context.method
     path = invocation_context.path
@@ -1503,22 +1557,6 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     """Extract API ID 'id123' from URLs like https://id123.execute-api.localhost.localstack.cloud:4566"""
     match = re.match(HOST_REGEX_EXECUTE_API, hostname)
     return match.group(1)
-
-
-# This need to be extended to handle mappings and not just literal values.
-def create_invocation_headers(invocation_context: ApiInvocationContext) -> Dict[str, Any]:
-    headers = invocation_context.headers
-    integration = invocation_context.integration
-
-    if request_parameters := integration.get("requestParameters"):
-        for req_parameter_key, req_parameter_value in request_parameters.items():
-            if (
-                header_name := req_parameter_key.lstrip("integration.request.header.")
-                if "integration.request.header." in req_parameter_key
-                else None
-            ):
-                headers.update({header_name: req_parameter_value})
-    return headers
 
 
 def is_greedy_path(path_part: str) -> bool:

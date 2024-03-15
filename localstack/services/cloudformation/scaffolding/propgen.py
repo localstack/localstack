@@ -4,9 +4,12 @@ Implementation of generating the types for a provider from the schema
 
 from __future__ import annotations
 
+import logging
 import textwrap
 from dataclasses import dataclass
 from typing import Optional, TypedDict
+
+LOG = logging.getLogger(__name__)
 
 
 @dataclass
@@ -92,6 +95,7 @@ TYPE_MAP = {
     "integer": "int",
     "number": "float",
     "object": "dict",
+    "array": "list",
 }
 
 
@@ -138,7 +142,12 @@ class PropertyTypeScaffolding:
             ref_type = ref_definition.get("type")
             if ref_type not in ["object", "array"]:
                 # in this case we simply flatten it (instead of for example creating a type alias)
-                resolved_type = TYPE_MAP[ref_type]
+                resolved_type = TYPE_MAP.get(ref_type)
+                if resolved_type is None:
+                    LOG.warning(
+                        "Type for %s not found in the TYPE_MAP. Using `Any` as fallback.", ref_type
+                    )
+                    resolved_type = "Any"
             else:
                 if ref_type == "object":
                     # the object might only have a pattern defined and no actual properties

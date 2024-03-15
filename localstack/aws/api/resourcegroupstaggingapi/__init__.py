@@ -246,8 +246,7 @@ class ResourcegroupstaggingapiApi:
 
     @handler("DescribeReportCreation")
     def describe_report_creation(
-        self,
-        context: RequestContext,
+        self, context: RequestContext, **kwargs
     ) -> DescribeReportCreationOutput:
         raise NotImplementedError
 
@@ -262,6 +261,7 @@ class ResourcegroupstaggingapiApi:
         group_by: GroupBy = None,
         max_results: MaxResultsGetComplianceSummary = None,
         pagination_token: PaginationToken = None,
+        **kwargs,
     ) -> GetComplianceSummaryOutput:
         raise NotImplementedError
 
@@ -277,30 +277,39 @@ class ResourcegroupstaggingapiApi:
         include_compliance_details: IncludeComplianceDetails = None,
         exclude_compliant_resources: ExcludeCompliantResources = None,
         resource_arn_list: ResourceARNListForGet = None,
+        **kwargs,
     ) -> GetResourcesOutput:
         raise NotImplementedError
 
     @handler("GetTagKeys")
     def get_tag_keys(
-        self, context: RequestContext, pagination_token: PaginationToken = None
+        self, context: RequestContext, pagination_token: PaginationToken = None, **kwargs
     ) -> GetTagKeysOutput:
         raise NotImplementedError
 
     @handler("GetTagValues")
     def get_tag_values(
-        self, context: RequestContext, key: TagKey, pagination_token: PaginationToken = None
+        self,
+        context: RequestContext,
+        key: TagKey,
+        pagination_token: PaginationToken = None,
+        **kwargs,
     ) -> GetTagValuesOutput:
         raise NotImplementedError
 
     @handler("StartReportCreation")
     def start_report_creation(
-        self, context: RequestContext, s3_bucket: S3Bucket
+        self, context: RequestContext, s3_bucket: S3Bucket, **kwargs
     ) -> StartReportCreationOutput:
         raise NotImplementedError
 
     @handler("TagResources")
     def tag_resources(
-        self, context: RequestContext, resource_arn_list: ResourceARNListForTagUntag, tags: TagMap
+        self,
+        context: RequestContext,
+        resource_arn_list: ResourceARNListForTagUntag,
+        tags: TagMap,
+        **kwargs,
     ) -> TagResourcesOutput:
         raise NotImplementedError
 
@@ -310,5 +319,6 @@ class ResourcegroupstaggingapiApi:
         context: RequestContext,
         resource_arn_list: ResourceARNListForTagUntag,
         tag_keys: TagKeyListForUntag,
+        **kwargs,
     ) -> UntagResourcesOutput:
         raise NotImplementedError

@@ -570,12 +570,13 @@ class SecretsmanagerApi:
         filters: FiltersListType = None,
         max_results: MaxResultsBatchType = None,
         next_token: NextTokenType = None,
+        **kwargs,
     ) -> BatchGetSecretValueResponse:
         raise NotImplementedError
 
     @handler("CancelRotateSecret")
     def cancel_rotate_secret(
-        self, context: RequestContext, secret_id: SecretIdType
+        self, context: RequestContext, secret_id: SecretIdType, **kwargs
     ) -> CancelRotateSecretResponse:
         raise NotImplementedError
 
@@ -592,12 +593,13 @@ class SecretsmanagerApi:
         tags: TagListType = None,
         add_replica_regions: AddReplicaRegionListType = None,
         force_overwrite_replica_secret: BooleanType = None,
+        **kwargs,
     ) -> CreateSecretResponse:
         raise NotImplementedError
 
     @handler("DeleteResourcePolicy")
     def delete_resource_policy(
-        self, context: RequestContext, secret_id: SecretIdType
+        self, context: RequestContext, secret_id: SecretIdType, **kwargs
     ) -> DeleteResourcePolicyResponse:
         raise NotImplementedError
 
@@ -608,12 +610,13 @@ class SecretsmanagerApi:
         secret_id: SecretIdType,
         recovery_window_in_days: RecoveryWindowInDaysType = None,
         force_delete_without_recovery: BooleanType = None,
+        **kwargs,
     ) -> DeleteSecretResponse:
         raise NotImplementedError
 
     @handler("DescribeSecret")
     def describe_secret(
-        self, context: RequestContext, secret_id: SecretIdType
+        self, context: RequestContext, secret_id: SecretIdType, **kwargs
     ) -> DescribeSecretResponse:
         raise NotImplementedError
 
@@ -629,12 +632,13 @@ class SecretsmanagerApi:
         exclude_lowercase: ExcludeLowercaseType = None,
         include_space: IncludeSpaceType = None,
         require_each_included_type: RequireEachIncludedTypeType = None,
+        **kwargs,
     ) -> GetRandomPasswordResponse:
         raise NotImplementedError
 
     @handler("GetResourcePolicy")
     def get_resource_policy(
-        self, context: RequestContext, secret_id: SecretIdType
+        self, context: RequestContext, secret_id: SecretIdType, **kwargs
     ) -> GetResourcePolicyResponse:
         raise NotImplementedError
 
@@ -645,6 +649,7 @@ class SecretsmanagerApi:
         secret_id: SecretIdType,
         version_id: SecretVersionIdType = None,
         version_stage: SecretVersionStageType = None,
+        **kwargs,
     ) -> GetSecretValueResponse:
         raise NotImplementedError
 
@@ -656,6 +661,7 @@ class SecretsmanagerApi:
         max_results: MaxResultsType = None,
         next_token: NextTokenType = None,
         include_deprecated: BooleanType = None,
+        **kwargs,
     ) -> ListSecretVersionIdsResponse:
         raise NotImplementedError
 
@@ -668,6 +674,7 @@ class SecretsmanagerApi:
         next_token: NextTokenType = None,
         filters: FiltersListType = None,
         sort_order: SortOrderType = None,
+        **kwargs,
     ) -> ListSecretsResponse:
         raise NotImplementedError
 
@@ -678,6 +685,7 @@ class SecretsmanagerApi:
         secret_id: SecretIdType,
         resource_policy: NonEmptyResourcePolicyType,
         block_public_policy: BooleanType = None,
+        **kwargs,
     ) -> PutResourcePolicyResponse:
         raise NotImplementedError
 
@@ -690,6 +698,7 @@ class SecretsmanagerApi:
         secret_binary: SecretBinaryType = None,
         secret_string: SecretStringType = None,
         version_stages: SecretVersionStagesType = None,
+        **kwargs,
     ) -> PutSecretValueResponse:
         raise NotImplementedError
 
@@ -699,6 +708,7 @@ class SecretsmanagerApi:
         context: RequestContext,
         secret_id: SecretIdType,
         remove_replica_regions: RemoveReplicaRegionListType,
+        **kwargs,
     ) -> RemoveRegionsFromReplicationResponse:
         raise NotImplementedError
 
@@ -709,12 +719,13 @@ class SecretsmanagerApi:
         secret_id: SecretIdType,
         add_replica_regions: AddReplicaRegionListType,
         force_overwrite_replica_secret: BooleanType = None,
+        **kwargs,
     ) -> ReplicateSecretToRegionsResponse:
         raise NotImplementedError
 
     @handler("RestoreSecret")
     def restore_secret(
-        self, context: RequestContext, secret_id: SecretIdType
+        self, context: RequestContext, secret_id: SecretIdType, **kwargs
     ) -> RestoreSecretResponse:
         raise NotImplementedError
 
@@ -727,24 +738,25 @@ class SecretsmanagerApi:
         rotation_lambda_arn: RotationLambdaARNType = None,
         rotation_rules: RotationRulesType = None,
         rotate_immediately: BooleanType = None,
+        **kwargs,
     ) -> RotateSecretResponse:
         raise NotImplementedError
 
     @handler("StopReplicationToReplica")
     def stop_replication_to_replica(
-        self, context: RequestContext, secret_id: SecretIdType
+        self, context: RequestContext, secret_id: SecretIdType, **kwargs
     ) -> StopReplicationToReplicaResponse:
         raise NotImplementedError
 
     @handler("TagResource")
     def tag_resource(
-        self, context: RequestContext, secret_id: SecretIdType, tags: TagListType
+        self, context: RequestContext, secret_id: SecretIdType, tags: TagListType, **kwargs
     ) -> None:
         raise NotImplementedError
 
     @handler("UntagResource")
     def untag_resource(
-        self, context: RequestContext, secret_id: SecretIdType, tag_keys: TagKeyListType
+        self, context: RequestContext, secret_id: SecretIdType, tag_keys: TagKeyListType, **kwargs
     ) -> None:
         raise NotImplementedError
 
@@ -758,6 +770,7 @@ class SecretsmanagerApi:
         kms_key_id: KmsKeyIdType = None,
         secret_binary: SecretBinaryType = None,
         secret_string: SecretStringType = None,
+        **kwargs,
     ) -> UpdateSecretResponse:
         raise NotImplementedError
 
@@ -769,6 +782,7 @@ class SecretsmanagerApi:
         version_stage: SecretVersionStageType,
         remove_from_version_id: SecretVersionIdType = None,
         move_to_version_id: SecretVersionIdType = None,
+        **kwargs,
     ) -> UpdateSecretVersionStageResponse:
         raise NotImplementedError
 
@@ -778,5 +792,6 @@ class SecretsmanagerApi:
         context: RequestContext,
         resource_policy: NonEmptyResourcePolicyType,
         secret_id: SecretIdType = None,
+        **kwargs,
     ) -> ValidateResourcePolicyResponse:
         raise NotImplementedError
