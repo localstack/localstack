@@ -1,5 +1,6 @@
 import fnmatch
 import re
+from collections import defaultdict
 from typing import Callable, Iterable, Optional
 
 from localstack.aws.scaffold import is_keyword
@@ -114,9 +115,15 @@ def generic_service_test_matching_rule(
     # TODO: consider API_COMPOSITES
 
     if api_dependencies is None:
-        from localstack.utils.bootstrap import API_DEPENDENCIES
+        from localstack.utils.bootstrap import API_DEPENDENCIES, API_DEPENDENCIES_OPTIONAL
 
-        api_dependencies = API_DEPENDENCIES
+        # merge the mandatory and optional service dependencies
+        api_dependencies = defaultdict(set)
+        for service, mandatory_dependencies in API_DEPENDENCIES.items():
+            api_dependencies[service].update(mandatory_dependencies)
+
+        for service, optional_dependencies in API_DEPENDENCIES_OPTIONAL.items():
+            api_dependencies[service].update(optional_dependencies)
 
     match = re.findall("localstack/services/([^/]+)/.+", changed_file_path)
     if not match:
