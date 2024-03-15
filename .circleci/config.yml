@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "40 5 * * *"
+    default: "32 6 * * *"
 #  skip_test_selection:
 #    type: boolean
 #    default: false
@@ -28,7 +28,12 @@ commands:
             if [[ $CIRCLE_BRANCH == "master" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             fi
-            echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
+            if [ -f aws_credentials.env ]; then
+              echo "export TINYBIRD_DATASOURCE=scheduled_tests_circleci" >> $BASH_ENV
+            else
+              echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
+            fi
+            echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
             echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
             echo "export CI_COMMIT_BRANCH=${CIRCLE_BRANCH}" >> $BASH_ENV
             echo "export CI_COMMIT_SHA=${CIRCLE_SHA1}" >> $BASH_ENV
@@ -256,7 +261,6 @@ jobs:
       - run:
           name: Setup non-default AWS credentials
           command: |
-              cat aws_credentials.env
               source aws_credentials.env
               if [ -f aws_credentials.env ]; then
                 source aws_credentials.env
