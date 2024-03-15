@@ -12,10 +12,10 @@ parameters:
     default: false
   schedule-non-default-creds:
     type: string
-    default: "50 11 * * *"
+    default: "0 12 * * *"
   randomize-aws-credentials:
     type: boolean
-    default: false
+    default: true
 
 executors:
   ubuntu-machine-amd64:
@@ -44,6 +44,7 @@ commands:
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci_ma_mr" >> $BASH_ENV
             else
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
+            fi
             echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
             echo "export CI_COMMIT_BRANCH=${CIRCLE_BRANCH}" >> $BASH_ENV
             echo "export CI_COMMIT_SHA=${CIRCLE_SHA1}" >> $BASH_ENV
