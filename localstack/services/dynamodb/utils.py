@@ -10,10 +10,13 @@ from localstack.aws.api.dynamodb import (
     AttributeMap,
     BatchGetRequestMap,
     BatchGetResponseMap,
+    Delete,
     DeleteRequest,
+    Put,
     PutRequest,
     ResourceNotFoundException,
     TableName,
+    Update,
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
@@ -198,7 +201,9 @@ class ItemFinder:
 
     @staticmethod
     def find_existing_items(
-        put_items_per_table: dict[TableName, list[PutRequest | DeleteRequest]],
+        put_items_per_table: dict[
+            TableName, list[PutRequest | DeleteRequest | Put | Update | Delete]
+        ],
         account_id: str,
         region_name: str,
         endpoint_url: str,
