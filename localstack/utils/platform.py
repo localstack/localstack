@@ -54,6 +54,8 @@ def get_arch() -> str:
     return standardized_arch(arch)
 
 
+# TODO: implement proper architecture detection (e.g., test whether an architecture-specific binary actually runs)
+#   because this naive implementation does not cover cross-architecture emulation
 def is_arm_compatible() -> bool:
     """Returns true if the current machine is compatible with ARM instructions and false otherwise."""
     return get_arch() == Arch.arm64
