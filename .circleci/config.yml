@@ -12,7 +12,7 @@ parameters:
     default: false
   randomize-aws-credentials:
     type: boolean
-    default: false
+    default: true
 
 executors:
   ubuntu-machine-amd64:
@@ -37,7 +37,7 @@ commands:
             if [[ $CIRCLE_BRANCH == "master" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             fi
-            if << pipeline.parameters.skip_test_selection >> ; then
+            if << pipeline.parameters.randomize-aws-credentials >> ; then
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci_ma_mr" >> $BASH_ENV
             else
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
