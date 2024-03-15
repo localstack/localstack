@@ -649,9 +649,9 @@ workflows:
       - preflight:
           requires:
             - install
-#      - test-selection:
-#          requires:
-#            - install
+      - test-selection:
+          requires:
+            - install
       - acceptance-tests:
           requires:
             - preflight
