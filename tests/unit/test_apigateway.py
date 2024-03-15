@@ -296,6 +296,17 @@ class TestApiGatewayRequestValidator(unittest.TestCase):
             )
             ctx.account_id = DEFAULT_AWS_ACCOUNT_ID
             ctx.region_name = TEST_AWS_REGION_NAME
+            import os
+
+            from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID
+
+            print("TEST_AWS_REGION_NAME:", TEST_AWS_REGION_NAME, os.getenv("TEST_AWS_REGION_NAME"))
+            print(
+                "TEST_AWS_ACCESS_KEY_ID:",
+                TEST_AWS_ACCESS_KEY_ID,
+                os.getenv("TEST_AWS_ACCESS_KEY_ID"),
+            )
+            print("TEST_AWS_ACCOUNT_KEY_ID:", TEST_AWS_ACCOUNT_ID, os.getenv("TEST_AWS_ACCOUNT_ID"))
             ctx.api_id = "deadbeef"
             ctx.resource = {
                 "resourceMethods": {

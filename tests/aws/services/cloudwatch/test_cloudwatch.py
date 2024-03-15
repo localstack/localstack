@@ -113,6 +113,14 @@ class TestCloudwatch:
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
 
+        from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+
+        print("TEST_AWS_REGION_NAME:", TEST_AWS_REGION_NAME, os.getenv("TEST_AWS_REGION_NAME"))
+        print(
+            "TEST_AWS_ACCESS_KEY_ID:", TEST_AWS_ACCESS_KEY_ID, os.getenv("TEST_AWS_ACCESS_KEY_ID")
+        )
+        print("TEST_AWS_ACCOUNT_KEY_ID:", TEST_AWS_ACCOUNT_ID, os.getenv("TEST_AWS_ACCOUNT_ID"))
+
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_put_metric_data_validation(self, aws_client):
