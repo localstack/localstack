@@ -12,7 +12,7 @@ from moto.secretsmanager import utils as secretsmanager_utils
 from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecretNotFoundException
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
-
+from botocore.utils import InvalidArnException
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.secretsmanager import (
     CancelRotateSecretRequest,
@@ -106,17 +106,13 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         apply_patches()
 
     @staticmethod
-    def _check_is_arn(name_or_arn: str):
-        return ":" in name_or_arn
-
-    @staticmethod
     def get_moto_backend_for_resource(
         name_or_arn: str, context: RequestContext
     ) -> SecretsManagerBackend:
-        if SecretsmanagerProvider._check_is_arn(name_or_arn):
+        try:
             arn_data = arns.parse_arn(name_or_arn)
             backend = secretsmanager_backends[arn_data["account"]][arn_data["region"]]
-        else:
+        except InvalidArnException:
             backend = secretsmanager_backends[context.account_id][context.region]
         return backend
 
