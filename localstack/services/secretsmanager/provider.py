@@ -6,13 +6,14 @@ import re
 import time
 from typing import Final, Optional, Union
 
+from botocore.utils import InvalidArnException
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import secretsmanager_backends
 from moto.secretsmanager import utils as secretsmanager_utils
 from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecretNotFoundException
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
-from botocore.utils import InvalidArnException
+
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.secretsmanager import (
     CancelRotateSecretRequest,
