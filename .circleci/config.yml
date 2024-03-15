@@ -12,7 +12,7 @@ parameters:
     default: false
   schedule-non-default-creds:
     type: string
-    default: "42 11 * * *"
+    default: "45 11 * * *"
   randomize-aws-credentials:
     type: boolean
     default: false
