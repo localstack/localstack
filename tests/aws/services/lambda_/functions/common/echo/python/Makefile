@@ -1,4 +1,3 @@
-
 build:
 	mkdir build && \
 	cp -r ./src/* build/

@@ -1,11 +1,19 @@
-# go1.x does not support arm64 architecture: https://docs.aws.amazon.com/lambda/latest/dg/lambda-golang.html
-DOCKER_PLATFORM ?= linux/amd64
+ARCHITECTURE ?= $(shell uname -m || echo "x86_64")
+DOCKER_PLATFORM ?= linux/$(ARCHITECTURE)
+# GOARCH enables cross-compilation but by default, `go build` selects the right architecture based on the environment
+ifeq ($(ARCHITECTURE),arm64)
+  GOARCH ?= arm64
+else
+  GOARCH ?= amd64
+endif
+
+# https://hub.docker.com/_/golang/tags
 # Golang EOL overview: https://endoflife.date/go
 DOCKER_GOLANG_IMAGE ?= golang:1.19.6
 
 build:
 	mkdir -p build && \
-	docker run --rm --platform $(DOCKER_PLATFORM) -v $$(pwd)/src:/app -v $$(pwd)/build:/out $(DOCKER_GOLANG_IMAGE) /bin/bash -c "cd /app && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags=-buildid= -o /out/bootstrap main.go && chown $$(id -u):$$(id -g) /out/bootstrap"
+	docker run --rm --platform $(DOCKER_PLATFORM) -v $$(pwd)/src:/app -v $$(pwd)/build:/out $(DOCKER_GOLANG_IMAGE) /bin/bash -c "cd /app && GOOS=linux GOARCH=$(GOARCH) CGO_ENABLED=0 go build -trimpath -ldflags=-buildid= -o /out/bootstrap main.go && chown $$(id -u):$$(id -g) /out/bootstrap"
 
 clean:
 	$(RM) -r build handler.zip

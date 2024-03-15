@@ -7,8 +7,10 @@ import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Mapping, Optional, Sequence, overload
 
+from localstack import config
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
 from localstack.utils.files import load_file
+from localstack.utils.platform import Arch, get_arch
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, retry
 from localstack.utils.testutil import get_lambda_log_events
@@ -106,8 +108,19 @@ def package_for_lang(scenario: str, runtime: str, root_folder: Path) -> str:
         return package_path
 
     # packaging
-    # TODO: add arch support: tricky to determine because it is x86 by default but might differ with ignore architecture
-    result = subprocess.run(["make", "build"], cwd=runtime_dir)
+    # Use the default Lambda architecture x86_64 unless the ignore architecture flag is configured.
+    # This enables local testing of both architectures on multi-architecture platforms such as Apple Silicon machines.
+    architecture = "x86_64"
+    if config.LAMBDA_IGNORE_ARCHITECTURE:
+        architecture = "arm64" if get_arch() == Arch.arm64 else "x86_64"
+    build_cmd = ["make", "build", f"ARCHITECTURE={architecture}"]
+    LOG.debug(
+        "Building Lambda function for scenario %s and runtime %s using %s.",
+        scenario,
+        runtime,
+        " ".join(build_cmd),
+    )
+    result = subprocess.run(build_cmd, cwd=runtime_dir)
     if result.returncode != 0:
         raise Exception(
             f"Failed to build multiruntime {scenario=} for {runtime=} with error code: {result.returncode}"

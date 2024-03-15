@@ -68,8 +68,9 @@ runtimes = arm_compatible_runtimes if get_arch() == Arch.arm64 else TESTED_RUNTI
 
 @markers.lambda_runtime_update
 class TestLambdaRuntimesCommon:
-    # TODO: refactor builds:
-    #   * Create a generic parametrizable Makefile per runtime (possibly with an option to provide a specific one)
+    # TODO: refactor builds by creating a generic parametrizable Makefile per runtime (possibly with an option to
+    #  provide a specific one). This might be doable by including another Makefile:
+    #  https://www.gnu.org/software/make/manual/make.html#Include
 
     @markers.aws.validated
     @markers.multiruntime(scenario="echo", runtimes=runtimes)

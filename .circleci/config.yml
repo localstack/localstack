@@ -327,24 +327,20 @@ jobs:
       - run:
           name: Load docker image
           command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
-      - when:
-#          TODO: remove this condition + add platform suffix to cache key
-          condition:
-            equal: [ "amd64", << parameters.platform >>]
-          steps:
-            - run:
-                name: compute-src-hashes
-                command: |
-                  find tests/aws/services/lambda_/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
-            - restore_cache:
-                key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
-            - run:
-                name: pre-build lambda common test packages
-                command: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
-            - save_cache:
-                key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
-                paths:
-                  - "tests/aws/services/lambda_/functions/common"
+      # Prebuild and cache Lambda multiruntime test functions, supporting both architectures: amd64 and arm64
+      - run:
+          name: compute-src-hashes
+          command: |
+            find tests/aws/services/lambda_/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
+      - restore_cache:
+          key: common-functions-<< parameters.platform >>-{{ checksum "/tmp/common-functions-checksums" }}
+      - run:
+          name: pre-build lambda common test packages
+          command: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
+      - save_cache:
+          key: common-functions-<< parameters.platform >>-{{ checksum "/tmp/common-functions-checksums" }}
+          paths:
+            - "tests/aws/services/lambda_/functions/common"
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
