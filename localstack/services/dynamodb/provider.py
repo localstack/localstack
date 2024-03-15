@@ -190,7 +190,7 @@ def dynamodb_table_exists(table_name: str, client=None):
 
 
 class EventForwarder:
-    def __init__(self, num_thread: int = 20):
+    def __init__(self, num_thread: int = 10):
         self.executor = ThreadPoolExecutor(num_thread, thread_name_prefix="ddb_stream_fwd")
 
     def shutdown(self):
