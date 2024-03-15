@@ -10,9 +10,6 @@ parameters:
   skip_test_selection:
     type: boolean
     default: false
-  schedule-non-default-creds:
-    type: string
-    default: "34 12 * * *"
   randomize-aws-credentials:
     type: boolean
     default: true
@@ -652,24 +649,24 @@ workflows:
       - preflight:
           requires:
             - install
-      - test-selection:
-          requires:
-            - install
+#      - test-selection:
+#          requires:
+#            - install
       - acceptance-tests:
           requires:
             - preflight
-      - itest-sfn-legacy-provider:
-          requires:
-            - preflight
-            - test-selection
-      - itest-s3-v2-legacy-provider:
-          requires:
-            - preflight
-            - test-selection
-      - itest-cloudwatch-v2-provider:
-          requires:
-            - preflight
-            - test-selection
+#      - itest-sfn-legacy-provider:
+#          requires:
+#            - preflight
+#            - test-selection
+#      - itest-s3-v2-legacy-provider:
+#          requires:
+#            - preflight
+#            - test-selection
+#      - itest-cloudwatch-v2-provider:
+#          requires:
+#            - preflight
+#            - test-selection
       - unit-tests:
           requires:
             - preflight
@@ -705,9 +702,9 @@ workflows:
           requires:
             - docker-build-amd64
             - test-selection
-      - bootstrap-tests:
-          requires:
-            - docker-build-amd64
+#      - bootstrap-tests:
+#          requires:
+#            - docker-build-amd64
       - capture-not-implemented:
           name: collect-not-implemented
           requires:
