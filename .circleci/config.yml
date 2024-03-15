@@ -12,7 +12,10 @@ parameters:
     default: false
   schedule-non-default-creds:
     type: string
-    default: "0 2 * * *"
+    default: "42 11 * * *"
+  randomize-aws-credentials:
+    type: boolean
+    default: false
 
 executors:
   ubuntu-machine-amd64:
@@ -37,11 +40,10 @@ commands:
             if [[ $CIRCLE_BRANCH == "master" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             fi
-            if [ -f aws_credentials.env ]; then
-              echo "export TINYBIRD_DATASOURCE=scheduled_tests_circleci" >> $BASH_ENV
+            if [[ "${{ pipeline.parameters.randomize_aws_credentials }}" == "true" ]]; then
+              echo "export TINYBIRD_DATASOURCE=community_tests_circleci_ma_mr" >> $BASH_ENV
             else
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
-            fi
             echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
             echo "export CI_COMMIT_BRANCH=${CIRCLE_BRANCH}" >> $BASH_ENV
             echo "export CI_COMMIT_SHA=${CIRCLE_SHA1}" >> $BASH_ENV
@@ -50,6 +52,25 @@ commands:
             echo "export CI_JOB_NAME=${CIRCLE_WORKFLOW_ID}" >> $BASH_ENV
             echo "export CI_JOB_ID=${CIRCLE_JOB}" >> $BASH_ENV
             source $BASH_ENV
+
+  prepare-account-region-randomization:
+    steps:
+      - when:
+          condition: << pipeline.parameters.randomize-aws-credentials >>
+          steps:
+            - run:
+              name: Generate Random AWS Account ID
+              command: |
+                # Generate a random 12-digit number for TEST_AWS_ACCOUNT_ID
+                export TEST_AWS_ACCOUNT_ID=$(LC_ALL=C tr -dc '0-9' < /dev/urandom | fold -w 12 | head -n 1)
+                export TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCOUNT_ID
+                # Set TEST_AWS_REGION_NAME to a random AWS region other than us-east-1
+                export AWS_REGIONS=("me-south-1" "me-central-1" "sa-east-1" "us-east-2" "us-west-1" "us-west-2" "eu-west-1" "eu-west-2" "eu-west-3" "ap-east-1" "ap-south-2" "ap-south-1" "ap-southeast-1" "ap-southeast-2" "ap-northeast-1" "ap-northeast-2" "ap-northeast-3" "sa-east-1" "af-south-1" "ca-central-1" "ca-west-1" "eu-central-1" "eu-south-1" "eu-south-2"	"eu-north-1" "eu-central-2" "il-central-1" )
+                export TEST_AWS_REGION_NAME=${AWS_REGIONS[$RANDOM % ${#AWS_REGIONS[@]}]}
+                echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> $BASH_ENV
+                echo "export TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" >> $BASH_ENV
+                echo "export TEST_AWS_ACCOUNT_ID=${TEST_AWS_ACCOUNT_ID}" >> $BASH_ENV
+                source $BASH_ENV
 
 jobs:
   install:
@@ -125,17 +146,13 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Unit tests
           environment:
             TEST_PATH: "tests/unit"
             COVERAGE_ARGS: "-p"
           command: |
-            if [ -f aws_credentials.env ]; then
-              source aws_credentials.env
-            else
-              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
-            fi
             COVERAGE_FILE="target/coverage/.coverage.unit.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" \
             make test-coverage
@@ -154,6 +171,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Acceptance tests (EXPERIMENTAL)
           environment:
@@ -161,11 +179,6 @@ jobs:
             COVERAGE_ARGS: "-p"
             LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
           command: |
-            if [ -f aws_credentials.env ]; then
-              source aws_credentials.env
-            else
-              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
-            fi
             COVERAGE_FILE="target/coverage/.coverage.acceptance.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance_test.xml -o junit_suite_name='acceptance_test'" \
             make test-coverage
@@ -186,6 +199,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Test SFN Legacy provider
           environment:
@@ -193,11 +207,6 @@ jobs:
             TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
             COVERAGE_ARGS: "-p"
           command: |
-            if [ -f aws_credentials.env ]; then
-              source aws_credentials.env
-            else
-              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
-            fi
             COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
             make test-coverage
@@ -216,6 +225,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Test S3 v2 legacy provider
           environment:
@@ -223,11 +233,6 @@ jobs:
             TEST_PATH: "tests/aws/services/s3/"
             COVERAGE_ARGS: "-p"
           command: |
-            if [ -f aws_credentials.env ]; then
-              source aws_credentials.env
-            else
-              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
-            fi
             COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
             make test-coverage
@@ -246,6 +251,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Test CloudWatch v2 provider
           environment:
@@ -253,11 +259,6 @@ jobs:
             TEST_PATH: "tests/aws/services/cloudwatch/"
             COVERAGE_ARGS: "-p"
           command: |
-            if [ -f aws_credentials.env ]; then
-              source aws_credentials.env
-            else
-              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
-            fi
             COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
             make test-coverage
@@ -345,16 +346,12 @@ jobs:
                 paths:
                   - "tests/aws/services/lambda_/functions/common"
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           # if we're doing performing a test selection, we need to filter the list of files before splitting by timings
           command: |
-            if [ -f aws_credentials.env ]; then
-              source aws_credentials.env
-            else
-              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
-            fi
             if [ -z $TESTSELECTION_PYTEST_ARGS ] ; then
               TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
             else
@@ -388,17 +385,13 @@ jobs:
           name: Load docker image
           command: docker load -i target/localstack-docker-image-amd64.tar
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Run bootstrap tests
           environment:
             TEST_PATH: "tests/bootstrap"
             COVERAGE_ARGS: "-p"
           command: |
-            if [ -f aws_credentials.env ]; then
-              source aws_credentials.env
-            else
-              echo "aws_credentials.env file not found. Skipping setup of non-default aws credentials."
-            fi
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/bootstrap-tests.xml -o junit_suite_name=bootstrap-tests" make test-coverage
       - store_test_results:
           path: target/reports/
@@ -447,36 +440,6 @@ jobs:
           paths:
             - repo/scripts/implementation_coverage_aggregated.csv
             - repo/scripts/implementation_coverage_full.csv
-
-  generate-random-aws-credentials:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Generate Random AWS Account ID
-          command: |
-            # Generate a random 12-digit non-default account number
-            while true; do
-              # Generate a random 12-digit number for TEST_AWS_ACCOUNT_ID
-              export TEST_AWS_ACCOUNT_ID=$(LC_ALL=C tr -dc '0-9' < /dev/urandom | fold -w 12 | head -n 1)
-              # Check if the generated number is not 000000000000
-              if [ "$TEST_AWS_ACCOUNT_ID" != "000000000000" ]; then
-                break
-              fi
-            done
-            export TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCOUNT_ID
-            # Set TEST_AWS_REGION_NAME to a random AWS region other than us-east-1
-            export AWS_REGIONS=("me-south-1" "me-central-1" "sa-east-1" "us-east-2" "us-west-1" "us-west-2" "eu-west-1" "eu-west-2" "eu-west-3" "ap-east-1" "ap-south-2" "ap-south-1" "ap-southeast-1" "ap-southeast-2" "ap-northeast-1" "ap-northeast-2" "ap-northeast-3" "sa-east-1" "af-south-1" "ca-central-1" "ca-west-1" "eu-central-1" "eu-south-1" "eu-south-2"	"eu-north-1" "eu-central-2" "il-central-1" )
-            export TEST_AWS_REGION_NAME=${AWS_REGIONS[$RANDOM % ${#AWS_REGIONS[@]}]}
-            echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> aws_credentials.env
-            echo "export TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" >> aws_credentials.env
-            echo "export TEST_AWS_ACCOUNT_ID=${TEST_AWS_ACCOUNT_ID}" >> aws_credentials.env
-      - persist_to_workspace:
-          root: /tmp/workspace
-          paths:
-            - repo/aws_credentials.env
 
   report:
     executor: ubuntu-machine-amd64
@@ -671,7 +634,6 @@ jobs:
 
 
 workflows:
-  version: 2
   main:
     jobs:
       - save-start-time:
@@ -749,122 +711,6 @@ workflows:
           requires:
             - docker-build-amd64
       - report:
-          requires:
-            - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
-            - acceptance-tests
-            - docker-test-amd64
-            - docker-test-arm64
-            - collect-not-implemented
-            - unit-tests
-      - push:
-          filters:
-            branches:
-              only: master
-          requires:
-            - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
-            - acceptance-tests
-            - docker-test-amd64
-            - docker-test-arm64
-            - unit-tests
-  scheduled-workflow:
-    triggers:
-      - schedule:
-          cron: << pipeline.parameters.schedule-non-default-creds >>
-          filters:
-            branches:
-              only: multi_acc_schedule_run
-    jobs:
-      - generate-random-aws-credentials
-      - save-start-time
-      - install:
-          requires:
-            - generate-random-aws-credentials
-            - save-start-time
-      - preflight:
-          requires:
-            - generate-random-aws-credentials
-            - install
-      - acceptance-tests:
-          requires:
-            - generate-random-aws-credentials
-            - preflight
-      - itest-sfn-legacy-provider:
-          requires:
-            - preflight
-      - itest-s3-v2-legacy-provider:
-          requires:
-            - generate-random-aws-credentials
-            - preflight
-      - itest-cloudwatch-v2-provider:
-          requires:
-            - generate-random-aws-credentials
-            - preflight
-      - unit-tests:
-          requires:
-            - generate-random-aws-credentials
-            - preflight
-      - docker-build:
-          name: docker-build-amd64
-          platform: amd64
-          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
-          resource_class: medium
-          requires:
-            - generate-random-aws-credentials
-            - preflight
-      - docker-build:
-          name: docker-build-arm64
-          platform: arm64
-          # The latest version of ubuntu is not yet supported for ARM:
-          # https://circleci.com/docs/2.0/arm-resources/
-          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
-          resource_class: arm.medium
-          requires:
-            - generate-random-aws-credentials
-            - preflight
-      - docker-test:
-          name: docker-test-arm64
-          platform: arm64
-          resource_class: arm.medium
-          machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
-          requires:
-            - generate-random-aws-credentials
-            - docker-build-arm64
-      - docker-test:
-          name: docker-test-amd64
-          platform: amd64
-          resource_class: medium
-          machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
-          requires:
-            - generate-random-aws-credentials
-            - docker-build-amd64
-      - bootstrap-tests:
-          requires:
-            - generate-random-aws-credentials
-            - docker-build-amd64
-      - capture-not-implemented:
-          name: collect-not-implemented
-          requires:
-            - generate-random-aws-credentials
-            - docker-build-amd64
-      - report:
-          requires:
-            - generate-random-aws-credentials
-            - itest-sfn-legacy-provider
-            - itest-s3-v2-legacy-provider
-            - itest-cloudwatch-v2-provider
-            - acceptance-tests
-            - docker-test-amd64
-            - docker-test-arm64
-            - collect-not-implemented
-            - unit-tests
-      - send-stats:
-          filters:
-            branches:
-              only: master
           requires:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
