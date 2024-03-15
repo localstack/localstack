@@ -20,7 +20,6 @@ from localstack.aws.api.secretsmanager import (
     ListSecretsResponse,
 )
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -403,7 +402,7 @@ class TestSecretsManager:
 
         sm_snapshot.match("list_secret_versions_rotated_1", list_secret_versions_1)
 
-    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="needs to be fixed")
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error", "$..Message"])
     @markers.aws.validated
     def test_rotate_secret_invalid_lambda_arn(
         self, secret_name, aws_client, account_id, sm_snapshot
