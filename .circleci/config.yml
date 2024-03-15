@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   schedule-non-default-creds:
     type: string
-    default: "32 6 * * *"
+    default: "50 6 * * *"
 #  skip_test_selection:
 #    type: boolean
 #    default: false
@@ -261,7 +261,6 @@ jobs:
       - run:
           name: Setup non-default AWS credentials
           command: |
-              source aws_credentials.env
               if [ -f aws_credentials.env ]; then
                 source aws_credentials.env
               else

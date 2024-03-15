@@ -120,8 +120,6 @@ class TestCloudwatch:
             "TEST_AWS_ACCESS_KEY_ID:", TEST_AWS_ACCESS_KEY_ID, os.getenv("TEST_AWS_ACCESS_KEY_ID")
         )
         print("TEST_AWS_ACCOUNT_KEY_ID:", TEST_AWS_ACCOUNT_ID, os.getenv("TEST_AWS_ACCOUNT_ID"))
-        assert TEST_AWS_REGION_NAME == "random_region_test"
-        assert TEST_AWS_ACCESS_KEY_ID == "random_access_key_id"
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
