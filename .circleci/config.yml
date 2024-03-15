@@ -12,7 +12,7 @@ parameters:
     default: false
   schedule-non-default-creds:
     type: string
-    default: "0 12 * * *"
+    default: "9 12 * * *"
   randomize-aws-credentials:
     type: boolean
     default: true
@@ -40,7 +40,7 @@ commands:
             if [[ $CIRCLE_BRANCH == "master" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             fi
-            if [[ "${{ pipeline.parameters.randomize_aws_credentials }}" == "true" ]]; then
+            if [[ "${{ pipeline.parameters.randomize-aws-credentials }}" == "true" ]]; then
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci_ma_mr" >> $BASH_ENV
             else
               echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
