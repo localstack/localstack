@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import os
 import uuid
 from datetime import datetime
 from random import getrandbits
@@ -8,12 +9,16 @@ from random import getrandbits
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, hmac, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding
+from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
+from localstack.services.kms.models import Ciphertext, _serialize_ciphertext_blob, IV_LEN
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.testing.pytest import markers
+from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
 
 
@@ -110,20 +115,26 @@ class TestKMS:
 
     @markers.aws.only_localstack
     def test_create_key_custom_key_material_hmac(self, kms_create_key, aws_client):
-        custom_key_material = base64.b64encode(b"custom test key material").decode("utf-8")
+        custom_key_material = b"custom test key material"
+        custom_key_tag_value = base64.b64encode(custom_key_material).decode("utf-8")
+        message = "some important message"
         key_spec = "HMAC_256"
         mac_algo = "HMAC_SHA_256"
-        expected_mac = b"}\xa2\x95\xb8\xac\xc9*$\xe7!G\xdb\xf2\xc7:8y\xb1\xcf\xdf\xcc[5\xdcA\xd0e\x98\x13d\x88\x8e"
+
+        # Generate expected MAC
+        h = hmac.HMAC(custom_key_material, hashes.SHA256())
+        h.update(message.encode("utf-8"))
+        expected_mac = h.finalize()
 
         key_id = kms_create_key(
             KeySpec=key_spec,
             KeyUsage="GENERATE_VERIFY_MAC",
-            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_material}],
+            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_tag_value}],
         )["KeyId"]
 
         mac = aws_client.kms.generate_mac(
             KeyId=key_id,
-            Message="some important message",
+            Message=message,
             MacAlgorithm=mac_algo,
         )["Mac"]
         assert mac == expected_mac
@@ -138,20 +149,30 @@ class TestKMS:
 
     @markers.aws.only_localstack
     def test_create_key_custom_key_material_symmetric_decrypt(self, kms_create_key, aws_client):
-        custom_key_material = base64.b64encode(b"custom test key material").decode("utf-8")
+        custom_key_material = b"custom test key material"
+        custom_key_tag_value = base64.b64encode(custom_key_material).decode("utf-8")
         algo = "SYMMETRIC_DEFAULT"
         message = b"test message 123 !%$@ 1234567890"
-        encrypted_message = b"m\xdc\x8e\xb5\xc4\xa2\\\x9f\x02\xa3\xfd[+L2N\x06`\xe8F\x87\xa0\xebh\xac\xa0qR \xec\x8eh?\n\x84l\x8d6\x0e\xd8d75\xa313H\x1e\x16\xf9\x14\x83,onX\xc5\x9d\x82\x84\x1d\xe91\x9c:\xea\x08\xc6\xdbc\x1f\xdcB\xf4\x83R\x83\x885\xc7"
 
         key_id = kms_create_key(
-            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_material}]
+            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_tag_value}]
         )["KeyId"]
+
+        # Generate expected cipher text
+        iv = os.urandom(IV_LEN)
+        ciphertext, tag = encrypt(custom_key_material, message, iv, b"")
+        expected_ciphertext_blob = _serialize_ciphertext_blob(
+            ciphertext=Ciphertext(
+                key_id=key_id, iv=iv, ciphertext=ciphertext, tag=tag
+            )
+        )
+
         plaintext = aws_client.kms.decrypt(
             KeyId=key_id,
-            CiphertextBlob=key_id.encode() + encrypted_message,
+            CiphertextBlob=expected_ciphertext_blob,
             EncryptionAlgorithm=algo,
         )["Plaintext"]
-        assert base64.b64decode(plaintext) == message
+        assert plaintext == message
 
     @markers.aws.validated
     def test_get_key_in_different_region(
