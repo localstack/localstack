@@ -152,7 +152,6 @@ jobs:
             TEST_PATH: "tests/unit"
             COVERAGE_ARGS: "-p"
           command: |
-#            source $BASH_ENV
             echo "Checking env variables"
             echo $TEST_AWS_ACCOUNT_ID
             echo $TEST_AWS_ACCESS_KEY_ID
