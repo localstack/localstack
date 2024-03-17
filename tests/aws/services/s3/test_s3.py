@@ -7994,7 +7994,7 @@ class TestS3StaticWebsiteHosting:
                     Bucket=s3_bucket,
                     WebsiteConfiguration=invalid_configuration,
                 )
-                assert False, f"{invalid_configuration} should have raised an exception"
+                raise AssertionError(f"{invalid_configuration} should have raised an exception")
             except ClientError as e:
                 snapshot.match(f"invalid-website-conf-{index}", e.response)
 

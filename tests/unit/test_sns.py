@@ -53,23 +53,23 @@ class TestSns:
         try:
             uuid.UUID(result.pop("MessageId"))
         except KeyError:
-            assert False, "MessageId missing in SNS response message body"
+            raise AssertionError("MessageId missing in SNS response message body")
         except ValueError:
-            assert False, "SNS response MessageId not a valid UUID"
+            raise AssertionError("SNS response MessageId not a valid UUID")
 
         try:
             dateutil.parser.parse(result.pop("Timestamp"))
         except KeyError:
-            assert False, "Timestamp missing in SNS response message body"
+            raise AssertionError("Timestamp missing in SNS response message body")
         except ValueError:
-            assert False, "SNS response Timestamp not a valid ISO 8601 date"
+            raise AssertionError("SNS response Timestamp not a valid ISO 8601 date")
 
         try:
             base64.b64decode(result.pop("Signature"))
         except KeyError:
-            assert False, "Signature missing in SNS response message body"
+            raise AssertionError("Signature missing in SNS response message body")
         except ValueError:
-            assert False, "SNS response Signature is not a valid base64 encoded value"
+            raise AssertionError("SNS response Signature is not a valid base64 encoded value")
 
         expected_sns_body = {
             "Message": "msg",
