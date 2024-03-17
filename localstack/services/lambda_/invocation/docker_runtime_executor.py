@@ -65,12 +65,10 @@ HOT_RELOADING_ENV_VARIABLE = "LOCALSTACK_HOT_RELOADING_PATHS"
 
 
 """Map AWS Lambda architecture to Docker platform flags. Example: arm64 => linux/arm64"""
-ARCHITECTURE_PLATFORM_MAPPING: dict[Architecture, DockerPlatform] = dict(
-    {
-        Architecture.x86_64: DockerPlatform.linux_amd64,
-        Architecture.arm64: DockerPlatform.linux_arm64,
-    }
-)
+ARCHITECTURE_PLATFORM_MAPPING: dict[Architecture, DockerPlatform] = {
+    Architecture.x86_64: DockerPlatform.linux_amd64,
+    Architecture.arm64: DockerPlatform.linux_arm64,
+}
 
 
 def docker_platform(lambda_architecture: Architecture) -> DockerPlatform | None:
