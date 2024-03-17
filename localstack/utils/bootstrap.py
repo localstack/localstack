@@ -62,7 +62,14 @@ API_DEPENDENCIES = {
 #   but which is needed for certain features (f.e. for one of multiple integrations)
 # - this mapping is used f.e. used for the selective test execution (localstack.testing.testselection)
 # - only add optional dependencies of services here, use API_DEPENDENCIES for mandatory dependencies
-API_DEPENDENCIES_OPTIONAL = {"firehose": ["opensearch", "es"]}
+API_DEPENDENCIES_OPTIONAL = {
+    "firehose": ["opensearch", "es", "s3"],
+    "lambda": ["logs", "cloudwatch"],
+    "ses": ["sns"],
+    "sns": ["sqs", "lambda", "firehose", "ses", "logs"],
+    "sqs": ["cloudwatch"],
+    "logs": ["lambda", "kinesis", "firehose"],
+}
 
 # composites define an abstract name like "serverless" that maps to a set of services
 API_COMPOSITES = {

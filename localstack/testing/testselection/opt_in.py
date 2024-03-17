@@ -20,6 +20,9 @@ OPT_IN = [
     # lambda
     "localstack/services/lambda_/**",
     "tests/aws/services/lambda_/**",
+    # sns
+    "localstack/services/sns/**",
+    "tests/aws/services/sns/**",
     # opensearch
     "localstack/services/opensearch/**",
     "tests/aws/services/opensearch/**",
