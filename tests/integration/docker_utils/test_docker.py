@@ -827,7 +827,7 @@ class TestDockerClient:
             # Simulate podman API response, Docker returns "sha:..." for Image, podman returns "<image-name>:<tag>".
             #  See https://github.com/containers/podman/issues/8329
             attrs["Image"] = image_name
-            container_init_orig(self, attrs=attrs, *args, **kwargs)
+            container_init_orig(self, *args, attrs=attrs, **kwargs)
 
         monkeypatch.setattr(Container, "__init__", container_init)
 

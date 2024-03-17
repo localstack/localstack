@@ -940,7 +940,7 @@ class RunningContainer:
 
     def exec_in_container(self, *args, **kwargs):
         return self.container_client.exec_in_container(
-            container_name_or_id=self.id, *args, **kwargs
+            *args, container_name_or_id=self.id, **kwargs
         )
 
     def stopped(self) -> Container:
