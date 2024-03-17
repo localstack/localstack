@@ -17,9 +17,6 @@ from localstack.utils.aws.request_context import mock_aws_request_headers
 def test_fix_region_in_headers():
     # the NoSQL Workbench sends "localhost" or "local" as the region name
     # TODO: this may need to be updated once we migrate DynamoDB to ASF
-    print("TEST_AWS_ACCESS_KEY_ID: ", TEST_AWS_ACCESS_KEY_ID)
-    print("TEST_AWS_REGION_NAME: ", TEST_AWS_REGION_NAME)
-    print("TEST_AWS_ACCOUNT_ID: ", TEST_AWS_ACCOUNT_ID)
     for region_name in ["local", "localhost"]:
         headers = mock_aws_request_headers(
             "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
