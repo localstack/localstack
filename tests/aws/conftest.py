@@ -132,7 +132,7 @@ def snapshot(request, _snapshot_session: SnapshotSession, account_id, region_nam
         "tests/aws/scenario/lambda_destination",
         "tests/aws/scenario/loan_broker",
     ]
-    if any([e in request.fspath.dirname for e in exemptions]):
+    if any(e in request.fspath.dirname for e in exemptions):
         _snapshot_session.add_transformer(SNAPSHOT_BASIC_TRANSFORMER, priority=2)
     else:
         _snapshot_session.add_transformer(SNAPSHOT_BASIC_TRANSFORMER_NEW, priority=2)

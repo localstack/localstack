@@ -188,11 +188,8 @@ ignore = [
     "B005", # TODO Using `.strip()` with multi-character strings is misleading
     "B006", # TODO Do not use mutable data structures for argument defaults
     "B007", # TODO Loop control variable x not used within loop body
-    "B008", # TODO Do not perform function call `Queue` in argument defaults
     "B011", # TODO Do not `assert False` (`python -O` removes these calls), raise `AssertionError()`
-    "B016", # TODO Cannot raise a literal. Did you intend to return it or raise an Exception?
     "B017", # TODO `pytest.raises(Exception)` should be considered evil
-    "B018", # TODO Found useless expression. Either assign it to a variable or remove it.
     "B019", # TODO Use of `functools.lru_cache` or `functools.cache` on methods can lead to memory leaks
     "B020", # TODO Loop control variable `invalid_values` overrides iterable it iterates
     "B022", # TODO No arguments passed to `contextlib.suppress`. No exceptions will be suppressed and therefore this context manager is redundant
@@ -213,7 +210,6 @@ ignore = [
     "C416", # TODO Unnecessary `set` comprehension
     "C417", # TODO Replace `map` with a generator expression
     "C418", # TODO Unnecessary `dict` literal passed to `dict()` (remove the outer call to `dict()`)
-    "C419", # TODO Unnecessary list comprehension.
     "C901", # TODO function is too complex
     "E402", # TODO Module level import not at top of file
     "E501", # E501 Line too long - handled by black, see https://docs.astral.sh/ruff/faq/#is-ruff-compatible-with-black

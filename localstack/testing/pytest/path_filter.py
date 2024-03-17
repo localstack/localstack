@@ -56,11 +56,11 @@ def pytest_collection_modifyitems(config, items):
             return  # No filtering if the list is empty => full test suite
 
         # this is technically redundant since we can just add "tests/" instead as a line item. still prefer to be explicit here
-        if any([p == SENTINEL_ALL_TESTS for p in pathfilter_substrings]):
+        if any(p == SENTINEL_ALL_TESTS for p in pathfilter_substrings):
             return  # at least one change should lead to a full run
 
         # technically doesn't even need to be checked since the loop below will take care of it
-        if all([p == SENTINEL_NO_TEST for p in pathfilter_substrings]):
+        if all(p == SENTINEL_NO_TEST for p in pathfilter_substrings):
             items[:] = []
             #  we only got sentinal values that signal a change that doesn't need to be tested, so delesect all
             config.hook.pytest_deselected(items=items)

@@ -253,7 +253,7 @@ class TestLambdaBaseFeatures:
                 .paginate(logGroupName=f"/aws/lambda/{function_name}")
                 .build_full_result()
             )
-            assert any(["generating bytes" in e["message"] for e in log_events["events"]])
+            assert any("generating bytes" in e["message"] for e in log_events["events"])
 
         retry(_check_print_in_logs, retries=10)
 
@@ -636,9 +636,9 @@ class TestLambdaBehavior:
                 logGroupName=log_group_name, logStreamName=log_stream_name
             )["events"]
 
-            assert any(["starting wait" in e["message"] for e in log_events])
+            assert any("starting wait" in e["message"] for e in log_events)
             # TODO: this part is a bit flaky, at least locally with old provider
-            assert not any(["done waiting" in e["message"] for e in log_events])
+            assert not any("done waiting" in e["message"] for e in log_events)
 
         retry(assert_events, retries=15)
 
@@ -671,8 +671,8 @@ class TestLambdaBehavior:
             log_events = aws_client.logs.get_log_events(
                 logGroupName=log_group_name, logStreamName=log_stream_name
             )["events"]
-            return any(["starting wait" in e["message"] for e in log_events]) and any(
-                ["done waiting" in e["message"] for e in log_events]
+            return any("starting wait" in e["message"] for e in log_events) and any(
+                "done waiting" in e["message"] for e in log_events
             )
 
         wait_until(_assert_log_output, strategy="linear")
@@ -740,9 +740,9 @@ class TestLambdaBehavior:
                 logGroupName=log_group_name, logStreamName=log_stream_name
             )["events"]
 
-            assert any(["starting wait" in e["message"] for e in log_events])
+            assert any("starting wait" in e["message"] for e in log_events)
             # TODO: this part is a bit flaky, at least locally with old provider
-            assert not any(["done waiting" in e["message"] for e in log_events])
+            assert not any("done waiting" in e["message"] for e in log_events)
 
         retry(assert_events, retries=15)
 
@@ -2716,7 +2716,7 @@ class TestRequestIdHandling:
 
         def fetch_logs():
             log_events_result = aws_client.logs.filter_log_events(logGroupName=log_group_name)
-            assert any(["REPORT" in e["message"] for e in log_events_result["events"]])
+            assert any("REPORT" in e["message"] for e in log_events_result["events"])
             return log_events_result
 
         log_events = retry(fetch_logs, retries=10, sleep=2)
@@ -2778,7 +2778,7 @@ class TestRequestIdHandling:
 
         def fetch_logs():
             log_events_result = aws_client.logs.filter_log_events(logGroupName=log_group_name)
-            assert any(["REPORT" in e["message"] for e in log_events_result["events"]])
+            assert any("REPORT" in e["message"] for e in log_events_result["events"])
             return log_events_result
 
         log_events = retry(fetch_logs, retries=10, sleep=2)
@@ -2827,7 +2827,7 @@ class TestRequestIdHandling:
         log_events = aws_client.logs.filter_log_events(logGroupName=log_group_name)
         report_messages = [e for e in log_events["events"] if "REPORT" in e["message"]]
         assert len(report_messages) == 2
-        assert all([request_id in rm["message"] for rm in report_messages])
+        assert all(request_id in rm["message"] for rm in report_messages)
         end_messages = [
             e["message"].rstrip() for e in log_events["events"] if "END" in e["message"]
         ]

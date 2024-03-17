@@ -213,16 +213,13 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     )
 
             if is_fifo := (".fifo" in topic_arn):
-                if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
+                if not all("MessageGroupId" in entry for entry in publish_batch_request_entries):
                     raise InvalidParameterException(
                         "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                     )
                 if moto_topic.content_based_deduplication == "false":
                     if not all(
-                        [
-                            "MessageDeduplicationId" in entry
-                            for entry in publish_batch_request_entries
-                        ]
+                        "MessageDeduplicationId" in entry for entry in publish_batch_request_entries
                     ):
                         raise InvalidParameterException(
                             "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",

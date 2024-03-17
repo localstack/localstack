@@ -238,9 +238,7 @@ class ServiceResponseParser(Handler):
 
         if exception := context.service_exception:
             if isinstance(exception, ServiceException):
-                try:
-                    exception.code
-                except AttributeError:
+                if not hasattr(exception, "code"):
                     # FIXME: we should set the exception attributes in the scaffold when we generate the exceptions.
                     #  this is a workaround for now, since we are not doing that yet, and the attributes may be unset.
                     self._set_exception_attributes(context.operation, exception)

@@ -396,7 +396,7 @@ class TestCfnLambdaIntegrations:
             log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
                 "events"
             ]
-            return any([msg in e["message"] for e in log_events])
+            return any(msg in e["message"] for e in log_events)
 
         assert wait_until(wait_logs)
 
@@ -517,7 +517,7 @@ class TestCfnLambdaIntegrations:
             log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
                 "events"
             ]
-            return any([msg in e["message"] for e in log_events])
+            return any(msg in e["message"] for e in log_events)
 
         assert wait_until(wait_logs)
 
@@ -660,7 +660,7 @@ class TestCfnLambdaIntegrations:
             log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
                 "events"
             ]
-            return any([msg in e["message"] for e in log_events])
+            return any(msg in e["message"] for e in log_events)
 
         assert wait_until(wait_logs)
 
@@ -794,7 +794,7 @@ class TestCfnLambdaIntegrations:
             log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
                 "events"
             ]
-            return any([data_msg in e["message"] for e in log_events])
+            return any(data_msg in e["message"] for e in log_events)
 
         assert wait_until(wait_logs)
 
