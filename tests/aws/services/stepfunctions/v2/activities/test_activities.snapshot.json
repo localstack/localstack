@@ -1,0 +1,610 @@
+{
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task": {
+    "recorded-date": "17-03-2024, 11:09:25",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ActivityTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "activityScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "activity_arn"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ActivityScheduled"
+          },
+          {
+            "activityStartedEventDetails": {
+              "workerName": "BASE_ID_ACTIVITY_CONSUMER"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ActivityStarted"
+          },
+          {
+            "activitySucceededEventDetails": {
+              "output": {
+                "Value1": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ActivitySucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "ActivityTask",
+              "output": {
+                "Value1": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Value1": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_failure": {
+    "recorded-date": "17-03-2024, 11:10:40",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ActivityTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "activityScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "activity_arn"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ActivityScheduled"
+          },
+          {
+            "activityStartedEventDetails": {
+              "workerName": "BASE_ID_ACTIVITY_CONSUMER"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ActivityStarted"
+          },
+          {
+            "activityFailedEventDetails": {
+              "cause": {
+                "Value1": "HelloWorld"
+              },
+              "error": "Programmatic Error"
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ActivityFailed"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": {
+                "Value1": "HelloWorld"
+              },
+              "error": "Programmatic Error"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_with_heartbeat": {
+    "recorded-date": "17-03-2024, 11:11:13",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ActivityTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "activityScheduledEventDetails": {
+              "heartbeatInSeconds": 10,
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "activity_arn",
+              "timeoutInSeconds": 60
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ActivityScheduled"
+          },
+          {
+            "activityStartedEventDetails": {
+              "workerName": "BASE_ID_ACTIVITY_CONSUMER"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ActivityStarted"
+          },
+          {
+            "activitySucceededEventDetails": {
+              "output": {
+                "Value1": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ActivitySucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "ActivityTask",
+              "output": {
+                "Value1": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Value1": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_on_deleted": {
+    "recorded-date": "17-03-2024, 11:10:13",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ActivityTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'ActivityTask' (entered at the event id #2). The activity activity_arn does not exist.",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_no_worker_name": {
+    "recorded-date": "17-03-2024, 11:09:58",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ActivityTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "activityScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "activity_arn"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ActivityScheduled"
+          },
+          {
+            "activityStartedEventDetails": {},
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ActivityStarted"
+          },
+          {
+            "activitySucceededEventDetails": {
+              "output": {
+                "Value1": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ActivitySucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "ActivityTask",
+              "output": {
+                "Value1": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Value1": "HelloWorld"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_start_timeout": {
+    "recorded-date": "17-03-2024, 11:48:21",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ActivityTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "activityScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "activity_arn",
+              "timeoutInSeconds": 5
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ActivityScheduled"
+          },
+          {
+            "activityStartedEventDetails": {
+              "workerName": "BASE_ID_ACTIVITY_CONSUMER"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ActivityStarted"
+          },
+          {
+            "activityTimedOutEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ActivityTimedOut"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

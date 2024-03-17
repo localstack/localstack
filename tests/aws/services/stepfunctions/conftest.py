@@ -254,9 +254,32 @@ def create_state_machine(aws_client):
 
     for state_machine_arn in _state_machine_arns:
         try:
+            executions = aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
+            for execution in executions["executions"]:
+                aws_client.stepfunctions.stop_execution(executionArn=execution["executionArn"])
+
             aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
         except Exception:
             LOG.debug(f"Unable to delete state machine '{state_machine_arn}' during cleanup.")
+
+
+@pytest.fixture
+def create_activity(aws_client):
+    activities_arns: Final[list[str]] = list()
+
+    def _create_activity(**kwargs):
+        create_output = aws_client.stepfunctions.create_activity(**kwargs)
+        create_output_arn = create_output["activityArn"]
+        activities_arns.append(create_output_arn)
+        return create_output
+
+    yield _create_activity
+
+    for activity_arn in activities_arns:
+        try:
+            aws_client.stepfunctions.delete_activity(activityArn=activity_arn)
+        except Exception:
+            LOG.debug(f"Unable to delete Activity '{activity_arn}' during cleanup.")
 
 
 @pytest.fixture
@@ -321,6 +344,26 @@ def sqs_send_heartbeat_and_task_success_state_machine(
         aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn,
             input=json.dumps({"QueueUrl": sqs_queue_url, "Iterator": {"Count": 300}}),
+        )
+
+    return _create_state_machine
+
+
+@pytest.fixture
+def sfn_activity_consumer(aws_client, create_state_machine, create_iam_role_for_sfn):
+    def _create_state_machine(template, activity_arn):
+        snf_role_arn = create_iam_role_for_sfn()
+        sm_name: str = f"activity_send_task_failure_on_task_{short_uid()}"
+        definition = json.dumps(template)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition, roleArn=snf_role_arn
+        )
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn,
+            input=json.dumps({"ActivityArn": activity_arn}),
         )
 
     return _create_state_machine

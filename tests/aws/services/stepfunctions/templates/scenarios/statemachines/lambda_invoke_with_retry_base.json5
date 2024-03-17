@@ -4,7 +4,7 @@
   "States": {
     "InvokeLambdaWithRetry": {
       "Type": "Task",
-      "Resource": "__tbd__",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
       "Retry": [
         {
           "ErrorEquals": ["States.ALL"],
