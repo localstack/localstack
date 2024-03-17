@@ -12,7 +12,7 @@ parameters:
     default: false
   randomize-aws-credentials:
     type: boolean
-    default: false
+    default: true
 
 executors:
   ubuntu-machine-amd64:
@@ -152,7 +152,11 @@ jobs:
             TEST_PATH: "tests/unit"
             COVERAGE_ARGS: "-p"
           command: |
-            source $BASH_ENV
+#            source $BASH_ENV
+            echo "Checking env variables"
+            echo $TEST_AWS_ACCOUNT_ID
+            echo $TEST_AWS_ACCESS_KEY_ID
+            echo $TEST_AWS_REGION_NAME
             COVERAGE_FILE="target/coverage/.coverage.unit.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" \
             make test-coverage
