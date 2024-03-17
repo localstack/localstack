@@ -186,7 +186,6 @@ exclude = [
 [tool.ruff.lint]
 ignore = [
     "B005", # TODO Using `.strip()` with multi-character strings is misleading
-    "B006", # TODO Do not use mutable data structures for argument defaults
     "B007", # TODO Loop control variable x not used within loop body
     "B017", # TODO `pytest.raises(Exception)` should be considered evil
     "B019", # TODO Use of `functools.lru_cache` or `functools.cache` on methods can lead to memory leaks
