@@ -1617,7 +1617,7 @@ class EsApi:
         self,
         context: RequestContext,
         cross_cluster_search_connection_id: CrossClusterSearchConnectionId,
-        **kwargs
+        **kwargs,
     ) -> AcceptInboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
@@ -1669,7 +1669,7 @@ class EsApi:
         advanced_security_options: AdvancedSecurityOptionsInput = None,
         auto_tune_options: AutoTuneOptionsInput = None,
         tag_list: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateElasticsearchDomainResponse:
         raise NotImplementedError
 
@@ -1680,7 +1680,7 @@ class EsApi:
         source_domain_info: DomainInformation,
         destination_domain_info: DomainInformation,
         connection_alias: ConnectionAlias,
-        **kwargs
+        **kwargs,
     ) -> CreateOutboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
@@ -1692,7 +1692,7 @@ class EsApi:
         package_type: PackageType,
         package_source: PackageSource,
         package_description: PackageDescription = None,
-        **kwargs
+        **kwargs,
     ) -> CreatePackageResponse:
         raise NotImplementedError
 
@@ -1703,7 +1703,7 @@ class EsApi:
         domain_arn: DomainArn,
         vpc_options: VPCOptions,
         client_token: ClientToken = None,
-        **kwargs
+        **kwargs,
     ) -> CreateVpcEndpointResponse:
         raise NotImplementedError
 
@@ -1722,7 +1722,7 @@ class EsApi:
         self,
         context: RequestContext,
         cross_cluster_search_connection_id: CrossClusterSearchConnectionId,
-        **kwargs
+        **kwargs,
     ) -> DeleteInboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
@@ -1731,7 +1731,7 @@ class EsApi:
         self,
         context: RequestContext,
         cross_cluster_search_connection_id: CrossClusterSearchConnectionId,
-        **kwargs
+        **kwargs,
     ) -> DeleteOutboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
@@ -1754,7 +1754,7 @@ class EsApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDomainAutoTunesResponse:
         raise NotImplementedError
 
@@ -1789,7 +1789,7 @@ class EsApi:
         instance_type: ESPartitionInstanceType,
         elasticsearch_version: ElasticsearchVersionString,
         domain_name: DomainName = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeElasticsearchInstanceTypeLimitsResponse:
         raise NotImplementedError
 
@@ -1800,7 +1800,7 @@ class EsApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeInboundCrossClusterSearchConnectionsResponse:
         raise NotImplementedError
 
@@ -1811,7 +1811,7 @@ class EsApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeOutboundCrossClusterSearchConnectionsResponse:
         raise NotImplementedError
 
@@ -1822,7 +1822,7 @@ class EsApi:
         filters: DescribePackagesFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribePackagesResponse:
         raise NotImplementedError
 
@@ -1833,7 +1833,7 @@ class EsApi:
         reserved_elasticsearch_instance_offering_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeReservedElasticsearchInstanceOfferingsResponse:
         raise NotImplementedError
 
@@ -1844,7 +1844,7 @@ class EsApi:
         reserved_elasticsearch_instance_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeReservedElasticsearchInstancesResponse:
         raise NotImplementedError
 
@@ -1873,7 +1873,7 @@ class EsApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetPackageVersionHistoryResponse:
         raise NotImplementedError
 
@@ -1884,7 +1884,7 @@ class EsApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetUpgradeHistoryResponse:
         raise NotImplementedError
 
@@ -1907,7 +1907,7 @@ class EsApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListDomainsForPackageResponse:
         raise NotImplementedError
 
@@ -1919,7 +1919,7 @@ class EsApi:
         domain_name: DomainName = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListElasticsearchInstanceTypesResponse:
         raise NotImplementedError
 
@@ -1929,7 +1929,7 @@ class EsApi:
         context: RequestContext,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListElasticsearchVersionsResponse:
         raise NotImplementedError
 
@@ -1940,7 +1940,7 @@ class EsApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListPackagesForDomainResponse:
         raise NotImplementedError
 
@@ -1954,7 +1954,7 @@ class EsApi:
         context: RequestContext,
         domain_name: DomainName,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListVpcEndpointAccessResponse:
         raise NotImplementedError
 
@@ -1970,7 +1970,7 @@ class EsApi:
         context: RequestContext,
         domain_name: DomainName,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListVpcEndpointsForDomainResponse:
         raise NotImplementedError
 
@@ -1981,7 +1981,7 @@ class EsApi:
         reserved_elasticsearch_instance_offering_id: GUID,
         reservation_name: ReservationToken,
         instance_count: InstanceCount = None,
-        **kwargs
+        **kwargs,
     ) -> PurchaseReservedElasticsearchInstanceOfferingResponse:
         raise NotImplementedError
 
@@ -1990,7 +1990,7 @@ class EsApi:
         self,
         context: RequestContext,
         cross_cluster_search_connection_id: CrossClusterSearchConnectionId,
-        **kwargs
+        **kwargs,
     ) -> RejectInboundCrossClusterSearchConnectionResponse:
         raise NotImplementedError
 
@@ -2031,7 +2031,7 @@ class EsApi:
         encryption_at_rest_options: EncryptionAtRestOptions = None,
         auto_tune_options: AutoTuneOptions = None,
         dry_run: DryRun = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateElasticsearchDomainConfigResponse:
         raise NotImplementedError
 
@@ -2043,7 +2043,7 @@ class EsApi:
         package_source: PackageSource,
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
-        **kwargs
+        **kwargs,
     ) -> UpdatePackageResponse:
         raise NotImplementedError
 
@@ -2053,7 +2053,7 @@ class EsApi:
         context: RequestContext,
         vpc_endpoint_id: VpcEndpointId,
         vpc_options: VPCOptions,
-        **kwargs
+        **kwargs,
     ) -> UpdateVpcEndpointResponse:
         raise NotImplementedError
 
@@ -2064,6 +2064,6 @@ class EsApi:
         domain_name: DomainName,
         target_version: ElasticsearchVersionString,
         perform_check_only: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> UpgradeElasticsearchDomainResponse:
         raise NotImplementedError

@@ -2,6 +2,7 @@ import json
 
 import pytest
 import yaml
+from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
@@ -14,6 +15,7 @@ from tests.aws.services.stepfunctions.utils import (
     await_execution_started,
     await_execution_success,
     await_execution_terminated,
+    await_list_execution_status,
     await_state_machine_listed,
     await_state_machine_not_listed,
 )
@@ -1003,3 +1005,55 @@ class TestSnfApi:
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount"])
+    @markers.aws.validated
+    def test_state_machine_status_filter(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        sm_name = f"statemachine_{short_uid()}"
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        list_response = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_arn, statusFilter="SUCCEEDED"
+        )
+        sfn_snapshot.match("list_before_execution", list_response)
+
+        exec_resp = aws_client.stepfunctions.start_execution(stateMachineArn=state_machine_arn)
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        sfn_snapshot.match("exec_resp", exec_resp)
+        execution_arn = exec_resp["executionArn"]
+
+        await_list_execution_status(
+            stepfunctions_client=aws_client.stepfunctions,
+            state_machine_arn=state_machine_arn,
+            execution_arn=execution_arn,
+            status="SUCCEEDED",
+        )
+
+        list_response = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_arn, statusFilter="SUCCEEDED"
+        )
+        sfn_snapshot.match("list_succeeded_when_complete", list_response)
+
+        list_response = aws_client.stepfunctions.list_executions(
+            stateMachineArn=state_machine_arn, statusFilter="RUNNING"
+        )
+        sfn_snapshot.match("list_running_when_complete", list_response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.stepfunctions.list_executions(
+                stateMachineArn=state_machine_arn, statusFilter="succeeded"
+            )
+        sfn_snapshot.match("list_executions_filter_exc", e.value.response)

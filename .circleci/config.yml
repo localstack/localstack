@@ -7,6 +7,12 @@ parameters:
   ubuntu-arm64-machine-image:
     type: string
     default: "ubuntu-2204:2023.02.1"
+  skip_test_selection:
+    type: boolean
+    default: false
+  randomize-aws-credentials:
+    type: boolean
+    default: false
 
 executors:
   ubuntu-machine-amd64:
@@ -16,13 +22,26 @@ executors:
 commands:
   prepare-pytest-tinybird:
     steps:
+      - unless:
+          condition: << pipeline.parameters.skip_test_selection >>
+          steps:
+            - run:
+                name: Setup test selection environment variable
+                command: |
+                  if [[ -n "$CI_PULL_REQUEST" ]] ; then
+                    echo "export TESTSELECTION_PYTEST_ARGS='--path-filter=target/testselection/test-selection.txt '" >> $BASH_ENV
+                  fi
       - run:
           name: Setup Environment Variables
           command: |
             if [[ $CIRCLE_BRANCH == "master" ]] ; then
               echo "export TINYBIRD_PYTEST_ARGS='--report-to-tinybird '" >> $BASH_ENV
             fi
-            echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
+            if << pipeline.parameters.randomize-aws-credentials >> ; then
+              echo "export TINYBIRD_DATASOURCE=community_tests_circleci_ma_mr" >> $BASH_ENV
+            else
+              echo "export TINYBIRD_DATASOURCE=community_tests_circleci" >> $BASH_ENV
+            fi
             echo "export TINYBIRD_TOKEN=${TINYBIRD_CI_TOKEN}" >> $BASH_ENV
             echo "export CI_COMMIT_BRANCH=${CIRCLE_BRANCH}" >> $BASH_ENV
             echo "export CI_COMMIT_SHA=${CIRCLE_SHA1}" >> $BASH_ENV
@@ -31,6 +50,26 @@ commands:
             echo "export CI_JOB_NAME=${CIRCLE_WORKFLOW_ID}" >> $BASH_ENV
             echo "export CI_JOB_ID=${CIRCLE_JOB}" >> $BASH_ENV
             source $BASH_ENV
+
+  prepare-account-region-randomization:
+    steps:
+      - when:
+          condition: << pipeline.parameters.randomize-aws-credentials >>
+          steps:
+            - run:
+                name: Generate Random AWS Account ID
+                command: |
+                  # Generate a random 12-digit number for TEST_AWS_ACCOUNT_ID
+                  export TEST_AWS_ACCOUNT_ID=$(LC_ALL=C tr -dc '0-9' < /dev/urandom | fold -w 12 | head -n 1)
+                  export TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCOUNT_ID
+                  # Set TEST_AWS_REGION_NAME to a random AWS region other than us-east-1
+                  export AWS_REGIONS=("me-south-1" "me-central-1" "sa-east-1" "us-east-2" "us-west-1" "us-west-2" "eu-west-1" "eu-west-2" "eu-west-3" "ap-east-1" "ap-south-2" "ap-south-1" "ap-southeast-1" "ap-southeast-2" "ap-northeast-1" "ap-northeast-2" "ap-northeast-3" "sa-east-1" "af-south-1" "ca-central-1" "ca-west-1" "eu-central-1" "eu-south-1" "eu-south-2"	"eu-north-1" "eu-central-2" "il-central-1" )
+                  export TEST_AWS_REGION_NAME=${AWS_REGIONS[$RANDOM % ${#AWS_REGIONS[@]}]}
+                  echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> $BASH_ENV
+                  echo "export TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" >> $BASH_ENV
+                  echo "export TEST_AWS_ACCOUNT_ID=${TEST_AWS_ACCOUNT_ID}" >> $BASH_ENV
+                  source $BASH_ENV
+
 
 jobs:
   install:
@@ -69,6 +108,36 @@ jobs:
           name: Checking AWS compatibility markers
           command: make check-aws-markers
 
+
+  # can't completely skip it since we need the dependency from other tasks => conditional in run step
+  test-selection:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - unless:
+          condition: << pipeline.parameters.skip_test_selection >>
+          steps:
+            - run:
+                # script expects an environment variable $GITHUB_API_TOKEN to be set to fetch PR details
+                name: Generate test selection filters from changed files
+                command: |
+                  if [[ -z "$CI_PULL_REQUEST" ]] ; then
+                    echo "Skipping test selection"
+                    circleci-agent step halt
+                  else
+                    source .venv/bin/activate
+                    python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr /tmp/workspace/repo $CI_PULL_REQUEST target/testselection/test-selection.txt
+                    cat target/testselection/test-selection.txt
+                  fi
+
+            - persist_to_workspace:
+                root:
+                  /tmp/workspace
+                paths:
+                  - repo/target/testselection/
+
   unit-tests:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -76,12 +145,14 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Unit tests
           environment:
             TEST_PATH: "tests/unit"
             COVERAGE_ARGS: "-p"
           command: |
+            source $BASH_ENV
             COVERAGE_FILE="target/coverage/.coverage.unit.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" \
             make test-coverage
@@ -93,31 +164,6 @@ jobs:
           paths:
             - repo/target/coverage/
 
-  itest-sfn-legacy-provider:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - prepare-pytest-tinybird
-      - run:
-          name: Test SFN Legacy provider
-          environment:
-            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
-            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
-            COVERAGE_ARGS: "-p"
-          command: |
-            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
-            make test-coverage
-      - persist_to_workspace:
-          root:
-            /tmp/workspace
-          paths:
-            - repo/target/coverage/
-      - store_test_results:
-          path: target/reports/
-
   acceptance-tests:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -125,6 +171,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Acceptance tests (EXPERIMENTAL)
           environment:
@@ -145,6 +192,32 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-sfn-legacy-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test SFN Legacy provider
+          environment:
+            PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
+            TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.sfnlegacy.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/sfn_legacy.xml -o junit_suite_name='sfn_legacy'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
   itest-s3-v2-legacy-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
@@ -152,6 +225,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Test S3 v2 legacy provider
           environment:
@@ -160,7 +234,7 @@ jobs:
             COVERAGE_ARGS: "-p"
           command: |
             COVERAGE_FILE="target/coverage/.coverage.s3legacy.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/s3_legacy.xml -o junit_suite_name='s3_legacy'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -177,6 +251,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Test CloudWatch v2 provider
           environment:
@@ -185,7 +260,7 @@ jobs:
             COVERAGE_ARGS: "-p"
           command: |
             COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -271,17 +346,27 @@ jobs:
                 paths:
                   - "tests/aws/services/lambda_/functions/common"
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
+          # if we're doing performing a test selection, we need to filter the list of files before splitting by timings
           command: |
-            TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
-            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+            if [ -z $TESTSELECTION_PYTEST_ARGS ] ; then
+              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
+            else
+              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | python -m localstack.testing.testselection.scripts.filter_by_test_selection target/testselection/test-selection.txt | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
+            fi
+            source $BASH_ENV
+            echo $TEST_FILES
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
             DEBUG=1 \
             make docker-run-tests
       - store_test_results:
+          path: target/reports/
+      - store_artifacts:
           path: target/reports/
       - persist_to_workspace:
           root:
@@ -301,6 +386,7 @@ jobs:
           name: Load docker image
           command: docker load -i target/localstack-docker-image-amd64.tar
       - prepare-pytest-tinybird
+      - prepare-account-region-randomization
       - run:
           name: Run bootstrap tests
           environment:
@@ -381,10 +467,14 @@ jobs:
       - run:
           name: Report coverage statistics
           command: |
-            source .venv/bin/activate
-            coverage report || true
-            coverage html || true
-            coveralls || true
+            if [ -z "${CI_PULL_REQUEST}" ]; then
+              source .venv/bin/activate
+              coverage report || true
+              coverage html || true
+              coveralls || true
+            else
+              echo "Skipping coverage reporting for pull request."
+            fi
       - run:
           name: store acceptance parity metrics
           command: |
@@ -561,18 +651,24 @@ workflows:
       - preflight:
           requires:
             - install
+      - test-selection:
+          requires:
+            - install
       - acceptance-tests:
           requires:
             - preflight
       - itest-sfn-legacy-provider:
           requires:
             - preflight
+            - test-selection
       - itest-s3-v2-legacy-provider:
           requires:
             - preflight
+            - test-selection
       - itest-cloudwatch-v2-provider:
           requires:
             - preflight
+            - test-selection
       - unit-tests:
           requires:
             - preflight
@@ -599,6 +695,7 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-arm64-machine-image >>
           requires:
             - docker-build-arm64
+            - test-selection
       - docker-test:
           name: docker-test-amd64
           platform: amd64
@@ -606,6 +703,7 @@ workflows:
           machine_image: << pipeline.parameters.ubuntu-amd64-machine-image >>
           requires:
             - docker-build-amd64
+            - test-selection
       - bootstrap-tests:
           requires:
             - docker-build-amd64

@@ -833,7 +833,7 @@ SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 # Used to toggle MessageRetentionPeriod functionality in SQS queues
 SQS_ENABLE_MESSAGE_RETENTION_PERIOD = is_env_true("SQS_ENABLE_MESSAGE_RETENTION_PERIOD")
 
-# Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", or "path"
+# Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", "path", or "dynamic"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "standard"
 
 # Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
@@ -1081,6 +1081,8 @@ DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONF
 # if `DISABLE_BOTO_RETRIES=1` is set, all our created boto clients will have retries disabled
 DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
+DISTRIBUTED_MODE = is_env_true("DISTRIBUTED_MODE")
+
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
 # https://docs.localstack.cloud/references/configuration/
@@ -1108,6 +1110,7 @@ CONFIG_ENV_VARS = [
     "DISABLE_CUSTOM_CORS_APIGATEWAY",
     "DISABLE_CUSTOM_CORS_S3",
     "DISABLE_EVENTS",
+    "DISTRIBUTED_MODE",
     "DNS_ADDRESS",
     "DNS_PORT",
     "DNS_LOCAL_NAME_PATTERNS",

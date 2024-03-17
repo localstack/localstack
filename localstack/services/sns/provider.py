@@ -911,7 +911,8 @@ def extract_tags(
     return True
 
 
-def parse_and_validate_topic_arn(topic_arn: str) -> ArnData:
+def parse_and_validate_topic_arn(topic_arn: str | None) -> ArnData:
+    topic_arn = topic_arn or ""
     try:
         return parse_arn(topic_arn)
     except InvalidArnException:

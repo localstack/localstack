@@ -307,6 +307,11 @@ class TestSNSPublishCrud:
 
         snapshot.match("invalid-topic-arn-1", e.value.response)
 
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.publish(Message=message, TopicArn="")
+
+        snapshot.match("empty-topic", e.value.response)
+
     @markers.aws.validated
     def test_publish_message_by_target_arn(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client

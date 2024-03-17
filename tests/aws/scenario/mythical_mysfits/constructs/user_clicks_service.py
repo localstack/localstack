@@ -19,7 +19,7 @@ class UserClicksService(constructs.Construct):
         id: str,
         *,
         account_id: str,
-        mysfits_table: dynamodb.Table
+        mysfits_table: dynamodb.Table,
     ):
         super().__init__(scope, id)
         # TODO: the bucket is versioned in the sample, but not sure why?

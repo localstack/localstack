@@ -91,6 +91,9 @@
 /tests/bootstrap @simonrw
 /localstack/testing/pytest/container.py @dominikschubert @simonrw
 
+# Test Selection
+/localstack/testing/testselection @dominikschubert @alexrashed 
+
 ######################
 ### SERVICE OWNERS ###
 ######################

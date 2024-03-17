@@ -2645,7 +2645,7 @@ class CloudformationApi:
         self,
         context: RequestContext,
         type_configuration_identifiers: TypeConfigurationIdentifiers,
-        **kwargs
+        **kwargs,
     ) -> BatchDescribeTypeConfigurationsOutput:
         raise NotImplementedError
 
@@ -2655,7 +2655,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackName,
         client_request_token: ClientRequestToken = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2667,7 +2667,7 @@ class CloudformationApi:
         role_arn: RoleARN = None,
         resources_to_skip: ResourcesToSkip = None,
         client_request_token: ClientRequestToken = None,
-        **kwargs
+        **kwargs,
     ) -> ContinueUpdateRollbackOutput:
         raise NotImplementedError
 
@@ -2694,7 +2694,7 @@ class CloudformationApi:
         include_nested_stacks: IncludeNestedStacks = None,
         on_stack_failure: OnStackFailure = None,
         import_existing_resources: ImportExistingResources = None,
-        **kwargs
+        **kwargs,
     ) -> CreateChangeSetOutput:
         raise NotImplementedError
 
@@ -2706,7 +2706,7 @@ class CloudformationApi:
         resources: ResourceDefinitions = None,
         stack_name: StackName = None,
         template_configuration: TemplateConfiguration = None,
-        **kwargs
+        **kwargs,
     ) -> CreateGeneratedTemplateOutput:
         raise NotImplementedError
 
@@ -2732,7 +2732,7 @@ class CloudformationApi:
         client_request_token: ClientRequestToken = None,
         enable_termination_protection: EnableTerminationProtection = None,
         retain_except_on_create: RetainExceptOnCreate = None,
-        **kwargs
+        **kwargs,
     ) -> CreateStackOutput:
         raise NotImplementedError
 
@@ -2748,7 +2748,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> CreateStackInstancesOutput:
         raise NotImplementedError
 
@@ -2771,7 +2771,7 @@ class CloudformationApi:
         call_as: CallAs = None,
         client_request_token: ClientRequestToken = None,
         managed_execution: ManagedExecution = None,
-        **kwargs
+        **kwargs,
     ) -> CreateStackSetOutput:
         raise NotImplementedError
 
@@ -2793,7 +2793,7 @@ class CloudformationApi:
         context: RequestContext,
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteChangeSetOutput:
         raise NotImplementedError
 
@@ -2811,7 +2811,7 @@ class CloudformationApi:
         retain_resources: RetainResources = None,
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2827,7 +2827,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteStackInstancesOutput:
         raise NotImplementedError
 
@@ -2837,7 +2837,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_set_name: StackSetName,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteStackSetOutput:
         raise NotImplementedError
 
@@ -2860,7 +2860,7 @@ class CloudformationApi:
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeChangeSetOutput:
         raise NotImplementedError
 
@@ -2872,7 +2872,7 @@ class CloudformationApi:
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
         logical_resource_id: LogicalResourceId = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeChangeSetHooksOutput:
         raise NotImplementedError
 
@@ -2912,7 +2912,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackName = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStackEventsOutput:
         raise NotImplementedError
 
@@ -2924,7 +2924,7 @@ class CloudformationApi:
         stack_instance_account: Account,
         stack_instance_region: Region,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStackInstanceOutput:
         raise NotImplementedError
 
@@ -2934,7 +2934,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackName,
         logical_resource_id: LogicalResourceId,
-        **kwargs
+        **kwargs,
     ) -> DescribeStackResourceOutput:
         raise NotImplementedError
 
@@ -2946,7 +2946,7 @@ class CloudformationApi:
         stack_resource_drift_status_filters: StackResourceDriftStatusFilters = None,
         next_token: NextToken = None,
         max_results: BoxedMaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStackResourceDriftsOutput:
         raise NotImplementedError
 
@@ -2957,7 +2957,7 @@ class CloudformationApi:
         stack_name: StackName = None,
         logical_resource_id: LogicalResourceId = None,
         physical_resource_id: PhysicalResourceId = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStackResourcesOutput:
         raise NotImplementedError
 
@@ -2967,7 +2967,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_set_name: StackSetName,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStackSetOutput:
         raise NotImplementedError
 
@@ -2978,7 +2978,7 @@ class CloudformationApi:
         stack_set_name: StackSetName,
         operation_id: ClientRequestToken,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStackSetOperationOutput:
         raise NotImplementedError
 
@@ -2988,7 +2988,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackName = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStacksOutput:
         raise NotImplementedError
 
@@ -3010,7 +3010,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackNameOrId,
         logical_resource_ids: LogicalResourceIds = None,
-        **kwargs
+        **kwargs,
     ) -> DetectStackDriftOutput:
         raise NotImplementedError
 
@@ -3020,7 +3020,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackNameOrId,
         logical_resource_id: LogicalResourceId,
-        **kwargs
+        **kwargs,
     ) -> DetectStackResourceDriftOutput:
         raise NotImplementedError
 
@@ -3032,7 +3032,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> DetectStackSetDriftOutput:
         raise NotImplementedError
 
@@ -3043,7 +3043,7 @@ class CloudformationApi:
         template_body: TemplateBody = None,
         template_url: TemplateURL = None,
         parameters: Parameters = None,
-        **kwargs
+        **kwargs,
     ) -> EstimateTemplateCostOutput:
         raise NotImplementedError
 
@@ -3056,7 +3056,7 @@ class CloudformationApi:
         client_request_token: ClientRequestToken = None,
         disable_rollback: DisableRollback = None,
         retain_except_on_create: RetainExceptOnCreate = None,
-        **kwargs
+        **kwargs,
     ) -> ExecuteChangeSetOutput:
         raise NotImplementedError
 
@@ -3066,7 +3066,7 @@ class CloudformationApi:
         context: RequestContext,
         generated_template_name: GeneratedTemplateName,
         format: TemplateFormat = None,
-        **kwargs
+        **kwargs,
     ) -> GetGeneratedTemplateOutput:
         raise NotImplementedError
 
@@ -3083,7 +3083,7 @@ class CloudformationApi:
         stack_name: StackName = None,
         change_set_name: ChangeSetNameOrId = None,
         template_stage: TemplateStage = None,
-        **kwargs
+        **kwargs,
     ) -> GetTemplateOutput:
         raise NotImplementedError
 
@@ -3097,7 +3097,7 @@ class CloudformationApi:
         stack_set_name: StackSetNameOrId = None,
         call_as: CallAs = None,
         template_summary_config: TemplateSummaryConfig = None,
-        **kwargs
+        **kwargs,
     ) -> GetTemplateSummaryOutput:
         raise NotImplementedError
 
@@ -3112,7 +3112,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> ImportStacksToStackSetOutput:
         raise NotImplementedError
 
@@ -3122,7 +3122,7 @@ class CloudformationApi:
         context: RequestContext,
         stack_name: StackNameOrId,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListChangeSetsOutput:
         raise NotImplementedError
 
@@ -3138,7 +3138,7 @@ class CloudformationApi:
         context: RequestContext,
         next_token: NextToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListGeneratedTemplatesOutput:
         raise NotImplementedError
 
@@ -3148,7 +3148,7 @@ class CloudformationApi:
         context: RequestContext,
         export_name: ExportName,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListImportsOutput:
         raise NotImplementedError
 
@@ -3160,7 +3160,7 @@ class CloudformationApi:
         resources: ScannedResourceIdentifiers,
         next_token: NextToken = None,
         max_results: BoxedMaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListResourceScanRelatedResourcesOutput:
         raise NotImplementedError
 
@@ -3175,7 +3175,7 @@ class CloudformationApi:
         tag_value: TagValue = None,
         next_token: NextToken = None,
         max_results: ResourceScannerMaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListResourceScanResourcesOutput:
         raise NotImplementedError
 
@@ -3185,7 +3185,7 @@ class CloudformationApi:
         context: RequestContext,
         next_token: NextToken = None,
         max_results: ResourceScannerMaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> ListResourceScansOutput:
         raise NotImplementedError
 
@@ -3201,7 +3201,7 @@ class CloudformationApi:
         max_results: MaxResults = None,
         stack_instance_resource_drift_statuses: StackResourceDriftStatusFilters = None,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> ListStackInstanceResourceDriftsOutput:
         raise NotImplementedError
 
@@ -3216,7 +3216,7 @@ class CloudformationApi:
         stack_instance_account: Account = None,
         stack_instance_region: Region = None,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> ListStackInstancesOutput:
         raise NotImplementedError
 
@@ -3236,7 +3236,7 @@ class CloudformationApi:
         max_results: MaxResults = None,
         call_as: CallAs = None,
         filters: OperationResultFilters = None,
-        **kwargs
+        **kwargs,
     ) -> ListStackSetOperationResultsOutput:
         raise NotImplementedError
 
@@ -3248,7 +3248,7 @@ class CloudformationApi:
         next_token: NextToken = None,
         max_results: MaxResults = None,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> ListStackSetOperationsOutput:
         raise NotImplementedError
 
@@ -3260,7 +3260,7 @@ class CloudformationApi:
         max_results: MaxResults = None,
         status: StackSetStatus = None,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> ListStackSetsOutput:
         raise NotImplementedError
 
@@ -3270,7 +3270,7 @@ class CloudformationApi:
         context: RequestContext,
         next_token: NextToken = None,
         stack_status_filter: StackStatusFilter = None,
-        **kwargs
+        **kwargs,
     ) -> ListStacksOutput:
         raise NotImplementedError
 
@@ -3309,7 +3309,7 @@ class CloudformationApi:
         error_code: HandlerErrorCode = None,
         resource_model: ResourceModel = None,
         client_request_token: ClientRequestToken = None,
-        **kwargs
+        **kwargs,
     ) -> RecordHandlerProgressOutput:
         raise NotImplementedError
 
@@ -3319,7 +3319,7 @@ class CloudformationApi:
         context: RequestContext,
         accept_terms_and_conditions: AcceptTermsAndConditions = None,
         connection_arn: ConnectionArn = None,
-        **kwargs
+        **kwargs,
     ) -> RegisterPublisherOutput:
         raise NotImplementedError
 
@@ -3337,7 +3337,7 @@ class CloudformationApi:
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
         retain_except_on_create: RetainExceptOnCreate = None,
-        **kwargs
+        **kwargs,
     ) -> RollbackStackOutput:
         raise NotImplementedError
 
@@ -3348,7 +3348,7 @@ class CloudformationApi:
         stack_name: StackName,
         stack_policy_body: StackPolicyBody = None,
         stack_policy_url: StackPolicyURL = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3372,7 +3372,7 @@ class CloudformationApi:
         logical_resource_id: LogicalResourceId,
         unique_id: ResourceSignalUniqueId,
         status: ResourceSignalStatus,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3389,7 +3389,7 @@ class CloudformationApi:
         stack_set_name: StackSetName,
         operation_id: ClientRequestToken,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> StopStackSetOperationOutput:
         raise NotImplementedError
 
@@ -3409,7 +3409,7 @@ class CloudformationApi:
         remove_resources: JazzLogicalResourceIds = None,
         refresh_all_resources: RefreshAllResources = None,
         template_configuration: TemplateConfiguration = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateGeneratedTemplateOutput:
         raise NotImplementedError
 
@@ -3435,7 +3435,7 @@ class CloudformationApi:
         disable_rollback: DisableRollback = None,
         client_request_token: ClientRequestToken = None,
         retain_except_on_create: RetainExceptOnCreate = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateStackOutput:
         raise NotImplementedError
 
@@ -3451,7 +3451,7 @@ class CloudformationApi:
         operation_preferences: StackSetOperationPreferences = None,
         operation_id: ClientRequestToken = None,
         call_as: CallAs = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateStackInstancesOutput:
         raise NotImplementedError
 
@@ -3478,7 +3478,7 @@ class CloudformationApi:
         regions: RegionList = None,
         call_as: CallAs = None,
         managed_execution: ManagedExecution = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateStackSetOutput:
         raise NotImplementedError
 
@@ -3488,7 +3488,7 @@ class CloudformationApi:
         context: RequestContext,
         enable_termination_protection: EnableTerminationProtection,
         stack_name: StackNameOrId,
-        **kwargs
+        **kwargs,
     ) -> UpdateTerminationProtectionOutput:
         raise NotImplementedError
 
@@ -3498,6 +3498,6 @@ class CloudformationApi:
         context: RequestContext,
         template_body: TemplateBody = None,
         template_url: TemplateURL = None,
-        **kwargs
+        **kwargs,
     ) -> ValidateTemplateOutput:
         raise NotImplementedError

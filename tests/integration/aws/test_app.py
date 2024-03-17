@@ -1,6 +1,7 @@
 import json
 import threading
 
+import httpx
 import pytest
 import requests
 import websocket
@@ -257,3 +258,25 @@ class TestWebSocketIntegration:
         socket.connect(url)
         assert socket.connected
         assert socket.recv() == "hello world"
+
+
+class TestHTTP2Support:
+    @pytest.fixture(autouse=True)
+    def _fix_proxy(self, monkeypatch):
+        # on linux it also includes [::1], somehow leading to weird URL parsing issues in httpx
+        monkeypatch.setenv("no_proxy", "localhost.localstack.cloud,localhost,127.0.0.1")
+
+    def test_http2_http(self):
+        host = config.internal_service_url(host="localhost.localstack.cloud", protocol="http")
+        with httpx.Client(http1=False, http2=True) as client:
+            assert client.get(f"{host}/_localstack/health").status_code == 200
+
+    def test_http2_https(self):
+        host = config.internal_service_url(host="localhost.localstack.cloud", protocol="https")
+        with httpx.Client(http1=False, http2=True) as client:
+            assert client.get(f"{host}/_localstack/health").status_code == 200
+
+    def test_http2_https_localhost(self):
+        host = config.internal_service_url(host="localhost", protocol="https")
+        with httpx.Client(http1=False, http2=True, verify=False) as client:
+            assert client.get(f"{host}/_localstack/health").status_code == 200

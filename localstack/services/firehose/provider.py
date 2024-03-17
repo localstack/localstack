@@ -55,6 +55,7 @@ from localstack.aws.api.firehose import (
     PutRecordOutput,
     Record,
     RedshiftDestinationConfiguration,
+    RedshiftDestinationDescription,
     RedshiftDestinationUpdate,
     ResourceNotFoundException,
     S3DestinationConfiguration,
@@ -81,6 +82,7 @@ from localstack.services.firehose.mappers import (
     convert_http_update_to_desc,
     convert_opensearch_config_to_desc,
     convert_opensearch_update_to_desc,
+    convert_redshift_config_to_desc,
     convert_s3_config_to_desc,
     convert_s3_update_to_desc,
     convert_source_config_to_desc,
@@ -273,8 +275,13 @@ class FirehoseProvider(FirehoseApi):
                 "Delivery stream contains a splunk destination (which is currently not supported)."
             )
         if redshift_destination_configuration:
-            LOG.warning(
-                "Delivery stream contains a redshift destination (which is currently not supported)."
+            destinations.append(
+                DestinationDescription(
+                    DestinationId=short_uid(),
+                    RedshiftDestinationDescription=convert_redshift_config_to_desc(
+                        redshift_destination_configuration
+                    ),
+                )
             )
         if amazon_open_search_serverless_destination_configuration:
             LOG.warning(
@@ -516,6 +523,7 @@ class FirehoseProvider(FirehoseApi):
             destination["HttpEndpointDestinationDescription"] = convert_http_update_to_desc(
                 http_endpoint_destination_update
             )
+        # TODO: add feature update redshift destination
 
         return UpdateDestinationOutput()
 
@@ -624,6 +632,14 @@ class FirehoseProvider(FirehoseApi):
                 except Exception as e:
                     LOG.exception(f"Unable to put Firehose records to HTTP endpoint {url}.")
                     raise e
+            if "RedshiftDestinationDescription" in destination:
+                s3_dest_desc = destination["RedshiftDestinationDescription"][
+                    "S3DestinationDescription"
+                ]
+                self._put_records_to_s3_bucket(delivery_stream_name, records, s3_dest_desc)
+
+                redshift_dest_desc = destination["RedshiftDestinationDescription"]
+                self._put_to_redshift(records, redshift_dest_desc)
         return [
             PutRecordBatchResponseEntry(RecordId=str(uuid.uuid4())) for _ in unprocessed_records
         ]
@@ -779,3 +795,77 @@ class FirehoseProvider(FirehoseApi):
         path = pattern.format(pre=prefix, name=stream_name, rand=str(uuid.uuid4()))
         path = timestamp(format=path)
         return path
+
+    def _put_to_redshift(
+        self,
+        records: List[Dict],
+        redshift_destination_description: RedshiftDestinationDescription,
+    ):
+        jdbcurl = redshift_destination_description.get("ClusterJDBCURL")
+        cluster_id = self._get_cluster_id_from_jdbc_url(jdbcurl)
+        db_name = jdbcurl.split("/")[-1]
+        table_name = redshift_destination_description.get("CopyCommand").get("DataTableName")
+
+        rows_to_insert = [self._prepare_records_for_redshift(record) for record in records]
+        columns_placeholder_str = self._extract_columns(records[0])
+        sql_insert_statement = f"INSERT INTO {table_name} VALUES ({columns_placeholder_str})"
+
+        execute_statement = {
+            "Sql": sql_insert_statement,
+            "Database": db_name,
+            "ClusterIdentifier": cluster_id,  # cluster_identifier in cluster create
+        }
+
+        role_arn = redshift_destination_description.get("RoleARN")
+        account_id = extract_account_id_from_arn(role_arn)
+        region_name = extract_region_from_arn(role_arn)
+        redshift_data = connect_to(
+            aws_access_key_id=account_id, region_name=region_name
+        ).redshift_data
+
+        for row_to_insert in rows_to_insert:  # redsift_data only allows single row inserts
+            try:
+                LOG.debug(
+                    "Publishing to Redshift destination: %s. Data: %s", jdbcurl, row_to_insert
+                )
+                redshift_data.execute_statement(Parameters=row_to_insert, **execute_statement)
+            except Exception as e:
+                LOG.exception(f"Unable to put records {row_to_insert} to redshift cluster.")
+                raise e
+
+    def _get_cluster_id_from_jdbc_url(self, jdbc_url: str) -> str:
+        pattern = r"://(.*?)\."
+        match = re.search(pattern, jdbc_url)
+        if match:
+            return match.group(1)
+        else:
+            raise ValueError(f"Unable to extract cluster id from jdbc url: {jdbc_url}")
+
+    def _decode_record(self, record: Dict) -> Dict:
+        data = base64.b64decode(record.get("Data") or record.get("data"))
+        data = to_str(data)
+        data = json.loads(data)
+        return data
+
+    def _prepare_records_for_redshift(self, record: Dict) -> List[Dict]:
+        data = self._decode_record(record)
+
+        parameters = []
+        for key, value in data.items():
+            if isinstance(value, str):
+                value = value.replace("\t", " ")
+                value = value.replace("\n", " ")
+            elif value is None:
+                value = "NULL"
+            else:
+                value = str(value)
+            parameters.append({"name": key, "value": value})
+            # required to work with execute_statement in community (moto) and ext (localstack native)
+
+        return parameters
+
+    def _extract_columns(self, record: Dict) -> str:
+        data = self._decode_record(record)
+        placeholders = [f":{key}" for key in data]
+        placeholder_str = ", ".join(placeholders)
+        return placeholder_str

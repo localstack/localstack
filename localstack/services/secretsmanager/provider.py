@@ -474,15 +474,21 @@ def backend_update_secret_version_stage(
         secret.default_version_id = move_to_version_id
 
     versions_no_stages = []
-    update_vid_set = {remove_from_version_id, move_to_version_id}
     for version_id, version in secret.versions.items():
         version_stages = version["version_stages"]
 
+        # moto appends a new AWSPREVIOUS label to the version AWSCURRENT was removed from,
+        # but it does not remove the old AWSPREVIOUS label.
         # Patch: ensure only one AWSPREVIOUS tagged version is in the pool.
-        if version_id not in update_vid_set and AWSPREVIOUS in version_stages:
+        if (
+            version_stage == AWSCURRENT
+            and version_id != remove_from_version_id
+            and AWSPREVIOUS in version_stages
+        ):
             version_stages.remove(AWSPREVIOUS)
-            if not version_stages:
-                versions_no_stages.append(version_id)
+
+        if not version_stages:
+            versions_no_stages.append(version_id)
 
     # Patch: remove secret versions with no version stages.
     for version_no_stages in versions_no_stages:
@@ -527,7 +533,7 @@ def rotate_secret(self) -> str:
         client_request_token=client_request_token,
         rotation_lambda_arn=rotation_lambda_arn,
         rotation_rules=rotation_rules,
-        rotate_immediately=rotate_immediately,
+        rotate_immediately=True if rotate_immediately is None else rotate_immediately,
     )
 
 

@@ -192,14 +192,14 @@ def run(
         │   ├── ...
         │   ├── localstack                   <- will be mounted into the container
         │   ├── localstack_core.egg-info
-        │   ├── setup.cfg
+        │   ├── pyproject.toml
         │   ├── tests
         │   └── ...
         ├── localstack-ext                   <- or execute script in here
         │   ├── ...
         │   ├── localstack_ext               <- will be mounted into the container
         │   ├── localstack_ext.egg-info
-        │   ├── setup.cfg
+        │   ├── pyproject.toml
         │   ├── tests
         │   └── ...
         ├── moto
@@ -207,7 +207,7 @@ def run(
         │   ├── ...
         │   ├── moto                         <- will be mounted into the container
         │   ├── moto_ext.egg-info
-        │   ├── setup.cfg
+        │   ├── pyproject.toml
         │   ├── tests
         │   └── ...
 

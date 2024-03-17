@@ -222,9 +222,17 @@ class TestMessageTransformationApiGateway:
         variables = {"input": {"body": context}}
         template1 = "${foo.bar.strip().lower().replace(' ','-')}"
         template2 = "${foo.bar.trim().toLowerCase().replace(' ','-')}"
-        for template in [template1, template2]:
+        template3 = "${foo.bar.toString().lower().replace(' ','-')}"
+        template4 = '${foo.bar.trim().toLowerCase().replaceAll("^(.*)\\s(.*)$","$1-$2")}'
+        for template in [template1, template2, template3, template4]:
             result = ApiGatewayVtlTemplate().render_vtl(template, variables=variables)
             assert result == "baz-baz"
+
+        contains_template1 = ("${foo.bar.toString().lower().contains('baz')}", "true")
+        contains_template2 = ("${foo.bar.toString().lower().contains('bar')}", "false")
+        for template, expected_result in [contains_template1, contains_template2]:
+            result = ApiGatewayVtlTemplate().render_vtl(template, variables=variables)
+            assert result == expected_result
 
     def test_render_urlencoded_string_data(self):
         template = "MessageBody=$util.base64Encode($input.json('$'))"
