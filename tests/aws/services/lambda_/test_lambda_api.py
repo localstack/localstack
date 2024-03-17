@@ -4097,8 +4097,8 @@ class TestLambdaAccountSettings:
         }"""
         acc_settings = aws_client.lambda_.get_account_settings()
         acc_settings_modded = acc_settings
-        acc_settings_modded["AccountLimit"] = sorted(list(acc_settings["AccountLimit"].keys()))
-        acc_settings_modded["AccountUsage"] = sorted(list(acc_settings["AccountUsage"].keys()))
+        acc_settings_modded["AccountLimit"] = sorted(acc_settings["AccountLimit"].keys())
+        acc_settings_modded["AccountUsage"] = sorted(acc_settings["AccountUsage"].keys())
         snapshot.match("acc_settings_modded", acc_settings_modded)
 
     @markers.aws.validated

@@ -195,7 +195,6 @@ ignore = [
     "B027", # TODO `Server.do_shutdown` is an empty method in an abstract base class, but has no abstract decorator
     "B904", # TODO Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
     "C408", # TODO Unnecessary `list` call (rewrite as a literal)
-    "C414", # TODO Unnecessary `list` call within `sorted()`
     "C416", # TODO Unnecessary `set` comprehension
     "C901", # TODO function is too complex
     "E402", # TODO Module level import not at top of file

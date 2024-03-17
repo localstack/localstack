@@ -160,7 +160,7 @@ class CloudFormationUi:
             "stackName": "stack1",
             "templateBody": "{}",
             "errorMessage": "''",
-            "regions": json.dumps(sorted(list(get_valid_regions()))),
+            "regions": json.dumps(sorted(get_valid_regions())),
         }
 
         download_url = req_params.get("templateURL")
