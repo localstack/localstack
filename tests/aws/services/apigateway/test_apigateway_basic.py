@@ -276,6 +276,9 @@ class TestAPIGateway:
     def test_api_gateway_lambda_integration_aws_type(
         self, create_lambda_function, create_rest_apigw, aws_client
     ):
+        print("TEST_AWS_REGION_NAME: ", TEST_AWS_REGION_NAME)
+        print("TEST_AWS_ACCOUNT_ID: ", TEST_AWS_ACCOUNT_ID)
+        print("TEST_AWS_ACCESS_KEY_ID: ", TEST_AWS_ACCESS_KEY_ID)
         region_name = aws_client.apigateway._client_config.region_name
         fn_name = f"test-{short_uid()}"
         create_lambda_function(
