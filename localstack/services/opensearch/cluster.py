@@ -89,7 +89,7 @@ def init_directories(dirs: Directories):
     chmod_r(dirs.backup, 0o777)
 
     # clear potentially existing lock files (which cause problems since ES 7.10)
-    for d, dirs, files in os.walk(dirs.data, True):
+    for d, _, files in os.walk(dirs.data, True):
         for f in files:
             if f.endswith(".lock"):
                 rm_rf(os.path.join(d, f))

@@ -188,7 +188,6 @@ ignore = [
     "B007", # TODO Loop control variable x not used within loop body
     "B017", # TODO `pytest.raises(Exception)` should be considered evil
     "B019", # TODO Use of `functools.lru_cache` or `functools.cache` on methods can lead to memory leaks
-    "B020", # TODO Loop control variable `invalid_values` overrides iterable it iterates
     "B022", # TODO No arguments passed to `contextlib.suppress`. No exceptions will be suppressed and therefore this context manager is redundant
     "B023", # TODO Function definition does not bind loop variable `server`
     "B024", # TODO x is an abstract base class, but it has no abstract methods

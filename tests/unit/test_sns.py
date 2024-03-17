@@ -549,8 +549,8 @@ class TestSns:
     def test_is_not_raw_message_delivery(self, subscriber):
         invalid_values = ["false", "False", False, "somevalue", ""]
 
-        for invalid_values in invalid_values:
-            subscriber["RawMessageDelivery"] = invalid_values
+        for value in invalid_values:
+            subscriber["RawMessageDelivery"] = value
             assert not is_raw_message_delivery(subscriber)
 
         del subscriber["RawMessageDelivery"]

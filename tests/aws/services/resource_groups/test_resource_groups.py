@@ -31,21 +31,21 @@ def resourcegroups_create_group(aws_client):
 
 @pytest.fixture
 def sqs_create_queue_in_region(aws_client_factory):
-    queue_urls = {}
+    region_queue_urls = {}
 
     def factory(region, **kwargs):
         if "QueueName" not in kwargs:
             kwargs["QueueName"] = "test-queue-%s" % short_uid()
         response = aws_client_factory(region_name=region).sqs.create_queue(**kwargs)
         url = response["QueueUrl"]
-        queue_urls.setdefault(region, []).append(url)
+        region_queue_urls.setdefault(region, []).append(url)
 
         return url
 
     yield factory
 
     # cleanup
-    for queues_region, queue_urls in queue_urls.items():
+    for queues_region, queue_urls in region_queue_urls.items():
         sqs_client = aws_client_factory(region_name=queues_region).sqs
         for queue_url in queue_urls:
             with contextlib.suppress(ClientError):
