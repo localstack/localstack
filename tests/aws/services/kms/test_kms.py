@@ -9,13 +9,11 @@ from random import getrandbits
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding
-from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from localstack.services.kms.models import Ciphertext, _serialize_ciphertext_blob, IV_LEN
+from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.testing.pytest import markers
 from localstack.utils.crypto import encrypt
@@ -162,9 +160,7 @@ class TestKMS:
         iv = os.urandom(IV_LEN)
         ciphertext, tag = encrypt(custom_key_material, message, iv, b"")
         expected_ciphertext_blob = _serialize_ciphertext_blob(
-            ciphertext=Ciphertext(
-                key_id=key_id, iv=iv, ciphertext=ciphertext, tag=tag
-            )
+            ciphertext=Ciphertext(key_id=key_id, iv=iv, ciphertext=ciphertext, tag=tag)
         )
 
         plaintext = aws_client.kms.decrypt(
