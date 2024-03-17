@@ -334,9 +334,9 @@ class TestSqsProvider:
             )
             i += 1
         assert len(result_recv["Messages"]) == message_count
-        assert set(result_recv["Messages"][b]["Body"] for b in range(message_count)) == set(
+        assert {result_recv["Messages"][b]["Body"] for b in range(message_count)} == {
             f"message-{b}" for b in range(message_count)
-        )
+        }
 
     @markers.aws.validated
     def test_send_message_batch_with_empty_list(self, sqs_create_queue, aws_sqs_client):

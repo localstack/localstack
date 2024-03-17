@@ -360,6 +360,7 @@ class InfraProvisioner:
         warnings.warn(
             "`add_custom_setup_provisioning_step` is deprecated. Use `add_custom_setup`",
             DeprecationWarning,
+            stacklevel=2,
         )
         self.add_custom_setup(setup_task)
 

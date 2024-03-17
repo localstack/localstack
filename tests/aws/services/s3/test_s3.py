@@ -3312,13 +3312,11 @@ class TestS3:
             func_name=function_name,
             role=lambda_su_role,
             runtime=Runtime.python3_9,
-            envvars=dict(
-                {
-                    "BUCKET_NAME": bucket_name,
-                    "OBJECT_NAME": key,
-                    "LOCAL_FILE_NAME": "/tmp/" + key,
-                }
-            ),
+            envvars={
+                "BUCKET_NAME": bucket_name,
+                "OBJECT_NAME": key,
+                "LOCAL_FILE_NAME": "/tmp/" + key,
+            },
         )
         aws_client.lambda_.invoke(FunctionName=function_name, InvocationType="Event")
 
@@ -7994,7 +7992,7 @@ class TestS3StaticWebsiteHosting:
                     Bucket=s3_bucket,
                     WebsiteConfiguration=invalid_configuration,
                 )
-                assert False, f"{invalid_configuration} should have raised an exception"
+                raise AssertionError(f"{invalid_configuration} should have raised an exception")
             except ClientError as e:
                 snapshot.match(f"invalid-website-conf-{index}", e.response)
 

@@ -364,7 +364,7 @@ class TestOpensearchProvider:
                 f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
             )
             plugins_response = requests.get(plugins_url, headers={"Accept": "application/json"})
-            installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
+            installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
             requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
             assert requested_plugins.issubset(installed_plugins)
         finally:
@@ -400,7 +400,7 @@ class TestOpensearchProvider:
             plugins_url, headers={"Accept": "application/json"}, auth=master_user_auth
         )
         assert plugins_response.status_code == 200
-        installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
+        installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
         assert "opensearch-security" in installed_plugins
 
         # create a new index with the admin user

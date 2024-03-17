@@ -591,7 +591,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
         # if we add 0.0.0.0:<port> and already contain *:<port> then bind on
         # 0.0.0.0
-        contained_ports = set(every.port for every in self)
+        contained_ports = {every.port for every in self}
         if value.host == "0.0.0.0" and value.port in contained_ports:
             for item in self:
                 if item.port == value.port:
@@ -1358,6 +1358,7 @@ def service_url(service_key, host=None, port=None):
         """@deprecated: Use `internal_service_url()` instead. We assume that most usages are
         internal but really need to check and update each usage accordingly.""",
         DeprecationWarning,
+        stacklevel=2,
     )
     return internal_service_url(host=host, port=port)
 
@@ -1369,6 +1370,7 @@ def service_port(service_key: str, external: bool = False) -> int:
         "Deprecated: use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for "
         "internal use.",
         DeprecationWarning,
+        stacklevel=2,
     )
     if external:
         return LOCALSTACK_HOST.port
@@ -1384,6 +1386,7 @@ def get_edge_port_http():
         for internal use. This function is also not needed anymore because we don't separate
         between HTTP and HTTP ports anymore since LocalStack listens to both.""",
         DeprecationWarning,
+        stacklevel=2,
     )
     return GATEWAY_LISTEN[0].port
 
@@ -1397,6 +1400,7 @@ def get_edge_url(localstack_hostname=None, protocol=None):
     We assume that most usages are internal but really need to check and update each usage accordingly.
     """,
         DeprecationWarning,
+        stacklevel=2,
     )
     return internal_service_url(host=localstack_hostname, protocol=protocol)
 

@@ -416,7 +416,7 @@ def moto_filter_log_events(
 ):
     # moto currently raises an exception if filter_patterns is None, so we skip it
     events = filter_log_events(
-        self, start_time=start_time, end_time=end_time, filter_pattern=None, *args, **kwargs
+        self, *args, start_time=start_time, end_time=end_time, filter_pattern=None, **kwargs
     )
 
     if not filter_pattern:

@@ -34,9 +34,8 @@ class TestSwf:
             domain=workflow_domain_name, registrationStatus="REGISTERED"
         )
 
-        assert workflow_type_name in map(
-            lambda workflow_type: workflow_type["workflowType"]["name"],
-            workflow_types["typeInfos"],
+        assert workflow_type_name in (
+            workflow_type["workflowType"]["name"] for workflow_type in workflow_types["typeInfos"]
         )
 
         swf_client.register_activity_type(
@@ -103,7 +102,7 @@ class TestSwf:
                 "runId": workflow_execution["runId"],
             },
         )
-        events = map(lambda event: event["eventType"], history["events"])
+        events = (event["eventType"] for event in history["events"])
         for event_type in [
             "WorkflowExecutionStarted",
             "DecisionTaskCompleted",

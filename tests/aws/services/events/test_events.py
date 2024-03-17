@@ -170,7 +170,7 @@ class TestEvents:
         self, aws_client
     ):
         event_type = str(uuid.uuid4())
-        event_details_to_publish = list(map(lambda n: f"event {n}", range(10)))
+        event_details_to_publish = [f"event {n}" for n in range(10)]
 
         for detail in event_details_to_publish:
             aws_client.events.put_events(
@@ -185,9 +185,9 @@ class TestEvents:
             )
 
         events_tmp_dir = _get_events_tmp_dir()
-        sorted_events_written_to_disk = map(
-            lambda filename: json.loads(str(load_file(os.path.join(events_tmp_dir, filename)))),
-            sorted(os.listdir(events_tmp_dir)),
+        sorted_events_written_to_disk = (
+            json.loads(str(load_file(os.path.join(events_tmp_dir, filename))))
+            for filename in sorted(os.listdir(events_tmp_dir))
         )
         sorted_events = list(
             filter(
@@ -196,10 +196,7 @@ class TestEvents:
             )
         )
 
-        assert (
-            list(map(lambda event: json.loads(event["Detail"]), sorted_events))
-            == event_details_to_publish
-        )
+        assert [json.loads(event["Detail"]) for event in sorted_events] == event_details_to_publish
 
     @markers.aws.validated
     def test_list_tags_for_resource(self, aws_client, clean_up):

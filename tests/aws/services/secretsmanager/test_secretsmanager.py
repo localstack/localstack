@@ -1354,8 +1354,8 @@ class TestSecretsManager:
         assert res_json["Name"] == secret_name
         res_versions: [json] = res_json["Versions"]
         assert len(res_versions) == len(versions)
-        assert len(set([rv["VersionId"] for rv in res_versions])) == len(res_versions)
-        assert len(set([v["VersionId"] for v in versions])) == len(versions)
+        assert len({rv["VersionId"] for rv in res_versions}) == len(res_versions)
+        assert len({v["VersionId"] for v in versions}) == len(versions)
         for version in versions:
             vs_in_res: [json] = list(
                 filter(lambda rv: rv["VersionId"] == version["VersionId"], res_versions)
