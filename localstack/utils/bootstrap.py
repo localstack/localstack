@@ -356,9 +356,9 @@ def validate_localstack_config(name: str):
     # prepare config options
     container_name = ls_service_details.get("container_name") or ""
     docker_ports = (port.split(":")[-2] for port in ls_service_details.get("ports", []))
-    docker_env = dict(
-        (env.split("=")[0], env.split("=")[1]) for env in ls_service_details.get("environment", {})
-    )
+    docker_env = {
+        env.split("=")[0]: env.split("=")[1] for env in ls_service_details.get("environment", {})
+    }
     edge_port = config.GATEWAY_LISTEN[0].port
     main_container = config.MAIN_CONTAINER_NAME
 
