@@ -198,7 +198,7 @@ class TestStacksApi:
         ]
         resources_before = len(resources)
         assert resources_before == 3
-        statuses = set([res["ResourceStatus"] for res in resources])
+        statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"CREATE_COMPLETE"}
 
         # remove one resource from the template, then update stack (via change set)
@@ -218,7 +218,7 @@ class TestStacksApi:
             "StackResourceSummaries"
         ]
         assert len(resources) == resources_before - 1
-        statuses = set([res["ResourceStatus"] for res in resources])
+        statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"UPDATE_COMPLETE"}
 
     @markers.aws.needs_fixing
@@ -579,7 +579,7 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
         "StackEvents"
     ]
 
-    resource_types = list(set([event["ResourceType"] for event in events]))
+    resource_types = list({event["ResourceType"] for event in events})
     resource_types.sort()
     snapshot.match("resource_types", resource_types)
 
