@@ -200,7 +200,6 @@ ignore = [
     "E402", # TODO Module level import not at top of file
     "E501", # E501 Line too long - handled by black, see https://docs.astral.sh/ruff/faq/#is-ruff-compatible-with-black
     "E721", # TODO Do not compare types, use `isinstance()`
-    "F403", # TODO `from localstack.services.cloudformation.models import *` used; unable to detect undefined names
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
 ]
