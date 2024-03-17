@@ -591,7 +591,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
         # if we add 0.0.0.0:<port> and already contain *:<port> then bind on
         # 0.0.0.0
-        contained_ports = set(every.port for every in self)
+        contained_ports = {every.port for every in self}
         if value.host == "0.0.0.0" and value.port in contained_ports:
             for item in self:
                 if item.port == value.port:

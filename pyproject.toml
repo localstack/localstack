@@ -200,7 +200,6 @@ ignore = [
     "B028", # TODO No explicit `stacklevel` keyword argument found
     "B034", # TODO `re.sub` should pass `count` and `flags` as keyword arguments to avoid confusion due to unintuitive argument positions
     "B904", # TODO Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
-    "C401", # TODO Unnecessary generator (rewrite as a `set` comprehension)
     "C402", # TODO Unnecessary generator (rewrite as a `dict` comprehension)
     "C403", # TODO Unnecessary `list` comprehension (rewrite as a `set` comprehension)
     "C405", # TODO Unnecessary `list` literal (rewrite as a `set` literal)
