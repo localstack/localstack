@@ -69,7 +69,7 @@ def resolve_ref(schema: ResourceSchema, target: str) -> dict:
     """
     Given a schema {"a": {"b": "c"}} and the ref "#/a/b" return "c"
     """
-    target_path = filter(None, map(lambda elem: elem.strip(), target.lstrip("#").split("/")))
+    target_path = filter(None, (elem.strip() for elem in target.lstrip("#").split("/")))
 
     T = TypeVar("T")
 
