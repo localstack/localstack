@@ -250,9 +250,8 @@ class Execution:
 
     def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
         exec_worker: Optional[ExecutionWorker] = self.exec_worker
-        if not exec_worker:
-            raise RuntimeError("No running executions.")
-        exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
+        if exec_worker:
+            exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
 
     def _publish_execution_status_change_event(self):
         input_value = (

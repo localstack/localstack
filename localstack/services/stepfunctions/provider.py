@@ -161,6 +161,13 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
     @staticmethod
     def _validate_activity_name(name: str) -> None:
+        # The activity name is validated according to the AWS StepFunctions documentation, the name should not contain:
+        # - white space
+        # - brackets < > { } [ ]
+        # - wildcard characters ? *
+        # - special characters " # % \ ^ | ~ ` $ & , ; : /
+        # - control characters (U+0000-001F, U+007F-009F)
+        # https://docs.aws.amazon.com/step-functions/latest/apireference/API_CreateActivity.html#API_CreateActivity_RequestSyntax
         invalid_chars = set(' <>{}[]?*"#%\\^|~`$&,;:/')
         control_chars = {chr(i) for i in range(32)} | {chr(i) for i in range(127, 160)}
         invalid_chars |= control_chars
@@ -782,7 +789,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         activities = self.get_store(context).activities
         if activity_arn not in activities:
             activity = Activity(arn=activity_arn, name=name)
-            self.get_store(context).activities[activity_arn] = activity
+            activities[activity_arn] = activity
         else:
             activity = activities[activity_arn]
 

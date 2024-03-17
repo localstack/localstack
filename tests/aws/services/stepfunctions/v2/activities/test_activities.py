@@ -40,7 +40,7 @@ class TestActivities:
         template["States"]["ActivityTask"]["Resource"] = activity_arn
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"Value1": "Hello", "Value2": "World"})
+        exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -77,7 +77,7 @@ class TestActivities:
         template["States"]["ActivityTask"]["Resource"] = activity_arn
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"Value1": "Hello", "Value2": "World"})
+        exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -109,7 +109,7 @@ class TestActivities:
         template["States"]["ActivityTask"]["Resource"] = activity_arn
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"Value1": "Hello", "Value2": "World"})
+        exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -147,7 +147,7 @@ class TestActivities:
         template["States"]["ActivityTask"]["Resource"] = activity_arn
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"Value1": "Hello", "Value2": "World"})
+        exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -185,7 +185,45 @@ class TestActivities:
         template["States"]["ActivityTask"]["Resource"] = activity_arn
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"Value1": "Hello", "Value2": "World"})
+        exec_input = json.dumps({"Value1": "HelloWorld"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_activity_task_start_timeout(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_activity,
+        sfn_activity_consumer,
+        sfn_snapshot,
+    ):
+        activity_name = f"activity-{short_uid()}"
+        create_activity_output = create_activity(name=activity_name)
+        activity_arn = create_activity_output["activityArn"]
+        sfn_snapshot.add_transformer(RegexTransformer(activity_arn, "activity_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(activity_name, "activity_name"))
+        sfn_snapshot.match("create_activity_output", create_activity_output)
+
+        sfn_activity_consumer(
+            template=ActivityTemplate.load_sfn_template(
+                ActivityTemplate.BASE_ID_ACTIVITY_CONSUMER_TIMEOUT
+            ),
+            activity_arn=activity_arn,
+        )
+
+        template = ActivityTemplate.load_sfn_template(ActivityTemplate.BASE_ACTIVITY_TASK_TIMEOUT)
+        template["States"]["ActivityTask"]["Resource"] = activity_arn
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Value1": "HelloWorld"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

@@ -13,11 +13,17 @@ class ActivityTemplate(TemplateLoader):
     BASE_ACTIVITY_TASK_HEARTBEAT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/base_activity_task_heartbeat.json5"
     )
+    BASE_ACTIVITY_TASK_TIMEOUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_activity_task_timeout.json5"
+    )
     BASE_ID_ACTIVITY_CONSUMER: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/base_id_activity_consumer.json5"
     )
     BASE_ID_ACTIVITY_CONSUMER_FAIL: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/base_id_activity_consumer_fail.json5"
+    )
+    BASE_ID_ACTIVITY_CONSUMER_TIMEOUT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/base_id_activity_consumer_timeout.json5"
     )
     HEARTBEAT_ID_ACTIVITY_CONSUMER: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/heartbeat_id_activity_consumer.json5"

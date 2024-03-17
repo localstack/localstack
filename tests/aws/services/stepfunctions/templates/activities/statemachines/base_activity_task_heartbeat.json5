@@ -6,7 +6,7 @@
       "Type": "Task",
       "TimeoutSeconds": 60,
       "HeartbeatSeconds": 10,
-      "Resource": "__tbd__",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
       "End": true
     }
   }

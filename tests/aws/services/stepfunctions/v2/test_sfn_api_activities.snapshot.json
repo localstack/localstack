@@ -58,9 +58,9 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_describe_deleted_activity": {
-    "recorded-date": "03-03-2024, 06:08:10",
+    "recorded-date": "17-03-2024, 10:33:44",
     "recorded-content": {
-      "invalid_name": {
+      "no_such_activity": {
         "Error": {
           "Code": "ActivityDoesNotExist",
           "Message": "Activity Does Not Exist: 'activity_arn'"
@@ -74,9 +74,9 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_get_activity_task_deleted": {
-    "recorded-date": "03-03-2024, 06:10:09",
+    "recorded-date": "17-03-2024, 10:34:59",
     "recorded-content": {
-      "invalid_name": {
+      "no_such_activity": {
         "Error": {
           "Code": "ActivityDoesNotExist",
           "Message": "Activity Does Not Exist: 'activity_arn'"
@@ -104,6 +104,34 @@
       "exception": {
         "exception_typename": "InvalidArn",
         "exception_value": "An error occurred (InvalidArn) when calling the GetActivityTask operation: Invalid Arn: 'Invalid ARN prefix: no_an_activity_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_list_activities": {
+    "recorded-date": "17-03-2024, 11:26:07",
+    "recorded-content": {
+      "list_activities_response": {
+        "activities": [
+          {
+            "activityArn": "activity_arn_0",
+            "creationDate": "datetime",
+            "name": "activity_name_0"
+          },
+          {
+            "activityArn": "activity_arn_1",
+            "creationDate": "datetime",
+            "name": "activity_name_1"
+          },
+          {
+            "activityArn": "activity_arn_2",
+            "creationDate": "datetime",
+            "name": "activity_name_2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   }

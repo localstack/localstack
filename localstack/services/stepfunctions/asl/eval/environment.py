@@ -167,8 +167,6 @@ class Environment:
                     frame.set_stop(stop_date=stop_date, cause=cause, error=error)
                 self.program_state_event.set()
                 self.program_state_event.clear()
-            else:
-                raise RuntimeError("Cannot stop non running ProgramState.")
 
     def open_frame(
         self, event_history_context: Optional[EventHistoryContext] = None

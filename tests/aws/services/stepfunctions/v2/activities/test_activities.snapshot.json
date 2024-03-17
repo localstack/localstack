@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task": {
-    "recorded-date": "03-03-2024, 08:03:04",
+    "recorded-date": "17-03-2024, 11:09:25",
     "recorded-content": {
       "create_activity_output": {
         "activityArn": "activity_arn",
@@ -15,8 +15,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -33,8 +32,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -47,8 +45,7 @@
           {
             "activityScheduledEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -72,8 +69,7 @@
           {
             "activitySucceededEventDetails": {
               "output": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "outputDetails": {
                 "truncated": false
@@ -90,8 +86,7 @@
             "stateExitedEventDetails": {
               "name": "ActivityTask",
               "output": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "outputDetails": {
                 "truncated": false
@@ -103,8 +98,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "outputDetails": {
                 "truncated": false
@@ -124,7 +118,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_failure": {
-    "recorded-date": "03-03-2024, 08:03:33",
+    "recorded-date": "17-03-2024, 11:10:40",
     "recorded-content": {
       "create_activity_output": {
         "activityArn": "activity_arn",
@@ -139,8 +133,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -157,8 +150,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -171,8 +163,7 @@
           {
             "activityScheduledEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -196,8 +187,7 @@
           {
             "activityFailedEventDetails": {
               "cause": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "error": "Programmatic Error"
             },
@@ -209,8 +199,7 @@
           {
             "executionFailedEventDetails": {
               "cause": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "error": "Programmatic Error"
             },
@@ -228,7 +217,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_with_heartbeat": {
-    "recorded-date": "03-03-2024, 08:04:07",
+    "recorded-date": "17-03-2024, 11:11:13",
     "recorded-content": {
       "create_activity_output": {
         "activityArn": "activity_arn",
@@ -243,8 +232,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -261,8 +249,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -276,8 +263,7 @@
             "activityScheduledEventDetails": {
               "heartbeatInSeconds": 10,
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -302,8 +288,7 @@
           {
             "activitySucceededEventDetails": {
               "output": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "outputDetails": {
                 "truncated": false
@@ -320,8 +305,7 @@
             "stateExitedEventDetails": {
               "name": "ActivityTask",
               "output": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "outputDetails": {
                 "truncated": false
@@ -333,8 +317,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "outputDetails": {
                 "truncated": false
@@ -354,7 +337,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_on_deleted": {
-    "recorded-date": "04-03-2024, 11:53:34",
+    "recorded-date": "17-03-2024, 11:10:13",
     "recorded-content": {
       "create_activity_output": {
         "activityArn": "activity_arn",
@@ -369,8 +352,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -387,8 +369,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -417,7 +398,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_no_worker_name": {
-    "recorded-date": "04-03-2024, 13:44:51",
+    "recorded-date": "17-03-2024, 11:09:58",
     "recorded-content": {
       "create_activity_output": {
         "activityArn": "activity_arn",
@@ -432,8 +413,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -450,8 +430,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -464,8 +443,7 @@
           {
             "activityScheduledEventDetails": {
               "input": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "inputDetails": {
                 "truncated": false
@@ -487,8 +465,7 @@
           {
             "activitySucceededEventDetails": {
               "output": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "outputDetails": {
                 "truncated": false
@@ -505,8 +482,7 @@
             "stateExitedEventDetails": {
               "name": "ActivityTask",
               "output": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "outputDetails": {
                 "truncated": false
@@ -518,8 +494,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "Value1": "Hello",
-                "Value2": "World"
+                "Value1": "HelloWorld"
               },
               "outputDetails": {
                 "truncated": false
@@ -529,6 +504,100 @@
             "previousEventId": 6,
             "timestamp": "timestamp",
             "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/activities/test_activities.py::TestActivities::test_activity_task_start_timeout": {
+    "recorded-date": "17-03-2024, 11:48:21",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ActivityTask"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "activityScheduledEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "resource": "activity_arn",
+              "timeoutInSeconds": 5
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ActivityScheduled"
+          },
+          {
+            "activityStartedEventDetails": {
+              "workerName": "BASE_ID_ACTIVITY_CONSUMER"
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ActivityStarted"
+          },
+          {
+            "activityTimedOutEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ActivityTimedOut"
+          },
+          {
+            "executionFailedEventDetails": {
+              "error": "States.Timeout"
+            },
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
           }
         ],
         "ResponseMetadata": {

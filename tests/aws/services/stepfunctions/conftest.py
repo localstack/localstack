@@ -254,6 +254,10 @@ def create_state_machine(aws_client):
 
     for state_machine_arn in _state_machine_arns:
         try:
+            executions = aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
+            for execution in executions["executions"]:
+                aws_client.stepfunctions.stop_execution(executionArn=execution["executionArn"])
+
             aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
         except Exception:
             LOG.debug(f"Unable to delete state machine '{state_machine_arn}' during cleanup.")
