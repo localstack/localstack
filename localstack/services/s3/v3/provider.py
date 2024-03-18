@@ -315,6 +315,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_before_state_save(self):
         self._storage_backend.flush()
 
+    def on_after_state_reset(self):
+        self._cors_handler.invalidate_cache()
+
+    def on_after_state_load(self):
+        self._cors_handler.invalidate_cache()
+
     def on_before_stop(self):
         self._notification_dispatcher.shutdown()
         self._storage_backend.close()
