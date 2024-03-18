@@ -48,22 +48,26 @@ LOG = logging.getLogger(__name__)
 # - do not add "optional" dependencies of services here, use API_DEPENDENCIES_OPTIONAL instead
 API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
+    # dynamodbsteams uses kinesis under the hood
     "dynamodbstreams": ["kinesis"],
+    # es forwards all requests to opensearch (basically an API deprecation path in AWS)
     "es": ["opensearch"],
     "cloudformation": ["s3", "sts"],
     "lambda": ["s3", "sqs", "sts"],
+    # firehose currently only supports kinesis as source, this could become optional when more sources are supported
     "firehose": ["kinesis"],
     "transcribe": ["s3"],
 }
 
 # Optional dependencies of services on other services
 # - maps from API names to list of other API names that they _optionally_ depend on: <service>:<dependent-services>
-# - an optional service dependency is a service without which a service's basic functionality breaks,
+# - an optional service dependency is a service without which a service's basic functionality doesn't break,
 #   but which is needed for certain features (f.e. for one of multiple integrations)
 # - this mapping is used f.e. used for the selective test execution (localstack.testing.testselection)
 # - only add optional dependencies of services here, use API_DEPENDENCIES for mandatory dependencies
 API_DEPENDENCIES_OPTIONAL = {
-    "firehose": ["opensearch", "es", "s3"],
+    # firehose's optional dependencies are supported delivery stream destinations
+    "firehose": ["es", "opensearch", "s3", "redshift"],
     "lambda": ["cloudwatch", "dynamodbstreams", "logs", "kafka", "kinesis", "msk"],
     "ses": ["sns"],
     "sns": ["sqs", "lambda", "firehose", "ses", "logs"],
