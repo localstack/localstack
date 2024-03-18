@@ -105,17 +105,17 @@
 /tests/aws/services/acm/ @alexrashed
 
 # apigateway
-/localstack/aws/api/apigateway/ @calvernaz @bentsku
-/localstack/services/apigateway/ @calvernaz @bentsku
-/tests/aws/services/apigateway/ @calvernaz @bentsku
-/tests/unit/test_apigateway.py @calvernaz @bentsku
+/localstack/aws/api/apigateway/ @bentsku
+/localstack/services/apigateway/ @bentsku
+/tests/aws/services/apigateway/ @bentsku
+/tests/unit/test_apigateway.py @bentsku
 
 # cloudformation
-/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw
-/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw
-/tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw
-/tests/unit/test_cloudformation.py @dominikschubert @pinzon @simonrw
-/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw
+/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
+/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
+/tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
+/tests/unit/test_cloudformation.py @dominikschubert @pinzon @simonrw @Morijarti
+/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
 
 # cloudwatch
 /localstack/aws/api/cloudwatch/ @steffyP @pinzon
@@ -146,6 +146,11 @@
 /localstack/aws/api/events/ @dominikschubert @dfangl
 /localstack/services/events/ @dominikschubert @dfangl
 /tests/aws/services/events/ @dominikschubert @dfangl
+
+# firehose
+/localstack/aws/api/firehose/ @pinzon
+/localstack/services/firehose/ @pinzon
+/tests/aws/services/firehose/ @pinzon
 
 # iam
 /localstack/aws/api/iam/ @dfangl @pinzon
@@ -229,6 +234,11 @@
 /localstack/aws/api/stepfunctions/ @dominikschubert @MEPalma
 /localstack/services/stepfunctions/ @dominikschubert @MEPalma
 /tests/aws/services/stepfunctions/ @dominikschubert @MEPalma
+
+# sts
+/localstack/aws/api/sts/ @pinzon
+/localstack/services/sts/ @pinzon
+/tests/aws/services/sts/ @pinzon
 
 # transcribe
 /localstack/aws/api/transcribe/ @sannya-singal @ackdav
