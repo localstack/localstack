@@ -61,6 +61,42 @@ def test_generic_service_matching_rule_with_dependencies():
     }
 
 
+def test_generic_service_matching_rule_defaults_to_api_deps():
+    """
+    Test that the generic service test matching rule uses both API_DEPENDENCIES and API_DEPENDENCIES_OPTIONAL
+    if no api dependencies are explicitly set.
+    """
+    # match on code associated with OpenSearch
+    result = generic_service_test_matching_rule("localstack/services/opensearch/test_somefile.py")
+    # the result needs to contain at least:
+    # - elasticsearch since it has opensearch as a mandatory requirement
+    assert "tests/aws/services/es/" in result
+    # - firehose since it has opensearch as an optional dependency used for one of its integrations
+    assert "tests/aws/services/firehose/" in result
+    # - opensearch because it is the actually changed service
+    assert "tests/aws/services/opensearch/"
+
+
+def test_service_dependency_resolving_with_co_dependencies():
+    """
+    Test to validate that we don't encounter issue when services are co-dependent on each other
+    """
+    api_dependencies = {
+        "ses": ["sns"],
+        "sns": ["sqs", "lambda", "firehose", "ses", "logs"],
+        "logs": ["lambda", "kinesis", "firehose"],
+        "lambda": ["logs", "cloudwatch"],
+    }
+    svc_including_deps = resolve_dependencies("ses", api_dependencies)
+    assert svc_including_deps >= {"sns"}
+
+    svc_including_deps = resolve_dependencies("logs", api_dependencies)
+    assert svc_including_deps >= {"sns", "lambda"}
+
+    svc_including_deps = resolve_dependencies("lambda", api_dependencies)
+    assert svc_including_deps >= {"sns", "logs"}
+
+
 @pytest.mark.skip(reason="mostly just useful for local execution as a sanity check")
 def test_rules_are_matching_at_least_one_file():
     root_dir = Path(__file__).parent.parent.parent.parent.parent

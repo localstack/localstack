@@ -1,5 +1,6 @@
 import fnmatch
 import re
+from collections import defaultdict
 from typing import Callable, Iterable, Optional
 
 from localstack.aws.scaffold import is_keyword
@@ -34,7 +35,7 @@ def resolve_dependencies(module_name: str, api_dependencies) -> set[str]:
     :return: set of resolved _service names_ that the service depends on (e.g. sts)
     """
     svc_name = _map_to_service_name(module_name)
-    return _expand_api_dependencies(svc_name, api_dependencies)
+    return set(_reverse_dependency_map(api_dependencies).get(svc_name, []))
 
 
 # TODO: might want to cache that, but for now it shouldn't be too much overhead
@@ -47,18 +48,6 @@ def _reverse_dependency_map(dependency_map: dict[str, dict]) -> dict[str, set[st
     for svc, deps in dependency_map.items():
         for dep in deps:
             result.setdefault(dep, set()).add(svc)
-    return result
-
-
-def _expand_api_dependencies(svc_name: str, api_dependencies) -> set[str]:
-    result = set()
-
-    dependencies = _reverse_dependency_map(api_dependencies).get(svc_name, [])
-    result.update(dependencies)
-
-    for dep in dependencies:
-        sub_deps = _expand_api_dependencies(dep, api_dependencies)  # recursive call
-        result.update(sub_deps)
     return result
 
 
@@ -114,9 +103,15 @@ def generic_service_test_matching_rule(
     # TODO: consider API_COMPOSITES
 
     if api_dependencies is None:
-        from localstack.utils.bootstrap import API_DEPENDENCIES
+        from localstack.utils.bootstrap import API_DEPENDENCIES, API_DEPENDENCIES_OPTIONAL
 
-        api_dependencies = API_DEPENDENCIES
+        # merge the mandatory and optional service dependencies
+        api_dependencies = defaultdict(set)
+        for service, mandatory_dependencies in API_DEPENDENCIES.items():
+            api_dependencies[service].update(mandatory_dependencies)
+
+        for service, optional_dependencies in API_DEPENDENCIES_OPTIONAL.items():
+            api_dependencies[service].update(optional_dependencies)
 
     match = re.findall("localstack/services/([^/]+)/.+", changed_file_path)
     if not match:
