@@ -193,7 +193,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
             secret = backend.describe_secret(secret_id)
         except MotoSecretNotFoundException:
             raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
-        return DescribeSecretResponse(**secret.to_dict() if secret else {})
+        return DescribeSecretResponse(**secret.to_dict())
 
     @handler("GetResourcePolicy", expand=False)
     def get_resource_policy(
