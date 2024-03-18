@@ -1776,21 +1776,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         records = []
         _stream_specs_by_table = {}
 
-        def find_item_for_keys_values_in_batch(
-            _table_name: str, item_keys: dict, batch: BatchGetResponseMap
-        ) -> AttributeMap | None:
-            """
-            This function looks up in the existing items for the provided item keys subset. If present, returns the
-            full item.
-            :param _table_name: the table name for the item
-            :param item_keys: the request item keys
-            :param batch: the values in which to look for the item
-            :return:
-            """
-            for item in batch.get(_table_name, []):
-                if all(item.get(k) == v for k, v in item_keys.items()):
-                    return item
-
         def get_stream_spec_for_table(_table_name: str):
             if (_stream_spec := _stream_specs_by_table.get(_table_name)) is None:
                 _stream_spec = dynamodb_get_table_stream_specification(
@@ -2212,3 +2197,19 @@ def dynamodb_get_table_stream_specification(account_id: str, region_name: str, t
             traceback.format_exc(),
         )
         raise e
+
+
+def find_item_for_keys_values_in_batch(
+    table_name: str, item_keys: dict, batch: BatchGetResponseMap
+) -> AttributeMap | None:
+    """
+    This function looks up in the existing items for the provided item keys subset. If present, returns the
+    full item.
+    :param table_name: the table name for the item
+    :param item_keys: the request item keys
+    :param batch: the values in which to look for the item
+    :return: a DynamoDB Item (AttributeMap)
+    """
+    for item in batch.get(table_name, []):
+        if all(item.get(k) == v for k, v in item_keys.items()):
+            return item
