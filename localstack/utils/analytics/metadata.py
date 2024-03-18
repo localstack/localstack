@@ -4,7 +4,7 @@ import os
 import platform
 from typing import Literal, Optional
 
-from localstack import config, constants
+from localstack import config
 from localstack.runtime import hooks
 from localstack.utils.bootstrap import Container
 from localstack.utils.files import rm_rf
@@ -12,6 +12,7 @@ from localstack.utils.functions import call_safe
 from localstack.utils.json import FileMappedDocument
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid, md5
+from localstack.version import VERSION
 
 LOG = logging.getLogger(__name__)
 
@@ -44,9 +45,9 @@ class ClientMetadata:
 def get_version_string() -> str:
     gh = config.LOCALSTACK_BUILD_GIT_HASH
     if gh:
-        return f"{constants.VERSION}:{gh}"
+        return f"{VERSION}:{gh}"
     else:
-        return constants.VERSION
+        return VERSION
 
 
 def read_client_metadata() -> ClientMetadata:

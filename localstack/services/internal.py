@@ -29,6 +29,7 @@ from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.numbers import is_number
 from localstack.utils.objects import singleton_factory
 from localstack.utils.server.http2_server import HTTP_METHODS
+from localstack.version import VERSION
 
 LOG = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ class HealthResource:
         result = dict(self.state)
         result = merge_recursive({"services": services}, result)
         result["edition"] = get_localstack_edition()
-        result["version"] = constants.VERSION
+        result["version"] = VERSION
         return result
 
     def on_head(self, request: Request):

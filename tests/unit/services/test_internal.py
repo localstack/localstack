@@ -1,9 +1,9 @@
 from unittest import mock
 
-from localstack.constants import VERSION
 from localstack.http import Request
 from localstack.services.internal import CloudFormationUi, HealthResource
 from localstack.services.plugins import ServiceManager, ServiceState
+from localstack.version import VERSION
 
 
 class TestHealthResource:

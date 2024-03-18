@@ -9,6 +9,7 @@ import requests
 from localstack import config, constants
 from localstack.utils.http import get_proxies
 from localstack.utils.time import now
+from localstack.version import VERSION
 
 from .events import Event, EventMetadata
 from .metadata import ClientMetadata, get_session_id
@@ -105,6 +106,6 @@ class AnalyticsClient:
 
     def _create_headers(self) -> Dict[str, str]:
         return {
-            "User-Agent": "localstack/" + constants.VERSION,
+            "User-Agent": "localstack/" + VERSION,
             "Localstack-Session-ID": self.localstack_session_id,
         }

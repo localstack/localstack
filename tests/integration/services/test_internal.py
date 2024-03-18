@@ -50,7 +50,7 @@ class TestInfoEndpoint:
         assert response.ok
         doc = response.json()
 
-        from localstack.constants import VERSION
+        from localstack.version import VERSION
 
         # we're being specifically vague here since we want this test to be robust against pro or community
         assert doc["version"].startswith(str(VERSION))

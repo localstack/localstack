@@ -30,6 +30,7 @@ from localstack.utils.threads import (
     cleanup_threads_and_processes,
     start_thread,
 )
+from localstack.version import VERSION
 
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = constants.READY_MARKER_OUTPUT
@@ -198,7 +199,7 @@ def print_runtime_information(in_docker=False):
     # FIXME: this is legacy code from the old CLI, reconcile with new CLI and runtime output
 
     print()
-    print("LocalStack version: %s" % constants.VERSION)
+    print(f"LocalStack version: {VERSION}")
     if in_docker:
         id = get_main_container_id()
         if id:

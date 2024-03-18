@@ -3,11 +3,11 @@ from queue import Queue
 
 from pytest_httpserver import HTTPServer
 
-from localstack import constants
 from localstack.utils.analytics.client import AnalyticsClient
 from localstack.utils.analytics.events import Event, EventMetadata
 from localstack.utils.analytics.metadata import get_client_metadata, get_session_id
 from localstack.utils.sync import poll_condition
+from localstack.version import VERSION
 
 
 def new_event(payload=None) -> Event:
@@ -52,7 +52,7 @@ def test_append_events(httpserver: HTTPServer):
 
     # assert headers are set
     assert request1.headers["Localstack-Session-Id"] == get_session_id()
-    assert request1.headers["User-Agent"] == f"localstack/{constants.VERSION}"
+    assert request1.headers["User-Agent"] == f"localstack/{VERSION}"
 
     # assert content is correct
     e1 = doc1["events"][0]

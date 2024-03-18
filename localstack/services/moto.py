@@ -28,9 +28,9 @@ from localstack.aws.forwarder import (
 )
 from localstack.aws.skeleton import DispatchTable
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
-from localstack.constants import VERSION as LOCALSTACK_VERSION
 from localstack.http import Response
 from localstack.http.request import get_full_raw_path, get_raw_current_url
+from localstack.version import VERSION as LOCALSTACK_VERSION
 
 MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
 

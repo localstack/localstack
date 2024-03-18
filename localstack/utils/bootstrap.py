@@ -38,6 +38,7 @@ from localstack.utils.run import is_command_available, run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
+from localstack.version import VERSION
 
 LOG = logging.getLogger(__name__)
 
@@ -145,7 +146,7 @@ def get_server_version_from_running_container() -> str:
             return version
         except ContainerException:
             # fall back to default constant
-            return constants.VERSION
+            return VERSION
 
 
 def get_server_version() -> str:

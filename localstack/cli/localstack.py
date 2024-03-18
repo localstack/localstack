@@ -10,10 +10,10 @@ import requests
 
 from localstack import config
 from localstack.cli.exceptions import CLIError
-from localstack.constants import VERSION
 from localstack.utils.analytics.cli import publish_invocation
 from localstack.utils.bootstrap import get_container_default_logfile_location
 from localstack.utils.json import CustomEncoder
+from localstack.version import VERSION
 
 from .console import BANNER, console
 from .plugin import LocalstackCli, load_cli_plugins
