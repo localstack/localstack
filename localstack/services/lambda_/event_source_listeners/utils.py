@@ -45,12 +45,28 @@ def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) ->
                 append_record = filter_stream_record(value, record_value)
         else:
             # special case 'exists'
-            if isinstance(value, list) and len(value) > 0:
-                if isinstance(value[0], dict):
-                    append_record = not value[0].get("exists", True)
-                elif value[0] is None:
+            def _filter_rule_value_list(val):
+                if isinstance(val[0], dict):
+                    return not val[0].get("exists", True)
+                elif val[0] is None:
                     # support null filter
-                    append_record = True
+                    return True
+
+            def _filter_rule_value_dict(val):
+                for k, v in val.items():
+                    return (
+                        _filter_rule_value_list(val[k])
+                        if isinstance(val[k], list)
+                        else _filter_rule_value_dict(val[k])
+                    )
+                return True
+
+            if isinstance(value, list) and len(value) > 0:
+                append_record = _filter_rule_value_list(value)
+            elif isinstance(value, dict):
+                # special case 'exists' for S type, e.g. {"S": [{"exists": false}]}
+                # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial2.html
+                append_record = _filter_rule_value_dict(value)
 
         filter_results.append(append_record)
     return all(filter_results)
