@@ -257,7 +257,7 @@ def get_service_catalog() -> ServiceCatalog:
         return ServiceCatalog()
 
     try:
-        ls_ver = localstack.__version__.replace(".", "_")
+        ls_ver = localstack.constants.VERSION.replace(".", "_")
         botocore_ver = botocore.__version__.replace(".", "_")
         cache_file_name = f"service-catalog-{ls_ver}-{botocore_ver}.pickle"
         cache_file = os.path.join(config.dirs.cache, cache_file_name)

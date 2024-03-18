@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION_FILE=${VERSION_FILE-*/__init__.py}
+VERSION_FILE=${VERSION_FILE-*/constants.py}
 DEPENDENCY_FILE=${DEPENDENCY_FILE-pyproject.toml}
 
 function usage() {
@@ -47,7 +47,7 @@ function usage() {
 }
 
 function get_current_version() {
-    egrep -h "^__version__ = " ${VERSION_FILE} | sed -r 's/^__version__ = "(.*)"/\1/g'
+    grep -oP '^VERSION\s*=\s*"\K[^"]+' ${VERSION_FILE}
 }
 
 function remove_ver_suffix() {
@@ -113,14 +113,14 @@ function release_env_validate() {
 }
 
 function explain_release_steps() {
-    echo "- bump __version__: ${CURRENT_VER} -> ${RELEASE_VER}"
+    echo "- bump constants.VERSION: ${CURRENT_VER} -> ${RELEASE_VER}"
     echo "- set synced dependencies to ==${RELEASE_VER}"
     echo "- perform release"
     echo "  - git commit -a -m 'Release version ${RELEASE_VER}'"
     echo "  - make publish"
     echo "  - git tag -a 'v${RELEASE_VER}' -m 'Release version ${RELEASE_VER}'"
     echo "  - git push && git push --tags"
-    echo "- bump __version__: ${RELEASE_VER} -> ${DEVELOP_VER}"
+    echo "- bump constants.VERSION: ${RELEASE_VER} -> ${DEVELOP_VER}"
     echo "- set synced dependencies to >=${DEVELOP_VER},<${BOUNDARY_VER}"
     echo "- prepare development iteration"
     echo "  - git commit -a -m 'Prepare next development iteration'"
@@ -150,7 +150,7 @@ function cmd-set-ver() {
     [[ $# -eq 1 ]] || { usage; exit 1; }
 
     ver=$1
-    sed -i -r "s/^__version__ = \"(.*)\"/__version__ = \"${ver}\"/" ${VERSION_FILE}
+    sed -i -r "s/^VERSION\s*=\s*\"(.*)\"/VERSION = \"${ver}\"/" ${VERSION_FILE}
 }
 
 function cmd-set-dep-ver() {

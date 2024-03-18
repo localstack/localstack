@@ -1,9 +1,7 @@
 import os
 
-import localstack
-
 # LocalStack version
-VERSION = localstack.__version__
+VERSION = "3.2.1.dev"
 
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = "x-localstack-edge"
