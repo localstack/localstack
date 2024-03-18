@@ -16,7 +16,11 @@ from localstack.aws.connect import (
 from localstack.aws.gateway import Gateway
 from localstack.aws.handlers import add_internal_request_params, add_region_from_header
 from localstack.config import HostAndPort
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.constants import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
+    TEST_AWS_SECRET_ACCESS_KEY,
+)
 from localstack.http import Response
 from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.http.hypercorn import GatewayServer
@@ -92,7 +96,7 @@ class TestClientFactory:
         )
         mock.assert_called_once_with(
             service_name="def",
-            region_name="us-east-1",
+            region_name=TEST_AWS_REGION_NAME,
             use_ssl=True,
             verify=False,
             endpoint_url="http://localhost:4566",
@@ -107,7 +111,7 @@ class TestClientFactory:
         connect_to.get_client("def", region_name=None, aws_access_key_id=TEST_AWS_ACCESS_KEY_ID)
         mock.assert_called_once_with(
             service_name="def",
-            region_name="us-east-1",
+            region_name=TEST_AWS_REGION_NAME,
             use_ssl=True,
             verify=False,
             endpoint_url="http://localhost:4566",
@@ -147,7 +151,7 @@ class TestClientFactory:
         )
         mock.assert_called_once_with(
             service_name="def",
-            region_name="us-east-1",
+            region_name=TEST_AWS_REGION_NAME,
             use_ssl=True,
             verify=True,
             endpoint_url=None,
