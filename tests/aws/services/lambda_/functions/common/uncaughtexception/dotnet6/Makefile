@@ -1,4 +1,9 @@
-ARCHITECTURE ?= $(shell uname -m || echo "x86_64")
+UNAME := $(shell uname -m)
+ifeq ($(UNAME),x86_64)
+	ARCHITECTURE ?= x86_64
+else
+	ARCHITECTURE ?= arm64
+endif
 DOCKER_PLATFORM ?= linux/$(ARCHITECTURE)
 # The packaging function architecture is x86_64 by default and needs to be set explicitly for arm64
 # https://github.com/aws/aws-extensions-for-dotnet-cli/blob/cdd490450e0407139d49248d94a4a899367e84df/src/Amazon.Lambda.Tools/LambdaDefinedCommandOptions.cs#L111

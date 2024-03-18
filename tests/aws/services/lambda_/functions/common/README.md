@@ -13,8 +13,11 @@ Each runtime directory defines a `Makefile` that
   * b) creates a `handler.zip` file with a Lambda deployment package
 * SHOULD define an `ARCHITECTURE` parameter to overwrite the target architecture (i.e., `x86_64` or `arm64`)
   if architecture-specific builds are required (e.g., Dotnet, Golang, Rust).
-  By default, the Makefile should build a deployment package with the same architecture as the host.
-  However, for testing on multi-architecture platforms, we should be able to overwrite the `ARCHITECTURE` parameter.
+  * By default, the Makefile should build a deployment package with the same architecture as the host.
+  * However, for testing on multi-architecture platforms, we should be able to overwrite the `ARCHITECTURE` parameter.
+  * We need to standardize `uname -m` into `ARCHITECTURE` because the output differs depending on the platform.
+    Ubuntu yields `aarch64` and macOS yields `arm64`.
+  * If we want to support dev systems without the `uname` utility, we could add `|| echo x86_64` to the uname detection.
 * SHOULD define a `clean` target that deletes any build artefacts, including the `handler.zip`.
   This helps a lot during development to tidy up and invalidate caching.
 

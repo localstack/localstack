@@ -1,4 +1,9 @@
-ARCHITECTURE ?= $(shell uname -m || echo "x86_64")
+UNAME := $(shell uname -m)
+ifeq ($(UNAME),x86_64)
+	ARCHITECTURE ?= x86_64
+else
+	ARCHITECTURE ?= arm64
+endif
 DOCKER_PLATFORM ?= linux/$(ARCHITECTURE)
 # GOARCH enables cross-compilation but by default, `go build` selects the right architecture based on the environment
 ifeq ($(ARCHITECTURE),arm64)

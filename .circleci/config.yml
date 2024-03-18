@@ -328,6 +328,7 @@ jobs:
           name: Load docker image
           command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
       # Prebuild and cache Lambda multiruntime test functions, supporting both architectures: amd64 and arm64
+      # Currently, all runners prebuild the Lambda functions, not just the one(s) executing Lambda multiruntime tests.
       - run:
           name: compute-src-hashes
           command: |

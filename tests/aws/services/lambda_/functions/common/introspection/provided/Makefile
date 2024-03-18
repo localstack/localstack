@@ -1,4 +1,9 @@
-ARCHITECTURE ?= $(shell uname -m || echo "x86_64")
+UNAME := $(shell uname -m)
+ifeq ($(UNAME),x86_64)
+	ARCHITECTURE ?= x86_64
+else
+	ARCHITECTURE ?= arm64
+endif
 DOCKER_PLATFORM ?= linux/$(ARCHITECTURE)
 # Manual implementation of the --arm64 logic from `cargo lambda lambda build`:
 # https://docs.aws.amazon.com/lambda/latest/dg/rust-package.html
