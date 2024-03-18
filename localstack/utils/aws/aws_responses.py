@@ -19,6 +19,8 @@ from localstack.utils.strings import short_uid, str_startswith_ignore_case, to_b
 
 REGEX_FLAGS = re.MULTILINE | re.DOTALL
 
+regex_url_start = re.compile("^[a-z]{1,5}://")
+
 
 class ErrorResponse(Exception):
     def __init__(self, response):
@@ -235,7 +237,8 @@ def create_sqs_system_attributes(headers: Dict[str, str]) -> Dict[str, Any]:
 
 def parse_query_string(url_or_qs: str, multi_values=False) -> Dict[str, str]:
     url_or_qs = str(url_or_qs or "").strip()
-    if "://" in url_or_qs and "?" not in url_or_qs:
+    # we match if the `url_or_qs` passed is maybe a URL
+    if regex_url_start.match(url_or_qs) and "?" not in url_or_qs:
         url_or_qs = f"{url_or_qs}?"
     url_or_qs = url_or_qs.split("?", maxsplit=1)[-1]
     result = parse_qs(url_or_qs, keep_blank_values=True)
