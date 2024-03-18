@@ -213,6 +213,10 @@ MaximumEfaInterfaces = int
 MaximumIops = int
 MaximumNetworkCards = int
 MaximumThroughputInMBps = float
+MediaDeviceCount = int
+MediaDeviceManufacturerName = str
+MediaDeviceMemorySize = int
+MediaDeviceName = str
 NatGatewayId = str
 NetmaskLength = int
 NetworkAclAssociationId = str
@@ -228,6 +232,11 @@ NetworkInterfaceAttachmentId = str
 NetworkInterfaceId = str
 NetworkInterfacePermissionId = str
 NetworkPerformance = str
+NeuronDeviceCoreCount = int
+NeuronDeviceCoreVersion = int
+NeuronDeviceCount = int
+NeuronDeviceMemorySize = int
+NeuronDeviceName = str
 NextToken = str
 NitroTpmSupportedVersionType = str
 OfferingId = str
@@ -282,6 +291,8 @@ SubnetCidrReservationId = str
 SubnetId = str
 TaggableResourceId = str
 ThreadsPerCore = int
+TotalMediaMemory = int
+TotalNeuronMemory = int
 TrafficMirrorFilterId = str
 TrafficMirrorFilterRuleIdWithResolver = str
 TrafficMirrorSessionId = str
@@ -11230,6 +11241,49 @@ class DescribeInstanceTypesRequest(ServiceRequest):
     NextToken: Optional[NextToken]
 
 
+class NeuronDeviceMemoryInfo(TypedDict, total=False):
+    SizeInMiB: Optional[NeuronDeviceMemorySize]
+
+
+class NeuronDeviceCoreInfo(TypedDict, total=False):
+    Count: Optional[NeuronDeviceCoreCount]
+    Version: Optional[NeuronDeviceCoreVersion]
+
+
+class NeuronDeviceInfo(TypedDict, total=False):
+    Count: Optional[NeuronDeviceCount]
+    Name: Optional[NeuronDeviceName]
+    CoreInfo: Optional[NeuronDeviceCoreInfo]
+    MemoryInfo: Optional[NeuronDeviceMemoryInfo]
+
+
+NeuronDeviceInfoList = List[NeuronDeviceInfo]
+
+
+class NeuronInfo(TypedDict, total=False):
+    NeuronDevices: Optional[NeuronDeviceInfoList]
+    TotalNeuronDeviceMemoryInMiB: Optional[TotalNeuronMemory]
+
+
+class MediaDeviceMemoryInfo(TypedDict, total=False):
+    SizeInMiB: Optional[MediaDeviceMemorySize]
+
+
+class MediaDeviceInfo(TypedDict, total=False):
+    Count: Optional[MediaDeviceCount]
+    Name: Optional[MediaDeviceName]
+    Manufacturer: Optional[MediaDeviceManufacturerName]
+    MemoryInfo: Optional[MediaDeviceMemoryInfo]
+
+
+MediaDeviceInfoList = List[MediaDeviceInfo]
+
+
+class MediaAcceleratorInfo(TypedDict, total=False):
+    Accelerators: Optional[MediaDeviceInfoList]
+    TotalMediaMemoryInMiB: Optional[TotalMediaMemory]
+
+
 NitroTpmSupportedVersionsList = List[NitroTpmSupportedVersionType]
 
 
@@ -11428,6 +11482,8 @@ class InstanceTypeInfo(TypedDict, total=False):
     NitroEnclavesSupport: Optional[NitroEnclavesSupport]
     NitroTpmSupport: Optional[NitroTpmSupport]
     NitroTpmInfo: Optional[NitroTpmInfo]
+    MediaAcceleratorInfo: Optional[MediaAcceleratorInfo]
+    NeuronInfo: Optional[NeuronInfo]
 
 
 InstanceTypeInfoList = List[InstanceTypeInfo]
