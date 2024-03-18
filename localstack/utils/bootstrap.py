@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Union
 
 from localstack import config, constants
 from localstack.config import HostAndPort, default_ip, is_env_not_false, is_env_true
+from localstack.constants import VERSION
 from localstack.runtime import hooks
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
@@ -172,7 +173,7 @@ def get_server_version_from_running_container() -> str:
             return version
         except ContainerException:
             # fall back to default constant
-            return constants.VERSION
+            return VERSION
 
 
 def get_server_version() -> str:

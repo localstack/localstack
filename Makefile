@@ -1,5 +1,5 @@
 IMAGE_NAME ?= localstack/localstack
-IMAGE_TAG ?= $(shell cat grep -oP '^VERSION\s*=\s*"\K[^"]+' localstack/constants.py)
+IMAGE_TAG ?= $(shell cat VERSION)
 VENV_BIN ?= python3 -m venv
 VENV_DIR ?= .venv
 PIP_CMD ?= pip3
@@ -105,7 +105,7 @@ docker-build: 			  ## Build Docker image
 	# --cache-from: Use the inlined caching information when building the image
 	DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
 		--cache-from $(TAG) --build-arg BUILDKIT_INLINE_CACHE=1 \
-		--build-arg LOCALSTACK_PRE_RELEASE=$(shell grep -oP '^VERSION\s*=\s*"\K[^"]+' localstack/constants.py | grep -v '.dev' >> /dev/null && echo "0" || echo "1") \
+		--build-arg LOCALSTACK_PRE_RELEASE=$(shell cat VERSION | grep -v '.dev' >> /dev/null && echo "0" || echo "1") \
 		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
 		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
 		--build-arg=LOCALSTACK_BUILD_VERSION=$(IMAGE_TAG) \
@@ -131,7 +131,7 @@ docker-push-master: 	  ## Push a single platform-specific Docker image to regist
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):latest-$(PLATFORM) && \
-		((! (git diff HEAD^ localstack/constants.py | grep '^VERSION\s*=\s*' | grep -v '.dev') && \
+		((! (git diff HEAD^ VERSION | tail -n 1 | grep -v '.dev') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):stable-$(PLATFORM) && \
 				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
@@ -160,7 +160,7 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 			docker manifest create $(MANIFEST_IMAGE_NAME):latest --amend $(MANIFEST_IMAGE_NAME):latest-amd64 --amend $(MANIFEST_IMAGE_NAME):latest-arm64 && \
-		((! (git diff HEAD^ localstack/constants.py | grep '^+VERSION\s*=\s*' | grep -v '.dev') && \
+		((! (git diff HEAD^ VERSION | tail -n 1 | grep -v '.dev') && \
 				echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) \
 			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 \

@@ -7,7 +7,6 @@ from botocore.model import ServiceModel
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.http import parse_dict_header
 
-import localstack
 from localstack import config
 from localstack.aws.spec import (
     ServiceCatalog,
@@ -15,7 +14,7 @@ from localstack.aws.spec import (
     build_service_index_cache,
     load_service_index_cache,
 )
-from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
+from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST, VERSION
 from localstack.http import Request
 from localstack.services.s3.utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
@@ -257,7 +256,7 @@ def get_service_catalog() -> ServiceCatalog:
         return ServiceCatalog()
 
     try:
-        ls_ver = localstack.constants.VERSION.replace(".", "_")
+        ls_ver = VERSION.replace(".", "_")
         botocore_ver = botocore.__version__.replace(".", "_")
         cache_file_name = f"service-catalog-{ls_ver}-{botocore_ver}.pickle"
         cache_file = os.path.join(config.dirs.cache, cache_file_name)

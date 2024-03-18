@@ -153,8 +153,8 @@ RUN --mount=type=cache,target=/root/.cache \
 
 # add files necessary to install runtime dependencies
 ADD Makefile pyproject.toml requirements-runtime.txt ./
-# add the root package init and constants to invalidate docker layers with version bumps
-ADD localstack/__init__.py localstack/constants.py localstack/
+# add the VERSION file to invalidate docker layers with version bumps
+ADD VERSION ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
@@ -170,7 +170,7 @@ FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 
 # add project files necessary to install all dependencies
-ADD Makefile pyproject.toml ./
+ADD Makefile pyproject.toml VERSION ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 

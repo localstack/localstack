@@ -142,7 +142,7 @@ script-files = [
 
 [tool.setuptools.dynamic]
 readme = { file = ["README.md"], content-type = "text/markdown"}
-version = { attr = "localstack.constants.VERSION" }
+version = { file = "VERSION" }
 
 [tool.setuptools.packages.find]
 include = ["localstack*"]
@@ -151,7 +151,8 @@ exclude = ["tests*"]
 [tool.setuptools.package-data]
 "*" = [
     "*.md",
-    "Makefile"
+    "Makefile",
+    "VERSION"
 ]
 "localstack" = [
     "aws/**/*.json",
