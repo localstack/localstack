@@ -19,7 +19,7 @@ from localstack.utils.strings import short_uid, str_startswith_ignore_case, to_b
 
 REGEX_FLAGS = re.MULTILINE | re.DOTALL
 
-regex_url_start = re.compile("^[a-z]{1,5}://")
+regex_url_start = re.compile("^[a-z]{2,5}://")
 
 
 class ErrorResponse(Exception):

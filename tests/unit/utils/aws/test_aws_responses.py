@@ -53,3 +53,9 @@ def test_parse_query_string():
         "a": ["1", "2", "3"],
         "b": ["0"],
     }
+    assert parse_query_string("ws://example.com/foo/bar?foo=1&1=2") == {"foo": "1", "1": "2"}
+    assert parse_query_string("ws://example.com/foo/bar") == {}
+    assert parse_query_string("wss://example.com/foo/bar?foo=1&1=2") == {"foo": "1", "1": "2"}
+    assert parse_query_string("wss://example.com/foo/bar") == {}
+    assert parse_query_string("https://example.com/foo/bar?foo=1&1=2") == {"foo": "1", "1": "2"}
+    assert parse_query_string("https://example.com/foo/bar") == {}
