@@ -53,7 +53,7 @@ API_DEPENDENCIES = {
     # es forwards all requests to opensearch (basically an API deprecation path in AWS)
     "es": ["opensearch"],
     "cloudformation": ["s3", "sts"],
-    "lambda": ["s3", "sqs", "sts"],
+    "lambda": ["s3", "sts"],
     # firehose currently only supports kinesis as source, this could become optional when more sources are supported
     "firehose": ["kinesis"],
     "transcribe": ["s3"],
@@ -68,7 +68,7 @@ API_DEPENDENCIES = {
 API_DEPENDENCIES_OPTIONAL = {
     # firehose's optional dependencies are supported delivery stream destinations
     "firehose": ["es", "opensearch", "s3", "redshift"],
-    "lambda": ["cloudwatch", "dynamodbstreams", "logs", "kafka", "kinesis", "msk"],
+    "lambda": ["cloudwatch", "dynamodbstreams", "logs", "kafka", "kinesis", "msk", "sqs"],
     "ses": ["sns"],
     "sns": ["sqs", "lambda", "firehose", "ses", "logs"],
     "sqs": ["cloudwatch"],
