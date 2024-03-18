@@ -554,7 +554,7 @@ class TestCfnLambdaIntegrations:
             log_events = aws_client.logs.filter_log_events(
                 logGroupName=f"/aws/lambda/{function_name}"
             )["events"]
-            return any(["Hello world!" in e["message"] for e in log_events])
+            return any("Hello world!" in e["message"] for e in log_events)
 
         sleep = 10 if os.getenv("TEST_TARGET") == "AWS_CLOUD" else 1
         assert wait_until(_send_events, wait=sleep, max_retries=50)
