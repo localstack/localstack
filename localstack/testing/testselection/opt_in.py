@@ -29,6 +29,15 @@ OPT_IN = [
     # stepfunctions
     "localstack/services/stepfunctions/**",
     "tests/aws/services/stepfunctions/**",
+    # secretsmanager
+    "localstack/services/secretsmanager/**",
+    "tests/aws/services/secretsmanager/**",
+    # events
+    "localstack/services/events/**",
+    "tests/aws/services/events/**",
+    # SSM
+    "localstack/services/ssm/**",
+    "tests/aws/services/ssm/**",
 ]
 
 

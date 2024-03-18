@@ -64,11 +64,14 @@ API_DEPENDENCIES = {
 # - only add optional dependencies of services here, use API_DEPENDENCIES for mandatory dependencies
 API_DEPENDENCIES_OPTIONAL = {
     "firehose": ["opensearch", "es", "s3"],
-    "lambda": ["logs", "cloudwatch"],
+    "lambda": ["cloudwatch", "dynamodbstreams", "logs", "kafka", "kinesis", "msk"],
     "ses": ["sns"],
     "sns": ["sqs", "lambda", "firehose", "ses", "logs"],
     "sqs": ["cloudwatch"],
     "logs": ["lambda", "kinesis", "firehose"],
+    "cloudformation": ["secretsmanager", "ssm", "lambda"],
+    "events": ["lambda", "kinesis", "firehose", "sns", "sqs", "stepfunctions", "logs"],
+    "stepfunctions": ["logs", "lambda", "dynamodb", "ecs", "sns", "sqs", "apigateway", "events"],
 }
 
 # composites define an abstract name like "serverless" that maps to a set of services
