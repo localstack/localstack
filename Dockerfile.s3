@@ -93,7 +93,7 @@ RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > 
 RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
 
-# expose edge service, external service ports, and debugpy
+# expose edge service and debugpy
 EXPOSE 4566 5678
 
 HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD ./bin/localstack status services --format=json
@@ -117,6 +117,7 @@ ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
 ENV EAGER_SERVICE_LOADING=1
 ENV SERVICES=s3
+ENV GATEWAY_SERVER=twisted
 # TODO: do we need DNS for the S3 image?
 ENV DNS_ADDRESS=false
 
