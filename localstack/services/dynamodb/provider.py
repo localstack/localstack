@@ -216,13 +216,21 @@ class EventForwarder:
     def _forward(self, account_id: str, region_name: str, records_map: RecordsMap):
         try:
             self.forward_to_kinesis_stream(account_id, region_name, records_map)
-        except Exception:
-            LOG.exception("Error while publishing to Kinesis streams")
+        except Exception as e:
+            LOG.debug(
+                "Error while publishing to Kinesis streams: '%s'",
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
 
         try:
             self.forward_to_ddb_stream(account_id, region_name, records_map)
-        except Exception:
-            LOG.exception("Error while publishing to DynamoDB streams")
+        except Exception as e:
+            LOG.debug(
+                "Error while publishing to DynamoDB streams, '%s'",
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
 
     @staticmethod
     def forward_to_ddb_stream(account_id: str, region_name: str, records_map: RecordsMap):
