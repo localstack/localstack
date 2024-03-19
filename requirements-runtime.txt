@@ -13,7 +13,9 @@ amazon-kclpy==2.1.3
 annotated-types==0.6.0
     # via pydantic
 antlr4-python3-runtime==4.13.1
-    # via localstack-core (pyproject.toml)
+    # via
+    #   localstack-core (pyproject.toml)
+    #   moto-ext
 apispec==6.6.0
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
@@ -172,7 +174,9 @@ jsonpatch==1.33
     #   cfn-lint
     #   localstack-core
 jsonpath-ng==1.6.1
-    # via localstack-core (pyproject.toml)
+    # via
+    #   localstack-core (pyproject.toml)
+    #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
 jsonpickle==3.0.3
@@ -206,7 +210,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext[all]==5.0.2.post2
+moto-ext[all]==5.0.3.post1
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
