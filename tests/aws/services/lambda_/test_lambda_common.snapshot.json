@@ -56,7 +56,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[dotnet6]": {
-    "recorded-date": "13-03-2024, 10:18:35",
+    "recorded-date": "19-03-2024, 20:51:54",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[nodejs16.x]": {
@@ -2010,13 +2010,13 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnet6]": {
-    "recorded-date": "13-03-2024, 10:20:43",
+    "recorded-date": "19-03-2024, 20:52:09",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "Qu0Kafb0Js/Y8nGqYM731qUyMEGPwwzfg3PHg7pDFHM=",
+        "CodeSha256": "huNzGg4FAVUueVqy0R191c1tvYj0blfh+aWvGpJxKTQ=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -2029,7 +2029,7 @@
         },
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
-        "Handler": "dotnet6::dotnet6.Function::FunctionHandler",
+        "Handler": "dotnet::Dotnet.Function::FunctionHandler",
         "LastModified": "date",
         "LoggingConfig": {
           "LogFormat": "Text",
@@ -2100,7 +2100,7 @@
           "TZ": ":UTC",
           "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
           "_AWS_XRAY_DAEMON_PORT": "2000",
-          "_HANDLER": "dotnet6::dotnet6.Function::FunctionHandler",
+          "_HANDLER": "dotnet::Dotnet.Function::FunctionHandler",
           "_LAMBDA_TELEMETRY_LOG_FD": "3",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:1>"
         },
@@ -2146,7 +2146,7 @@
           "TZ": ":UTC",
           "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
           "_AWS_XRAY_DAEMON_PORT": "2000",
-          "_HANDLER": "dotnet6::dotnet6.Function::FunctionHandler",
+          "_HANDLER": "dotnet::Dotnet.Function::FunctionHandler",
           "_LAMBDA_TELEMETRY_LOG_FD": "3",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:2>"
         },
@@ -3166,13 +3166,13 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[dotnet6]": {
-    "recorded-date": "13-03-2024, 10:23:06",
+    "recorded-date": "19-03-2024, 20:52:22",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "Sg6qh8wRPMB1FU4uuyhE7vCP74o0Iqo/IsI29HLkST0=",
+        "CodeSha256": "jxyJzz2gyUQzNB6ThhPzXUjJKJmLQiPQSd5iMqCs114=",
         "CodeSize": "<code-size>",
         "Description": "",
         "EphemeralStorage": {
@@ -3180,7 +3180,7 @@
         },
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
-        "Handler": "dotnet6::dotnet6.Function::FunctionHandler",
+        "Handler": "dotnet::Dotnet.Function::FunctionHandler",
         "LastModified": "date",
         "LoggingConfig": {
           "LogFormat": "Text",
@@ -3926,13 +3926,13 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_runtime_wrapper_invoke[dotnet6]": {
-    "recorded-date": "13-03-2024, 10:23:47",
+    "recorded-date": "19-03-2024, 20:52:32",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
           "x86_64"
         ],
-        "CodeSha256": "1kBc3RSH6bmwflQueZAl2kRYHyp3oWScezN2XRhmp+Q=",
+        "CodeSha256": "3GETLXRtoCACNUW6ZvMiL9DzCGqCCetZKnkXSLitQcg=",
         "CodeSize": "<code-size>",
         "Description": "",
         "Environment": {
@@ -3945,7 +3945,7 @@
         },
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
-        "Handler": "dotnet6::dotnet6.Function::FunctionHandler",
+        "Handler": "dotnet::Dotnet.Function::FunctionHandler",
         "LastModified": "date",
         "LoggingConfig": {
           "LogFormat": "Text",
@@ -4066,5 +4066,271 @@
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaCallingLocalstack::test_manual_endpoint_injection[ruby3.2]": {
     "recorded-date": "13-03-2024, 10:24:18",
     "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[dotnet8]": {
+    "recorded-date": "19-03-2024, 20:52:03",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnet8]": {
+    "recorded-date": "19-03-2024, 20:52:16",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "ivFsoGKLEOb6RkpOj4pHU+3mvw/BX4SPhEESGasDbNc=",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "TEST_KEY": "TEST_VAL"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "dotnet::Dotnet.Function::FunctionHandler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "dotnet8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "invocation_result_payload": {
+        "ctx": {
+          "aws_request_id": "<uuid:2>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": "<remaining-time-in-millis>"
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "<aws-access-key-id:1>",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_dotnet8",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
+          "AWS_SESSION_TOKEN": "<aws-session-token:1>",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "DOTNET_ROOT": "/var/lang/bin",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_RUNTIME_NAME": "dotnet8",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "PWD": "/var/task",
+          "SHLVL": "0",
+          "SSL_CERT_FILE": "/var/runtime/empty-certificates.crt",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "dotnet::Dotnet.Function::FunctionHandler",
+          "_LAMBDA_TELEMETRY_LOG_FD": "3",
+          "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:1>"
+        },
+        "packages": []
+      },
+      "invocation_result_payload_qualified": {
+        "ctx": {
+          "aws_request_id": "<uuid:3>",
+          "function_name": "<function-name:1>",
+          "function_version": "$LATEST",
+          "invoked_function_arn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+          "log_group_name": "/aws/lambda/<function-name:1>",
+          "log_stream_name": "<log-stream-name:1>",
+          "memory_limit_in_mb": "1024",
+          "remaining_time_in_millis": "<remaining-time-in-millis>"
+        },
+        "environment": {
+          "AWS_ACCESS_KEY_ID": "<aws-access-key-id:1>",
+          "AWS_DEFAULT_REGION": "<region>",
+          "AWS_EXECUTION_ENV": "AWS_Lambda_dotnet8",
+          "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "1024",
+          "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
+          "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
+          "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
+          "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
+          "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
+          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_REGION": "<region>",
+          "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
+          "AWS_SESSION_TOKEN": "<aws-session-token:1>",
+          "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "DOTNET_ROOT": "/var/lang/bin",
+          "LAMBDA_RUNTIME_DIR": "/var/runtime",
+          "LAMBDA_RUNTIME_NAME": "dotnet8",
+          "LAMBDA_TASK_ROOT": "/var/task",
+          "LANG": "en_US.UTF-8",
+          "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
+          "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
+          "PWD": "/var/task",
+          "SHLVL": "0",
+          "SSL_CERT_FILE": "/var/runtime/empty-certificates.crt",
+          "TEST_KEY": "TEST_VAL",
+          "TZ": ":UTC",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_PORT": "2000",
+          "_HANDLER": "dotnet::Dotnet.Function::FunctionHandler",
+          "_LAMBDA_TELEMETRY_LOG_FD": "3",
+          "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:2>"
+        },
+        "packages": []
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[dotnet8]": {
+    "recorded-date": "19-03-2024, 20:52:29",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "bScSZvXw12XpOujYHfHDNj+8scvLQ5ELGkONCxAB1JQ=",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "dotnet::Dotnet.Function::FunctionHandler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "dotnet8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "error_result": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorType": "Exception",
+          "errorMessage": "Error: some_error_msg",
+          "stackTrace": "<stack-trace>"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_runtime_wrapper_invoke[dotnet8]": {
+    "recorded-date": "19-03-2024, 20:52:35",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "kd4MwUA5khN6OBJvXdoFx73/A1FraNqUFhVRIlefcxM=",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {
+            "AWS_LAMBDA_EXEC_WRAPPER": "/var/task/environment_wrapper"
+          }
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "dotnet::Dotnet.Function::FunctionHandler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "dotnet8",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
   }
 }
