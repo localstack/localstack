@@ -27,3 +27,12 @@ build Lambda deployment packages correctly.
 
 The top-level and intermediary directories provided a meta-Makefile that automatically invokes sub-Makefiles such that
 we can run `make clean` at the top-level recursively.
+
+## Rust
+
+ARM builds had some issues but were finally fixed. Here are the relevant sources:
+
+* List of Rust build targets in the docs: https://doc.rust-lang.org/nightly/rustc/platform-support.html
+* This issue mentioned that "Aarch64 stack probes are tested in CI" and everything should work: https://github.com/rust-lang/rust/issues/77071
+* The fix was done in this PR and released with Rust `1.76.0`: https://github.com/rust-lang/rust/pull/118491
+* The `-musl` suffix was required to fix a GLIBC not found error with the Lambda runtime `provided.al2`
