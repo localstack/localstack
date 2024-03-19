@@ -257,6 +257,7 @@ class TestLambdaCallingLocalstack:
 
     @markers.multiruntime(
         scenario="endpointinjection",
+        runtimes=list(set(TESTED_RUNTIMES) - set(RUNTIMES_AGGREGATED.get("provided"))),
     )
     @markers.aws.validated
     def test_manual_endpoint_injection(self, multiruntime_lambda, tmp_path, aws_client):
