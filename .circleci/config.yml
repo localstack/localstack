@@ -581,70 +581,51 @@ jobs:
             source .venv/bin/activate
             bin/release-helper.sh set-ver $(bin/release-helper.sh next-dev-ver)
             make publish
-  save-start-time:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - run:
-          name: Save start time to file
-          command: mkdir stats && echo $(date +%s) > stats/start-time.txt
-      - persist_to_workspace:
-            root: /tmp/workspace
-            paths:
-                - repo/stats/
   waiter:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
-      - run: |
-          while [[ $(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job"| jq -r '.items[]|select(.name != "waiter" and .name != "push" and .name != "report")|.status' | grep -c "running") -gt 0 ]]; do
+      - run:
+          name: Wait for the workflow to complete
+          command: |
+            # Record the time this step started
+            START_TIME=$(date +%s)
+
+            # wait for the workflow to be done
+            while [[ $(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job"| jq -r '.items[]|select(.name != "waiter" and .name != "push" and .name != "report")|.status' | grep -c "running") -gt 0 ]]; do
               sleep 10
             done
-          FAILED_COUNT=$(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job" | jq -r '.items[]|.status' | grep -c "failed") || true
-          echo "failed count" $FAILED_COUNT
-          mkdir stats
-          if [[ $FAILED_COUNT -eq 0 ]]; then
-              echo "success" > stats/outcome.txt
-          else
-              echo "failure" > stats/outcome.txt
-          fi
-          cat stats/outcome.txt
-      - persist_to_workspace:
-            root: /tmp/workspace
-            paths:
-                - repo/stats/
-  send-stats:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          when: always
-          name: Load start time from file
-          command: |
-            START_TIME=$(cat stats/start-time.txt)
+
+            # check if a step failed / determine the outcome
+            FAILED_COUNT=$(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job" | jq -r '.items[]|.status' | grep -c "failed") || true
+            echo "failed count: $FAILED_COUNT"
+            if [[ $FAILED_COUNT -eq 0 ]]; then
+                OUTCOME="success"
+            else
+                OUTCOME="failure"
+            fi
+            echo "outcome: $OUTCOME"
+
+            # Record the time this step is done
             END_TIME=$(date +%s)
-            OUTCOME=$(cat stats/outcome.txt)
-            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'"}' > stats/stats.json
+
+            # Build the payload
+            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'"}' > stats.json
             echo 'Sending: '$(cat stats/stats.json)
-            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats/stats.json
 
+            # Send the data to Tinybird
+            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats.json
 
+            # Fail this step depending on the success to trigger a rerun of this step together with others in case of a "rerun failed"
+            [[ $OUTCOME = "success" ]] && exit 0 || exit 1
 
 workflows:
   main:
     jobs:
-      - save-start-time:
+      - waiter:
           filters:
             branches:
               only: master
-      - waiter:
-          requires:
-            - save-start-time
-      - send-stats:
-          requires:
-            - waiter
       - install
       - preflight:
           requires:
