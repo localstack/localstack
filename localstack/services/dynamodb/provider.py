@@ -185,7 +185,7 @@ THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 MANAGED_KMS_KEYS = {}
 
 
-def dynamodb_table_exists(table_name: str, client=None):
+def dynamodb_table_exists(table_name: str, client=None) -> bool:
     client = client or connect_to().dynamodb
     paginator = client.get_paginator("list_tables")
     pages = paginator.paginate(PaginationConfig={"PageSize": 100})
@@ -202,7 +202,7 @@ class EventForwarder:
 
     def forward_to_targets(
         self, account_id: str, region_name: str, records_map: RecordsMap, background: bool = True
-    ):
+    ) -> None:
         if background:
             self.executor.submit(
                 self._forward,
@@ -213,7 +213,7 @@ class EventForwarder:
         else:
             self._forward(account_id, region_name, records_map)
 
-    def _forward(self, account_id: str, region_name: str, records_map: RecordsMap):
+    def _forward(self, account_id: str, region_name: str, records_map: RecordsMap) -> None:
         try:
             self.forward_to_kinesis_stream(account_id, region_name, records_map)
         except Exception as e:
@@ -233,11 +233,13 @@ class EventForwarder:
             )
 
     @staticmethod
-    def forward_to_ddb_stream(account_id: str, region_name: str, records_map: RecordsMap):
+    def forward_to_ddb_stream(account_id: str, region_name: str, records_map: RecordsMap) -> None:
         dynamodbstreams_api.forward_events(account_id, region_name, records_map)
 
     @staticmethod
-    def forward_to_kinesis_stream(account_id: str, region_name: str, records_map: RecordsMap):
+    def forward_to_kinesis_stream(
+        account_id: str, region_name: str, records_map: RecordsMap
+    ) -> None:
         # You can only stream data from DynamoDB to Kinesis Data Streams in the same AWS account and AWS Region as your
         # table.
         # You can only stream data from a DynamoDB table to one Kinesis data stream.
@@ -1323,9 +1325,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 server_url=self.server.url,
                 table_stream_type=stream_type,
             )
-            self.forward_stream_records(
-                context.account_id, context.region, records, table_name=table_name
-            )
+            self.forward_stream_records(context.account_id, context.region, records)
 
         return result
 
@@ -1937,8 +1937,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return records_map
 
     def forward_stream_records(
-        self, account_id: str, region_name: str, records_map: RecordsMap, table_name: str = None
-    ):
+        self,
+        account_id: str,
+        region_name: str,
+        records_map: RecordsMap,
+    ) -> None:
         if not records_map:
             return
 
@@ -1947,7 +1950,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
     @staticmethod
-    def get_record_template(region_name: str, stream_view_type: str = None) -> StreamRecord:
+    def get_record_template(region_name: str, stream_view_type: str | None = None) -> StreamRecord:
         record = {
             "eventID": short_uid(),
             "eventVersion": "1.1",
@@ -2051,7 +2054,7 @@ def is_index_query_valid(account_id: str, region_name: str, query_data: dict) ->
 
 def get_table_stream_type(
     account_id: str, region_name: str, table_name_or_arn: str
-) -> Optional[TableStreamType]:
+) -> TableStreamType | None:
     """
     :param account_id: the account id of the table
     :param region_name: the region of the table

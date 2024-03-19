@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api.dynamodb import (
     AttributeMap,
@@ -30,7 +30,7 @@ class TableStreamType:
     is_kinesis: equivalent to NEW_AND_OLD_IMAGES, can be set at the same time as StreamViewType
     """
 
-    stream_view_type: Optional[StreamViewType]
+    stream_view_type: StreamViewType | None
     is_kinesis: bool
 
     @property
@@ -52,15 +52,16 @@ class DynamoDbStreamRecord(TypedDict, total=False):
     ApproximateCreationDateTime: int
     SizeBytes: int
     Keys: Key
-    StreamViewType: Optional[StreamViewType]
-    OldImage: Optional[AttributeMap]
-    NewImage: Optional[AttributeMap]
-    SequenceNumber: Optional[int]
+    StreamViewType: StreamViewType | None
+    OldImage: AttributeMap | None
+    NewImage: AttributeMap | None
+    SequenceNumber: int | None
 
 
 class StreamRecord(TypedDict, total=False):
     """
-    Global record type, this can contain both a KinesisRecord and a DynamoDBStreams record?
+    Related to DynamoDB Streams and Kinesis Destinations
+    This class contains data necessary for both KinesisRecord and DynamoDBStreams record
     """
 
     eventName: str
@@ -75,10 +76,18 @@ StreamRecords = list[StreamRecord]
 
 
 class TableRecords(TypedDict):
+    """
+    Container class used to forward events from DynamoDB to DDB Streams and Kinesis destinations.
+    It contains the records to be forwarded and data about the streams to be forwarded to.
+    """
+
     table_stream_type: TableStreamType
     records: StreamRecords
 
 
+# the RecordsMap maps the TableName to TableRecords, allowing forwarding to the destinations
+# some DynamoDB calls can modify several tables at once, which is why we need to group those events per table, as each
+# table can have different destinations
 RecordsMap = dict[TableName, TableRecords]
 
 
