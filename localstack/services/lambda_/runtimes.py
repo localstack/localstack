@@ -112,9 +112,9 @@ RUNTIMES_AGGREGATED = {
         Runtime.ruby3_2,
     ],
     "dotnet": [
-        Runtime.dotnet8,
         Runtime.dotnet6,
-    ],  # TODO: Runtime.dotnet8
+        # Runtime.dotnet8,
+    ],
     "provided": [
         Runtime.provided_al2023,
         Runtime.provided_al2,
