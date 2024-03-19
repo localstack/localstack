@@ -34,7 +34,7 @@ packaging==24.0
     # via build
 pbr==6.0.0
     # via stevedore
-plux==1.7.0
+plux==1.8.1
     # via localstack-core (pyproject.toml)
 psutil==5.9.8
     # via localstack-core (pyproject.toml)

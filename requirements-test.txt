@@ -16,7 +16,7 @@ antlr4-python3-runtime==4.13.1
     # via localstack-core
 anyio==4.3.0
     # via httpx
-apispec==6.5.0
+apispec==6.6.0
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
@@ -35,7 +35,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.132.1
+aws-cdk-lib==2.133.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.86.0
     # via
@@ -104,7 +104,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.3.0
     # via aws-cdk-lib
-coverage[toml]==7.4.3
+coverage[toml]==7.4.4
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
@@ -177,7 +177,7 @@ idna==3.6
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.3.0
+importlib-resources==6.3.1
     # via jsii
 incremental==22.10.0
     # via localstack-twisted
@@ -207,7 +207,7 @@ jsii==1.95.0
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-lib
     #   constructs
-json5==0.9.22
+json5==0.9.24
     # via localstack-core
 jsondiff==2.0.0
     # via moto-ext
@@ -288,7 +288,7 @@ pluggy==1.4.0
     # via
     #   localstack-core (pyproject.toml)
     #   pytest
-plux==1.7.0
+plux==1.8.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -342,7 +342,7 @@ pytest==8.1.1
     #   pytest-tinybird
 pytest-httpserver==1.0.10
     # via localstack-core (pyproject.toml)
-pytest-rerunfailures==13.0
+pytest-rerunfailures==14.0
     # via localstack-core (pyproject.toml)
 pytest-split==0.8.2
     # via localstack-core (pyproject.toml)
@@ -408,7 +408,7 @@ rpds-py==0.18.0
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.10.0
+s3transfer==0.10.1
     # via
     #   awscli
     #   boto3
@@ -458,7 +458,7 @@ typing-extensions==4.10.0
     #   pydantic
     #   pydantic-core
     #   readerwriterlock
-urllib3==2.0.7
+urllib3==2.2.1
     # via
     #   botocore
     #   docker

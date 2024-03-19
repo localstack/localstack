@@ -14,7 +14,7 @@ annotated-types==0.6.0
     # via pydantic
 antlr4-python3-runtime==4.13.1
     # via localstack-core (pyproject.toml)
-apispec==6.5.0
+apispec==6.6.0
     # via localstack-core (pyproject.toml)
 argparse==1.4.0
     # via amazon-kclpy
@@ -163,7 +163,7 @@ joserfc==0.9.0
     # via moto-ext
 jschema-to-python==1.2.3
     # via cfn-lint
-json5==0.9.22
+json5==0.9.24
     # via localstack-core (pyproject.toml)
 jsondiff==2.0.0
     # via moto-ext
@@ -232,7 +232,7 @@ pbr==6.0.0
     #   jschema-to-python
     #   sarif-om
     #   stevedore
-plux==1.7.0
+plux==1.8.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -329,7 +329,7 @@ rpds-py==0.18.0
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.10.0
+s3transfer==0.10.1
     # via
     #   awscli
     #   boto3
@@ -366,7 +366,7 @@ typing-extensions==4.10.0
     #   pydantic
     #   pydantic-core
     #   readerwriterlock
-urllib3==2.0.7
+urllib3==2.2.1
     # via
     #   botocore
     #   docker

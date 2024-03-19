@@ -16,7 +16,7 @@ antlr4-python3-runtime==4.13.1
     # via localstack-core
 anyio==4.3.0
     # via httpx
-apispec==6.5.0
+apispec==6.6.0
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
@@ -35,7 +35,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.1
     # via aws-cdk-lib
-aws-cdk-lib==2.132.1
+aws-cdk-lib==2.133.0
     # via localstack-core
 aws-sam-translator==1.86.0
     # via
@@ -60,7 +60,7 @@ boto3==1.34.64
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.61
+boto3-stubs[acm,acm-pca,amplify,apigateway,apigatewayv2,appconfig,appconfigdata,application-autoscaling,appsync,athena,autoscaling,backup,batch,ce,cloudcontrol,cloudformation,cloudfront,cloudtrail,cloudwatch,codecommit,cognito-identity,cognito-idp,dms,docdb,dynamodb,dynamodbstreams,ec2,ecr,ecs,efs,eks,elasticache,elasticbeanstalk,elbv2,emr,emr-serverless,es,events,firehose,fis,glacier,glue,iam,identitystore,iot,iot-data,iotanalytics,iotwireless,kafka,kinesis,kinesisanalytics,kinesisanalyticsv2,kms,lakeformation,lambda,logs,managedblockchain,mediaconvert,mediastore,mq,mwaa,neptune,opensearch,organizations,pi,pipes,qldb,qldb-session,rds,rds-data,redshift,redshift-data,resource-groups,resourcegroupstaggingapi,route53,route53resolver,s3,s3control,sagemaker,sagemaker-runtime,secretsmanager,serverlessrepo,servicediscovery,ses,sesv2,sns,sqs,ssm,sso-admin,stepfunctions,sts,timestream-query,timestream-write,transcribe,wafv2,xray]==1.34.65
     # via localstack-core (pyproject.toml)
 botocore==1.34.64
     # via
@@ -71,7 +71,7 @@ botocore==1.34.64
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-botocore-stubs==1.34.61
+botocore-stubs==1.34.65
     # via boto3-stubs
 build==1.1.1
     # via
@@ -200,7 +200,7 @@ idna==3.6
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.3.0
+importlib-resources==6.3.1
     # via jsii
 incremental==22.10.0
     # via localstack-twisted
@@ -230,7 +230,7 @@ jsii==1.95.0
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-lib
     #   constructs
-json5==0.9.22
+json5==0.9.24
     # via localstack-core
 jsondiff==2.0.0
     # via moto-ext
@@ -287,7 +287,7 @@ mypy-boto3-acm==1.34.0
     # via boto3-stubs
 mypy-boto3-acm-pca==1.34.28
     # via boto3-stubs
-mypy-boto3-amplify==1.34.45
+mypy-boto3-amplify==1.34.63
     # via boto3-stubs
 mypy-boto3-apigateway==1.34.56
     # via boto3-stubs
@@ -305,7 +305,7 @@ mypy-boto3-athena==1.34.23
     # via boto3-stubs
 mypy-boto3-autoscaling==1.34.54
     # via boto3-stubs
-mypy-boto3-backup==1.34.0
+mypy-boto3-backup==1.34.64
     # via boto3-stubs
 mypy-boto3-batch==1.34.59
     # via boto3-stubs
@@ -313,7 +313,7 @@ mypy-boto3-ce==1.34.52
     # via boto3-stubs
 mypy-boto3-cloudcontrol==1.34.0
     # via boto3-stubs
-mypy-boto3-cloudformation==1.34.61
+mypy-boto3-cloudformation==1.34.65
     # via boto3-stubs
 mypy-boto3-cloudfront==1.34.0
     # via boto3-stubs
@@ -335,7 +335,7 @@ mypy-boto3-dynamodb==1.34.57
     # via boto3-stubs
 mypy-boto3-dynamodbstreams==1.34.0
     # via boto3-stubs
-mypy-boto3-ec2==1.34.61
+mypy-boto3-ec2==1.34.64
     # via boto3-stubs
 mypy-boto3-ecr==1.34.0
     # via boto3-stubs
@@ -349,7 +349,7 @@ mypy-boto3-elasticache==1.34.60
     # via boto3-stubs
 mypy-boto3-elasticbeanstalk==1.34.0
     # via boto3-stubs
-mypy-boto3-elbv2==1.34.32
+mypy-boto3-elbv2==1.34.63
     # via boto3-stubs
 mypy-boto3-emr==1.34.44
     # via boto3-stubs
@@ -361,7 +361,7 @@ mypy-boto3-events==1.34.17
     # via boto3-stubs
 mypy-boto3-firehose==1.34.46
     # via boto3-stubs
-mypy-boto3-fis==1.34.0
+mypy-boto3-fis==1.34.63
     # via boto3-stubs
 mypy-boto3-glacier==1.34.0
     # via boto3-stubs
@@ -385,9 +385,9 @@ mypy-boto3-kinesis==1.34.0
     # via boto3-stubs
 mypy-boto3-kinesisanalytics==1.34.0
     # via boto3-stubs
-mypy-boto3-kinesisanalyticsv2==1.34.0
+mypy-boto3-kinesisanalyticsv2==1.34.64
     # via boto3-stubs
-mypy-boto3-kms==1.34.14
+mypy-boto3-kms==1.34.65
     # via boto3-stubs
 mypy-boto3-lakeformation==1.34.7
     # via boto3-stubs
@@ -419,7 +419,7 @@ mypy-boto3-qldb==1.34.49
     # via boto3-stubs
 mypy-boto3-qldb-session==1.34.0
     # via boto3-stubs
-mypy-boto3-rds==1.34.58
+mypy-boto3-rds==1.34.65
     # via boto3-stubs
 mypy-boto3-rds-data==1.34.6
     # via boto3-stubs
@@ -435,15 +435,15 @@ mypy-boto3-route53==1.34.31
     # via boto3-stubs
 mypy-boto3-route53resolver==1.34.15
     # via boto3-stubs
-mypy-boto3-s3==1.34.14
+mypy-boto3-s3==1.34.65
     # via boto3-stubs
 mypy-boto3-s3control==1.34.18
     # via boto3-stubs
-mypy-boto3-sagemaker==1.34.53
+mypy-boto3-sagemaker==1.34.64
     # via boto3-stubs
 mypy-boto3-sagemaker-runtime==1.34.0
     # via boto3-stubs
-mypy-boto3-secretsmanager==1.34.43
+mypy-boto3-secretsmanager==1.34.63
     # via boto3-stubs
 mypy-boto3-serverlessrepo==1.34.0
     # via boto3-stubs
@@ -465,7 +465,7 @@ mypy-boto3-stepfunctions==1.34.0
     # via boto3-stubs
 mypy-boto3-sts==1.34.0
     # via boto3-stubs
-mypy-boto3-timestream-query==1.34.0
+mypy-boto3-timestream-query==1.34.65
     # via boto3-stubs
 mypy-boto3-timestream-write==1.34.0
     # via boto3-stubs
@@ -520,7 +520,7 @@ pluggy==1.4.0
     #   pytest
 plumbum==1.8.2
     # via pandoc
-plux==1.7.0
+plux==1.8.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -579,7 +579,7 @@ pytest==8.1.1
     #   pytest-tinybird
 pytest-httpserver==1.0.10
     # via localstack-core
-pytest-rerunfailures==13.0
+pytest-rerunfailures==14.0
     # via localstack-core
 pytest-split==0.8.2
     # via localstack-core
@@ -649,9 +649,9 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core
-ruff==0.3.2
+ruff==0.3.3
     # via localstack-core
-s3transfer==0.10.0
+s3transfer==0.10.1
     # via
     #   awscli
     #   boto3
@@ -802,7 +802,7 @@ typing-extensions==4.10.0
     #   pydantic
     #   pydantic-core
     #   readerwriterlock
-urllib3==2.0.7
+urllib3==2.2.1
     # via
     #   botocore
     #   docker
