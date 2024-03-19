@@ -1413,9 +1413,9 @@ class TestS3:
         snapshot.match("copy-object-in-place-with-acl", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        condition=is_v2_provider,
-        paths=["$..ServerSideEncryption"],
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not raise exception",
     )
     def test_s3_copy_object_in_place_versioned(
         self, s3_bucket, allow_bucket_acl, snapshot, aws_client
