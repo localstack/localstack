@@ -1880,8 +1880,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 :param item_keys: the request item keys
                 :return:
                 """
+                keys_items = item_keys.items()
                 for item in existing_items_for_table_unordered:
-                    if all(item.get(k) == v for k, v in item_keys.items()):
+                    if keys_items <= item.items():
                         return item
 
             for write_request in request_items[table_name]:
@@ -2200,6 +2201,7 @@ def find_item_for_keys_values_in_batch(
     :param batch: the values in which to look for the item
     :return: a DynamoDB Item (AttributeMap)
     """
+    keys = item_keys.items()
     for item in batch.get(table_name, []):
-        if all(item.get(k) == v for k, v in item_keys.items()):
+        if keys <= item.items():
             return item
