@@ -5,12 +5,12 @@ import botocore.exceptions
 import pytest
 import yaml
 from botocore.exceptions import WaiterError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.cloudformation import Capability
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
@@ -198,7 +198,7 @@ class TestStacksApi:
         ]
         resources_before = len(resources)
         assert resources_before == 3
-        statuses = set([res["ResourceStatus"] for res in resources])
+        statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"CREATE_COMPLETE"}
 
         # remove one resource from the template, then update stack (via change set)
@@ -218,7 +218,7 @@ class TestStacksApi:
             "StackResourceSummaries"
         ]
         assert len(resources) == resources_before - 1
-        statuses = set([res["ResourceStatus"] for res in resources])
+        statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"UPDATE_COMPLETE"}
 
     @markers.aws.needs_fixing
@@ -579,7 +579,7 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
         "StackEvents"
     ]
 
-    resource_types = list(set([event["ResourceType"] for event in events]))
+    resource_types = list({event["ResourceType"] for event in events})
     resource_types.sort()
     snapshot.match("resource_types", resource_types)
 

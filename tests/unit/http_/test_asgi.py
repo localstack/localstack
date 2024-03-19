@@ -9,10 +9,9 @@ from typing import List
 
 import pytest
 import requests
-import websocket
 from werkzeug import Request, Response
 
-from localstack.http.asgi import ASGILifespanListener, WebSocketEnvironment
+from localstack.http.asgi import ASGILifespanListener
 
 LOG = logging.getLogger(__name__)
 
@@ -403,43 +402,3 @@ def test_lifespan_listener(serve_asgi_adapter):
 
     assert events.get(timeout=5) == "shutdown"
     assert events.qsize() == 0
-
-
-def test_websocket_listener(serve_asgi_adapter):
-    class WebsocketApp:
-        def __call__(self, environ: WebSocketEnvironment):
-            ws = environ["asgi.websocket"]
-            event = ws.receive()
-            assert event["type"] == "websocket.connect"
-            ws.send(
-                {
-                    "type": "websocket.accept",
-                    "subprotocol": None,
-                    "headers": [(b"X-Foo-Bar", b"foobar")],
-                }
-            )
-
-            event = ws.receive()
-            assert event == {"type": "websocket.receive", "text": "hello world", "bytes": None}
-
-            ws.send(
-                {
-                    "type": "websocket.send",
-                    "text": f"echo: {event['text']}",
-                }
-            )
-
-            ws.send({"type": "websocket.close", "code": 1000, "reason": "test done"})
-
-    server = serve_asgi_adapter(None, websocket_listener=WebsocketApp())
-
-    client = websocket.WebSocket()
-    client.connect(server.url.replace("http://", "ws://"))
-    assert client.handshake_response.status == 101
-    assert client.handshake_response.headers
-    assert client.handshake_response.headers["connection"] == "Upgrade"
-    assert client.handshake_response.headers["x-foo-bar"] == "foobar"
-
-    client.send("hello world")
-    assert client.recv() == "echo: hello world"
-    client.close()

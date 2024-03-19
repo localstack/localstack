@@ -591,7 +591,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
         # if we add 0.0.0.0:<port> and already contain *:<port> then bind on
         # 0.0.0.0
-        contained_ports = set(every.port for every in self)
+        contained_ports = {every.port for every in self}
         if value.host == "0.0.0.0" and value.port in contained_ports:
             for item in self:
                 if item.port == value.port:
@@ -656,6 +656,9 @@ def populate_edge_configuration(
 ) = populate_edge_configuration(os.environ)
 
 GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
+
+# the gateway server that should be used (supported: hypercorn, twisted dev: werkzeug)
+GATEWAY_SERVER = os.environ.get("GATEWAY_SERVER", "").strip() or "hypercorn"
 
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
@@ -830,7 +833,7 @@ SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 # Used to toggle MessageRetentionPeriod functionality in SQS queues
 SQS_ENABLE_MESSAGE_RETENTION_PERIOD = is_env_true("SQS_ENABLE_MESSAGE_RETENTION_PERIOD")
 
-# Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", or "path"
+# Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", "path", or "dynamic"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "standard"
 
 # Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
@@ -933,6 +936,12 @@ LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE = int(
 LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES = int(
     os.environ.get("LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES", 4 * 1024)
 )
+# SEMI-PUBLIC: not actively communicated
+LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES = int(
+    os.environ.get(
+        "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES", 6 * 1024 * 1024 + 100
+    )  # the 100 comes from the init defaults
+)
 
 LAMBDA_EVENTS_INTERNAL_SQS = is_env_not_false("LAMBDA_EVENTS_INTERNAL_SQS")
 
@@ -1032,10 +1041,6 @@ CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 # EXPERIMENTAL
 CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES")
 
-# Selectively enable/disable new resource providers
-# e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
-CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
-
 # bind address of local DNS server
 DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
 # port of the local DNS server
@@ -1076,6 +1081,8 @@ DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONF
 # if `DISABLE_BOTO_RETRIES=1` is set, all our created boto clients will have retries disabled
 DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
+DISTRIBUTED_MODE = is_env_true("DISTRIBUTED_MODE")
+
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
 # https://docs.localstack.cloud/references/configuration/
@@ -1090,7 +1097,6 @@ CONFIG_ENV_VARS = [
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
     "CFN_VERBOSE_ERRORS",
-    "CFN_RESOURCE_PROVIDER_OVERRIDES",
     "CI",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
@@ -1104,6 +1110,7 @@ CONFIG_ENV_VARS = [
     "DISABLE_CUSTOM_CORS_APIGATEWAY",
     "DISABLE_CUSTOM_CORS_S3",
     "DISABLE_EVENTS",
+    "DISTRIBUTED_MODE",
     "DNS_ADDRESS",
     "DNS_PORT",
     "DNS_LOCAL_NAME_PATTERNS",
@@ -1126,6 +1133,7 @@ CONFIG_ENV_VARS = [
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",
     "GATEWAY_LISTEN",
+    "GATEWAY_SERVER",
     "GATEWAY_WORKER_THREAD_COUNT",
     "HOSTNAME",
     "HOSTNAME_FROM_LAMBDA",
@@ -1162,6 +1170,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_LIMITS_CODE_SIZE_UNZIPPED",
     "LAMBDA_LIMITS_CREATE_FUNCTION_REQUEST_SIZE",
     "LAMBDA_LIMITS_MAX_FUNCTION_ENVVAR_SIZE_BYTES",
+    "LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES",
     "LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL",
     "LEGACY_DOCKER_CLIENT",
     "LEGACY_SNS_GCM_PUBLISHING",
@@ -1195,7 +1204,6 @@ CONFIG_ENV_VARS = [
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "STRICT_SERVICE_LOADING",
-    "TEST_AWS_ACCOUNT_ID",
     "TF_COMPAT_MODE",
     "USE_SSL",
     "WAIT_FOR_DEBUGGER",
@@ -1350,6 +1358,7 @@ def service_url(service_key, host=None, port=None):
         """@deprecated: Use `internal_service_url()` instead. We assume that most usages are
         internal but really need to check and update each usage accordingly.""",
         DeprecationWarning,
+        stacklevel=2,
     )
     return internal_service_url(host=host, port=port)
 
@@ -1361,6 +1370,7 @@ def service_port(service_key: str, external: bool = False) -> int:
         "Deprecated: use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for "
         "internal use.",
         DeprecationWarning,
+        stacklevel=2,
     )
     if external:
         return LOCALSTACK_HOST.port
@@ -1376,6 +1386,7 @@ def get_edge_port_http():
         for internal use. This function is also not needed anymore because we don't separate
         between HTTP and HTTP ports anymore since LocalStack listens to both.""",
         DeprecationWarning,
+        stacklevel=2,
     )
     return GATEWAY_LISTEN[0].port
 
@@ -1389,6 +1400,7 @@ def get_edge_url(localstack_hostname=None, protocol=None):
     We assume that most usages are internal but really need to check and update each usage accordingly.
     """,
         DeprecationWarning,
+        stacklevel=2,
     )
     return internal_service_url(host=localstack_hostname, protocol=protocol)
 

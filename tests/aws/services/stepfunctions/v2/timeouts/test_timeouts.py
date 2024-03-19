@@ -1,10 +1,10 @@
 import json
 
 import pytest
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates import (
@@ -16,7 +16,14 @@ from tests.aws.services.stepfunctions.utils import (
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..loggingConfiguration",
+        "$..tracingConfiguration",
+        "$..redriveCount",
+        "$..redriveStatus",
+    ]
+)
 class TestTimeouts:
     @markers.aws.validated
     def test_global_timeout(
@@ -29,7 +36,7 @@ class TestTimeouts:
         snf_role_arn = create_iam_role_for_sfn()
 
         template = TT.load_sfn_template(BaseTemplate.BASE_WAIT_1_MIN)
-        template["TimeoutSeconds"] = 1
+        template["TimeoutSeconds"] = 5
         definition = json.dumps(template)
 
         creation_resp = create_state_machine(
@@ -73,7 +80,9 @@ class TestTimeouts:
         template = TT.load_sfn_template(TT.SERVICE_LAMBDA_WAIT_WITH_TIMEOUT_SECONDS)
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
+        exec_input = json.dumps(
+            {"FunctionName": function_name, "Payload": None, "TimeoutSecondsValue": 5}
+        )
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -106,7 +115,7 @@ class TestTimeouts:
         definition = json.dumps(template)
 
         exec_input = json.dumps(
-            {"TimeoutSecondsValue": 1, "FunctionName": function_name, "Payload": None}
+            {"TimeoutSecondsValue": 5, "FunctionName": function_name, "Payload": None}
         )
         create_and_record_execution(
             aws_client.stepfunctions,

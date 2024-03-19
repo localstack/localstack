@@ -1,58 +1,65 @@
 import pytest
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 from moto import settings as moto_settings
-from moto.ec2 import utils as ec2_utils
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.crypto import generate_ssl_cert
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 
-DIGICERT_ROOT_CERT = """
------BEGIN CERTIFICATE-----
-MIICRjCCAc2gAwIBAgIQC6Fa+h3foLVJRK/NJKBs7DAKBggqhkjOPQQDAzBlMQsw
-CQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cu
-ZGlnaWNlcnQuY29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVkIElEIFJvb3Qg
-RzMwHhcNMTMwODAxMTIwMDAwWhcNMzgwMTE1MTIwMDAwWjBlMQswCQYDVQQGEwJV
-UzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQu
-Y29tMSQwIgYDVQQDExtEaWdpQ2VydCBBc3N1cmVkIElEIFJvb3QgRzMwdjAQBgcq
-hkjOPQIBBgUrgQQAIgNiAAQZ57ysRGXtzbg/WPuNsVepRC0FFfLvC/8QdJ+1YlJf
-Zn4f5dwbRXkLzMZTCp2NXQLZqVneAlr2lSoOjThKiknGvMYDOAdfVdp+CW7if17Q
-RSAPWXYQ1qAk8C3eNvJsKTmjQjBAMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/
-BAQDAgGGMB0GA1UdDgQWBBTL0L2p4ZgFUaFNN6KDec6NHSrkhDAKBggqhkjOPQQD
-AwNnADBkAjAlpIFFAmsSS3V0T8gj43DydXLefInwz5FyYZ5eEJJZVrmDxxDnOOlY
-JjZ91eQ0hjkCMHw2U/Aw5WJjOpnitqM7mzT6HtoQknFekROn3aRukswy1vUhZscv
-6pZjamVFkpUBtA==
------END CERTIFICATE-----
-"""
-
 
 class TestACM:
-    @markers.aws.unknown
-    def test_import_certificate(self, aws_client):
-        certs_before = aws_client.acm.list_certificates().get("CertificateSummaryList", [])
-
-        with pytest.raises(Exception) as exec_info:
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Certificate.CreatedAt",
+            "$..Certificate.DomainValidationOptions..ResourceRecord",
+            "$..Certificate.DomainValidationOptions..ValidationDomain",
+            "$..Certificate.DomainValidationOptions..ValidationMethod",
+            "$..Certificate.DomainValidationOptions..ValidationStatus",
+            "$..Certificate.ExtendedKeyUsages",
+            "$..Certificate.ExtendedKeyUsages..Name",
+            "$..Certificate.ExtendedKeyUsages..OID",
+            "$..Certificate.Issuer",
+            "$..Certificate.KeyUsages",
+            "$..Certificate.KeyUsages..Name",
+            "$..Certificate.Options.CertificateTransparencyLoggingPreference",
+            "$..Certificate.Serial",
+            "$..Certificate.Subject",
+        ]
+    )
+    def test_import_certificate(self, tmp_path, aws_client, cleanups, snapshot):
+        with pytest.raises(Exception) as exc_info:
             aws_client.acm.import_certificate(Certificate=b"CERT123", PrivateKey=b"KEY123")
-        assert "PEM" in str(exec_info)
+        assert exc_info.value.response["Error"]["Code"] == "ValidationException"
 
-        private_key = ec2_utils.random_rsa_key_pair()["material"]
-        result = None
-        try:
-            result = aws_client.acm.import_certificate(
-                Certificate=DIGICERT_ROOT_CERT, PrivateKey=private_key
-            )
-            assert "CertificateArn" in result
+        _, cert_file, key_file = generate_ssl_cert(target_file=str(tmp_path / "cert"))
+        with open(key_file, "rb") as infile:
+            private_key_bytes = infile.read()
+        with open(cert_file, "rb") as infile:
+            certificate_bytes = infile.read()
+        result = aws_client.acm.import_certificate(
+            Certificate=certificate_bytes, PrivateKey=private_key_bytes
+        )
+        certificate_arn = result["CertificateArn"]
+        cert_id = certificate_arn.split("certificate/")[-1]
+        snapshot.add_transformer(snapshot.transform.regex(cert_id, "<cert-id>"))
 
-            expected_arn = f"arn:aws:acm:{TEST_AWS_REGION_NAME}:{TEST_AWS_ACCOUNT_ID}:certificate"
-            acm_cert_arn = result["CertificateArn"].split("/")[0]
-            assert expected_arn == acm_cert_arn
+        cleanups.append(lambda: aws_client.acm.delete_certificate(CertificateArn=certificate_arn))
+        snapshot.match("import-certificate-response", result)
 
-            certs_after = aws_client.acm.list_certificates().get("CertificateSummaryList", [])
-            assert len(certs_before) + 1 == len(certs_after)
-        finally:
-            if result is not None:
-                aws_client.acm.delete_certificate(CertificateArn=result["CertificateArn"])
+        def _certificate_present():
+            return aws_client.acm.describe_certificate(CertificateArn=certificate_arn)
+
+        describe_res = retry(_certificate_present)
+
+        snapshot.add_transformer(
+            SortingTransformer("DomainValidationOptions", lambda o: o["DomainName"])
+        )
+        snapshot.add_transformer(SortingTransformer("SubjectAlternativeNames"))
+
+        snapshot.match("describe-certificate-response", describe_res)
 
     @markers.aws.unknown
     def test_domain_validation(self, acm_request_certificate, aws_client):

@@ -3,10 +3,10 @@ import json
 import re
 
 import pytest
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import JsonpathTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.utils import (
@@ -19,6 +19,7 @@ from tests.aws.services.stepfunctions.utils import (
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
 class TestSnfBase:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount", "$..redriveStatus"])
     def test_state_fail(
         self,
         aws_client,
@@ -37,6 +38,7 @@ class TestSnfBase:
             sfn_snapshot,
             definition,
             exec_input,
+            verify_execution_description=True,
         )
 
     @markers.aws.validated
@@ -82,6 +84,7 @@ class TestSnfBase:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount", "$..redriveStatus"])
     def test_state_fail_empty(
         self,
         aws_client,
@@ -100,6 +103,7 @@ class TestSnfBase:
             sfn_snapshot,
             definition,
             exec_input,
+            verify_execution_description=True,
         )
 
     @markers.aws.validated
@@ -149,6 +153,14 @@ class TestSnfBase:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..detail.redriveCount",
+            "$..detail.redriveDate",
+            "$..detail.redriveStatus",
+            "$..detail.redriveStatusReason",
+        ]
+    )
     def test_event_bridge_events_base(
         self,
         create_iam_role_for_sfn,
@@ -219,6 +231,7 @@ class TestSnfBase:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..RedriveCount"])
     def test_query_context_object_values(
         self,
         create_iam_role_for_sfn,
@@ -323,3 +336,63 @@ class TestSnfBase:
         d = execution_done["startDate"].astimezone(datetime.UTC)
         serialized_date = f'{d.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
         assert context_start_time == serialized_date
+
+    @markers.aws.validated
+    def test_state_pass_regex_json_path_base(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.PASS_RESULT_REGEX_JSON_PATH_BASE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {
+                "users": [
+                    {"year": 1997, "status": 0},
+                    {"year": 1998, "status": 1},
+                ]
+            }
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @pytest.mark.skip(reason="Unsupported jsonpath derivation.")
+    @markers.aws.validated
+    def test_state_pass_regex_json_path(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.PASS_RESULT_REGEX_JSON_PATH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {
+                "users": [
+                    {"year": 1997, "name": "User1997", "status": 0},
+                    {"year": 1998, "name": "User1998", "status": 0},
+                    {"year": 1999, "last": "User1999", "status": 0},
+                    {"year": 2000, "last": "User2000", "status": 1},
+                    {"year": 2001, "last": "User2001", "status": 2},
+                ]
+            }
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )

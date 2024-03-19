@@ -42,6 +42,7 @@ class StateTaskLambda(StateTask):
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, TimeoutError):
             return FailureEvent(
+                env=env,
                 error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
                 event_type=HistoryEventType.LambdaFunctionTimedOut,
                 event_details=EventDetails(
@@ -63,6 +64,7 @@ class StateTaskLambda(StateTask):
             cause = str(ex)
 
         return FailureEvent(
+            env=env,
             error_name=error_name,
             event_type=HistoryEventType.LambdaFunctionFailed,
             event_details=EventDetails(

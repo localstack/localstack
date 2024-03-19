@@ -5,7 +5,6 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
@@ -32,21 +31,21 @@ def resourcegroups_create_group(aws_client):
 
 @pytest.fixture
 def sqs_create_queue_in_region(aws_client_factory):
-    queue_urls = {}
+    region_queue_urls = {}
 
     def factory(region, **kwargs):
         if "QueueName" not in kwargs:
             kwargs["QueueName"] = "test-queue-%s" % short_uid()
         response = aws_client_factory(region_name=region).sqs.create_queue(**kwargs)
         url = response["QueueUrl"]
-        queue_urls.setdefault(region, []).append(url)
+        region_queue_urls.setdefault(region, []).append(url)
 
         return url
 
     yield factory
 
     # cleanup
-    for queues_region, queue_urls in queue_urls.items():
+    for queues_region, queue_urls in region_queue_urls.items():
         sqs_client = aws_client_factory(region_name=queues_region).sqs
         for queue_url in queue_urls:
             with contextlib.suppress(ClientError):
@@ -191,10 +190,15 @@ class TestResourceGroups:
         condition=not is_aws_cloud(), reason="Not implemented in moto (ListGroupResources)"
     )
     def test_resource_groups_different_region(
-        self, aws_client_factory, snapshot, resourcegroups_create_group, sqs_create_queue_in_region
+        self,
+        aws_client_factory,
+        snapshot,
+        resourcegroups_create_group,
+        sqs_create_queue_in_region,
+        region_name,
     ):
         """Resource groups can only have resources from the same Region, the one of the group"""
-        region_1 = TEST_AWS_REGION_NAME
+        region_1 = region_name
         region_2 = "us-east-2"
         resourcegroups_client = aws_client_factory(region_name=region_1).resource_groups
         snapshot.add_transformer(snapshot.transform.resource_name())

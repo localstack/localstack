@@ -2,6 +2,7 @@ import copy
 import logging
 from typing import Final, Optional
 
+from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
@@ -17,6 +18,7 @@ LOG = logging.getLogger(__name__)
 
 
 class InlineItemProcessorWorker(IterationWorker):
+    _parameters: Final[Optional[Parameters]]
     _item_selector: Final[Optional[ItemSelector]]
 
     def __init__(
@@ -25,15 +27,24 @@ class InlineItemProcessorWorker(IterationWorker):
         job_pool: JobPool,
         env: Environment,
         item_selector: Optional[ItemSelector],
+        parameters: Optional[Parameters],
     ):
         super().__init__(work_name=work_name, job_pool=job_pool, env=env)
         self._item_selector = item_selector
+        self._parameters = parameters
 
     def _eval_input(self, env_frame: Environment) -> None:
+        if not self._parameters and not self._item_selector:
+            return
+
+        map_state_input = self._env.stack[-1]
+        env_frame.inp = copy.deepcopy(map_state_input)
+        env_frame.stack.append(env_frame.inp)
+
         if self._item_selector:
-            map_state_input = self._env.stack[-1]
-            env_frame.inp = copy.deepcopy(map_state_input)
-            env_frame.stack.append(env_frame.inp)
             self._item_selector.eval(env_frame)
-            env_frame.inp = env_frame.stack.pop()
-            env_frame.stack.append(env_frame.inp)
+        elif self._parameters:
+            self._parameters.eval(env_frame)
+
+        env_frame.inp = env_frame.stack.pop()
+        env_frame.stack.append(env_frame.inp)

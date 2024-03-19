@@ -41,7 +41,7 @@ def test_create_change_set_without_parameters(
     try:
         # make sure the change set wasn't executed (which would create a topic)
         topics = aws_client.sns.list_topics()
-        topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
+        topic_arns = [x["TopicArn"] for x in topics["Topics"]]
         assert not any("sns-topic-simple" in arn for arn in topic_arns)
         # stack is initially in REVIEW_IN_PROGRESS state. only after executing the change_set will it change its status
         stack_response = aws_client.cloudformation.describe_stacks(StackName=stack_id)
@@ -328,7 +328,7 @@ def test_create_change_set_with_ssm_parameter(
         wait_until(is_stack_created(stack_id))
 
         topics = aws_client.sns.list_topics()
-        topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
+        topic_arns = [x["TopicArn"] for x in topics["Topics"]]
         assert any((parameter_value in t) for t in topic_arns)
     finally:
         cleanup_changesets([change_set_id])
@@ -383,7 +383,7 @@ def test_execute_change_set(
         assert wait_until(is_change_set_finished(change_set_id))
         # check if stack resource was created
         topics = aws_client.sns.list_topics()
-        topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
+        topic_arns = [x["TopicArn"] for x in topics["Topics"]]
         assert any(("sns-topic-simple" in t) for t in topic_arns)
 
         # new change set name
@@ -995,3 +995,39 @@ def test_name_conflicts(aws_client, snapshot, cleanups):
         ChangeSetName=second_initial_changeset_id
     )
     snapshot.match("second_initial_changeset_id_desc", second_initial_changeset_id_desc)
+
+
+@markers.aws.validated
+def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aws_client):
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+
+    # create a changeset
+    template_path = os.path.join(os.path.dirname(__file__), "../../../templates/ec2_keypair.yml")
+    template_body = load_template_raw(template_path)
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=template_body,
+        ChangeSetType="CREATE",
+    )
+
+    # delete the stack
+    aws_client.cloudformation.delete_stack(StackName=stack_name)
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+
+    # create a new changeset with the same name
+    response = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=template_body,
+        ChangeSetType="CREATE",
+    )
+
+    # ensure that the correct changeset is returned when requested by stack name
+    assert (
+        aws_client.cloudformation.describe_change_set(
+            ChangeSetName=response["Id"], StackName=stack_name
+        )["ChangeSetId"]
+        == response["Id"]
+    )

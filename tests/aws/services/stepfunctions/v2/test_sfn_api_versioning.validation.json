@@ -32,6 +32,12 @@
   "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_publish_state_machine_version": {
     "last_validated_date": "2023-08-11T10:10:42+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_publish_state_machine_version_invalid_arn": {
+    "last_validated_date": "2024-03-08T11:10:04+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_publish_state_machine_version_no_such_machine": {
+    "last_validated_date": "2024-03-08T11:05:48+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_start_version_execution": {
     "last_validated_date": "2023-08-17T07:53:53+00:00"
   },

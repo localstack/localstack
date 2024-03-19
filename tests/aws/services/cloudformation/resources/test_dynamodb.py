@@ -1,6 +1,9 @@
 import os
 
+import aws_cdk as cdk
 import pytest
+from aws_cdk import aws_dynamodb as dynamodb
+from aws_cdk.aws_dynamodb import BillingMode
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -137,3 +140,70 @@ def test_global_table(deploy_cfn_template, snapshot, aws_client):
 
     error_code = ex.value.response["Error"]["Code"]
     assert "ResourceNotFoundException" == error_code
+
+
+@markers.aws.validated
+def test_ttl_cdk(aws_client, snapshot, infrastructure_setup):
+    infra = infrastructure_setup(namespace="DDBTableTTL")
+    stack = cdk.Stack(infra.cdk_app, "DDBStackTTL")
+
+    table = dynamodb.Table(
+        stack,
+        id="Table",
+        billing_mode=BillingMode.PAY_PER_REQUEST,
+        partition_key=dynamodb.Attribute(name="id", type=dynamodb.AttributeType.STRING),
+        removal_policy=cdk.RemovalPolicy.RETAIN,
+        time_to_live_attribute="expire_at",
+    )
+
+    cdk.CfnOutput(stack, "TableName", value=table.table_name)
+
+    with infra.provisioner() as prov:
+        outputs = prov.get_stack_outputs(stack_name="DDBStackTTL")
+        table_name = outputs["TableName"]
+        table = aws_client.dynamodb.describe_time_to_live(TableName=table_name)
+        snapshot.match("table", table)
+
+
+@markers.aws.validated
+# We return field bellow, while AWS doesn't return them
+@markers.snapshot.skip_snapshot_verify(
+    [
+        "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+        "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+        "$..Table.Replicas",
+    ]
+)
+def test_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.dynamodb_api())
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/dynamodb_table_sse_enabled.yml"
+        ),
+    )
+    snapshot.add_transformer(snapshot.transform.key_value("TableName", "table-name"))
+    snapshot.add_transformer(snapshot.transform.key_value("KMSMasterKeyArn", "kms-arn"))
+    response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
+    snapshot.match("table_description", response)
+
+
+@markers.aws.validated
+# We return field bellow, while AWS doesn't return them
+@markers.snapshot.skip_snapshot_verify(
+    [
+        "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+        "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+    ]
+)
+def test_global_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.dynamodb_api())
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/dynamodb_global_table_sse_enabled.yml"
+        ),
+    )
+    snapshot.add_transformer(snapshot.transform.key_value("TableName", "table-name"))
+    snapshot.add_transformer(snapshot.transform.key_value("KMSMasterKeyArn", "kms-arn"))
+
+    response = aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
+    snapshot.match("table_description", response)

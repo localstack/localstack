@@ -2288,7 +2288,7 @@ class IamApi:
         context: RequestContext,
         open_id_connect_provider_arn: arnType,
         client_id: clientIDType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2298,7 +2298,7 @@ class IamApi:
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         role_name: roleNameType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2308,7 +2308,7 @@ class IamApi:
         context: RequestContext,
         group_name: groupNameType,
         user_name: existingUserNameType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2336,7 +2336,7 @@ class IamApi:
         context: RequestContext,
         old_password: passwordType,
         new_password: passwordType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2365,7 +2365,7 @@ class IamApi:
         instance_profile_name: instanceProfileNameType,
         path: pathType = None,
         tags: tagListType = None,
-        **kwargs
+        **kwargs,
     ) -> CreateInstanceProfileResponse:
         raise NotImplementedError
 
@@ -2376,7 +2376,7 @@ class IamApi:
         user_name: userNameType,
         password: passwordType,
         password_reset_required: booleanType = None,
-        **kwargs
+        **kwargs,
     ) -> CreateLoginProfileResponse:
         raise NotImplementedError
 
@@ -2388,7 +2388,7 @@ class IamApi:
         thumbprint_list: thumbprintListType,
         client_id_list: clientIDListType = None,
         tags: tagListType = None,
-        **kwargs
+        **kwargs,
     ) -> CreateOpenIDConnectProviderResponse:
         raise NotImplementedError
 
@@ -2401,7 +2401,7 @@ class IamApi:
         path: policyPathType = None,
         description: policyDescriptionType = None,
         tags: tagListType = None,
-        **kwargs
+        **kwargs,
     ) -> CreatePolicyResponse:
         raise NotImplementedError
 
@@ -2412,7 +2412,7 @@ class IamApi:
         policy_arn: arnType,
         policy_document: policyDocumentType,
         set_as_default: booleanType = None,
-        **kwargs
+        **kwargs,
     ) -> CreatePolicyVersionResponse:
         raise NotImplementedError
 
@@ -2427,7 +2427,7 @@ class IamApi:
         max_session_duration: roleMaxSessionDurationType = None,
         permissions_boundary: arnType = None,
         tags: tagListType = None,
-        **kwargs
+        **kwargs,
     ) -> CreateRoleResponse:
         raise NotImplementedError
 
@@ -2438,7 +2438,7 @@ class IamApi:
         saml_metadata_document: SAMLMetadataDocumentType,
         name: SAMLProviderNameType,
         tags: tagListType = None,
-        **kwargs
+        **kwargs,
     ) -> CreateSAMLProviderResponse:
         raise NotImplementedError
 
@@ -2449,7 +2449,7 @@ class IamApi:
         aws_service_name: groupNameType,
         description: roleDescriptionType = None,
         custom_suffix: customSuffixType = None,
-        **kwargs
+        **kwargs,
     ) -> CreateServiceLinkedRoleResponse:
         raise NotImplementedError
 
@@ -2467,7 +2467,7 @@ class IamApi:
         path: pathType = None,
         permissions_boundary: arnType = None,
         tags: tagListType = None,
-        **kwargs
+        **kwargs,
     ) -> CreateUserResponse:
         raise NotImplementedError
 
@@ -2478,7 +2478,7 @@ class IamApi:
         virtual_mfa_device_name: virtualMFADeviceName,
         path: pathType = None,
         tags: tagListType = None,
-        **kwargs
+        **kwargs,
     ) -> CreateVirtualMFADeviceResponse:
         raise NotImplementedError
 
@@ -2488,7 +2488,7 @@ class IamApi:
         context: RequestContext,
         user_name: existingUserNameType,
         serial_number: serialNumberType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2498,7 +2498,7 @@ class IamApi:
         context: RequestContext,
         access_key_id: accessKeyIdType,
         user_name: existingUserNameType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2522,7 +2522,7 @@ class IamApi:
         context: RequestContext,
         group_name: groupNameType,
         policy_name: policyNameType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2554,7 +2554,7 @@ class IamApi:
         context: RequestContext,
         policy_arn: arnType,
         version_id: policyVersionIdType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2574,7 +2574,7 @@ class IamApi:
         context: RequestContext,
         role_name: roleNameType,
         policy_name: policyNameType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2590,7 +2590,7 @@ class IamApi:
         context: RequestContext,
         user_name: userNameType,
         ssh_public_key_id: publicKeyIdType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2612,7 +2612,7 @@ class IamApi:
         context: RequestContext,
         service_specific_credential_id: serviceSpecificCredentialId,
         user_name: userNameType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2622,7 +2622,7 @@ class IamApi:
         context: RequestContext,
         certificate_id: certificateIdType,
         user_name: existingUserNameType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2644,7 +2644,7 @@ class IamApi:
         context: RequestContext,
         user_name: existingUserNameType,
         policy_name: policyNameType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2680,7 +2680,7 @@ class IamApi:
         serial_number: serialNumberType,
         authentication_code1: authenticationCodeType,
         authentication_code2: authenticationCodeType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2696,7 +2696,7 @@ class IamApi:
         context: RequestContext,
         entity_path: organizationsEntityPathType,
         organizations_policy_id: organizationsPolicyIdType = None,
-        **kwargs
+        **kwargs,
     ) -> GenerateOrganizationsAccessReportResponse:
         raise NotImplementedError
 
@@ -2706,7 +2706,7 @@ class IamApi:
         context: RequestContext,
         arn: arnType,
         granularity: AccessAdvisorUsageGranularityType = None,
-        **kwargs
+        **kwargs,
     ) -> GenerateServiceLastAccessedDetailsResponse:
         raise NotImplementedError
 
@@ -2723,7 +2723,7 @@ class IamApi:
         filter: entityListType = None,
         max_items: maxItemsType = None,
         marker: markerType = None,
-        **kwargs
+        **kwargs,
     ) -> GetAccountAuthorizationDetailsResponse:
         raise NotImplementedError
 
@@ -2749,7 +2749,7 @@ class IamApi:
         context: RequestContext,
         policy_source_arn: arnType,
         policy_input_list: SimulationPolicyListType = None,
-        **kwargs
+        **kwargs,
     ) -> GetContextKeysForPolicyResponse:
         raise NotImplementedError
 
@@ -2766,7 +2766,7 @@ class IamApi:
         group_name: groupNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> GetGroupResponse:
         raise NotImplementedError
 
@@ -2776,7 +2776,7 @@ class IamApi:
         context: RequestContext,
         group_name: groupNameType,
         policy_name: policyNameType,
-        **kwargs
+        **kwargs,
     ) -> GetGroupPolicyResponse:
         raise NotImplementedError
 
@@ -2798,7 +2798,7 @@ class IamApi:
         context: RequestContext,
         serial_number: serialNumberType,
         user_name: userNameType = None,
-        **kwargs
+        **kwargs,
     ) -> GetMFADeviceResponse:
         raise NotImplementedError
 
@@ -2816,7 +2816,7 @@ class IamApi:
         max_items: maxItemsType = None,
         marker: markerType = None,
         sort_key: sortKeyType = None,
-        **kwargs
+        **kwargs,
     ) -> GetOrganizationsAccessReportResponse:
         raise NotImplementedError
 
@@ -2832,7 +2832,7 @@ class IamApi:
         context: RequestContext,
         policy_arn: arnType,
         version_id: policyVersionIdType,
-        **kwargs
+        **kwargs,
     ) -> GetPolicyVersionResponse:
         raise NotImplementedError
 
@@ -2848,7 +2848,7 @@ class IamApi:
         context: RequestContext,
         role_name: roleNameType,
         policy_name: policyNameType,
-        **kwargs
+        **kwargs,
     ) -> GetRolePolicyResponse:
         raise NotImplementedError
 
@@ -2865,7 +2865,7 @@ class IamApi:
         user_name: userNameType,
         ssh_public_key_id: publicKeyIdType,
         encoding: encodingType,
-        **kwargs
+        **kwargs,
     ) -> GetSSHPublicKeyResponse:
         raise NotImplementedError
 
@@ -2882,7 +2882,7 @@ class IamApi:
         job_id: jobIDType,
         max_items: maxItemsType = None,
         marker: markerType = None,
-        **kwargs
+        **kwargs,
     ) -> GetServiceLastAccessedDetailsResponse:
         raise NotImplementedError
 
@@ -2894,7 +2894,7 @@ class IamApi:
         service_namespace: serviceNamespaceType,
         max_items: maxItemsType = None,
         marker: markerType = None,
-        **kwargs
+        **kwargs,
     ) -> GetServiceLastAccessedDetailsWithEntitiesResponse:
         raise NotImplementedError
 
@@ -2916,7 +2916,7 @@ class IamApi:
         context: RequestContext,
         user_name: existingUserNameType,
         policy_name: policyNameType,
-        **kwargs
+        **kwargs,
     ) -> GetUserPolicyResponse:
         raise NotImplementedError
 
@@ -2927,7 +2927,7 @@ class IamApi:
         user_name: existingUserNameType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListAccessKeysResponse:
         raise NotImplementedError
 
@@ -2937,7 +2937,7 @@ class IamApi:
         context: RequestContext,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListAccountAliasesResponse:
         raise NotImplementedError
 
@@ -2949,7 +2949,7 @@ class IamApi:
         path_prefix: policyPathType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListAttachedGroupPoliciesResponse:
         raise NotImplementedError
 
@@ -2961,7 +2961,7 @@ class IamApi:
         path_prefix: policyPathType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListAttachedRolePoliciesResponse:
         raise NotImplementedError
 
@@ -2973,7 +2973,7 @@ class IamApi:
         path_prefix: policyPathType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListAttachedUserPoliciesResponse:
         raise NotImplementedError
 
@@ -2987,7 +2987,7 @@ class IamApi:
         policy_usage_filter: PolicyUsageType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListEntitiesForPolicyResponse:
         raise NotImplementedError
 
@@ -2998,7 +2998,7 @@ class IamApi:
         group_name: groupNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListGroupPoliciesResponse:
         raise NotImplementedError
 
@@ -3009,7 +3009,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListGroupsResponse:
         raise NotImplementedError
 
@@ -3020,7 +3020,7 @@ class IamApi:
         user_name: existingUserNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListGroupsForUserResponse:
         raise NotImplementedError
 
@@ -3031,7 +3031,7 @@ class IamApi:
         instance_profile_name: instanceProfileNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListInstanceProfileTagsResponse:
         raise NotImplementedError
 
@@ -3042,7 +3042,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListInstanceProfilesResponse:
         raise NotImplementedError
 
@@ -3053,7 +3053,7 @@ class IamApi:
         role_name: roleNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListInstanceProfilesForRoleResponse:
         raise NotImplementedError
 
@@ -3064,7 +3064,7 @@ class IamApi:
         serial_number: serialNumberType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListMFADeviceTagsResponse:
         raise NotImplementedError
 
@@ -3075,7 +3075,7 @@ class IamApi:
         user_name: existingUserNameType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListMFADevicesResponse:
         raise NotImplementedError
 
@@ -3086,7 +3086,7 @@ class IamApi:
         open_id_connect_provider_arn: arnType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListOpenIDConnectProviderTagsResponse:
         raise NotImplementedError
 
@@ -3106,7 +3106,7 @@ class IamApi:
         policy_usage_filter: PolicyUsageType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListPoliciesResponse:
         raise NotImplementedError
 
@@ -3117,7 +3117,7 @@ class IamApi:
         arn: arnType,
         service_namespaces: serviceNamespaceListType,
         marker: markerType = None,
-        **kwargs
+        **kwargs,
     ) -> ListPoliciesGrantingServiceAccessResponse:
         raise NotImplementedError
 
@@ -3128,7 +3128,7 @@ class IamApi:
         policy_arn: arnType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListPolicyTagsResponse:
         raise NotImplementedError
 
@@ -3139,7 +3139,7 @@ class IamApi:
         policy_arn: arnType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListPolicyVersionsResponse:
         raise NotImplementedError
 
@@ -3150,7 +3150,7 @@ class IamApi:
         role_name: roleNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListRolePoliciesResponse:
         raise NotImplementedError
 
@@ -3161,7 +3161,7 @@ class IamApi:
         role_name: roleNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListRoleTagsResponse:
         raise NotImplementedError
 
@@ -3172,7 +3172,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListRolesResponse:
         raise NotImplementedError
 
@@ -3183,7 +3183,7 @@ class IamApi:
         saml_provider_arn: arnType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListSAMLProviderTagsResponse:
         raise NotImplementedError
 
@@ -3198,7 +3198,7 @@ class IamApi:
         user_name: userNameType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListSSHPublicKeysResponse:
         raise NotImplementedError
 
@@ -3209,7 +3209,7 @@ class IamApi:
         server_certificate_name: serverCertificateNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListServerCertificateTagsResponse:
         raise NotImplementedError
 
@@ -3220,7 +3220,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListServerCertificatesResponse:
         raise NotImplementedError
 
@@ -3230,7 +3230,7 @@ class IamApi:
         context: RequestContext,
         user_name: userNameType = None,
         service_name: serviceName = None,
-        **kwargs
+        **kwargs,
     ) -> ListServiceSpecificCredentialsResponse:
         raise NotImplementedError
 
@@ -3241,7 +3241,7 @@ class IamApi:
         user_name: existingUserNameType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListSigningCertificatesResponse:
         raise NotImplementedError
 
@@ -3252,7 +3252,7 @@ class IamApi:
         user_name: existingUserNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListUserPoliciesResponse:
         raise NotImplementedError
 
@@ -3263,7 +3263,7 @@ class IamApi:
         user_name: existingUserNameType,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListUserTagsResponse:
         raise NotImplementedError
 
@@ -3274,7 +3274,7 @@ class IamApi:
         path_prefix: pathPrefixType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListUsersResponse:
         raise NotImplementedError
 
@@ -3285,7 +3285,7 @@ class IamApi:
         assignment_status: assignmentStatusType = None,
         marker: markerType = None,
         max_items: maxItemsType = None,
-        **kwargs
+        **kwargs,
     ) -> ListVirtualMFADevicesResponse:
         raise NotImplementedError
 
@@ -3296,7 +3296,7 @@ class IamApi:
         group_name: groupNameType,
         policy_name: policyNameType,
         policy_document: policyDocumentType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3306,7 +3306,7 @@ class IamApi:
         context: RequestContext,
         role_name: roleNameType,
         permissions_boundary: arnType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3317,7 +3317,7 @@ class IamApi:
         role_name: roleNameType,
         policy_name: policyNameType,
         policy_document: policyDocumentType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3327,7 +3327,7 @@ class IamApi:
         context: RequestContext,
         user_name: userNameType,
         permissions_boundary: arnType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3338,7 +3338,7 @@ class IamApi:
         user_name: existingUserNameType,
         policy_name: policyNameType,
         policy_document: policyDocumentType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3348,7 +3348,7 @@ class IamApi:
         context: RequestContext,
         open_id_connect_provider_arn: arnType,
         client_id: clientIDType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3358,7 +3358,7 @@ class IamApi:
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         role_name: roleNameType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3368,7 +3368,7 @@ class IamApi:
         context: RequestContext,
         group_name: groupNameType,
         user_name: existingUserNameType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3378,7 +3378,7 @@ class IamApi:
         context: RequestContext,
         service_specific_credential_id: serviceSpecificCredentialId,
         user_name: userNameType = None,
-        **kwargs
+        **kwargs,
     ) -> ResetServiceSpecificCredentialResponse:
         raise NotImplementedError
 
@@ -3390,7 +3390,7 @@ class IamApi:
         serial_number: serialNumberType,
         authentication_code1: authenticationCodeType,
         authentication_code2: authenticationCodeType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3400,7 +3400,7 @@ class IamApi:
         context: RequestContext,
         policy_arn: arnType,
         version_id: policyVersionIdType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3409,7 +3409,7 @@ class IamApi:
         self,
         context: RequestContext,
         global_endpoint_token_version: globalEndpointTokenVersion,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3428,7 +3428,7 @@ class IamApi:
         resource_handling_option: ResourceHandlingOptionType = None,
         max_items: maxItemsType = None,
         marker: markerType = None,
-        **kwargs
+        **kwargs,
     ) -> SimulatePolicyResponse:
         raise NotImplementedError
 
@@ -3448,7 +3448,7 @@ class IamApi:
         resource_handling_option: ResourceHandlingOptionType = None,
         max_items: maxItemsType = None,
         marker: markerType = None,
-        **kwargs
+        **kwargs,
     ) -> SimulatePolicyResponse:
         raise NotImplementedError
 
@@ -3458,7 +3458,7 @@ class IamApi:
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         tags: tagListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3474,7 +3474,7 @@ class IamApi:
         context: RequestContext,
         open_id_connect_provider_arn: arnType,
         tags: tagListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3502,7 +3502,7 @@ class IamApi:
         context: RequestContext,
         server_certificate_name: serverCertificateNameType,
         tags: tagListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3518,7 +3518,7 @@ class IamApi:
         context: RequestContext,
         instance_profile_name: instanceProfileNameType,
         tag_keys: tagKeyListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3528,7 +3528,7 @@ class IamApi:
         context: RequestContext,
         serial_number: serialNumberType,
         tag_keys: tagKeyListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3538,7 +3538,7 @@ class IamApi:
         context: RequestContext,
         open_id_connect_provider_arn: arnType,
         tag_keys: tagKeyListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3560,7 +3560,7 @@ class IamApi:
         context: RequestContext,
         saml_provider_arn: arnType,
         tag_keys: tagKeyListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3570,7 +3570,7 @@ class IamApi:
         context: RequestContext,
         server_certificate_name: serverCertificateNameType,
         tag_keys: tagKeyListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3580,7 +3580,7 @@ class IamApi:
         context: RequestContext,
         user_name: existingUserNameType,
         tag_keys: tagKeyListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3591,7 +3591,7 @@ class IamApi:
         access_key_id: accessKeyIdType,
         status: statusType,
         user_name: existingUserNameType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3608,7 +3608,7 @@ class IamApi:
         max_password_age: maxPasswordAgeType = None,
         password_reuse_prevention: passwordReusePreventionType = None,
         hard_expiry: booleanObjectType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3618,7 +3618,7 @@ class IamApi:
         context: RequestContext,
         role_name: roleNameType,
         policy_document: policyDocumentType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3629,7 +3629,7 @@ class IamApi:
         group_name: groupNameType,
         new_path: pathType = None,
         new_group_name: groupNameType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3640,7 +3640,7 @@ class IamApi:
         user_name: userNameType,
         password: passwordType = None,
         password_reset_required: booleanObjectType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3650,7 +3650,7 @@ class IamApi:
         context: RequestContext,
         open_id_connect_provider_arn: arnType,
         thumbprint_list: thumbprintListType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3661,7 +3661,7 @@ class IamApi:
         role_name: roleNameType,
         description: roleDescriptionType = None,
         max_session_duration: roleMaxSessionDurationType = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateRoleResponse:
         raise NotImplementedError
 
@@ -3671,7 +3671,7 @@ class IamApi:
         context: RequestContext,
         role_name: roleNameType,
         description: roleDescriptionType,
-        **kwargs
+        **kwargs,
     ) -> UpdateRoleDescriptionResponse:
         raise NotImplementedError
 
@@ -3681,7 +3681,7 @@ class IamApi:
         context: RequestContext,
         saml_metadata_document: SAMLMetadataDocumentType,
         saml_provider_arn: arnType,
-        **kwargs
+        **kwargs,
     ) -> UpdateSAMLProviderResponse:
         raise NotImplementedError
 
@@ -3692,7 +3692,7 @@ class IamApi:
         user_name: userNameType,
         ssh_public_key_id: publicKeyIdType,
         status: statusType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3703,7 +3703,7 @@ class IamApi:
         server_certificate_name: serverCertificateNameType,
         new_path: pathType = None,
         new_server_certificate_name: serverCertificateNameType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3714,7 +3714,7 @@ class IamApi:
         service_specific_credential_id: serviceSpecificCredentialId,
         status: statusType,
         user_name: userNameType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3725,7 +3725,7 @@ class IamApi:
         certificate_id: certificateIdType,
         status: statusType,
         user_name: existingUserNameType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3736,7 +3736,7 @@ class IamApi:
         user_name: existingUserNameType,
         new_path: pathType = None,
         new_user_name: userNameType = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3746,7 +3746,7 @@ class IamApi:
         context: RequestContext,
         user_name: userNameType,
         ssh_public_key_body: publicKeyMaterialType,
-        **kwargs
+        **kwargs,
     ) -> UploadSSHPublicKeyResponse:
         raise NotImplementedError
 
@@ -3760,7 +3760,7 @@ class IamApi:
         path: pathType = None,
         certificate_chain: certificateChainType = None,
         tags: tagListType = None,
-        **kwargs
+        **kwargs,
     ) -> UploadServerCertificateResponse:
         raise NotImplementedError
 
@@ -3770,6 +3770,6 @@ class IamApi:
         context: RequestContext,
         certificate_body: certificateBodyType,
         user_name: existingUserNameType = None,
-        **kwargs
+        **kwargs,
     ) -> UploadSigningCertificateResponse:
         raise NotImplementedError

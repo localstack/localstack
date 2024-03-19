@@ -65,9 +65,9 @@ class LockingTestPackageInstaller(PackageInstaller):
     Package installer class used for testing the locking behavior.
     """
 
-    def __init__(self, queue: Queue = Queue(), install_lock: Optional[RLock] = None):
+    def __init__(self, queue: Queue = None, install_lock: Optional[RLock] = None):
         super().__init__("lock-test-installer", "test", install_lock)
-        self.queue = queue
+        self.queue = queue or Queue()
         self.about_to_wait = Event()
 
     def _get_install_marker_path(self, target: InstallTarget) -> str:

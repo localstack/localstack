@@ -139,7 +139,9 @@ class KinesisStreamProvider(ResourceProvider[KinesisStreamProperties]):
           - kinesis:RemoveTagsFromStream
         """
         model = request.desired_state
-        request.aws_client_factory.kinesis.delete_stream(StreamARN=model["Arn"])
+        request.aws_client_factory.kinesis.delete_stream(
+            StreamARN=model["Arn"], EnforceConsumerDeletion=True
+        )
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model={},

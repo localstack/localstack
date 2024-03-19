@@ -1,5 +1,5 @@
 # base: Stage which installs necessary runtime dependencies (OS packages, filesystem...)
-FROM python:3.11.7-slim-bookworm@sha256:53d6284a40eae6b625f22870f5faba6c54f2a28db9027408f4dee111f1e885a2 as base
+FROM python:3.11.8-slim-bookworm@sha256:a2eb07f336e4f194358382611b4fea136c632b40baa6314cb27a366deeaf0144 as base
 ARG TARGETARCH
 
 # set workdir
@@ -52,10 +52,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
-    (python3 -m venv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
+    (python3 -m venv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools build)
 
 # add files necessary to install all dependencies
-ADD Makefile setup.py setup.cfg pyproject.toml requirements-base-runtime.txt ./
+ADD Makefile pyproject.toml requirements-base-runtime.txt ./
 # add the root package init to invalidate docker layers with version bumps
 ADD localstack/__init__.py localstack/
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
@@ -76,7 +76,7 @@ FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 
 # add project files necessary to install all dependencies
-ADD Makefile setup.py setup.cfg pyproject.toml requirements-base-runtime.txt ./
+ADD Makefile pyproject.toml requirements-base-runtime.txt ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 

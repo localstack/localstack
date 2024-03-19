@@ -549,7 +549,7 @@
     }
   },
   "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_opensearch_crud": {
-    "recorded-date": "07-09-2023, 12:02:59",
+    "recorded-date": "12-02-2024, 15:44:19",
     "recorded-content": {
       "describe_domains": {
         "DomainStatusList": [
@@ -605,6 +605,7 @@
             },
             "Endpoint": "<endpoint:1>",
             "EngineVersion": "OpenSearch_2.5",
+            "IPAddressType": "ipv4",
             "NodeToNodeEncryptionOptions": {
               "Enabled": false
             },
@@ -612,7 +613,7 @@
               "Enabled": true,
               "OffPeakWindow": {
                 "WindowStartTime": {
-                  "Hours": 2,
+                  "Hours": 3,
                   "Minutes": 0
                 }
               }
@@ -621,7 +622,7 @@
             "ServiceSoftwareOptions": {
               "AutomatedUpdateDate": "datetime",
               "Cancellable": false,
-              "CurrentVersion": "OpenSearch_2_5_R20230308-P4",
+              "CurrentVersion": "OpenSearch_2_5_R20230928-P3",
               "Description": "There is no software update available for this domain.",
               "NewVersion": "",
               "OptionalDeployment": true,
@@ -793,6 +794,16 @@
               "UpdateVersion": "update-version"
             }
           },
+          "IPAddressType": {
+            "Options": "ipv4",
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
           "LogPublishingOptions": {
             "Options": {},
             "Status": {
@@ -820,7 +831,7 @@
               "Enabled": true,
               "OffPeakWindow": {
                 "WindowStartTime": {
-                  "Hours": 2,
+                  "Hours": 3,
                   "Minutes": 0
                 }
               }
@@ -906,7 +917,9 @@
           {
             "SourceVersion": "OpenSearch_2.5",
             "TargetVersions": [
-              "OpenSearch_2.7", "OpenSearch_2.9"
+              "OpenSearch_2.7",
+              "OpenSearch_2.9",
+              "OpenSearch_2.11"
             ]
           }
         ],
@@ -917,6 +930,8 @@
       },
       "list_versions": {
         "Versions": [
+          "OpenSearch_2.11",
+          "OpenSearch_2.9",
           "OpenSearch_2.7",
           "OpenSearch_2.5",
           "OpenSearch_2.3",

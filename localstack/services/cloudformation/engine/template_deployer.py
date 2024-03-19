@@ -4,7 +4,7 @@ import logging
 import re
 import traceback
 import uuid
-from typing import Literal, Optional, Type, TypedDict
+from typing import Literal, Optional, TypedDict
 
 from localstack import config
 from localstack.aws.connect import connect_to
@@ -31,12 +31,10 @@ from localstack.services.cloudformation.resource_provider import (
 )
 from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
-    GenericBaseModel,
 )
 from localstack.services.cloudformation.stores import exports_map
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe
-from localstack.utils.objects import get_all_subclasses
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.threads import start_worker_thread
 
@@ -56,11 +54,6 @@ LOG = logging.getLogger(__name__)
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ["AWS::Region", "AWS::Partition", "AWS::StackName", "AWS::AccountId"]
 
-# maps resource type string to model class
-RESOURCE_MODELS: dict[str, Type[GenericBaseModel]] = {
-    model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)
-}
-
 
 class NoStackUpdates(Exception):
     """Exception indicating that no actions are to be performed in a stack update (which is not allowed)"""
@@ -77,14 +70,6 @@ def get_attr_from_model_instance(
     resource: dict, attribute_name: str, resource_type: str, resource_id: str
 ) -> str:
     properties = resource.get("Properties", {})
-
-    # TODO: fix this somewhere else
-    if legacy_state := resource.get("_state_"):
-        properties = {**properties, **legacy_state}
-
-        if legacy_deployed_state := resource.get("_last_deployed_state"):
-            properties = {**properties, **legacy_deployed_state}
-
     # if there's no entry in VALID_GETATT_PROPERTIES for the resource type we still default to "open" and accept anything
     valid_atts = VALID_GETATT_PROPERTIES.get(resource_type)
     if valid_atts is not None and attribute_name not in valid_atts:
@@ -97,9 +82,15 @@ def get_attr_from_model_instance(
 
     attribute_candidate = properties.get(attribute_name)
     if "." in attribute_name:
+        # was used for legacy, but keeping it since it might have to work for a custom resource as well
         if attribute_candidate:
-            # in case we explicitly add a property with a dot, e.g. resource["Properties"]["Endpoint.Port"]
             return attribute_candidate
+
+        # some resources (e.g. ElastiCache) have their readOnly attributes defined as Aa.Bb but the property is named AaBb
+        if attribute_candidate := properties.get(attribute_name.replace(".", "")):
+            return attribute_candidate
+
+        # accessing nested properties
         parts = attribute_name.split(".")
         attribute = properties
         # TODO: the attribute fetching below is a temporary workaround for the dependency resolution.
@@ -803,15 +794,6 @@ class TemplateDeployer:
         self.account_id = account_id
         self.region_name = region_name
 
-        try:
-            self.provider_config = json.loads(config.CFN_RESOURCE_PROVIDER_OVERRIDES)
-        except json.JSONDecodeError:
-            LOG.warning(
-                "Failed to parse CFN_RESOURCE_PROVIDER_OVERRIDES config. Not a valid JSON document.",
-                exc_info=True,
-            )
-            raise
-
     @property
     def resources(self):
         return self.stack.resources
@@ -922,7 +904,8 @@ class TemplateDeployer:
                         resource_provider_payload = self.create_resource_provider_payload(
                             "Remove", logical_resource_id=resource_id
                         )
-                        progress_event = executor.deploy_loop(resource_provider_payload)  # noqa
+                        # TODO: check actual return value
+                        executor.deploy_loop(resource, resource_provider_payload)
                         self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
                 except Exception as e:
                     if iteration_cycle == max_cycle:
@@ -1370,13 +1353,17 @@ class TemplateDeployer:
             action, logical_resource_id=resource_id
         )
 
-        progress_event = executor.deploy_loop(resource_provider_payload)  # noqa
+        progress_event = executor.deploy_loop(resource, resource_provider_payload)  # noqa
 
         # TODO: clean up the surrounding loop (do_apply_changes_in_loop) so that the responsibilities are clearer
         stack_action = get_action_name_for_resource_change(action)
         match progress_event.status:
             case OperationStatus.FAILED:
-                stack.set_resource_status(resource_id, f"{stack_action}_FAILED")
+                stack.set_resource_status(
+                    resource_id,
+                    f"{stack_action}_FAILED",
+                    status_reason=progress_event.message or "",
+                )
                 # TODO: remove exception raising here?
                 # TODO: fix request token
                 raise Exception(
@@ -1401,10 +1388,6 @@ class TemplateDeployer:
         return ResourceProviderExecutor(
             stack_name=self.stack.stack_name,
             stack_id=self.stack.stack_id,
-            provider_config=self.provider_config,
-            # FIXME: ugly
-            resources=self.resources,
-            legacy_base_models=RESOURCE_MODELS,
         )
 
     def create_resource_provider_payload(

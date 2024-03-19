@@ -1,6 +1,14 @@
 import abc
 from typing import TYPE_CHECKING, Union
 
+"""
+Installing additional types locally:
+
+pip install "boto3-stubs[application-autoscaling]"
+
+Ideally please add them to the list below and in our pyproject.toml typehint dependencies as well
+
+"""
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
     from mypy_boto3_acm_pca import ACMPCAClient
@@ -9,6 +17,7 @@ if TYPE_CHECKING:
     from mypy_boto3_apigatewayv2 import ApiGatewayV2Client
     from mypy_boto3_appconfig import AppConfigClient
     from mypy_boto3_appconfigdata import AppConfigDataClient
+    from mypy_boto3_application_autoscaling import ApplicationAutoScalingClient
     from mypy_boto3_appsync import AppSyncClient
     from mypy_boto3_athena import AthenaClient
     from mypy_boto3_autoscaling import AutoScalingClient
@@ -66,6 +75,7 @@ if TYPE_CHECKING:
     from mypy_boto3_opensearch import OpenSearchServiceClient
     from mypy_boto3_organizations import OrganizationsClient
     from mypy_boto3_pi import PIClient
+    from mypy_boto3_pipes import EventBridgePipesClient
     from mypy_boto3_qldb import QLDBClient
     from mypy_boto3_qldb_session import QLDBSessionClient
     from mypy_boto3_rds import RDSClient
@@ -109,6 +119,9 @@ class TypedServiceClientFactory(abc.ABC):
     appconfig: Union["AppConfigClient", "MetadataRequestInjector[AppConfigClient]"]
     appconfigdata: Union["AppConfigDataClient", "MetadataRequestInjector[AppConfigDataClient]"]
     appsync: Union["AppSyncClient", "MetadataRequestInjector[AppSyncClient]"]
+    application_autoscaling: Union[
+        "ApplicationAutoScalingClient", "MetadataRequestInjector[ApplicationAutoScalingClient]"
+    ]
     athena: Union["AthenaClient", "MetadataRequestInjector[AthenaClient]"]
     autoscaling: Union["AutoScalingClient", "MetadataRequestInjector[AutoScalingClient]"]
     backup: Union["BackupClient", "MetadataRequestInjector[BackupClient]"]
@@ -183,6 +196,7 @@ class TypedServiceClientFactory(abc.ABC):
     opensearch: Union["OpenSearchServiceClient", "MetadataRequestInjector[OpenSearchServiceClient]"]
     organizations: Union["OrganizationsClient", "MetadataRequestInjector[OrganizationsClient]"]
     pi: Union["PIClient", "MetadataRequestInjector[PIClient]"]
+    pipes: Union["EventBridgePipesClient", "MetadataRequestInjector[EventBridgePipesClient]"]
     qldb: Union["QLDBClient", "MetadataRequestInjector[QLDBClient]"]
     qldb_session: Union["QLDBSessionClient", "MetadataRequestInjector[QLDBSessionClient]"]
     rds: Union["RDSClient", "MetadataRequestInjector[RDSClient]"]
@@ -252,6 +266,7 @@ class ServicePrincipal(str):
     firehose = "firehose"
     lambda_ = "lambda"
     logs = "logs"
+    pipes = "pipes"
     s3 = "s3"
     sns = "sns"
     sqs = "sqs"

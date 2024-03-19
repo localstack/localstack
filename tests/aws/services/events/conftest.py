@@ -120,10 +120,16 @@ def clean_up(aws_client):
 
 @pytest.fixture
 def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
+    queue_urls = []
+    event_bus_names = []
+    rule_names = []
+    target_ids = []
+
     def _put_events_with_filter_to_sqs(
         pattern: dict,
         entries_asserts: list[Tuple[list[dict], bool]],
         input_path: str = None,
+        input_transformer: dict[dict, str] = None,
     ):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
@@ -132,6 +138,7 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
 
         sqs_client = aws_client.sqs
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
+        queue_urls.append(queue_url)
         queue_arn = sqs_get_queue_arn(queue_url)
         policy = {
             "Version": "2012-10-17",
@@ -152,52 +159,73 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
 
         events_client = aws_client.events
         events_client.create_event_bus(Name=bus_name)
+        event_bus_names.append(bus_name)
+
         events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
             EventPattern=json.dumps(pattern),
         )
+        rule_names.append(rule_name)
         kwargs = {"InputPath": input_path} if input_path else {}
-        rs = events_client.put_targets(
+        if input_transformer:
+            kwargs["InputTransformer"] = input_transformer
+        response = events_client.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
             Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
         )
+        target_ids.append(target_id)
 
-        assert rs["FailedEntryCount"] == 0
-        assert rs["FailedEntries"] == []
+        assert response["FailedEntryCount"] == 0
+        assert response["FailedEntries"] == []
 
-        try:
-            messages = []
-            for entry_asserts in entries_asserts:
-                entries = entry_asserts[0]
-                for entry in entries:
-                    entry["EventBusName"] = bus_name
-                message = _put_entries_assert_results_sqs(
-                    events_client,
-                    sqs_client,
-                    queue_url,
-                    entries=entries,
-                    should_match=entry_asserts[1],
-                )
-                if message is not None:
-                    messages.extend(message)
-        finally:
-            clean_up(
-                bus_name=bus_name,
-                rule_name=rule_name,
-                target_ids=target_id,
-                queue_url=queue_url,
+        messages = []
+        for entry_asserts in entries_asserts:
+            entries = entry_asserts[0]
+            for entry in entries:
+                entry["EventBusName"] = bus_name
+            message = _put_entries_assert_results_sqs(
+                events_client,
+                sqs_client,
+                queue_url,
+                entries=entries,
+                should_match=entry_asserts[1],
             )
+            if message is not None:
+                messages.extend(message)
 
         return messages
 
     yield _put_events_with_filter_to_sqs
 
+    for queue_url, event_bus_name, rule_name, target_id in zip(
+        queue_urls, event_bus_names, rule_names, target_ids
+    ):
+        clean_up(
+            bus_name=event_bus_name,
+            rule_name=rule_name,
+            target_ids=target_id,
+            queue_url=queue_url,
+        )
+
 
 def _put_entries_assert_results_sqs(
     events_client, sqs_client, queue_url: str, entries: list[dict], should_match: bool
 ):
+    """
+    Put events to the event bus, receives the messages resulting from the event in the sqs queue and deletes them out of the queue.
+    If should_match is True, the content of the messages is asserted to be the same as the events put to the event bus.
+
+    :param events_client: boto3.client("events")
+    :param sqs_client: boto3.client("sqs")
+    :param queue_url: URL of the sqs queue
+    :param entries: List of entries to put to the event bus, each entry must
+                    be a dict that contains the keys: "Source", "DetailType", "Detail"
+    :param should_match:
+
+    :return: Messages from the queue if should_match is True, otherwise None
+    """
     response = events_client.put_events(Entries=entries)
     assert not response.get("FailedEntryCount")
 
@@ -218,15 +246,15 @@ def _put_entries_assert_results_sqs(
 
     if should_match:
         actual_event = json.loads(messages[0]["Body"])
-        if "detail" in actual_event:
-            _assert_valid_event(actual_event)
+        if isinstance(actual_event, dict) and "detail" in actual_event:
+            assert_valid_event(actual_event)
         return messages
     else:
         assert not messages
         return None
 
 
-def _assert_valid_event(event):
+def assert_valid_event(event):
     expected_fields = (
         "version",
         "id",
@@ -242,46 +270,36 @@ def _assert_valid_event(event):
         assert field in event
 
 
-@pytest.fixture
-def assert_valid_event():
-    yield _assert_valid_event
+def sqs_collect_messages(
+    aws_client,
+    queue_url: str,
+    min_events: int,
+    wait_time: int = 1,
+    retries: int = 3,
+) -> list[dict]:
+    """
+    Polls the given queue for the given amount of time and extracts and flattens from the received messages all
+    events (messages that have a "Records" field in their body, and where the records can be json-deserialized).
 
+    :param queue_url: the queue URL to listen from
+    :param min_events: the minimum number of events to receive to wait for
+    :param wait_time: the number of seconds to wait between retries
+    :param retries: the number of retries before raising an assert error
+    :return: a list with the deserialized records from the SQS messages
+    """
 
-@pytest.fixture
-def sqs_collect_messages(aws_client):
-    def _sqs_collect_messages(
-        queue_url: str,
-        min_events: int,
-        wait_time: int = 1,
-        retries: int = 3,
-    ) -> list[dict]:
-        """
-        Polls the given queue for the given amount of time and extracts and flattens from the received messages all
-        events (messages that have a "Records" field in their body, and where the records can be json-deserialized).
+    events = []
 
-        :param queue_url: the queue URL to listen from
-        :param min_events: the minimum number of events to receive to wait for
-        :param wait_time: the number of seconds to wait between retries
-        :param retries: the number of retries before raising an assert error
-        :return: a list with the deserialized records from the SQS messages
-        """
+    def collect_events() -> None:
+        _response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=wait_time)
+        messages = _response.get("Messages", [])
 
-        events = []
+        for m in messages:
+            events.append(m)
+            aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"])
 
-        def collect_events() -> None:
-            _response = aws_client.sqs.receive_message(
-                QueueUrl=queue_url, WaitTimeSeconds=wait_time
-            )
-            messages = _response.get("Messages", [])
+        assert len(events) >= min_events
 
-            for m in messages:
-                events.append(m)
-                aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"])
+    retry(collect_events, retries=retries, sleep=0.01)
 
-            assert len(events) >= min_events
-
-        retry(collect_events, retries=retries, sleep=0.01)
-
-        return events
-
-    yield _sqs_collect_messages
+    return events

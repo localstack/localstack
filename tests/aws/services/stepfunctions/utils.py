@@ -4,6 +4,7 @@ import os
 from typing import Callable, Final
 
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.aws.api.stepfunctions import (
     CreateStateMachineOutput,
@@ -12,7 +13,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventType,
 )
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
-from localstack.testing.snapshots.transformer import JsonpathTransformer, RegexTransformer
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 
@@ -25,10 +26,7 @@ _DELETION_TIMEOUT_SECS: Final[int] = 120
 
 
 def is_legacy_provider():
-    return (
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
-        and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") == "legacy"
-    )
+    return not is_aws_cloud() and os.environ.get("PROVIDER_OVERRIDE_STEPFUNCTIONS") == "legacy"
 
 
 def is_not_legacy_provider():
@@ -157,6 +155,28 @@ def await_execution_success(stepfunctions_client, execution_arn: str):
     )
 
 
+def await_list_execution_status(
+    stepfunctions_client, state_machine_arn: str, execution_arn: str, status: str
+):
+    """required as there is some eventual consistency in list_executions vs describe_execution and get_execution_history"""
+
+    def _run_check():
+        list_resp = stepfunctions_client.list_executions(
+            stateMachineArn=state_machine_arn, statusFilter=status
+        )
+        for execution in list_resp.get("executions", []):
+            if execution["executionArn"] != execution_arn or execution["status"] != status:
+                continue
+            return True
+        return False
+
+    success = poll_condition(condition=_run_check, timeout=120, interval=1)
+    if not success:
+        LOG.warning(
+            f"Timed out whilst awaiting for execution status {status} to satisfy condition for execution '{execution_arn}'."
+        )
+
+
 def await_execution_terminated(stepfunctions_client, execution_arn: str):
     def _check_last_is_terminal(events: HistoryEventList) -> bool:
         if len(events) > 0:
@@ -249,6 +269,7 @@ def launch_and_record_execution(
     sfn_snapshot,
     state_machine_arn,
     execution_input,
+    verify_execution_description=False,
 ):
     exec_resp = stepfunctions_client.start_execution(
         stateMachineArn=state_machine_arn, input=execution_input
@@ -259,6 +280,10 @@ def launch_and_record_execution(
     await_execution_terminated(
         stepfunctions_client=stepfunctions_client, execution_arn=execution_arn
     )
+
+    if verify_execution_description:
+        describe_execution = stepfunctions_client.describe_execution(executionArn=execution_arn)
+        sfn_snapshot.match("describe_execution", describe_execution)
 
     get_execution_history = stepfunctions_client.get_execution_history(executionArn=execution_arn)
 
@@ -276,6 +301,7 @@ def launch_and_record_execution(
     sfn_snapshot.match("get_execution_history", get_execution_history)
 
 
+# TODO: make this return the execution ARN for manual assertions
 def create_and_record_execution(
     stepfunctions_client,
     create_iam_role_for_sfn,
@@ -283,6 +309,7 @@ def create_and_record_execution(
     sfn_snapshot,
     definition,
     execution_input,
+    verify_execution_description=False,
 ):
     state_machine_arn = create(
         create_iam_role_for_sfn, create_state_machine, sfn_snapshot, definition
@@ -292,6 +319,7 @@ def create_and_record_execution(
         sfn_snapshot,
         state_machine_arn,
         execution_input,
+        verify_execution_description,
     )
 
 

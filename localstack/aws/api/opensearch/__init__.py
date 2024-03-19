@@ -132,6 +132,17 @@ class AutoTuneType(str):
     SCHEDULED_ACTION = "SCHEDULED_ACTION"
 
 
+class ConfigChangeStatus(str):
+    Pending = "Pending"
+    Initializing = "Initializing"
+    Validating = "Validating"
+    ValidationFailed = "ValidationFailed"
+    ApplyingChanges = "ApplyingChanges"
+    Completed = "Completed"
+    PendingUserInput = "PendingUserInput"
+    Cancelled = "Cancelled"
+
+
 class ConnectionMode(str):
     DIRECT = "DIRECT"
     VPC_ENDPOINT = "VPC_ENDPOINT"
@@ -168,6 +179,16 @@ class DomainPackageStatus(str):
     DISSOCIATION_FAILED = "DISSOCIATION_FAILED"
 
 
+class DomainProcessingStatusType(str):
+    Creating = "Creating"
+    Active = "Active"
+    Modifying = "Modifying"
+    UpgradingEngineVersion = "UpgradingEngineVersion"
+    UpdatingServiceSoftware = "UpdatingServiceSoftware"
+    Isolated = "Isolated"
+    Deleting = "Deleting"
+
+
 class DomainState(str):
     Active = "Active"
     Processing = "Processing"
@@ -198,6 +219,11 @@ class InboundConnectionStatusCode(str):
     REJECTED = "REJECTED"
     DELETING = "DELETING"
     DELETED = "DELETED"
+
+
+class InitiatedBy(str):
+    CUSTOMER = "CUSTOMER"
+    SERVICE = "SERVICE"
 
 
 class LogType(str):
@@ -273,6 +299,14 @@ class OpenSearchPartitionInstanceType(str):
     t3_large_search = "t3.large.search"
     t3_xlarge_search = "t3.xlarge.search"
     t3_2xlarge_search = "t3.2xlarge.search"
+    or1_medium_search = "or1.medium.search"
+    or1_large_search = "or1.large.search"
+    or1_xlarge_search = "or1.xlarge.search"
+    or1_2xlarge_search = "or1.2xlarge.search"
+    or1_4xlarge_search = "or1.4xlarge.search"
+    or1_8xlarge_search = "or1.8xlarge.search"
+    or1_12xlarge_search = "or1.12xlarge.search"
+    or1_16xlarge_search = "or1.16xlarge.search"
     ultrawarm1_medium_search = "ultrawarm1.medium.search"
     ultrawarm1_large_search = "ultrawarm1.large.search"
     ultrawarm1_xlarge_search = "ultrawarm1.xlarge.search"
@@ -387,6 +421,11 @@ class PackageType(str):
 class PrincipalType(str):
     AWS_ACCOUNT = "AWS_ACCOUNT"
     AWS_SERVICE = "AWS_SERVICE"
+
+
+class PropertyValueType(str):
+    PLAIN_TEXT = "PLAIN_TEXT"
+    STRINGIFIED_JSON = "STRINGIFIED_JSON"
 
 
 class ReservedInstancePaymentOption(str):
@@ -840,6 +879,27 @@ AvailabilityZoneInfoList = List[AvailabilityZoneInfo]
 AvailabilityZoneList = List[AvailabilityZone]
 
 
+class CancelDomainConfigChangeRequest(ServiceRequest):
+    DomainName: DomainName
+    DryRun: Optional[DryRun]
+
+
+class CancelledChangeProperty(TypedDict, total=False):
+    PropertyName: Optional[String]
+    CancelledValue: Optional[String]
+    ActiveValue: Optional[String]
+
+
+CancelledChangePropertyList = List[CancelledChangeProperty]
+GUIDList = List[GUID]
+
+
+class CancelDomainConfigChangeResponse(TypedDict, total=False):
+    CancelledChangeIds: Optional[GUIDList]
+    CancelledChangeProperties: Optional[CancelledChangePropertyList]
+    DryRun: Optional[DryRun]
+
+
 class CancelServiceSoftwareUpdateRequest(ServiceRequest):
     DomainName: DomainName
 
@@ -865,6 +925,10 @@ class CancelServiceSoftwareUpdateResponse(TypedDict, total=False):
 class ChangeProgressDetails(TypedDict, total=False):
     ChangeId: Optional[GUID]
     Message: Optional[Message]
+    ConfigChangeStatus: Optional[ConfigChangeStatus]
+    InitiatedBy: Optional[InitiatedBy]
+    StartTime: Optional[UpdateTimestamp]
+    LastUpdatedTime: Optional[UpdateTimestamp]
 
 
 class ChangeProgressStage(TypedDict, total=False):
@@ -886,6 +950,9 @@ class ChangeProgressStatusDetails(TypedDict, total=False):
     CompletedProperties: Optional[StringList]
     TotalNumberOfStages: Optional[TotalNumberOfStages]
     ChangeProgressStages: Optional[ChangeProgressStageList]
+    LastUpdatedTime: Optional[UpdateTimestamp]
+    ConfigChangeStatus: Optional[ConfigChangeStatus]
+    InitiatedBy: Optional[InitiatedBy]
 
 
 class ColdStorageOptions(TypedDict, total=False):
@@ -1034,6 +1101,16 @@ class CreateDomainRequest(ServiceRequest):
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
 
 
+class ModifyingProperties(TypedDict, total=False):
+    Name: Optional[String]
+    ActiveValue: Optional[String]
+    PendingValue: Optional[String]
+    ValueType: Optional[PropertyValueType]
+
+
+ModifyingPropertiesList = List[ModifyingProperties]
+
+
 class VPCDerivedInfo(TypedDict, total=False):
     VPCId: Optional[String]
     SubnetIds: Optional[StringList]
@@ -1074,6 +1151,8 @@ class DomainStatus(TypedDict, total=False):
     ChangeProgressDetails: Optional[ChangeProgressDetails]
     OffPeakWindowOptions: Optional[OffPeakWindowOptions]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptions]
+    DomainProcessingStatus: Optional[DomainProcessingStatusType]
+    ModifyingProperties: Optional[ModifyingPropertiesList]
 
 
 class CreateDomainResponse(TypedDict, total=False):
@@ -1339,6 +1418,7 @@ class DomainConfig(TypedDict, total=False):
     ChangeProgressDetails: Optional[ChangeProgressDetails]
     OffPeakWindowOptions: Optional[OffPeakWindowOptionsStatus]
     SoftwareUpdateOptions: Optional[SoftwareUpdateOptionsStatus]
+    ModifyingProperties: Optional[ModifyingPropertiesList]
 
 
 class DescribeDomainConfigResponse(TypedDict, total=False):
@@ -2092,7 +2172,7 @@ class OpensearchApi:
         name: DataSourceName,
         data_source_type: DataSourceType,
         description: DataSourceDescription = None,
-        **kwargs
+        **kwargs,
     ) -> AddDataSourceResponse:
         raise NotImplementedError
 
@@ -2110,6 +2190,12 @@ class OpensearchApi:
     def authorize_vpc_endpoint_access(
         self, context: RequestContext, domain_name: DomainName, account: AWSAccount, **kwargs
     ) -> AuthorizeVpcEndpointAccessResponse:
+        raise NotImplementedError
+
+    @handler("CancelDomainConfigChange")
+    def cancel_domain_config_change(
+        self, context: RequestContext, domain_name: DomainName, dry_run: DryRun = None, **kwargs
+    ) -> CancelDomainConfigChangeResponse:
         raise NotImplementedError
 
     @handler("CancelServiceSoftwareUpdate")
@@ -2141,7 +2227,7 @@ class OpensearchApi:
         auto_tune_options: AutoTuneOptionsInput = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
-        **kwargs
+        **kwargs,
     ) -> CreateDomainResponse:
         raise NotImplementedError
 
@@ -2154,7 +2240,7 @@ class OpensearchApi:
         connection_alias: ConnectionAlias,
         connection_mode: ConnectionMode = None,
         connection_properties: ConnectionProperties = None,
-        **kwargs
+        **kwargs,
     ) -> CreateOutboundConnectionResponse:
         raise NotImplementedError
 
@@ -2166,7 +2252,7 @@ class OpensearchApi:
         package_type: PackageType,
         package_source: PackageSource,
         package_description: PackageDescription = None,
-        **kwargs
+        **kwargs,
     ) -> CreatePackageResponse:
         raise NotImplementedError
 
@@ -2177,7 +2263,7 @@ class OpensearchApi:
         domain_arn: DomainArn,
         vpc_options: VPCOptions,
         client_token: ClientToken = None,
-        **kwargs
+        **kwargs,
     ) -> CreateVpcEndpointResponse:
         raise NotImplementedError
 
@@ -2230,7 +2316,7 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDomainAutoTunesResponse:
         raise NotImplementedError
 
@@ -2271,7 +2357,7 @@ class OpensearchApi:
         domain_name: DomainName,
         dry_run_id: GUID = None,
         load_dry_run_config: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDryRunProgressResponse:
         raise NotImplementedError
 
@@ -2282,7 +2368,7 @@ class OpensearchApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeInboundConnectionsResponse:
         raise NotImplementedError
 
@@ -2293,7 +2379,7 @@ class OpensearchApi:
         instance_type: OpenSearchPartitionInstanceType,
         engine_version: VersionString,
         domain_name: DomainName = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeInstanceTypeLimitsResponse:
         raise NotImplementedError
 
@@ -2304,7 +2390,7 @@ class OpensearchApi:
         filters: FilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeOutboundConnectionsResponse:
         raise NotImplementedError
 
@@ -2315,7 +2401,7 @@ class OpensearchApi:
         filters: DescribePackagesFilterList = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribePackagesResponse:
         raise NotImplementedError
 
@@ -2326,7 +2412,7 @@ class OpensearchApi:
         reserved_instance_offering_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeReservedInstanceOfferingsResponse:
         raise NotImplementedError
 
@@ -2337,7 +2423,7 @@ class OpensearchApi:
         reserved_instance_id: GUID = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeReservedInstancesResponse:
         raise NotImplementedError
 
@@ -2378,7 +2464,7 @@ class OpensearchApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetPackageVersionHistoryResponse:
         raise NotImplementedError
 
@@ -2389,7 +2475,7 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetUpgradeHistoryResponse:
         raise NotImplementedError
 
@@ -2414,7 +2500,7 @@ class OpensearchApi:
         status: MaintenanceStatus = None,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListDomainMaintenancesResponse:
         raise NotImplementedError
 
@@ -2431,7 +2517,7 @@ class OpensearchApi:
         package_id: PackageID,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListDomainsForPackageResponse:
         raise NotImplementedError
 
@@ -2445,7 +2531,7 @@ class OpensearchApi:
         next_token: NextToken = None,
         retrieve_azs: Boolean = None,
         instance_type: InstanceTypeString = None,
-        **kwargs
+        **kwargs,
     ) -> ListInstanceTypeDetailsResponse:
         raise NotImplementedError
 
@@ -2456,7 +2542,7 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListPackagesForDomainResponse:
         raise NotImplementedError
 
@@ -2467,7 +2553,7 @@ class OpensearchApi:
         domain_name: DomainName,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListScheduledActionsResponse:
         raise NotImplementedError
 
@@ -2481,7 +2567,7 @@ class OpensearchApi:
         context: RequestContext,
         max_results: MaxResults = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListVersionsResponse:
         raise NotImplementedError
 
@@ -2491,7 +2577,7 @@ class OpensearchApi:
         context: RequestContext,
         domain_name: DomainName,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListVpcEndpointAccessResponse:
         raise NotImplementedError
 
@@ -2507,7 +2593,7 @@ class OpensearchApi:
         context: RequestContext,
         domain_name: DomainName,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListVpcEndpointsForDomainResponse:
         raise NotImplementedError
 
@@ -2518,7 +2604,7 @@ class OpensearchApi:
         reserved_instance_offering_id: GUID,
         reservation_name: ReservationToken,
         instance_count: InstanceCount = None,
-        **kwargs
+        **kwargs,
     ) -> PurchaseReservedInstanceOfferingResponse:
         raise NotImplementedError
 
@@ -2547,7 +2633,7 @@ class OpensearchApi:
         domain_name: DomainName,
         action: MaintenanceType,
         node_id: NodeId = None,
-        **kwargs
+        **kwargs,
     ) -> StartDomainMaintenanceResponse:
         raise NotImplementedError
 
@@ -2558,7 +2644,7 @@ class OpensearchApi:
         domain_name: DomainName,
         schedule_at: ScheduleAt = None,
         desired_start_time: Long = None,
-        **kwargs
+        **kwargs,
     ) -> StartServiceSoftwareUpdateResponse:
         raise NotImplementedError
 
@@ -2570,7 +2656,7 @@ class OpensearchApi:
         name: DataSourceName,
         data_source_type: DataSourceType,
         description: DataSourceDescription = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateDataSourceResponse:
         raise NotImplementedError
 
@@ -2597,7 +2683,7 @@ class OpensearchApi:
         dry_run_mode: DryRunMode = None,
         off_peak_window_options: OffPeakWindowOptions = None,
         software_update_options: SoftwareUpdateOptions = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateDomainConfigResponse:
         raise NotImplementedError
 
@@ -2609,7 +2695,7 @@ class OpensearchApi:
         package_source: PackageSource,
         package_description: PackageDescription = None,
         commit_message: CommitMessage = None,
-        **kwargs
+        **kwargs,
     ) -> UpdatePackageResponse:
         raise NotImplementedError
 
@@ -2622,7 +2708,7 @@ class OpensearchApi:
         action_type: ActionType,
         schedule_at: ScheduleAt,
         desired_start_time: Long = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateScheduledActionResponse:
         raise NotImplementedError
 
@@ -2632,7 +2718,7 @@ class OpensearchApi:
         context: RequestContext,
         vpc_endpoint_id: VpcEndpointId,
         vpc_options: VPCOptions,
-        **kwargs
+        **kwargs,
     ) -> UpdateVpcEndpointResponse:
         raise NotImplementedError
 
@@ -2644,6 +2730,6 @@ class OpensearchApi:
         target_version: VersionString,
         perform_check_only: Boolean = None,
         advanced_options: AdvancedOptions = None,
-        **kwargs
+        **kwargs,
     ) -> UpgradeDomainResponse:
         raise NotImplementedError

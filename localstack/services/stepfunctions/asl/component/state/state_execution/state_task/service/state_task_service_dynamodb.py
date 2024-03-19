@@ -98,6 +98,7 @@ class StateTaskServiceDynamoDB(StateTaskService):
             error, cause = self._error_cause_from_client_error(ex)
             error_name = CustomErrorName(error)
             return FailureEvent(
+                env=env,
                 error_name=error_name,
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(
@@ -111,6 +112,7 @@ class StateTaskServiceDynamoDB(StateTaskService):
             )
         else:
             return FailureEvent(
+                env=env,
                 error_name=CustomErrorName(self._ERROR_NAME_AWS),
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(

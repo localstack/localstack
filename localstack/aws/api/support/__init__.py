@@ -477,7 +477,7 @@ class SupportApi:
         context: RequestContext,
         attachments: Attachments,
         attachment_set_id: AttachmentSetId = None,
-        **kwargs
+        **kwargs,
     ) -> AddAttachmentsToSetResponse:
         raise NotImplementedError
 
@@ -489,7 +489,7 @@ class SupportApi:
         case_id: CaseId = None,
         cc_email_addresses: CcEmailAddressList = None,
         attachment_set_id: AttachmentSetId = None,
-        **kwargs
+        **kwargs,
     ) -> AddCommunicationToCaseResponse:
         raise NotImplementedError
 
@@ -506,7 +506,7 @@ class SupportApi:
         language: Language = None,
         issue_type: IssueType = None,
         attachment_set_id: AttachmentSetId = None,
-        **kwargs
+        **kwargs,
     ) -> CreateCaseResponse:
         raise NotImplementedError
 
@@ -529,7 +529,7 @@ class SupportApi:
         max_results: MaxResults = None,
         language: Language = None,
         include_communications: IncludeCommunications = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeCasesResponse:
         raise NotImplementedError
 
@@ -542,7 +542,7 @@ class SupportApi:
         after_time: AfterTime = None,
         next_token: NextToken = None,
         max_results: MaxResults = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeCommunicationsResponse:
         raise NotImplementedError
 
@@ -554,7 +554,7 @@ class SupportApi:
         service_code: ServiceCode,
         language: Language,
         category_code: CategoryCode,
-        **kwargs
+        **kwargs,
     ) -> DescribeCreateCaseOptionsResponse:
         raise NotImplementedError
 
@@ -564,7 +564,7 @@ class SupportApi:
         context: RequestContext,
         service_code_list: ServiceCodeList = None,
         language: Language = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeServicesResponse:
         raise NotImplementedError
 
@@ -581,7 +581,7 @@ class SupportApi:
         issue_type: ValidatedIssueTypeString,
         service_code: ValidatedServiceCode,
         category_code: ValidatedCategoryCode,
-        **kwargs
+        **kwargs,
     ) -> DescribeSupportedLanguagesResponse:
         raise NotImplementedError
 

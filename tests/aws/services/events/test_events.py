@@ -11,7 +11,6 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.events.provider import _get_events_tmp_dir
 from localstack.testing.aws.eventbus_utils import allow_event_rule_to_sqs_queue
 from localstack.testing.aws.util import is_aws_cloud
@@ -75,7 +74,7 @@ class TestEvents:
         self, aws_client
     ):
         event_type = str(uuid.uuid4())
-        event_details_to_publish = list(map(lambda n: f"event {n}", range(10)))
+        event_details_to_publish = [f"event {n}" for n in range(10)]
 
         for detail in event_details_to_publish:
             aws_client.events.put_events(
@@ -90,9 +89,9 @@ class TestEvents:
             )
 
         events_tmp_dir = _get_events_tmp_dir()
-        sorted_events_written_to_disk = map(
-            lambda filename: json.loads(str(load_file(os.path.join(events_tmp_dir, filename)))),
-            sorted(os.listdir(events_tmp_dir)),
+        sorted_events_written_to_disk = (
+            json.loads(str(load_file(os.path.join(events_tmp_dir, filename))))
+            for filename in sorted(os.listdir(events_tmp_dir))
         )
         sorted_events = list(
             filter(
@@ -101,10 +100,7 @@ class TestEvents:
             )
         )
 
-        assert (
-            list(map(lambda event: json.loads(event["Detail"]), sorted_events))
-            == event_details_to_publish
-        )
+        assert [json.loads(event["Detail"]) for event in sorted_events] == event_details_to_publish
 
     @markers.aws.validated
     def test_list_tags_for_resource(self, aws_client, clean_up):
@@ -203,6 +199,8 @@ class TestEvents:
         sns_subscription,
         httpserver: HTTPServer,
         aws_client,
+        account_id,
+        region_name,
         clean_up,
     ):
         httpserver.expect_request("").respond_with_data(b"", 200)
@@ -212,7 +210,7 @@ class TestEvents:
         queue_name = f"queue-{short_uid()}"
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         rule_name = f"rule-{short_uid()}"
-        sm_role_arn = arns.iam_role_arn("sfn_role", account_id=TEST_AWS_ACCOUNT_ID)
+        sm_role_arn = arns.iam_role_arn("sfn_role", account_id=account_id)
         sm_name = f"state-machine-{short_uid()}"
         topic_target_id = f"target-{short_uid()}"
         sm_target_id = f"target-{short_uid()}"
@@ -256,10 +254,8 @@ class TestEvents:
             Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
         )
 
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
-        fifo_queue_arn = arns.sqs_queue_arn(
-            fifo_queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-        )
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
+        fifo_queue_arn = arns.sqs_queue_arn(fifo_queue_name, account_id, region_name)
 
         event = {"env": "testing"}
         event_json = json.dumps(event)
@@ -574,7 +570,7 @@ class TestEvents:
         )
 
     @markers.aws.validated
-    def test_test_event_pattern(self, aws_client, snapshot, account_id, region):
+    def test_test_event_pattern(self, aws_client, snapshot, account_id, region_name):
         response = aws_client.events.test_event_pattern(
             Event=json.dumps(
                 {
@@ -582,7 +578,7 @@ class TestEvents:
                     "source": "order",
                     "detail-type": "Test",
                     "account": account_id,
-                    "region": region,
+                    "region": region_name,
                     "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
             ),
@@ -603,7 +599,7 @@ class TestEvents:
                     "source": "order",
                     "detail-type": "Test",
                     "account": account_id,
-                    "region": region,
+                    "region": region_name,
                     "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                 }
             ),
@@ -969,3 +965,62 @@ class TestEventsEventBus:
         with pytest.raises(ClientError) as e:
             aws_client.events.describe_event_bus(Name=nonexistent_event_bus)
         snapshot.match("non-existent-bus", e.value.response)
+
+
+class TestEventsInputTransformers:
+    @markers.aws.validated
+    def test_put_events_with_input_transformation_to_sqs(
+        self, put_events_with_filter_to_sqs, snapshot
+    ):
+        pattern = {"detail-type": ["customerCreated"]}
+        event_detail = {"command": "display-message", "payload": "baz"}
+        entries = [
+            {
+                "Source": "com.mycompany.myapp",
+                "DetailType": "customerCreated",
+                "Detail": json.dumps(event_detail),
+            }
+        ]
+        entries_asserts = [(entries, True)]
+
+        # input transformer with all keys in template present in message
+        input_path_map = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.command",
+        }
+        input_template = '"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>"'
+        input_transformer_match_all = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+        messages_match_all = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer_match_all,
+        )
+
+        # input transformer with keys in template missing from message
+        input_path_map_missing_key = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.notinmessage",
+        }
+        input_transformer_not_match_all = {
+            "InputPathsMap": input_path_map_missing_key,
+            "InputTemplate": input_template,
+        }
+        messages_not_match_all = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer_not_match_all,
+        )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("custom-variables-match-all", messages_match_all)
+        snapshot.match("custom-variables-not-match-all", messages_not_match_all)

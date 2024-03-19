@@ -25,8 +25,10 @@ from localstack.constants import (
 from localstack.http import Request, Response, Router, route
 from localstack.http.dispatcher import Handler
 from localstack.services.sqs.exceptions import MissingRequiredParameterException
-from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
-from localstack.utils.aws.request_context import extract_region_from_headers
+from localstack.utils.aws.request_context import (
+    extract_access_key_id_from_auth_header,
+    extract_region_from_headers,
+)
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)

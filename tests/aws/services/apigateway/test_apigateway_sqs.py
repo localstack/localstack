@@ -4,7 +4,6 @@ import re
 
 import requests
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs, path_based_url
 from localstack.testing.pytest import markers
 from localstack.utils.aws import queries
@@ -17,7 +16,9 @@ from tests.aws.services.apigateway.test_apigateway_basic import TEST_STAGE_NAME
 
 
 @markers.aws.unknown
-def test_api_gateway_sqs_integration(aws_client, sqs_create_queue, sqs_get_queue_arn):
+def test_api_gateway_sqs_integration(
+    aws_client, account_id, region_name, sqs_create_queue, sqs_get_queue_arn
+):
     # create target SQS stream
     queue_name = f"queue-{short_uid()}"
     sqs_create_queue(QueueName=queue_name)
@@ -28,8 +29,8 @@ def test_api_gateway_sqs_integration(aws_client, sqs_create_queue, sqs_get_queue
         stage_name=TEST_STAGE_NAME,
         queue_arn=queue_name,
         path="/data",
-        account_id=TEST_AWS_ACCOUNT_ID,
-        region_name=TEST_AWS_REGION_NAME,
+        account_id=account_id,
+        region_name=region_name,
     )
 
     # generate test data
@@ -55,7 +56,7 @@ def test_sqs_aws_integration(
     sqs_create_queue,
     aws_client,
     create_role_with_policy,
-    region,
+    region_name,
     account_id,
     snapshot,
 ):
@@ -92,7 +93,7 @@ def test_sqs_aws_integration(
         httpMethod="POST",
         type="AWS",
         integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{region}:sqs:path/{account_id}/{queue_name}",
+        uri=f"arn:aws:apigateway:{region_name}:sqs:path/{account_id}/{queue_name}",
         credentials=role_arn,
         requestParameters={
             "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"
@@ -145,7 +146,7 @@ def test_sqs_request_and_response_xml_templates_integration(
     sqs_create_queue,
     aws_client,
     create_role_with_policy,
-    region,
+    region_name,
     account_id,
     snapshot,
 ):
@@ -180,7 +181,7 @@ def test_sqs_request_and_response_xml_templates_integration(
         httpMethod="POST",
         type="AWS",
         integrationHttpMethod="POST",
-        uri=f"arn:aws:apigateway:{region}:sqs:path/{account_id}/{queue_name}",
+        uri=f"arn:aws:apigateway:{region_name}:sqs:path/{account_id}/{queue_name}",
         credentials=role_arn,
         requestParameters={
             "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"

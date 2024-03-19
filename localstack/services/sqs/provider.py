@@ -92,6 +92,7 @@ from localstack.services.sqs.utils import (
     is_message_deduplication_id_required,
     parse_queue_url,
 )
+from localstack.services.stores import AccountRegionBundle
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.bootstrap import is_api_enabled
@@ -428,9 +429,12 @@ class MessageMoveTaskManager:
      transactional move, foregoing the API layer but using receipt handles and transactions.
 
     TODO: restoring move tasks from persistence doesn't work, may be a fringe case though
+
+    TODO: re-drive into multiple original source queues
     """
 
-    def __init__(self) -> None:
+    def __init__(self, stores: AccountRegionBundle[SqsStore] = None) -> None:
+        self.stores = stores or sqs_stores
         self.mutex = threading.RLock()
         self.move_tasks: dict[str, MessageMoveTask] = dict()
         self.executor = ThreadPoolExecutor(max_workers=100, thread_name_prefix="sqs-move-message")
@@ -464,16 +468,23 @@ class MessageMoveTaskManager:
 
     def _run(self, move_task: MessageMoveTask):
         try:
-            LOG.info(
-                "Move task started %s (%s -> %s)",
-                move_task.task_id,
-                move_task.source_arn,
-                move_task.destination_arn,
-            )
+            if move_task.destination_arn:
+                LOG.info(
+                    "Move task started %s (%s -> %s)",
+                    move_task.task_id,
+                    move_task.source_arn,
+                    move_task.destination_arn,
+                )
+            else:
+                LOG.info(
+                    "Move task started %s (%s -> original sources)",
+                    move_task.task_id,
+                    move_task.source_arn,
+                )
+
             while not move_task.cancel_event.is_set():
-                # look up queues every time in case they are removed
+                # look up queues for every message in case they are removed
                 source_queue = self._get_queue_by_arn(move_task.source_arn)
-                destination_queue = self._get_queue_by_arn(move_task.destination_arn)
 
                 receive_result = source_queue.receive(num_messages=1, visibility_timeout=1)
 
@@ -486,7 +497,18 @@ class MessageMoveTaskManager:
 
                 message = receive_result.successful[0]
                 receipt_handle = receive_result.receipt_handles[0]
-                destination_queue.put(message=message.message)
+
+                if move_task.destination_arn:
+                    target_queue = self._get_queue_by_arn(move_task.destination_arn)
+                else:
+                    # we assume that dead_letter_source_arn is set since the message comes from a DLQ
+                    target_queue = self._get_queue_by_arn(message.dead_letter_queue_source_arn)
+
+                target_queue.put(
+                    message=message.message,
+                    message_group_id=message.message_group_id,
+                    message_deduplication_id=message.message_deduplication_id,
+                )
                 source_queue.remove(receipt_handle)
                 move_task.approximate_number_of_messages_moved += 1
 
@@ -704,7 +726,7 @@ class SqsDeveloperEndpoints:
         messages = []
 
         for sqs_message in sqs_messages:
-            message: Message = to_sqs_api_message(sqs_message, QueueAttributeName.All, ["All"])
+            message: Message = to_sqs_api_message(sqs_message, [QueueAttributeName.All], ["All"])
             # these are all non-standard fields so we squelch the linter
             if show_invisible:
                 message["Attributes"]["IsVisible"] = str(sqs_message.is_visible).lower()  # noqa
@@ -1198,9 +1220,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             dl_queue = self._require_queue_by_arn(context, dead_letter_target_arn)
             # TODO: does this need to be atomic?
             for standard_message in result.dead_letter_messages:
-                message = to_sqs_api_message(
-                    standard_message, attribute_names, message_attribute_names
-                )
+                message = standard_message.message
+                message["Attributes"][
+                    MessageSystemAttributeName.DeadLetterQueueSourceArn
+                ] = queue.arn
                 dl_queue.put(
                     message=message,
                     message_deduplication_id=standard_message.message_deduplication_id,
@@ -1418,15 +1441,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 status_code=404,
             ) from e
 
-        # check that destination queue exists
-        try:
-            self._require_queue_by_arn(context, destination_arn)
-        except QueueDoesNotExist as e:
-            raise ResourceNotFoundException(
-                "The resource that you specified for the DestinationArn parameter doesn't exist.",
-                status_code=404,
-            ) from e
-
         # check that the source queue is the dlq of some other queue
         is_dlq = False
         for _, _, store in sqs_stores.iter_stores():
@@ -1442,6 +1456,17 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             raise InvalidParameterValueException(
                 "Source queue must be configured as a Dead Letter Queue."
             )
+
+        # If destination_arn is left blank, the messages will be redriven back to their respective original
+        # source queues.
+        if destination_arn:
+            try:
+                self._require_queue_by_arn(context, destination_arn)
+            except QueueDoesNotExist as e:
+                raise ResourceNotFoundException(
+                    "The resource that you specified for the DestinationArn parameter doesn't exist.",
+                    status_code=404,
+                ) from e
 
         # check that only one active task exists
         with self._message_move_task_manager.mutex:
@@ -1459,10 +1484,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             ]
             if len(tasks) > 0:
                 raise InvalidParameterValueException(
-                    "There is already a task running. Only one active task is allowed for a source queue arn at a given time."
+                    "There is already a task running. Only one active task is allowed for a source queue "
+                    "arn at a given time."
                 )
 
-            task = MessageMoveTask(source_arn, destination_arn, max_number_of_messages_per_second)
+            task = MessageMoveTask(
+                source_arn,
+                destination_arn,
+                max_number_of_messages_per_second,
+            )
             store.move_tasks[task.task_id] = task
 
         self._message_move_task_manager.submit(task)
@@ -1722,9 +1752,6 @@ def to_sqs_api_message(
     message = copy.deepcopy(standard_message.message)
 
     # update system attributes of the message copy
-    message["Attributes"][MessageSystemAttributeName.ApproximateReceiveCount] = str(
-        (standard_message.receive_count or 0)
-    )
     message["Attributes"][MessageSystemAttributeName.ApproximateFirstReceiveTimestamp] = str(
         int((standard_message.first_received or 0) * 1000)
     )
@@ -1758,7 +1785,7 @@ def message_filter_attributes(message: Message, names: Optional[AttributeNameLis
         del message["Attributes"]
         return
 
-    if "All" in names:
+    if QueueAttributeName.All in names:
         return
 
     for k in list(message["Attributes"].keys()):

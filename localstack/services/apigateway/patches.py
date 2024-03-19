@@ -146,6 +146,7 @@ def apply_patches():
         default_settings = self.method_settings.get("*/*", {})
         result["cacheDataEncrypted"] = default_settings.get("cacheDataEncrypted", False)
         result["throttlingRateLimit"] = default_settings.get("throttlingRateLimit", 10000.0)
+        result["throttlingBurstLimit"] = default_settings.get("throttlingBurstLimit", 5000)
         result["metricsEnabled"] = default_settings.get("metricsEnabled", False)
         result["dataTraceEnabled"] = default_settings.get("dataTraceEnabled", False)
         result["unauthorizedCacheControlHeaderStrategy"] = default_settings.get(

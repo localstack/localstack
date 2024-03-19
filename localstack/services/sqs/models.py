@@ -16,6 +16,7 @@ from localstack.aws.api.sqs import (
     AttributeNameList,
     InvalidAttributeName,
     Message,
+    MessageSystemAttributeName,
     QueueAttributeMap,
     QueueAttributeName,
     ReceiptHandleIsInvalid,
@@ -32,6 +33,7 @@ from localstack.services.sqs.utils import (
     encode_move_task_handle,
     encode_receipt_handle,
     global_message_sequence,
+    guess_endpoint_strategy_and_host,
     is_message_deduplication_id_required,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
@@ -94,17 +96,37 @@ class SqsMessage:
         else:
             self.message["Attributes"] = attributes
 
+        # set attribute default values if not set
+        self.message["Attributes"].setdefault(
+            MessageSystemAttributeName.ApproximateReceiveCount, "0"
+        )
+
     @property
     def message_group_id(self) -> Optional[str]:
-        return self.message["Attributes"].get("MessageGroupId")
+        return self.message["Attributes"].get(MessageSystemAttributeName.MessageGroupId)
 
     @property
     def message_deduplication_id(self) -> Optional[str]:
-        return self.message["Attributes"].get("MessageDeduplicationId")
+        return self.message["Attributes"].get(MessageSystemAttributeName.MessageDeduplicationId)
+
+    @property
+    def dead_letter_queue_source_arn(self) -> Optional[str]:
+        return self.message["Attributes"].get(MessageSystemAttributeName.DeadLetterQueueSourceArn)
 
     @property
     def message_id(self):
         return self.message["MessageId"]
+
+    def increment_approximate_receive_count(self):
+        """
+        Increment the message system attribute ``ApproximateReceiveCount``.
+        """
+        # TODO: need better handling of system attributes
+        cnt = int(
+            self.message["Attributes"].get(MessageSystemAttributeName.ApproximateReceiveCount, "0")
+        )
+        cnt += 1
+        self.message["Attributes"][MessageSystemAttributeName.ApproximateReceiveCount] = str(cnt)
 
     def set_last_received(self, timestamp: float):
         """
@@ -205,7 +227,9 @@ class MessageMoveTask:
 
     # configurable fields
     source_arn: str
-    destination_arn: str
+    """The arn of the DLQ the messages are currently in."""
+    destination_arn: str | None = None
+    """If the DestinationArn is not specified, the original source arn will be used as target."""
     max_number_of_messages_per_second: int | None = None
 
     # dynamic fields
@@ -326,34 +350,35 @@ class SqsQueue:
         * otherwise: http://localhost.localstack.cloud:4566/000000000000/myqueue
         """
 
-        scheme = config.get_protocol()
+        scheme = config.get_protocol()  # TODO: should probably change to context.request.scheme
         host_definition = localstack_host()
+        host_and_port = host_definition.host_and_port()
 
-        if config.SQS_ENDPOINT_STRATEGY == "standard":
+        endpoint_strategy = config.SQS_ENDPOINT_STRATEGY
+
+        if endpoint_strategy == "dynamic":
+            scheme = context.request.scheme
+            # determine the endpoint strategy that should be used, and determine the host dynamically
+            endpoint_strategy, host_and_port = guess_endpoint_strategy_and_host(
+                context.request.host
+            )
+
+        if endpoint_strategy == "standard":
             # Region is always part of the queue URL
             # sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/my-queue
             scheme = context.request.scheme
-            host_definition = localstack_host()
-            host_url = f"{scheme}://sqs.{self.region}.{host_definition.host_and_port()}"
-
-        elif config.SQS_ENDPOINT_STRATEGY == "domain":
+            host_url = f"{scheme}://sqs.{self.region}.{host_and_port}"
+        elif endpoint_strategy == "domain":
             # Legacy style
             # queue.localhost.localstack.cloud:4566/000000000000/my-queue (us-east-1)
             # or us-east-2.queue.localhost.localstack.cloud:4566/000000000000/my-queue
             region = "" if self.region == "us-east-1" else self.region + "."
-
-            host_url = f"{scheme}://{region}queue.{host_definition.host_and_port()}"
-        elif config.SQS_ENDPOINT_STRATEGY == "path":
+            host_url = f"{scheme}://{region}queue.{host_and_port}"
+        elif endpoint_strategy == "path":
             # https?://localhost:4566/queue/us-east-1/00000000000/my-queue (us-east-1)
-            host_url = f"{scheme}://{host_definition.host_and_port()}/queue/{self.region}"
-        elif config.SQS_ENDPOINT_STRATEGY == "dynamic":
-            # undocumented strategy to help unblock folks who depended on the feature previously,
-            # especially when running localstack in the container on a different port than the one exposed
-            # by docker (let's say :<random-port>->:4566/tcp.). however, this should be handled in a more
-            # fundamental way in localstack.
-            host_url = f"{context.request.host_url.rstrip('/')}/queue/{self.region}"
+            host_url = f"{scheme}://{host_and_port}/queue/{self.region}"
         else:
-            host_url = f"{scheme}://{host_definition.host_and_port()}"
+            host_url = f"{scheme}://{host_and_port}"
 
         return "{host}/{account_id}/{name}".format(
             host=host_url.rstrip("/"),
@@ -663,6 +688,8 @@ class SqsQueue:
                 value = func()
                 if value is not None:
                     result[attr] = value
+            elif value == "False" or value == "True":
+                result[attr] = value.lower()
             elif value is not None:
                 result[attr] = value
         return result
@@ -696,7 +723,7 @@ class SqsQueue:
 
 
 class StandardQueue(SqsQueue):
-    visible: PriorityQueue
+    visible: PriorityQueue[SqsMessage]
     inflight: Set[SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
@@ -818,6 +845,7 @@ class StandardQueue(SqsQueue):
                 result.dead_letter_messages.append(message)
             else:
                 result.successful.append(message)
+                message.increment_approximate_receive_count()
 
                 # now we can return
                 if len(result.successful) == num_messages:
@@ -897,6 +925,7 @@ class FifoQueue(SqsQueue):
     message_groups: dict[str, MessageGroup]
     inflight_groups: set[MessageGroup]
     message_group_queue: Queue
+    high_throughput: bool
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
@@ -905,6 +934,15 @@ class FifoQueue(SqsQueue):
         self.message_groups = {}
         self.inflight_groups = set()
         self.message_group_queue = Queue()
+        self.high_throughput = False
+
+        # SQS does not seem to change the deduplication behaviour of fifo queues if you
+        # change to/from high-throughput mode after creation -> we need to set this on creation
+        if (
+            self.attributes[QueueAttributeName.DeduplicationScope] == "messageGroup"
+            and self.attributes[QueueAttributeName.FifoThroughputLimit] == "perMessageGroupId"
+        ):
+            self.high_throughput = True
 
     @property
     def approx_number_of_messages(self):
@@ -922,11 +960,7 @@ class FifoQueue(SqsQueue):
         """
         with self.mutex:
             if message_group_id not in self.message_groups:
-                # a newly created message group is added to the queue immediately
-                message_group = self.message_groups[message_group_id] = MessageGroup(
-                    message_group_id
-                )
-                self.message_group_queue.put_nowait(message_group)
+                self.message_groups[message_group_id] = MessageGroup(message_group_id)
 
             return self.message_groups.get(message_group_id)
 
@@ -996,11 +1030,15 @@ class FifoQueue(SqsQueue):
             fifo_message.delay_seconds = self.delay_seconds
 
         original_message = self.deduplication.get(dedup_id)
-
         if (
             original_message
             and original_message.priority + sqs_constants.DEDUPLICATION_INTERVAL_IN_SEC
             > fifo_message.priority
+            # account for high-throughput-mode
+            and (
+                not self.high_throughput
+                or fifo_message.message_group_id == original_message.message_group_id
+            )
         ):
             message["MessageId"] = original_message.message["MessageId"]
         else:
@@ -1018,14 +1056,19 @@ class FifoQueue(SqsQueue):
         message_group = self.get_message_group(message.message_group_id)
 
         with self.mutex:
+            previously_empty = message_group.empty()
             # put the message into the group
             message_group.push(message)
 
-            # if an older message becomes visible again in the queue, that message's group becomes visible also.
-            if message.receive_count < 1:
+            # new messages should not make groups visible that are currently inflight
+            if message.receive_count < 1 and message_group in self.inflight_groups:
                 return
+            # if an older message becomes visible again in the queue, that message's group becomes visible also.
             if message_group in self.inflight_groups:
                 self.inflight_groups.remove(message_group)
+                self.message_group_queue.put_nowait(message_group)
+            # if the group was previously empty, it was not yet added back to the queue
+            elif previously_empty:
                 self.message_group_queue.put_nowait(message_group)
 
     def remove_expired_messages(self):
@@ -1080,10 +1123,9 @@ class FifoQueue(SqsQueue):
             except Empty:
                 break
 
-            self.inflight_groups.add(group)
-
             if group.empty():
-                # this can be the case if all messages in the group are still invisible
+                # this can be the case if all messages in the group are still invisible or
+                # if all messages of a group have been processed.
                 # TODO: it should be blocking until at least one message is in the queue, but we don't
                 #  want to block the group
                 # TODO: check behavior in case it happens if all messages were removed from a group due to message
@@ -1092,6 +1134,8 @@ class FifoQueue(SqsQueue):
                 if timeout < 0:
                     timeout = 0
                 continue
+
+            self.inflight_groups.add(group)
 
             received_groups.add(group)
 
@@ -1129,6 +1173,7 @@ class FifoQueue(SqsQueue):
                         result.dead_letter_messages.append(message)
                     else:
                         result.successful.append(message)
+                        message.increment_approximate_receive_count()
 
                         # now we can break the inner loop
                         if len(result.successful) == num_messages:
@@ -1175,7 +1220,8 @@ class FifoQueue(SqsQueue):
                         return
 
                 self.inflight_groups.remove(message_group)
-                self.message_group_queue.put_nowait(message_group)
+                if not message_group.empty():
+                    self.message_group_queue.put_nowait(message_group)
 
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):

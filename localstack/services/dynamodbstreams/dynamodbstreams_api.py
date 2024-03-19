@@ -1,16 +1,20 @@
-import contextlib
 import logging
 import threading
-import time
-from typing import Dict
+from collections import defaultdict
+from typing import TYPE_CHECKING, Dict
 
 from bson.json_util import dumps
 
+from localstack import config
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType
 from localstack.aws.connect import connect_to
 from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
 from localstack.utils.aws import arns, resources
 from localstack.utils.common import now_utc
+from localstack.utils.threads import FuncThread
+
+if TYPE_CHECKING:
+    from mypy_boto3_kinesis import KinesisClient
 
 DDB_KINESIS_STREAM_NAME_PREFIX = "__ddb_stream_"
 
@@ -32,6 +36,15 @@ def get_and_increment_sequence_number_counter() -> int:
         return cnt
 
 
+def get_kinesis_client(account_id: str, region_name: str) -> "KinesisClient":
+    # specifically specify endpoint url here to ensure we always hit the local kinesis instance
+    return connect_to(
+        aws_access_key_id=account_id,
+        region_name=region_name,
+        endpoint_url=config.internal_service_url(),
+    ).kinesis
+
+
 def add_dynamodb_stream(
     account_id: str,
     region_name: str,
@@ -47,7 +60,7 @@ def add_dynamodb_stream(
     # create kinesis stream as a backend
     stream_name = get_kinesis_stream_name(table_name)
     resources.create_kinesis_stream(
-        connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis,
+        get_kinesis_client(account_id, region_name),
         stream_name=stream_name,
     )
     latest_stream_label = latest_stream_label or "latest"
@@ -76,17 +89,31 @@ def get_stream_for_table(account_id: str, region_name: str, table_arn: str) -> d
 
 
 def forward_events(account_id: str, region_name: str, records: dict) -> None:
-    kinesis = connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis
+    kinesis = get_kinesis_client(account_id, region_name)
+    # cache to avoid calling the store if all the records are from the same table (often the case)
+    tables_streams = {}
+    kinesis_records = defaultdict(list)
     for record in records:
         table_arn = record.pop("eventSourceARN", "")
-        if stream := get_stream_for_table(account_id, region_name, table_arn):
-            table_name = table_name_from_stream_arn(stream["StreamArn"])
-            stream_name = get_kinesis_stream_name(table_name)
-            kinesis.put_record(
-                StreamName=stream_name,
-                Data=dumps(record),
-                PartitionKey="TODO",
-            )
+        if not (stream := tables_streams.get(table_arn)):
+            if not (stream := get_stream_for_table(account_id, region_name, table_arn)):
+                continue
+            tables_streams[table_arn] = stream
+
+        table_name = table_name_from_stream_arn(stream["StreamArn"])
+        stream_name = get_kinesis_stream_name(table_name)
+        kinesis_records[stream_name].append(
+            {
+                "Data": dumps(record),
+                "PartitionKey": "TODO",
+            }
+        )
+
+    for stream_name, records in kinesis_records.items():
+        kinesis.put_records(
+            StreamName=stream_name,
+            Records=records,
+        )
 
 
 def delete_streams(account_id: str, region_name: str, table_arn: str) -> None:
@@ -94,12 +121,23 @@ def delete_streams(account_id: str, region_name: str, table_arn: str) -> None:
     table_name = table_name_from_table_arn(table_arn)
     if store.ddb_streams.pop(table_name, None):
         stream_name = get_kinesis_stream_name(table_name)
-        with contextlib.suppress(Exception):
-            connect_to(aws_access_key_id=account_id, region_name=region_name).kinesis.delete_stream(
-                StreamName=stream_name
-            )
-            # sleep a bit, as stream deletion can take some time ...
-            time.sleep(1)
+        # stream_arn = stream["StreamArn"]
+
+        # we're basically asynchronously trying to delete the stream, or should we do this "synchronous" with the table deletion?
+        def _delete_stream(*args, **kwargs):
+            try:
+                kinesis_client = get_kinesis_client(account_id, region_name)
+                # needs to be active otherwise we can't delete it
+                kinesis_client.get_waiter("stream_exists").wait(StreamName=stream_name)
+                kinesis_client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
+                kinesis_client.get_waiter("stream_not_exists").wait(StreamName=stream_name)
+            except Exception:
+                LOG.warning(
+                    f"Failed to delete underlying kinesis stream for dynamodb table {table_arn=}",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+
+        FuncThread(_delete_stream).start()  # fire & forget
 
 
 def get_kinesis_stream_name(table_name: str) -> str:

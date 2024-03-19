@@ -130,17 +130,48 @@ class RedshiftClusterProvider(ResourceProvider[RedshiftClusterProperties]):
         model = request.desired_state
         redshift = request.aws_client_factory.redshift
 
-        if not model.get("ClusterIdentifier"):
-            model["ClusterIdentifier"] = util.generate_default_name(
-                stack_name=request.stack_name, logical_resource_id=request.logical_resource_id
-            )
+        if not request.custom_context.get(REPEATED_INVOCATION):
+            request.custom_context[REPEATED_INVOCATION] = True
 
-        redshift.create_cluster(**model)
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+            if not model.get("ClusterIdentifier"):
+                model["ClusterIdentifier"] = util.generate_default_name(
+                    stack_name=request.stack_name, logical_resource_id=request.logical_resource_id
+                )
+
+            result = redshift.create_cluster(**model)
+            model["Id"] = result["Cluster"]["ClusterIdentifier"]
+
+        try:
+            cluster = redshift.describe_clusters(ClusterIdentifier=model["ClusterIdentifier"])[
+                "Clusters"
+            ][0]
+            match cluster["ClusterStatus"]:
+                case "available":
+                    model.setdefault("Endpoint", {})
+                    model["Endpoint"]["Address"] = cluster["Endpoint"]["Address"]
+                    model["Endpoint"]["Port"] = str(cluster["Endpoint"]["Port"])
+                    # getting "Attribute 'DeferMaintenanceIdentifier' does not exist." on AWS
+                    # model["DeferMaintenanceIdentifier"] = "?"
+
+                    return ProgressEvent(
+                        status=OperationStatus.SUCCESS,
+                        resource_model=model,
+                        custom_context=request.custom_context,
+                    )
+                case failed_state:
+                    return ProgressEvent(
+                        status=OperationStatus.FAILED,
+                        resource_model=model,
+                        custom_context=request.custom_context,
+                        message=f"Cluster in failed state: {failed_state}",
+                    )
+
+        except redshift.exceptions.ClusterNotFoundFault:
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
 
     def read(
         self,
@@ -171,12 +202,34 @@ class RedshiftClusterProvider(ResourceProvider[RedshiftClusterProperties]):
         model = request.desired_state
         redshift = request.aws_client_factory.redshift
 
-        redshift.delete_cluster(ClusterIdentifier=model["ClusterIdentifier"])
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        if not request.custom_context.get(REPEATED_INVOCATION):
+            request.custom_context[REPEATED_INVOCATION] = True
+            redshift.delete_cluster(ClusterIdentifier=model["ClusterIdentifier"])
+
+        try:
+            cluster = redshift.describe_clusters(ClusterIdentifier=model["ClusterIdentifier"])[
+                "Clusters"
+            ][0]
+            match cluster["ClusterStatus"]:
+                case "creating" | "modifying":
+                    return ProgressEvent(
+                        status=OperationStatus.FAILED,
+                        resource_model=model,
+                        custom_context=request.custom_context,
+                        message=f"Redshift cluster in unexpected status: {cluster['ClusterStatus']}",
+                    )
+                case _:
+                    return ProgressEvent(
+                        status=OperationStatus.IN_PROGRESS,
+                        resource_model=model,
+                        custom_context=request.custom_context,
+                    )
+        except redshift.exceptions.ClusterNotFoundFault:
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS,
+                resource_model={},
+                custom_context=request.custom_context,
+            )
 
     def update(
         self,

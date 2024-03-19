@@ -27,6 +27,7 @@ class FuncThread(threading.Thread):
         quiet=False,
         on_stop: Callable[["FuncThread"], None] = None,
         name: Optional[str] = None,
+        daemon=True,
     ):
         global counter
         global counter_lock
@@ -36,11 +37,12 @@ class FuncThread(threading.Thread):
                 counter += 1
                 thread_counter_current = counter
 
-            threading.Thread.__init__(self, name=f"{name}-functhread{thread_counter_current}")
+            threading.Thread.__init__(
+                self, name=f"{name}-functhread{thread_counter_current}", daemon=daemon
+            )
         else:
-            threading.Thread.__init__(self)
+            threading.Thread.__init__(self, daemon=daemon)
 
-        self.daemon = True
         self.params = params
         self.func = func
         self.quiet = quiet
@@ -115,7 +117,6 @@ def cleanup_threads_and_processes(quiet=True):
     for thread in TMP_THREADS:
         if thread:
             try:
-                # LOG.debug('[shutdown] Cleaning up thread: %s', thread)
                 if hasattr(thread, "shutdown"):
                     thread.shutdown()
                     continue
@@ -124,24 +125,26 @@ def cleanup_threads_and_processes(quiet=True):
                     continue
                 thread.stop(quiet=quiet)
             except Exception as e:
-                print(e)
+                LOG.debug("[shutdown] Error stopping thread %s: %s", thread, e)
+                if not thread.daemon:
+                    LOG.warning(
+                        "[shutdown] Non-daemon thread %s may block localstack shutdown", thread
+                    )
     for proc in TMP_PROCESSES:
         try:
-            # LOG.debug('[shutdown] Cleaning up process: %s', proc)
             kill_process_tree(proc.pid)
             # proc.terminate()
         except Exception as e:
-            print(e)
+            LOG.debug("[shutdown] Error cleaning up process tree %s: %s", proc, e)
     # clean up async tasks
     try:
         import asyncio
 
         for task in asyncio.all_tasks():
             try:
-                # LOG.debug('[shutdown] Canceling asyncio task: %s', task)
                 task.cancel()
             except Exception as e:
-                print(e)
+                LOG.debug("[shutdown] Error cancelling asyncio task %s: %s", task, e)
     except Exception:
         pass
     LOG.debug("[shutdown] Done cleaning up threads / processes / tasks")

@@ -263,6 +263,7 @@ comparison_variable_stmt
     : variable_decl
     | comparison_func
     | next_decl
+    | comment_decl
     ;
 
 comparison_composite_stmt
@@ -353,6 +354,7 @@ iterator_decl_item
     : startat_decl
     | states_decl
     | comment_decl
+    | processor_config_decl
     ;
 
 item_selector_decl
@@ -432,6 +434,9 @@ retrier_stmt
     | interval_seconds_decl
     | max_attempts_decl
     | backoff_rate_decl
+    | max_delay_seconds_decl
+    | jitter_strategy_decl
+    | comment_decl
     ;
 
 error_equals_decl
@@ -454,6 +459,14 @@ backoff_rate_decl
     : BACKOFFRATE COLON (INT | NUMBER)
     ;
 
+max_delay_seconds_decl
+    : MAXDELAYSECONDS COLON INT
+    ;
+
+jitter_strategy_decl
+    : JITTERSTRATEGY COLON (FULL | NONE)
+    ;
+
 catch_decl
     : CATCH
       COLON
@@ -472,6 +485,7 @@ catcher_stmt
     : error_equals_decl
     | result_path_decl
     | next_decl
+    | comment_decl
     ;
 
 comparison_op
@@ -570,7 +584,7 @@ json_value_decl
    | keyword_or_string
    ;
 
-keyword_or_string // TODO: check keywords can be used as strings.
+keyword_or_string
     : STRINGDOLLAR
     | STRINGPATHCONTEXTOBJ
     | STRINGPATH
@@ -677,6 +691,10 @@ keyword_or_string // TODO: check keywords can be used as strings.
     | INTERVALSECONDS
     | MAXATTEMPTS
     | BACKOFFRATE
+    | MAXDELAYSECONDS
+    | JITTERSTRATEGY
+    | FULL
+    | NONE
     | CATCH
     | ERRORNAMEStatesALL
     | ERRORNAMEStatesHeartbeatTimeout

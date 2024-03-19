@@ -2,9 +2,9 @@ import dataclasses
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Type
+from typing import Type, TypedDict
 
-from plugin import PluginManager
+from plux import PluginManager
 
 from localstack import config
 from localstack.services.lambda_.invocation.lambda_models import FunctionVersion, InvocationResult
@@ -126,6 +126,11 @@ class LambdaPrebuildContext:
     docker_file_content: str
     context_path: Path
     function_version: FunctionVersion
+
+
+class ChmodPath(TypedDict):
+    path: str
+    mode: str
 
 
 EXECUTOR_PLUGIN_MANAGER: PluginManager[Type[RuntimeExecutor]] = PluginManager(

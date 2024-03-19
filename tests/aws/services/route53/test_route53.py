@@ -1,6 +1,5 @@
 import pytest
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
@@ -51,7 +50,9 @@ class TestRoute53:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..HostedZone.CallerReference"])
-    def test_create_private_hosted_zone(self, region, aws_client, cleanups, snapshot, hosted_zone):
+    def test_create_private_hosted_zone(
+        self, region_name, aws_client, cleanups, snapshot, hosted_zone
+    ):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.113.0.0/24")
         cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
         vpc_id = vpc["Vpc"]["VpcId"]
@@ -66,7 +67,7 @@ class TestRoute53:
             },
             VPC={
                 "VPCId": vpc_id,
-                "VPCRegion": region,
+                "VPCRegion": region_name,
             },
         )
         snapshot.match("create-hosted-zone-response", response)
@@ -76,7 +77,9 @@ class TestRoute53:
         snapshot.match("get_hosted_zone", response)
 
     @markers.aws.unknown
-    def test_associate_vpc_with_hosted_zone(self, cleanups, hosted_zone, aws_client):
+    def test_associate_vpc_with_hosted_zone(
+        self, cleanups, hosted_zone, aws_client, account_id, region_name
+    ):
         name = "zone123"
         response = hosted_zone(
             Name=name,
@@ -94,7 +97,7 @@ class TestRoute53:
         vpc2_id = vpc2["Vpc"]["VpcId"]
 
         # associate zone with VPC
-        vpc_region = TEST_AWS_REGION_NAME
+        vpc_region = region_name
         for vpc_id in [vpc1_id, vpc2_id]:
             result = aws_client.route53.associate_vpc_with_hosted_zone(
                 HostedZoneId=zone_id,
@@ -116,7 +119,7 @@ class TestRoute53:
         expected = {
             "HostedZoneId": zone_id,
             "Name": "%s." % name,
-            "Owner": {"OwningAccount": TEST_AWS_ACCOUNT_ID},
+            "Owner": {"OwningAccount": account_id},
         }
         assert expected in result
 

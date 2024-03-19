@@ -17,7 +17,6 @@ from localstack.constants import (
     ELASTICSEARCH_DEFAULT_VERSION,
     OPENSEARCH_DEFAULT_VERSION,
     OPENSEARCH_PLUGIN_LIST,
-    TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services.opensearch import provider
 from localstack.services.opensearch.cluster import CustomEndpoint, EdgeProxiedOpensearchCluster
@@ -142,16 +141,29 @@ class TestOpensearchProvider:
         assert len(compatible_versions) >= 20
         expected_compatible_versions = [
             {
+                "SourceVersion": "OpenSearch_2.9",
+                "TargetVersions": ["OpenSearch_2.11"],
+            },
+            {
                 "SourceVersion": "OpenSearch_2.7",
-                "TargetVersions": ["OpenSearch_2.9"],
+                "TargetVersions": ["OpenSearch_2.9", "OpenSearch_2.11"],
             },
             {
                 "SourceVersion": "OpenSearch_2.5",
-                "TargetVersions": ["OpenSearch_2.7", "OpenSearch_2.9"],
+                "TargetVersions": [
+                    "OpenSearch_2.7",
+                    "OpenSearch_2.9",
+                    "OpenSearch_2.11",
+                ],
             },
             {
                 "SourceVersion": "OpenSearch_2.3",
-                "TargetVersions": ["OpenSearch_2.5", "OpenSearch_2.7", "OpenSearch_2.9"],
+                "TargetVersions": [
+                    "OpenSearch_2.5",
+                    "OpenSearch_2.7",
+                    "OpenSearch_2.9",
+                    "OpenSearch_2.11",
+                ],
             },
             {
                 "SourceVersion": "OpenSearch_1.0",
@@ -172,6 +184,7 @@ class TestOpensearchProvider:
                     "OpenSearch_2.5",
                     "OpenSearch_2.7",
                     "OpenSearch_2.9",
+                    "OpenSearch_2.11",
                 ],
             },
             {
@@ -351,7 +364,7 @@ class TestOpensearchProvider:
                 f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
             )
             plugins_response = requests.get(plugins_url, headers={"Accept": "application/json"})
-            installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
+            installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
             requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
             assert requested_plugins.issubset(installed_plugins)
         finally:
@@ -387,7 +400,7 @@ class TestOpensearchProvider:
             plugins_url, headers={"Accept": "application/json"}, auth=master_user_auth
         )
         assert plugins_response.status_code == 200
-        installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
+        installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
         assert "opensearch-security" in installed_plugins
 
         # create a new index with the admin user
@@ -523,11 +536,15 @@ class TestOpensearchProvider:
             connection.putrequest(method, parsed.path, skip_accept_encoding=True)
             connection.endheaders()
             response = connection.getresponse()
-            connection.close()
-            return response
+            try:
+                return response, response.read()
+            finally:
+                # make sure to close the connectio *after* we've called ``response.read()``.
+                response.close()
 
-        plain_response = send_plain_request("GET", opensearch_endpoint)
-        assert "cluster_name" in to_str(plain_response.read())
+        plain_response, data = send_plain_request("GET", opensearch_endpoint)
+        assert plain_response.status == 200
+        assert "cluster_name" in to_str(data)
 
         # ensure that requests with the "Accept-Encoding": "gzip" header receive gzip compressed responses
         gzip_accept_headers = {"Accept-Encoding": "gzip"}
@@ -692,7 +709,7 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "2.9.0"
+            assert response.json()["version"]["number"] == "2.11.1"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"
@@ -777,7 +794,7 @@ class TestEdgeProxiedOpensearchCluster:
 @markers.skip_offline
 class TestMultiClusterManager:
     @markers.aws.unknown
-    def test_multi_cluster(self, monkeypatch):
+    def test_multi_cluster(self, account_id, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
 
@@ -787,12 +804,12 @@ class TestMultiClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -825,7 +842,7 @@ class TestMultiClusterManager:
 @markers.skip_offline
 class TestMultiplexingClusterManager:
     @markers.aws.unknown
-    def test_multiplexing_cluster(self, monkeypatch):
+    def test_multiplexing_cluster(self, account_id, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
 
@@ -835,12 +852,12 @@ class TestMultiplexingClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -873,7 +890,7 @@ class TestMultiplexingClusterManager:
 @markers.skip_offline
 class TestSingletonClusterManager:
     @markers.aws.unknown
-    def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch):
+    def test_endpoint_strategy_port_singleton_cluster(self, account_id, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
         monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
 
@@ -883,12 +900,12 @@ class TestSingletonClusterManager:
         domain_key_0 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         domain_key_1 = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
         cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
@@ -919,7 +936,7 @@ class TestSingletonClusterManager:
 @markers.skip_offline
 class TestCustomBackendManager:
     @markers.aws.unknown
-    def test_custom_backend(self, httpserver, monkeypatch):
+    def test_custom_backend(self, account_id, httpserver, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "OPENSEARCH_CUSTOM_BACKEND", httpserver.url_for("/"))
 
@@ -969,7 +986,7 @@ class TestCustomBackendManager:
         domain_key = DomainKey(
             domain_name=f"domain-{short_uid()}",
             region="us-east-1",
-            account=TEST_AWS_ACCOUNT_ID,
+            account=account_id,
         )
         cluster = manager.create(domain_key.arn, OPENSEARCH_DEFAULT_VERSION)
         # check that we're using the domain endpoint strategy

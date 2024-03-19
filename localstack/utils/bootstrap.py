@@ -41,16 +41,43 @@ from localstack.utils.sync import poll_condition
 
 LOG = logging.getLogger(__name__)
 
-# maps from API names to list of other API names that they depend on
+# Mandatory dependencies of services on other services
+# - maps from API names to list of other API names that they _explicitly_ depend on: <service>:<dependent-services>
+# - an explicit service dependency is a service without which another service's basic functionality breaks
+# - this mapping is used when enabling strict service loading (use SERVICES env var to allow-list services)
+# - do not add "optional" dependencies of services here, use API_DEPENDENCIES_OPTIONAL instead
 API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
+    # dynamodbsteams uses kinesis under the hood
     "dynamodbstreams": ["kinesis"],
+    # es forwards all requests to opensearch (basically an API deprecation path in AWS)
     "es": ["opensearch"],
     "cloudformation": ["s3", "sts"],
-    "lambda": ["s3", "sqs", "sts"],
+    "lambda": ["s3", "sts"],
+    # firehose currently only supports kinesis as source, this could become optional when more sources are supported
     "firehose": ["kinesis"],
     "transcribe": ["s3"],
 }
+
+# Optional dependencies of services on other services
+# - maps from API names to list of other API names that they _optionally_ depend on: <service>:<dependent-services>
+# - an optional service dependency is a service without which a service's basic functionality doesn't break,
+#   but which is needed for certain features (f.e. for one of multiple integrations)
+# - this mapping is used f.e. used for the selective test execution (localstack.testing.testselection)
+# - only add optional dependencies of services here, use API_DEPENDENCIES for mandatory dependencies
+API_DEPENDENCIES_OPTIONAL = {
+    # firehose's optional dependencies are supported delivery stream destinations
+    "firehose": ["es", "opensearch", "s3", "redshift"],
+    "lambda": ["cloudwatch", "dynamodbstreams", "logs", "kafka", "kinesis", "msk", "sqs"],
+    "ses": ["sns"],
+    "sns": ["sqs", "lambda", "firehose", "ses", "logs"],
+    "sqs": ["cloudwatch"],
+    "logs": ["lambda", "kinesis", "firehose"],
+    "cloudformation": ["secretsmanager", "ssm", "lambda"],
+    "events": ["lambda", "kinesis", "firehose", "sns", "sqs", "stepfunctions", "logs"],
+    "stepfunctions": ["logs", "lambda", "dynamodb", "ecs", "sns", "sqs", "apigateway", "events"],
+}
+
 # composites define an abstract name like "serverless" that maps to a set of services
 API_COMPOSITES = {
     "serverless": [
@@ -64,6 +91,7 @@ API_COMPOSITES = {
         "s3",
     ],
     "cognito": ["cognito-idp", "cognito-identity"],
+    "timestream": ["timestream-write", "timestream-query"],
 }
 
 
@@ -355,9 +383,9 @@ def validate_localstack_config(name: str):
     # prepare config options
     container_name = ls_service_details.get("container_name") or ""
     docker_ports = (port.split(":")[-2] for port in ls_service_details.get("ports", []))
-    docker_env = dict(
-        (env.split("=")[0], env.split("=")[1]) for env in ls_service_details.get("environment", {})
-    )
+    docker_env = {
+        env.split("=")[0]: env.split("=")[1] for env in ls_service_details.get("environment", {})
+    }
     edge_port = config.GATEWAY_LISTEN[0].port
     main_container = config.MAIN_CONTAINER_NAME
 
@@ -939,7 +967,7 @@ class RunningContainer:
 
     def exec_in_container(self, *args, **kwargs):
         return self.container_client.exec_in_container(
-            container_name_or_id=self.id, *args, **kwargs
+            *args, container_name_or_id=self.id, **kwargs
         )
 
     def stopped(self) -> Container:
@@ -1116,7 +1144,7 @@ def configure_container(container: Container):
     else:
         container.config.additional_flags = f"{container.config.additional_flags} {user_flags}"
 
-    # get additional parameters from plugins
+    # get additional parameters from plux
     hooks.configure_localstack_container.run(container)
 
     if config.DEVELOP:
