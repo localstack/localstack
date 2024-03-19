@@ -68,8 +68,8 @@ class BaseExecutionWorkerComm(ExecutionWorkerComm):
             self.execution.exec_status = ExecutionStatus.ABORTED
         elif isinstance(exit_program_state, ProgramError):
             self.execution.exec_status = ExecutionStatus.FAILED
-            self.execution.error = exit_program_state.error["error"]
-            self.execution.cause = exit_program_state.error["cause"]
+            self.execution.error = exit_program_state.error.get("error")
+            self.execution.cause = exit_program_state.error.get("cause")
         elif isinstance(exit_program_state, ProgramTimedOut):
             self.execution.exec_status = ExecutionStatus.TIMED_OUT
         else:
