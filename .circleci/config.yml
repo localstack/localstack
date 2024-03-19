@@ -332,7 +332,7 @@ jobs:
       - run:
           name: compute-src-hashes
           command: |
-            find tests/aws/services/lambda_/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
+            find tests/aws/services/lambda_/functions/common -type f \( -path '**/src/**' -o -path '**/Makefile' \) | xargs sha256sum > /tmp/common-functions-checksums
       - restore_cache:
           key: common-functions-<< parameters.platform >>-{{ checksum "/tmp/common-functions-checksums" }}
       - run:
