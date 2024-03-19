@@ -233,3 +233,31 @@ class S3ObjectStore(abc.ABC):
         Resetting the `S3ObjectStore` will delete all the contained resources.
         """
         pass
+
+
+def should_copy_in_place(
+    src_bucket: BucketName,
+    src_object: S3Object,
+    dest_bucket: BucketName,
+    dest_object: S3Object,
+) -> bool:
+    """
+    Helper method to determine if we should use the same underlying fileobject to avoid copying in place for no gain.
+    :param src_bucket: the source bucket
+    :param src_object: the source S3Object
+    :param dest_bucket: the destination bucket
+    :param dest_object: the destination S3Object
+    :return: if
+    """
+    if src_bucket != dest_bucket:
+        return False
+
+    if src_object.key != dest_object.key:
+        return False
+
+    # if the objects have version id, the bucket is versioned, and we should not copy in place: the new destination
+    # object will be a new version of the source object
+    if src_object.version_id or dest_object.version_id:
+        return False
+
+    return True
