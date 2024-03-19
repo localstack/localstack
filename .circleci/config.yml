@@ -347,9 +347,6 @@ jobs:
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
-          name: Fail for testing
-          command: exit 1
-      - run:
           name: Run integration tests
           # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           # if we're doing performing a test selection, we need to filter the list of files before splitting by timings
@@ -625,7 +622,10 @@ jobs:
 workflows:
   main:
     jobs:
-      - waiter
+      - waiter:
+          filters:
+            branches:
+              only: master
       - install
       - preflight:
           requires:
