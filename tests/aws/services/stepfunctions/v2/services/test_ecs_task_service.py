@@ -58,7 +58,7 @@ class TestTaskServiceECS:
 
     @pytest.fixture(scope="class", autouse=False)
     def infrastructure_test_run_task(self, aws_client, infrastructure_setup):
-        infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=True)
+        infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=False)
         stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
         # cluster setup
@@ -105,7 +105,7 @@ class TestTaskServiceECS:
 
     @pytest.fixture(scope="class", autouse=False)
     def infrastructure_test_run_task_raise_failure(self, aws_client, infrastructure_setup):
-        infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=True)
+        infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=False)
         stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
         # cluster setup
@@ -152,7 +152,7 @@ class TestTaskServiceECS:
 
     @pytest.fixture(scope="class", autouse=False)
     def infrastructure_test_run_task_sync(self, aws_client, infrastructure_setup):
-        infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=True)
+        infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=False)
         stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
         # cluster setup
@@ -199,7 +199,7 @@ class TestTaskServiceECS:
 
     @pytest.fixture(scope="class", autouse=False)
     def infrastructure_test_run_task_sync_raise_failure(self, aws_client, infrastructure_setup):
-        infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=True)
+        infra = infrastructure_setup(namespace="StepFunctionsEcsTask", force_synth=False)
         stack = cdk.Stack(infra.cdk_app, self.STACK_NAME)
 
         # cluster setup
