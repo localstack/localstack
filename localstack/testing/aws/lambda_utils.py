@@ -37,7 +37,7 @@ HANDLERS = {
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "index.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "echo.Handler"),
-    # TODO: check if "function.handler" is relevant; or just main or bootstrap?!
+    # The handler value does not matter unless the custom runtime reads it in some way but it is a required field.
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "function.handler"),
     "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",  # TODO lets see if we can accumulate those
 }
