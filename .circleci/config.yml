@@ -12,7 +12,7 @@ parameters:
     default: false
   randomize-aws-credentials:
     type: boolean
-    default: true
+    default: false
 
 executors:
   ubuntu-machine-amd64:
