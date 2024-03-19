@@ -318,18 +318,23 @@ class TestSecretsManager:
         assert all(c not in "xyzDje@?!." for c in random_password["RandomPassword"])
 
     @markers.aws.validated
-    def test_resource_policy(self, secret_name, aws_client, cleanups):
-        aws_client.secretsmanager.create_secret(
+    def test_resource_policy(self, secret_name, aws_client, sm_snapshot, cleanups):
+        response = aws_client.secretsmanager.create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing creation of secrets",
         )
-
-        aws_client.secretsmanager.put_resource_policy(
-            SecretId=secret_name, ResourcePolicy=json.dumps(RESOURCE_POLICY)
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
         )
 
+        response = aws_client.secretsmanager.put_resource_policy(
+            SecretId=secret_name, ResourcePolicy=json.dumps(RESOURCE_POLICY)
+        )
+        sm_snapshot.match("put_resource_policy", response)
+
         rs = aws_client.secretsmanager.get_resource_policy(SecretId=secret_name)
+        sm_snapshot.match("get_resource_policy", rs)
 
         policy = json.loads(rs["ResourcePolicy"])
 
