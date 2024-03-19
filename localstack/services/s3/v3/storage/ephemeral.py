@@ -18,7 +18,13 @@ from localstack.services.s3.utils import ChecksumHash, ObjectRange, get_s3_check
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 from localstack.utils.files import mkdir
 
-from .core import LimitedStream, S3ObjectStore, S3StoredMultipart, S3StoredObject
+from .core import (
+    LimitedStream,
+    S3ObjectStore,
+    S3StoredMultipart,
+    S3StoredObject,
+    should_copy_in_place,
+)
 
 # max file size for S3 objects kept in memory (500 KB by default)
 # TODO: make it configurable
@@ -425,8 +431,8 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         :return: the destination EphemeralS3StoredObject
         """
         # If this is an in-place copy, directly return the EphemeralS3StoredObject of the destination S3Object, no need
-        # to copy the underlying data.
-        if src_bucket == dest_bucket and src_object.key == dest_object.key:
+        # to copy the underlying data except if we are in a versioned bucket.
+        if should_copy_in_place(src_bucket, src_object, dest_bucket, dest_object):
             return self.open(dest_bucket, dest_object, mode="r")
 
         with self.open(src_bucket, src_object, mode="r") as src_stored_object:
