@@ -33,22 +33,22 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 HANDLERS = {
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "handler.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "index.handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "handler.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "echo.Handler"),
-    # The handler value does not matter unless the custom runtime reads it in some way but it is a required field.
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("dotnet"), "dotnet::Dotnet.Function::FunctionHandler"),
+    # The handler value does not matter unless the custom runtime reads it in some way, but it is a required field.
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "function.handler"),
-    "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",  # TODO lets see if we can accumulate those
 }
 
 PACKAGE_FOR_RUNTIME = {
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "python"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "nodejs"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "python"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "java"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("dotnet"), "dotnet"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "provided"),
-    "dotnet6": "dotnet6",
 }
 
 
