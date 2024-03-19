@@ -52,7 +52,7 @@ IMAGE_MAPPING: dict[Runtime, str] = {
     Runtime.java11: "java:11",
     Runtime.java8_al2: "java:8.al2",
     Runtime.java8: "java:8",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
-    # Runtime.dotnet8: "dotnet:8",  # TODO
+    Runtime.dotnet8: "dotnet:8",
     # dotnet7 (container only)
     Runtime.dotnet6: "dotnet:6",
     Runtime.dotnetcore3_1: "dotnet:core3.1",  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
@@ -81,8 +81,7 @@ DEPRECATED_RUNTIMES: list[Runtime] = [
 SUPPORTED_RUNTIMES: list[Runtime] = list(set(IMAGE_MAPPING.keys()) - set(DEPRECATED_RUNTIMES))
 
 # A temporary list of missing runtimes not yet supported in LocalStack. Used for modular updates.
-# TODO: add Dotnet8 runtime
-MISSING_RUNTIMES = [Runtime.dotnet8]
+MISSING_RUNTIMES = []
 
 # An unordered list of all Lambda runtimes supported by LocalStack.
 ALL_RUNTIMES: list[Runtime] = list(IMAGE_MAPPING.keys())
@@ -113,7 +112,7 @@ RUNTIMES_AGGREGATED = {
     ],
     "dotnet": [
         Runtime.dotnet6,
-        # Runtime.dotnet8,
+        Runtime.dotnet8,
     ],
     "provided": [
         Runtime.provided_al2023,
