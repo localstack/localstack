@@ -8,6 +8,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
+from tests.aws.services.events.conftest import sqs_collect_messages
 from tests.aws.services.events.test_events import TEST_EVENT_BUS_NAME, TEST_EVENT_PATTERN
 
 
@@ -226,7 +227,7 @@ def test_put_events_with_rule_exists_false_to_sqs(put_events_with_filter_to_sqs,
 
 
 @markers.aws.unknown
-def test_put_event_with_content_base_rule_in_pattern(sqs_collect_messages, aws_client, clean_up):
+def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
     queue_name = f"queue-{short_uid()}"
     rule_name = f"rule-{short_uid()}"
     target_id = f"target-{short_uid()}"
@@ -301,7 +302,7 @@ def test_put_event_with_content_base_rule_in_pattern(sqs_collect_messages, aws_c
     )
     aws_client.events.put_events(Entries=[event])
 
-    messages = sqs_collect_messages(queue_url, min_events=1, retries=3)
+    messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
     assert len(messages) == 1
     assert json.loads(messages[0].get("Body")) == json.loads(event["Detail"])
     event_details = json.loads(event["Detail"])
@@ -310,7 +311,7 @@ def test_put_event_with_content_base_rule_in_pattern(sqs_collect_messages, aws_c
 
     aws_client.events.put_events(Entries=[event])
 
-    messages = sqs_collect_messages(queue_url, min_events=0, retries=1, wait_time=3)
+    messages = sqs_collect_messages(aws_client, queue_url, min_events=0, retries=1, wait_time=3)
     assert messages == []
 
     # clean up

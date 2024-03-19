@@ -4,12 +4,13 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
+from tests.aws.services.events.conftest import sqs_collect_messages
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
 
 
 class TestEventsInputPath:
     @markers.aws.unknown
-    def test_put_events_with_input_path(self, sqs_collect_messages, aws_client, clean_up):
+    def test_put_events_with_input_path(self, aws_client, clean_up):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
         target_id = f"target-{short_uid()}"
@@ -41,7 +42,7 @@ class TestEventsInputPath:
             ]
         )
 
-        messages = sqs_collect_messages(queue_url, min_events=1, retries=3)
+        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
         assert json.loads(messages[0].get("Body")) == EVENT_DETAIL
 
         aws_client.events.put_events(
@@ -55,14 +56,14 @@ class TestEventsInputPath:
             ]
         )
 
-        messages = sqs_collect_messages(queue_url, min_events=0, retries=1, wait_time=3)
+        messages = sqs_collect_messages(aws_client, queue_url, min_events=0, retries=1, wait_time=3)
         assert messages == []
 
         # clean up
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
     @markers.aws.unknown
-    def test_put_events_with_input_path_multiple(self, sqs_collect_messages, aws_client, clean_up):
+    def test_put_events_with_input_path_multiple(self, aws_client, clean_up):
         queue_name = "queue-{}".format(short_uid())
         queue_name_1 = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
@@ -107,11 +108,11 @@ class TestEventsInputPath:
             ]
         )
 
-        messages = sqs_collect_messages(queue_url, min_events=1, retries=3)
+        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
         assert len(messages) == 1
         assert json.loads(messages[0].get("Body")) == EVENT_DETAIL
 
-        messages = sqs_collect_messages(queue_url_1, min_events=1, retries=3)
+        messages = sqs_collect_messages(aws_client, queue_url_1, min_events=1, retries=3)
         assert len(messages) == 1
         assert json.loads(messages[0].get("Body")).get("detail") == EVENT_DETAIL
 
@@ -126,7 +127,7 @@ class TestEventsInputPath:
             ]
         )
 
-        messages = sqs_collect_messages(queue_url, min_events=0, retries=1, wait_time=3)
+        messages = sqs_collect_messages(aws_client, queue_url, min_events=0, retries=1, wait_time=3)
         assert messages == []
 
         # clean up

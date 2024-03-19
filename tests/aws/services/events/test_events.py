@@ -19,6 +19,7 @@ from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
+from tests.aws.services.events.conftest import assert_valid_event, sqs_collect_messages
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -689,8 +690,6 @@ class TestEventsEventBus:
         self,
         monkeypatch,
         sqs_get_queue_arn,
-        assert_valid_event,
-        sqs_collect_messages,
         aws_client,
         clean_up,
         strategy,
@@ -741,7 +740,7 @@ class TestEventsEventBus:
             ]
         )
 
-        messages = sqs_collect_messages(queue_url, min_events=1, retries=3)
+        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
         assert len(messages) == 1
 
         actual_event = json.loads(messages[0]["Body"])
@@ -763,9 +762,7 @@ class TestEventsEventBus:
         create_role,
         create_policy,
         s3_bucket,
-        sqs_collect_messages,
         snapshot,
-        assert_valid_event,
         aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
@@ -877,7 +874,9 @@ class TestEventsEventBus:
         aws_client.s3.put_object(Bucket=s3_bucket, Key="delivery/test.txt", Body=b"data")
 
         retries = 20 if is_aws_cloud() else 3
-        messages = sqs_collect_messages(queue_url, min_events=1, retries=retries, wait_time=5)
+        messages = sqs_collect_messages(
+            aws_client, queue_url, min_events=1, retries=retries, wait_time=5
+        )
         assert len(messages) == 1
         snapshot.match("get-events", {"Messages": messages})
 

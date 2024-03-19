@@ -11,6 +11,7 @@ from localstack.utils.aws import arns, resources
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+from tests.aws.services.events.conftest import assert_valid_event, sqs_collect_messages
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
@@ -103,8 +104,6 @@ def test_put_events_with_target_sqs_event_detail_match(put_events_with_filter_to
 def test_put_events_with_target_sns(
     monkeypatch,
     sns_subscription,
-    assert_valid_event,
-    sqs_collect_messages,
     aws_client,
     clean_up,
     strategy,
@@ -152,7 +151,7 @@ def test_put_events_with_target_sns(
         ]
     )
 
-    messages = sqs_collect_messages(queue_url, min_events=1, retries=3)
+    messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
     assert len(messages) == 1
 
     actual_event = json.loads(messages[0]["Body"]).get("Message")
@@ -170,9 +169,7 @@ def test_put_events_with_target_sns(
 
 
 @markers.aws.unknown
-def test_put_events_with_target_lambda(
-    create_lambda_function, cleanups, assert_valid_event, aws_client, clean_up
-):
+def test_put_events_with_target_lambda(create_lambda_function, cleanups, aws_client, clean_up):
     rule_name = f"rule-{short_uid()}"
     function_name = f"lambda-func-{short_uid()}"
     target_id = f"target-{short_uid()}"
@@ -282,7 +279,7 @@ def test_should_ignore_schedules_for_put_event(create_lambda_function, cleanups,
 
 
 @markers.aws.unknown
-def test_put_events_with_target_firehose(assert_valid_event, aws_client, clean_up):
+def test_put_events_with_target_firehose(aws_client, clean_up):
     s3_bucket = "s3-{}".format(short_uid())
     s3_prefix = "testeventdata"
     stream_name = "firehose-{}".format(short_uid())
@@ -350,7 +347,7 @@ def test_put_events_with_target_firehose(assert_valid_event, aws_client, clean_u
 
 
 @markers.aws.unknown
-def test_put_events_with_target_kinesis(assert_valid_event, aws_client):
+def test_put_events_with_target_kinesis(aws_client):
     rule_name = "rule-{}".format(short_uid())
     target_id = "target-{}".format(short_uid())
     bus_name = "bus-{}".format(short_uid())
