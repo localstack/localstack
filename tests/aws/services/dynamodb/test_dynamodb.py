@@ -824,10 +824,11 @@ class TestDynamoDB:
         snapshot.match("get-records", {"Records": records})
 
     @markers.aws.only_localstack
-    def test_dynamodb_with_kinesis_stream(self, aws_client, secondary_aws_client):
+    def test_dynamodb_with_kinesis_stream(self, aws_client):
         dynamodb = aws_client.dynamodb
-        # Create Kinesis stream in another account to test that integration works cross-account
-        kinesis = secondary_aws_client.kinesis
+        # Kinesis streams can only be in the same account and region as the table. See
+        # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/kds.html#kds_howitworks.enabling
+        kinesis = aws_client.kinesis
 
         # create kinesis datastream
         stream_name = f"kinesis_dest_stream_{short_uid()}"

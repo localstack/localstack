@@ -184,19 +184,16 @@ class ItemFinder:
             if not search_key:
                 return
 
-        req = {"TableName": table_name, "Key": search_key}
-        existing_item = ddb_client.get_item(**req)
-        if not existing_item:
-            return existing_item
-        if "Item" not in existing_item:
-            if "message" in existing_item:
-                table_names = ddb_client.list_tables()["TableNames"]
-                LOG.warning(
-                    "Unable to get item from DynamoDB (existing tables: %s ...truncated if >100 tables): %s",
-                    table_names,
-                    existing_item["message"],
-                )
+        try:
+            existing_item = ddb_client.get_item(TableName=table_name, Key=search_key)
+        except ddb_client.exceptions.ClientError as e:
+            LOG.warning(
+                "Unable to get item from DynamoDB table '%s': %s",
+                table_name,
+                e,
+            )
             return
+
         return existing_item.get("Item")
 
     @staticmethod
@@ -244,7 +241,15 @@ class ItemFinder:
                 table_keys = get_items_request.setdefault(table_name, {"Keys": []})
                 table_keys["Keys"].append(search_key)
 
-        existing_items = ddb_client.batch_get_item(RequestItems=get_items_request)
+        try:
+            existing_items = ddb_client.batch_get_item(RequestItems=get_items_request)
+        except ddb_client.exceptions.ClientError as e:
+            LOG.warning(
+                "Unable to get items from DynamoDB tables '%s': %s",
+                list(put_items_per_table.values()),
+                e,
+            )
+            return {}
 
         return existing_items.get("Responses", {})
 
