@@ -425,8 +425,13 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         :return: the destination EphemeralS3StoredObject
         """
         # If this is an in-place copy, directly return the EphemeralS3StoredObject of the destination S3Object, no need
-        # to copy the underlying data.
-        if src_bucket == dest_bucket and src_object.key == dest_object.key:
+        # to copy the underlying data except if we are in a versioned bucket.
+        if (
+            src_bucket == dest_bucket
+            and src_object.key == dest_object.key
+            and not src_object.version_id
+            and not dest_object.version_id
+        ):
             return self.open(dest_bucket, dest_object, mode="r")
 
         with self.open(src_bucket, src_object, mode="r") as src_stored_object:
