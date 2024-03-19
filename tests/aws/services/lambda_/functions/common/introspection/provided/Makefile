@@ -8,11 +8,15 @@ DOCKER_PLATFORM ?= linux/$(ARCHITECTURE)
 # Manual implementation of the --arm64 logic from `cargo lambda lambda build`:
 # https://docs.aws.amazon.com/lambda/latest/dg/rust-package.html
 # https://github.com/cargo-lambda/cargo-lambda/blob/7b0977e6fd9a6b03d8f6ddf71eff5a5b9999e0c0/crates/cargo-lambda-build/src/target_arch.rs#L10
-ifeq ($(ARCHITECTURE),arm64)
-  # ARM builds are finally fixed: https://github.com/rust-lang/rust/issues/77071
-  # On macOS, `provided.al2` requires the -musl instead of -gnu suffix for the introspection scenario:
-  # https://github.com/awslabs/aws-lambda-rust-runtime/issues/17#issuecomment-645064821
-  RUST_TARGET ?= aarch64-unknown-linux-musl
+ifeq ($(UNAME),aarch64)
+  # ARM builds are finally fixed (2024-03): https://github.com/rust-lang/rust/issues/77071
+  RUST_TARGET ?= aarch64-unknown-linux-gnu
+else ifeq ($(UNAME),arm64)
+	# On macOS, the runtime `provided.al2` requires the suffix -musl instead of -gnu for the introspection scenario to
+	# fix the following GLIBC version not found error:
+	# /var/task/bootstrap: /lib64/libm.so.6: version `GLIBC_2.29' not found (required by /var/task/bootstrap)
+	# https://github.com/awslabs/aws-lambda-rust-runtime/issues/17#issuecomment-645064821
+	RUST_TARGET ?= aarch64-unknown-linux-musl
 else
   RUST_TARGET ?= x86_64-unknown-linux-musl
 endif
