@@ -104,17 +104,18 @@ def forward_events(account_id: str, region_name: str, records_map: dict[TableNam
             and stream_type.stream_view_type != StreamViewType.NEW_AND_OLD_IMAGES
         ):
             kinesis_records = []
-            for record in records:
-                # StreamViewType determines what information is written to the stream for the table
-                # When an item in the table is inserted, updated or deleted
-                image_filter = set()
-                if stream_type.stream_view_type == StreamViewType.KEYS_ONLY:
-                    image_filter = {"OldImage", "NewImage"}
-                elif stream_type.stream_view_type == StreamViewType.OLD_IMAGE:
-                    image_filter = {"NewImage"}
-                elif stream_type.stream_view_type == StreamViewType.NEW_IMAGE:
-                    image_filter = {"OldImage"}
 
+            # StreamViewType determines what information is written to the stream for the table
+            # When an item in the table is inserted, updated or deleted
+            image_filter = set()
+            if stream_type.stream_view_type == StreamViewType.KEYS_ONLY:
+                image_filter = {"OldImage", "NewImage"}
+            elif stream_type.stream_view_type == StreamViewType.OLD_IMAGE:
+                image_filter = {"NewImage"}
+            elif stream_type.stream_view_type == StreamViewType.NEW_IMAGE:
+                image_filter = {"OldImage"}
+
+            for record in records:
                 record["dynamodb"] = {
                     k: v for k, v in record["dynamodb"].items() if k not in image_filter
                 }
