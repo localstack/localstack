@@ -11,6 +11,8 @@ DOCKER_PLATFORM ?= linux/$(ARCHITECTURE)
 ifeq ($(ARCHITECTURE),arm64)
   # ARM builds are finally fixed: https://github.com/rust-lang/rust/issues/77071
   RUST_TARGET ?= aarch64-unknown-linux-musl
+  # On macOS, `provided.al2` requires the -musl instead of -gnu suffix for the introspection scenario:
+  # https://github.com/awslabs/aws-lambda-rust-runtime/issues/17#issuecomment-645064821
 else
   RUST_TARGET ?= x86_64-unknown-linux-musl
 endif
