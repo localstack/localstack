@@ -15,11 +15,9 @@ import zipfile
 import pytest
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
-from localstack.aws.api.lambda_ import Runtime
-from localstack.services.lambda_.runtimes import TESTED_RUNTIMES
+from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED, TESTED_RUNTIMES
 from localstack.testing.pytest import markers
 from localstack.utils.files import cp_r
-from localstack.utils.platform import Arch, get_arch
 from localstack.utils.strings import short_uid, to_bytes
 
 LOG = logging.getLogger(__name__)
@@ -49,23 +47,6 @@ def snapshot_transformers(snapshot):
     )
 
 
-# TODO: these runtime skips should only apply in CI and definitely not when running against AWS
-# TODO: debug and fix ARM builds in CI (works locally on ARM mac)
-RUNTIMES_SKIP_ARM = [
-    Runtime.java8_al2,
-    Runtime.java11,
-    Runtime.java17,
-    Runtime.java21,
-    Runtime.dotnet6,
-    # test_echo_invoke works but test_introspection_invoke and test_uncaught_exception_invoke fail in CI
-    Runtime.provided_al2,
-    Runtime.provided_al2023,
-]
-
-arm_compatible_runtimes = list(set(TESTED_RUNTIMES) - set(RUNTIMES_SKIP_ARM))
-runtimes = arm_compatible_runtimes if get_arch() == Arch.arm64 else TESTED_RUNTIMES
-
-
 @markers.lambda_runtime_update
 class TestLambdaRuntimesCommon:
     # TODO: refactor builds by creating a generic parametrizable Makefile per runtime (possibly with an option to
@@ -73,7 +54,7 @@ class TestLambdaRuntimesCommon:
     #  https://www.gnu.org/software/make/manual/make.html#Include
 
     @markers.aws.validated
-    @markers.multiruntime(scenario="echo", runtimes=runtimes)
+    @markers.multiruntime(scenario="echo")
     def test_echo_invoke(self, multiruntime_lambda, aws_client):
         # provided lambdas take a little longer for large payloads, hence timeout to 5s
         create_function_result = multiruntime_lambda.create_function(MemorySize=1024, Timeout=5)
@@ -159,7 +140,7 @@ class TestLambdaRuntimesCommon:
         ]
     )
     @markers.aws.validated
-    @markers.multiruntime(scenario="introspection", runtimes=runtimes)
+    @markers.multiruntime(scenario="introspection")
     def test_introspection_invoke(self, multiruntime_lambda, snapshot, aws_client):
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024, Environment={"Variables": {"TEST_KEY": "TEST_VAL"}}
@@ -197,7 +178,7 @@ class TestLambdaRuntimesCommon:
         ]
     )
     @markers.aws.validated
-    @markers.multiruntime(scenario="uncaughtexception", runtimes=runtimes)
+    @markers.multiruntime(scenario="uncaughtexception")
     def test_uncaught_exception_invoke(self, multiruntime_lambda, snapshot, aws_client):
         # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
         # since the stack trace contains references to internal runtime code.
@@ -228,15 +209,11 @@ class TestLambdaRuntimesCommon:
     )
     @markers.aws.validated
     # Only works for >=al2 runtimes, except for any provided runtimes
+    # Does NOT work for provided runtimes
     # Source: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-modify.html#runtime-wrapper
-    # TODO: update runtime filters (should not skip >=al2 runtimes); resolved after fixing ARM build
     @markers.multiruntime(
         scenario="introspection",
-        runtimes=list(
-            set(TESTED_RUNTIMES)
-            - set(RUNTIMES_SKIP_ARM)
-            - {Runtime.provided_al2, Runtime.provided_al2023}
-        ),
+        runtimes=list(set(TESTED_RUNTIMES) - set(RUNTIMES_AGGREGATED.get("provided"))),
     )
     def test_runtime_wrapper_invoke(self, multiruntime_lambda, snapshot, tmp_path, aws_client):
         # copy and modify zip file, pretty dirty hack to reuse scenario and reduce CI test runtime
@@ -278,41 +255,8 @@ class TestLambdaRuntimesCommon:
 class TestLambdaCallingLocalstack:
     """=> Keep these tests synchronized with `test_lambda_endpoint_injection.py` in ext!"""
 
-    # TODO: remove this once all non-arm compatible runtimes are deprecated by the end of 2023
-    #  and the ARM builds are fixed for the CI.
-    # These temporary runtime selections are only relevant for test_manual_endpoint_injection
-    x86_runtimes = [
-        "dotnet6",
-        # java17 and java21 do not ship the AWS SDK v1 anymore.
-        # Therefore, we bundle the SDK v1 separately because the SDK v2 does not
-        # support DISABLE_CERT_CHECKING_SYSTEM_PROPERTY anymore.
-        "java",
-        # nodejs18.x and nodejs20.x do not ship the AWS SDK v1 anymore. Therefore, we use the SDK v2 instead.
-        "nodejs",
-        "python",
-        "ruby",
-    ]
-
-    # ARM-compatible runtimes for the endpointinjection scenario
-    arm_runtimes = [
-        # TODO: debug and fix ARM builds in CI (works locally on ARM mac)
-        # "dotnet6",
-        # "java8.al2",
-        # "java11",
-        # "java17",
-        # "java21",
-        "nodejs",
-        "python3.8",
-        "python3.9",
-        "python3.10",
-        "python3.11",
-        "python3.12",
-        "ruby",
-    ]
-
     @markers.multiruntime(
         scenario="endpointinjection",
-        runtimes=arm_runtimes if get_arch() == Arch.arm64 else x86_runtimes,
     )
     @markers.aws.validated
     def test_manual_endpoint_injection(self, multiruntime_lambda, tmp_path, aws_client):
