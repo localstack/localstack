@@ -7,7 +7,6 @@ from moto.apigateway.exceptions import (
     NoIntegrationDefined,
     RestAPINotFound,
     StageStillActive,
-    UsagePlanNotFoundException,
 )
 from moto.apigateway.responses import APIGatewayResponse
 from moto.core.utils import camelcase_to_underscores
@@ -75,32 +74,6 @@ def apply_patches():
             return 200, {}, json.dumps(integration.to_json())
 
         return result
-
-    @patch(APIGatewayResponse.usage_plan_individual)
-    def apigateway_response_usage_plan_individual(
-        fn, self, request, full_url, headers, *args, **kwargs
-    ):
-        self.setup_class(request, full_url, headers)
-        if self.method == "PATCH":
-            url_path_parts = self.path.split("/")
-            usage_plan_id = url_path_parts[2]
-            patch_operations = self._get_param("patchOperations")
-            usage_plan = self.backend.usage_plans.get(usage_plan_id)
-            if not usage_plan:
-                raise UsagePlanNotFoundException()
-
-            apply_json_patch_safe(usage_plan.to_json(), patch_operations, in_place=True)
-            # fix certain attributes after running the patch updates
-            if isinstance(usage_plan.api_stages, (dict, str)):
-                usage_plan.api_stages = [usage_plan.api_stages]
-            api_stages = usage_plan.api_stages or []
-            for i in range(len(api_stages)):
-                if isinstance(api_stages[i], str) and ":" in api_stages[i]:
-                    api_id, stage = api_stages[i].split(":")
-                    api_stages[i] = {"apiId": api_id, "stage": stage}
-
-            return 200, {}, json.dumps(usage_plan.to_json())
-        return fn(self, request, full_url, headers, *args, **kwargs)
 
     def backend_update_deployment(self, function_id, deployment_id, patch_operations):
         rest_api = self.get_rest_api(function_id)

@@ -2156,14 +2156,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not usage_plan.get("quota"):
             usage_plan.pop("quota", None)
 
-        if not usage_plan.get("throttle"):
-            usage_plan.pop("throttle", None)
-
-        if usage_plan.get("throttle", {}).get("rateLimit"):
-            usage_plan["throttle"]["rateLimit"] = float(usage_plan["throttle"]["rateLimit"])
-
-        if usage_plan.get("throttle", {}).get("burstLimit"):
-            usage_plan["throttle"]["burstLimit"] = int(usage_plan["throttle"]["burstLimit"])
+        fix_throttle_from_usage_plan(usage_plan)
 
         return usage_plan
 
@@ -2178,17 +2171,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not usage_plan.get("quota"):
             usage_plan.pop("quota", None)
 
-        if not usage_plan.get("throttle"):
-            usage_plan.pop("throttle", None)
-
         if "tags" not in usage_plan:
             usage_plan["tags"] = {}
 
-        if usage_plan.get("throttle", {}).get("rateLimit"):
-            usage_plan["throttle"]["rateLimit"] = float(usage_plan["throttle"]["rateLimit"])
-
-        if usage_plan.get("throttle", {}).get("burstLimit"):
-            usage_plan["throttle"]["burstLimit"] = int(usage_plan["throttle"]["burstLimit"])
+        fix_throttle_from_usage_plan(usage_plan)
 
         return usage_plan
 
@@ -2197,8 +2183,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not usage_plan.get("quota"):
             usage_plan.pop("quota", None)
 
-        if not usage_plan.get("throttle"):
-            usage_plan.pop("throttle", None)
+        fix_throttle_from_usage_plan(usage_plan)
 
         if "tags" not in usage_plan:
             usage_plan["tags"] = {}
@@ -2223,8 +2208,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             if not up.get("quota"):
                 up.pop("quota", None)
 
-            if not up.get("throttle"):
-                up.pop("throttle", None)
+            fix_throttle_from_usage_plan(up)
 
             if "tags" not in up:
                 up.pop("tags", None)
@@ -2482,6 +2466,17 @@ def remove_empty_attributes_from_integration_response(integration_response: Inte
         integration_response.pop("responseTemplates", None)
 
     return integration_response
+
+
+def fix_throttle_from_usage_plan(usage_plan: UsagePlan) -> None:
+    if throttle := usage_plan.get("throttle"):
+        if rate_limit := throttle.get("rateLimit"):
+            throttle["rateLimit"] = float(rate_limit)
+
+        if burst_limit := throttle.get("burstLimit"):
+            throttle["burstLimit"] = int(burst_limit)
+    else:
+        usage_plan.pop("throttle", None)
 
 
 def validate_model_in_use(moto_rest_api: MotoRestAPI, model_name: str) -> None:

@@ -181,7 +181,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestUsagePlans::test_usage_plan_crud": {
-    "recorded-date": "28-07-2023, 08:30:23",
+    "recorded-date": "20-03-2024, 20:55:49",
     "recorded-content": {
       "create-usage-plan": {
         "apiStages": [
@@ -248,6 +248,60 @@
           "burstLimit": 100,
           "rateLimit": 200.0
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-wrong-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Usage Plan ID specified"
+        },
+        "message": "Invalid Usage Plan ID specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-usage-plan-after-update": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "dev"
+          }
+        ],
+        "description": "<description:1>",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "tags": {},
+        "throttle": {
+          "burstLimit": 100,
+          "rateLimit": 200.0
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-usage-plans-after-update": {
+        "items": [
+          {
+            "apiStages": [
+              {
+                "apiId": "<api-id:1>",
+                "stage": "dev"
+              }
+            ],
+            "description": "<description:1>",
+            "id": "<id:1>",
+            "name": "<name:1>",
+            "throttle": {
+              "burstLimit": 100,
+              "rateLimit": 200.0
+            }
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

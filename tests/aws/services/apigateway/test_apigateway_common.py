@@ -542,6 +542,24 @@ class TestUsagePlans:
         )
         snapshot.match("update-usage-plan", response)
 
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id + "1",  # wrong ID
+                patchOperations=[
+                    {"op": "replace", "path": "/throttle/burstLimit", "value": "100"},
+                    {"op": "replace", "path": "/throttle/rateLimit", "value": "200"},
+                ],
+            )
+        snapshot.match("update-wrong-id", e.value.response)
+
+        # get usage plan after update
+        response = aws_client.apigateway.get_usage_plan(usagePlanId=usage_plan_id)
+        snapshot.match("get-usage-plan-after-update", response)
+
+        # get usage plans after update
+        response = aws_client.apigateway.get_usage_plans()
+        snapshot.match("get-usage-plans-after-update", response)
+
 
 class TestDocumentations:
     @markers.aws.validated

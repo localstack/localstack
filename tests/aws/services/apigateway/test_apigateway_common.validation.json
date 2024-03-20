@@ -30,6 +30,6 @@
     "last_validated_date": "2023-07-27T15:57:20+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestUsagePlans::test_usage_plan_crud": {
-    "last_validated_date": "2023-07-28T06:30:23+00:00"
+    "last_validated_date": "2024-03-20T20:55:49+00:00"
   }
 }
