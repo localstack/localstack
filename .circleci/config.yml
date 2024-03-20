@@ -616,7 +616,7 @@ jobs:
 
             # Build the payload
             echo '{"workflow": "'$TINYBIRD_WORKFLOW'", "attempt": 1, "run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'", "workflow_url": "'$CIRCLE_BUILD_URL'"}' > stats.json
-            echo 'Sending: '$(cat stats/stats.json)
+            echo 'Sending: '$(cat stats.json)
 
             # Send the data to Tinybird
             curl -X POST "https://api.tinybird.co/v0/events?name=ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats.json
