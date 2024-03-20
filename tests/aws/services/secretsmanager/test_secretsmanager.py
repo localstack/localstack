@@ -2285,7 +2285,7 @@ class TestSecretsManagerMultiAccounts:
         response = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
         assert response["SecretString"] == "updated"
 
-        aws_client.secretsmanager.delete_secret(
+        secondary_aws_client.secretsmanager.delete_secret(
             SecretId=secret_arn, ForceDeleteWithoutRecovery=False, RecoveryWindowInDays=7
         )
 

@@ -14,6 +14,9 @@ from moto.secretsmanager.exceptions import (
     InvalidRequestException as MotoInvalidRequestException,
 )
 from moto.secretsmanager.exceptions import (
+    InvalidParameterException as MotoInvalidParameterException,
+)
+from moto.secretsmanager.exceptions import (
     OperationNotPermittedOnReplica as MotoOperationNotPermittedOnReplica,
 )
 from moto.secretsmanager.exceptions import (
@@ -90,9 +93,6 @@ AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[
 ] = "You can't create this secret because a secret with this name is already scheduled for deletion."
 
 LOG = logging.getLogger(__name__)
-
-# Maps key names to ARNs.
-SECRET_ARN_STORAGE = {}
 
 
 class ValidationException(CommonServiceException):
@@ -200,9 +200,23 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     ) -> DeleteSecretResponse:
         secret_id: str = request["SecretId"]
         self._raise_if_invalid_secret_id(secret_id)
-        res = call_moto(context, request)
-        delete_arn_binding_for(context.region, secret_id)
-        return res
+        recovery_window_in_days: Optional[int] = request.get("RecoveryWindowInDays")
+        force_delete_without_recovery: Optional[bool] = request.get("ForceDeleteWithoutRecovery")
+
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        try:
+            arn, name, deletion_date = backend.delete_secret(
+                secret_id=secret_id,
+                recovery_window_in_days=recovery_window_in_days,
+                force_delete_without_recovery=force_delete_without_recovery,
+            )
+        except MotoInvalidParameterException as e:
+            raise InvalidParameterException(str(e))
+        except MotoInvalidRequestException as e:
+            raise InvalidRequestException(str(e))
+        except MotoSecretNotFoundException:
+            raise SecretNotFoundException()
+        return DeleteSecretResponse(ARN=arn, Name=name, DeletionDate=deletion_date)
 
     @handler("DescribeSecret", expand=False)
     def describe_secret(
@@ -271,6 +285,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     ) -> PutSecretValueResponse:
         secret_id = request["SecretId"]
         self._raise_if_invalid_secret_id(secret_id)
+        self._raise_if_missing_client_req_token(request)
         client_req_token = request.get("ClientRequestToken")
         secret_string = request.get("SecretString")
         secret_binary = request.get("SecretBinary")
@@ -363,6 +378,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         kms_key_id = request.get("KmsKeyId")
         client_req_token = request.get("ClientRequestToken")
         self._raise_if_invalid_secret_id(secret_id)
+        self._raise_if_missing_client_req_token(request)
 
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
         try:
@@ -788,25 +804,25 @@ def moto_secret_not_found_exception_init(fn, self):
     self.code = 400
 
 
-def get_arn_binding_key_for(region: str, secret_id: str) -> str:
-    return f"{region}_{secret_id}"
+# def get_arn_binding_key_for(region: str, secret_id: str) -> str:
+#     return f"{region}_{secret_id}"
 
 
-def get_arn_binding_for(account_id, region, secret_id):
-    k = get_arn_binding_key_for(region, secret_id)
-    if k not in SECRET_ARN_STORAGE:
-        id_string = short_uid()[:6]
-        arn = arns.secretsmanager_secret_arn(
-            secret_id, account_id=account_id, region_name=region, random_suffix=id_string
-        )
-        SECRET_ARN_STORAGE[k] = arn
-    return SECRET_ARN_STORAGE[k]
+# def get_arn_binding_for(account_id, region, secret_id):
+#     k = get_arn_binding_key_for(region, secret_id)
+#     if k not in SECRET_ARN_STORAGE:
+#         id_string = short_uid()[:6]
+#         arn = arns.secretsmanager_secret_arn(
+#             secret_id, account_id=account_id, region_name=region, random_suffix=id_string
+#         )
+#         SECRET_ARN_STORAGE[k] = arn
+#     return SECRET_ARN_STORAGE[k]
 
 
-def delete_arn_binding_for(region: str, secret_id: str) -> None:
-    k = get_arn_binding_key_for(region, secret_id)
-    if k in SECRET_ARN_STORAGE:
-        del SECRET_ARN_STORAGE[k]
+# def delete_arn_binding_for(region: str, secret_id: str) -> None:
+#     k = get_arn_binding_key_for(region, secret_id)
+#     if k in SECRET_ARN_STORAGE:
+#         del SECRET_ARN_STORAGE[k]
 
 
 # patching resource policy in moto
@@ -872,7 +888,7 @@ def put_resource_policy_response(self):
 
 
 def apply_patches():
-    secretsmanager_utils.secret_arn = get_arn_binding_for
+    # secretsmanager_utils.secret_arn = get_arn_binding_for
     SecretsManagerBackend.get_resource_policy = get_resource_policy_model
     SecretsManagerResponse.get_resource_policy = get_resource_policy_response
 
