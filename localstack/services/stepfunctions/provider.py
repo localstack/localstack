@@ -761,9 +761,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> DescribeMapRunOutput:
         store = self.get_store(context)
         for execution in store.executions.values():
-            map_run_record: Optional[
-                MapRunRecord
-            ] = execution.exec_worker.env.map_run_record_pool_manager.get(map_run_arn)
+            map_run_record: Optional[MapRunRecord] = (
+                execution.exec_worker.env.map_run_record_pool_manager.get(map_run_arn)
+            )
             if map_run_record is not None:
                 return map_run_record.describe()
         raise ResourceNotFound()
@@ -778,9 +778,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> ListMapRunsOutput:
         # TODO: add support for paging.
         execution = self._get_execution(context=context, execution_arn=execution_arn)
-        map_run_records: list[
-            MapRunRecord
-        ] = execution.exec_worker.env.map_run_record_pool_manager.get_all()
+        map_run_records: list[MapRunRecord] = (
+            execution.exec_worker.env.map_run_record_pool_manager.get_all()
+        )
         return ListMapRunsOutput(
             mapRuns=[map_run_record.list_item() for map_run_record in map_run_records]
         )
@@ -801,9 +801,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         # TODO: investigate behaviour of empty requests.
         store = self.get_store(context)
         for execution in store.executions.values():
-            map_run_record: Optional[
-                MapRunRecord
-            ] = execution.exec_worker.env.map_run_record_pool_manager.get(map_run_arn)
+            map_run_record: Optional[MapRunRecord] = (
+                execution.exec_worker.env.map_run_record_pool_manager.get(map_run_arn)
+            )
             if map_run_record is not None:
                 map_run_record.update(
                     max_concurrency=max_concurrency,

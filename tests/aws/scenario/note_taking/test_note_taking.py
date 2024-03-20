@@ -2,6 +2,7 @@
 This scenario tests is based on the aws-sample aws-sdk-js-notes app (https://github.com/aws-samples/aws-sdk-js-notes-app),
 which was adapted to work with LocalStack https://github.com/localstack-samples/sample-notes-app-dynamodb-lambda-apigateway.
 """
+
 import copy
 import json
 import logging
@@ -202,10 +203,10 @@ class TestNoteTakingScenario:
         for stack_resource in describe_stack_resources["StackResources"]:
             match stack_resource["ResourceType"]:
                 case "AWS::Lambda::Function":
-                    service_resources_fn[
-                        stack_resource["LogicalResourceId"]
-                    ] = aws_client.lambda_.get_function(
-                        FunctionName=stack_resource["PhysicalResourceId"]
+                    service_resources_fn[stack_resource["LogicalResourceId"]] = (
+                        aws_client.lambda_.get_function(
+                            FunctionName=stack_resource["PhysicalResourceId"]
+                        )
                     )
                 case "AWS::DynamoDB::Table":
                     # we only have one table

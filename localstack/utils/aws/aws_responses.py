@@ -168,9 +168,7 @@ def get_response_payload(response, as_json=False):
     result = (
         response.content
         if isinstance(response, RequestsResponse)
-        else response.data
-        if isinstance(response, FlaskResponse)
-        else None
+        else response.data if isinstance(response, FlaskResponse) else None
     )
     result = "" if result is None else result
     if as_json:

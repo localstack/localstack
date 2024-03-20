@@ -1415,9 +1415,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if entity.max_number_of_messages_per_second is not None:
             entry["MaxNumberOfMessagesPerSecond"] = entity.max_number_of_messages_per_second
         if entity.approximate_number_of_messages_to_move is not None:
-            entry[
-                "ApproximateNumberOfMessagesToMove"
-            ] = entity.approximate_number_of_messages_to_move
+            entry["ApproximateNumberOfMessagesToMove"] = (
+                entity.approximate_number_of_messages_to_move
+            )
         if entity.approximate_number_of_messages_moved is not None:
             entry["ApproximateNumberOfMessagesMoved"] = entity.approximate_number_of_messages_moved
         if entity.failure_reason is not None:

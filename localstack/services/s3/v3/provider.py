@@ -1281,9 +1281,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             LastModified=s3_object.last_modified,
         )
         if s3_object.checksum_algorithm:
-            copy_object_result[
-                f"Checksum{s3_object.checksum_algorithm.upper()}"
-            ] = s3_object.checksum_value
+            copy_object_result[f"Checksum{s3_object.checksum_algorithm.upper()}"] = (
+                s3_object.checksum_value
+            )
 
         response = CopyObjectOutput(
             CopyObjectResult=copy_object_result,
@@ -3452,13 +3452,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         source_bucket_region = s3_bucket.bucket_region
         if target_s3_bucket.bucket_region != source_bucket_region:
-            raise CrossLocationLoggingProhibitted(
-                "Cross S3 location logging not allowed. ",
-                TargetBucketLocation=target_s3_bucket.bucket_region,
-            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
-                "Cross S3 location logging not allowed. ",
-                SourceBucketLocation=source_bucket_region,
-                TargetBucketLocation=target_s3_bucket.bucket_region,
+            raise (
+                CrossLocationLoggingProhibitted(
+                    "Cross S3 location logging not allowed. ",
+                    TargetBucketLocation=target_s3_bucket.bucket_region,
+                )
+                if source_bucket_region == AWS_REGION_US_EAST_1
+                else CrossLocationLoggingProhibitted(
+                    "Cross S3 location logging not allowed. ",
+                    SourceBucketLocation=source_bucket_region,
+                    TargetBucketLocation=target_s3_bucket.bucket_region,
+                )
             )
 
         s3_bucket.logging = logging_config

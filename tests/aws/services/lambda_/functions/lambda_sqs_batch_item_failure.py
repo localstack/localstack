@@ -14,6 +14,7 @@ The lambda understands two env variables:
 * OVERWRITE_RESULT: a string (potentially a json document) that can be used to return custom responses to provoke errors
 * DESTINATION_QUEUE_URL: the queue url to send the event and result to
 """
+
 import json
 import os
 

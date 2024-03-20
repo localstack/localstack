@@ -9,5 +9,4 @@ class ExecutionWorkerComm(abc.ABC):
     """
 
     @abc.abstractmethod
-    def terminated(self) -> None:
-        ...
+    def terminated(self) -> None: ...

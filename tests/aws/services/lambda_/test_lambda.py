@@ -1,5 +1,6 @@
 """Tests for Lambda behavior and implicit functionality.
 Everything related to API operations goes into test_lambda_api.py instead."""
+
 import base64
 import json
 import logging

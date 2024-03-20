@@ -1653,9 +1653,9 @@ class TestAPIGateway:
             resource_util.create_dynamodb_table(
                 "MusicCollection", partition_key="id", client=dynamodb_client
             )
-            kwargs[
-                "uri"
-            ] = f"arn:aws:apigateway:{apigw_client.meta.region_name}:dynamodb:action/PutItem&Table=MusicCollection"
+            kwargs["uri"] = (
+                f"arn:aws:apigateway:{apigw_client.meta.region_name}:dynamodb:action/PutItem&Table=MusicCollection"
+            )
 
         if role_arn:
             kwargs["credentials"] = role_arn

@@ -12,8 +12,7 @@ class PayloadBinding(PayloadValue, abc.ABC):
         self.field: Final[str] = field
 
     @abc.abstractmethod
-    def _eval_val(self, env: Environment) -> Any:
-        ...
+    def _eval_val(self, env: Environment) -> Any: ...
 
     def _eval_body(self, env: Environment) -> None:
         cnt: dict = env.stack.pop()

@@ -146,9 +146,9 @@ class TestRoute53Resolver:
             resolver_endpoint_request_ids_status = {}
 
             for resolver_endpoint in lst.get("ResolverEndpoints", []):
-                resolver_endpoint_request_ids_status[
-                    resolver_endpoint["CreatorRequestId"]
-                ] = resolver_endpoint["Status"]
+                resolver_endpoint_request_ids_status[resolver_endpoint["CreatorRequestId"]] = (
+                    resolver_endpoint["Status"]
+                )
             for key, value in resolver_endpoint_request_ids_status.items():
                 if key == req_id:
                     return value == status

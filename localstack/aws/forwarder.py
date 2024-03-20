@@ -2,6 +2,7 @@
 This module contains utilities to call a backend (e.g., an external service process like
 DynamoDBLocal) from a service provider.
 """
+
 from typing import Any, Callable, Mapping, Optional, Union
 from urllib.parse import urlsplit
 

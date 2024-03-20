@@ -24,9 +24,11 @@ def pytest_unconfigure(config):
             "frame_traceback": traceback.format_stack(frame),
             "thread_name": thread.name,
             "thread_target": repr(thread._target) if hasattr(thread, "_target") else None,
-            "thread_target_file": inspect.getfile(thread._target)
-            if hasattr(thread, "_target") and thread._target
-            else None,
+            "thread_target_file": (
+                inspect.getfile(thread._target)
+                if hasattr(thread, "_target") and thread._target
+                else None
+            ),
         }
         for frame, thread in thread_frames
         if frame

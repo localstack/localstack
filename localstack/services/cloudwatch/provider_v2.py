@@ -739,9 +739,9 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 "AlarmName": alarm.alarm["AlarmName"],
                 "HistoryData": json.dumps(history_data),
                 "HistorySummary": f"Alarm updated from {old_state} to {state_value}",
-                "AlarmType": "MetricAlarm"
-                if isinstance(alarm, LocalStackMetricAlarm)
-                else "CompositeAlarm",
+                "AlarmType": (
+                    "MetricAlarm" if isinstance(alarm, LocalStackMetricAlarm) else "CompositeAlarm"
+                ),
             }
         )
         alarm.alarm["StateValue"] = state_value

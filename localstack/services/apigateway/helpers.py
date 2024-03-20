@@ -906,9 +906,11 @@ def add_documentation_parts(rest_api_container, documentation):
             id=entity_id,
             location=DocumentationPartLocation(
                 type=location.get("type"),
-                path=location.get("path", "/")
-                if location.get("type") not in ["API", "MODEL"]
-                else None,
+                path=(
+                    location.get("path", "/")
+                    if location.get("type") not in ["API", "MODEL"]
+                    else None
+                ),
                 method=location.get("method"),
                 statusCode=location.get("statusCode"),
                 name=location.get("name"),
@@ -1093,9 +1095,9 @@ def import_api_from_openapi_spec(
                         if param_location == "query":
                             param_location = "querystring"
 
-                        request_parameters[
-                            f"method.request.{param_location}.{param_name}"
-                        ] = param_required
+                        request_parameters[f"method.request.{param_location}.{param_name}"] = (
+                            param_required
+                        )
 
                     elif param_location == "body":
                         request_models = {APPLICATION_JSON: param_name}
@@ -1429,9 +1431,7 @@ def event_type_from_route_key(invocation_context):
     return (
         "CONNECT"
         if action == "$connect"
-        else "DISCONNECT"
-        if action == "$disconnect"
-        else "MESSAGE"
+        else "DISCONNECT" if action == "$disconnect" else "MESSAGE"
     )
 
 

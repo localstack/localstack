@@ -1132,9 +1132,11 @@ class TestSQSEventSourceMapping:
         aws_client.sqs.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps(item_matching))
         aws_client.sqs.send_message(
             QueueUrl=queue_url_1,
-            MessageBody=json.dumps(item_not_matching)
-            if not isinstance(item_not_matching, str)
-            else item_not_matching,
+            MessageBody=(
+                json.dumps(item_not_matching)
+                if not isinstance(item_not_matching, str)
+                else item_not_matching
+            ),
         )
 
         def _assert_qsize():
@@ -1213,9 +1215,11 @@ class TestSQSEventSourceMapping:
                 FilterCriteria={
                     "Filters": [
                         {
-                            "Pattern": invalid_filter
-                            if isinstance(invalid_filter, str)
-                            else json.dumps(invalid_filter)
+                            "Pattern": (
+                                invalid_filter
+                                if isinstance(invalid_filter, str)
+                                else json.dumps(invalid_filter)
+                            )
                         },
                     ]
                 },

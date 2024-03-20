@@ -224,9 +224,9 @@ class S3EventNotificationContext:
             key_size=key_size,
             key_expiry=key_expiry,
             key_storage_class=storage_class,
-            key_version_id=s3_object.version_id
-            if s3_bucket.versioning_status
-            else None,  # todo: check this?
+            key_version_id=(
+                s3_object.version_id if s3_bucket.versioning_status else None
+            ),  # todo: check this?
             xray=request_context.request.headers.get(HEADER_AMZN_XRAY),
         )
 
@@ -722,9 +722,9 @@ class EventBridgeNotifier(BaseNotifier):
         elif "ObjectRemoved" in ctx.event_type:
             entry["DetailType"] = "Object Deleted"
             event_details["reason"] = "DeleteObject"
-            event_details[
-                "deletion-type"
-            ] = "Permanently Deleted"  # TODO: check with versioned bucket?
+            event_details["deletion-type"] = (
+                "Permanently Deleted"  # TODO: check with versioned bucket?
+            )
             event_details["object"].pop("etag")
             event_details["object"].pop("size")
 

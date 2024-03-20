@@ -957,9 +957,11 @@ def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[s
     formatted_messages = []
     for sent_message in sent_messages:
         msg = {
-            key: json.dumps(value)
-            if key == "Message" and sent_message.get("MessageStructure") == "json"
-            else value
+            key: (
+                json.dumps(value)
+                if key == "Message" and sent_message.get("MessageStructure") == "json"
+                else value
+            )
             for key, value in sent_message.items()
             if key in validated_keys
         }

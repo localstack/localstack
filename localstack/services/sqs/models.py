@@ -611,13 +611,15 @@ class SqsQueue:
             "Sid": label,
             "Effect": "Allow",
             "Principal": {
-                "AWS": [f"arn:aws:iam::{account_id}:root" for account_id in account_ids]
-                if len(account_ids) > 1
-                else f"arn:aws:iam::{account_ids[0]}:root"
+                "AWS": (
+                    [f"arn:aws:iam::{account_id}:root" for account_id in account_ids]
+                    if len(account_ids) > 1
+                    else f"arn:aws:iam::{account_ids[0]}:root"
+                )
             },
-            "Action": [f"SQS:{action}" for action in actions]
-            if len(actions) > 1
-            else f"SQS:{actions[0]}",
+            "Action": (
+                [f"SQS:{action}" for action in actions] if len(actions) > 1 else f"SQS:{actions[0]}"
+            ),
             "Resource": self.arn,
         }
         if policy := self.attributes.get(QueueAttributeName.Policy):

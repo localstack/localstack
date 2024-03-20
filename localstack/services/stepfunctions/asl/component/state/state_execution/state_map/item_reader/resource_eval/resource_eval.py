@@ -13,5 +13,4 @@ class ResourceEval(abc.ABC):
     def __init__(self, resource: ServiceResource):
         self.resource = resource
 
-    def eval_resource(self, env: Environment) -> None:
-        ...
+    def eval_resource(self, env: Environment) -> None: ...

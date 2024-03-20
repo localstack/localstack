@@ -66,8 +66,7 @@ class _BaseOpenApiExporter(abc.ABC):
         with_extension: bool,
         account_id: str,
         region_name: str,
-    ) -> str | dict:
-        ...
+    ) -> str | dict: ...
 
     @abc.abstractmethod
     def _add_paths(self, spec: APISpec, resources: dict, with_extension: bool):

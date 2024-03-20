@@ -1576,9 +1576,9 @@ class TestSNSSubscriptionSQS:
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
         def add_xray_header(request, **_kwargs):
-            request.headers[
-                "X-Amzn-Trace-Id"
-            ] = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            request.headers["X-Amzn-Trace-Id"] = (
+                "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            )
 
         try:
             aws_client.sns.meta.events.register("before-send.sns.Publish", add_xray_header)

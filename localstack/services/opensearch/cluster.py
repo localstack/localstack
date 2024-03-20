@@ -444,9 +444,9 @@ class OpensearchCluster(Server):
             settings["plugins.security.ssl.http.pemcert_filepath"] = "cert.crt"
             settings["plugins.security.ssl.http.pemtrustedcas_filepath"] = "cert.crt"
             settings["plugins.security.allow_default_init_securityindex"] = "true"
-            settings[
-                "plugins.security.restapi.roles_enabled"
-            ] = "all_access,security_rest_api_access"
+            settings["plugins.security.restapi.roles_enabled"] = (
+                "all_access,security_rest_api_access"
+            )
 
         return settings
 

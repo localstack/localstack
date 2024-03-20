@@ -1,4 +1,5 @@
 """Handlers for logging."""
+
 import logging
 from functools import cached_property
 from typing import Type
@@ -98,9 +99,11 @@ class ResponseLogger:
                         "account_id": context.account_id,
                         "region": context.region,
                         # request
-                        "input_type": context.operation.input_shape.name
-                        if context.operation.input_shape
-                        else "Request",
+                        "input_type": (
+                            context.operation.input_shape.name
+                            if context.operation.input_shape
+                            else "Request"
+                        ),
                         "input": context.service_request,
                         "request_headers": dict(context.request.headers),
                         # response
@@ -120,15 +123,19 @@ class ResponseLogger:
                         "account_id": context.account_id,
                         "region": context.region,
                         # request
-                        "input_type": context.operation.input_shape.name
-                        if context.operation.input_shape
-                        else "Request",
+                        "input_type": (
+                            context.operation.input_shape.name
+                            if context.operation.input_shape
+                            else "Request"
+                        ),
                         "input": context.service_request,
                         "request_headers": dict(context.request.headers),
                         # response
-                        "output_type": context.operation.output_shape.name
-                        if context.operation.output_shape
-                        else "Response",
+                        "output_type": (
+                            context.operation.output_shape.name
+                            if context.operation.output_shape
+                            else "Response"
+                        ),
                         "output": context.service_response,
                         "response_headers": dict(response.headers),
                     },

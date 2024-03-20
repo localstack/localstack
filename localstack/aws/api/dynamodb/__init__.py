@@ -618,7 +618,9 @@ class AutoScalingTargetTrackingScalingPolicyConfigurationUpdate(TypedDict, total
 
 class AutoScalingPolicyUpdate(TypedDict, total=False):
     PolicyName: Optional[AutoScalingPolicyName]
-    TargetTrackingScalingPolicyConfiguration: AutoScalingTargetTrackingScalingPolicyConfigurationUpdate
+    TargetTrackingScalingPolicyConfiguration: (
+        AutoScalingTargetTrackingScalingPolicyConfigurationUpdate
+    )
 
 
 PositiveLongObject = int

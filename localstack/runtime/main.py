@@ -1,5 +1,6 @@
 """This is the entrypoint used to start the localstack runtime. It starts the infrastructure and also
 manages the interaction with the operating system - mostly signal handlers for now."""
+
 import signal
 import sys
 

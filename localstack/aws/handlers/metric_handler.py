@@ -188,9 +188,9 @@ class MetricHandler:
             parameters=parameters,
             response_code=response.status_code,
             response_data=response_data,
-            exception=context.service_exception.__class__.__name__
-            if context.service_exception
-            else "",
+            exception=(
+                context.service_exception.__class__.__name__ if context.service_exception else ""
+            ),
             origin="internal" if context.is_internal_call else "external",
         )
         # refrain from adding duplicates

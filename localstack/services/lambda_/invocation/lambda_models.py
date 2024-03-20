@@ -2,6 +2,7 @@
 The LambdaProviderPro in localstack-ext imports this model and configures persistence.
 The actual function code is stored in S3 (see S3Code).
 """
+
 import dataclasses
 import logging
 import shutil
@@ -345,9 +346,9 @@ class FunctionUrlConfig:
     url: str  # full URL (e.g. "https://pfn5bdb2dl5mzkbn6eb2oi3xfe0nthdn.lambda-url.eu-west-3.on.aws/")
     auth_type: FunctionUrlAuthType
     creation_time: str  # time
-    last_modified_time: Optional[
-        str
-    ] = None  # TODO: check if this is the creation time when initially creating
+    last_modified_time: Optional[str] = (
+        None  # TODO: check if this is the creation time when initially creating
+    )
     function_qualifier: Optional[str] = "$LATEST"  # only $LATEST or alias name
     invoke_mode: Optional[InvokeMode] = None
 
@@ -584,9 +585,9 @@ class Function:
         default_factory=dict
     )  # key is $LATEST(?), version or alias
     reserved_concurrent_executions: Optional[int] = None
-    provisioned_concurrency_configs: dict[
-        str, ProvisionedConcurrencyConfiguration
-    ] = dataclasses.field(default_factory=dict)
+    provisioned_concurrency_configs: dict[str, ProvisionedConcurrencyConfiguration] = (
+        dataclasses.field(default_factory=dict)
+    )
     tags: dict[str, str] | None = None
 
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)

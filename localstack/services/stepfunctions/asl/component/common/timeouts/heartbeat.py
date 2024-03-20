@@ -8,8 +8,7 @@ from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 
 class Heartbeat(EvalComponent, abc.ABC):
     @abc.abstractmethod
-    def _eval_seconds(self, env: Environment) -> int:
-        ...
+    def _eval_seconds(self, env: Environment) -> int: ...
 
     def _eval_body(self, env: Environment) -> None:
         seconds = self._eval_seconds(env=env)

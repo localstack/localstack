@@ -4,6 +4,7 @@ LocalStack client stack.
 This module provides the interface to perform cross-service communication between
 LocalStack providers.
 """
+
 import json
 import logging
 import re

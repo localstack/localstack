@@ -1,4 +1,5 @@
 """Module for localstack internal resources, such as health, graph, or _localstack/cloudformation/deploy. """
+
 import json
 import logging
 import os
