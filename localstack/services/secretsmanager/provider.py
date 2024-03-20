@@ -6,7 +6,9 @@ import re
 import time
 from typing import Final, Optional, Union
 
+from botocore.utils import InvalidArnException
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
+from moto.secretsmanager import secretsmanager_backends
 from moto.secretsmanager import utils as secretsmanager_utils
 from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecretNotFoundException
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
@@ -105,6 +107,17 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         apply_patches()
 
     @staticmethod
+    def get_moto_backend_for_resource(
+        name_or_arn: str, context: RequestContext
+    ) -> SecretsManagerBackend:
+        try:
+            arn_data = arns.parse_arn(name_or_arn)
+            backend = secretsmanager_backends[arn_data["account"]][arn_data["region"]]
+        except InvalidArnException:
+            backend = secretsmanager_backends[context.account_id][context.region]
+        return backend
+
+    @staticmethod
     def _validate_secret_id(secret_id: SecretIdType) -> bool:
         # The secret name can contain ASCII letters, numbers, and the following characters: /_+=.@-
         return bool(re.match(r"^[A-Za-z0-9/_+=.@-]+\Z", secret_id))
@@ -173,15 +186,24 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def describe_secret(
         self, context: RequestContext, request: DescribeSecretRequest
     ) -> DescribeSecretResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id: str = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        try:
+            secret = backend.describe_secret(secret_id)
+        except MotoSecretNotFoundException:
+            raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
+        return DescribeSecretResponse(**secret.to_dict())
 
     @handler("GetResourcePolicy", expand=False)
     def get_resource_policy(
         self, context: RequestContext, request: GetResourcePolicyRequest
     ) -> GetResourcePolicyResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        policy = backend.get_resource_policy(secret_id)
+        return GetResourcePolicyResponse(**json.loads(policy))
 
     @handler("GetSecretValue", expand=False)
     def get_secret_value(
@@ -194,15 +216,21 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def list_secret_version_ids(
         self, context: RequestContext, request: ListSecretVersionIdsRequest
     ) -> ListSecretVersionIdsResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        secrets = backend.list_secret_version_ids(secret_id)
+        return ListSecretVersionIdsResponse(**json.loads(secrets))
 
     @handler("PutResourcePolicy", expand=False)
     def put_resource_policy(
         self, context: RequestContext, request: PutResourcePolicyRequest
     ) -> PutResourcePolicyResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        arn, name = backend.put_resource_policy(secret_id, request["ResourcePolicy"])
+        return PutResourcePolicyResponse(ARN=arn, Name=name)
 
     @handler("PutSecretValue", expand=False)
     def put_secret_value(
@@ -250,13 +278,19 @@ class SecretsmanagerProvider(SecretsmanagerApi):
 
     @handler("TagResource", expand=False)
     def tag_resource(self, context: RequestContext, request: TagResourceRequest) -> None:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        tags = request["Tags"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        backend.tag_resource(secret_id, tags)
 
     @handler("UntagResource", expand=False)
     def untag_resource(self, context: RequestContext, request: UntagResourceRequest) -> None:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        tag_keys = request.get("TagKeys")
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        backend.untag_resource(secret_id=secret_id, tag_keys=tag_keys)
 
     @handler("UpdateSecret", expand=False)
     def update_secret(
