@@ -114,7 +114,7 @@ dev = [
     # test dependencies are required for developing localstack
     "localstack-core[test]",
     # TODO upgrade black to v24 or replace with ruff format
-    "black>=23.12.0,<24",
+    "black>=23.12.0,<25",
     "coveralls>=3.3.1",
     "Cython",
     "networkx>=2.8.4",

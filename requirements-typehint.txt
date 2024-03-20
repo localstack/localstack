@@ -47,7 +47,7 @@ awscli==1.32.64
     # via localstack-core
 awscrt==0.20.5
     # via localstack-core
-black==23.12.1
+black==24.3.0
     # via localstack-core
 blinker==1.7.0
     # via
