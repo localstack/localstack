@@ -138,6 +138,11 @@ class TestLambdaRuntimesCommon:
             # https://nodejs.org/api/cli.html#uv_use_io_uringvalue
             # https://techfindings.net/archives/6469
             "$..environment.UV_USE_IO_URING",  # Only Nodejs runtimes
+            # Only Dotnet8
+            "$..environment.DOTNET_CLI_TELEMETRY_OPTOUT",
+            "$..environment.DOTNET_NOLOGO",
+            "$..environment.DOTNET_RUNNING_IN_CONTAINER",
+            "$..environment.DOTNET_VERSION",
         ]
     )
     @markers.aws.validated
