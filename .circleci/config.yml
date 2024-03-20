@@ -609,12 +609,18 @@ jobs:
             # Record the time this step is done
             END_TIME=$(date +%s)
 
+            if << pipeline.parameters.randomize-aws-credentials >> ; then
+              echo "export TINYBIRD_WORKFLOW=tests_circleci_ma_mr" >> $BASH_ENV
+            else
+              echo "export TINYBIRD_WORKFLOW=tests_circleci" >> $BASH_ENV
+            fi
+
             # Build the payload
-            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'", "workflow_url": "${CIRCLE_BUILD_URL}"}' > stats.json
+            echo '{"workflow": "'$TINYBIRD_WORKFLOW'", "attempt": 1, "run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'", "workflow_url": "'$CIRCLE_BUILD_URL'"}' > stats.json
             echo 'Sending: '$(cat stats/stats.json)
 
             # Send the data to Tinybird
-            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats.json
+            curl -X POST "https://api.tinybird.co/v0/events?name=ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats.json
 
             # Fail this step depending on the success to trigger a rerun of this step together with others in case of a "rerun failed"
             [[ $OUTCOME = "success" ]] && exit 0 || exit 1
