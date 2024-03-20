@@ -248,7 +248,7 @@ jobs:
         with:
           path: |
             localstack/tests/aws/services/lambda_/functions/common
-          key: community-it-${{ runner.os }}-lambda-common-${{ hashFiles('localstack/tests/aws/services/lambda_/functions/common/**/src/*') }}
+          key: community-it-${{ runner.os }}-${{ runner.arch }}-lambda-common-${{ hashFiles('tests/aws/services/lambda_/functions/common/**/src/*', 'tests/aws/services/lambda_/functions/common/**/Makefile') }}
 
       - name: Prebuild lambda common packages
         working-directory: localstack
