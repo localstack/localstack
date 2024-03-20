@@ -1,0 +1,25 @@
+{
+  "tests/aws/services/resourcegroupstaggingapi/test_rgsa.py::TestRGSAIntegrations::test_get_resources": {
+    "recorded-date": "20-03-2024, 06:15:41",
+    "recorded-content": {
+      "get_resources": {
+        "PaginationToken": "",
+        "ResourceTagMappingList": [
+          {
+            "ResourceARN": "<ARN:1>",
+            "Tags": [
+              {
+                "Key": "test",
+                "Value": "test"
+              }
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
