@@ -30,7 +30,7 @@ class TestLambdaUtils:
             Runtime.dotnetcore3_1,
         )
         assert "test/handler.rb" == get_handler_file_from_name(
-            "test.handler.execute", Runtime.ruby2_7
+            "test.handler.execute", Runtime.ruby3_2
         )
         assert "test.handler.execute" == get_handler_file_from_name(
             "test.handler.execute", Runtime.go1_x

@@ -1,3 +1,7 @@
+"""Testing different Lambda runtimes focusing on specifics of particular runtimes (e.g., Nodejs ES6 modules).
+
+See `test_lambda_common.py` for tests focusing on common functionality across all runtimes.
+"""
 import json
 import os
 import shutil
@@ -55,8 +59,10 @@ class LambdaJavaTestlibsPackageInstaller(DownloadInstaller):
         )
 
 
+# TODO: inline this outdated dependency into test build
 lambda_java_testlibs_package = LambdaJavaTestlibsPackage()
 
+# TODO: consider using the multiruntime annotation directly?!
 parametrize_python_runtimes = pytest.mark.parametrize("runtime", PYTHON_TEST_RUNTIMES)
 parametrize_node_runtimes = pytest.mark.parametrize("runtime", NODE_TEST_RUNTIMES)
 parametrize_java_runtimes = pytest.mark.parametrize("runtime", JAVA_TEST_RUNTIMES)
@@ -69,6 +75,7 @@ def add_snapshot_transformer(snapshot):
 
 
 class TestNodeJSRuntimes:
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @parametrize_node_runtimes
     @markers.aws.validated
     def test_invoke_nodejs_es6_lambda(self, create_lambda_function, snapshot, runtime, aws_client):
@@ -127,6 +134,7 @@ class TestJavaRuntimes:
         save_file(zip_jar_path, java_jar)
         return testutil.create_zip_file(tmpdir, get_content=True)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_java_runtime_with_lib(self, create_lambda_function, snapshot, aws_client):
         """Test lambda creation/invocation with different deployment package types (jar, zip, zip-with-gradle)"""
@@ -189,6 +197,7 @@ class TestJavaRuntimes:
         )
         snapshot.match("invoke_result", result)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @parametrize_java_runtimes
     @markers.aws.validated
     def test_serializable_input_object(
@@ -218,6 +227,7 @@ class TestJavaRuntimes:
             "key": "test_key",
         }
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @pytest.mark.parametrize(
         "handler,expected_result",
         [
@@ -268,6 +278,7 @@ class TestJavaRuntimes:
 
         retry(check_logs, retries=20)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     # TODO maybe snapshot payload as well
     def test_java_lambda_subscribe_sns_topic(
@@ -416,3 +427,58 @@ class TestPythonRuntimes:
         )
         result = json.load(result["Payload"])
         assert result["version"] == runtime
+
+
+class TestGoProvidedRuntimes:
+    """These tests are a subset of the common tests focusing on exercising Golang, which had a dedicated runtime.
+
+    The Lambda sources are under ./common/<scenario>/runtime/
+    The tests `test_uncaught_exception_invoke` and `test_manual_endpoint_injection` are copied from the common tests
+    because the common tests only test each runtime once. Multiple tests per runtime are not supported and would make
+    them even more complex. Usually, only a subset of the test scenarios is relevant to have extra test coverage.
+    For example, Go used to have a dedicated runtime and therefore, we want to test the migration path.
+    Calling LocalStack and uncaught exception behavior can be language-specific and deserve dedicated tests while
+    echo invoke is redundant (runtime is already tested and every other scenario covers this basic functionality).
+    """
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: implement logging config
+            "$..LoggingConfig",
+            "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
+        ]
+    )
+    @markers.aws.validated
+    @markers.multiruntime(scenario="uncaughtexception_extra", runtimes=["provided"])
+    def test_uncaught_exception_invoke(self, multiruntime_lambda, snapshot, aws_client):
+        # unfortunately the stack trace is quite unreliable and changes when AWS updates the runtime transparently
+        # since the stack trace contains references to internal runtime code.
+        snapshot.add_transformer(
+            snapshot.transform.key_value("stackTrace", "<stack-trace>", reference_replacement=False)
+        )
+        create_function_result = multiruntime_lambda.create_function(MemorySize=1024)
+        snapshot.match("create_function_result", create_function_result)
+
+        # simple payload
+        invocation_result = aws_client.lambda_.invoke(
+            FunctionName=create_function_result["FunctionName"],
+            Payload=b'{"error_msg": "some_error_msg"}',
+        )
+        assert "FunctionError" in invocation_result
+        snapshot.match("error_result", invocation_result)
+
+    @markers.aws.validated
+    @markers.multiruntime(scenario="endpointinjection_extra", runtimes=["provided"])
+    def test_manual_endpoint_injection(self, multiruntime_lambda, tmp_path, aws_client):
+        """Test calling SQS from Lambda using manual AWS SDK client configuration via AWS_ENDPOINT_URL.
+        This must work for all runtimes.
+        The code might differ depending on the SDK version shipped with the Lambda runtime.
+        This test is designed to be AWS-compatible using minimal code changes to configure the endpoint url for LS.
+        """
+
+        create_function_result = multiruntime_lambda.create_function(MemorySize=1024, Timeout=15)
+
+        invocation_result = aws_client.lambda_.invoke(
+            FunctionName=create_function_result["FunctionName"],
+        )
+        assert "FunctionError" not in invocation_result
