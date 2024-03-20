@@ -628,10 +628,7 @@ jobs:
 workflows:
   main:
     jobs:
-      - push-to-tinybird:
-          filters:
-            branches:
-              only: master
+      - push-to-tinybird
       - install
       - preflight:
           requires:
