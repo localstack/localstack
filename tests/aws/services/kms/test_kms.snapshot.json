@@ -1207,8 +1207,8 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key": {
-    "recorded-date": "13-04-2023, 11:30:39",
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_symmetric": {
+    "recorded-date": "24-01-2024, 10:44:12",
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
@@ -1331,6 +1331,102 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
+    "recorded-date": "24-01-2024, 10:44:14",
+    "recorded-content": {
+      "created-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "ECC_NIST_P256",
+        "Description": "<description:1>",
+        "Enabled": false,
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "ECC_NIST_P256",
+        "KeyState": "PendingImport",
+        "KeyUsage": "SIGN_VERIFY",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL",
+        "SigningAlgorithms": [
+          "ECDSA_SHA_256"
+        ]
+      },
+      "describe-key-before-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "ECC_NIST_P256",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "ECC_NIST_P256",
+          "KeyState": "PendingImport",
+          "KeyUsage": "SIGN_VERIFY",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL",
+          "SigningAlgorithms": [
+            "ECDSA_SHA_256"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "ECC_NIST_P256",
+          "Description": "<description:1>",
+          "Enabled": true,
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "ECC_NIST_P256",
+          "KeyState": "Enabled",
+          "KeyUsage": "SIGN_VERIFY",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL",
+          "SigningAlgorithms": [
+            "ECDSA_SHA_256"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-deleted-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "ECC_NIST_P256",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "ECC_NIST_P256",
+          "KeyState": "PendingImport",
+          "KeyUsage": "SIGN_VERIFY",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL",
+          "SigningAlgorithms": [
+            "ECDSA_SHA_256"
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

@@ -1073,7 +1073,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             enabled_key_allowed=True,
             disabled_key_allowed=True,
         )
-        self._validate_key_for_encryption_decryption(context, key_to_import_material_to)
 
         if import_state.wrapping_algo == AlgorithmSpec.RSAES_PKCS1_V1_5:
             decrypt_padding = padding.PKCS1v15()
@@ -1106,9 +1105,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 "A validTo date must be set if the ExpirationModel is KEY_MATERIAL_EXPIRES"
             )
         # TODO actually set validTo and make the key expire
-        key_to_import_material_to.crypto_key.key_material = key_material
         key_to_import_material_to.metadata["Enabled"] = True
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
+        key_to_import_material_to.crypto_key.load_key_material(key_material)
+
         return ImportKeyMaterialResponse()
 
     def delete_imported_key_material(

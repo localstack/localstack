@@ -114,6 +114,7 @@ from localstack.aws.api.dynamodb import (
     UpdateTimeToLiveOutput,
     WriteRequest,
 )
+from localstack.aws.api.dynamodbstreams import StreamStatus
 from localstack.aws.connect import connect_to
 from localstack.constants import (
     AUTH_CREDENTIAL_REGEX,
@@ -121,7 +122,15 @@ from localstack.constants import (
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.http import Request, Response, route
-from localstack.services.dynamodb.models import DynamoDBStore, dynamodb_stores
+from localstack.services.dynamodb.models import (
+    DynamoDBStore,
+    RecordsMap,
+    StreamRecord,
+    StreamRecords,
+    TableRecords,
+    TableStreamType,
+    dynamodb_stores,
+)
 from localstack.services.dynamodb.server import DynamodbServer
 from localstack.services.dynamodb.utils import (
     ItemFinder,
@@ -132,9 +141,6 @@ from localstack.services.dynamodb.utils import (
     get_ddb_access_key,
 )
 from localstack.services.dynamodbstreams import dynamodbstreams_api
-from localstack.services.dynamodbstreams.dynamodbstreams_api import (
-    get_and_increment_sequence_number_counter,
-)
 from localstack.services.dynamodbstreams.models import dynamodbstreams_stores
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
@@ -179,15 +185,12 @@ THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 MANAGED_KMS_KEYS = {}
 
 
-def dynamodb_table_exists(table_name: str, client=None):
+def dynamodb_table_exists(table_name: str, client=None) -> bool:
     client = client or connect_to().dynamodb
     paginator = client.get_paginator("list_tables")
     pages = paginator.paginate(PaginationConfig={"PageSize": 100})
-    for page in pages:
-        table_names = page["TableNames"]
-        if to_str(table_name) in table_names:
-            return True
-    return False
+    table_name = to_str(table_name)
+    return any(table_name in page["TableNames"] for page in pages)
 
 
 class EventForwarder:
@@ -198,103 +201,97 @@ class EventForwarder:
         self.executor.shutdown(wait=False)
 
     def forward_to_targets(
-        self, account_id: str, region_name: str, records: List[Dict], background: bool = True
-    ):
+        self, account_id: str, region_name: str, records_map: RecordsMap, background: bool = True
+    ) -> None:
         if background:
             self.executor.submit(
                 self._forward,
                 account_id=account_id,
                 region_name=region_name,
-                records=records,
+                records_map=records_map,
             )
         else:
-            self._forward(account_id, region_name, records)
+            self._forward(account_id, region_name, records_map)
 
-    def _forward(self, account_id: str, region_name: str, records: List[Dict]):
-        # forward to kinesis stream
-        records_to_kinesis = copy.deepcopy(records)
-        self.forward_to_kinesis_stream(records_to_kinesis)
-
-        # forward to ddb_streams
-        forward_records = self.prepare_records_to_forward_to_ddb_stream(records)
-        records_to_ddb = copy.deepcopy(forward_records)
-        self.forward_to_ddb_stream(account_id, region_name, records_to_ddb)
-
-    @staticmethod
-    def forward_to_ddb_stream(account_id: str, region_name: str, records):
-        dynamodbstreams_api.forward_events(account_id, region_name, records)
-
-    @staticmethod
-    def forward_to_kinesis_stream(records):
-        kinesis_records = defaultdict(list)
-
-        for record in records:
-            event_source_arn = record.get("eventSourceARN")
-            if not event_source_arn:
-                continue
-
-            table_name = event_source_arn.split("/", 1)[-1]
-            account_id = extract_account_id_from_arn(event_source_arn)
-            region_name = extract_region_from_arn(event_source_arn)
-            store = get_store(account_id, region_name)
-            table_def = store.table_definitions.get(table_name) or {}
-            if table_def.get("KinesisDataStreamDestinationStatus") != "ACTIVE":
-                continue
-
-            stream_arn = table_def["KinesisDataStreamDestinations"][-1]["StreamArn"]
-            record["tableName"] = table_name
-            record.pop("eventSourceARN", None)
-            record["dynamodb"].pop("StreamViewType", None)
-            record.pop("eventVersion", None)
-            record["recordFormat"] = "application/json"
-            record["userIdentity"] = None
-            hash_keys = list(filter(lambda key: key["KeyType"] == "HASH", table_def["KeySchema"]))
-            # TODO: reverse properly how AWS creates the partition key, it seems to be an MD5 hash
-            kinesis_partition_key = md5(f"{table_name}{hash_keys[0]['AttributeName']}")
-
-            kinesis_records[(stream_arn, event_source_arn)].append(
-                {
-                    "Data": json.dumps(record, cls=BytesEncoder),
-                    "PartitionKey": kinesis_partition_key,
-                }
+    def _forward(self, account_id: str, region_name: str, records_map: RecordsMap) -> None:
+        try:
+            self.forward_to_kinesis_stream(account_id, region_name, records_map)
+        except Exception as e:
+            LOG.debug(
+                "Error while publishing to Kinesis streams: '%s'",
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
-        for (stream_arn, event_source_arn), records in kinesis_records.items():
-            stream_account_id = extract_account_id_from_arn(stream_arn)
-            stream_region_name = extract_region_from_arn(stream_arn)
+        try:
+            self.forward_to_ddb_stream(account_id, region_name, records_map)
+        except Exception as e:
+            LOG.debug(
+                "Error while publishing to DynamoDB streams, '%s'",
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
+
+    @staticmethod
+    def forward_to_ddb_stream(account_id: str, region_name: str, records_map: RecordsMap) -> None:
+        dynamodbstreams_api.forward_events(account_id, region_name, records_map)
+
+    @staticmethod
+    def forward_to_kinesis_stream(
+        account_id: str, region_name: str, records_map: RecordsMap
+    ) -> None:
+        # You can only stream data from DynamoDB to Kinesis Data Streams in the same AWS account and AWS Region as your
+        # table.
+        # You can only stream data from a DynamoDB table to one Kinesis data stream.
+        store = get_store(account_id, region_name)
+
+        for table_name, table_records in records_map.items():
+            table_stream_type = table_records["table_stream_type"]
+            if not table_stream_type.is_kinesis:
+                continue
+
+            kinesis_records = []
+
+            table_arn = arns.dynamodb_table_arn(table_name, account_id, region_name)
+            records = table_records["records"]
+            table_def = store.table_definitions.get(table_name) or {}
+            stream_arn = table_def["KinesisDataStreamDestinations"][-1]["StreamArn"]
+            for record in records:
+                kinesis_record = dict(
+                    tableName=table_name,
+                    recordFormat="application/json",
+                    userIdentity=None,
+                    **record,
+                )
+                fields_to_remove = {"StreamViewType", "SequenceNumber"}
+                kinesis_record["dynamodb"] = {
+                    k: v for k, v in record["dynamodb"].items() if k not in fields_to_remove
+                }
+                kinesis_record.pop("eventVersion", None)
+
+                hash_keys = list(
+                    filter(lambda key: key["KeyType"] == "HASH", table_def["KeySchema"])
+                )
+                # TODO: reverse properly how AWS creates the partition key, it seems to be an MD5 hash
+                kinesis_partition_key = md5(f"{table_name}{hash_keys[0]['AttributeName']}")
+
+                kinesis_records.append(
+                    {
+                        "Data": json.dumps(kinesis_record, cls=BytesEncoder),
+                        "PartitionKey": kinesis_partition_key,
+                    }
+                )
+
             kinesis = connect_to(
-                aws_access_key_id=stream_account_id,
+                aws_access_key_id=account_id,
                 aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
-                region_name=stream_region_name,
-            ).kinesis.request_metadata(service_principal="dynamodb", source_arn=event_source_arn)
+                region_name=region_name,
+            ).kinesis.request_metadata(service_principal="dynamodb", source_arn=table_arn)
 
             kinesis.put_records(
                 StreamARN=stream_arn,
-                Records=records,
+                Records=kinesis_records,
             )
-
-    @classmethod
-    def prepare_records_to_forward_to_ddb_stream(cls, records):
-        # StreamViewType determines what information is written to the stream for the table
-        # When an item in the table is inserted, updated or deleted
-        for record in records:
-            ddb_record = record["dynamodb"]
-            stream_type = ddb_record.get("StreamViewType")
-            if not stream_type:
-                continue
-            if "SequenceNumber" not in ddb_record:
-                ddb_record["SequenceNumber"] = str(get_and_increment_sequence_number_counter())
-            # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
-            if stream_type == "KEYS_ONLY":
-                ddb_record.pop("OldImage", None)
-                ddb_record.pop("NewImage", None)
-            # NEW_IMAGE - The entire item, as it appears after it was modified, is written to the stream
-            elif stream_type == "NEW_IMAGE":
-                ddb_record.pop("OldImage", None)
-            # OLD_IMAGE - The entire item, as it appeared before it was modified, is written to the stream
-            elif stream_type == "OLD_IMAGE":
-                ddb_record.pop("NewImage", None)
-        return records
 
     @classmethod
     def is_kinesis_stream_exists(cls, stream_arn):
@@ -889,11 +886,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         has_return_values = put_item_input.get("ReturnValues") == "ALL_OLD"
-        streams_enabled = has_streams_enabled(context.account_id, context.region, table_name)
+        stream_type = get_table_stream_type(context.account_id, context.region, table_name)
 
         # if the request doesn't ask for ReturnValues and we have stream enabled, we need to modify the request to
         # force DDBLocal to return those values
-        if not has_return_values and streams_enabled:
+        if stream_type and not has_return_values:
             service_req = copy.copy(context.service_request)
             service_req["ReturnValues"] = "ALL_OLD"
             result = self._forward_request(
@@ -907,12 +904,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         # region, e.g. when getting the stream spec
 
         # Get stream specifications details for the table
-        if streams_enabled:
-            stream_spec = dynamodb_get_table_stream_specification(
-                account_id=context.account_id,
-                region_name=global_table_region,
-                table_name=table_name,
-            )
+        if stream_type:
             item = put_item_input["Item"]
             # prepare record keys
             keys = SchemaExtractor.extract_keys(
@@ -929,22 +921,24 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 existing_item = result.pop("Attributes", None)
 
             # create record
-            record = self.get_record_template(context.region)
+            record = self.get_record_template(
+                context.region,
+            )
             record["eventName"] = "INSERT" if not existing_item else "MODIFY"
-            record["dynamodb"].update(
-                {
-                    "Keys": keys,
-                    "NewImage": item,
-                    "SizeBytes": _get_size_bytes(item),
-                }
-            )
-            if stream_spec:
-                record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
-            if existing_item:
+            record["dynamodb"]["Keys"] = keys
+            record["dynamodb"]["SizeBytes"] = _get_size_bytes(item)
+
+            if stream_type.needs_new_image:
+                record["dynamodb"]["NewImage"] = item
+            if stream_type.stream_view_type:
+                record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
+            if existing_item and stream_type.needs_old_image:
                 record["dynamodb"]["OldImage"] = existing_item
-            self.forward_stream_records(
-                context.account_id, context.region, [record], table_name=table_name
-            )
+
+            records_map = {
+                table_name: TableRecords(records=[record], table_stream_type=stream_type)
+            }
+            self.forward_stream_records(context.account_id, context.region, records_map)
         return result
 
     @handler("DeleteItem", expand=False)
@@ -957,11 +951,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         has_return_values = delete_item_input.get("ReturnValues") == "ALL_OLD"
-        streams_enabled = has_streams_enabled(context.account_id, context.region, table_name)
+        stream_type = get_table_stream_type(context.account_id, context.region, table_name)
 
         # if the request doesn't ask for ReturnValues and we have stream enabled, we need to modify the request to
         # force DDBLocal to return those values
-        if not has_return_values and streams_enabled:
+        if stream_type and not has_return_values:
             service_req = copy.copy(context.service_request)
             service_req["ReturnValues"] = "ALL_OLD"
             result = self._forward_request(
@@ -971,7 +965,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             result = self._forward_request(context=context, region=global_table_region)
 
         # determine and forward stream record
-        if streams_enabled:
+        if stream_type:
             # because we modified the request, we will always have the ReturnValues if we have streams enabled
             if has_return_values:
                 existing_item = result.get("Attributes")
@@ -979,26 +973,24 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 # remove the ReturnValues if the client didn't ask for it
                 existing_item = result.pop("Attributes", None)
 
-            if existing_item:
-                # create record
-                record = self.get_record_template(context.region)
-                record["eventName"] = "REMOVE"
-                record["dynamodb"].update(
-                    {
-                        "Keys": delete_item_input["Key"],
-                        "OldImage": existing_item,
-                        "SizeBytes": _get_size_bytes(existing_item),
-                    }
-                )
-                # Get stream specifications details for the table
-                stream_spec = dynamodb_get_table_stream_specification(
-                    account_id=context.account_id, region_name=context.region, table_name=table_name
-                )
-                if stream_spec:
-                    record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
-                self.forward_stream_records(
-                    context.account_id, context.region, [record], table_name=table_name
-                )
+            if not existing_item:
+                return result
+
+            # create record
+            record = self.get_record_template(context.region)
+            record["eventName"] = "REMOVE"
+            record["dynamodb"]["Keys"] = delete_item_input["Key"]
+            record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_item)
+
+            if stream_type.stream_view_type:
+                record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
+            if stream_type.needs_old_image:
+                record["dynamodb"]["OldImage"] = existing_item
+
+            records_map = {
+                table_name: TableRecords(records=[record], table_stream_type=stream_type)
+            }
+            self.forward_stream_records(context.account_id, context.region, records_map)
 
         return result
 
@@ -1013,10 +1005,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         global_table_region = self.get_global_table_region(context, table_name)
 
         existing_item = None
-        event_sources_or_streams_enabled = has_streams_enabled(
-            context.account_id, context.region, table_name
-        )
-        if event_sources_or_streams_enabled:
+        stream_type = get_table_stream_type(context.account_id, context.region, table_name)
+
+        # even if we don't need the OldImage, we still need to fetch the existing item to know if the event is INSERT
+        # or MODIFY (UpdateItem will create the object if it doesn't exist, and you don't use a ConditionExpression)
+        if stream_type:
             existing_item = ItemFinder.find_existing_item(
                 put_item=update_item_input,
                 table_name=table_name,
@@ -1028,7 +1021,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self._forward_request(context=context, region=global_table_region)
 
         # construct and forward stream record
-        if event_sources_or_streams_enabled:
+        if stream_type:
             updated_item = ItemFinder.find_existing_item(
                 put_item=update_item_input,
                 table_name=table_name,
@@ -1036,26 +1029,26 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 region_name=context.region,
                 endpoint_url=self.server.url,
             )
-            if updated_item:
-                record = self.get_record_template(context.region)
-                record["eventName"] = "INSERT" if not existing_item else "MODIFY"
-                record["dynamodb"].update(
-                    {
-                        "Keys": update_item_input["Key"],
-                        "NewImage": updated_item,
-                        "SizeBytes": _get_size_bytes(updated_item),
-                    }
-                )
-                if existing_item:
-                    record["dynamodb"]["OldImage"] = existing_item
-                stream_spec = dynamodb_get_table_stream_specification(
-                    account_id=context.account_id, region_name=context.region, table_name=table_name
-                )
-                if stream_spec:
-                    record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
-                self.forward_stream_records(
-                    context.account_id, context.region, [record], table_name=table_name
-                )
+            if not updated_item:
+                return result
+
+            record = self.get_record_template(context.region)
+            record["eventName"] = "INSERT" if not existing_item else "MODIFY"
+            record["dynamodb"]["Keys"] = update_item_input["Key"]
+            record["dynamodb"]["SizeBytes"] = _get_size_bytes(updated_item)
+
+            if stream_type.stream_view_type:
+                record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
+            if existing_item and stream_type.needs_old_image:
+                record["dynamodb"]["OldImage"] = existing_item
+            if stream_type.needs_new_image:
+                record["dynamodb"]["NewImage"] = updated_item
+
+            records_map = {
+                table_name: TableRecords(records=[record], table_stream_type=stream_type)
+            }
+            self.forward_stream_records(context.account_id, context.region, records_map)
+
         return result
 
     @handler("GetItem", expand=False)
@@ -1111,13 +1104,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         unprocessed_items = {}
         request_items = batch_write_item_input["RequestItems"]
 
-        tables_with_stream = []
+        tables_stream_type: dict[TableName, TableStreamType] = {}
 
         for table_name, items in sorted(request_items.items(), key=itemgetter(0)):
-            if stream_enabled := has_streams_enabled(
-                context.account_id, context.region, table_name
-            ):
-                tables_with_stream.append(table_name)
+            if stream_type := get_table_stream_type(context.account_id, context.region, table_name):
+                tables_stream_type[table_name] = stream_type
 
             for request in items:
                 request: WriteRequest
@@ -1127,7 +1118,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         unprocessed_items_for_table = unprocessed_items.setdefault(table_name, [])
                         unprocessed_items_for_table.append(request)
 
-                    elif stream_enabled:
+                    elif stream_type:
                         existing_items_to_fetch_for_table = existing_items_to_fetch.setdefault(
                             table_name, []
                         )
@@ -1151,15 +1142,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             raise e
 
         # determine and forward stream records
-        if tables_with_stream:
-            records = self.prepare_batch_write_item_records(
+        if tables_stream_type:
+            records_map = self.prepare_batch_write_item_records(
                 account_id=context.account_id,
                 region_name=context.region,
-                streamed_tables=tables_with_stream,
+                tables_stream_type=tables_stream_type,
                 request_items=request_items,
                 existing_items=existing_items,
             )
-            self.forward_stream_records(context.account_id, context.region, records)
+            self.forward_stream_records(context.account_id, context.region, records_map)
 
         # TODO: should unprocessed item which have mutated by `prepare_batch_write_item_records` be returned
         for table_name, unprocessed_items_in_table in unprocessed_items.items():
@@ -1203,7 +1194,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         existing_items_to_fetch: dict[str, list[Put | Update | Delete]] = {}
         updated_items_to_fetch: dict[str, list[Update]] = {}
         transact_items = transact_write_items_input["TransactItems"]
-        tables_with_stream = []
+        tables_stream_type: dict[TableName, TableStreamType] = {}
         no_stream_tables = set()
 
         for item in transact_items:
@@ -1217,9 +1208,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         continue
 
                     # if we have not seen the table, fetch its streaming status
-                    if table_name not in tables_with_stream:
-                        if has_streams_enabled(context.account_id, context.region, table_name):
-                            tables_with_stream.append(table_name)
+                    if table_name not in tables_stream_type:
+                        if stream_type := get_table_stream_type(
+                            context.account_id, context.region, table_name
+                        ):
+                            tables_stream_type[table_name] = stream_type
                         else:
                             # no stream,
                             no_stream_tables.add(table_name)
@@ -1255,7 +1248,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self.forward_request(context)
 
         # determine and forward stream records
-        if tables_with_stream:
+        if tables_stream_type:
             updated_items = (
                 ItemFinder.find_existing_items(
                     put_items_per_table=existing_items_to_fetch,
@@ -1267,14 +1260,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 else {}
             )
 
-            records = self.prepare_transact_write_item_records(
+            records_map = self.prepare_transact_write_item_records(
                 account_id=context.account_id,
                 region_name=context.region,
                 transact_items=transact_items,
                 existing_items=existing_items,
                 updated_items=updated_items,
+                tables_stream_type=tables_stream_type,
             )
-            self.forward_stream_records(context.account_id, context.region, records)
+            self.forward_stream_records(context.account_id, context.region, records_map)
 
         return result
 
@@ -1306,7 +1300,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         statement = execute_statement_input["Statement"]
         table_name = extract_table_name_from_partiql_update(statement)
         existing_items = None
-        if table_name and has_streams_enabled(context.account_id, context.region, table_name):
+        stream_type = table_name and get_table_stream_type(
+            context.account_id, context.region, table_name
+        )
+        if stream_type:
             # Note: fetching the entire list of items is hugely inefficient, especially for larger tables
             # TODO: find a mechanism to hook into the PartiQL update mechanism of DynamoDB Local directly!
             existing_items = ItemFinder.list_existing_items_for_statement(
@@ -1319,20 +1316,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         result = self.forward_request(context)
 
         # construct and forward stream record
-        event_sources_or_streams_enabled = table_name and has_streams_enabled(
-            context.account_id, context.region, table_name
-        )
-        if event_sources_or_streams_enabled:
+        if stream_type:
             records = get_updated_records(
                 account_id=context.account_id,
                 region_name=context.region,
                 table_name=table_name,
                 existing_items=existing_items,
                 server_url=self.server.url,
+                table_stream_type=stream_type,
             )
-            self.forward_stream_records(
-                context.account_id, context.region, records, table_name=table_name
-            )
+            self.forward_stream_records(context.account_id, context.region, records)
 
         return result
 
@@ -1656,19 +1649,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     # Helpers
     #
 
-    # @staticmethod
-    # def ddb_access_key(account_id: str, region_name: str) -> str:
-    #     """
-    #     Get the access key to be used while communicating with DynamoDB Local.
-    #
-    #     DDBLocal supports namespacing as an undocumented feature. It works based on the value of the `Credentials`
-    #     field of the `Authorization` header. We use a concatenated value of account ID and region to achieve
-    #     namespacing.
-    #     """
-    #     return "{account_id}{region_name}".format(
-    #         account_id=account_id, region_name=region_name
-    #     ).replace("-", "")
-
     @staticmethod
     def ddb_region_name(region_name: str) -> str:
         """Map `local` or `localhost` region to the us-east-1 region. These values are used by NoSQL Workbench."""
@@ -1772,20 +1752,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         transact_items: TransactWriteItemList,
         existing_items: BatchGetResponseMap,
         updated_items: BatchGetResponseMap,
-    ):
-        records = []
-        _stream_specs_by_table = {}
-
-        def get_stream_spec_for_table(_table_name: str):
-            if (_stream_spec := _stream_specs_by_table.get(_table_name)) is None:
-                _stream_spec = dynamodb_get_table_stream_specification(
-                    account_id=account_id,
-                    region_name=region_name,
-                    table_name=_table_name,
-                )
-                _stream_specs_by_table[table_name] = _stream_spec or {}
-
-            return _stream_spec
+        tables_stream_type: dict[TableName, TableStreamType],
+    ) -> RecordsMap:
+        records_only_map: dict[TableName, StreamRecords] = defaultdict(list)
 
         for request in transact_items:
             record = self.get_record_template(region_name)
@@ -1803,21 +1772,21 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     if existing_item == new_item:
                         continue
 
-                    if stream_spec := get_stream_spec_for_table(table_name):
-                        record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
+                    stream_type = tables_stream_type[table_name]
+                    if stream_type.stream_view_type:
+                        record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
 
                     record["eventID"] = short_uid()
                     record["eventName"] = "INSERT" if not existing_item else "MODIFY"
                     record["dynamodb"]["Keys"] = keys
-                    record["dynamodb"]["NewImage"] = new_item
-                    if existing_item:
+                    if stream_type.needs_new_image:
+                        record["dynamodb"]["NewImage"] = new_item
+                    if existing_item and stream_type.needs_old_image:
                         record["dynamodb"]["OldImage"] = existing_item
-                    record["eventSourceARN"] = arns.dynamodb_table_arn(
-                        table_name, account_id=account_id, region_name=region_name
-                    )
+
                     record_item = de_dynamize_record(new_item)
                     record["dynamodb"]["SizeBytes"] = _get_size_bytes(record_item)
-                    records.append(record)
+                    records_only_map[table_name].append(record)
                     continue
 
                 case {"Update": {"TableName": table_name, "Key": keys}}:
@@ -1825,45 +1794,59 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         table_name, keys, updated_items
                     )
                     if not updated_item:
-                        return []
+                        continue
 
                     existing_item = find_item_for_keys_values_in_batch(
                         table_name, keys, existing_items
                     )
 
-                    if stream_spec := get_stream_spec_for_table(table_name):
-                        record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
+                    stream_type = tables_stream_type[table_name]
+                    if stream_type.stream_view_type:
+                        record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
+
                     record["eventID"] = short_uid()
-                    record["eventName"] = "MODIFY"
+                    record["eventName"] = "MODIFY" if updated_item else "INSERT"
                     record["dynamodb"]["Keys"] = keys
-                    record["dynamodb"]["OldImage"] = existing_item
-                    record["dynamodb"]["NewImage"] = updated_item
-                    record["eventSourceARN"] = arns.dynamodb_table_arn(
-                        table_name, account_id=account_id, region_name=region_name
-                    )
+
+                    if stream_type.needs_old_image:
+                        record["dynamodb"]["OldImage"] = existing_item
+                    if stream_type.needs_new_image:
+                        record["dynamodb"]["NewImage"] = updated_item
+
                     record["dynamodb"]["SizeBytes"] = _get_size_bytes(updated_item)
-                    records.append(record)
+                    records_only_map[table_name].append(record)
                     continue
 
                 case {"Delete": {"TableName": table_name, "Key": keys}}:
                     existing_item = find_item_for_keys_values_in_batch(
                         table_name, keys, existing_items
                     )
-                    if stream_spec := get_stream_spec_for_table(table_name):
-                        record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
+                    if not existing_item:
+                        continue
+
+                    stream_type = tables_stream_type[table_name]
+                    if stream_type.stream_view_type:
+                        record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
+
                     record["eventID"] = short_uid()
                     record["eventName"] = "REMOVE"
                     record["dynamodb"]["Keys"] = keys
-                    record["dynamodb"]["OldImage"] = existing_item
+                    if stream_type.needs_old_image:
+                        record["dynamodb"]["OldImage"] = existing_item
                     record_item = de_dynamize_record(existing_item)
                     record["dynamodb"]["SizeBytes"] = _get_size_bytes(record_item)
-                    record["eventSourceARN"] = arns.dynamodb_table_arn(
-                        table_name, account_id=account_id, region_name=region_name
-                    )
-                    records.append(record)
+
+                    records_only_map[table_name].append(record)
                     continue
 
-        return records
+        records_map = {
+            table_name: TableRecords(
+                records=records, table_stream_type=tables_stream_type[table_name]
+            )
+            for table_name, records in records_only_map.items()
+        }
+
+        return records_map
 
     def batch_execute_statement(
         self,
@@ -1879,25 +1862,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self,
         account_id: str,
         region_name: str,
-        streamed_tables: list[str],
+        tables_stream_type: dict[TableName, TableStreamType],
         request_items: BatchWriteItemRequestMap,
         existing_items: BatchGetResponseMap,
-    ) -> list:
-        records = []
+    ) -> RecordsMap:
+        records_map: RecordsMap = {}
 
         # only iterate over tables with streams
-        for table_name in streamed_tables:
-            # Add stream view type to record if ddb stream is enabled
-            stream_view_type = None
-            stream_spec = dynamodb_get_table_stream_specification(
-                account_id=account_id,
-                region_name=region_name,
-                table_name=table_name,
-            )
-            if stream_spec:
-                stream_view_type = stream_spec["StreamViewType"]
-
+        for table_name, stream_type in tables_stream_type.items():
             existing_items_for_table_unordered = existing_items.get(table_name, [])
+            table_records: StreamRecords = []
 
             def find_existing_item_for_keys_values(item_keys: dict) -> AttributeMap | None:
                 """
@@ -1906,12 +1880,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 :param item_keys: the request item keys
                 :return:
                 """
+                keys_items = item_keys.items()
                 for item in existing_items_for_table_unordered:
-                    if all(item.get(k) == v for k, v in item_keys.items()):
+                    if keys_items <= item.items():
                         return item
 
             for write_request in request_items[table_name]:
-                record = self.get_record_template(region_name, stream_view_type=stream_view_type)
+                record = self.get_record_template(
+                    region_name,
+                    stream_view_type=stream_type.stream_view_type,
+                )
                 match write_request:
                     case {"PutRequest": request}:
                         keys = SchemaExtractor.extract_keys(
@@ -1920,6 +1898,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                             account_id=account_id,
                             region_name=region_name,
                         )
+                        # we need to find if there was an existing item even if we don't need it for `OldImage`, because
+                        # of the `eventName`
                         existing_item = find_existing_item_for_keys_values(keys)
                         if existing_item == request["Item"]:
                             # if the item is the same as the previous version, AWS does not send an event
@@ -1928,13 +1908,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         record["dynamodb"]["SizeBytes"] = _get_size_bytes(request["Item"])
                         record["eventName"] = "INSERT" if not existing_item else "MODIFY"
                         record["dynamodb"]["Keys"] = keys
-                        record["dynamodb"]["NewImage"] = request["Item"]
-                        if existing_item:
+
+                        if stream_type.needs_new_image:
+                            record["dynamodb"]["NewImage"] = request["Item"]
+                        if existing_item and stream_type.needs_old_image:
                             record["dynamodb"]["OldImage"] = existing_item
-                        record["eventSourceARN"] = arns.dynamodb_table_arn(
-                            table_name, account_id=account_id, region_name=region_name
-                        )
-                        records.append(record)
+
+                        table_records.append(record)
                         continue
 
                     case {"DeleteRequest": request}:
@@ -1945,31 +1925,33 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         record["eventID"] = short_uid()
                         record["eventName"] = "REMOVE"
                         record["dynamodb"]["Keys"] = keys
-                        record["dynamodb"]["OldImage"] = existing_item
+                        if stream_type.needs_old_image:
+                            record["dynamodb"]["OldImage"] = existing_item
                         record["dynamodb"]["SizeBytes"] = _get_size_bytes(existing_item)
-                        record["eventSourceARN"] = arns.dynamodb_table_arn(
-                            table_name, account_id=account_id, region_name=region_name
-                        )
-                        records.append(record)
+                        table_records.append(record)
                         continue
 
-        return records
-
-    def forward_stream_records(
-        self, account_id: str, region_name: str, records: List[Dict], table_name: str = None
-    ):
-        if records and "eventName" in records[0]:
-            if table_name:
-                for record in records:
-                    record["eventSourceARN"] = arns.dynamodb_table_arn(
-                        table_name, account_id=account_id, region_name=region_name
-                    )
-            self._event_forwarder.forward_to_targets(
-                account_id, region_name, records, background=True
+            records_map[table_name] = TableRecords(
+                records=table_records, table_stream_type=stream_type
             )
 
+        return records_map
+
+    def forward_stream_records(
+        self,
+        account_id: str,
+        region_name: str,
+        records_map: RecordsMap,
+    ) -> None:
+        if not records_map:
+            return
+
+        self._event_forwarder.forward_to_targets(
+            account_id, region_name, records_map, background=True
+        )
+
     @staticmethod
-    def get_record_template(region_name: str, stream_view_type: str = None) -> Dict:
+    def get_record_template(region_name: str, stream_view_type: str | None = None) -> StreamRecord:
         record = {
             "eventID": short_uid(),
             "eventVersion": "1.1",
@@ -2071,21 +2053,36 @@ def is_index_query_valid(account_id: str, region_name: str, query_data: dict) ->
     return True
 
 
-def has_streams_enabled(account_id: str, region_name: str, table_name_or_arn: str):
+def get_table_stream_type(
+    account_id: str, region_name: str, table_name_or_arn: str
+) -> TableStreamType | None:
+    """
+    :param account_id: the account id of the table
+    :param region_name: the region of the table
+    :param table_name_or_arn: the table name or ARN
+    :return: a TableStreamViewType object if the table has streams enabled. If not, return None
+    """
     if not table_name_or_arn:
         return
+
     table_name = table_name_or_arn.split(":table/")[-1]
-    table_arn = arns.dynamodb_table_arn(table_name, account_id=account_id, region_name=region_name)
 
-    if dynamodbstreams_api.get_stream_for_table(account_id, region_name, table_arn):
-        return True
+    is_kinesis = False
+    stream_view_type = None
 
-    # if kinesis streaming destination is enabled
     if table_definition := get_store(account_id, region_name).table_definitions.get(table_name):
         if table_definition.get("KinesisDataStreamDestinationStatus") == "ACTIVE":
-            return True
+            is_kinesis = True
 
-    return False
+    table_arn = arns.dynamodb_table_arn(table_name, account_id=account_id, region_name=region_name)
+
+    if (
+        stream := dynamodbstreams_api.get_stream_for_table(account_id, region_name, table_arn)
+    ) and stream["StreamStatus"] in (StreamStatus.ENABLING, StreamStatus.ENABLED):
+        stream_view_type = stream["StreamViewType"]
+
+    if is_kinesis or stream_view_type:
+        return TableStreamType(stream_view_type, is_kinesis=is_kinesis)
 
 
 def get_updated_records(
@@ -2094,7 +2091,8 @@ def get_updated_records(
     table_name: str,
     existing_items: List,
     server_url: str,
-) -> List:
+    table_stream_type: TableStreamType,
+) -> RecordsMap:
     """
     Determine the list of record updates, to be sent to a DDB stream after a PartiQL update operation.
 
@@ -2104,9 +2102,6 @@ def get_updated_records(
           into the PartiQL query execution inside DynamoDB Local and directly extract the list of updated items.
     """
     result = []
-    stream_spec = dynamodb_get_table_stream_specification(
-        account_id=account_id, region_name=region_name, table_name=table_name
-    )
 
     key_schema = SchemaExtractor.get_key_schema(table_name, account_id, region_name)
     before = ItemSet(existing_items, key_schema=key_schema)
@@ -2136,24 +2131,19 @@ def get_updated_records(
 
         # prepare record
         keys = SchemaExtractor.extract_keys_for_schema(item=item, key_schema=key_schema)
-        # TODO: use `DynamoDBProvider.get_record_template()`
-        record = {
-            "eventName": event_name,
-            "eventID": short_uid(),
-            "dynamodb": {
-                "Keys": keys,
-                "NewImage": new_image,
-                "SizeBytes": _get_size_bytes(item),
-                "ApproximateCreationDateTime": int(time.time()),
-            },
-            "awsRegion": region_name,
-            "eventSource": "aws:dynamodb",
-            "eventVersion": "1.1",
-        }
-        if stream_spec:
-            record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
-        if old_image:
+
+        record = DynamoDBProvider.get_record_template(region_name)
+        record["eventName"] = event_name
+        record["dynamodb"]["Keys"] = keys
+        record["dynamodb"]["SizeBytes"] = _get_size_bytes(item)
+
+        if table_stream_type.stream_view_type:
+            record["dynamodb"]["StreamViewType"] = table_stream_type.stream_view_type
+        if table_stream_type.needs_new_image:
+            record["dynamodb"]["NewImage"] = new_image
+        if old_image and table_stream_type.needs_old_image:
             record["dynamodb"]["OldImage"] = old_image
+
         result.append(record)
 
     # loop over items in new item list (find INSERT/MODIFY events)
@@ -2162,7 +2152,8 @@ def get_updated_records(
     # loop over items in old item list (find REMOVE events)
     for item in before.items_list:
         _add_record(item, after)
-    return result
+
+    return {table_name: TableRecords(records=result, table_stream_type=table_stream_type)}
 
 
 def create_dynamodb_stream(account_id: str, region_name: str, data, latest_stream_label):
@@ -2210,6 +2201,7 @@ def find_item_for_keys_values_in_batch(
     :param batch: the values in which to look for the item
     :return: a DynamoDB Item (AttributeMap)
     """
+    keys = item_keys.items()
     for item in batch.get(table_name, []):
-        if all(item.get(k) == v for k, v in item_keys.items()):
+        if keys <= item.items():
             return item
