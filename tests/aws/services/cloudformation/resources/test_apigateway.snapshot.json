@@ -526,5 +526,50 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_usage_plan": {
+    "recorded-date": "20-03-2024, 22:33:14",
+    "recorded-content": {
+      "usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "<stage:1>"
+          }
+        ],
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 5000,
+          "offset": 0,
+          "period": "MONTH"
+        },
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "<stage:1>"
+          }
+        ],
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 7000,
+          "offset": 0,
+          "period": "MONTH"
+        },
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

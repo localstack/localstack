@@ -177,13 +177,6 @@ class ApiGatewayUsagePlanProvider(ResourceProvider[ApiGatewayUsagePlanProperties
         for parameter in update_config_props:
             value = update_config_props[parameter]
             if parameter == "ApiStages":
-                patch_operations.append(
-                    {
-                        "op": "remove",
-                        "path": f"/{first_char_to_lower(parameter)}",
-                    }
-                )
-
                 for stage in value:
                     patch_operations.append(
                         {

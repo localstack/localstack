@@ -181,7 +181,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestUsagePlans::test_usage_plan_crud": {
-    "recorded-date": "20-03-2024, 20:55:49",
+    "recorded-date": "20-03-2024, 22:49:50",
     "recorded-content": {
       "create-usage-plan": {
         "apiStages": [
@@ -243,6 +243,11 @@
         "description": "<description:1>",
         "id": "<id:1>",
         "name": "<name:1>",
+        "quota": {
+          "limit": 5000,
+          "offset": 0,
+          "period": "MONTH"
+        },
         "tags": {},
         "throttle": {
           "burstLimit": 100,
@@ -264,6 +269,50 @@
           "HTTPStatusCode": 404
         }
       },
+      "update-wrong-api-stages-no-value": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid API Stage specified"
+        },
+        "message": "Invalid API Stage specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-wrong-api-stages-wrong-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API Stage {api: <api-id:1>b, stage: dev} specified for usageplan <id:1>"
+        },
+        "message": "Invalid API Stage {api: <api-id:1>b, stage: dev} specified for usageplan <id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-wrong-api-stages-wrong-stage": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API Stage {api: <api-id:1>, stage: fakestagename} specified for usageplan <id:1>"
+        },
+        "message": "Invalid API Stage {api: <api-id:1>, stage: fakestagename} specified for usageplan <id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-wrong-api-stages-wrong-value": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid API Stage specified"
+        },
+        "message": "Invalid API Stage specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "get-usage-plan-after-update": {
         "apiStages": [
           {
@@ -274,6 +323,11 @@
         "description": "<description:1>",
         "id": "<id:1>",
         "name": "<name:1>",
+        "quota": {
+          "limit": 5000,
+          "offset": 0,
+          "period": "MONTH"
+        },
         "tags": {},
         "throttle": {
           "burstLimit": 100,
@@ -296,6 +350,11 @@
             "description": "<description:1>",
             "id": "<id:1>",
             "name": "<name:1>",
+            "quota": {
+              "limit": 5000,
+              "offset": 0,
+              "period": "MONTH"
+            },
             "throttle": {
               "burstLimit": 100,
               "rateLimit": 200.0

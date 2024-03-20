@@ -1,4 +1,5 @@
 import json
+import time
 
 import pytest
 import requests
@@ -538,9 +539,15 @@ class TestUsagePlans:
             patchOperations=[
                 {"op": "replace", "path": "/throttle/burstLimit", "value": "100"},
                 {"op": "replace", "path": "/throttle/rateLimit", "value": "200"},
+                {"op": "replace", "path": "/quota/period", "value": "MONTH"},
+                {"op": "replace", "path": "/quota/limit", "value": "5000"},
             ],
         )
         snapshot.match("update-usage-plan", response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
 
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.update_usage_plan(
@@ -551,6 +558,59 @@ class TestUsagePlans:
                 ],
             )
         snapshot.match("update-wrong-id", e.value.response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id,
+                patchOperations=[
+                    {"op": "remove", "path": "/apiStages"},
+                ],
+            )
+        snapshot.match("update-wrong-api-stages-no-value", e.value.response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
+
+        with pytest.raises(ClientError) as e:
+            wrong_api_id = api_id + "b"
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id,
+                patchOperations=[
+                    {"op": "remove", "path": "/apiStages", "value": f"{wrong_api_id}:{stage}"},
+                ],
+            )
+        snapshot.match("update-wrong-api-stages-wrong-api", e.value.response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id,
+                patchOperations=[
+                    {"op": "remove", "path": "/apiStages", "value": f"{api_id}:fakestagename"},
+                ],
+            )
+        snapshot.match("update-wrong-api-stages-wrong-stage", e.value.response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id,
+                patchOperations=[
+                    {"op": "remove", "path": "/apiStages", "value": "fakevalue"},
+                ],
+            )
+        snapshot.match("update-wrong-api-stages-wrong-value", e.value.response)
 
         # get usage plan after update
         response = aws_client.apigateway.get_usage_plan(usagePlanId=usage_plan_id)

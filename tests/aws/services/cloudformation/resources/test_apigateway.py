@@ -397,7 +397,15 @@ def test_account(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-def test_update_usage_plan(deploy_cfn_template, aws_client):
+def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("apiId"),
+            snapshot.transform.key_value("stage"),
+            snapshot.transform.key_value("id"),
+            snapshot.transform.key_value("name"),
+        ]
+    )
     rest_api_name = f"api-{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -407,6 +415,7 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
     )
 
     usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
+    snapshot.match("usage-plan", usage_plan)
     assert usage_plan["quota"]["limit"] == 5000
 
     deploy_cfn_template(
@@ -419,7 +428,8 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
     )
 
     usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
-    assert 7000 == usage_plan["quota"]["limit"]
+    snapshot.match("updated-usage-plan", usage_plan)
+    assert usage_plan["quota"]["limit"] == 7000
 
 
 @markers.aws.validated
