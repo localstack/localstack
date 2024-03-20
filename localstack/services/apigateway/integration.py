@@ -4,7 +4,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from functools import lru_cache
-from http import HTTPStatus
+from http import HTTPMethod, HTTPStatus
 from typing import Any, Dict
 from urllib.parse import urljoin
 
@@ -267,6 +267,11 @@ class LambdaProxyIntegration(BackendIntegration):
         del path_params["proxy+"]
         path_params["proxy"] = proxy_path_param_value
 
+    @staticmethod
+    def validate_integration_method(invocation_context: ApiInvocationContext):
+        if invocation_context.integration["httpMethod"] != HTTPMethod.POST:
+            raise ApiGatewayIntegrationError("InternalServerError", status_code=500)
+
     @classmethod
     def construct_invocation_event(
         cls, method, path, headers, data, query_string_params=None, is_base64_encoded=False
@@ -349,6 +354,7 @@ class LambdaProxyIntegration(BackendIntegration):
             )
 
     def invoke(self, invocation_context: ApiInvocationContext):
+        self.validate_integration_method(invocation_context)
         uri = (
             invocation_context.integration.get("uri")
             or invocation_context.integration.get("integrationUri")
