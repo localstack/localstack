@@ -50,5 +50,13 @@
         ]
       }
     }
+  },
+  "tests/aws/services/cloudformation/engine/test_attributes.py::TestResourceAttributes::test_dependency_on_attribute_with_dot_notation": {
+    "recorded-date": "21-03-2024, 21:10:29",
+    "recorded-content": {
+      "outputs": {
+        "DeadArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+      }
+    }
   }
 }
