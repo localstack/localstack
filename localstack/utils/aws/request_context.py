@@ -48,7 +48,7 @@ def get_proxy_request_for_thread():
 
 def get_flask_request_for_thread():
     try:
-        # Append/cache a converted request (requests.Request) to the the thread-local Flask request.
+        # Append/cache a converted request (requests.Request) to the thread-local Flask request.
         #  We use this request object as the invocation context, which may be modified in other places,
         #  e.g., when manually configuring the region in the request context of an incoming API call.
         if not hasattr(request, "_converted_request"):
