@@ -147,10 +147,10 @@
     "last_validated_date": "2023-11-20T15:55:22+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "last_validated_date": "2024-03-12T15:41:52+00:00"
+    "last_validated_date": "2024-03-21T08:24:38+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "last_validated_date": "2024-03-12T15:41:55+00:00"
+    "last_validated_date": "2024-03-21T08:24:43+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
     "last_validated_date": "2024-03-12T15:42:16+00:00"
