@@ -340,14 +340,16 @@ class TestS3:
     @markers.snapshot.skip_snapshot_verify(paths=["$..AccessPointAlias"])
     def test_region_header_exists(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
+        region = "eu-west-1"
+        snapshot.add_transformer(RegexTransformer(region, "<region>"))
         bucket_name = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
+            CreateBucketConfiguration={"LocationConstraint": region},
         )
         response = aws_client.s3.head_bucket(Bucket=bucket_name)
-        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
+        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == region
         snapshot.match("head_bucket", response)
         response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
-        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
+        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == region
         snapshot.match("list_objects_v2", response)
 
     @markers.aws.validated
