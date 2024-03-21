@@ -949,7 +949,7 @@ LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC = float(
     os.environ.get("LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC") or 1.0
 )
 
-# DEV: 0 (default) only applies to new lambda provider. For LS developers only.
+# DEV: 0 (default) For LS developers only. Only applies to Docker mode.
 # Whether to explicitly expose a free TCP port in lambda containers when invoking functions in host mode for
 # systems that cannot reach the container via its IPv4. For example, macOS cannot reach Docker containers:
 # https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers
