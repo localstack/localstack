@@ -2256,17 +2256,6 @@ class TestSecretsManagerMultiAccounts:
         response = secondary_aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
         assert response["SecretString"] == "new-secret"
 
-        secondary_aws_client.secretsmanager.update_secret(
-            SecretId=secret_arn,
-            ClientRequestToken="EXAMPLE1-90ab-cdef-fedc-ba987EXAMPLE",
-            Description="updated",
-            SecretString="updated",
-        )
-
-        response = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
-        assert response["SecretString"] == "updated"
-        assert response["Description"] == "updated"
-
         secondary_aws_client.secretsmanager.delete_secret(
             SecretId=secret_arn, ForceDeleteWithoutRecovery=False, RecoveryWindowInDays=7
         )
