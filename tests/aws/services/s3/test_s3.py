@@ -6600,9 +6600,9 @@ class TestS3PresignedUrl:
             # Moto does not register the default returned value from STS as a valid IAM user, which is way we can't
             # retrieve the secret access key
             # we need to hardcode the secret access key to the default one
-            response["Credentials"][
-                "SecretAccessKey"
-            ] = s3_constants.DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
+            response["Credentials"]["SecretAccessKey"] = (
+                s3_constants.DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
+            )
 
         client = boto3.client(
             "s3",

@@ -1,4 +1,5 @@
 """Core concepts of the persistence API."""
+
 import io
 from typing import IO, Any, Protocol, runtime_checkable
 

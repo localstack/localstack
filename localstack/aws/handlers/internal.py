@@ -1,4 +1,5 @@
 """Handler for routing internal localstack resources under /_localstack."""
+
 import logging
 
 from werkzeug.exceptions import NotFound

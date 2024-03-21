@@ -984,11 +984,15 @@ class TestEvents:
         connection_name = "This should fail with two errors 123467890123412341234123412341234"
 
         with pytest.raises(ClientError) as ctx:
-            aws_client.events.create_connection(
-                Name=connection_name,
-                AuthorizationType="INVALID",
-                AuthParameters={"BasicAuthParameters": {"Username": "user", "Password": "pass"}},
-            ),
+            (
+                aws_client.events.create_connection(
+                    Name=connection_name,
+                    AuthorizationType="INVALID",
+                    AuthParameters={
+                        "BasicAuthParameters": {"Username": "user", "Password": "pass"}
+                    },
+                ),
+            )
 
         assert ctx.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
         assert ctx.value.response["Error"]["Code"] == "ValidationException"

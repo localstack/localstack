@@ -1,7 +1,8 @@
 """The SQS Query API allows using Queue URLs as endpoints for operations on that queue. See:
 https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-making-api-requests.html. This is a
 generic implementation that creates from Query API requests the respective AWS requests, and uses an aws_stack client
-to make the request. """
+to make the request."""
+
 import logging
 from typing import Dict, Optional, Tuple
 from urllib.parse import urlencode

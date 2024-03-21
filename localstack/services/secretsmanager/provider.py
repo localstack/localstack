@@ -76,9 +76,9 @@ AWSPENDING: Final[str] = "AWSPENDING"
 AWSCURRENT: Final[str] = "AWSCURRENT"
 #
 # Error Messages.
-AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[
-    str
-] = "You can't create this secret because a secret with this name is already scheduled for deletion."
+AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[str] = (
+    "You can't create this secret because a secret with this name is already scheduled for deletion."
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
             PutSecretValueRequest,
             RotateSecretRequest,
             UpdateSecretRequest,
-        ]
+        ],
     ):
         if "ClientRequestToken" not in request:
             raise InvalidRequestException(

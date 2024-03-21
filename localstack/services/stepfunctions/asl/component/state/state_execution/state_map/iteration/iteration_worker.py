@@ -50,8 +50,7 @@ class IterationWorker(abc.ABC):
         return self._stop_signal_received
 
     @abc.abstractmethod
-    def _eval_input(self, env_frame: Environment) -> None:
-        ...
+    def _eval_input(self, env_frame: Environment) -> None: ...
 
     def _eval_job(self, env: Environment, job: Job) -> None:
         map_iteration_event_details = MapIterationEventDetails(

@@ -139,11 +139,9 @@ class ChecksumHash(Protocol):
     S3CRC32Checksum, and botocore CrtCrc32cChecksum).
     """
 
-    def digest(self) -> bytes:
-        ...
+    def digest(self) -> bytes: ...
 
-    def update(self, value: bytes):
-        ...
+    def update(self, value: bytes): ...
 
 
 def get_s3_checksum(algorithm) -> ChecksumHash:

@@ -1,4 +1,4 @@
-""" Uploading to Tinybird of the metrics collected for a CircleCI run
+"""Uploading to Tinybird of the metrics collected for a CircleCI run
 
 The upload includes:
  * Test Data Raw

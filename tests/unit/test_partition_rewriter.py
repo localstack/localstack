@@ -66,9 +66,9 @@ def test_arn_partition_rewriting_in_request(internal_call, encoding, origin_part
     else:
         headers = {}
 
-    headers[
-        "some-header-with-arn"
-    ] = f"arn:{origin_partition}:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
+    headers["some-header-with-arn"] = (
+        f"arn:{origin_partition}:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
+    )
 
     request = Request(
         method="POST",
@@ -362,9 +362,9 @@ def test_arn_partition_rewriting_in_request_and_response(
     else:
         headers = {"Host": f"{httpserver.host}:{httpserver.port}"}
 
-    headers[
-        "Arn-Header"
-    ] = f"arn:{origin_partition}:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
+    headers["Arn-Header"] = (
+        f"arn:{origin_partition}:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
+    )
 
     request = Request(
         method="POST",

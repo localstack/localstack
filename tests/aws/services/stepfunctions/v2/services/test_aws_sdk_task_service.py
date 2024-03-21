@@ -197,9 +197,9 @@ class TestTaskServiceAwsSdk:
         )
 
         template = ST.load_sfn_template(ST.AWS_SDK_SFN_START_EXECUTION_IMPLICIT_JSON_SERIALISATION)
-        template["States"]["StartTarget"]["Parameters"][
-            "StateMachineArn"
-        ] = state_machine_arn_target
+        template["States"]["StartTarget"]["Parameters"]["StateMachineArn"] = (
+            state_machine_arn_target
+        )
         definition = json.dumps(template)
 
         exec_input = json.dumps({})

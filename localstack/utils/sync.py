@@ -1,4 +1,5 @@
 """Concurrency synchronization utilities"""
+
 import functools
 import threading
 import time

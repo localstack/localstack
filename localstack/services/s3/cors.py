@@ -122,9 +122,9 @@ class S3CorsHandler(Handler):
             """
             request_id = context.request_id
             response.headers["x-amz-request-id"] = request_id
-            response.headers[
-                "x-amz-id-2"
-            ] = f"MzRISOwyjmnup{request_id}7/JypPGXLh0OVFGcJaaO3KW/hRAqKOpIEEp"
+            response.headers["x-amz-id-2"] = (
+                f"MzRISOwyjmnup{request_id}7/JypPGXLh0OVFGcJaaO3KW/hRAqKOpIEEp"
+            )
 
             response.set_response(b"")
             response.headers.pop("Content-Type", None)
@@ -197,9 +197,9 @@ class S3CorsHandler(Handler):
         if not is_wildcard:
             response.headers["Access-Control-Allow-Credentials"] = "true"
 
-        response.headers[
-            "Vary"
-        ] = "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        response.headers["Vary"] = (
+            "Origin, Access-Control-Request-Headers, Access-Control-Request-Method"
+        )
 
         response.headers["Access-Control-Allow-Methods"] = ", ".join(rule["AllowedMethods"])
 

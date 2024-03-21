@@ -48,8 +48,9 @@ class ErrorEqualsDecl(EvalComponent):
 
         if ErrorEqualsDecl._STATE_ALL_ERROR in self.error_names:
             res = True
-        elif ErrorEqualsDecl._STATE_TASK_ERROR in self.error_names and not isinstance(
-            error_name, StatesErrorName
+        elif (
+            ErrorEqualsDecl._STATE_TASK_ERROR in self.error_names
+            and not isinstance(error_name, StatesErrorName)
         ):  # TODO: consider binding a 'context' variable to error_names to more formally detect their evaluation type.
             res = True
         else:

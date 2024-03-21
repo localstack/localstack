@@ -14,8 +14,7 @@ LOG = logging.getLogger(__name__)
 class BranchWorker:
     class BranchWorkerComm(abc.ABC):
         @abc.abstractmethod
-        def on_terminated(self, env: Environment):
-            ...
+        def on_terminated(self, env: Environment): ...
 
     _branch_worker_comm: Final[BranchWorkerComm]
     _program: Final[Program]

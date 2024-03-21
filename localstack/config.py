@@ -603,7 +603,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
 
 def populate_edge_configuration(
-    environment: Mapping[str, str]
+    environment: Mapping[str, str],
 ) -> Tuple[HostAndPort, UniqueHostAndPortList]:
     """Populate the LocalStack edge configuration from environment variables."""
     localstack_host_raw = environment.get("LOCALSTACK_HOST")

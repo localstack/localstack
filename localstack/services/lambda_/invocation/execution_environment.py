@@ -151,9 +151,9 @@ class ExecutionEnvironment:
         }
         # Conditionally added environment variables
         if not config.LAMBDA_DISABLE_AWS_ENDPOINT_URL:
-            env_vars[
-                "AWS_ENDPOINT_URL"
-            ] = f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}"
+            env_vars["AWS_ENDPOINT_URL"] = (
+                f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}"
+            )
         # config.handler is None for image lambdas and will be populated at runtime (e.g., by RIE)
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler

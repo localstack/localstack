@@ -10,8 +10,7 @@ LOG = logging.getLogger(__name__)
 
 class WaitFunction(EvalComponent, abc.ABC):
     @abc.abstractmethod
-    def _get_wait_seconds(self, env: Environment) -> int:
-        ...
+    def _get_wait_seconds(self, env: Environment) -> int: ...
 
     def _wait_interval(self, env: Environment, wait_seconds: int) -> None:
         t0 = time.time()

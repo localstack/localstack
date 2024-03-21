@@ -1,4 +1,5 @@
 """Tools for formatting localstack logs."""
+
 import logging
 from functools import lru_cache
 from typing import Dict

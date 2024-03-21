@@ -3,8 +3,7 @@ from typing import Final
 from localstack.services.stepfunctions.asl.component.intrinsic.component import Component
 
 
-class Member(Component):
-    ...
+class Member(Component): ...
 
 
 class IdentifiedMember(Member):

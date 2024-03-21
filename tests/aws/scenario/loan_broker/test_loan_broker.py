@@ -2,6 +2,7 @@
 This scenario test is taken from https://github.com/localstack-samples/sample-loan-broker-stepfunctions-lambda
 which in turn is based on https://www.enterpriseintegrationpatterns.com/ramblings/loanbroker_stepfunctions.html
 """
+
 import json
 import os
 from dataclasses import dataclass

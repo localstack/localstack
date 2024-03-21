@@ -768,9 +768,7 @@ class TestAPIGateway:
             name="lambda_authorizer",
             type="TOKEN",
             authorizerUri="arn:aws:apigateway:us-east-1:lambda:path/ \
-                2015-03-31/functions/{}/invocations".format(
-                lambda_uri
-            ),
+                2015-03-31/functions/{}/invocations".format(lambda_uri),
             identitySource="method.request.header.Auth",
         )
 
@@ -1653,9 +1651,9 @@ class TestAPIGateway:
             resource_util.create_dynamodb_table(
                 "MusicCollection", partition_key="id", client=dynamodb_client
             )
-            kwargs[
-                "uri"
-            ] = f"arn:aws:apigateway:{apigw_client.meta.region_name}:dynamodb:action/PutItem&Table=MusicCollection"
+            kwargs["uri"] = (
+                f"arn:aws:apigateway:{apigw_client.meta.region_name}:dynamodb:action/PutItem&Table=MusicCollection"
+            )
 
         if role_arn:
             kwargs["credentials"] = role_arn
