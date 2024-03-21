@@ -33,9 +33,11 @@ we can run `make clean` at the top-level recursively.
 The `dotnet` directory contains the original source code and a parametrizable Makefile to build multiple Dotnet versions.
 We create individual subdirectories for supported Dotnet versions (e.g., `dotnet6` and `dotnet8`) with a Makefile that
 invokes the original Makefile in the `dotnet` directory.
-Using a directory for each concrete Dotnet version avoids issues with pre-building where dotnet6 could overwrite the
-package pre-built for `dotnet8`.
-Limitation: concurrent builds are not safe because everything is built in the original `dotnet` directory!
+
+Using the shared `dotnet` directory has a couple of limitations:
+* We need to use a concrete sub-directory (i.e., `dotnet6` and `dotnet8`) for pre-building
+* We need to clean before building to avoid picking up leftover from another Dotnet version build
+* Concurrent builds of Dotnet runtimes are unsafe
 
 ## Rust
 

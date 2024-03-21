@@ -10,7 +10,7 @@ FRAMEWORK ?= net6.0
 
 # Forward build for different Dotnet framework version to avoid code duplication
 build:
-	cd ../dotnet && $(MAKE) build ARCHITECTURE=$(ARCHITECTURE) FRAMEWORK=$(FRAMEWORK)
+	cd ../dotnet && $(MAKE) clean build ARCHITECTURE=$(ARCHITECTURE) FRAMEWORK=$(FRAMEWORK)
 	mv ../dotnet/handler.zip .
 
 clean:
