@@ -23,8 +23,7 @@ _STRING_RETURN_FUNCTIONS: Final[set[str]] = {
 }
 
 
-class ErrorPath(ErrorDecl):
-    ...
+class ErrorPath(ErrorDecl): ...
 
 
 class ErrorPathJsonPath(ErrorPath):

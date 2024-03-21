@@ -113,15 +113,13 @@ test = [
 dev = [
     # test dependencies are required for developing localstack
     "localstack-core[test]",
-    # TODO upgrade black to v24 or replace with ruff format
-    "black>=23.12.0,<24",
     "coveralls>=3.3.1",
     "Cython",
     "networkx>=2.8.4",
     "pandoc",
     "pre-commit>=3.5.0",
     "pypandoc",
-    "ruff>=0.1.0",
+    "ruff>=0.3.3",
     "rstr>=3.2.0",
 ]
 
@@ -162,15 +160,10 @@ exclude = ["tests*"]
     "utils/kinesis/java/cloud/localstack/*.*",
 ]
 
-[tool.black]
-line_length = 100
-include = '(localstack/.*\.py$|tests/.*\.py$)'
-extend_exclude = '(localstack/infra|localstack/node_modules|.filesystem|localstack/services/stepfunctions/asl/antlr/runtime)'
-
 [tool.ruff]
 # Always generate Python 3.8-compatible code.
 target-version = "py38"
-line-length = 110
+line-length = 100
 exclude = [
     ".venv*",
     "venv*",

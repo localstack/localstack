@@ -303,9 +303,7 @@ class TestApiGatewayImportRestApi:
         spec_file = spec_file.replace(
             "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:account-id:function:function-name/invocations",
             apigateway_placeholder_authorizer_lambda_invocation_arn,
-        ).replace(
-            "arn:aws:iam::account-id:role", lambda_su_role
-        )  # we just need a placeholder role
+        ).replace("arn:aws:iam::account-id:role", lambda_su_role)  # we just need a placeholder role
 
         response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
 

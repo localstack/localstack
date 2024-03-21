@@ -1,6 +1,7 @@
 """
 This module provides tools to call moto using moto and botocore internals without going through the moto HTTP server.
 """
+
 import copy
 import sys
 from functools import lru_cache

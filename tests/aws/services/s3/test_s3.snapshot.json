@@ -1,10 +1,10 @@
 {
   "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "recorded-date": "06-12-2023, 16:47:40",
+    "recorded-date": "21-03-2024, 08:05:13",
     "recorded-content": {
       "head_bucket": {
         "AccessPointAlias": false,
-        "BucketRegion": "eu-west-1",
+        "BucketRegion": "<region>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

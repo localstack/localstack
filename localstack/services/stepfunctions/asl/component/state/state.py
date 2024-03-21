@@ -140,8 +140,7 @@ class CommonStateField(EvalComponent, ABC):
         )
 
     @abc.abstractmethod
-    def _eval_state(self, env: Environment) -> None:
-        ...
+    def _eval_state(self, env: Environment) -> None: ...
 
     def _eval_body(self, env: Environment) -> None:
         env.event_history.add_event(

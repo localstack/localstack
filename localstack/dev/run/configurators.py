@@ -1,6 +1,7 @@
 """
 Several ContainerConfigurator implementations to set up a development version of a localstack container.
 """
+
 import gzip
 import os
 from pathlib import Path, PurePosixPath

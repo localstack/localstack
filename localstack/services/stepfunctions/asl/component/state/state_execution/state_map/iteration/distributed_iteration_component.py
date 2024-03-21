@@ -89,8 +89,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         self._workers = list()
 
     @abc.abstractmethod
-    def _create_worker(self, env: Environment) -> IterationWorker:
-        ...
+    def _create_worker(self, env: Environment) -> IterationWorker: ...
 
     def _launch_worker(self, env: Environment) -> IterationWorker:
         worker = super()._launch_worker(env=env)

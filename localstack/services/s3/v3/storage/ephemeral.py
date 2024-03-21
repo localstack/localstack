@@ -124,9 +124,9 @@ class EphemeralS3StoredObject(S3StoredObject):
 
         with self.file.position_lock:
             truncate = self.file.truncate(size)
-            self.s3_object.internal_last_modified = (
-                self.file.internal_last_modified
-            ) = time.time_ns()
+            self.s3_object.internal_last_modified = self.file.internal_last_modified = (
+                time.time_ns()
+            )
             return truncate
 
     def write(self, stream: IO[bytes] | "EphemeralS3StoredObject" | LimitedStream) -> int:
@@ -164,9 +164,9 @@ class EphemeralS3StoredObject(S3StoredObject):
             etag = etag.hexdigest()
             self.size = self.s3_object.size = file.tell()
             self._etag = self.s3_object.etag = etag
-            self.s3_object.internal_last_modified = (
-                self.file.internal_last_modified
-            ) = time.time_ns()
+            self.s3_object.internal_last_modified = self.file.internal_last_modified = (
+                time.time_ns()
+            )
 
             self._pos = file.seek(0)
 

@@ -9367,7 +9367,9 @@ class DeleteLocalGatewayRouteTableResult(TypedDict, total=False):
 
 
 class DeleteLocalGatewayRouteTableVirtualInterfaceGroupAssociationRequest(ServiceRequest):
-    LocalGatewayRouteTableVirtualInterfaceGroupAssociationId: LocalGatewayRouteTableVirtualInterfaceGroupAssociationId
+    LocalGatewayRouteTableVirtualInterfaceGroupAssociationId: (
+        LocalGatewayRouteTableVirtualInterfaceGroupAssociationId
+    )
     DryRun: Optional[Boolean]
 
 

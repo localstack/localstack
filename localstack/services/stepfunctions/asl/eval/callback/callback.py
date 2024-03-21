@@ -39,8 +39,7 @@ class CallbackTimeoutError(TimeoutError):
     pass
 
 
-class CallbackConsumerError(abc.ABC):
-    ...
+class CallbackConsumerError(abc.ABC): ...
 
 
 class CallbackConsumerTimeout(CallbackConsumerError):
