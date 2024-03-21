@@ -609,9 +609,9 @@ jobs:
             END_TIME=$(date +%s)
 
             if << pipeline.parameters.randomize-aws-credentials >> ; then
-              export TINYBIRD_WORKFLOW=tests_circleci_ma_mr
+              TINYBIRD_WORKFLOW=tests_circleci_ma_mr
             else
-              export TINYBIRD_WORKFLOW=tests_circleci
+              TINYBIRD_WORKFLOW=tests_circleci
             fi
 
             # Build the payload
