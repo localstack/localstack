@@ -313,6 +313,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(
                 "httpMethod": method,
                 "authorizationType": auth_type,
                 "authorizerId": None,
+                "integrationHttpMethod": "POST",
                 "integrations": [integration],
             }
         )

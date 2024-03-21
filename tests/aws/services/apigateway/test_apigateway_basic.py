@@ -1799,7 +1799,7 @@ def test_rest_api_multi_region(
         resourceId=resource_eu_id,
         httpMethod=method,
         type="AWS_PROXY",
-        integrationHttpMethod=method,
+        integrationHttpMethod="POST",
         uri=uri_eu,
     )
 
@@ -1811,7 +1811,7 @@ def test_rest_api_multi_region(
         resourceId=resource_us_id,
         httpMethod=method,
         type="AWS_PROXY",
-        integrationHttpMethod=method,
+        integrationHttpMethod="POST",
         uri=uri_us,
     )
 
