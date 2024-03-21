@@ -35,9 +35,11 @@ We create individual subdirectories for supported Dotnet versions (e.g., `dotnet
 invokes the original Makefile in the `dotnet` directory.
 
 Using the shared `dotnet` directory has a couple of limitations:
+* In CI, we currently waste one extra build cycle for the top-level dotnet directory
+* Concurrent builds of Dotnet runtimes are unsafe
 * We need to use a concrete sub-directory (i.e., `dotnet6` and `dotnet8`) for pre-building
 * We need to clean before building to avoid picking up leftover from another Dotnet version build
-* Concurrent builds of Dotnet runtimes are unsafe
+* We need to parametrize the build directory to mitigate a Docker race condition when executing two builds in succession
 
 ## Rust
 
