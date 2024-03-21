@@ -62,6 +62,10 @@ class IAMServerCertificateProvider(ResourceProvider[IAMServerCertificateProperti
 
         """
         model = request.desired_state
+        if not model.get("ServerCertificateName"):
+            model["ServerCertificateName"] = util.generate_default_name_without_stack(
+                request.logical_resource_id
+            )
 
         create_params = util.select_attributes(
             model,
