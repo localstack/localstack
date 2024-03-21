@@ -13082,7 +13082,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "recorded-date": "12-03-2024, 15:41:52",
+    "recorded-date": "21-03-2024, 08:24:39",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13123,7 +13123,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "recorded-date": "12-03-2024, 15:41:55",
+    "recorded-date": "21-03-2024, 08:24:44",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13133,6 +13133,7 @@
         "CompatibleRuntimes": [
           "java8.al2",
           "java8",
+          "dotnet8",
           "dotnet6",
           "dotnetcore3.1",
           "go1.x",
