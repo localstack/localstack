@@ -9,12 +9,11 @@ from typing import Final, Optional, Union
 from botocore.utils import InvalidArnException
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import secretsmanager_backends
-from moto.secretsmanager import utils as secretsmanager_utils
-from moto.secretsmanager.exceptions import (
-    InvalidRequestException as MotoInvalidRequestException,
-)
 from moto.secretsmanager.exceptions import (
     InvalidParameterException as MotoInvalidParameterException,
+)
+from moto.secretsmanager.exceptions import (
+    InvalidRequestException as MotoInvalidRequestException,
 )
 from moto.secretsmanager.exceptions import (
     OperationNotPermittedOnReplica as MotoOperationNotPermittedOnReplica,
@@ -79,7 +78,6 @@ from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto
 from localstack.utils.aws import arns
 from localstack.utils.patch import patch
-from localstack.utils.strings import short_uid
 from localstack.utils.time import today_no_time
 
 # Constants.
