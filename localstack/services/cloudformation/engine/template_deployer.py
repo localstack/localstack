@@ -935,7 +935,10 @@ class TemplateDeployer:
     def is_deployed(self, resource):
         return self.stack.resource_states.get(resource["LogicalResourceId"], {}).get(
             "ResourceStatus"
-        ) in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
+        ) in [
+            "CREATE_COMPLETE",
+            "UPDATE_COMPLETE",
+        ]
 
     def all_resource_dependencies_satisfied(self, resource) -> bool:
         unsatisfied = self.get_unsatisfied_dependencies(resource)

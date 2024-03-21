@@ -1,4 +1,5 @@
 """Functionality related to AWS Accounts"""
+
 import base64
 import binascii
 import logging

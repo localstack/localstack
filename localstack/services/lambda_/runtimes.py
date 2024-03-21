@@ -1,4 +1,5 @@
 """This Lambda Runtimes reference defines everything around Lambda runtimes to facilitate adding new runtimes."""
+
 from localstack.aws.api.lambda_ import Runtime
 
 # LocalStack Lambda runtimes support policy

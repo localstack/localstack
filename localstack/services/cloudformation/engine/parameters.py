@@ -17,6 +17,7 @@ Documentation extracted from AWS docs (https://docs.aws.amazon.com/AWSCloudForma
         For stack updates, the Use existing value option in the console and the UsePreviousValue attribute for update-stack tell AWS CloudFormation to use the existing Systems Manager parameter key—not its value. AWS CloudFormation always fetches the latest values from Parameter Store when it updates stacks.
 
 """
+
 from typing import Literal, Optional, TypedDict
 
 from localstack.aws.api.cloudformation import Parameter, ParameterDeclaration
@@ -143,7 +144,7 @@ def strip_parameter_type(in_param: StackParameter) -> Parameter:
 
 
 def convert_stack_parameters_to_list(
-    in_params: dict[str, StackParameter] | None
+    in_params: dict[str, StackParameter] | None,
 ) -> list[StackParameter]:
     if not in_params:
         return []

@@ -27,9 +27,9 @@ class Route53ResolverStore(BaseStore):
         default=dict
     )
     resolver_query_log_configs: Dict[str, ResolverQueryLogConfig] = LocalAttribute(default=dict)
-    resolver_query_log_config_associations: Dict[
-        str, ResolverQueryLogConfigAssociation
-    ] = LocalAttribute(default=dict)
+    resolver_query_log_config_associations: Dict[str, ResolverQueryLogConfigAssociation] = (
+        LocalAttribute(default=dict)
+    )
 
     def get_firewall_rule_group(self, id):
         """returns firewall rule group with the given id if it exists"""

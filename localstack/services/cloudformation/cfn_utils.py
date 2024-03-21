@@ -42,8 +42,15 @@ def lambda_rename_attributes(attrs, func=None):
         return o
 
     func = func or (lambda account_id, region_name, x, logical_resource_id, *args, **kwargs: x)
-    return lambda account_id, region_name, params, logical_resource_id, *args, **kwargs: recurse_object(
-        func(account_id, region_name, params, logical_resource_id, *args, **kwargs), recurse
+    return (
+        lambda account_id,
+        region_name,
+        params,
+        logical_resource_id,
+        *args,
+        **kwargs: recurse_object(
+            func(account_id, region_name, params, logical_resource_id, *args, **kwargs), recurse
+        )
     )
 
 

@@ -42,7 +42,10 @@ def test_parse_query_string():
     assert parse_query_string("http://example.com/foo/bar?foo=1&1=2") == {"foo": "1", "1": "2"}
     assert parse_query_string(
         "http://example.com/foo/bar?foo=1&redirect=http://test.com/redirect"
-    ) == {"foo": "1", "redirect": "http://test.com/redirect"}
+    ) == {
+        "foo": "1",
+        "redirect": "http://test.com/redirect",
+    }
     assert parse_query_string(
         "http://example.com/foo/bar?foo=1&redirect=http%3A%2F%2Flocalhost%3A3001%2Fredirect"
     ) == {"foo": "1", "redirect": "http://localhost:3001/redirect"}

@@ -576,9 +576,9 @@ class Route53ResolverProvider(Route53ResolverApi):
         **kwargs,
     ) -> CreateResolverEndpointResponse:
         create_resolver_endpoint_resp = call_moto(context)
-        create_resolver_endpoint_resp["ResolverEndpoint"][
-            "Status"
-        ] = ResolverQueryLogConfigStatus.CREATING
+        create_resolver_endpoint_resp["ResolverEndpoint"]["Status"] = (
+            ResolverQueryLogConfigStatus.CREATING
+        )
         return create_resolver_endpoint_resp
 
     def get_resolver_query_log_config(

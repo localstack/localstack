@@ -70,6 +70,7 @@ to certain so-called "traits" in Smithy.
 The result of the serialization methods is the HTTP response which can
 be sent back to the calling client.
 """
+
 import abc
 import base64
 import functools
@@ -1550,9 +1551,9 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         )
         # s3 extended Request ID
         # mostly used internally on AWS and corresponds to a HostId
-        response.headers[
-            "x-amz-id-2"
-        ] = "s9lzHYrFp76ZVxRcpX9+5cjAnEH2ROuNkd2BHfIa6UkFVdtjf5mKR3/eTPFvsiP/XV/VLi31234="
+        response.headers["x-amz-id-2"] = (
+            "s9lzHYrFp76ZVxRcpX9+5cjAnEH2ROuNkd2BHfIa6UkFVdtjf5mKR3/eTPFvsiP/XV/VLi31234="
+        )
         return response
 
     def _add_error_tags(

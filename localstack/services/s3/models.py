@@ -40,9 +40,9 @@ class S3Store(BaseStore):
     )
 
     # maps bucket name to bucket's lifecycle configuration
-    bucket_lifecycle_configuration: dict[
-        BucketName, BucketLifecycleConfiguration
-    ] = CrossRegionAttribute(default=dict)
+    bucket_lifecycle_configuration: dict[BucketName, BucketLifecycleConfiguration] = (
+        CrossRegionAttribute(default=dict)
+    )
 
     bucket_versioning_status: dict[BucketName, bool] = CrossRegionAttribute(default=dict)
 
@@ -50,17 +50,17 @@ class S3Store(BaseStore):
         default=dict
     )
 
-    bucket_analytics_configuration: dict[
-        BucketName, dict[AnalyticsId, AnalyticsConfiguration]
-    ] = CrossRegionAttribute(default=dict)
+    bucket_analytics_configuration: dict[BucketName, dict[AnalyticsId, AnalyticsConfiguration]] = (
+        CrossRegionAttribute(default=dict)
+    )
 
     bucket_intelligent_tiering_configuration: dict[
         BucketName, dict[IntelligentTieringId, IntelligentTieringConfiguration]
     ] = CrossRegionAttribute(default=dict)
 
-    bucket_inventory_configurations: dict[
-        BucketName, dict[InventoryId, InventoryConfiguration]
-    ] = CrossRegionAttribute(default=dict)
+    bucket_inventory_configurations: dict[BucketName, dict[InventoryId, InventoryConfiguration]] = (
+        CrossRegionAttribute(default=dict)
+    )
 
 
 class BucketCorsIndex:

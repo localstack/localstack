@@ -4,6 +4,7 @@ A set of utils for use in resource providers.
 Avoid any imports to localstack here and keep external imports to a minimum!
 This is because we want to be able to package a resource provider without including localstack code.
 """
+
 import builtins
 import json
 import re

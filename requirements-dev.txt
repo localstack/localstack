@@ -47,8 +47,6 @@ awscli==1.32.64
     # via localstack-core
 awscrt==0.20.5
     # via localstack-core
-black==23.12.1
-    # via localstack-core (pyproject.toml)
 blinker==1.7.0
     # via
     #   flask
@@ -92,13 +90,12 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==0.86.0
+cfn-lint==0.86.1
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via
-    #   black
     #   flask
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -196,7 +193,7 @@ idna==3.6
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.3.1
+importlib-resources==6.3.2
     # via jsii
 incremental==22.10.0
     # via localstack-twisted
@@ -279,8 +276,6 @@ mpmath==1.3.0
     # via sympy
 multipart==0.2.4
     # via moto-ext
-mypy-extensions==1.0.0
-    # via black
 networkx==3.2.1
     # via
     #   cfn-lint
@@ -298,7 +293,6 @@ ordered-set==4.1.0
 packaging==24.0
     # via
     #   apispec
-    #   black
     #   build
     #   docker
     #   pytest
@@ -307,17 +301,13 @@ pandoc==2.3
     # via localstack-core (pyproject.toml)
 pathable==0.4.3
     # via jsonschema-path
-pathspec==0.12.1
-    # via black
 pbr==6.0.0
     # via
     #   jschema-to-python
     #   sarif-om
     #   stevedore
 platformdirs==4.2.0
-    # via
-    #   black
-    #   virtualenv
+    # via virtualenv
 pluggy==1.4.0
     # via
     #   localstack-core

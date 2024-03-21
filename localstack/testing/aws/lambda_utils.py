@@ -198,8 +198,7 @@ class ParametrizedLambda:
         CodeSigningConfigArn: Optional[str] = None,
         Architectures: Optional[Sequence["ArchitectureType"]] = None,
         EphemeralStorage: Optional["EphemeralStorageTypeDef"] = None,
-    ) -> "FunctionConfigurationResponseMetadataTypeDef":
-        ...
+    ) -> "FunctionConfigurationResponseMetadataTypeDef": ...
 
     def create_function(self, **kwargs):
         kwargs.setdefault("FunctionName", f"{self.scenario}-{short_uid()}")
