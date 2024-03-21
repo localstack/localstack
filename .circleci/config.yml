@@ -609,9 +609,9 @@ jobs:
             END_TIME=$(date +%s)
 
             if << pipeline.parameters.randomize-aws-credentials >> ; then
-              echo "export TINYBIRD_WORKFLOW=tests_circleci_ma_mr" >> $BASH_ENV
+              export TINYBIRD_WORKFLOW=tests_circleci_ma_mr
             else
-              echo "export TINYBIRD_WORKFLOW=tests_circleci" >> $BASH_ENV
+              export TINYBIRD_WORKFLOW=tests_circleci
             fi
 
             # Build the payload
