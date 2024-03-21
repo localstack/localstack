@@ -10,6 +10,9 @@ FUNCTION_ARCHITECTURE ?= $(ARCHITECTURE)
 
 # Target Dotnet framework version
 FRAMEWORK ?= net8.0
+# Workaround for a Docker race condition causing an I/O error upon zipping to /out/handler.zip if
+# two builds are executed in short succession. Example: `make -C dotnet build && make -C dotnet6 build`
+BUILD_DIR ?= build-$(FRAMEWORK)
 
 # https://gallery.ecr.aws/sam/build-dotnet8
 IMAGE ?= public.ecr.aws/sam/build-dotnet8:1.112.0
@@ -23,11 +26,11 @@ IMAGE ?= public.ecr.aws/sam/build-dotnet8:1.112.0
 #		      and cross-build the Dotnet package using the flag `--function-architecture` (x86_64 or arm64).
 
 build:
-	mkdir -p build && \
-	docker run --rm -v $$(pwd)/src:/app -v $$(pwd)/build:/out $(IMAGE) bash -c "mkdir -p /app2 && cp /app/* /app2 && cd /app2 && dotnet lambda package --framework $(FRAMEWORK) --function-architecture $(FUNCTION_ARCHITECTURE) -o ../out/handler.zip" && \
-	cp build/handler.zip handler.zip
+	mkdir -p $(BUILD_DIR) && \
+	docker run --rm -v $$(pwd)/src:/app -v $$(pwd)/$(BUILD_DIR):/out $(IMAGE) bash -c "mkdir -p /app2 && cp /app/* /app2 && cd /app2 && dotnet lambda package --framework $(FRAMEWORK) --function-architecture $(FUNCTION_ARCHITECTURE) -o ../out/handler.zip" && \
+	cp $(BUILD_DIR)/handler.zip handler.zip
 
 clean:
-	$(RM) -r build handler.zip
+	$(RM) -r $(BUILD_DIR) handler.zip
 
 .PHONY: build clean

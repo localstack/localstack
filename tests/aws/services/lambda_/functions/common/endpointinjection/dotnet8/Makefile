@@ -15,6 +15,6 @@ build:
 
 clean:
 	$(RM) -r build handler.zip
-	cd ../dotnet && $(MAKE) clean
+	cd ../dotnet && $(MAKE) clean FRAMEWORK=$(FRAMEWORK)
 
 .PHONY: build clean
