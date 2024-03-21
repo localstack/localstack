@@ -1,0 +1,38 @@
+{
+  "Comment": "TASK_LAMBDA_INVOKE_CATCH_DATA_LIMIT_EXCEEDED",
+  "StartAt": "InvokeLambda",
+  "States": {
+    "InvokeLambda": {
+      "Type": "Task",
+      "Resource": "__tbd__",
+      "Next": "ProcessResult",
+      "Catch": [
+        {
+          // Note: DataLimitExceeded is a terminal error that can't be caught by the States.ALL error type.
+          "ErrorEquals": [
+            "States.DataLimitExceeded"
+          ],
+          "Next": "HandleDataLimitExceeded"
+        },
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "HandleGeneralError"
+        }
+      ]
+    },
+    "ProcessResult": {
+      "Type": "Pass",
+      "End": true
+    },
+    "HandleDataLimitExceeded": {
+      "Type": "Pass",
+      "End": true
+    },
+    "HandleGeneralError": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}
