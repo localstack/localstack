@@ -2112,6 +2112,23 @@ class TestSecretsManagerMultiAccounts:
         response = secondary_aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
         assert response["ARN"] == secret_arn
 
+        kms_default_key_error = (
+            "You can't access a secret from a different AWS account if you encrypt the secret "
+            "with the default KMS service key."
+        )
+
+        with pytest.raises(Exception) as ex:
+            secondary_aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
+        assert ex.value.response["Error"]["Code"] == "InvalidRequestException"
+        assert ex.value.response["Error"]["Message"] == kms_default_key_error
+
+        with pytest.raises(Exception) as ex:
+            secondary_aws_client.secretsmanager.put_secret_value(
+                SecretId=secret_arn, SecretString="new-secret"
+            )
+        assert ex.value.response["Error"]["Code"] == "InvalidRequestException"
+        assert ex.value.response["Error"]["Message"] == kms_default_key_error
+
         # try to add resource policy from the secondary account
         policy = resource_policy
         policy["Statement"][0]["Sid"] = "AllowCrossAccount"
@@ -2146,7 +2163,7 @@ class TestSecretsManagerMultiAccounts:
         # get tags from the primary account
         # Note: when removing tags, the response will be empty list in case of AWS,
         # but it will be None in Localstack. To avoid failing the test, we will use the default value as list
-        poll_condition(
+        assert poll_condition(
             lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get("Tags", [])
             == [],
             timeout=5.0,
@@ -2155,11 +2172,6 @@ class TestSecretsManagerMultiAccounts:
 
         secondary_aws_client.secretsmanager.delete_secret(
             SecretId=secret_arn, ForceDeleteWithoutRecovery=True
-        )
-        poll_condition(
-            lambda: secondary_aws_client.secretsmanager.list_secrets()["SecretList"] == [],
-            timeout=5.0,
-            interval=0.5,
         )
 
     @markers.aws.validated
@@ -2260,7 +2272,7 @@ class TestSecretsManagerMultiAccounts:
             SecretId=secret_arn, ForceDeleteWithoutRecovery=False, RecoveryWindowInDays=7
         )
 
-        poll_condition(
+        assert poll_condition(
             lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
                 "DeletedDate"
             )
@@ -2271,7 +2283,7 @@ class TestSecretsManagerMultiAccounts:
 
         secondary_aws_client.secretsmanager.restore_secret(SecretId=secret_arn)
 
-        poll_condition(
+        assert poll_condition(
             lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
                 "DeletedDate"
             )
