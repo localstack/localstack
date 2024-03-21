@@ -802,27 +802,6 @@ def moto_secret_not_found_exception_init(fn, self):
     self.code = 400
 
 
-# def get_arn_binding_key_for(region: str, secret_id: str) -> str:
-#     return f"{region}_{secret_id}"
-
-
-# def get_arn_binding_for(account_id, region, secret_id):
-#     k = get_arn_binding_key_for(region, secret_id)
-#     if k not in SECRET_ARN_STORAGE:
-#         id_string = short_uid()[:6]
-#         arn = arns.secretsmanager_secret_arn(
-#             secret_id, account_id=account_id, region_name=region, random_suffix=id_string
-#         )
-#         SECRET_ARN_STORAGE[k] = arn
-#     return SECRET_ARN_STORAGE[k]
-
-
-# def delete_arn_binding_for(region: str, secret_id: str) -> None:
-#     k = get_arn_binding_key_for(region, secret_id)
-#     if k in SECRET_ARN_STORAGE:
-#         del SECRET_ARN_STORAGE[k]
-
-
 # patching resource policy in moto
 def get_resource_policy_model(self, secret_id):
     if self._is_valid_identifier(secret_id):
@@ -886,7 +865,6 @@ def put_resource_policy_response(self):
 
 
 def apply_patches():
-    # secretsmanager_utils.secret_arn = get_arn_binding_for
     SecretsManagerBackend.get_resource_policy = get_resource_policy_model
     SecretsManagerResponse.get_resource_policy = get_resource_policy_response
 
