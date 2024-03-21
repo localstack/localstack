@@ -69,3 +69,5 @@ gen/
 
 # RAW snapshots
 *.raw.snapshot.json
+
+.fake
