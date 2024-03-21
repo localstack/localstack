@@ -28,6 +28,15 @@ build Lambda deployment packages correctly.
 The top-level and intermediary directories provided a meta-Makefile that automatically invokes sub-Makefiles such that
 we can run `make clean` at the top-level recursively.
 
+## Dotnet
+
+The `dotnet` directory contains the original source code and a parametrizable Makefile to build multiple Dotnet versions.
+We create individual subdirectories for supported Dotnet versions (e.g., `dotnet6` and `dotnet8`) with a Makefile that
+invokes the original Makefile in the `dotnet` directory.
+Using a directory for each concrete Dotnet version avoids issues with pre-building where dotnet6 could overwrite the
+package pre-built for `dotnet8`.
+Limitation: concurrent builds are not safe because everything is built in the original `dotnet` directory!
+
 ## Rust
 
 ARM builds had some issues but were finally fixed. Here are the relevant sources:
