@@ -2163,17 +2163,12 @@ class TestSecretsManagerMultiAccounts:
         )
 
     @markers.aws.validated
-    def test_cross_account_access_non_default_key(
-        self, aws_client, secondary_aws_client, aws_client_factory, cleanups
-    ):
-        SECONDARY_KMS_KEY_REGION = "us-east-2"
-
+    def test_cross_account_access_non_default_key(self, aws_client, secondary_aws_client, cleanups):
         # GetSecretValue and PutSecretValue can't be used if the default keys are used
         primary_identity = aws_client.sts.get_caller_identity()
         primary_principal = primary_identity["Arn"]
         primary_account_id = primary_identity["Account"]
         secondary_principal = secondary_aws_client.sts.get_caller_identity()["Arn"]
-        aws_client_us_east_2 = aws_client_factory(region_name=SECONDARY_KMS_KEY_REGION)
 
         resource_policy_secretsmanager = {
             "Version": "2012-10-17",
@@ -2235,32 +2230,18 @@ class TestSecretsManagerMultiAccounts:
         )[
             "KeyMetadata"
         ]["Arn"]
-
         cleanups.append(
             lambda: aws_client.kms.schedule_key_deletion(KeyId=key_arn, PendingWindowInDays=7)
-        )
-
-        secondary_key_arn = aws_client_us_east_2.kms.create_key(
-            Description="test-key",
-            Policy=kms_policy,
-        )["KeyMetadata"]["Arn"]
-
-        cleanups.append(
-            lambda: aws_client_us_east_2.kms.schedule_key_deletion(
-                KeyId=secondary_key_arn, PendingWindowInDays=7
-            )
         )
 
         secret_arn = aws_client.secretsmanager.create_secret(
             Name=secret_name, SecretString="secret", KmsKeyId=key_arn
         )["ARN"]
-
         cleanups.append(
             lambda: aws_client.secretsmanager.delete_secret(
                 SecretId=secret_name, ForceDeleteWithoutRecovery=True
             )
         )
-
         aws_client.secretsmanager.put_resource_policy(
             SecretId=secret_arn, ResourcePolicy=json.dumps(resource_policy_secretsmanager)
         )
@@ -2284,12 +2265,12 @@ class TestSecretsManagerMultiAccounts:
 
         response = aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
         assert response["SecretString"] == "updated"
+        assert response["Description"] == "updated"
 
         secondary_aws_client.secretsmanager.delete_secret(
             SecretId=secret_arn, ForceDeleteWithoutRecovery=False, RecoveryWindowInDays=7
         )
 
-        # assert that the secret is deleted
         poll_condition(
             lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
                 "DeletedDate"
@@ -2301,21 +2282,11 @@ class TestSecretsManagerMultiAccounts:
 
         secondary_aws_client.secretsmanager.restore_secret(SecretId=secret_arn)
 
-        # assert that the secret is deleted
         poll_condition(
             lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
                 "DeletedDate"
             )
             is None,
-            timeout=5.0,
-            interval=0.5,
-        )
-
-        poll_condition(
-            lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
-                "ReplicationStatus"
-            )
-            == "InSync",
             timeout=5.0,
             interval=0.5,
         )
