@@ -962,6 +962,77 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "max_items_value", [-1, 0, 2, 1.5, 100_000_000, 100_000_001]
+    )  # The Distributed Map state stops reading items beyond 100_000_000.
+    def test_map_item_reader_csv_max_items(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        max_items_value,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.csv"
+        csv_file = (
+            "Col1,Col2\n" "Value1,Value2\n" "Value3,Value4\n" "Value5,Value6\n" "Value7,Value8\n"
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_MAX_ITEMS)
+        template["MapState"]["ItemReader"]["ReaderConfig"]["MaxItems"] = max_items_value
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "max_items_value", [-1, 0, 2, 1.5, 100_000_000, 100_000_001]
+    )  # The Distributed Map state stops reading items beyond 100_000_000.
+    def test_map_item_reader_csv_max_items_paths(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        max_items_value,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.csv"
+        csv_file = (
+            "Col1,Col2\n" "Value1,Value2\n" "Value3,Value4\n" "Value5,Value6\n" "Value7,Value8\n"
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_MAX_ITEMS_PATH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key, "MaxItems": max_items_value})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_map_item_reader_base_csv_headers_decl(
         self,
         aws_client,
