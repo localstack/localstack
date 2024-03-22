@@ -40,8 +40,8 @@ class BaseTemplate(TemplateLoader):
     PASS_START_TIME: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/pass_start_time_format.json5"
     )
-    WAIT_TIMESTAMPPATH: Final[str] = os.path.join(
-        _THIS_FOLDER, "statemachines/wait_timestamppath.json5"
+    WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/wait_timestamp_path.json5"
     )
     WAIT_SECONDS_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/wait_seconds_path.json5"
