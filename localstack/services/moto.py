@@ -14,7 +14,6 @@ from moto.moto_server.utilities import RegexConverter
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Map, Rule
 
-from localstack import __version__ as localstack_version
 from localstack import constants
 from localstack.aws.api import (
     CommonServiceException,
@@ -30,12 +29,13 @@ from localstack.aws.forwarder import (
 )
 from localstack.aws.skeleton import DispatchTable
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
+from localstack.constants import VERSION as LOCALSTACK_VERSION
 from localstack.http import Response
 from localstack.http.request import get_full_raw_path, get_raw_current_url
 
 MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
 
-user_agent = f"Localstack/{localstack_version} Python/{sys.version.split(' ')[0]}"
+user_agent = f"Localstack/{LOCALSTACK_VERSION} Python/{sys.version.split(' ')[0]}"
 
 
 def call_moto(context: RequestContext, include_response_metadata=False) -> ServiceResponse:
