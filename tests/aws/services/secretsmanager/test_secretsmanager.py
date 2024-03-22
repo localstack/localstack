@@ -2239,9 +2239,7 @@ class TestSecretsManagerMultiAccounts:
         key_arn = aws_client.kms.create_key(
             Description="test-key",
             Policy=kms_policy,
-        )[
-            "KeyMetadata"
-        ]["Arn"]
+        )["KeyMetadata"]["Arn"]
         cleanups.append(
             lambda: aws_client.kms.schedule_key_deletion(KeyId=key_arn, PendingWindowInDays=7)
         )
