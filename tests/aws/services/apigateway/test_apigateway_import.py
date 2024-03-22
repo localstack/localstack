@@ -272,11 +272,13 @@ class TestApiGatewayImportRestApi:
             "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
             "$.resources.items..resourceMethods.OPTIONS",
             "$.resources.items..resourceMethods.POST",
+            "$..rootResourceId",
             "$.get-authorizers.items[1].authorizerResultTtlInSeconds",
         ]
     )
     def test_import_swagger_api(
         self,
+        region_name,
         import_apigw,
         snapshot,
         aws_client,
@@ -300,6 +302,10 @@ class TestApiGatewayImportRestApi:
             ]
         )
         spec_file = load_file(PETSTORE_SWAGGER_JSON)
+        spec_file = spec_file.replace(
+            "${uri}", f"http://petstore.execute-api.{region_name}.amazonaws.com/petstore/pets"
+        )
+
         spec_file = spec_file.replace(
             "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:account-id:function:function-name/invocations",
             apigateway_placeholder_authorizer_lambda_invocation_arn,

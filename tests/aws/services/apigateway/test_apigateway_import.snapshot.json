@@ -25,7 +25,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
-    "recorded-date": "06-07-2023, 22:05:59",
+    "recorded-date": "22-03-2024, 07:03:04",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -39,6 +39,7 @@
         },
         "id": "<rest-id:1>",
         "name": "PetStore",
+        "rootResourceId": "<resource-id:1>",
         "version": "1.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -319,7 +320,7 @@
           },
           "timeoutInMillis": 29000,
           "type": "HTTP",
-          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets"
+          "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets"
         },
         "methodResponses": {
           "200": {
@@ -374,7 +375,7 @@
         },
         "timeoutInMillis": 29000,
         "type": "HTTP",
-        "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+        "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -507,7 +508,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "HTTP",
-          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets"
+          "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets"
         },
         "methodResponses": {
           "200": {
@@ -558,7 +559,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "HTTP",
-        "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+        "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -597,7 +598,7 @@
           },
           "timeoutInMillis": 29000,
           "type": "HTTP",
-          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets/{petId}"
+          "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets/{petId}"
         },
         "methodResponses": {
           "200": {
@@ -651,7 +652,7 @@
         },
         "timeoutInMillis": 29000,
         "type": "HTTP",
-        "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets/{petId}",
+        "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets/{petId}",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
