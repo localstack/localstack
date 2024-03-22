@@ -149,7 +149,7 @@ function cmd-next-dev-ver() {
 function cmd-set-ver() {
     [[ $# -eq 1 ]] || { usage; exit 1; }
 
-    cat $1 > ${VERSION_FILE}
+    echo $1 > ${VERSION_FILE}
 }
 
 function cmd-set-dep-ver() {
