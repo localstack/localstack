@@ -6,7 +6,7 @@ else
 endif
 
 # Target Dotnet framework version
-FRAMEWORK ?= net6.0
+FRAMEWORK ?= net8.0
 
 # Forward build for different Dotnet framework version to avoid code duplication
 build:
@@ -15,6 +15,6 @@ build:
 
 clean:
 	$(RM) -r build handler.zip
-	cd ../dotnet && $(MAKE) clean FRAMEWORK=$(FRAMEWORK)
+	cd ../dotnet && $(MAKE) clean
 
 .PHONY: build clean
