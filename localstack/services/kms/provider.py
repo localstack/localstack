@@ -142,9 +142,6 @@ VALID_OPERATIONS = [
     "GenerateDataKeyPairWithoutPlaintext",
 ]
 
-# special tag name to allow specifying a custom ID for created keys
-TAG_KEY_CUSTOM_ID = "_custom_id_"
-
 
 class ValidationError(CommonServiceException):
     """General validation error type (defined in the AWS docs, but not part of the botocore spec)"""
@@ -202,14 +199,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ) -> KmsKey:
         store = kms_stores[account_id][region_name]
         key = KmsKey(request, account_id, region_name)
-
-        # check if the _custom_id_ tag is specified, to set a user-defined KeyId for this key
-        tags_dict = {tag["TagKey"]: tag["TagValue"] for tag in request.get("Tags", [])}
-        custom_id = tags_dict.get(TAG_KEY_CUSTOM_ID)
-        if custom_id and custom_id.strip():
-            key.metadata["KeyId"] = custom_id.strip()
-            key.calculate_and_set_arn(account_id=account_id, region=region_name)
-
         key_id = key.metadata["KeyId"]
         store.keys[key_id] = key
         return key
@@ -1093,9 +1082,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         if expiration_model:
             key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
         else:
-            key_to_import_material_to.metadata[
-                "ExpirationModel"
-            ] = ExpirationModelType.KEY_MATERIAL_EXPIRES
+            key_to_import_material_to.metadata["ExpirationModel"] = (
+                ExpirationModelType.KEY_MATERIAL_EXPIRES
+            )
         if (
             key_to_import_material_to.metadata["ExpirationModel"]
             == ExpirationModelType.KEY_MATERIAL_EXPIRES

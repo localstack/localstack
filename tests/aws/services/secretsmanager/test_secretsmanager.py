@@ -180,6 +180,28 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
     @markers.aws.validated
+    def test_secret_restore(self, secret_name: str, sm_snapshot, cleanups, aws_client):
+        cleanups.append(
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
+        )
+        create_secret_rs = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString="my_secret",
+            Description="test description",
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs, 0)
+        )
+
+        delete_secret_res = aws_client.secretsmanager.delete_secret(SecretId=secret_name)
+        sm_snapshot.match("delete_secret_res", delete_secret_res)
+
+        restore_secret_res = aws_client.secretsmanager.restore_secret(SecretId=secret_name)
+        sm_snapshot.match("restore_secret_res", restore_secret_res)
+
+    @markers.aws.validated
     def test_secret_not_found(self, sm_snapshot, aws_client):
         with pytest.raises(Exception) as not_found:
             aws_client.secretsmanager.get_secret_value(SecretId=f"s-{short_uid()}")
@@ -318,18 +340,23 @@ class TestSecretsManager:
         assert all(c not in "xyzDje@?!." for c in random_password["RandomPassword"])
 
     @markers.aws.validated
-    def test_resource_policy(self, secret_name, aws_client, cleanups):
-        aws_client.secretsmanager.create_secret(
+    def test_resource_policy(self, secret_name, aws_client, sm_snapshot, cleanups):
+        response = aws_client.secretsmanager.create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing creation of secrets",
         )
-
-        aws_client.secretsmanager.put_resource_policy(
-            SecretId=secret_name, ResourcePolicy=json.dumps(RESOURCE_POLICY)
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
         )
 
+        response = aws_client.secretsmanager.put_resource_policy(
+            SecretId=secret_name, ResourcePolicy=json.dumps(RESOURCE_POLICY)
+        )
+        sm_snapshot.match("put_resource_policy", response)
+
         rs = aws_client.secretsmanager.get_resource_policy(SecretId=secret_name)
+        sm_snapshot.match("get_resource_policy", rs)
 
         policy = json.loads(rs["ResourcePolicy"])
 
@@ -2046,3 +2073,219 @@ class TestSecretsManager:
             SecretId=secret_id, SecretString="example-string-to-protect"
         )
         snapshot.match("put-secret-value", response)
+
+
+class TestSecretsManagerMultiAccounts:
+    @markers.aws.validated
+    def test_cross_account_access(self, aws_client, secondary_aws_client, cleanups):
+        # GetSecretValue and PutSecretValue can't be used if the default keys are used
+        principal_arn = secondary_aws_client.sts.get_caller_identity()["Arn"]
+        resource_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": principal_arn},
+                    "Action": ["secretsmanager:*"],
+                    "Resource": "*",
+                }
+            ],
+        }
+
+        secret_name = f"test-secret-{short_uid()}"
+        secret_arn = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString="secret",
+        )["ARN"]
+
+        cleanups.append(
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
+        )
+
+        aws_client.secretsmanager.put_resource_policy(
+            SecretId=secret_arn, ResourcePolicy=json.dumps(resource_policy)
+        )
+
+        # try to access the secret from the secondary account without the resource policy
+        response = secondary_aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        assert response["ARN"] == secret_arn
+
+        kms_default_key_error = (
+            "You can't access a secret from a different AWS account if you encrypt the secret "
+            "with the default KMS service key."
+        )
+
+        with pytest.raises(Exception) as ex:
+            secondary_aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
+        assert ex.value.response["Error"]["Code"] == "InvalidRequestException"
+        assert ex.value.response["Error"]["Message"] == kms_default_key_error
+
+        with pytest.raises(Exception) as ex:
+            secondary_aws_client.secretsmanager.put_secret_value(
+                SecretId=secret_arn, SecretString="new-secret"
+            )
+        assert ex.value.response["Error"]["Code"] == "InvalidRequestException"
+        assert ex.value.response["Error"]["Message"] == kms_default_key_error
+
+        # try to add resource policy from the secondary account
+        policy = resource_policy
+        policy["Statement"][0]["Sid"] = "AllowCrossAccount"
+        secondary_aws_client.secretsmanager.put_resource_policy(
+            SecretId=secret_arn, ResourcePolicy=json.dumps(policy)
+        )
+
+        # try to get the resource policy from the secondary account
+        response = secondary_aws_client.secretsmanager.get_resource_policy(SecretId=secret_arn)
+        assert json.loads(response["ResourcePolicy"])["Statement"][0]["Sid"] == "AllowCrossAccount"
+
+        # try to access the secret version ids from the secondary account
+        response = secondary_aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_arn)
+        assert len(response["Versions"]) == 1
+
+        # should not list the secret from the primary account
+        response = secondary_aws_client.secretsmanager.list_secrets()
+        assert len(response["SecretList"]) == 0
+
+        # set tags from the secondary account
+        secondary_aws_client.secretsmanager.tag_resource(
+            SecretId=secret_arn, Tags=[{"Key": "tag1", "Value": "value1"}]
+        )
+
+        # get tags from the primary account
+        response = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        assert response["Tags"] == [{"Key": "tag1", "Value": "value1"}]
+
+        # set tags from the secondary account
+        secondary_aws_client.secretsmanager.untag_resource(SecretId=secret_arn, TagKeys=["tag1"])
+
+        # get tags from the primary account
+        # Note: when removing tags, the response will be empty list in case of AWS,
+        # but it will be None in Localstack. To avoid failing the test, we will use the default value as list
+        assert poll_condition(
+            lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get("Tags", [])
+            == [],
+            timeout=5.0,
+            interval=0.5,
+        )
+
+        secondary_aws_client.secretsmanager.delete_secret(
+            SecretId=secret_arn, ForceDeleteWithoutRecovery=True
+        )
+
+    @markers.aws.validated
+    def test_cross_account_access_non_default_key(self, aws_client, secondary_aws_client, cleanups):
+        # GetSecretValue and PutSecretValue can't be used if the default keys are used
+        primary_identity = aws_client.sts.get_caller_identity()
+        primary_principal = primary_identity["Arn"]
+        primary_account_id = primary_identity["Account"]
+        secondary_principal = secondary_aws_client.sts.get_caller_identity()["Arn"]
+
+        resource_policy_secretsmanager = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": secondary_principal},
+                    "Action": ["secretsmanager:*"],
+                    "Resource": "*",
+                }
+            ],
+        }
+
+        kms_policy_document = """{
+        "Version": "2012-10-17",
+        "Id": "key-default-1",
+        "Statement": [
+            {
+                "Sid": "Enable IAM User Permissions",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": "arn:aws:iam::%s:root"
+                },
+                "Action": "kms:*",
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow administration of the key",
+                "Effect": "Allow",
+                "Principal": {"AWS": "%s"},
+                "Action": "kms:*",
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow use of the key",
+                "Effect": "Allow",
+                "Principal": {"AWS": "%s"},
+                "Action": [
+                    "kms:Encrypt",
+                    "kms:Decrypt",
+                    "kms:ReEncrypt*",
+                    "kms:GenerateDataKey*",
+                    "kms:DescribeKey"
+                ],
+                "Resource": "*"
+            }
+        ]
+        }"""
+        secret_name = f"test-secret-{short_uid()}"
+
+        kms_policy = kms_policy_document % (
+            primary_account_id,
+            primary_principal,
+            secondary_principal,
+        )
+        key_arn = aws_client.kms.create_key(
+            Description="test-key",
+            Policy=kms_policy,
+        )["KeyMetadata"]["Arn"]
+        cleanups.append(
+            lambda: aws_client.kms.schedule_key_deletion(KeyId=key_arn, PendingWindowInDays=7)
+        )
+
+        secret_arn = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="secret", KmsKeyId=key_arn
+        )["ARN"]
+        cleanups.append(
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
+        )
+        aws_client.secretsmanager.put_resource_policy(
+            SecretId=secret_arn, ResourcePolicy=json.dumps(resource_policy_secretsmanager)
+        )
+
+        response = secondary_aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
+        assert response["SecretString"] == "secret"
+
+        secondary_aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_arn, SecretString="new-secret"
+        )
+
+        response = secondary_aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
+        assert response["SecretString"] == "new-secret"
+
+        secondary_aws_client.secretsmanager.delete_secret(
+            SecretId=secret_arn, ForceDeleteWithoutRecovery=False, RecoveryWindowInDays=7
+        )
+
+        assert poll_condition(
+            lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
+                "DeletedDate"
+            )
+            is not None,
+            timeout=5.0,
+            interval=0.5,
+        )
+
+        secondary_aws_client.secretsmanager.restore_secret(SecretId=secret_arn)
+
+        assert poll_condition(
+            lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
+                "DeletedDate"
+            )
+            is None,
+            timeout=5.0,
+            interval=0.5,
+        )

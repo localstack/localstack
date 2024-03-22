@@ -6,8 +6,21 @@ import re
 import time
 from typing import Final, Optional, Union
 
+from botocore.utils import InvalidArnException
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
-from moto.secretsmanager import utils as secretsmanager_utils
+from moto.secretsmanager import secretsmanager_backends
+from moto.secretsmanager.exceptions import (
+    InvalidParameterException as MotoInvalidParameterException,
+)
+from moto.secretsmanager.exceptions import (
+    InvalidRequestException as MotoInvalidRequestException,
+)
+from moto.secretsmanager.exceptions import (
+    OperationNotPermittedOnReplica as MotoOperationNotPermittedOnReplica,
+)
+from moto.secretsmanager.exceptions import (
+    SecretHasNoValueException as MotoSecretHasNoValueException,
+)
 from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecretNotFoundException
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
@@ -65,7 +78,6 @@ from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto
 from localstack.utils.aws import arns
 from localstack.utils.patch import patch
-from localstack.utils.strings import short_uid
 from localstack.utils.time import today_no_time
 
 # Constants.
@@ -74,14 +86,11 @@ AWSPENDING: Final[str] = "AWSPENDING"
 AWSCURRENT: Final[str] = "AWSCURRENT"
 #
 # Error Messages.
-AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[
-    str
-] = "You can't create this secret because a secret with this name is already scheduled for deletion."
+AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[str] = (
+    "You can't create this secret because a secret with this name is already scheduled for deletion."
+)
 
 LOG = logging.getLogger(__name__)
-
-# Maps key names to ARNs.
-SECRET_ARN_STORAGE = {}
 
 
 class ValidationException(CommonServiceException):
@@ -103,6 +112,30 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def __init__(self):
         super().__init__()
         apply_patches()
+
+    @staticmethod
+    def get_moto_backend_for_resource(
+        name_or_arn: str, context: RequestContext
+    ) -> SecretsManagerBackend:
+        try:
+            arn_data = arns.parse_arn(name_or_arn)
+            backend = secretsmanager_backends[arn_data["account"]][arn_data["region"]]
+        except InvalidArnException:
+            backend = secretsmanager_backends[context.account_id][context.region]
+        return backend
+
+    @staticmethod
+    def _raise_if_default_kms_key(
+        secret_id: str, request: RequestContext, backend: SecretsManagerBackend
+    ):
+        try:
+            secret = backend.describe_secret(secret_id)
+        except MotoSecretNotFoundException:
+            raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
+        if secret.kms_key_id is None and request.account_id != secret.account_id:
+            raise InvalidRequestException(
+                "You can't access a secret from a different AWS account if you encrypt the secret with the default KMS service key."
+            )
 
     @staticmethod
     def _validate_secret_id(secret_id: SecretIdType) -> bool:
@@ -129,7 +162,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
             PutSecretValueRequest,
             RotateSecretRequest,
             UpdateSecretRequest,
-        ]
+        ],
     ):
         if "ClientRequestToken" not in request:
             raise InvalidRequestException(
@@ -165,52 +198,113 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     ) -> DeleteSecretResponse:
         secret_id: str = request["SecretId"]
         self._raise_if_invalid_secret_id(secret_id)
-        res = call_moto(context, request)
-        delete_arn_binding_for(context.region, secret_id)
-        return res
+        recovery_window_in_days: Optional[int] = request.get("RecoveryWindowInDays")
+        force_delete_without_recovery: Optional[bool] = request.get("ForceDeleteWithoutRecovery")
+
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        try:
+            arn, name, deletion_date = backend.delete_secret(
+                secret_id=secret_id,
+                recovery_window_in_days=recovery_window_in_days,
+                force_delete_without_recovery=force_delete_without_recovery,
+            )
+        except MotoInvalidParameterException as e:
+            raise InvalidParameterException(str(e))
+        except MotoInvalidRequestException as e:
+            raise InvalidRequestException(str(e))
+        except MotoSecretNotFoundException:
+            raise SecretNotFoundException()
+        return DeleteSecretResponse(ARN=arn, Name=name, DeletionDate=deletion_date)
 
     @handler("DescribeSecret", expand=False)
     def describe_secret(
         self, context: RequestContext, request: DescribeSecretRequest
     ) -> DescribeSecretResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id: str = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        try:
+            secret = backend.describe_secret(secret_id)
+        except MotoSecretNotFoundException:
+            raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
+        return DescribeSecretResponse(**secret.to_dict())
 
     @handler("GetResourcePolicy", expand=False)
     def get_resource_policy(
         self, context: RequestContext, request: GetResourcePolicyRequest
     ) -> GetResourcePolicyResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        policy = backend.get_resource_policy(secret_id)
+        return GetResourcePolicyResponse(**json.loads(policy))
 
     @handler("GetSecretValue", expand=False)
     def get_secret_value(
         self, context: RequestContext, request: GetSecretValueRequest
     ) -> GetSecretValueResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request.get("SecretId")
+        version_id = request.get("VersionId")
+        version_stage = request.get("VersionStage")
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        self._raise_if_default_kms_key(secret_id, context, backend)
+        try:
+            response = backend.get_secret_value(secret_id, version_id, version_stage)
+        except MotoSecretHasNoValueException:
+            raise ResourceNotFoundException(
+                f"Secrets Manager can't find the specified secret value for staging label: {version_stage}"
+            )
+        return GetSecretValueResponse(**response)
 
     @handler("ListSecretVersionIds", expand=False)
     def list_secret_version_ids(
         self, context: RequestContext, request: ListSecretVersionIdsRequest
     ) -> ListSecretVersionIdsResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        secrets = backend.list_secret_version_ids(secret_id)
+        return ListSecretVersionIdsResponse(**json.loads(secrets))
 
     @handler("PutResourcePolicy", expand=False)
     def put_resource_policy(
         self, context: RequestContext, request: PutResourcePolicyRequest
     ) -> PutResourcePolicyResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        arn, name = backend.put_resource_policy(secret_id, request["ResourcePolicy"])
+        return PutResourcePolicyResponse(ARN=arn, Name=name)
 
     @handler("PutSecretValue", expand=False)
     def put_secret_value(
         self, context: RequestContext, request: PutSecretValueRequest
     ) -> PutSecretValueResponse:
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
         self._raise_if_missing_client_req_token(request)
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        client_req_token = request.get("ClientRequestToken")
+        secret_string = request.get("SecretString")
+        secret_binary = request.get("SecretBinary")
+        if not secret_binary and not secret_string:
+            raise InvalidRequestException("You must provide either SecretString or SecretBinary.")
+
+        version_stages = request.get("VersionStages", ["AWSCURRENT"])
+        if not isinstance(version_stages, list):
+            version_stages = [version_stages]
+
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        self._raise_if_default_kms_key(secret_id, context, backend)
+
+        response = backend.put_secret_value(
+            secret_id=secret_id,
+            secret_binary=secret_binary,
+            secret_string=secret_string,
+            version_stages=version_stages,
+            client_request_token=client_req_token,
+        )
+        return PutSecretValueResponse(**json.loads(response))
 
     @handler("RemoveRegionsFromReplication", expand=False)
     def remove_regions_from_replication(
@@ -230,8 +324,14 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def restore_secret(
         self, context: RequestContext, request: RestoreSecretRequest
     ) -> RestoreSecretResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        try:
+            arn, name = backend.restore_secret(secret_id)
+        except MotoSecretNotFoundException:
+            raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
+        return RestoreSecretResponse(ARN=arn, Name=name)
 
     @handler("RotateSecret", expand=False)
     def rotate_secret(
@@ -250,23 +350,56 @@ class SecretsmanagerProvider(SecretsmanagerApi):
 
     @handler("TagResource", expand=False)
     def tag_resource(self, context: RequestContext, request: TagResourceRequest) -> None:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        tags = request["Tags"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        backend.tag_resource(secret_id, tags)
 
     @handler("UntagResource", expand=False)
     def untag_resource(self, context: RequestContext, request: UntagResourceRequest) -> None:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        tag_keys = request.get("TagKeys")
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        backend.untag_resource(secret_id=secret_id, tag_keys=tag_keys)
 
     @handler("UpdateSecret", expand=False)
     def update_secret(
         self, context: RequestContext, request: UpdateSecretRequest
     ) -> UpdateSecretResponse:
         # if we're modifying the value of the secret, ClientRequestToken is required
-        if any(key for key in request if key in ("SecretBinary", "SecretString")):
-            self._raise_if_missing_client_req_token(request)
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        secret_string = request.get("SecretString")
+        secret_binary = request.get("SecretBinary")
+        description = request.get("Description")
+        kms_key_id = request.get("KmsKeyId")
+        client_req_token = request.get("ClientRequestToken")
+        self._raise_if_invalid_secret_id(secret_id)
+        self._raise_if_missing_client_req_token(request)
+
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        try:
+            secret = backend.update_secret(
+                secret_id,
+                description=description,
+                secret_string=secret_string,
+                secret_binary=secret_binary,
+                client_request_token=client_req_token,
+                kms_key_id=kms_key_id,
+            )
+        except MotoSecretNotFoundException:
+            raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
+        except MotoOperationNotPermittedOnReplica:
+            raise InvalidRequestException(
+                "Operation not permitted on a replica secret. Call must be made in primary secret's region."
+            )
+        except MotoInvalidRequestException:
+            raise InvalidRequestException(
+                "An error occurred (InvalidRequestException) when calling the UpdateSecret operation: "
+                "You can't perform this operation on the secret because it was marked for deletion."
+            )
+        return UpdateSecretResponse(**json.loads(secret))
 
     @handler("UpdateSecretVersionStage", expand=False)
     def update_secret_version_stage(
@@ -669,27 +802,6 @@ def moto_secret_not_found_exception_init(fn, self):
     self.code = 400
 
 
-def get_arn_binding_key_for(region: str, secret_id: str) -> str:
-    return f"{region}_{secret_id}"
-
-
-def get_arn_binding_for(account_id, region, secret_id):
-    k = get_arn_binding_key_for(region, secret_id)
-    if k not in SECRET_ARN_STORAGE:
-        id_string = short_uid()[:6]
-        arn = arns.secretsmanager_secret_arn(
-            secret_id, account_id=account_id, region_name=region, random_suffix=id_string
-        )
-        SECRET_ARN_STORAGE[k] = arn
-    return SECRET_ARN_STORAGE[k]
-
-
-def delete_arn_binding_for(region: str, secret_id: str) -> None:
-    k = get_arn_binding_key_for(region, secret_id)
-    if k in SECRET_ARN_STORAGE:
-        del SECRET_ARN_STORAGE[k]
-
-
 # patching resource policy in moto
 def get_resource_policy_model(self, secret_id):
     if self._is_valid_identifier(secret_id):
@@ -753,7 +865,6 @@ def put_resource_policy_response(self):
 
 
 def apply_patches():
-    secretsmanager_utils.secret_arn = get_arn_binding_for
     SecretsManagerBackend.get_resource_policy = get_resource_policy_model
     SecretsManagerResponse.get_resource_policy = get_resource_policy_response
 

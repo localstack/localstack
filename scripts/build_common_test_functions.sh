@@ -20,6 +20,7 @@ for scenario in */ ; do
     # skip if zip file exists, otherwise run makefile
     [ -f "handler.zip" ] && echo "found handler.zip => skipping" && continue
     echo -n "building ..."
+    # MAYBE: consider printing build logs only if the build fails (using CircleCI SSH seems easier for now)
     make build >/dev/null
 
     # if no zipfile, package build folder

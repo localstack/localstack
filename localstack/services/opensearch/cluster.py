@@ -133,7 +133,7 @@ def build_cluster_run_command(cluster_bin: str, settings: CommandSettings) -> Li
     :param settings: dictionary where each item will be set as a command arguments
     :return: list of strings for the command with the settings to be executed as a shell command
     """
-    cmd_settings = [f"-E {k}={v}" for k, v, in settings.items()]
+    cmd_settings = [f"-E {k}={v}" for k, v in settings.items()]
     return [cluster_bin] + cmd_settings
 
 
@@ -444,9 +444,9 @@ class OpensearchCluster(Server):
             settings["plugins.security.ssl.http.pemcert_filepath"] = "cert.crt"
             settings["plugins.security.ssl.http.pemtrustedcas_filepath"] = "cert.crt"
             settings["plugins.security.allow_default_init_securityindex"] = "true"
-            settings[
-                "plugins.security.restapi.roles_enabled"
-            ] = "all_access,security_rest_api_access"
+            settings["plugins.security.restapi.roles_enabled"] = (
+                "all_access,security_rest_api_access"
+            )
 
         return settings
 

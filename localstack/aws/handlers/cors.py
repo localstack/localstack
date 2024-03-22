@@ -1,6 +1,7 @@
 """
 A set of handlers which handle Cross Origin Resource Sharing (CORS).
 """
+
 import logging
 import re
 from typing import List, Set

@@ -28,7 +28,9 @@ if TYPE_CHECKING:
 
 
 class TestLambdaDLQ:
-    @markers.snapshot.skip_snapshot_verify(paths=["$..DeadLetterConfig", "$..result"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..DeadLetterConfig", "$..result", "$..LoggingConfig"]
+    )
     @markers.aws.validated
     def test_dead_letter_queue(
         self,

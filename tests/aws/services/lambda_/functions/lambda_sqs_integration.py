@@ -10,6 +10,7 @@ invocations, this lambda does this manually. You can pass in an event that looks
 Which will cause the lambda to fail twice (comparing the "ApproximateReceiveCount" of the SQS event triggering
 the lambda), and send either an error or success result to the SQS queue passed in the destination key.
 """
+
 import json
 import os
 

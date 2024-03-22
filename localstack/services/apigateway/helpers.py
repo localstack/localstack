@@ -1093,9 +1093,9 @@ def import_api_from_openapi_spec(
                         if param_location == "query":
                             param_location = "querystring"
 
-                        request_parameters[
-                            f"method.request.{param_location}.{param_name}"
-                        ] = param_required
+                        request_parameters[f"method.request.{param_location}.{param_name}"] = (
+                            param_required
+                        )
 
                     elif param_location == "body":
                         request_models = {APPLICATION_JSON: param_name}

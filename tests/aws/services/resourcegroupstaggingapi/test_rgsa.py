@@ -2,18 +2,22 @@ from localstack.testing.pytest import markers
 
 
 class TestRGSAIntegrations:
-    @markers.aws.unknown
-    def test_get_resources(self, aws_client):
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PaginationToken"])
+    def test_get_resources(self, aws_client, cleanups, snapshot):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
-        try:
-            aws_client.ec2.create_tags(
-                Resources=[vpc.get("Vpc").get("VpcId")],
-                Tags=[{"Key": "test", "Value": "test"}],
-            )
+        vpd_id = vpc.get("Vpc").get("VpcId")
 
-            resp = aws_client.resourcegroupstaggingapi.get_resources(ResourceTypeFilters=["ec2"])
-            results = resp.get("ResourceTagMappingList", [])
-            assert 1 == len(results)
-            assert [{"Key": "test", "Value": "test"}] == results[0].get("Tags")
-        finally:
-            aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"])
+        snapshot.add_transformers_list([snapshot.transform.key_value("ResourceARN", "ARN")])
+        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpd_id))
+
+        tags = [{"Key": "test", "Value": "test"}]
+
+        aws_client.ec2.create_tags(
+            Resources=[vpc.get("Vpc").get("VpcId")],
+            Tags=tags,
+        )
+        resp = aws_client.resourcegroupstaggingapi.get_resources(
+            TagFilters=[{"Key": "test", "Values": ["test"]}]
+        )
+        snapshot.match("get_resources", resp)

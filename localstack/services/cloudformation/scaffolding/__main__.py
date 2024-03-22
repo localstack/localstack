@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess as sp
 import zipfile
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -114,26 +113,11 @@ class ResourceName:
         )
 
 
-def run_black(text: str) -> str:
-    """Black does not have an API, so spawn a subprocess"""
-    try:
-        proc = sp.run(["black", "--code", text], capture_output=True, check=True)
-    except FileNotFoundError:
-        # The user does not have black installed
-        return text
-    output = proc.stdout.decode("utf8")
-    return output
-
-
 def get_formatted_template_output(
-    env: Environment, template_name: str, do_run_black: bool, *render_args, **render_kwargs
+    env: Environment, template_name: str, *render_args, **render_kwargs
 ) -> str:
     template = env.get_template(template_name)
-    raw_text = template.render(*render_args, **render_kwargs)
-    if do_run_black:
-        return run_black(raw_text)
-    else:
-        return raw_text
+    return template.render(*render_args, **render_kwargs)
 
 
 class SchemaProvider:
@@ -259,7 +243,6 @@ class TemplateRenderer:
         self,
         file_type: FileType,
         resource_name: ResourceName,
-        do_run_black: bool,
     ) -> str:
         # Generated outputs (template, schema)
         # templates
@@ -353,7 +336,7 @@ class TemplateRenderer:
                 raise NotImplementedError(f"Rendering template of type {file_type}")
 
         return get_formatted_template_output(
-            self.environment, template_mapping[file_type], do_run_black, **kwargs
+            self.environment, template_mapping[file_type], **kwargs
         )
 
     def get_getatt_targets(self) -> Generator[str, None, None]:
@@ -668,15 +651,13 @@ class OutputFactory:
         template_renderer: TemplateRenderer,
         printer: Console,
         writer: FileWriter,
-        do_run_black: bool,
     ):
         self.template_renderer = template_renderer
         self.printer = printer
         self.writer = writer
-        self.do_run_black = do_run_black
 
     def get(self, file_type: FileType, resource_name: ResourceName) -> Output:
-        contents = self.template_renderer.render(file_type, resource_name, self.do_run_black)
+        contents = self.template_renderer.render(file_type, resource_name)
         return Output(contents, file_type, self.printer, self.writer, resource_name)
 
 
@@ -764,14 +745,12 @@ def cli():
 @click.option("-w", "--write/--no-write", default=False)
 @click.option("--overwrite", is_flag=True, default=False)
 @click.option("-t", "--write-tests/--no-write-tests", default=False)
-@click.option("--run-black/--no-run-black", "do_run_black", default=True)
 @click.option("--pro", is_flag=True, default=False)
 def generate(
     resource_type: str,
     write: bool,
     write_tests: bool,
     overwrite: bool,
-    do_run_black: bool,
     pro: bool,
 ):
     console = Console()
@@ -800,7 +779,7 @@ def generate(
 
         template_renderer = TemplateRenderer(schema, env, pro)
         writer = FileWriter(resource_name, console, overwrite, pro)
-        output_factory = OutputFactory(template_renderer, console, writer, do_run_black)  # noqa
+        output_factory = OutputFactory(template_renderer, console, writer)  # noqa
         for file_type in FileType:
             if not write_tests and file_type in {
                 FileType.integration_test,

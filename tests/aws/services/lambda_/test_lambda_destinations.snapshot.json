@@ -61,67 +61,8 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[RetriesExhausted-payload1]": {
-    "recorded-date": "01-09-2022, 09:03:35",
-    "recorded-content": {
-      "put_function_event_invoke_config": {
-        "DestinationConfig": {
-          "OnFailure": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
-          },
-          "OnSuccess": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:1>"
-          }
-        },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:$LATEST",
-        "LastModified": "datetime",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "receive_message_result": {
-        "Messages": [
-          {
-            "Body": {
-              "version": "1.0",
-              "timestamp": "date",
-              "requestContext": {
-                "requestId": "<uuid:1>",
-                "functionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>:$LATEST",
-                "condition": "RetriesExhausted",
-                "approximateInvokeCount": 3
-              },
-              "requestPayload": {
-                "raise_error": 1
-              },
-              "responseContext": {
-                "statusCode": 200,
-                "executedVersion": "$LATEST",
-                "functionError": "Unhandled"
-              },
-              "responsePayload": {
-                "errorMessage": "Test exception (this is intentional)",
-                "errorType": "Exception",
-                "stackTrace": [
-                  "  File \"/var/task/handler.py\", line 54, in handler\n    raise Exception(\"Test exception (this is intentional)\")\n"
-                ]
-              }
-            },
-            "MD5OfBody": "<m-d5-of-body:1>",
-            "MessageId": "<uuid:2>",
-            "ReceiptHandle": "<receipt-handle:1>"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload0]": {
-    "recorded-date": "23-03-2023, 00:15:17",
+    "recorded-date": "21-03-2024, 12:26:43",
     "recorded-content": {
       "put_function_event_invoke_config": {
         "DestinationConfig": {
@@ -184,7 +125,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_assess_lambda_destination_invocation[payload1]": {
-    "recorded-date": "23-03-2023, 00:15:20",
+    "recorded-date": "21-03-2024, 12:26:48",
     "recorded-content": {
       "put_function_event_invoke_config": {
         "DestinationConfig": {
@@ -228,7 +169,7 @@
                 "errorType": "Exception",
                 "requestId": "<uuid:1>",
                 "stackTrace": [
-                  "  File \"/var/task/handler.py\", line 54, in handler\n    raise Exception(\"Test exception (this is intentional)\")\n"
+                  "  File \"/var/task/handler.py\", line 55, in handler\n    raise Exception(\"Test exception (this is intentional)\")\n"
                 ]
               }
             },
@@ -245,7 +186,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDLQ::test_dead_letter_queue": {
-    "recorded-date": "27-02-2023, 16:00:54",
+    "recorded-date": "21-03-2024, 12:20:31",
     "recorded-content": {
       "create_lambda_with_dlq": {
         "CreateEventSourceMappingResponse": null,
@@ -269,6 +210,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -349,6 +294,10 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
@@ -381,7 +330,7 @@
           "errorType": "Exception",
           "requestId": "<uuid:4>",
           "stackTrace": [
-            "  File \"/var/task/handler.py\", line 54, in handler\n    raise Exception(\"Test exception (this is intentional)\")\n"
+            "  File \"/var/task/handler.py\", line 55, in handler\n    raise Exception(\"Test exception (this is intentional)\")\n"
           ]
         },
         "StatusCode": 200,
@@ -395,9 +344,10 @@
           "START RequestId: <uuid:4> Version: $LATEST",
           "Lambda log message - print function",
           "[INFO]\tdate\t<uuid:4>\tLambda log message - logging module",
+          "LAMBDA_WARNING: Unhandled exception. The most likely cause is an issue in the function code. However, in rare cases, a Lambda runtime update can cause unexpected function behavior. For functions using managed runtimes, runtime updates can be triggered by a function change, or can be applied automatically. To determine if the runtime has been updated, check the runtime version in the INIT_START log entry. If this error correlates with a change in the runtime version, you may be able to mitigate this error by temporarily rolling back to the previous runtime version. For more information, see https://docs.aws.amazon.com/lambda/latest/dg/runtimes-update.html",
           "[ERROR] Exception: Test exception (this is intentional)",
           "Traceback (most recent call last):",
-          "\u00a0\u00a0File \"/var/task/handler.py\", line 54, in handler",
+          "\u00a0\u00a0File \"/var/task/handler.py\", line 55, in handler",
           "\u00a0\u00a0\u00a0\u00a0raise Exception(\"Test exception (this is intentional)\")END RequestId: <uuid:4>"
         ]
       }
@@ -533,7 +483,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationSqs::test_lambda_destination_default_retries": {
-    "recorded-date": "23-03-2023, 00:18:52",
+    "recorded-date": "21-03-2024, 12:24:09",
     "recorded-content": {
       "put_function_event_invoke_config": {
         "DestinationConfig": {
@@ -576,7 +526,7 @@
                 "errorType": "Exception",
                 "requestId": "<uuid:1>",
                 "stackTrace": [
-                  "  File \"/var/task/handler.py\", line 54, in handler\n    raise Exception(\"Test exception (this is intentional)\")\n"
+                  "  File \"/var/task/handler.py\", line 55, in handler\n    raise Exception(\"Test exception (this is intentional)\")\n"
                 ]
               }
             },

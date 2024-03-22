@@ -107,9 +107,9 @@ def apply_patches():
         apigateway_models.MethodResponse,
     ]
     for model_class in model_classes:
-        model_class.apply_operations = (
-            model_class.apply_patch_operations
-        ) = backend_model_apply_operations
+        model_class.apply_operations = model_class.apply_patch_operations = (
+            backend_model_apply_operations
+        )
 
     # fix data types for some json-patch operation values
 

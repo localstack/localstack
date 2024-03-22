@@ -1,6 +1,7 @@
 """
 Usage reporting for Lambda service
 """
+
 from localstack.utils.analytics.usage import UsageCounter, UsageSetCounter
 
 # usage of lambda hot-reload feature

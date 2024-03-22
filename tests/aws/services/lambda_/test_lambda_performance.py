@@ -4,6 +4,7 @@ Basic opt-in performance tests for Lambda. Usage:
 2) Set TEST_PERFORMANCE_RESULTS_DIR=$HOME/Downloads if you want to export performance results as CSV
 3) Adjust repeat=100 to configure the number of repetitions
 """
+
 import csv
 import json
 import logging

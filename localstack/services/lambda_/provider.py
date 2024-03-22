@@ -685,9 +685,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         state.layers[layer_name] = layer
                     else:
                         # Create layer version if another version of the same layer already exists
-                        state.layers[layer_name].layer_versions[
-                            layer_version_str
-                        ] = layer.layer_versions.get(layer_version_str)
+                        state.layers[layer_name].layer_versions[layer_version_str] = (
+                            layer.layer_versions.get(layer_version_str)
+                        )
 
             # only the first two matches in the array are considered for the error message
             layer_arn = ":".join(layer_version_arn.split(":")[:-1])
@@ -1323,7 +1323,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 version, return_qualified_arn=bool(qualifier), alias_name=alias_name
             ),
             Code=code_location,  # TODO
-            **additional_fields
+            **additional_fields,
             # Concurrency={},  # TODO
         )
 
@@ -1849,9 +1849,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 function_name, qualifier, account_id, region
             )
 
-        temp_params = (
-            {}
-        )  # values only set for the returned response, not saved internally (e.g. transient state)
+        temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
 
         if request.get("Enabled") is not None:
             if request["Enabled"]:

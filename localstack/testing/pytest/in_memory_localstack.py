@@ -11,6 +11,7 @@ Use in your module as follows::
 
 You can explicitly disable starting localstack by setting ``TEST_SKIP_LOCALSTACK_START=1`` or
 ``TEST_TARGET=AWS_CLOUD``."""
+
 import logging
 import os
 import threading

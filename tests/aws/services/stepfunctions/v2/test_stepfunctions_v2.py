@@ -436,9 +436,9 @@ class TestStateMachine:
         lambda_arn_1 = arns.lambda_function_arn(TEST_LAMBDA_NAME_5, account_id, region_name)
         lambda_arn_2 = arns.lambda_function_arn(TEST_LAMBDA_NAME_5, account_id, region_name)
         if isinstance(definition["States"]["state1"].get("Parameters"), dict):
-            definition["States"]["state1"]["Parameters"]["lambda_params"][
-                "FunctionName"
-            ] = lambda_arn_1
+            definition["States"]["state1"]["Parameters"]["lambda_params"]["FunctionName"] = (
+                lambda_arn_1
+            )
             definition["States"]["state3"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
         sm_name = f"intrinsic-{short_uid()}"

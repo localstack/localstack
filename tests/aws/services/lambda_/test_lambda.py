@@ -1,5 +1,6 @@
 """Tests for Lambda behavior and implicit functionality.
 Everything related to API operations goes into test_lambda_api.py instead."""
+
 import base64
 import json
 import logging
@@ -36,7 +37,7 @@ from localstack.utils.aws import arns
 from localstack.utils.aws.arns import lambda_function_name
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
-from localstack.utils.platform import Arch, get_arch, standardized_arch
+from localstack.utils.platform import Arch, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -120,14 +121,9 @@ TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
 TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
 TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
 
-# TODO: remove the architecture filter once all non-ARM compatible runtimes are fully deprecated
-PYTHON_TEST_RUNTIMES = (
-    RUNTIMES_AGGREGATED["python"] if (get_arch() != Arch.arm64) else [Runtime.python3_11]
-)
-NODE_TEST_RUNTIMES = (
-    RUNTIMES_AGGREGATED["nodejs"] if (get_arch() != Arch.arm64) else [Runtime.nodejs16_x]
-)
-JAVA_TEST_RUNTIMES = RUNTIMES_AGGREGATED["java"] if (get_arch() != Arch.arm64) else [Runtime.java11]
+PYTHON_TEST_RUNTIMES = RUNTIMES_AGGREGATED["python"]
+NODE_TEST_RUNTIMES = RUNTIMES_AGGREGATED["nodejs"]
+JAVA_TEST_RUNTIMES = RUNTIMES_AGGREGATED["java"]
 
 TEST_LAMBDA_LIBS = [
     "requests",

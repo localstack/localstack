@@ -63,7 +63,7 @@ commands:
                   export TEST_AWS_ACCOUNT_ID=$(LC_ALL=C tr -dc '0-9' < /dev/urandom | fold -w 12 | head -n 1)
                   export TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCOUNT_ID
                   # Set TEST_AWS_REGION_NAME to a random AWS region other than us-east-1
-                  export AWS_REGIONS=("me-south-1" "me-central-1" "sa-east-1" "us-east-2" "us-west-1" "us-west-2" "eu-west-1" "eu-west-2" "eu-west-3" "ap-east-1" "ap-south-2" "ap-south-1" "ap-southeast-1" "ap-southeast-2" "ap-northeast-1" "ap-northeast-2" "ap-northeast-3" "sa-east-1" "af-south-1" "ca-central-1" "ca-west-1" "eu-central-1" "eu-south-1" "eu-south-2"	"eu-north-1" "eu-central-2" "il-central-1" )
+                  export AWS_REGIONS=("us-east-2" "us-west-1" "us-west-2" "ap-southeast-1" "ap-southeast-2" "ap-northeast-1" "eu-central-1" "eu-west-1")
                   export TEST_AWS_REGION_NAME=${AWS_REGIONS[$RANDOM % ${#AWS_REGIONS[@]}]}
                   echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> $BASH_ENV
                   echo "export TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" >> $BASH_ENV
@@ -327,23 +327,22 @@ jobs:
       - run:
           name: Load docker image
           command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
-      - when:
-          condition:
-            equal: [ "amd64", << parameters.platform >>]
-          steps:
-            - run:
-                name: compute-src-hashes
-                command: |
-                  find tests/aws/services/lambda_/functions/common -type f -path '**/src/**' -not -path '*/.*' | xargs sha256sum > /tmp/common-functions-checksums
-            - restore_cache:
-                key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
-            - run:
-                name: pre-build lambda common test packages
-                command: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
-            - save_cache:
-                key: common-functions-{{ checksum "/tmp/common-functions-checksums" }}
-                paths:
-                  - "tests/aws/services/lambda_/functions/common"
+      # Prebuild and cache Lambda multiruntime test functions, supporting both architectures: amd64 and arm64
+      # Currently, all runners prebuild the Lambda functions, not just the one(s) executing Lambda multiruntime tests.
+      - run:
+          name: Compute Lambda build hashes
+          # Any change in the Lambda function source code (i.e., **/src/**) or build process (i.e., **/Makefile) invalidates the cache
+          command: |
+            find tests/aws/services/lambda_/functions/common -type f \( -path '**/src/**' -o -path '**/Makefile' \) | xargs sha256sum > /tmp/common-functions-checksums
+      - restore_cache:
+          key: common-functions-<< parameters.platform >>-{{ checksum "/tmp/common-functions-checksums" }}
+      - run:
+          name: Pre-build Lambda common test packages
+          command: ./scripts/build_common_test_functions.sh `pwd`/tests/aws/services/lambda_/functions/common
+      - save_cache:
+          key: common-functions-<< parameters.platform >>-{{ checksum "/tmp/common-functions-checksums" }}
+          paths:
+            - "tests/aws/services/lambda_/functions/common"
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -581,70 +580,57 @@ jobs:
             source .venv/bin/activate
             bin/release-helper.sh set-ver $(bin/release-helper.sh next-dev-ver)
             make publish
-  save-start-time:
+  push-to-tinybird:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
     steps:
       - run:
-          name: Save start time to file
-          command: mkdir stats && echo $(date +%s) > stats/start-time.txt
-      - persist_to_workspace:
-            root: /tmp/workspace
-            paths:
-                - repo/stats/
-  waiter:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - run: |
-          while [[ $(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job"| jq -r '.items[]|select(.name != "waiter" and .name != "push" and .name != "report")|.status' | grep -c "running") -gt 0 ]]; do
+          name: Wait for the workflow to complete
+          command: |
+            # Record the time this step started
+            START_TIME=$(date +%s)
+
+            # wait for the workflow to be done
+            while [[ $(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job"| jq -r '.items[]|select(.name != "push-to-tinybird" and .name != "push" and .name != "report")|.status' | grep -c "running") -gt 0 ]]; do
               sleep 10
             done
-          FAILED_COUNT=$(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job" | jq -r '.items[]|.status' | grep -c "failed") || true
-          echo "failed count" $FAILED_COUNT
-          mkdir stats
-          if [[ $FAILED_COUNT -eq 0 ]]; then
-              echo "success" > stats/outcome.txt
-          else
-              echo "failure" > stats/outcome.txt
-          fi
-          cat stats/outcome.txt
-      - persist_to_workspace:
-            root: /tmp/workspace
-            paths:
-                - repo/stats/
-  send-stats:
-    executor: ubuntu-machine-amd64
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          when: always
-          name: Load start time from file
-          command: |
-            START_TIME=$(cat stats/start-time.txt)
+
+            # check if a step failed / determine the outcome
+            FAILED_COUNT=$(curl --location --request GET "https://circleci.com/api/v2/workflow/$CIRCLE_WORKFLOW_ID/job" | jq -r '.items[]|.status' | grep -c "failed") || true
+            echo "failed count: $FAILED_COUNT"
+            if [[ $FAILED_COUNT -eq 0 ]]; then
+                OUTCOME="success"
+            else
+                OUTCOME="failure"
+            fi
+            echo "outcome: $OUTCOME"
+
+            # Record the time this step is done
             END_TIME=$(date +%s)
-            OUTCOME=$(cat stats/outcome.txt)
-            echo '{"run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'"}' > stats/stats.json
-            echo 'Sending: '$(cat stats/stats.json)
-            curl -X POST "https://api.tinybird.co/v0/events?name=circle_ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats/stats.json
 
+            if << pipeline.parameters.randomize-aws-credentials >> ; then
+              TINYBIRD_WORKFLOW=tests_circleci_ma_mr
+            else
+              TINYBIRD_WORKFLOW=tests_circleci
+            fi
 
+            # Build the payload
+            echo '{"workflow": "'$TINYBIRD_WORKFLOW'", "attempt": 1, "run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'", "workflow_url": "'$CIRCLE_BUILD_URL'"}' > stats.json
+            echo 'Sending: '$(cat stats.json)
+
+            # Send the data to Tinybird
+            curl -X POST "https://api.tinybird.co/v0/events?name=ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats.json
+
+            # Fail this step depending on the success to trigger a rerun of this step together with others in case of a "rerun failed"
+            [[ $OUTCOME = "success" ]] && exit 0 || exit 1
 
 workflows:
   main:
     jobs:
-      - save-start-time:
+      - push-to-tinybird:
           filters:
             branches:
               only: master
-      - waiter:
-          requires:
-            - save-start-time
-      - send-stats:
-          requires:
-            - waiter
       - install
       - preflight:
           requires:

@@ -577,9 +577,9 @@ class SNSEmitter:
         }
 
         if emit_source_arn:
-            event_payload["mail"][
-                "sourceArn"
-            ] = f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
+            event_payload["mail"]["sourceArn"] = (
+                f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
+            )
 
         client = self._client_for_topic(sns_topic_arn)
         try:

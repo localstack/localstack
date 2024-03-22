@@ -597,9 +597,9 @@ class TestS3NotificationsToSQS:
 
         # add boto hook
         def add_xray_header(request, **kwargs):
-            request.headers[
-                "X-Amzn-Trace-Id"
-            ] = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            request.headers["X-Amzn-Trace-Id"] = (
+                "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            )
 
         aws_client.s3.meta.events.register("before-send.s3.*", add_xray_header)
         # make sure the hook gets cleaned up after the test

@@ -1,8 +1,7 @@
 import abc
 
 
-class CatcherOutcome(abc.ABC):
-    ...
+class CatcherOutcome(abc.ABC): ...
 
 
 class CatcherOutcomeCaught(CatcherOutcome):
