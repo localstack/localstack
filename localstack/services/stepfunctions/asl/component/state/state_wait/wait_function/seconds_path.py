@@ -1,11 +1,10 @@
 from typing import Final
 
-from jsonpath_ng import parse
-
 from localstack.services.stepfunctions.asl.component.state.state_wait.wait_function.wait_function import (
     WaitFunction,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
+from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 
 
 class SecondsPath(WaitFunction):
@@ -18,6 +17,10 @@ class SecondsPath(WaitFunction):
         self.path: Final[str] = path
 
     def _get_wait_seconds(self, env: Environment) -> int:
-        input_expr = parse(self.path)
-        seconds = input_expr.find(env.inp)
+        inp = env.stack[-1]
+        seconds = JSONPathUtils.extract_json(self.path, inp)
+        if not isinstance(seconds, int) and seconds <= 0:
+            raise ValueError(
+                f"Expected non-negative integer for SecondsPath, got '{type(seconds).__name__}' '{seconds}' instead."
+            )
         return seconds

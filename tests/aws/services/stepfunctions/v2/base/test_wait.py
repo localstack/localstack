@@ -92,3 +92,31 @@ class TestSfnWait:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    # @markers.snapshot.skip_snapshot_verify(
+    #     paths=[
+    #         "$..detail.redriveCount",
+    #         "$..detail.redriveDate",
+    #         "$..detail.redriveStatus",
+    #         "$..detail.redriveStatusReason",
+    #     ]
+    # )
+    def test_base_wait_seconds_path(
+        self,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        aws_client,
+        sfn_snapshot,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_SECONDS_PATH)
+        definition = json.dumps(template)
+        execution_input = json.dumps({"input": {"waitSeconds": 1}})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            execution_input,
+        )
