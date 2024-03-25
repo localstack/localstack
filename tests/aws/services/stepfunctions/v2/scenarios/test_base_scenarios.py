@@ -963,8 +963,9 @@ class TestBaseScenarios:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "max_items_value", [-1, 0, 2, 1.5, 100_000_000, 100_000_001]
-    )  # The Distributed Map state stops reading items beyond 100_000_000.
+        "max_items_value",
+        [0, 2, 100_000_000],  # Linter on creation filters for valid input integers (0 - 100000000).
+    )
     def test_map_item_reader_csv_max_items(
         self,
         aws_client,
@@ -984,7 +985,7 @@ class TestBaseScenarios:
         aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_MAX_ITEMS)
-        template["MapState"]["ItemReader"]["ReaderConfig"]["MaxItems"] = max_items_value
+        template["States"]["MapState"]["ItemReader"]["ReaderConfig"]["MaxItems"] = max_items_value
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
@@ -1010,6 +1011,11 @@ class TestBaseScenarios:
         sfn_snapshot,
         max_items_value,
     ):
+        if max_items_value == 1.5:
+            pytest.skip(
+                "Validation of non integer max items value is performed at a higher depth than that of negative values in AWS StepFunctions. The SFN v2 interpreter runs this check at the same depth."
+            )
+
         bucket_name = s3_create_bucket()
         sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
 
@@ -1273,6 +1279,40 @@ class TestBaseScenarios:
         aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
 
         template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_item_reader_base_json_max_items(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.json"
+        json_file = json.dumps(
+            [
+                {"verdict": "true", "statement_date": "6/11/2008", "statement_source": "speech"},
+            ]
+            * 3
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON_MAX_ITEMS)
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})

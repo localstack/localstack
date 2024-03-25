@@ -158,6 +158,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
     ReaderConfig,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_props import (
+    ReaderConfigProps,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
@@ -643,7 +646,7 @@ class Preprocessor(ASLParserVisitor):
         )
 
     def visitReader_config_decl(self, ctx: ASLParser.Reader_config_declContext) -> ReaderConfig:
-        props = TypedProps()
+        props = ReaderConfigProps()
         for child in ctx.children:
             cmp = self.visit(child)
             props.add(cmp)
@@ -654,7 +657,7 @@ class Preprocessor(ASLParserVisitor):
                     f"Expected a InputType declaration at '{ctx.getText()}'."
                 ),
             ),
-            max_items=props.get(typ=MaxItemsDecl),
+            max_items_decl=props.get(typ=MaxItemsDecl),
             csv_header_location=props.get(CSVHeaderLocation),
             csv_headers=props.get(CSVHeaders),
         )

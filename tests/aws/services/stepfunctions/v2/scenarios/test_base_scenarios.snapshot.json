@@ -13984,7 +13984,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[0]": {
-    "recorded-date": "22-03-2024, 21:03:53",
+    "recorded-date": "25-03-2024, 15:36:44",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -13992,8 +13992,7 @@
             "executionStartedEventDetails": {
               "input": {
                 "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 0
+                "Key": "file.csv"
               },
               "inputDetails": {
                 "truncated": false
@@ -14011,8 +14010,7 @@
             "stateEnteredEventDetails": {
               "input": {
                 "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 0
+                "Key": "file.csv"
               },
               "inputDetails": {
                 "truncated": false
@@ -14086,7 +14084,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[2]": {
-    "recorded-date": "22-03-2024, 21:04:23",
+    "recorded-date": "25-03-2024, 15:37:04",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -14094,8 +14092,7 @@
             "executionStartedEventDetails": {
               "input": {
                 "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 2
+                "Key": "file.csv"
               },
               "inputDetails": {
                 "truncated": false
@@ -14113,8 +14110,7 @@
             "stateEnteredEventDetails": {
               "input": {
                 "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 2
+                "Key": "file.csv"
               },
               "inputDetails": {
                 "truncated": false
@@ -14178,72 +14174,6 @@
             "previousEventId": 7,
             "timestamp": "timestamp",
             "type": "ExecutionSucceeded"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[1.5]": {
-    "recorded-date": "22-03-2024, 21:04:40",
-    "recorded-content": {
-      "get_execution_history": {
-        "events": [
-          {
-            "executionStartedEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 1.5
-              },
-              "inputDetails": {
-                "truncated": false
-              },
-              "roleArn": "snf_role_arn"
-            },
-            "id": 1,
-            "previousEventId": 0,
-            "timestamp": "timestamp",
-            "type": "ExecutionStarted"
-          },
-          {
-            "id": 2,
-            "previousEventId": 0,
-            "stateEnteredEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 1.5
-              },
-              "inputDetails": {
-                "truncated": false
-              },
-              "name": "MapState"
-            },
-            "timestamp": "timestamp",
-            "type": "MapStateEntered"
-          },
-          {
-            "id": 3,
-            "mapStateStartedEventDetails": {
-              "length": 0
-            },
-            "previousEventId": 2,
-            "timestamp": "timestamp",
-            "type": "MapStateStarted"
-          },
-          {
-            "executionFailedEventDetails": {
-              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). The MaxItemsPath field refers to value \"1.5\" which is not a valid integer: $.MaxItems",
-              "error": "States.Runtime"
-            },
-            "id": 4,
-            "previousEventId": 3,
-            "timestamp": "timestamp",
-            "type": "ExecutionFailed"
           }
         ],
         "ResponseMetadata": {
@@ -14254,7 +14184,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[100000000]": {
-    "recorded-date": "22-03-2024, 21:05:01",
+    "recorded-date": "25-03-2024, 15:37:24",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -14262,8 +14192,7 @@
             "executionStartedEventDetails": {
               "input": {
                 "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 100000000
+                "Key": "file.csv"
               },
               "inputDetails": {
                 "truncated": false
@@ -14281,201 +14210,7 @@
             "stateEnteredEventDetails": {
               "input": {
                 "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 100000000
-              },
-              "inputDetails": {
-                "truncated": false
-              },
-              "name": "MapState"
-            },
-            "timestamp": "timestamp",
-            "type": "MapStateEntered"
-          },
-          {
-            "id": 3,
-            "mapStateStartedEventDetails": {
-              "length": 0
-            },
-            "previousEventId": 2,
-            "timestamp": "timestamp",
-            "type": "MapStateStarted"
-          },
-          {
-            "id": 4,
-            "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
-            },
-            "previousEventId": 3,
-            "timestamp": "timestamp",
-            "type": "MapRunStarted"
-          },
-          {
-            "id": 5,
-            "previousEventId": 4,
-            "timestamp": "timestamp",
-            "type": "MapRunSucceeded"
-          },
-          {
-            "id": 6,
-            "previousEventId": 5,
-            "timestamp": "timestamp",
-            "type": "MapStateSucceeded"
-          },
-          {
-            "id": 7,
-            "previousEventId": 5,
-            "stateExitedEventDetails": {
-              "name": "MapState",
-              "output": "[{\"Col1\":\"Value1\",\"Col2\":\"Value2\"},{\"Col1\":\"Value3\",\"Col2\":\"Value4\"},{\"Col1\":\"Value5\",\"Col2\":\"Value6\"},{\"Col1\":\"Value7\",\"Col2\":\"Value8\"}]",
-              "outputDetails": {
-                "truncated": false
-              }
-            },
-            "timestamp": "timestamp",
-            "type": "MapStateExited"
-          },
-          {
-            "executionSucceededEventDetails": {
-              "output": "[{\"Col1\":\"Value1\",\"Col2\":\"Value2\"},{\"Col1\":\"Value3\",\"Col2\":\"Value4\"},{\"Col1\":\"Value5\",\"Col2\":\"Value6\"},{\"Col1\":\"Value7\",\"Col2\":\"Value8\"}]",
-              "outputDetails": {
-                "truncated": false
-              }
-            },
-            "id": 8,
-            "previousEventId": 7,
-            "timestamp": "timestamp",
-            "type": "ExecutionSucceeded"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[-1]": {
-    "recorded-date": "22-03-2024, 21:03:32",
-    "recorded-content": {
-      "get_execution_history": {
-        "events": [
-          {
-            "executionStartedEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": -1
-              },
-              "inputDetails": {
-                "truncated": false
-              },
-              "roleArn": "snf_role_arn"
-            },
-            "id": 1,
-            "previousEventId": 0,
-            "timestamp": "timestamp",
-            "type": "ExecutionStarted"
-          },
-          {
-            "id": 2,
-            "previousEventId": 0,
-            "stateEnteredEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": -1
-              },
-              "inputDetails": {
-                "truncated": false
-              },
-              "name": "MapState"
-            },
-            "timestamp": "timestamp",
-            "type": "MapStateEntered"
-          },
-          {
-            "id": 3,
-            "mapStateStartedEventDetails": {
-              "length": 0
-            },
-            "previousEventId": 2,
-            "timestamp": "timestamp",
-            "type": "MapStateStarted"
-          },
-          {
-            "id": 4,
-            "mapRunStartedEventDetails": {
-              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
-            },
-            "previousEventId": 3,
-            "timestamp": "timestamp",
-            "type": "MapRunStarted"
-          },
-          {
-            "id": 5,
-            "mapRunFailedEventDetails": {
-              "cause": "field MaxItems must be positive",
-              "error": "States.ItemReaderFailed"
-            },
-            "previousEventId": 4,
-            "timestamp": "timestamp",
-            "type": "MapRunFailed"
-          },
-          {
-            "id": 6,
-            "previousEventId": 5,
-            "timestamp": "timestamp",
-            "type": "MapStateFailed"
-          },
-          {
-            "executionFailedEventDetails": {
-              "cause": "field MaxItems must be positive",
-              "error": "States.ItemReaderFailed"
-            },
-            "id": 7,
-            "previousEventId": 6,
-            "timestamp": "timestamp",
-            "type": "ExecutionFailed"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[100000001]": {
-    "recorded-date": "22-03-2024, 21:05:22",
-    "recorded-content": {
-      "get_execution_history": {
-        "events": [
-          {
-            "executionStartedEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 100000001
-              },
-              "inputDetails": {
-                "truncated": false
-              },
-              "roleArn": "snf_role_arn"
-            },
-            "id": 1,
-            "previousEventId": 0,
-            "timestamp": "timestamp",
-            "type": "ExecutionStarted"
-          },
-          {
-            "id": 2,
-            "previousEventId": 0,
-            "stateEnteredEventDetails": {
-              "input": {
-                "Bucket": "bucket-name",
-                "Key": "file.csv",
-                "MaxItems": 100000001
+                "Key": "file.csv"
               },
               "inputDetails": {
                 "truncated": false
@@ -14549,7 +14284,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[-1]": {
-    "recorded-date": "22-03-2024, 21:06:33",
+    "recorded-date": "25-03-2024, 17:38:59",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -14640,7 +14375,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[0]": {
-    "recorded-date": "22-03-2024, 21:06:54",
+    "recorded-date": "25-03-2024, 17:39:20",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -14742,7 +14477,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[2]": {
-    "recorded-date": "22-03-2024, 21:07:14",
+    "recorded-date": "25-03-2024, 17:39:44",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -14844,7 +14579,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[1.5]": {
-    "recorded-date": "22-03-2024, 21:07:31",
+    "recorded-date": "25-03-2024, 17:40:01",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -14910,7 +14645,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[100000000]": {
-    "recorded-date": "22-03-2024, 21:07:51",
+    "recorded-date": "25-03-2024, 17:40:23",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -15012,7 +14747,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[100000001]": {
-    "recorded-date": "22-03-2024, 21:08:11",
+    "recorded-date": "25-03-2024, 17:40:44",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -15096,6 +14831,106 @@
           {
             "executionSucceededEventDetails": {
               "output": "[{\"Col1\":\"Value1\",\"Col2\":\"Value2\"},{\"Col1\":\"Value3\",\"Col2\":\"Value4\"},{\"Col1\":\"Value5\",\"Col2\":\"Value6\"},{\"Col1\":\"Value7\",\"Col2\":\"Value8\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json_max_items": {
+    "recorded-date": "25-03-2024, 18:19:14",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file.json"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 0
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapRunStartedEventDetails": {
+              "mapRunArn": "arn:aws:states:<region>:111111111111:mapRun:<ArnPart_0idx>/<MapRunArnPart0_0idx>:<MapRunArnPart1_0idx>"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapRunStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "MapRunSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"}]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"},{\"verdict\":\"true\",\"statement_date\":\"6/11/2008\",\"statement_source\":\"speech\"}]",
               "outputDetails": {
                 "truncated": false
               }

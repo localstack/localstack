@@ -57,6 +57,11 @@ class ItemReader(EvalComponent):
         return f"({self.__class__.__name__}| {class_dict})"
 
     def _eval_body(self, env: Environment) -> None:
+        resource_config = None
+        if self.reader_config:
+            self.reader_config.eval(env=env)
+            resource_config = env.stack.pop()
+
         if self.parameters:
             self.parameters.eval(env=env)
         else:
@@ -65,5 +70,5 @@ class ItemReader(EvalComponent):
         self.resource_eval.eval_resource(env=env)
 
         if self.reader_config:
-            self.reader_config.eval(env=env)
+            env.stack.append(resource_config)
             self.resource_output_transformer.eval(env=env)
