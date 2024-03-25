@@ -1013,7 +1013,8 @@ class TestBaseScenarios:
     ):
         if max_items_value == 1.5:
             pytest.skip(
-                "Validation of non integer max items value is performed at a higher depth than that of negative values in AWS StepFunctions. The SFN v2 interpreter runs this check at the same depth."
+                "Validation of non integer max items value is performed at a higher depth than that of negative "
+                "values in AWS StepFunctions. The SFN v2 interpreter runs this check at the same depth."
             )
 
         bucket_name = s3_create_bucket()
