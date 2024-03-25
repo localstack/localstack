@@ -49,7 +49,6 @@ IsSampled = bool
 KmsKeyId = str
 ListAnomaliesLimit = int
 ListLogAnomalyDetectorsLimit = int
-LogEvent = str
 LogEventIndex = int
 LogGroupArn = str
 LogGroupIdentifier = str
@@ -392,6 +391,13 @@ class PatternToken(TypedDict, total=False):
 
 
 PatternTokens = List[PatternToken]
+
+
+class LogEvent(TypedDict, total=False):
+    timestamp: Optional[Timestamp]
+    message: Optional[EventMessage]
+
+
 LogSamples = List[LogEvent]
 Count = int
 Histogram = Dict[Time, Count]
