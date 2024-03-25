@@ -179,7 +179,7 @@ idna==3.6
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.3.2
+importlib-resources==6.4.0
     # via jsii
 incremental==22.10.0
     # via localstack-twisted
@@ -202,7 +202,7 @@ joserfc==0.9.0
     # via moto-ext
 jschema-to-python==1.2.3
     # via cfn-lint
-jsii==1.95.0
+jsii==1.96.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
@@ -291,7 +291,7 @@ pluggy==1.4.0
     # via
     #   localstack-core (pyproject.toml)
     #   pytest
-plux==1.8.1
+plux==1.9.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
