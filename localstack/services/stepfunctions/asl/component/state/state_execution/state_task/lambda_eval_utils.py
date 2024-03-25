@@ -20,6 +20,12 @@ class LambdaFunctionErrorException(Exception):
 
 
 def _from_payload(payload_streaming_body: IO[bytes]) -> Union[json, str]:
+    """
+    This method extracts the lambda payload. The payload may be a string or a JSON stringified object.
+    In the first case, this function converts the output into a UTF-8 string, otherwise it parses the
+    JSON string into a JSON object.
+    """
+
     payload_bytes: bytes = payload_streaming_body.read()
     decoded_data: str = payload_bytes.decode("utf-8")
     try:

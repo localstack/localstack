@@ -26,11 +26,17 @@ class TestStatesErrors:
         create_lambda_function,
         sfn_snapshot,
     ):
+        """
+        This test checks the 'DataLimitExceeded' error when a service lambda task returns a large UTF-8 response.
+        It creates a lambda function with a large output string, then creates and records an execution of a
+        state machine that invokes the lambda function. The test verifies that the state machine correctly
+        raises the 'DataLimitExceeded' error.
+        """
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.9",
+            runtime="python3.12",
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
@@ -56,11 +62,18 @@ class TestStatesErrors:
         create_lambda_function,
         sfn_snapshot,
     ):
+        """
+        This test checks the 'DataLimitExceeded' error when a service lambda task returns a large UTF-8 response.
+        It creates a lambda function with a large output string, then creates and records an execution of a
+        state machine that invokes the lambda function. The test verifies that the state machine correctly
+        raises and handles the 'DataLimitExceeded' error.
+        """
+
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.9",
+            runtime="python3.12",
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
@@ -86,11 +99,20 @@ class TestStatesErrors:
         create_lambda_function,
         sfn_snapshot,
     ):
+        """
+        This test checks the 'DataLimitExceeded' error when a legacy lambda task returns a large UTF-8 response.
+        This is different from a service lambda task as the state machine invokes the lambda function directly using
+        its arn, rather than passing the parameters results to the states invoke call.
+        It creates a lambda function with a large output string, then creates and records an execution of a
+        state machine that invokes the lambda function. The test verifies that the state machine correctly
+        raises the 'DataLimitExceeded' error.
+        """
+
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_response = create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.9",
+            runtime="python3.12",
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
@@ -118,11 +140,20 @@ class TestStatesErrors:
         create_lambda_function,
         sfn_snapshot,
     ):
+        """
+        This test checks the 'DataLimitExceeded' error when a legacy lambda task returns a large UTF-8 response.
+        This is different from a service lambda task as the state machine invokes the lambda function directly using
+        its arn, rather than passing the parameters results to the states invoke call.
+        It creates a lambda function with a large output string, then creates and records an execution of a
+        state machine that invokes the lambda function. The test verifies that the state machine correctly
+        raises and handles the 'DataLimitExceeded' error.
+        """
+
         function_name = f"lambda_func_{short_uid()}"
         create_lambda_response = create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_LARGE_OUTPUT_STRING,
-            runtime="python3.9",
+            runtime="python3.12",
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
         function_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
@@ -149,15 +180,21 @@ class TestStatesErrors:
         create_state_machine,
         sfn_snapshot,
     ):
-        four_bytes_utf8_char = "𐍈"
+        """
+        This test checks the 'DataLimitExceeded' error from a non-task state.
+        In this case, it defines a 'Pass' state with a result that exceeds the given quota.
+        The test verifies that the state machine correctly raises the 'DataLimitExceeded' error.
+        """
+
+        two_bytes_utf8_char = "a"
         template = {
             "StartAt": "State_1",
             "States": {
                 "State_1": {
                     "Type": "Pass",
                     "Result": {
-                        "Arg1": four_bytes_utf8_char
-                        * (257 * 1024 // len(four_bytes_utf8_char.encode("utf-8")))
+                        "Arg1": two_bytes_utf8_char
+                        * (257 * 1024 // len(two_bytes_utf8_char.encode("utf-8")))
                     },
                     "End": True,
                 }
