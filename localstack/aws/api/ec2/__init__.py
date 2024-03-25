@@ -76,6 +76,7 @@ DescribeInternetGatewaysMaxResults = int
 DescribeIpamByoasnMaxResults = int
 DescribeLaunchTemplatesMaxResults = int
 DescribeLockedSnapshotsMaxResults = int
+DescribeMacHostsRequestMaxResults = int
 DescribeMovingAddressesMaxResults = int
 DescribeNatGatewaysMaxResults = int
 DescribeNetworkAclsMaxResults = int
@@ -12129,6 +12130,29 @@ class DescribeLockedSnapshotsResult(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+class DescribeMacHostsRequest(ServiceRequest):
+    Filters: Optional[FilterList]
+    HostIds: Optional[RequestHostIdList]
+    MaxResults: Optional[DescribeMacHostsRequestMaxResults]
+    NextToken: Optional[String]
+
+
+MacOSVersionStringList = List[String]
+
+
+class MacHost(TypedDict, total=False):
+    HostId: Optional[DedicatedHostId]
+    MacOSLatestSupportedVersions: Optional[MacOSVersionStringList]
+
+
+MacHostList = List[MacHost]
+
+
+class DescribeMacHostsResult(TypedDict, total=False):
+    MacHosts: Optional[MacHostList]
+    NextToken: Optional[String]
+
+
 class DescribeManagedPrefixListsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     Filters: Optional[FilterList]
@@ -21755,6 +21779,18 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> DescribeLockedSnapshotsResult:
+        raise NotImplementedError
+
+    @handler("DescribeMacHosts")
+    def describe_mac_hosts(
+        self,
+        context: RequestContext,
+        filters: FilterList = None,
+        host_ids: RequestHostIdList = None,
+        max_results: DescribeMacHostsRequestMaxResults = None,
+        next_token: String = None,
+        **kwargs,
+    ) -> DescribeMacHostsResult:
         raise NotImplementedError
 
     @handler("DescribeManagedPrefixLists")

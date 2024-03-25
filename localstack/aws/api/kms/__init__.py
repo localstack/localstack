@@ -904,11 +904,12 @@ class GenerateRandomResponse(TypedDict, total=False):
 
 class GetKeyPolicyRequest(ServiceRequest):
     KeyId: KeyIdType
-    PolicyName: PolicyNameType
+    PolicyName: Optional[PolicyNameType]
 
 
 class GetKeyPolicyResponse(TypedDict, total=False):
     Policy: Optional[PolicyType]
+    PolicyName: Optional[PolicyNameType]
 
 
 class GetKeyRotationStatusRequest(ServiceRequest):
@@ -1054,7 +1055,7 @@ class ListRetirableGrantsRequest(ServiceRequest):
 
 class PutKeyPolicyRequest(ServiceRequest):
     KeyId: KeyIdType
-    PolicyName: PolicyNameType
+    PolicyName: Optional[PolicyNameType]
     Policy: PolicyType
     BypassPolicyLockoutSafetyCheck: Optional[BooleanType]
 
@@ -1455,7 +1456,11 @@ class KmsApi:
 
     @handler("GetKeyPolicy")
     def get_key_policy(
-        self, context: RequestContext, key_id: KeyIdType, policy_name: PolicyNameType, **kwargs
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        policy_name: PolicyNameType = None,
+        **kwargs,
     ) -> GetKeyPolicyResponse:
         raise NotImplementedError
 
@@ -1567,8 +1572,8 @@ class KmsApi:
         self,
         context: RequestContext,
         key_id: KeyIdType,
-        policy_name: PolicyNameType,
         policy: PolicyType,
+        policy_name: PolicyNameType = None,
         bypass_policy_lockout_safety_check: BooleanType = None,
         **kwargs,
     ) -> None:

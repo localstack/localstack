@@ -1,0 +1,26 @@
+{
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds[0]": {
+    "last_validated_date": "2024-03-22T21:22:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds[1]": {
+    "last_validated_date": "2024-03-22T21:22:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path": {
+    "last_validated_date": "2024-03-22T17:32:55+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[-1.5]": {
+    "last_validated_date": "2024-03-22T21:37:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[-1]": {
+    "last_validated_date": "2024-03-22T21:37:11+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[0]": {
+    "last_validated_date": "2024-03-22T21:37:45+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[1.5]": {
+    "last_validated_date": "2024-03-22T21:38:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/base/test_wait.py::TestSfnWait::test_base_wait_seconds_path[1]": {
+    "last_validated_date": "2024-03-22T21:38:00+00:00"
+  }
+}
