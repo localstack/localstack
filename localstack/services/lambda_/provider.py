@@ -1689,10 +1689,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
-        if "EventSourceArn" not in request:
-            raise InvalidParameterValueException("Unrecognized event source.", Type="User")
+        service = None
 
-        service = extract_service_from_arn(request["EventSourceArn"])
+        if "SelfManagedEventSource" in request:
+            service = "kafka"
+
+        if service is None and "EventSourceArn" not in request:
+            raise InvalidParameterValueException("Unrecognized event source.", Type="User")
+        if service is None:
+            service = extract_service_from_arn(request["EventSourceArn"])
         if service in ["dynamodb", "kinesis", "kafka"] and "StartingPosition" not in request:
             raise InvalidParameterValueException(
                 "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
