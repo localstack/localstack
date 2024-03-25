@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.8-slim-bookworm@sha256:a2eb07f336e4f194358382611b4fea136c632b40baa6314cb27a366deeaf0144 as base
+FROM python:3.11.8-slim-bookworm@sha256:bc6a38f1284b39dc87a602c50d027ad268d091af6956dd5142337121ce90b3f0 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
