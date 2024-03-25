@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+  SQSDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: test-dead
+
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Value:
+        Fn::GetAtt: SQSDeadLetterQueue.Arn
+      Type: String
+
+Outputs:
+  DeadArn:
+    Value:
+      Fn::GetAtt: SQSDeadLetterQueue.Arn

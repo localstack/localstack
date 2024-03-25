@@ -1084,5 +1084,13 @@
         "statusCode": 400
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration_non_post_method": {
+    "recorded-date": "20-03-2024, 22:16:43",
+    "recorded-content": {
+      "invocation-payload-with-get-proxy-method": {
+        "message": "Internal server error"
+      }
+    }
   }
 }

@@ -1,5 +1,6 @@
 include Makefile
 include LICENSE.txt
+include VERSION
 recursive-include localstack/ext *.java
 recursive-include localstack/ext pom.xml
 recursive-include localstack/utils/kinesis *.java

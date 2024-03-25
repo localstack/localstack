@@ -66,7 +66,6 @@ from tests.aws.services.apigateway.conftest import (
     STEPFUNCTIONS_ASSUME_ROLE_POLICY,
 )
 from tests.aws.services.lambda_.test_lambda import (
-    TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_NODEJS_APIGW_502,
@@ -220,57 +219,6 @@ class TestAPIGateway:
             patchOperations=patch_operations,
         )
         assert deployment["description"] == "new-description"
-
-    @markers.aws.unknown
-    def test_api_gateway_lambda_integration(
-        self,
-        create_rest_apigw,
-        create_lambda_function,
-        aws_client,
-        region_name,
-    ):
-        """
-        API gateway to lambda integration test returns a response with the same body as the lambda
-        function input event.
-        """
-        fn_name = f"test-{short_uid()}"
-        lambda_arn = create_lambda_function(
-            func_name=fn_name,
-            handler_file=TEST_LAMBDA_AWS_PROXY,
-            runtime=Runtime.python3_9,
-        )["CreateFunctionResponse"]["FunctionArn"]
-
-        api_id, _, root = create_rest_apigw(name="aws lambda api")
-        resource_id, _ = create_rest_resource(
-            aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="test"
-        )
-
-        # create method and integration
-        create_rest_resource_method(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="GET",
-            authorizationType="NONE",
-        )
-        create_rest_api_integration(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="GET",
-            integrationHttpMethod="GET",
-            type="AWS_PROXY",
-            uri=f"arn:aws:apigateway:{region_name}:lambda:path//2015-03-31/function"
-            f"s/{lambda_arn}/invocations",
-        )
-
-        url = api_invoke_url(api_id=api_id, stage="local", path="/test")
-        response = requests.get(url)
-        body = response.json()
-        assert response.status_code == 200
-        # authorizer contains an object that does not contain the authorizer type ('lambda', 'sns')
-        # TODO this should not only be empty, but the key should not exist (like in aws)
-        assert not body.get("requestContext").get("authorizer")
 
     @markers.aws.validated
     def test_api_gateway_lambda_integration_aws_type(
@@ -1851,7 +1799,7 @@ def test_rest_api_multi_region(
         resourceId=resource_eu_id,
         httpMethod=method,
         type="AWS_PROXY",
-        integrationHttpMethod=method,
+        integrationHttpMethod="POST",
         uri=uri_eu,
     )
 
@@ -1863,7 +1811,7 @@ def test_rest_api_multi_region(
         resourceId=resource_us_id,
         httpMethod=method,
         type="AWS_PROXY",
-        integrationHttpMethod=method,
+        integrationHttpMethod="POST",
         uri=uri_us,
     )
 

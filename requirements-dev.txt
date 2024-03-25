@@ -13,7 +13,9 @@ amazon-kclpy==2.1.3
 annotated-types==0.6.0
     # via pydantic
 antlr4-python3-runtime==4.13.1
-    # via localstack-core
+    # via
+    #   localstack-core
+    #   moto-ext
 anyio==4.3.0
     # via httpx
 apispec==6.6.0
@@ -43,7 +45,7 @@ aws-sam-translator==1.86.0
     #   localstack-core
 aws-xray-sdk==2.13.0
     # via moto-ext
-awscli==1.32.64
+awscli==1.32.69
     # via localstack-core
 awscrt==0.20.5
     # via localstack-core
@@ -53,12 +55,12 @@ blinker==1.7.0
     #   quart
 boto==2.49.0
     # via amazon-kclpy
-boto3==1.34.64
+boto3==1.34.69
     # via
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.34.64
+botocore==1.34.69
     # via
     #   aws-xray-sdk
     #   awscli
@@ -193,7 +195,7 @@ idna==3.6
     #   hyperlink
     #   localstack-twisted
     #   requests
-importlib-resources==6.3.2
+importlib-resources==6.4.0
     # via jsii
 incremental==22.10.0
     # via localstack-twisted
@@ -216,7 +218,7 @@ joserfc==0.9.0
     # via moto-ext
 jschema-to-python==1.2.3
     # via cfn-lint
-jsii==1.95.0
+jsii==1.96.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
@@ -235,6 +237,7 @@ jsonpath-ng==1.6.1
     # via
     #   localstack-core
     #   localstack-snapshot
+    #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core
 jsonpickle==3.0.3
@@ -270,7 +273,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext[all]==5.0.2.post2
+moto-ext[all]==5.0.3.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -314,7 +317,7 @@ pluggy==1.4.0
     #   pytest
 plumbum==1.8.2
     # via pandoc
-plux==1.8.1
+plux==1.9.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -323,7 +326,7 @@ ply==3.11
     #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
-pre-commit==3.6.2
+pre-commit==3.7.0
     # via localstack-core (pyproject.toml)
 priority==1.3.0
     # via
@@ -443,7 +446,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.3.3
+ruff==0.3.4
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.1
     # via

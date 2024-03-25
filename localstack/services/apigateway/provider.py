@@ -2156,14 +2156,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not usage_plan.get("quota"):
             usage_plan.pop("quota", None)
 
-        if not usage_plan.get("throttle"):
-            usage_plan.pop("throttle", None)
-
-        if usage_plan.get("throttle", {}).get("rateLimit"):
-            usage_plan["throttle"]["rateLimit"] = float(usage_plan["throttle"]["rateLimit"])
-
-        if usage_plan.get("throttle", {}).get("burstLimit"):
-            usage_plan["throttle"]["burstLimit"] = int(usage_plan["throttle"]["burstLimit"])
+        fix_throttle_and_quota_from_usage_plan(usage_plan)
 
         return usage_plan
 
@@ -2174,21 +2167,31 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         patch_operations: ListOfPatchOperation = None,
         **kwargs,
     ) -> UsagePlan:
+        for patch_op in patch_operations:
+            if patch_op.get("op") == "remove" and patch_op.get("path") == "/apiStages":
+                if not (api_stage_id := patch_op.get("value")):
+                    raise BadRequestException("Invalid API Stage specified")
+                if not len(split_stage_id := api_stage_id.split(":")) == 2:
+                    raise BadRequestException("Invalid API Stage specified")
+                rest_api_id, stage_name = split_stage_id
+                moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+                if not (rest_api := moto_backend.apis.get(rest_api_id)):
+                    raise NotFoundException(
+                        f"Invalid API Stage {{api: {rest_api_id}, stage: {stage_name}}} specified for usageplan {usage_plan_id}"
+                    )
+                if stage_name not in rest_api.stages:
+                    raise NotFoundException(
+                        f"Invalid API Stage {{api: {rest_api_id}, stage: {stage_name}}} specified for usageplan {usage_plan_id}"
+                    )
+
         usage_plan = call_moto(context=context)
         if not usage_plan.get("quota"):
             usage_plan.pop("quota", None)
 
-        if not usage_plan.get("throttle"):
-            usage_plan.pop("throttle", None)
-
         if "tags" not in usage_plan:
             usage_plan["tags"] = {}
 
-        if usage_plan.get("throttle", {}).get("rateLimit"):
-            usage_plan["throttle"]["rateLimit"] = float(usage_plan["throttle"]["rateLimit"])
-
-        if usage_plan.get("throttle", {}).get("burstLimit"):
-            usage_plan["throttle"]["burstLimit"] = int(usage_plan["throttle"]["burstLimit"])
+        fix_throttle_and_quota_from_usage_plan(usage_plan)
 
         return usage_plan
 
@@ -2197,8 +2200,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not usage_plan.get("quota"):
             usage_plan.pop("quota", None)
 
-        if not usage_plan.get("throttle"):
-            usage_plan.pop("throttle", None)
+        fix_throttle_and_quota_from_usage_plan(usage_plan)
 
         if "tags" not in usage_plan:
             usage_plan["tags"] = {}
@@ -2223,8 +2225,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             if not up.get("quota"):
                 up.pop("quota", None)
 
-            if not up.get("throttle"):
-                up.pop("throttle", None)
+            fix_throttle_and_quota_from_usage_plan(up)
 
             if "tags" not in up:
                 up.pop("tags", None)
@@ -2482,6 +2483,23 @@ def remove_empty_attributes_from_integration_response(integration_response: Inte
         integration_response.pop("responseTemplates", None)
 
     return integration_response
+
+
+def fix_throttle_and_quota_from_usage_plan(usage_plan: UsagePlan) -> None:
+    if quota := usage_plan.get("quota"):
+        if "offset" not in quota:
+            quota["offset"] = 0
+    else:
+        usage_plan.pop("quota", None)
+
+    if throttle := usage_plan.get("throttle"):
+        if rate_limit := throttle.get("rateLimit"):
+            throttle["rateLimit"] = float(rate_limit)
+
+        if burst_limit := throttle.get("burstLimit"):
+            throttle["burstLimit"] = int(burst_limit)
+    else:
+        usage_plan.pop("throttle", None)
 
 
 def validate_model_in_use(moto_rest_api: MotoRestAPI, model_name: str) -> None:

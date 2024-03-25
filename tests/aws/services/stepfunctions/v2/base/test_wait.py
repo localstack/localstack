@@ -29,7 +29,7 @@ class TestSfnWait:
         This isn't as important though since a statemachine can't run for more than a year anyway.
         Docs for Standard workflows: "If an execution runs for more than the 1-year maximum, it will fail with a States.Timeout error and emit a ExecutionsTimedOut CloudWatch metric."
         """
-        template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_TIMESTAMPPATH)
+        template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_TIMESTAMP_PATH)
         definition = json.dumps(template)
 
         wait_timestamp = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(
@@ -75,7 +75,7 @@ class TestSfnWait:
         - Timestamp can be in the past (succeeds immediately)
         - Fractional seconds are optional and there's no specific number enforced (e.g. milliseconds vs. microseconds)
         """
-        template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_TIMESTAMPPATH)
+        template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_TIMESTAMP_PATH)
         definition = json.dumps(template)
 
         wait_timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -91,4 +91,26 @@ class TestSfnWait:
             sfn_snapshot,
             definition,
             exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("seconds_value", [-1, -1.5, 0, 1, 1.5])
+    def test_base_wait_seconds_path(
+        self,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        aws_client,
+        sfn_snapshot,
+        seconds_value,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_SECONDS_PATH)
+        definition = json.dumps(template)
+        execution_input = json.dumps({"input": {"waitSeconds": seconds_value}})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            execution_input,
         )
