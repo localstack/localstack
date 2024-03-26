@@ -8,18 +8,6 @@ PYTEST_LOGLEVEL ?=
 DISABLE_BOTO_RETRIES ?= 1
 MAIN_CONTAINER_NAME ?= localstack-main
 
-# Define default ANTLR4 tool dump directory and path.
-ANTLR4_DIR ?= .antlr
-ANTLR4_JAR ?= $(ANTLR4_DIR)/antlr-4.13.1-complete.jar
-# Define the download path for ANTLR4 parser generator.
-ANTLR4_URL ?= https://www.antlr.org/download/antlr-4.13.1-complete.jar
-# Define the default input and output directory for ANTLR4 grammars.
-ANTLR4_SRC_DIR ?= localstack/services/stepfunctions/asl/antlr
-ANTLR4_TARGET_DIR ?= $(ANTLR4_SRC_DIR)/runtime
-ANTLR4_GRAMMAR_FILES ?= $(wildcard $(ANTLR4_SRC_DIR)/*.g4)
-# Define the default ANTLR4 run command and options.
-RUN_ANTLR4 ?= java -jar $(ANTLR4_JAR) -Dlanguage=Python3 -visitor
-
 MAJOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f1)
 MINOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f2)
 PATCH_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f3)
@@ -80,24 +68,12 @@ install-s3: venv     ## Install dependencies for the localstack runtime for s3-o
 	$(VENV_RUN); $(PIP_CMD) install -r requirements-base-runtime.txt
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[base-runtime]"
 
-install-dev-antlr4:        ## Install the dependencies for compiling the ANTLR4 project
-	@mkdir -p $(ANTLR4_DIR)
-	@curl -o $(ANTLR4_JAR) $(ANTLR4_URL)
-
 install: install-dev entrypoints  ## Install full dependencies into venv
 
 entrypoints:              ## Run plux to build entry points
 	$(VENV_RUN); python -m plux entrypoints
 	@# make sure that the entrypoints were correctly created and are non-empty
 	@test -s localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
-
-build-dev-antlr4: $(ANTLR4_GRAMMAR_FILES)        ## Build the ANTLR4 project.
-	@echo "Compiling grammar files in $(ANTLR_SRC_DIR)"
-	@mkdir -p $(ANTLR4_TARGET_DIR)
-	@for grammar in $^ ; do \
-		echo "Processing $$grammar..."; \
-		$(RUN_ANTLR4) $$grammar -o $(ANTLR4_TARGET_DIR) -Xexact-output-dir; \
-	done
 
 dist: entrypoints        ## Build source and built (wheel) distributions of the current version
 	$(VENV_RUN); pip install --upgrade twine; python setup.py sdist bdist_wheel
@@ -291,9 +267,5 @@ clean:             		  ## Clean up (npm dependencies, downloaded infrastructure 
 clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
-
-clean-dev-antlr4:        ## Clean up the ANTLR4 project directory.
-	rm -rf $(ANTLR4_TARGET_DIR)
-	rm -rf $(ANTLR4_DIR)
 
 .PHONY: usage freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist pip-tools upgrade-pinned-dependencies
