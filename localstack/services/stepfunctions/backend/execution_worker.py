@@ -4,6 +4,7 @@ from threading import Thread
 from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
+    Arn,
     Definition,
     ExecutionStartedEventDetails,
     HistoryEventExecutionDataDetails,
@@ -19,6 +20,7 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistoryContext
 from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.backend.activity import Activity
 from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
 
 
@@ -29,6 +31,7 @@ class ExecutionWorker:
     _exec_comm: Final[ExecutionWorkerComm]
     _context_object_init: Final[ContextObjectInitData]
     _aws_execution_details: Final[AWSExecutionDetails]
+    _activity_store: dict[Arn, Activity]
 
     def __init__(
         self,
@@ -37,12 +40,14 @@ class ExecutionWorker:
         context_object_init: ContextObjectInitData,
         aws_execution_details: AWSExecutionDetails,
         exec_comm: ExecutionWorkerComm,
+        activity_store: dict[Arn, Activity],
     ):
         self._definition = definition
         self._input_data = input_data
         self._exec_comm = exec_comm
         self._context_object_init = context_object_init
         self._aws_execution_details = aws_execution_details
+        self._activity_store = activity_store
         self.env = None
 
     def _execution_logic(self):
@@ -51,6 +56,7 @@ class ExecutionWorker:
             aws_execution_details=self._aws_execution_details,
             context_object_init=self._context_object_init,
             event_history_context=EventHistoryContext.of_program_start(),
+            activity_store=self._activity_store,
         )
         self.env.inp = copy.deepcopy(
             self._input_data

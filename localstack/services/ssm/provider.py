@@ -126,7 +126,7 @@ class SsmProvider(SsmApi, ABC):
         if SsmProvider._has_secrets(names):
             return SsmProvider._get_params_and_secrets(context.account_id, context.region, names)
 
-        norm_names = list([SsmProvider._normalize_name(name, validate=True) for name in names])
+        norm_names = [SsmProvider._normalize_name(name, validate=True) for name in names]
         request = {"Names": norm_names, "WithDecryption": bool(with_decryption)}
         res = call_moto_with_request(context, request)
 

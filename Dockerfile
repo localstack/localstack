@@ -1,5 +1,5 @@
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:11@sha256:80d72d2b0e1afef5b99b9bb2f75db73e54ca427ad6423434f711e0920c7547e6 as java-builder
+FROM eclipse-temurin:11@sha256:1cfde03be30cc838fe93164ef7e64dbb38656d926103c901cb2e0f806c26ae43 as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.8-slim-bookworm@sha256:ce81dc539f0aedc9114cae640f8352fad83d37461c24a3615b01f081d0c0583a as base
+FROM python:3.11.8-slim-bookworm@sha256:bc6a38f1284b39dc87a602c50d027ad268d091af6956dd5142337121ce90b3f0 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -152,9 +152,9 @@ RUN --mount=type=cache,target=/root/.cache \
     (virtualenv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
 
 # add files necessary to install runtime dependencies
-ADD Makefile setup.py setup.cfg pyproject.toml requirements-runtime.txt ./
-# add the root package init to invalidate docker layers with version bumps
-ADD localstack/__init__.py localstack/
+ADD Makefile pyproject.toml requirements-runtime.txt ./
+# add the VERSION file to invalidate docker layers with version bumps
+ADD VERSION ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
@@ -170,7 +170,7 @@ FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 
 # add project files necessary to install all dependencies
-ADD Makefile setup.py setup.cfg pyproject.toml ./
+ADD Makefile pyproject.toml VERSION ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 

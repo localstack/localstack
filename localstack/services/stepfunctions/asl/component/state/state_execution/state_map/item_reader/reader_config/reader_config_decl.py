@@ -68,9 +68,9 @@ class ReaderConfig(EvalComponent):
             MaxItemsValue=max_items_value,
         )
         if self.csv_header_location:
-            reader_config_output[
-                "CSVHeaderLocation"
-            ] = self.csv_header_location.csv_header_location_value.value
+            reader_config_output["CSVHeaderLocation"] = (
+                self.csv_header_location.csv_header_location_value.value
+            )
         if self.csv_headers:
             reader_config_output["CSVHeaders"] = self.csv_headers.header_names
         env.stack.append(reader_config_output)

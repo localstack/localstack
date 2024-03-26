@@ -318,6 +318,59 @@ class TestS3Cors:
         match_headers("get-random-wildcard-origin", get_req)
 
     @markers.aws.validated
+    def test_cors_options_match_partial_origin(self, s3_bucket, aws_client, match_headers):
+        bucket_url = _bucket_url_vhost(bucket_name=s3_bucket)
+        origin_url = "http://test.origin.com"
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["http://*.origin.com"],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["*"],
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+        response = requests.options(
+            bucket_url, headers={"Origin": origin_url, "Access-Control-Request-Method": "GET"}
+        )
+        match_headers("options_match_partial_origin", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Body.Error.ResourceType",
+            # it's because HostId is supposed to match x-amz-id-2 but is handled in serializer
+            "$..Body.Error.HostId",
+            # it's because RequestId is supposed to match x-amz-request-id ^
+            "$..Headers.Content-Length",  # TODO: fix me? not supposed to be here, OPTIONS with body
+            "$..Headers.Transfer-Encoding",
+            # TODO: fix me? supposed to be chunked, fully missing for OPTIONS with body (to be expected, honestly)
+        ]
+    )
+    def test_cors_options_fails_partial_origin(
+        self, s3_bucket, snapshot, aws_client, match_headers
+    ):
+        bucket_url = _bucket_url_vhost(bucket_name=s3_bucket)
+        origin_url = "http://test.origin.com/"
+        bucket_cors_config = {
+            "CORSRules": [
+                {
+                    "AllowedOrigins": ["http://*.origin.com"],
+                    "AllowedMethods": ["GET", "PUT"],
+                    "MaxAgeSeconds": 3000,
+                    "AllowedHeaders": ["*"],
+                }
+            ]
+        }
+        aws_client.s3.put_bucket_cors(Bucket=s3_bucket, CORSConfiguration=bucket_cors_config)
+        response = requests.options(
+            bucket_url, headers={"Origin": origin_url, "Access-Control-Request-Method": "GET"}
+        )
+        match_headers("options_fails_partial_origin", response)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Body.Error.HostId",

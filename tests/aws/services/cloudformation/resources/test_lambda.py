@@ -396,7 +396,7 @@ class TestCfnLambdaIntegrations:
             log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
                 "events"
             ]
-            return any([msg in e["message"] for e in log_events])
+            return any(msg in e["message"] for e in log_events)
 
         assert wait_until(wait_logs)
 
@@ -517,13 +517,47 @@ class TestCfnLambdaIntegrations:
             log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
                 "events"
             ]
-            return any([msg in e["message"] for e in log_events])
+            return any(msg in e["message"] for e in log_events)
 
         assert wait_until(wait_logs)
 
         deployment.destroy()
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
             aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
+
+    @markers.aws.validated
+    def test_lambda_dynamodb_event_filter(
+        self, dynamodb_wait_for_table_active, deploy_cfn_template, aws_client
+    ):
+        function_name = f"test-fn-{short_uid()}"
+        table_name = f"ddb-tbl-{short_uid()}"
+
+        item_to_put = {
+            "PK": {"S": "person1"},
+            "SK": {"S": "details"},
+            "name": {"S": "John Doe"},
+        }
+
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/lambda_dynamodb_event_filter.yaml"
+            ),
+            parameters={
+                "FunctionName": function_name,
+                "TableName": table_name,
+                "Filter": '{"dynamodb": {"NewImage": {"homemade": {"S": [{"exists": false}]}}}}',
+            },
+        )
+        aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put)
+
+        def _send_events():
+            log_events = aws_client.logs.filter_log_events(
+                logGroupName=f"/aws/lambda/{function_name}"
+            )["events"]
+            return any("Hello world!" in e["message"] for e in log_events)
+
+        sleep = 10 if os.getenv("TEST_TARGET") == "AWS_CLOUD" else 1
+        assert wait_until(_send_events, wait=sleep, max_retries=50)
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -660,7 +694,7 @@ class TestCfnLambdaIntegrations:
             log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
                 "events"
             ]
-            return any([msg in e["message"] for e in log_events])
+            return any(msg in e["message"] for e in log_events)
 
         assert wait_until(wait_logs)
 
@@ -794,7 +828,7 @@ class TestCfnLambdaIntegrations:
             log_events = aws_client.logs.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")[
                 "events"
             ]
-            return any([data_msg in e["message"] for e in log_events])
+            return any(data_msg in e["message"] for e in log_events)
 
         assert wait_until(wait_logs)
 

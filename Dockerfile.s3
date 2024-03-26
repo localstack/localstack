@@ -1,5 +1,5 @@
 # base: Stage which installs necessary runtime dependencies (OS packages, filesystem...)
-FROM python:3.11.8-slim-bookworm@sha256:ce81dc539f0aedc9114cae640f8352fad83d37461c24a3615b01f081d0c0583a as base
+FROM python:3.11.8-slim-bookworm@sha256:bc6a38f1284b39dc87a602c50d027ad268d091af6956dd5142337121ce90b3f0 as base
 ARG TARGETARCH
 
 # set workdir
@@ -52,12 +52,12 @@ RUN --mount=type=cache,target=/var/cache/apt \
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \
-    (python3 -m venv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
+    (python3 -m venv .venv && . .venv/bin/activate && pip3 install --upgrade pip wheel setuptools build)
 
 # add files necessary to install all dependencies
-ADD Makefile setup.py setup.cfg pyproject.toml requirements-base-runtime.txt ./
-# add the root package init to invalidate docker layers with version bumps
-ADD localstack/__init__.py localstack/
+ADD Makefile pyproject.toml requirements-base-runtime.txt ./
+# add the VERSION file to invalidate docker layers with version bumps
+ADD VERSION ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
@@ -76,7 +76,7 @@ FROM base
 COPY --from=builder /opt/code/localstack/.venv /opt/code/localstack/.venv
 
 # add project files necessary to install all dependencies
-ADD Makefile setup.py setup.cfg pyproject.toml requirements-base-runtime.txt ./
+ADD Makefile pyproject.toml VERSION requirements-base-runtime.txt ./
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
@@ -93,7 +93,7 @@ RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > 
 RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
 
-# expose edge service, external service ports, and debugpy
+# expose edge service and debugpy
 EXPOSE 4566 5678
 
 HEALTHCHECK --interval=10s --start-period=15s --retries=5 --timeout=5s CMD ./bin/localstack status services --format=json
@@ -117,6 +117,7 @@ ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 ENV LOCALSTACK_BUILD_VERSION=${LOCALSTACK_BUILD_VERSION}
 ENV EAGER_SERVICE_LOADING=1
 ENV SERVICES=s3
+ENV GATEWAY_SERVER=twisted
 # TODO: do we need DNS for the S3 image?
 ENV DNS_ADDRESS=false
 

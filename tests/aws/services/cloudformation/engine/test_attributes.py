@@ -25,3 +25,18 @@ class TestResourceAttributes:
             )
         stack_events = exc_info.value.events
         snapshot.match("stack_events", {"events": stack_events})
+
+    @markers.aws.validated
+    def test_dependency_on_attribute_with_dot_notation(
+        self, deploy_cfn_template, aws_client, snapshot
+    ):
+        """
+        Test that a resource can depend on another resource's attribute with dot notation
+        """
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        deployment = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/engine/cfn_getatt_dot_dependency.yml"
+            )
+        )
+        snapshot.match("outputs", deployment.outputs)

@@ -299,6 +299,7 @@ choice_operator: NOT | AND | OR;
 
 states_error_name:
     ERRORNAMEStatesALL
+    | ERRORNAMEStatesDataLimitExceeded
     | ERRORNAMEStatesHeartbeatTimeout
     | ERRORNAMEStatesTimeout
     | ERRORNAMEStatesTaskFailed

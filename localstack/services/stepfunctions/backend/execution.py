@@ -41,6 +41,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramTimedOut,
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.backend.activity import Activity
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
 from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
 from localstack.services.stepfunctions.backend.state_machine import (
@@ -67,8 +68,8 @@ class BaseExecutionWorkerComm(ExecutionWorkerComm):
             self.execution.exec_status = ExecutionStatus.ABORTED
         elif isinstance(exit_program_state, ProgramError):
             self.execution.exec_status = ExecutionStatus.FAILED
-            self.execution.error = exit_program_state.error["error"]
-            self.execution.cause = exit_program_state.error["cause"]
+            self.execution.error = exit_program_state.error.get("error")
+            self.execution.cause = exit_program_state.error.get("cause")
         elif isinstance(exit_program_state, ProgramTimedOut):
             self.execution.exec_status = ExecutionStatus.TIMED_OUT
         else:
@@ -103,6 +104,8 @@ class Execution:
 
     exec_worker: Optional[ExecutionWorker]
 
+    _activity_store: dict[Arn, Activity]
+
     def __init__(
         self,
         name: str,
@@ -112,6 +115,7 @@ class Execution:
         region_name: str,
         state_machine: StateMachineInstance,
         start_date: Timestamp,
+        activity_store: dict[Arn, Activity],
         input_data: Optional[dict] = None,
         trace_header: Optional[TraceHeader] = None,
     ):
@@ -132,6 +136,7 @@ class Execution:
         self.exec_worker = None
         self.error = None
         self.cause = None
+        self._activity_store = activity_store
 
     def _get_events_client(self):
         return connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
@@ -237,6 +242,7 @@ class Execution:
             aws_execution_details=AWSExecutionDetails(
                 account=self.account_id, region=self.region_name, role_arn=self.role_arn
             ),
+            activity_store=self._activity_store,
         )
         self.exec_status = ExecutionStatus.RUNNING
         self._publish_execution_status_change_event()
@@ -244,9 +250,8 @@ class Execution:
 
     def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
         exec_worker: Optional[ExecutionWorker] = self.exec_worker
-        if not exec_worker:
-            raise RuntimeError("No running executions.")
-        exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
+        if exec_worker:
+            exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
 
     def _publish_execution_status_change_event(self):
         input_value = (

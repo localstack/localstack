@@ -11,6 +11,9 @@
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
     "last_validated_date": "2023-02-27T16:38:51+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_lambda_dynamodb_event_filter": {
+    "last_validated_date": "2024-03-12T18:17:17+00:00"
+  },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_cfn_function_url": {
     "last_validated_date": "2023-02-27T16:27:12+00:00"
   },

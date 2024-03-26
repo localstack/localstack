@@ -114,7 +114,7 @@
             "integration.request.querystring.page": "method.request.querystring.page",
             "integration.request.querystring.type": "method.request.querystring.type"
           },
-          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+          "uri": "${uri}",
           "passthroughBehavior": "when_no_match",
           "httpMethod": "GET",
           "type": "http"
@@ -165,7 +165,7 @@
               }
             }
           },
-          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+          "uri": "${uri}",
           "passthroughBehavior": "when_no_match",
           "httpMethod": "POST",
           "type": "http"
@@ -264,7 +264,7 @@
           "requestParameters": {
             "integration.request.path.petId": "method.request.path.petId"
           },
-          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets/{petId}",
+          "uri": "${uri}/{petId}",
           "passthroughBehavior": "when_no_match",
           "httpMethod": "GET",
           "type": "http"

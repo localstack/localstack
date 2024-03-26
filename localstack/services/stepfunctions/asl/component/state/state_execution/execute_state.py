@@ -140,8 +140,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         )
 
     @abc.abstractmethod
-    def _eval_execution(self, env: Environment) -> None:
-        ...
+    def _eval_execution(self, env: Environment) -> None: ...
 
     def _handle_retry(self, env: Environment, failure_event: FailureEvent) -> RetryOutcome:
         env.stack.append(failure_event.error_name)

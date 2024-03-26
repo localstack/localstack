@@ -1,6 +1,87 @@
 {
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_to_default_eventbus_for_custom_eventbus": {
-    "recorded-date": "22-12-2022, 01:50:01",
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_target_id_validation": {
+    "recorded-date": "26-03-2024, 14:07:18",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '!@#$@!#$' at 'targets.1.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "length_error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'second-invalid-target-id' at 'targets.1.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_event_pattern": {
+    "recorded-date": "26-03-2024, 14:07:19",
+    "recorded-content": {
+      "eventbridge-test-event-pattern-response": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "eventbridge-test-event-pattern-response-no-match": {
+        "Result": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
+    "recorded-date": "26-03-2024, 14:09:45",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "EventId": "<uuid:1>"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-events": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "CustomType",
+            "source": "MySource",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "for the default event bus"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
+    "recorded-date": "26-03-2024, 14:07:59",
     "recorded-content": {
       "create-custom-event-bus": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<resource:1>",
@@ -78,33 +159,8 @@
       }
     }
   },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_target_id_validation": {
-    "recorded-date": "24-02-2023, 14:57:23",
-    "recorded-content": {
-      "error": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '!@#$@!#$' at 'targets.1.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "length_error": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'second-invalid-target-id' at 'targets.1.member.id' failed to satisfy constraint: Member must have length less than or equal to 64"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_nonexistent_event_bus": {
-    "recorded-date": "05-05-2023, 12:00:22",
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_put_events_nonexistent_event_bus": {
+    "recorded-date": "26-03-2024, 14:11:46",
     "recorded-content": {
       "put-events": {
         "Entries": [
@@ -151,219 +207,6 @@
           "HTTPStatusCode": 400
         }
       }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_test_event_pattern": {
-    "recorded-date": "05-07-2023, 19:41:16",
-    "recorded-content": {
-      "eventbridge-test-event-pattern-response": {
-        "Result": true,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "eventbridge-test-event-pattern-response-no-match": {
-        "Result": false,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
-    "recorded-date": "13-07-2023, 02:49:20",
-    "recorded-content": {
-      "put-events": {
-        "Entries": [
-          {
-            "EventId": "<uuid:1>"
-          }
-        ],
-        "FailedEntryCount": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get-events": [
-        {
-          "MessageId": "<uuid:2>",
-          "ReceiptHandle": "<receipt-handle:1>",
-          "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:1>",
-            "detail-type": "CustomType",
-            "source": "MySource",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "message": "for the default event bus"
-            }
-          }
-        }
-      ]
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_rule": {
-    "recorded-date": "29-09-2023, 19:26:53",
-    "recorded-content": {
-      "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-rules": {
-        "Rules": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
-            "EventBusName": "default",
-            "EventPattern": {
-              "source": [
-                "core.update-account-command"
-              ],
-              "detail-type": [
-                "core.update-account-command"
-              ],
-              "detail": {
-                "command": [
-                  "update-account"
-                ]
-              }
-            },
-            "Name": "<rule-name>",
-            "State": "ENABLED"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_rule_anything_but_to_sqs": {
-    "recorded-date": "21-12-2023, 13:00:42",
-    "recorded-content": {
-      "rule-anything-but": [
-        {
-          "MessageId": "<uuid:1>",
-          "ReceiptHandle": "<receipt-handle:1>",
-          "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:2>",
-            "detail-type": "core.update-account-command",
-            "source": "core.update-account-command",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "command": "display-message",
-              "payload": "baz"
-            }
-          }
-        },
-        {
-          "MessageId": "<uuid:3>",
-          "ReceiptHandle": "<receipt-handle:2>",
-          "MD5OfBody": "<m-d5-of-body:2>",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:4>",
-            "detail-type": "core.update-account-command",
-            "source": "core.update-account-command",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "command": null,
-              "payload": "baz"
-            }
-          }
-        }
-      ]
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_rule_exists_true_to_sqs": {
-    "recorded-date": "29-12-2023, 09:56:47",
-    "recorded-content": {
-      "rule-exists-true": [
-        {
-          "MessageId": "<uuid:1>",
-          "ReceiptHandle": "<receipt-handle:1>",
-          "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:2>",
-            "detail-type": "core.update-account-command",
-            "source": "core.update-account-command",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "key": "value",
-              "payload": "baz"
-            }
-          }
-        }
-      ]
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_rule_exists_false_to_sqs": {
-    "recorded-date": "29-12-2023, 09:59:20",
-    "recorded-content": {
-      "rule-exists-false": [
-        {
-          "MessageId": "<uuid:1>",
-          "ReceiptHandle": "<receipt-handle:1>",
-          "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:2>",
-            "detail-type": "core.update-account-command",
-            "source": "core.update-account-command",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "no-key": "no-value",
-              "payload": "baz"
-            }
-          }
-        }
-      ]
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsInputTransformers::test_put_events_with_input_transformation_to_sqs": {
-    "recorded-date": "08-02-2024, 12:06:09",
-    "recorded-content": {
-      "custom-variables-match-all": [
-        {
-          "MessageId": "<uuid:1>",
-          "ReceiptHandle": "<receipt-handle:1>",
-          "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": "\"Event of customerCreated type, at time date, info extracted from detail display-message\""
-        }
-      ],
-      "custom-variables-not-match-all": [
-        {
-          "MessageId": "<uuid:2>",
-          "ReceiptHandle": "<receipt-handle:2>",
-          "MD5OfBody": "<m-d5-of-body:2>",
-          "Body": "\"Event of customerCreated type, at time date, info extracted from detail \""
-        }
-      ]
     }
   }
 }

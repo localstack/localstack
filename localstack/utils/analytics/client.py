@@ -1,6 +1,7 @@
 """
 Client for the analytics backend.
 """
+
 import logging
 from typing import Any, Dict, List
 

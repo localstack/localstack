@@ -5,10 +5,6 @@ from pathlib import Path
 from typing import Optional, TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
-from localstack.services.cloudformation.models.ec2 import (
-    _get_default_acl_for_vpc,
-    _get_default_security_group_for_vpc,
-)
 from localstack.services.cloudformation.resource_provider import (
     OperationStatus,
     ProgressEvent,
@@ -38,6 +34,30 @@ class Tag(TypedDict):
 
 
 REPEATED_INVOCATION = "repeated_invocation"
+
+
+def _get_default_security_group_for_vpc(ec2_client, vpc_id: str) -> str:
+    sgs = ec2_client.describe_security_groups(
+        Filters=[
+            {"Name": "group-name", "Values": ["default"]},
+            {"Name": "vpc-id", "Values": [vpc_id]},
+        ]
+    )["SecurityGroups"]
+    if len(sgs) != 1:
+        raise Exception(f"There should only be one default group for this VPC ({vpc_id=})")
+    return sgs[0]["GroupId"]
+
+
+def _get_default_acl_for_vpc(ec2_client, vpc_id: str) -> str:
+    acls = ec2_client.describe_network_acls(
+        Filters=[
+            {"Name": "default", "Values": ["true"]},
+            {"Name": "vpc-id", "Values": [vpc_id]},
+        ]
+    )["NetworkAcls"]
+    if len(acls) != 1:
+        raise Exception(f"There should only be one default network ACL for this VPC ({vpc_id=})")
+    return acls[0]["NetworkAclId"]
 
 
 class EC2VPCProvider(ResourceProvider[EC2VPCProperties]):

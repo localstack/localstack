@@ -73,8 +73,7 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
         self._job_pool = None
 
     @abc.abstractmethod
-    def _create_worker(self, env: Environment) -> IterationWorker:
-        ...
+    def _create_worker(self, env: Environment) -> IterationWorker: ...
 
     def _launch_worker(self, env: Environment) -> IterationWorker:
         worker = self._create_worker(env=env)

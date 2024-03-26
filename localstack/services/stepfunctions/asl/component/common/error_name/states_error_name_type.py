@@ -8,6 +8,7 @@ from localstack.services.stepfunctions.asl.antlr.runtime.ASLLexer import ASLLexe
 
 class StatesErrorNameType(Enum):
     StatesALL = ASLLexer.ERRORNAMEStatesALL
+    StatesStatesDataLimitExceeded = ASLLexer.ERRORNAMEStatesDataLimitExceeded
     StatesHeartbeatTimeout = ASLLexer.ERRORNAMEStatesHeartbeatTimeout
     StatesTimeout = ASLLexer.ERRORNAMEStatesTimeout
     StatesTaskFailed = ASLLexer.ERRORNAMEStatesTaskFailed

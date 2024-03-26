@@ -148,7 +148,7 @@ def generate_metric_query(alarm_details: MetricAlarm) -> MetricDataQuery:
             Metric=metric,
             Period=alarm_details["Period"],
             Stat=alarm_details["Statistic"],
-        )
+        ),
         # TODO other fields might be required in the future
     )
 

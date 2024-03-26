@@ -918,9 +918,9 @@ class TestBaseScenarios:
         output_norm.sort(key=lambda value: value["Key"])
         output_norm_str = json.dumps(output_norm)
         execution_history["events"][-2]["stateExitedEventDetails"]["output"] = output_norm_str
-        execution_history["events"][-1]["executionSucceededEventDetails"][
-            "output"
-        ] = output_norm_str
+        execution_history["events"][-1]["executionSucceededEventDetails"]["output"] = (
+            output_norm_str
+        )
 
         sfn_snapshot.match("get_execution_history", execution_history)
 

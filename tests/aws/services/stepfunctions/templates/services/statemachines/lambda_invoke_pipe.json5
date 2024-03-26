@@ -4,12 +4,12 @@
   "States": {
     "step1": {
       "Type": "Task",
-      "Resource": "__tbd__",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
       "Next": "step2"
     },
     "step2": {
       "Type": "Task",
-      "Resource": "__tbd__",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
       "ResultPath": "$.Return",
       "End": true,
     },

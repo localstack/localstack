@@ -32,6 +32,14 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/task_lambda_invoke_catch_relevant.json5"
     )
 
+    AWS_SERVICE_LAMBDA_INVOKE_CATCH_ALL: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_all.json5"
+    )
+
+    AWS_SERVICE_LAMBDA_INVOKE_CATCH_DATA_LIMIT_EXCEEDED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_data_limit_exceeded.json5"
+    )
+
     AWS_SERVICE_LAMBDA_INVOKE_CATCH_UNKNOWN: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/task_service_lambda_invoke_catch_unknown.json5"
     )
@@ -53,6 +61,9 @@ class ErrorHandlingTemplate(TemplateLoader):
     )
 
     # Lambda Functions.
+    LAMBDA_FUNC_LARGE_OUTPUT_STRING: Final[str] = os.path.join(
+        _THIS_FOLDER, "lambdafunctions/large_output_string.py"
+    )
     LAMBDA_FUNC_RAISE_EXCEPTION: Final[str] = os.path.join(
         _THIS_FOLDER, "lambdafunctions/raise_exception.py"
     )

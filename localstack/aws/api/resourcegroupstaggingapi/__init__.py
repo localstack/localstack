@@ -261,7 +261,7 @@ class ResourcegroupstaggingapiApi:
         group_by: GroupBy = None,
         max_results: MaxResultsGetComplianceSummary = None,
         pagination_token: PaginationToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetComplianceSummaryOutput:
         raise NotImplementedError
 
@@ -277,7 +277,7 @@ class ResourcegroupstaggingapiApi:
         include_compliance_details: IncludeComplianceDetails = None,
         exclude_compliant_resources: ExcludeCompliantResources = None,
         resource_arn_list: ResourceARNListForGet = None,
-        **kwargs
+        **kwargs,
     ) -> GetResourcesOutput:
         raise NotImplementedError
 
@@ -293,7 +293,7 @@ class ResourcegroupstaggingapiApi:
         context: RequestContext,
         key: TagKey,
         pagination_token: PaginationToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetTagValuesOutput:
         raise NotImplementedError
 
@@ -309,7 +309,7 @@ class ResourcegroupstaggingapiApi:
         context: RequestContext,
         resource_arn_list: ResourceARNListForTagUntag,
         tags: TagMap,
-        **kwargs
+        **kwargs,
     ) -> TagResourcesOutput:
         raise NotImplementedError
 
@@ -319,6 +319,6 @@ class ResourcegroupstaggingapiApi:
         context: RequestContext,
         resource_arn_list: ResourceARNListForTagUntag,
         tag_keys: TagKeyListForUntag,
-        **kwargs
+        **kwargs,
     ) -> UntagResourcesOutput:
         raise NotImplementedError

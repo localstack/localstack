@@ -153,7 +153,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_timeout": {
-    "recorded-date": "25-06-2023, 14:30:43",
+    "recorded-date": "10-03-2024, 16:42:16",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -203,7 +203,7 @@
               "region": "<region>",
               "resource": "sendMessage.waitForTaskToken",
               "resourceType": "sqs",
-              "timeoutInSeconds": 1
+              "timeoutInSeconds": 5
             },
             "timestamp": "timestamp",
             "type": "TaskScheduled"
@@ -223,24 +223,28 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "d15eb9a6d32a6653495e8b8765fd56fe",
+                "MD5OfMessageBody": "1761bdfa678f40d2d350e7bdf487f6f6",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },

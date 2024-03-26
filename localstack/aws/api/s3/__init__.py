@@ -3364,7 +3364,7 @@ class S3Api:
         upload_id: MultipartUploadId,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> AbortMultipartUploadOutput:
         raise NotImplementedError
 
@@ -3385,7 +3385,7 @@ class S3Api:
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
-        **kwargs
+        **kwargs,
     ) -> CompleteMultipartUploadOutput:
         raise NotImplementedError
 
@@ -3434,7 +3434,7 @@ class S3Api:
         object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         expected_bucket_owner: AccountId = None,
         expected_source_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> CopyObjectOutput:
         raise NotImplementedError
 
@@ -3452,7 +3452,7 @@ class S3Api:
         grant_write_acp: GrantWriteACP = None,
         object_lock_enabled_for_bucket: ObjectLockEnabledForBucket = None,
         object_ownership: ObjectOwnership = None,
-        **kwargs
+        **kwargs,
     ) -> CreateBucketOutput:
         raise NotImplementedError
 
@@ -3490,7 +3490,7 @@ class S3Api:
         object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
-        **kwargs
+        **kwargs,
     ) -> CreateMultipartUploadOutput:
         raise NotImplementedError
 
@@ -3500,7 +3500,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         session_mode: SessionMode = None,
-        **kwargs
+        **kwargs,
     ) -> CreateSessionOutput:
         raise NotImplementedError
 
@@ -3510,7 +3510,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3521,7 +3521,7 @@ class S3Api:
         bucket: BucketName,
         id: AnalyticsId,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3531,7 +3531,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3541,7 +3541,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3558,7 +3558,7 @@ class S3Api:
         bucket: BucketName,
         id: InventoryId,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3568,7 +3568,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3579,7 +3579,7 @@ class S3Api:
         bucket: BucketName,
         id: MetricsId,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3589,7 +3589,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3599,7 +3599,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3609,7 +3609,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3619,7 +3619,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3629,7 +3629,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3644,7 +3644,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteObjectOutput:
         raise NotImplementedError
 
@@ -3656,7 +3656,7 @@ class S3Api:
         key: ObjectKey,
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteObjectTaggingOutput:
         raise NotImplementedError
 
@@ -3671,7 +3671,7 @@ class S3Api:
         bypass_governance_retention: BypassGovernanceRetention = None,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteObjectsOutput:
         raise NotImplementedError
 
@@ -3681,7 +3681,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3692,7 +3692,7 @@ class S3Api:
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketAccelerateConfigurationOutput:
         raise NotImplementedError
 
@@ -3702,7 +3702,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketAclOutput:
         raise NotImplementedError
 
@@ -3713,7 +3713,7 @@ class S3Api:
         bucket: BucketName,
         id: AnalyticsId,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketAnalyticsConfigurationOutput:
         raise NotImplementedError
 
@@ -3723,7 +3723,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketCorsOutput:
         raise NotImplementedError
 
@@ -3733,7 +3733,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketEncryptionOutput:
         raise NotImplementedError
 
@@ -3750,7 +3750,7 @@ class S3Api:
         bucket: BucketName,
         id: InventoryId,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketInventoryConfigurationOutput:
         raise NotImplementedError
 
@@ -3760,7 +3760,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketLifecycleOutput:
         raise NotImplementedError
 
@@ -3770,7 +3770,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketLifecycleConfigurationOutput:
         raise NotImplementedError
 
@@ -3780,7 +3780,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketLocationOutput:
         raise NotImplementedError
 
@@ -3790,7 +3790,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketLoggingOutput:
         raise NotImplementedError
 
@@ -3801,7 +3801,7 @@ class S3Api:
         bucket: BucketName,
         id: MetricsId,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketMetricsConfigurationOutput:
         raise NotImplementedError
 
@@ -3811,7 +3811,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> NotificationConfigurationDeprecated:
         raise NotImplementedError
 
@@ -3821,7 +3821,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> NotificationConfiguration:
         raise NotImplementedError
 
@@ -3831,7 +3831,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketOwnershipControlsOutput:
         raise NotImplementedError
 
@@ -3841,7 +3841,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketPolicyOutput:
         raise NotImplementedError
 
@@ -3851,7 +3851,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketPolicyStatusOutput:
         raise NotImplementedError
 
@@ -3861,7 +3861,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketReplicationOutput:
         raise NotImplementedError
 
@@ -3871,7 +3871,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketRequestPaymentOutput:
         raise NotImplementedError
 
@@ -3881,7 +3881,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketTaggingOutput:
         raise NotImplementedError
 
@@ -3891,7 +3891,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketVersioningOutput:
         raise NotImplementedError
 
@@ -3901,7 +3901,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetBucketWebsiteOutput:
         raise NotImplementedError
 
@@ -3930,7 +3930,7 @@ class S3Api:
         part_number: PartNumber = None,
         expected_bucket_owner: AccountId = None,
         checksum_mode: ChecksumMode = None,
-        **kwargs
+        **kwargs,
     ) -> GetObjectOutput:
         raise NotImplementedError
 
@@ -3943,7 +3943,7 @@ class S3Api:
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetObjectAclOutput:
         raise NotImplementedError
 
@@ -3962,7 +3962,7 @@ class S3Api:
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetObjectAttributesOutput:
         raise NotImplementedError
 
@@ -3975,7 +3975,7 @@ class S3Api:
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetObjectLegalHoldOutput:
         raise NotImplementedError
 
@@ -3985,7 +3985,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetObjectLockConfigurationOutput:
         raise NotImplementedError
 
@@ -3998,7 +3998,7 @@ class S3Api:
         version_id: ObjectVersionId = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetObjectRetentionOutput:
         raise NotImplementedError
 
@@ -4011,7 +4011,7 @@ class S3Api:
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
-        **kwargs
+        **kwargs,
     ) -> GetObjectTaggingOutput:
         raise NotImplementedError
 
@@ -4023,7 +4023,7 @@ class S3Api:
         key: ObjectKey,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetObjectTorrentOutput:
         raise NotImplementedError
 
@@ -4033,7 +4033,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> GetPublicAccessBlockOutput:
         raise NotImplementedError
 
@@ -4043,7 +4043,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> HeadBucketOutput:
         raise NotImplementedError
 
@@ -4066,7 +4066,7 @@ class S3Api:
         part_number: PartNumber = None,
         expected_bucket_owner: AccountId = None,
         checksum_mode: ChecksumMode = None,
-        **kwargs
+        **kwargs,
     ) -> HeadObjectOutput:
         raise NotImplementedError
 
@@ -4077,7 +4077,7 @@ class S3Api:
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> ListBucketAnalyticsConfigurationsOutput:
         raise NotImplementedError
 
@@ -4087,7 +4087,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         continuation_token: Token = None,
-        **kwargs
+        **kwargs,
     ) -> ListBucketIntelligentTieringConfigurationsOutput:
         raise NotImplementedError
 
@@ -4098,7 +4098,7 @@ class S3Api:
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> ListBucketInventoryConfigurationsOutput:
         raise NotImplementedError
 
@@ -4109,7 +4109,7 @@ class S3Api:
         bucket: BucketName,
         continuation_token: Token = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> ListBucketMetricsConfigurationsOutput:
         raise NotImplementedError
 
@@ -4123,7 +4123,7 @@ class S3Api:
         context: RequestContext,
         continuation_token: DirectoryBucketToken = None,
         max_directory_buckets: MaxDirectoryBuckets = None,
-        **kwargs
+        **kwargs,
     ) -> ListDirectoryBucketsOutput:
         raise NotImplementedError
 
@@ -4140,7 +4140,7 @@ class S3Api:
         upload_id_marker: UploadIdMarker = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
-        **kwargs
+        **kwargs,
     ) -> ListMultipartUploadsOutput:
         raise NotImplementedError
 
@@ -4158,7 +4158,7 @@ class S3Api:
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
-        **kwargs
+        **kwargs,
     ) -> ListObjectVersionsOutput:
         raise NotImplementedError
 
@@ -4175,7 +4175,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
-        **kwargs
+        **kwargs,
     ) -> ListObjectsOutput:
         raise NotImplementedError
 
@@ -4194,7 +4194,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         optional_object_attributes: OptionalObjectAttributesList = None,
-        **kwargs
+        **kwargs,
     ) -> ListObjectsV2Output:
         raise NotImplementedError
 
@@ -4212,7 +4212,7 @@ class S3Api:
         sse_customer_algorithm: SSECustomerAlgorithm = None,
         sse_customer_key: SSECustomerKey = None,
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
-        **kwargs
+        **kwargs,
     ) -> ListPartsOutput:
         raise NotImplementedError
 
@@ -4224,7 +4224,7 @@ class S3Api:
         accelerate_configuration: AccelerateConfiguration,
         expected_bucket_owner: AccountId = None,
         checksum_algorithm: ChecksumAlgorithm = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4243,7 +4243,7 @@ class S3Api:
         grant_write: GrantWrite = None,
         grant_write_acp: GrantWriteACP = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4255,7 +4255,7 @@ class S3Api:
         id: AnalyticsId,
         analytics_configuration: AnalyticsConfiguration,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4268,7 +4268,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4281,7 +4281,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4292,7 +4292,7 @@ class S3Api:
         bucket: BucketName,
         id: IntelligentTieringId,
         intelligent_tiering_configuration: IntelligentTieringConfiguration,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4304,7 +4304,7 @@ class S3Api:
         id: InventoryId,
         inventory_configuration: InventoryConfiguration,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4317,7 +4317,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: LifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4329,7 +4329,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         lifecycle_configuration: BucketLifecycleConfiguration = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4342,7 +4342,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4354,7 +4354,7 @@ class S3Api:
         id: MetricsId,
         metrics_configuration: MetricsConfiguration,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4367,7 +4367,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4379,7 +4379,7 @@ class S3Api:
         notification_configuration: NotificationConfiguration,
         expected_bucket_owner: AccountId = None,
         skip_destination_validation: SkipValidation = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4391,7 +4391,7 @@ class S3Api:
         ownership_controls: OwnershipControls,
         content_md5: ContentMD5 = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4405,7 +4405,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         confirm_remove_self_bucket_access: ConfirmRemoveSelfBucketAccess = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4419,7 +4419,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         token: ObjectLockToken = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4432,7 +4432,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4445,7 +4445,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4459,7 +4459,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         mfa: MFA = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4472,7 +4472,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4517,7 +4517,7 @@ class S3Api:
         object_lock_retain_until_date: ObjectLockRetainUntilDate = None,
         object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> PutObjectOutput:
         raise NotImplementedError
 
@@ -4539,7 +4539,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         version_id: ObjectVersionId = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> PutObjectAclOutput:
         raise NotImplementedError
 
@@ -4555,7 +4555,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> PutObjectLegalHoldOutput:
         raise NotImplementedError
 
@@ -4570,7 +4570,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> PutObjectLockConfigurationOutput:
         raise NotImplementedError
 
@@ -4587,7 +4587,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> PutObjectRetentionOutput:
         raise NotImplementedError
 
@@ -4603,7 +4603,7 @@ class S3Api:
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
         request_payer: RequestPayer = None,
-        **kwargs
+        **kwargs,
     ) -> PutObjectTaggingOutput:
         raise NotImplementedError
 
@@ -4616,7 +4616,7 @@ class S3Api:
         content_md5: ContentMD5 = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4631,7 +4631,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         checksum_algorithm: ChecksumAlgorithm = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> RestoreObjectOutput:
         raise NotImplementedError
 
@@ -4651,7 +4651,7 @@ class S3Api:
         request_progress: RequestProgress = None,
         scan_range: ScanRange = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> SelectObjectContentOutput:
         raise NotImplementedError
 
@@ -4676,7 +4676,7 @@ class S3Api:
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> UploadPartOutput:
         raise NotImplementedError
 
@@ -4703,7 +4703,7 @@ class S3Api:
         request_payer: RequestPayer = None,
         expected_bucket_owner: AccountId = None,
         expected_source_bucket_owner: AccountId = None,
-        **kwargs
+        **kwargs,
     ) -> UploadPartCopyOutput:
         raise NotImplementedError
 
@@ -4751,7 +4751,7 @@ class S3Api:
         tag_count: TagCount = None,
         version_id: ObjectVersionId = None,
         bucket_key_enabled: BucketKeyEnabled = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 

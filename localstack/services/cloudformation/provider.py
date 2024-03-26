@@ -705,16 +705,16 @@ class CloudformationProvider(CloudformationApi):
         if not changes:
             change_set.metadata["Status"] = "FAILED"
             change_set.metadata["ExecutionStatus"] = "UNAVAILABLE"
-            change_set.metadata[
-                "StatusReason"
-            ] = "The submitted information didn't contain changes. Submit different information to create a change set."
+            change_set.metadata["StatusReason"] = (
+                "The submitted information didn't contain changes. Submit different information to create a change set."
+            )
         else:
-            change_set.metadata[
-                "Status"
-            ] = "CREATE_COMPLETE"  # technically for some time this should first be CREATE_PENDING
-            change_set.metadata[
-                "ExecutionStatus"
-            ] = "AVAILABLE"  # technically for some time this should first be UNAVAILABLE
+            change_set.metadata["Status"] = (
+                "CREATE_COMPLETE"  # technically for some time this should first be CREATE_PENDING
+            )
+            change_set.metadata["ExecutionStatus"] = (
+                "AVAILABLE"  # technically for some time this should first be UNAVAILABLE
+            )
 
         return CreateChangeSetOutput(StackId=change_set.stack_id, Id=change_set.change_set_id)
 

@@ -243,9 +243,7 @@ class IamProvider(IamApi):
             # Permission boundary should not be a part of the response
             response_role.pop("PermissionsBoundary", None)
             response_roles.append(response_role)
-            if (
-                path_prefix
-            ):  # TODO: this is consistent with the patch it migrates, but should add tests for this.
+            if path_prefix:  # TODO: this is consistent with the patch it migrates, but should add tests for this.
                 response_role["AssumeRolePolicyDocument"] = quote(
                     json.dumps(moto_role.assume_role_policy_document or {})
                 )

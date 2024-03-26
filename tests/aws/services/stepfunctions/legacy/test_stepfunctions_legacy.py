@@ -347,9 +347,9 @@ class TestStateMachine:
         lambda_arn_3 = arns.lambda_function_arn(
             TEST_LAMBDA_NAME_3, SF_TEST_AWS_ACCOUNT_ID, region_name
         )
-        definition["States"]["ExampleMapState"]["Iterator"]["States"]["CallLambda"][
-            "Resource"
-        ] = lambda_arn_3
+        definition["States"]["ExampleMapState"]["Iterator"]["States"]["CallLambda"]["Resource"] = (
+            lambda_arn_3
+        )
         definition = json.dumps(definition)
         sm_name = f"map-{short_uid()}"
         custom_client.stepfunctions.create_state_machine(
@@ -480,9 +480,9 @@ class TestStateMachine:
             TEST_LAMBDA_NAME_5, SF_TEST_AWS_ACCOUNT_ID, region_name
         )
         if isinstance(definition["States"]["state1"].get("Parameters"), dict):
-            definition["States"]["state1"]["Parameters"]["lambda_params"][
-                "FunctionName"
-            ] = lambda_arn_1
+            definition["States"]["state1"]["Parameters"]["lambda_params"]["FunctionName"] = (
+                lambda_arn_1
+            )
             definition["States"]["state3"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
         sm_name = f"intrinsic-{short_uid()}"

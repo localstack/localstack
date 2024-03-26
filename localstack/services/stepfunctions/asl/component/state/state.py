@@ -2,17 +2,29 @@ from __future__ import annotations
 
 import abc
 import datetime
+import json
 import logging
 from abc import ABC
-from typing import Final, Optional
+from typing import Final, Optional, Union
 
 from localstack.aws.api.stepfunctions import (
+    ExecutionFailedEventDetails,
     HistoryEventExecutionDataDetails,
     HistoryEventType,
     StateEnteredEventDetails,
     StateExitedEventDetails,
 )
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
+from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
+    FailureEvent,
+    FailureEventException,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
+    StatesErrorName,
+)
+from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name_type import (
+    StatesErrorNameType,
+)
 from localstack.services.stepfunctions.asl.component.common.flow.end import End
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
 from localstack.services.stepfunctions.asl.component.common.path.input_path import InputPath
@@ -30,6 +42,7 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunning
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.quotas import is_within_size_quota
 
 LOG = logging.getLogger(__name__)
 
@@ -103,9 +116,31 @@ class CommonStateField(EvalComponent, ABC):
             ),
         )
 
+    def _verify_size_quota(self, env: Environment, value: Union[str, json]) -> None:
+        is_within: bool = is_within_size_quota(value)
+        if is_within:
+            return
+        error_type = StatesErrorNameType.StatesStatesDataLimitExceeded
+        cause = (
+            f"The state/task '{self.name}' returned a result with a size exceeding "
+            f"the maximum number of bytes service limit."
+        )
+        raise FailureEventException(
+            failure_event=FailureEvent(
+                env=env,
+                error_name=StatesErrorName(typ=error_type),
+                event_type=HistoryEventType.TaskFailed,
+                event_details=EventDetails(
+                    executionFailedEventDetails=ExecutionFailedEventDetails(
+                        error=error_type.to_name(),
+                        cause=cause,
+                    )
+                ),
+            )
+        )
+
     @abc.abstractmethod
-    def _eval_state(self, env: Environment) -> None:
-        ...
+    def _eval_state(self, env: Environment) -> None: ...
 
     def _eval_body(self, env: Environment) -> None:
         env.event_history.add_event(
@@ -129,6 +164,10 @@ class CommonStateField(EvalComponent, ABC):
         #
         if not isinstance(env.program_state(), ProgramRunning):
             return
+
+        # Ensure the state's output is within state size quotas.
+        output = env.stack[-1]
+        self._verify_size_quota(env=env, value=output)
 
         # Filter the input onto the input.
         if self.output_path:

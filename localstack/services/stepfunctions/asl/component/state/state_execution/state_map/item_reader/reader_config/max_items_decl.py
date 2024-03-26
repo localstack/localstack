@@ -9,8 +9,7 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 class MaxItemsDecl(EvalComponent, abc.ABC):
     @abc.abstractmethod
-    def _get_value(self, env: Environment) -> int:
-        ...
+    def _get_value(self, env: Environment) -> int: ...
 
     def _eval_body(self, env: Environment) -> None:
         max_items: int = self._get_value(env=env)

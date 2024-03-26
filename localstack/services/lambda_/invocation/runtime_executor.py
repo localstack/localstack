@@ -2,7 +2,7 @@ import dataclasses
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Type
+from typing import Type, TypedDict
 
 from plux import PluginManager
 
@@ -126,6 +126,11 @@ class LambdaPrebuildContext:
     docker_file_content: str
     context_path: Path
     function_version: FunctionVersion
+
+
+class ChmodPath(TypedDict):
+    path: str
+    mode: str
 
 
 EXECUTOR_PLUGIN_MANAGER: PluginManager[Type[RuntimeExecutor]] = PluginManager(

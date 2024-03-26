@@ -3,8 +3,7 @@ import abc
 from localstack.services.stepfunctions.asl.component.common.flow.next import Next
 
 
-class ContinueWith(abc.ABC):
-    ...
+class ContinueWith(abc.ABC): ...
 
 
 class ContinueWithEnd(ContinueWith):

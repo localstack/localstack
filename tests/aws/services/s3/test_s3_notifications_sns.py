@@ -282,9 +282,9 @@ class TestS3NotificationsToSns:
         snapshot.match("invalid_skip", e.value.response)
 
         # set valid but not-existing topic
-        config["TopicConfigurations"][0][
-            "TopicArn"
-        ] = f"{arns.sns_topic_arn('my-topic', account_id=account_id, region_name=region_name)}"
+        config["TopicConfigurations"][0]["TopicArn"] = (
+            f"{arns.sns_topic_arn('my-topic', account_id=account_id, region_name=region_name)}"
+        )
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name,

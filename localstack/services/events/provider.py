@@ -657,7 +657,7 @@ def events_handler_put_events(self):
     if config.is_local_test_mode():
         TEST_EVENTS_CACHE.extend(entries)
 
-    events = list(map(lambda event: {"event": event, "uuid": str(long_uid())}, entries))
+    events = [{"event": event, "uuid": str(long_uid())} for event in entries]
 
     _dump_events_to_files(events)
 
@@ -714,7 +714,7 @@ def events_handler_put_events(self):
 
     content = {
         "FailedEntryCount": 0,  # TODO: dynamically set proper value when refactoring
-        "Entries": list(map(lambda event: {"EventId": event["uuid"]}, events)),
+        "Entries": [{"EventId": event["uuid"]} for event in events],
     }
 
     self.response_headers.update(

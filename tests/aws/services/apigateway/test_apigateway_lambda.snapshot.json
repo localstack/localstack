@@ -1,12 +1,13 @@
 {
   "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration": {
-    "recorded-date": "26-04-2023, 20:03:23",
+    "recorded-date": "20-03-2024, 14:44:59",
     "recorded-content": {
       "invocation-payload-without-trailing-slash": {
         "body": null,
         "headers": {
           "Accept": "*/*",
           "Accept-Encoding": "gzip, deflate",
+          "Authorization": "random-value",
           "CloudFront-Forwarded-Proto": "https",
           "CloudFront-Is-Desktop-Viewer": "true",
           "CloudFront-Is-Mobile-Viewer": "false",
@@ -32,6 +33,9 @@
           ],
           "Accept-Encoding": [
             "gzip, deflate"
+          ],
+          "Authorization": [
+            "random-value"
           ],
           "CloudFront-Forwarded-Proto": [
             "https"
@@ -91,6 +95,7 @@
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<api-id>",
+          "deploymentId": "<deployment-id:1>",
           "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
           "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:1>",
@@ -126,6 +131,7 @@
         "headers": {
           "Accept": "*/*",
           "Accept-Encoding": "gzip, deflate",
+          "Authorization": "random-value",
           "CloudFront-Forwarded-Proto": "https",
           "CloudFront-Is-Desktop-Viewer": "true",
           "CloudFront-Is-Mobile-Viewer": "false",
@@ -151,6 +157,9 @@
           ],
           "Accept-Encoding": [
             "gzip, deflate"
+          ],
+          "Authorization": [
+            "random-value"
           ],
           "CloudFront-Forwarded-Proto": [
             "https"
@@ -210,6 +219,7 @@
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<api-id>",
+          "deploymentId": "<deployment-id:1>",
           "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
           "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:2>",
@@ -245,6 +255,7 @@
         "headers": {
           "Accept": "*/*",
           "Accept-Encoding": "gzip, deflate",
+          "Authorization": "random-value",
           "CloudFront-Forwarded-Proto": "https",
           "CloudFront-Is-Desktop-Viewer": "true",
           "CloudFront-Is-Mobile-Viewer": "false",
@@ -270,6 +281,9 @@
           ],
           "Accept-Encoding": [
             "gzip, deflate"
+          ],
+          "Authorization": [
+            "random-value"
           ],
           "CloudFront-Forwarded-Proto": [
             "https"
@@ -335,6 +349,7 @@
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<api-id>",
+          "deploymentId": "<deployment-id:1>",
           "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
           "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:3>",
@@ -370,6 +385,7 @@
         "headers": {
           "Accept": "*/*",
           "Accept-Encoding": "gzip, deflate",
+          "Authorization": "random-value",
           "CloudFront-Forwarded-Proto": "https",
           "CloudFront-Is-Desktop-Viewer": "true",
           "CloudFront-Is-Mobile-Viewer": "false",
@@ -395,6 +411,9 @@
           ],
           "Accept-Encoding": [
             "gzip, deflate"
+          ],
+          "Authorization": [
+            "random-value"
           ],
           "CloudFront-Forwarded-Proto": [
             "https"
@@ -460,6 +479,7 @@
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<api-id>",
+          "deploymentId": "<deployment-id:1>",
           "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
           "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:4>",
@@ -495,6 +515,7 @@
         "headers": {
           "Accept": "*/*",
           "Accept-Encoding": "gzip, deflate",
+          "Authorization": "random-value",
           "CloudFront-Forwarded-Proto": "https",
           "CloudFront-Is-Desktop-Viewer": "true",
           "CloudFront-Is-Mobile-Viewer": "false",
@@ -520,6 +541,9 @@
           ],
           "Accept-Encoding": [
             "gzip, deflate"
+          ],
+          "Authorization": [
+            "random-value"
           ],
           "CloudFront-Forwarded-Proto": [
             "https"
@@ -579,6 +603,7 @@
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<api-id>",
+          "deploymentId": "<deployment-id:1>",
           "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
           "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:5>",
@@ -614,6 +639,7 @@
         "headers": {
           "Accept": "*/*",
           "Accept-Encoding": "gzip, deflate",
+          "Authorization": "random-value",
           "CloudFront-Forwarded-Proto": "https",
           "CloudFront-Is-Desktop-Viewer": "true",
           "CloudFront-Is-Mobile-Viewer": "false",
@@ -639,6 +665,9 @@
           ],
           "Accept-Encoding": [
             "gzip, deflate"
+          ],
+          "Authorization": [
+            "random-value"
           ],
           "CloudFront-Forwarded-Proto": [
             "https"
@@ -724,6 +753,7 @@
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<api-id>",
+          "deploymentId": "<deployment-id:1>",
           "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
           "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:6>",
@@ -772,7 +802,7 @@
           "Content-Type": "application/json;charset=utf-8",
           "Host": "<api-id>.execute-api.<region>.amazonaws.com",
           "User-Agent": "python-requests/testing",
-          "Via": "<via:6>",
+          "Via": "<via:7>",
           "X-Amz-Cf-Id": "<cf-id:7>",
           "X-Amzn-Trace-Id": "<trace-id:7>",
           "X-Forwarded-For": "<source-ip:1>, <ip>",
@@ -822,7 +852,7 @@
             "python-requests/testing"
           ],
           "Via": [
-            "<via:6>"
+            "<via:7>"
           ],
           "X-Amz-Cf-Id": [
             "<cf-id:7>"
@@ -862,6 +892,7 @@
         "requestContext": {
           "accountId": "111111111111",
           "apiId": "<api-id>",
+          "deploymentId": "<deployment-id:1>",
           "domainName": "<api-id>.execute-api.<region>.amazonaws.com",
           "domainPrefix": "<api-id>",
           "extendedRequestId": "<extended-request-id:7>",
@@ -1051,6 +1082,14 @@
           "statusCode": 200
         },
         "statusCode": 400
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_aws_proxy_integration_non_post_method": {
+    "recorded-date": "20-03-2024, 22:16:43",
+    "recorded-content": {
+      "invocation-payload-with-get-proxy-method": {
+        "message": "Internal server error"
       }
     }
   }

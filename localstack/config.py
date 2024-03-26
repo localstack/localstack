@@ -591,7 +591,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
         # if we add 0.0.0.0:<port> and already contain *:<port> then bind on
         # 0.0.0.0
-        contained_ports = set(every.port for every in self)
+        contained_ports = {every.port for every in self}
         if value.host == "0.0.0.0" and value.port in contained_ports:
             for item in self:
                 if item.port == value.port:
@@ -603,7 +603,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
 
 def populate_edge_configuration(
-    environment: Mapping[str, str]
+    environment: Mapping[str, str],
 ) -> Tuple[HostAndPort, UniqueHostAndPortList]:
     """Populate the LocalStack edge configuration from environment variables."""
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
@@ -657,7 +657,7 @@ def populate_edge_configuration(
 
 GATEWAY_WORKER_COUNT = int(os.environ.get("GATEWAY_WORKER_COUNT") or 1000)
 
-# the gateway server that should be used (supported: hypercorn, dev: werkzeug)
+# the gateway server that should be used (supported: hypercorn, twisted dev: werkzeug)
 GATEWAY_SERVER = os.environ.get("GATEWAY_SERVER", "").strip() or "hypercorn"
 
 # IP of the docker bridge used to enable access between containers
@@ -833,7 +833,7 @@ SQS_DELAY_RECENTLY_DELETED = is_env_true("SQS_DELAY_RECENTLY_DELETED")
 # Used to toggle MessageRetentionPeriod functionality in SQS queues
 SQS_ENABLE_MESSAGE_RETENTION_PERIOD = is_env_true("SQS_ENABLE_MESSAGE_RETENTION_PERIOD")
 
-# Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", or "path"
+# Strategy used when creating SQS queue urls. can be "off", "standard" (default), "domain", "path", or "dynamic"
 SQS_ENDPOINT_STRATEGY = os.environ.get("SQS_ENDPOINT_STRATEGY", "") or "standard"
 
 # Disable the check for MaxNumberOfMessage in SQS ReceiveMessage
@@ -949,7 +949,7 @@ LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC = float(
     os.environ.get("LAMBDA_SQS_EVENT_SOURCE_MAPPING_INTERVAL_SEC") or 1.0
 )
 
-# DEV: 0 (default) only applies to new lambda provider. For LS developers only.
+# DEV: 0 (default) For LS developers only. Only applies to Docker mode.
 # Whether to explicitly expose a free TCP port in lambda containers when invoking functions in host mode for
 # systems that cannot reach the container via its IPv4. For example, macOS cannot reach Docker containers:
 # https://docs.docker.com/desktop/networking/#i-cannot-ping-my-containers
@@ -1041,10 +1041,6 @@ CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 # EXPERIMENTAL
 CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES = is_env_not_false("CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES")
 
-# Selectively enable/disable new resource providers
-# e.g. CFN_RESOURCE_PROVIDER_OVERRIDES='{"AWS::Lambda::Version": "GenericBaseModel","AWS::Lambda::Function": "ResourceProvider"}'
-CFN_RESOURCE_PROVIDER_OVERRIDES = os.environ.get("CFN_RESOURCE_PROVIDER_OVERRIDES", "{}")
-
 # bind address of local DNS server
 DNS_ADDRESS = os.environ.get("DNS_ADDRESS") or "0.0.0.0"
 # port of the local DNS server
@@ -1085,6 +1081,8 @@ DISABLE_CUSTOM_BOTO_WAITER_CONFIG = is_env_true("DISABLE_CUSTOM_BOTO_WAITER_CONF
 # if `DISABLE_BOTO_RETRIES=1` is set, all our created boto clients will have retries disabled
 DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
+DISTRIBUTED_MODE = is_env_true("DISTRIBUTED_MODE")
+
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
 # https://docs.localstack.cloud/references/configuration/
@@ -1099,7 +1097,6 @@ CONFIG_ENV_VARS = [
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
     "CFN_VERBOSE_ERRORS",
-    "CFN_RESOURCE_PROVIDER_OVERRIDES",
     "CI",
     "CUSTOM_SSL_CERT_PATH",
     "DEBUG",
@@ -1113,6 +1110,7 @@ CONFIG_ENV_VARS = [
     "DISABLE_CUSTOM_CORS_APIGATEWAY",
     "DISABLE_CUSTOM_CORS_S3",
     "DISABLE_EVENTS",
+    "DISTRIBUTED_MODE",
     "DNS_ADDRESS",
     "DNS_PORT",
     "DNS_LOCAL_NAME_PATTERNS",
@@ -1360,6 +1358,7 @@ def service_url(service_key, host=None, port=None):
         """@deprecated: Use `internal_service_url()` instead. We assume that most usages are
         internal but really need to check and update each usage accordingly.""",
         DeprecationWarning,
+        stacklevel=2,
     )
     return internal_service_url(host=host, port=port)
 
@@ -1371,6 +1370,7 @@ def service_port(service_key: str, external: bool = False) -> int:
         "Deprecated: use `localstack_host().port` for external and `GATEWAY_LISTEN[0].port` for "
         "internal use.",
         DeprecationWarning,
+        stacklevel=2,
     )
     if external:
         return LOCALSTACK_HOST.port
@@ -1386,6 +1386,7 @@ def get_edge_port_http():
         for internal use. This function is also not needed anymore because we don't separate
         between HTTP and HTTP ports anymore since LocalStack listens to both.""",
         DeprecationWarning,
+        stacklevel=2,
     )
     return GATEWAY_LISTEN[0].port
 
@@ -1399,6 +1400,7 @@ def get_edge_url(localstack_hostname=None, protocol=None):
     We assume that most usages are internal but really need to check and update each usage accordingly.
     """,
         DeprecationWarning,
+        stacklevel=2,
     )
     return internal_service_url(host=localstack_hostname, protocol=protocol)
 

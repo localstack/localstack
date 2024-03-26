@@ -234,3 +234,38 @@ def test_managed_policy_with_empty_resource(deploy_cfn_template, snapshot, aws_c
     policy_arn = stack.outputs["PolicyArn"]
     policy = aws_client.iam.get_policy(PolicyArn=policy_arn)
     snapshot.match("managed_policy", policy)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..ServerCertificate.Tags",
+    ]
+)
+def test_server_certificate(deploy_cfn_template, snapshot, aws_client):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../../templates/iam_server_certificate.yaml"
+        ),
+        parameters={"certificateName": f"server-certificate-{short_uid()}"},
+    )
+    snapshot.match("outputs", stack.outputs)
+
+    certificate = aws_client.iam.get_server_certificate(
+        ServerCertificateName=stack.outputs["ServerCertificateName"]
+    )
+    snapshot.match("certificate", certificate)
+
+    stack.destroy()
+    with pytest.raises(Exception) as e:
+        aws_client.iam.get_server_certificate(
+            ServerCertificateName=stack.outputs["ServerCertificateName"]
+        )
+    snapshot.match("get_server_certificate_error", e.value.response)
+
+    snapshot.add_transformer(
+        snapshot.transform.key_value("ServerCertificateName", "server-certificate-name")
+    )
+    snapshot.add_transformer(
+        snapshot.transform.key_value("ServerCertificateId", "server-certificate-id")
+    )
