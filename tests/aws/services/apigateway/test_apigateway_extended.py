@@ -27,7 +27,10 @@ TEST_IMPORT_PETS = os.path.join(THIS_FOLDER, "../../files/pets.json")
 )
 def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file, region_name):
     snapshot.add_transformer(
-        snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
+        [
+            snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id"),
+            snapshot.transform.key_value("rootResourceId"),
+        ]
     )
     spec_file = load_file(import_file)
     spec_file = spec_file.replace(
