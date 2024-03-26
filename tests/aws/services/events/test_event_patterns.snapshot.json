@@ -1,6 +1,6 @@
 {
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[request_template0]": {
-    "recorded-date": "26-03-2024, 16:08:28",
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[sample1]": {
+    "recorded-date": "26-03-2024, 16:56:35",
     "recorded-content": {
       "sample1": {
         "Result": true,

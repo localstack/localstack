@@ -1,0 +1,14 @@
+{
+    "Event": {
+        "id": "1",
+        "source": "order",
+        "detail-type": "Test",
+        "account": "$account",
+        "region": "$region",
+        "time": "$time",
+    },
+    "EventPattern": {
+        "source": ["order"],
+        "detail-type": ["Test"],
+    }
+}

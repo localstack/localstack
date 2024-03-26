@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[request_template0]": {
-    "last_validated_date": "2024-03-26T16:08:39+00:00"
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[sample1]": {
+    "last_validated_date": "2024-03-26T16:56:35+00:00"
   }
 }
