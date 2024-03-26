@@ -20,6 +20,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
+from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
@@ -47,6 +48,7 @@ from localstack.utils.json import CustomEncoder, json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
+from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO_HTTP
 
 LOG = logging.getLogger(__name__)
 
@@ -1296,6 +1298,44 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
             logs_client.delete_log_group(logGroupName=log_group_name)
         except Exception:
             LOG.debug(f"Unable to delete log group {log_group_name} in cleanup")
+
+
+@pytest.fixture
+def create_echo_http_server(aws_client, create_lambda_function):
+    lambda_client = aws_client.lambda_
+
+    def _create_echo_http_server() -> str:
+        """Creates a server that will echo any request. Any request will be returned with the
+        following format. Any unset values will have those defaults
+        {
+          "args": {},
+          "headers": {},
+          "data": "",
+          "method": "",
+          "domain": "",
+          "origin": "",
+          "path": ""
+        }"""
+        func_name = f"echo-http-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO_HTTP,
+            handler="lambda_echo_http.handler",
+            runtime=Runtime.python3_9,
+        )
+        url_response = lambda_client.create_function_url_config(
+            FunctionName=func_name, AuthType="NONE"
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=func_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+        return url_response["FunctionUrl"]
+
+    yield _create_echo_http_server
 
 
 @pytest.fixture
