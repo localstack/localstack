@@ -1111,7 +1111,7 @@ class TestSNSSubscriptionLambda:
         snapshot.match("messages", response)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("signature_version", ["2"])
+    @pytest.mark.parametrize("signature_version", ["1", "2"])
     def test_publish_lambda_verify_signature(
         self,
         aws_client,
