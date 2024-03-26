@@ -35,7 +35,7 @@ aws-xray-sdk==2.13.0
     # via moto-ext
 awscli==1.32.69
     # via localstack-core (pyproject.toml)
-awscrt==0.20.5
+awscrt==0.20.6
     # via localstack-core
 blinker==1.7.0
     # via

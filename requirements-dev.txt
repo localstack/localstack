@@ -47,7 +47,7 @@ aws-xray-sdk==2.13.0
     # via moto-ext
 awscli==1.32.69
     # via localstack-core
-awscrt==0.20.5
+awscrt==0.20.6
     # via localstack-core
 blinker==1.7.0
     # via
@@ -154,7 +154,7 @@ docopt==0.6.2
     # via coveralls
 docutils==0.16
     # via awscli
-filelock==3.13.1
+filelock==3.13.3
     # via virtualenv
 flask==3.0.2
     # via

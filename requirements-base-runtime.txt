@@ -8,7 +8,7 @@ aiofiles==23.2.1
     # via quart
 attrs==23.2.0
     # via localstack-twisted
-awscrt==0.20.5
+awscrt==0.20.6
     # via localstack-core (pyproject.toml)
 blinker==1.7.0
     # via
