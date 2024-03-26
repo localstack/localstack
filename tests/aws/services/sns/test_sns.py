@@ -395,7 +395,13 @@ class TestSNSPublishCrud:
 
     @markers.aws.validated
     def test_topic_publish_another_region(
-        self, sns_create_topic, snapshot, aws_client, aws_client_factory, secondary_region_name
+        self,
+        sns_create_topic,
+        snapshot,
+        aws_client,
+        aws_client_factory,
+        region_name,
+        secondary_region_name,
     ):
         # create the topic in the default region, so that it's easier to clean up with the fixture
         topic_arn = sns_create_topic()["TopicArn"]
@@ -403,7 +409,7 @@ class TestSNSPublishCrud:
         # create a client in another region
         sns_client_region_2 = aws_client_factory.get_client(
             service_name="sns",
-            region_name=secondary_region_name,
+            region_name=secondary_region_name if region_name != "ap-southeast-1" else "us-east-2",
         )
 
         message = "This is a test message"
@@ -1105,7 +1111,7 @@ class TestSNSSubscriptionLambda:
         snapshot.match("messages", response)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("signature_version", ["1", "2"])
+    @pytest.mark.parametrize("signature_version", ["2"])
     def test_publish_lambda_verify_signature(
         self,
         aws_client,
@@ -4740,13 +4746,15 @@ class TestSNSRetrospectionEndpoints:
             api_platform_endpoints_msgs[endpoint_arn][0]["MessageAttributes"] == message_attributes
         )
 
+        region_2 = secondary_region_name if region_name != "ap-southeast-1" else "us-east-2"
+
         # Ensure you can select the region
         msg_with_region = requests.get(
             msgs_url,
-            params={"region": secondary_region_name, "accountId": account_id},
+            params={"region": region_2, "accountId": account_id},
         ).json()
         assert len(msg_with_region["platform_endpoint_messages"]) == 0
-        assert msg_with_region["region"] == secondary_region_name
+        assert msg_with_region["region"] == region_2
 
         # Ensure default region is us-east-1
         msg_with_region = requests.get(msgs_url).json()

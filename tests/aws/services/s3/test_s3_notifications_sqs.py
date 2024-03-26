@@ -436,6 +436,7 @@ class TestS3NotificationsToSQS:
         snapshot,
         aws_client,
         aws_client_factory,
+        region_name,
         secondary_region_name,
     ):
         """This test validates that pre-signed URL works with notification, and that the awsRegion field is the
@@ -461,11 +462,12 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == key
 
         # test with the bucket in a different region than the client
+        region_2 = secondary_region_name if region_name != "ap-southeast-1" else "us-east-2"
         bucket_name_region_2 = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": secondary_region_name},
+            CreateBucketConfiguration={"LocationConstraint": region_2},
         )
         # the SQS queue needs to be in the same region as the S3 bucket
-        sqs_client_region_2 = aws_client_factory(region_name=secondary_region_name).sqs
+        sqs_client_region_2 = aws_client_factory(region_name=region_2).sqs
         queue_url_region_2 = sqs_create_queue_with_client(sqs_client_region_2)
         s3_create_sqs_bucket_notification(
             bucket_name=bucket_name_region_2,
