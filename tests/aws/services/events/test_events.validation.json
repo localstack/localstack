@@ -1,29 +1,35 @@
 {
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_nonexistent_event_bus": {
-    "last_validated_date": "2023-05-05T10:00:22+00:00"
+  "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
+    "last_validated_date": "2024-03-26T14:07:16+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_event_pattern": {
+    "last_validated_date": "2024-03-26T14:07:19+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_list_tags_for_resource": {
+    "last_validated_date": "2024-03-26T14:06:51+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_detail": {
+    "last_validated_date": "2024-03-26T14:07:16+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_event_without_source": {
+    "last_validated_date": "2024-03-26T14:07:16+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
-    "last_validated_date": "2023-07-13T00:49:20+00:00"
+    "last_validated_date": "2024-03-26T14:09:45+00:00"
   },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_to_default_eventbus_for_custom_eventbus": {
-    "last_validated_date": "2022-12-22T00:50:01+00:00"
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_nested_event_pattern": {
+    "last_validated_date": "2024-03-26T14:07:10+00:00"
   },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_rule_exists_false_to_sqs": {
-    "last_validated_date": "2023-12-29T09:59:20+00:00"
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_rule_exists_true_to_sqs": {
-    "last_validated_date": "2023-12-29T09:56:47+00:00"
-  },
-  "tests/aws/services/events/test_events.py::TestEvents::test_put_rule": {
-    "last_validated_date": "2023-09-29T17:26:53+00:00"
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_values_in_array": {
+    "last_validated_date": "2024-03-26T14:06:58+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_target_id_validation": {
-    "last_validated_date": "2023-02-24T13:57:23+00:00"
+    "last_validated_date": "2024-03-26T14:07:18+00:00"
   },
-  "tests/aws/services/events/test_events.py::TestEvents::test_test_event_pattern": {
-    "last_validated_date": "2023-07-05T17:41:16+00:00"
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_put_events_nonexistent_event_bus": {
+    "last_validated_date": "2024-03-26T14:11:46+00:00"
   },
-  "tests/aws/services/events/test_events.py::TestEventsInputTransformers::test_put_events_with_input_transformation_to_sqs": {
-    "last_validated_date": "2024-02-08T12:06:09+00:00"
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
+    "last_validated_date": "2024-03-26T14:07:59+00:00"
   }
 }
