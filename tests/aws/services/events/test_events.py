@@ -961,7 +961,7 @@ class TestEventsEventBus:
             )
             return msgs
 
-        messages = retry(_get_sqs_messages, retries=5, sleep=0.1)
+        messages = retry(_get_sqs_messages, retries=10, sleep=0.1)
         snapshot.match("get-events", messages)
 
         # try to get the custom EventBus we passed the Event to
