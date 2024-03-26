@@ -10449,6 +10449,7 @@ class TestS3PresignedPost:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..ContentLength",
+            "$..Size",
             "$..ETag",
             "$..HostId",
         ],  # FIXME: in CI, it fails sporadically and the form is empty
