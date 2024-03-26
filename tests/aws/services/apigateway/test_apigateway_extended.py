@@ -22,13 +22,18 @@ TEST_IMPORT_PETS = os.path.join(THIS_FOLDER, "../../files/pets.json")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..body.host",
+        "$..rootResourceId",
     ]
 )
-def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file):
+def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file, region_name):
     snapshot.add_transformer(
         snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
     )
     spec_file = load_file(import_file)
+    spec_file = spec_file.replace(
+        "${uri}", f"http://petstore.execute-api.{region_name}.amazonaws.com/petstore/pets"
+    )
+
     response, _ = import_apigw(body=spec_file, failOnWarnings=True)
     snapshot.match("import-api", response)
     api_id = response["id"]
@@ -58,14 +63,19 @@ def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..body.servers..url",
+        "$..rootResourceId",
     ]
 )
-def test_export_oas30_openapi(aws_client, snapshot, import_apigw, import_file):
+def test_export_oas30_openapi(aws_client, snapshot, import_apigw, region_name, import_file):
     snapshot.add_transformer(
         snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
     )
 
     spec_file = load_file(import_file)
+    spec_file = spec_file.replace(
+        "${uri}", f"http://petstore.execute-api.{region_name}.amazonaws.com/petstore/pets"
+    )
+
     response, _ = import_apigw(body=spec_file, failOnWarnings=True)
     snapshot.match("import-api", response)
     api_id = response["id"]
