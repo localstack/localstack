@@ -2545,6 +2545,7 @@ class TestS3:
         s3_create_bucket,
         aws_client_factory,
         s3_create_bucket_with_client,
+        region_name,
         snapshot,
         aws_client,
     ):
@@ -2563,6 +2564,7 @@ class TestS3:
         snapshot.match("get_bucket_location_bucket_1", response)
 
         region_2 = "us-east-2"
+        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
         client_2 = aws_client_factory(region_name=region_2).s3
         bucket_2_name = f"bucket-{short_uid()}"
         s3_create_bucket_with_client(

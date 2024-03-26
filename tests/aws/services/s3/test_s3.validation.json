@@ -63,7 +63,7 @@
     "last_validated_date": "2023-10-22T02:25:14+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "last_validated_date": "2023-08-03T02:16:27+00:00"
+    "last_validated_date": "2024-03-25T17:20:27+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_empty_bucket_fixture": {
     "last_validated_date": "2023-09-08T16:52:15+00:00"
