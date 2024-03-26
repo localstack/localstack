@@ -336,13 +336,30 @@ def ssm():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider()
+@aws_provider(api="events", name="default")
 def events():
     from localstack.services.events.provider import EventsProvider
     from localstack.services.moto import MotoFallbackDispatcher
 
     provider = EventsProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="events", name="v1")
+def events_v1():
+    from localstack.services.events.provider import EventsProvider
+    from localstack.services.moto import MotoFallbackDispatcher
+
+    provider = EventsProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="events", name="v2")
+def events_v2():
+    from localstack.services.events.provider_v2 import EventsProvider
+
+    provider = EventsProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider()
