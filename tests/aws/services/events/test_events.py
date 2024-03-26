@@ -131,7 +131,7 @@ class TestEvents:
         clean_up(rule_name=rule_name)
 
     @markers.aws.unknown
-    def test_put_events_with_values_in_array(sef, put_events_with_filter_to_sqs):
+    def test_put_events_with_values_in_array(self, put_events_with_filter_to_sqs):
         pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
         entries1 = [
             {
