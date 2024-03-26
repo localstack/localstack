@@ -1,5 +1,4 @@
-"""Tests for input path and input transformer in AWS EventBridge.
-"""
+"""Tests for input path and input transformer in AWS EventBridge."""
 
 import json
 

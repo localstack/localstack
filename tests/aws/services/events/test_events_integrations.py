@@ -1,5 +1,4 @@
-"""Tests for integrations between AWS EventBridge and other AWS services.
-"""
+"""Tests for integrations between AWS EventBridge and other AWS services."""
 
 import json
 from datetime import datetime
