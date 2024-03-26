@@ -36,7 +36,7 @@ def test_edge_tcp_proxy(httpserver):
         assert response.status_code == 200
         assert response.text == "Target Server Response"
     finally:
-        proxy_server.stop()
+        proxy_server.shutdown()
 
 
 def test_edge_tcp_proxy_does_not_terminate_on_connection_error():
@@ -71,4 +71,4 @@ def test_edge_tcp_proxy_does_not_terminate_on_connection_error():
             if httpserver.is_running():
                 httpserver.stop()
     finally:
-        proxy_server.stop()
+        proxy_server.shutdown()
