@@ -409,7 +409,9 @@ class TestSNSPublishCrud:
         # create a client in another region
         sns_client_region_2 = aws_client_factory.get_client(
             service_name="sns",
-            region_name=secondary_region_name if region_name != "ap-southeast-1" else "us-east-2",
+            region_name=secondary_region_name
+            if region_name != secondary_region_name
+            else "us-east-2",
         )
 
         message = "This is a test message"
@@ -4746,7 +4748,7 @@ class TestSNSRetrospectionEndpoints:
             api_platform_endpoints_msgs[endpoint_arn][0]["MessageAttributes"] == message_attributes
         )
 
-        region_2 = secondary_region_name if region_name != "ap-southeast-1" else "us-east-2"
+        region_2 = secondary_region_name if region_name != secondary_region_name else "us-east-2"
 
         # Ensure you can select the region
         msg_with_region = requests.get(

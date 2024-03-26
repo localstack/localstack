@@ -462,7 +462,7 @@ class TestS3NotificationsToSQS:
         assert events[0]["s3"]["object"]["key"] == key
 
         # test with the bucket in a different region than the client
-        region_2 = secondary_region_name if region_name != "ap-southeast-1" else "us-east-2"
+        region_2 = secondary_region_name if region_name != secondary_region_name else "us-east-2"
         bucket_name_region_2 = s3_create_bucket(
             CreateBucketConfiguration={"LocationConstraint": region_2},
         )
