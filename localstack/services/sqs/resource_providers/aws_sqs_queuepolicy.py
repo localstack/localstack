@@ -98,4 +98,13 @@ class SQSQueuePolicyProvider(ResourceProvider[SQSQueuePolicyProperties]):
         """
         Update a resource
         """
-        raise NotImplementedError
+        model = request.desired_state
+        sqs = request.aws_client_factory.sqs
+        for queue in model.get("Queues", []):
+            policy = json.dumps(model["PolicyDocument"])
+            sqs.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": policy})
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=request.desired_state,
+        )
