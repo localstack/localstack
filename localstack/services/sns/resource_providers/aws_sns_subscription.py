@@ -128,6 +128,27 @@ class SNSSubscriptionProvider(ResourceProvider[SNSSubscriptionProperties]):
         """
         Update a resource
 
-
         """
-        raise NotImplementedError
+        model = request.desired_state
+        sns = request.aws_client_factory.sns
+
+        attrs = [
+            "DeliveryPolicy",
+            "FilterPolicy",
+            "FilterPolicyScope",
+            "RawMessageDelivery",
+            "RedrivePolicy",
+        ]
+        for a in attrs:
+            if a in model:
+                sns.set_subscription_attributes(
+                    SubscriptionArn=model["Id"],
+                    AttributeName=a,
+                    AttributeValue=json.dumps(model[a]),
+                )
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )

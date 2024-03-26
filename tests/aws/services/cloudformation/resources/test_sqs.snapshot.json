@@ -11,5 +11,40 @@
         "QueueUrl": "<queue-url>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_sqs.py::test_update_sqs_queuepolicy": {
+    "recorded-date": "26-03-2024, 21:26:03",
+    "recorded-content": {
+      "policy1": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": [
+              "sqs:SendMessage",
+              "sqs:GetQueueAttributes",
+              "sqs:GetQueueUrl"
+            ],
+            "Resource": "arn:aws:sqs:<region>:111111111111:stack-55fde856-Queue4A7E3555-WrfiOcX0cO4h"
+          }
+        ]
+      },
+      "policy2": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": [
+              "sqs:SendMessage",
+              "sqs:GetQueueAttributes",
+              "sqs:GetQueueUrl"
+            ],
+            "Resource": "arn:aws:sqs:<region>:111111111111:stack-55fde856-Queue4A7E3555-WrfiOcX0cO4h"
+          }
+        ]
+      }
+    }
   }
 }
