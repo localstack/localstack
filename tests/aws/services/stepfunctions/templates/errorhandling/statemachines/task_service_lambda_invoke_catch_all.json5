@@ -1,0 +1,31 @@
+{
+  "Comment": "TASK_SERVICE_LAMBDA_INVOKE_CATCH_ALL",
+  "StartAt": "InvokeLambda",
+  "States": {
+    "InvokeLambda": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName.$": "$.FunctionName",
+        "Payload.$": "$.Payload",
+      },
+      "Next": "ProcessResult",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "HandleGeneralError"
+        }
+      ]
+    },
+    "ProcessResult": {
+      "Type": "Pass",
+      "End": true
+    },
+    "HandleGeneralError": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

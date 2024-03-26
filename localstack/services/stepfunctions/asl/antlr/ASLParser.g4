@@ -538,6 +538,7 @@ choice_operator
 
 states_error_name
     : ERRORNAMEStatesALL
+    | ERRORNAMEStatesDataLimitExceeded
     | ERRORNAMEStatesHeartbeatTimeout
     | ERRORNAMEStatesTimeout
     | ERRORNAMEStatesTaskFailed

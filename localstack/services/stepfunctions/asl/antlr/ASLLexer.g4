@@ -142,6 +142,7 @@ CATCH: '"Catch"';
 
 // ErrorNames
 ERRORNAMEStatesALL: '"States.ALL"';
+ERRORNAMEStatesDataLimitExceeded: '"States.DataLimitExceeded"';
 ERRORNAMEStatesHeartbeatTimeout: '"States.HeartbeatTimeout"';
 ERRORNAMEStatesTimeout: '"States.Timeout"';
 ERRORNAMEStatesTaskFailed: '"States.TaskFailed"';
