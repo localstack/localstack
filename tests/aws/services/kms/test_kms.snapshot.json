@@ -188,7 +188,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
-    "recorded-date": "13-07-2023, 11:58:37",
+    "recorded-date": "26-03-2024, 08:27:34",
     "recorded-content": {
       "describe-key-diff-region-with-id": {
         "Error": {
@@ -204,9 +204,9 @@
       "describe-key-diff-region-with-arn": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Invalid arn ap-southeast-1"
+          "Message": "Invalid arn <region_2>"
         },
-        "message": "Invalid arn ap-southeast-1",
+        "message": "Invalid arn <region_2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -215,7 +215,7 @@
       "describe-key-same-specific-region-with-id": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:aws:kms:<region_2>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test key 123",
@@ -239,7 +239,7 @@
       "describe-key-same-specific-region-with-arn": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:aws:kms:<region_2>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test key 123",
@@ -339,14 +339,14 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
-    "recorded-date": "13-07-2023, 11:59:29",
+    "recorded-date": "26-03-2024, 08:47:02",
     "recorded-content": {
       "describe-key-from-different-region": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Key 'arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>' does not exist"
+          "Message": "Key 'arn:aws:kms:<region_2>:111111111111:key/<key-id:1>' does not exist"
         },
-        "message": "Key 'arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>' does not exist",
+        "message": "Key 'arn:aws:kms:<region_2>:111111111111:key/<key-id:1>' does not exist",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -355,7 +355,7 @@
       "replicate-key": {
         "ReplicaKeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:aws:kms:<region_2>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "",
@@ -377,8 +377,8 @@
             },
             "ReplicaKeys": [
               {
-                "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
-                "Region": "ap-southeast-1"
+                "Arn": "arn:aws:kms:<region_2>:111111111111:key/<key-id:1>",
+                "Region": "<region_2>"
               }
             ]
           },
@@ -429,8 +429,8 @@
             },
             "ReplicaKeys": [
               {
-                "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
-                "Region": "ap-southeast-1"
+                "Arn": "arn:aws:kms:<region_2>:111111111111:key/<key-id:1>",
+                "Region": "<region_2>"
               }
             ]
           },
@@ -444,7 +444,7 @@
       "describe-replicated-key": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:aws:kms:<region_2>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "",
@@ -466,8 +466,8 @@
             },
             "ReplicaKeys": [
               {
-                "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
-                "Region": "ap-southeast-1"
+                "Arn": "arn:aws:kms:<region_2>:111111111111:key/<key-id:1>",
+                "Region": "<region_2>"
               }
             ]
           },

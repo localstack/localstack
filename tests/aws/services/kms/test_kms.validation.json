@@ -69,7 +69,7 @@
     "last_validated_date": "2023-04-13T09:29:34+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
-    "last_validated_date": "2023-07-13T09:58:37+00:00"
+    "last_validated_date": "2024-03-26T08:27:34+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
     "last_validated_date": "2023-11-07T13:05:57+00:00"
@@ -108,7 +108,7 @@
     "last_validated_date": "2023-04-13T09:31:24+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
-    "last_validated_date": "2023-07-13T09:59:29+00:00"
+    "last_validated_date": "2024-03-26T08:47:02+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P256-ECDSA_SHA_256]": {
     "last_validated_date": "2023-04-13T09:30:15+00:00"

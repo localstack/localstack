@@ -12,6 +12,7 @@ from botocore.exceptions import ClientError
 from cryptography.hazmat.primitives import hashes, hmac, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
 from localstack.services.kms.utils import get_hash_algorithm
@@ -175,7 +176,8 @@ class TestKMS:
         self, kms_client_for_region, kms_create_key, snapshot, region_name, secondary_region_name
     ):
         client_region = region_name
-        key_region = secondary_region_name
+        key_region = secondary_region_name if region_name != "ap-southeast-1" else "us-east-2"
+        snapshot.add_transformer(RegexTransformer(key_region, "<region_2>"))
         us_east_1_kms_client = kms_client_for_region(client_region)
         us_west_2_kms_client = kms_client_for_region(key_region)
 
@@ -821,7 +823,10 @@ class TestKMS:
         secondary_region_name,
     ):
         region_to_replicate_from = region_name
-        region_to_replicate_to = secondary_region_name
+        region_to_replicate_to = (
+            secondary_region_name if region_name != "ap-southeast-1" else "us-east-2"
+        )
+        snapshot.add_transformer(RegexTransformer(region_to_replicate_to, "<region_2>"))
         us_east_1_kms_client = kms_client_for_region(region_to_replicate_from)
         us_west_1_kms_client = kms_client_for_region(region_to_replicate_to)
 
