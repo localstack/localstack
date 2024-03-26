@@ -3,7 +3,7 @@
 set -e
 
 VERSION_FILE=${VERSION_FILE-VERSION}
-VERSION_PACKAGE=${VERSION_PACKAGE-*/version.py}
+VERSION_PY=${VERSION_PY-*/version.py}
 DEPENDENCY_FILE=${DEPENDENCY_FILE-pyproject.toml}
 
 function usage() {
@@ -192,13 +192,13 @@ function cmd-git-commit-release() {
 
     echo $1 || verify_valid_version
 
-    git add ${VERSION_FILE} ${VERSION_PACKAGE} ${DEPENDENCY_FILE}
+    git add ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}
     git commit -m "release version ${1}"
     git tag -a "v${1}" -m "Release version ${1}"
 }
 
 function cmd-git-commit-increment() {
-    git add ${VERSION_FILE} ${VERSION_PACKAGE} ${DEPENDENCY_FILE}
+    git add ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}
     git commit -m "prepare next development iteration"
 }
 
