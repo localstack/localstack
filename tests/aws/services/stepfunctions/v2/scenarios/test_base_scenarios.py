@@ -1000,7 +1000,7 @@ class TestBaseScenarios:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "max_items_value", [-1, 0, 2, 1.5, 100_000_000, 100_000_001]
+        "max_items_value", [-1, 0, 1.5, 2, 100_000_000, 100_000_001]
     )  # The Distributed Map state stops reading items beyond 100_000_000.
     def test_map_item_reader_csv_max_items_paths(
         self,
