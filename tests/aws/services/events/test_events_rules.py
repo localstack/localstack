@@ -1,3 +1,7 @@
+"""Tests for EventBridge rules.
+Tests for rule routing of events as well as rule creation and deletion.
+"""
+
 import json
 
 import pytest

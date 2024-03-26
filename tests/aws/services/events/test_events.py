@@ -1,3 +1,7 @@
+"""General EventBridge and EventBridgeBus tests.
+Test creating and modifying event buses, as well as putting events to custom and the default bus.
+"""
+
 import base64
 import json
 import os

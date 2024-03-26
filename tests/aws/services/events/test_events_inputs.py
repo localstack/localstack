@@ -1,3 +1,6 @@
+"""Tests for input path and input transformer in AWS EventBridge.
+"""
+
 import json
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
