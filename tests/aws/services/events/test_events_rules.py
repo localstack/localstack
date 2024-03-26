@@ -12,7 +12,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
-from tests.aws.services.events.conftest import sqs_collect_messages
+from tests.aws.services.events.conftest import assert_valid_event, sqs_collect_messages
 from tests.aws.services.events.test_events import TEST_EVENT_BUS_NAME, TEST_EVENT_PATTERN
 
 
@@ -343,7 +343,7 @@ def test_create_rule_with_one_unit_in_singular_should_succeed(
 
 @markers.aws.validated
 @pytest.mark.xfail
-def test_verify_rule_event_content(assert_valid_event, aws_client, clean_up):
+def test_verify_rule_event_content(aws_client, clean_up):
     log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
     rule_name = f"rule-{short_uid()}"
     target_id = f"testRuleId-{short_uid()}"
