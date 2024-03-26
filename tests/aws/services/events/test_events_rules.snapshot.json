@@ -1,6 +1,6 @@
 {
   "tests/aws/services/events/test_events_rules.py::test_put_rule": {
-    "recorded-date": "08-02-2024, 20:44:43",
+    "recorded-date": "26-03-2024, 15:59:20",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
@@ -39,7 +39,7 @@
     }
   },
   "tests/aws/services/events/test_events_rules.py::test_put_events_with_rule_anything_but_to_sqs": {
-    "recorded-date": "08-02-2024, 20:45:02",
+    "recorded-date": "26-03-2024, 15:59:37",
     "recorded-content": {
       "rule-anything-but": [
         {
@@ -84,7 +84,7 @@
     }
   },
   "tests/aws/services/events/test_events_rules.py::test_put_events_with_rule_exists_true_to_sqs": {
-    "recorded-date": "08-02-2024, 20:45:09",
+    "recorded-date": "26-03-2024, 15:59:45",
     "recorded-content": {
       "rule-exists-true": [
         {
@@ -110,7 +110,7 @@
     }
   },
   "tests/aws/services/events/test_events_rules.py::test_put_events_with_rule_exists_false_to_sqs": {
-    "recorded-date": "08-02-2024, 20:45:17",
+    "recorded-date": "26-03-2024, 15:59:52",
     "recorded-content": {
       "rule-exists-false": [
         {

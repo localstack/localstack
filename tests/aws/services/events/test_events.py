@@ -575,7 +575,7 @@ class TestEvents:
         )
 
     @markers.aws.validated
-    def test_test_event_pattern(self, aws_client, snapshot, account_id, region_name):
+    def test_event_pattern(self, aws_client, snapshot, account_id, region_name):
         response = aws_client.events.test_event_pattern(
             Event=json.dumps(
                 {
