@@ -30,13 +30,6 @@ venv
 ~*
 *~
 
-<<<<<<< HEAD
-=======
-.antlr
-/.antlr*
-localstack/services/stepfunctions/asl/antlr/runtime/
-
->>>>>>> d5503a157 (stop tracking)
 node_modules/
 /build/
 /dist/
