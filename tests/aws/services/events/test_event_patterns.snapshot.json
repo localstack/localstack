@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[request_template0]": {
+    "recorded-date": "26-03-2024, 16:08:28",
+    "recorded-content": {
+      "sample1": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
