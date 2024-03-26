@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_swagger_openapi[TEST_IMPORT_PETSTORE_SWAGGER]": {
-    "recorded-date": "15-09-2023, 04:27:47",
+    "recorded-date": "26-03-2024, 11:32:19",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -14,6 +14,7 @@
         },
         "id": "<api-id:1>",
         "name": "PetStore",
+        "rootResourceId": "<root-resource-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -309,6 +310,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "mock",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -323,8 +325,7 @@
                   "requestTemplates": {
                     "application/json": "{\"statusCode\": 200}"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "mock"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             },
@@ -361,8 +362,9 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "GET",
-                  "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+                  "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -375,8 +377,7 @@
                     "integration.request.querystring.page": "method.request.querystring.page",
                     "integration.request.querystring.type": "method.request.querystring.type"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               },
               "post": {
@@ -411,8 +412,9 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "POST",
-                  "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+                  "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -421,8 +423,7 @@
                       }
                     }
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               },
               "options": {
@@ -452,6 +453,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "mock",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -465,8 +467,7 @@
                   "requestTemplates": {
                     "application/json": "{\"statusCode\": 200}"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "mock"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             },
@@ -498,8 +499,9 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "GET",
-                  "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets/{petId}",
+                  "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets/{petId}",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -511,8 +513,7 @@
                   "requestParameters": {
                     "integration.request.path.petId": "method.request.path.petId"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               },
               "options": {
@@ -550,6 +551,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "mock",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -563,8 +565,7 @@
                   "requestTemplates": {
                     "application/json": "{\"statusCode\": 200}"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "mock"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             }
@@ -637,7 +638,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_swagger_openapi[TEST_IMPORT_PETS]": {
-    "recorded-date": "15-09-2023, 04:27:55",
+    "recorded-date": "26-03-2024, 11:32:36",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -650,6 +651,7 @@
         },
         "id": "<api-id:1>",
         "name": "Simple PetStore (Swagger)",
+        "rootResourceId": "<root-resource-id:1>",
         "version": "1.0.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -780,7 +782,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETSTORE_SWAGGER]": {
-    "recorded-date": "15-09-2023, 04:55:14",
+    "recorded-date": "26-03-2024, 11:32:50",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -794,6 +796,7 @@
         },
         "id": "<api-id:1>",
         "name": "PetStore",
+        "rootResourceId": "kb57q8ij35",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -1137,8 +1140,9 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "GET",
-                  "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+                  "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -1151,8 +1155,7 @@
                     "integration.request.querystring.page": "method.request.querystring.page",
                     "integration.request.querystring.type": "method.request.querystring.type"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               },
               "post": {
@@ -1187,8 +1190,9 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "POST",
-                  "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+                  "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -1197,8 +1201,7 @@
                       }
                     }
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               },
               "options": {
@@ -1232,6 +1235,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "mock",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -1245,8 +1249,7 @@
                   "requestTemplates": {
                     "application/json": "{\"statusCode\": 200}"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "mock"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             },
@@ -1283,8 +1286,9 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "http",
                   "httpMethod": "GET",
-                  "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets/{petId}",
+                  "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets/{petId}",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -1296,8 +1300,7 @@
                   "requestParameters": {
                     "integration.request.path.petId": "method.request.path.petId"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "http"
+                  "passthroughBehavior": "when_no_match"
                 }
               },
               "options": {
@@ -1341,6 +1344,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "mock",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -1354,8 +1358,7 @@
                   "requestTemplates": {
                     "application/json": "{\"statusCode\": 200}"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "mock"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             },
@@ -1375,6 +1378,7 @@
                   }
                 },
                 "x-amazon-apigateway-integration": {
+                  "type": "mock",
                   "responses": {
                     "default": {
                       "statusCode": "200",
@@ -1389,8 +1393,7 @@
                   "requestTemplates": {
                     "application/json": "{\"statusCode\": 200}"
                   },
-                  "passthroughBehavior": "when_no_match",
-                  "type": "mock"
+                  "passthroughBehavior": "when_no_match"
                 }
               }
             }
@@ -1465,7 +1468,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETS]": {
-    "recorded-date": "15-09-2023, 04:55:22",
+    "recorded-date": "26-03-2024, 11:32:58",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -1478,6 +1481,7 @@
         },
         "id": "<api-id:1>",
         "name": "Simple PetStore (Swagger)",
+        "rootResourceId": "vp8w0yxukk",
         "version": "1.0.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
