@@ -19,9 +19,7 @@
     "dynamodb": {
       "NewImage": {
         "homemade": {
-          "N": [
-            "1234"
-          ]
+          "N": ["1234"]
         }
       }
     }

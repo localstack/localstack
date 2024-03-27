@@ -117,3 +117,23 @@ def test_test_event_pattern_with_multi_key(aws_client):
             EventPattern=event_pattern,
         )
         assert response["Result"]
+
+
+@markers.aws.validated
+def test_test_event_pattern_with_escape_characters(aws_client):
+    r"""Test the special case of using escape characters separately because it requires working around JSON escaping.
+    Escape characters are explained in the AWS documentation:
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-wildcard-matching
+    * "The string \* represents the literal * character"
+    * "The string \\ represents the literal \ character"
+    """
+
+    event = r'{"id": "1", "source": "test-source", "detail-type": "test-detail-type", "account": "123456789012", "region": "us-east-2", "time": "2022-07-13T13:48:01Z", "detail": {"escape_star": "*", "escape_backslash": "\\"}}'
+    # TODO: devise better testing strategy for * because the wildcard matches everything and "\\*" does not match.
+    event_pattern = r'{"detail": {"escape_star": ["*"], "escape_backslash": ["\\"]}}'
+
+    response = aws_client.events.test_event_pattern(
+        Event=event,
+        EventPattern=event_pattern,
+    )
+    assert response["Result"]

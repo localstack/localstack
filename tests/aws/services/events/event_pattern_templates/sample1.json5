@@ -1,3 +1,4 @@
+// This sample is based on our API tests
 // API: https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
 {
   "Event": {
