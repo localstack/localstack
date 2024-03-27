@@ -145,11 +145,12 @@ def run(pro: bool = None, mount_moto: bool = False, write: bool = False, command
 
     generate_k8s_cluster_overrides(pro, config, write=write)
 
-    print("To create a k3d cluster with the generated configuration, run the following command:")
-    print("k3d cluster create --config cluster-config.yaml")
+    print("\nTo create a k3d cluster with the generated configuration, follow these steps:")
+    print("1. Run the following command to create the cluster:")
+    print("\n    k3d cluster create --config cluster-config.yaml\n")
 
-    print("To start the cluster with the generated overrides, run the following command:")
-    print("helm upgrade --install localstack ./charts/localstack -f cluster-overrides.yaml ")
+    print("2. Once the cluster is created, start LocalStack with the generated overrides:")
+    print("\n   helm upgrade --install localstack ./charts/localstack -f cluster-overrides.yaml\n")
 
 
 def main():
