@@ -4,6 +4,7 @@ from collections import OrderedDict
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -1560,7 +1561,7 @@ class TestBaseScenarios:
         create_lambda_function(
             func_name=function_name,
             handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
-            runtime="python3.12",
+            runtime=Runtime.python3_12,
         )
 
         template = ST.load_sfn_template(ST.RETRY_INTERVAL_FEATURES_MAX_ATTEMPTS_ZERO)

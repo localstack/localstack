@@ -13,7 +13,7 @@
       },
       "Retry": [
         {
-          "Comment": "Includes all retry langauge features with zero max attempts.",
+          "Comment": "Includes all retry language features with zero max attempts.",
           "ErrorEquals": [
             "States.ALL"
           ],
