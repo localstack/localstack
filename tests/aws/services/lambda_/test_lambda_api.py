@@ -75,6 +75,26 @@ def environment_length_bytes(e: dict) -> int:
 
 
 class TestLambdaFunction:
+
+    @markers.aws.validated
+    def test_function_advanced_configuration(self, snapshot, create_lambda_function, lambda_su_role, aws_client):
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+            MemorySize=256,
+            Timeout=5,
+        )
+
+        snapshot.match("create_response", create_response)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response", get_function_response)
+
+
     @markers.snapshot.skip_snapshot_verify(
         # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
         # from python3.9 to python3.8 in update_func_conf_response.
@@ -87,7 +107,7 @@ class TestLambdaFunction:
         create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
             MemorySize=256,
             Timeout=5,
@@ -101,7 +121,7 @@ class TestLambdaFunction:
 
         update_func_conf_response = aws_client.lambda_.update_function_configuration(
             FunctionName=function_name,
-            Runtime=Runtime.python3_8,
+            Runtime=Runtime.python3_11,
             Description="Changed-Description",
             MemorySize=512,
             Timeout=10,

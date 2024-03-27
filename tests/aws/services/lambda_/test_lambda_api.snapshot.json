@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "recorded-date": "20-11-2023, 16:46:00",
+    "recorded-date": "27-03-2024, 09:14:35",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -21,11 +21,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 256,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -70,11 +74,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 256,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -116,11 +124,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 512,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
+        "Runtime": "python3.11",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },
@@ -164,11 +176,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 512,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.8",
+          "Runtime": "python3.11",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
           },
@@ -210,11 +226,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 512,
         "PackageType": "Zip",
         "RevisionId": "<uuid:5>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.8",
+        "Runtime": "python3.11",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },
@@ -258,11 +278,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 512,
           "PackageType": "Zip",
           "RevisionId": "<uuid:6>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.8",
+          "Runtime": "python3.11",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
           },
