@@ -4,9 +4,7 @@ import click
 import yaml
 
 
-def generate_k8s_cluster_config(
-    pro: bool = False, mount_moto: bool = False, write_files: bool = False
-):
+def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, write: bool = False):
     volumes = []
     root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
     localstack_code_path = os.path.join(root_path, "localstack")
@@ -45,13 +43,12 @@ def generate_k8s_cluster_config(
 
     config = {"apiVersion": "k3d.io/v1alpha3", "kind": "Simple", "volumes": volumes}
 
-    if write_files:
-        with open(os.path.join(os.getcwd(), "cluster-config.yaml"), "w") as f:
+    if write:
+        path = os.path.join(os.getcwd(), "cluster-config.yaml")
+        with open(path, "w") as f:
             f.write(yaml.dump(config))
             f.close()
-            print(
-                "Generated kubernetes cluster configuration file at kubernetes/cluster-config.yaml"
-            )
+            print(f"Generated kubernetes cluster configuration file at {path}")
     else:
         print("Generated kubernetes cluster configuration:")
         print("=====================================")
@@ -65,7 +62,7 @@ def snake_to_kebab_case(string: str):
 
 
 def generate_k8s_cluster_overrides(
-    pro: bool = False, cluster_config: dict = None, write_files: bool = False
+    pro: bool = False, cluster_config: dict = None, write: bool = False
 ):
     volumes = []
     for volume in cluster_config["volumes"]:
@@ -102,15 +99,22 @@ def generate_k8s_cluster_overrides(
         )
 
     overrides = {
+        "debug": True,
         "volumes": volumes,
         "volumeMounts": volumen_mounts,
     }
+    if pro:
+        overrides["image"] = {
+            "repository": "localstack/localstack-pro",
+            "pullPolicy": "Always",
+        }
 
-    if write_files:
-        with open(os.path.join(os.getcwd(), "cluster-overrides.yaml"), "w") as f:
+    if write:
+        path = os.path.join(os.getcwd(), "cluster-overrides.yaml")
+        with open(path, "w") as f:
             f.write(yaml.dump(overrides))
             f.close()
-        print("Generated kubernetes cluster overrides file at kubernetes/cluster-overrides.yaml")
+        print(f"Generated kubernetes cluster overrides file at {path}")
     else:
         print("Generated kubernetes cluster overrides:")
         print("=====================================")
@@ -126,22 +130,26 @@ def generate_k8s_cluster_overrides(
     "--mount-moto", is_flag=True, default=None, help="Mount the moto code into the cluster."
 )
 @click.option(
-    "--write-files",
+    "--write",
     is_flag=True,
     default=None,
     help="Write the configuration and overrides to files.",
 )
 @click.argument("command", nargs=-1, required=False)
-def run(pro: bool = None, mount_moto: bool = False, write_files: bool = False, command: str = None):
+def run(pro: bool = None, mount_moto: bool = False, write: bool = False, command: str = None):
     """
-    A tool for localstack developers to generated the kubernetes cluster configuration file and the overrides to mount the localstack code into the cluster.
+    A tool for localstack developers to generate the kubernetes cluster configuration file and the overrides to mount the localstack code into the cluster.
     """
 
-    print(pro)
+    config = generate_k8s_cluster_config(pro=pro, mount_moto=mount_moto, write=write)
 
-    config = generate_k8s_cluster_config(pro=pro, mount_moto=mount_moto, write_files=write_files)
+    generate_k8s_cluster_overrides(pro, config, write=write)
 
-    generate_k8s_cluster_overrides(pro, config, write_files=write_files)
+    print("To create a k3d cluster with the generated configuration, run the following command:")
+    print("k3d cluster create --config cluster-config.yaml")
+
+    print("To start the cluster with the generated overrides, run the following command:")
+    print("helm upgrade --install localstack ./charts/localstack -f cluster-overrides.yaml ")
 
 
 def main():
