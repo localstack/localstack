@@ -1,0 +1,44 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda": {
+    "recorded-date": "27-03-2024, 01:47:41",
+    "recorded-content": {
+      "http-invocation-lambda-url": {
+        "content": {
+          "args": {},
+          "data": {
+            "message": "hello world"
+          },
+          "domain": "domain",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "accept-encoding",
+            "content-length": "content-length",
+            "content-type": "application/json",
+            "host": "host",
+            "user-agent": "user-agent",
+            "x-amzn-apigateway-api-id": "x-amzn-apigateway-api-id",
+            "x-amzn-tls-cipher-suite": "x-amzn-tls-cipher-suite",
+            "x-amzn-tls-version": "x-amzn-tls-version",
+            "x-amzn-trace-id": "x-amzn-trace-id",
+            "x-forwarded-for": "44.218.97.60",
+            "x-forwarded-port": "x-forwarded-port",
+            "x-forwarded-proto": "x-forwarded-proto"
+          },
+          "method": "POST",
+          "origin": "44.218.97.60",
+          "path": "/"
+        },
+        "headers": {
+          "connection": "keep-alive",
+          "content-length": "content-length",
+          "content-type": "application/json",
+          "date": "date",
+          "x-amz-apigw-id": "VRAdjEYQoAMEpeg=",
+          "x-amzn-requestid": "<uuid:1>",
+          "x-amzn-trace-id": "x-amzn-trace-id"
+        },
+        "status_code": 200
+      }
+    }
+  }
+}

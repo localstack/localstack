@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda": {
+    "last_validated_date": "2024-03-27T01:47:41+00:00"
+  }
+}

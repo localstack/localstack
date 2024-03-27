@@ -97,14 +97,18 @@ def create_rest_api_with_integration(
             policy = APIGATEWAY_DYNAMODB_POLICY
         elif ":kinesis:" in integration_uri:
             policy = APIGATEWAY_KINESIS_POLICY
+        elif "lambda-url" in integration_uri:
+            policy = None
         else:
             raise Exception(f"Unexpected integration URI: {integration_uri}")
-        assume_role_arn = create_iam_role_with_policy(
-            RoleName=f"role-apigw-{short_uid()}",
-            PolicyName=f"policy-apigw-{short_uid()}",
-            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
-            PolicyDefinition=policy,
-        )
+        assume_role_arn = ""
+        if policy:
+            assume_role_arn = create_iam_role_with_policy(
+                RoleName=f"role-apigw-{short_uid()}",
+                PolicyName=f"policy-apigw-{short_uid()}",
+                RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+                PolicyDefinition=policy,
+            )
 
         create_rest_api_integration(
             aws_client.apigateway,
