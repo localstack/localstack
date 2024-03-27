@@ -103,7 +103,7 @@ class Preprocessor(ASLIntrinsicParserVisitor):
     def visitFunc_arg_func_decl(
         self, ctx: ASLIntrinsicParser.Func_arg_func_declContext
     ) -> FunctionArgumentFunction:
-        function: Function = self.visit(ctx.func_decl())
+        function: Function = self.visit(ctx.states_func_decl())
         return FunctionArgumentFunction(function=function)
 
     def visitFunc_arg_bool(

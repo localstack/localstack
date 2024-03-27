@@ -876,3 +876,6 @@ class Preprocessor(ASLParserVisitor):
             version=props.get(typ=Version),
         )
         return program
+
+    def visitState_machine(self, ctx: ASLParser.State_machineContext) -> Program:
+        return self.visit(ctx.program_decl())

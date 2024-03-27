@@ -9,6 +9,11 @@ else:
 
 class ASLParserVisitor(ParseTreeVisitor):
 
+    # Visit a parse tree produced by ASLParser#state_machine.
+    def visitState_machine(self, ctx:ASLParser.State_machineContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#program_decl.
     def visitProgram_decl(self, ctx:ASLParser.Program_declContext):
         return self.visitChildren(ctx)
