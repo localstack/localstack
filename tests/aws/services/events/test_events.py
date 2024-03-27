@@ -30,7 +30,10 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
 TEST_EVENT_BUS_NAME = "command-bus-dev"
 
-EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
+EVENT_DETAIL = {
+    "command": "update-account",
+    "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"},
+}
 TEST_EVENT_PATTERN = {
     "source": ["core.update-account-command"],
     "detail-type": ["core.update-account-command"],
@@ -335,7 +338,12 @@ class TestEvents:
             assert json.loads(msg_received["Body"]) == event
 
         # clean up
-        target_ids = [topic_target_id, sm_target_id, queue_target_id, fifo_queue_target_id]
+        target_ids = [
+            topic_target_id,
+            sm_target_id,
+            queue_target_id,
+            fifo_queue_target_id,
+        ]
         clean_up(rule_name=rule_name, target_ids=target_ids, queue_url=queue_url)
         aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
 
@@ -705,6 +713,16 @@ class TestEvents:
 
 
 class TestEventsEventBus:
+    @markers.aws.validated
+    def test_create_custom_event_bus(self, aws_client, cleanups, snapshot):
+        events = aws_client.events
+        bus_name = "test-bus"
+
+        response = events.create_event_bus(Name=bus_name)
+        cleanups.append(lambda: events.delete_event_bus(Name=bus_name))
+
+        snapshot.match("create-custom-event-bus", response)
+
     @markers.aws.unknown
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
@@ -797,7 +815,9 @@ class TestEventsEventBus:
                 snapshot.transform.jsonpath("$..detail.bucket.name", "bucket-name"),
                 snapshot.transform.jsonpath("$..detail.object.key", "key-name"),
                 snapshot.transform.jsonpath(
-                    "$..detail.object.sequencer", "object-sequencer", reference_replacement=False
+                    "$..detail.object.sequencer",
+                    "object-sequencer",
+                    reference_replacement=False,
                 ),
                 snapshot.transform.jsonpath(
                     "$..detail.request-id", "request-id", reference_replacement=False
@@ -831,7 +851,11 @@ class TestEventsEventBus:
         event_bus_policy = {
             "Version": "2012-10-17",
             "Statement": [
-                {"Effect": "Allow", "Action": "events:PutEvents", "Resource": custom_event_bus_arn}
+                {
+                    "Effect": "Allow",
+                    "Action": "events:PutEvents",
+                    "Resource": custom_event_bus_arn,
+                }
             ],
         }
 
@@ -882,7 +906,11 @@ class TestEventsEventBus:
         resp = aws_client.events.put_targets(
             Rule=default_bus_rule_name,
             Targets=[
-                {"Id": default_bus_target_id, "Arn": custom_event_bus_arn, "RoleArn": role_arn}
+                {
+                    "Id": default_bus_target_id,
+                    "Arn": custom_event_bus_arn,
+                    "RoleArn": role_arn,
+                }
             ],
         )
         snapshot.match("put-target-1", resp)
