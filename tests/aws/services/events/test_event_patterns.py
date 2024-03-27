@@ -56,18 +56,34 @@ def apply_event_template(event_template, account_id, region_name):
     return event_template
 
 
+# TODO: having an easy way to filter would be nice => just a list of names would make it easy to comment them out
 request_template_tuples = load_request_templates(REQUEST_TEMPLATE_DIR)
 
 
 @pytest.mark.parametrize(
     "request_template,label", request_template_tuples, ids=[t[1] for t in request_template_tuples]
 )
-@markers.aws.unknown
+@markers.aws.validated
 def test_test_event_pattern(aws_client, snapshot, account_id, region_name, request_template, label):
     event = apply_event_template(request_template["Event"], account_id, region_name)
     event_pattern = request_template["EventPattern"]
-    response = aws_client.events.test_event_pattern(
-        Event=json.dumps(event),
-        EventPattern=json.dumps(event_pattern),
-    )
-    snapshot.match(label, response)
+
+    # Handling both success and error cases enables parity testing all types of event/pattern configs
+    try:
+        response = aws_client.events.test_event_pattern(
+            Event=json.dumps(event),
+            EventPattern=json.dumps(event_pattern),
+        )
+        snapshot.match(label, response)
+
+        # Validate the test intention: The _NEG suffix indicates negative tests (i.e., a pattern not matching the event)
+        if label.endswith("_NEG"):
+            assert not response["Result"]
+        else:
+            assert response["Result"]
+    except Exception as e:
+        exception_info = {"exception_type": type(e), "exception_message": str(e)}
+        snapshot.match(label, exception_info)
+
+        # Validate the test intention: The _EXC suffix indicates an exception test (i.e., an invalid pattern)
+        assert label.endswith("_EXC")

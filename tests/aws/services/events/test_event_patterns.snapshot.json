@@ -1,8 +1,458 @@
 {
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_repeating]": {
+    "recorded-date": "27-03-2024, 15:19:26",
+    "recorded-content": {
+      "content_wildcard_repeating": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[complex_multi_match]": {
+    "recorded-date": "27-03-2024, 15:19:26",
+    "recorded-content": {
+      "complex_multi_match": {
+        "Result": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {
+            "content-length": "16",
+            "content-type": "application/x-amz-json-1.1",
+            "date": "Wed, 27 Mar 2024 15:19:25 GMT",
+            "x-amzn-requestid": "2071417d-8035-46ba-922a-2c35d05e9427"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "2071417d-8035-46ba-922a-2c35d05e9427",
+          "RetryAttempts": 0
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[arrays]": {
+    "recorded-date": "27-03-2024, 15:19:26",
+    "recorded-content": {
+      "arrays": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_simplified]": {
+    "recorded-date": "27-03-2024, 15:19:26",
+    "recorded-content": {
+      "content_wildcard_simplified": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[or-exists]": {
+    "recorded-date": "27-03-2024, 15:19:26",
+    "recorded-content": {
+      "or-exists": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_nonrepeating]": {
+    "recorded-date": "27-03-2024, 15:19:26",
+    "recorded-content": {
+      "content_wildcard_nonrepeating": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_string]": {
+    "recorded-date": "27-03-2024, 15:19:26",
+    "recorded-content": {
+      "content_anything_but_string": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_ip_address]": {
+    "recorded-date": "27-03-2024, 15:19:27",
+    "recorded-content": {
+      "content_ip_address": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[or-exists-parent]": {
+    "recorded-date": "27-03-2024, 15:19:27",
+    "recorded-content": {
+      "or-exists-parent": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[dot_joining_pattern]": {
+    "recorded-date": "27-03-2024, 15:19:27",
+    "recorded-content": {
+      "dot_joining_pattern": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_string_list]": {
+    "recorded-date": "27-03-2024, 15:19:27",
+    "recorded-content": {
+      "content_anything_but_string_list": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[dynamodb]": {
+    "recorded-date": "27-03-2024, 15:19:27",
+    "recorded-content": {
+      "dynamodb": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_ignorecase]": {
+    "recorded-date": "27-03-2024, 15:19:27",
+    "recorded-content": {
+      "content_anything_but_ignorecase": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[null_value]": {
+    "recorded-date": "27-03-2024, 15:19:27",
+    "recorded-content": {
+      "null_value": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_number_list]": {
+    "recorded-date": "27-03-2024, 15:19:28",
+    "recorded-content": {
+      "content_anything_but_number_list": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_exists]": {
+    "recorded-date": "27-03-2024, 15:19:28",
+    "recorded-content": {
+      "content_exists": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[complex_or]": {
+    "recorded-date": "27-03-2024, 15:19:28",
+    "recorded-content": {
+      "complex_or": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[dot_joining_event]": {
+    "recorded-date": "27-03-2024, 15:19:28",
+    "recorded-content": {
+      "dot_joining_event": {
+        "Result": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {
+            "content-length": "16",
+            "content-type": "application/x-amz-json-1.1",
+            "date": "Wed, 27 Mar 2024 15:19:27 GMT",
+            "x-amzn-requestid": "c4cc448a-7825-41b4-9871-f7ba6b146bd7"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "c4cc448a-7825-41b4-9871-f7ba6b146bd7",
+          "RetryAttempts": 0
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_prefix_ignorecase]": {
+    "recorded-date": "27-03-2024, 15:19:28",
+    "recorded-content": {
+      "content_prefix_ignorecase": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_suffix_ignorecase]": {
+    "recorded-date": "27-03-2024, 15:19:28",
+    "recorded-content": {
+      "content_suffix_ignorecase": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_prefix]": {
+    "recorded-date": "27-03-2024, 15:19:28",
+    "recorded-content": {
+      "content_anything_prefix": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[sample1]": {
-    "recorded-date": "26-03-2024, 16:56:35",
+    "recorded-date": "27-03-2024, 15:19:28",
     "recorded-content": {
       "sample1": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[empty_string]": {
+    "recorded-date": "27-03-2024, 15:19:29",
+    "recorded-content": {
+      "empty_string": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[prefix]": {
+    "recorded-date": "27-03-2024, 15:19:29",
+    "recorded-content": {
+      "prefix": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_suffix]": {
+    "recorded-date": "27-03-2024, 15:19:29",
+    "recorded-content": {
+      "content_anything_suffix": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_ignorecase_list]": {
+    "recorded-date": "27-03-2024, 15:19:29",
+    "recorded-content": {
+      "content_anything_but_ignorecase_list": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_complex_EXC]": {
+    "recorded-date": "27-03-2024, 15:19:29",
+    "recorded-content": {
+      "content_wildcard_complex_EXC": {
+        "exception_message": "An error occurred (InvalidEventPatternException) when calling the TestEventPattern operation: Event pattern is not valid. Reason: Rule is too complex - try using fewer wildcard characters or fewer repeating character sequences after a wildcard character",
+        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[minimal_template]": {
+    "recorded-date": "27-03-2024, 15:19:30",
+    "recorded-content": {
+      "minimal_template": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_prefix]": {
+    "recorded-date": "27-03-2024, 15:19:30",
+    "recorded-content": {
+      "content_prefix": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[minimal]": {
+    "recorded-date": "27-03-2024, 15:19:30",
+    "recorded-content": {
+      "minimal": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[complex_multi_key]": {
+    "recorded-date": "27-03-2024, 15:19:30",
+    "recorded-content": {
+      "complex_multi_key": {
+        "Result": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {
+            "content-length": "16",
+            "content-type": "application/x-amz-json-1.1",
+            "date": "Wed, 27 Mar 2024 15:19:30 GMT",
+            "x-amzn-requestid": "108fa54a-881a-4345-b277-bba5d29a4202"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "108fa54a-881a-4345-b277-bba5d29a4202",
+          "RetryAttempts": 0
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_suffix]": {
+    "recorded-date": "27-03-2024, 15:19:30",
+    "recorded-content": {
+      "content_suffix": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_ignorecase]": {
+    "recorded-date": "27-03-2024, 15:19:30",
+    "recorded-content": {
+      "content_ignorecase": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_exists_NEG]": {
+    "recorded-date": "27-03-2024, 15:19:31",
+    "recorded-content": {
+      "content_exists_NEG": {
+        "Result": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_and]": {
+    "recorded-date": "27-03-2024, 15:19:31",
+    "recorded-content": {
+      "content_numeric_and": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_number]": {
+    "recorded-date": "27-03-2024, 15:19:31",
+    "recorded-content": {
+      "content_anything_but_number": {
+        "Result": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[or-anything-but]": {
+    "recorded-date": "27-03-2024, 15:19:31",
+    "recorded-content": {
+      "or-anything-but": {
         "Result": true,
         "ResponseMetadata": {
           "HTTPHeaders": {},

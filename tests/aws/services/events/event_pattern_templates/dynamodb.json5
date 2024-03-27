@@ -1,0 +1,29 @@
+{
+  "Event": {
+    "id": "1",
+    "source": "order",
+    "detail-type": "Test",
+    "account": "$account",
+    "region": "$region",
+    "time": "$time",
+    "dynamodb": {
+      "NewImage": {
+        "homemade": {
+          "S": "ABCD",
+          "N": "1234"
+        }
+      }
+    }
+  },
+  "EventPattern": {
+    "dynamodb": {
+      "NewImage": {
+        "homemade": {
+          "N": [
+            "1234"
+          ]
+        }
+      }
+    }
+  }
+}

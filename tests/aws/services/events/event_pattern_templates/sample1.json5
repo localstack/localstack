@@ -1,14 +1,19 @@
+// API: https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
 {
-    "Event": {
-        "id": "1",
-        "source": "order",
-        "detail-type": "Test",
-        "account": "$account",
-        "region": "$region",
-        "time": "$time",
-    },
-    "EventPattern": {
-        "source": ["order"],
-        "detail-type": ["Test"],
-    }
+  "Event": {
+    "id": "1",
+    "source": "order",
+    "detail-type": "Test",
+    "account": "$account",
+    "region": "$region",
+    "time": "$time",
+  },
+  "EventPattern": {
+    "source": [
+      "order"
+    ],
+    "detail-type": [
+      "Test"
+    ],
+  }
 }
