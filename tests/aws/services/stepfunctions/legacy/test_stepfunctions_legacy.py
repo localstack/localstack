@@ -289,7 +289,7 @@ def get_machine_arn(sm_name, sfn_client):
 
 
 pytestmark = pytest.mark.skipif(
-    condition=is_not_legacy_provider, reason="Test suite only for legacy provider."
+    condition=is_not_legacy_provider(), reason="Test suite only for legacy provider."
 )
 
 

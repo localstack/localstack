@@ -203,6 +203,7 @@ jobs:
           name: Test SFN Legacy provider
           environment:
             PROVIDER_OVERRIDE_STEPFUNCTIONS: "legacy"
+            DEBUG: 1
             TEST_PATH: "tests/aws/services/stepfunctions/legacy/"
             COVERAGE_ARGS: "-p"
           command: |
