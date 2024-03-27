@@ -14,9 +14,6 @@ COMPLEX_MULTI_KEY_EVENT_PATTERN = os.path.join(
     REQUEST_TEMPLATE_DIR, "complex_multi_key_event_pattern.json"
 )
 COMPLEX_MULTI_KEY_EVENT = os.path.join(REQUEST_TEMPLATE_DIR, "complex_multi_key_event.json")
-REFERENCE_DATE: str = (
-    "2022-07-13T13:48:01Z"  # v1.0.0 commit timestamp cf26bd9199354a9a55e0b65e312ceee4c407f6c0
-)
 
 
 def load_request_templates(directory_path: str) -> List[Tuple[dict, str]]:
@@ -41,26 +38,7 @@ def list_files_with_suffix(directory_path: str, suffix: str) -> List[str]:
     return files
 
 
-def apply_event_template(event_template, account_id, region_name):
-    replacements = {
-        # replacement variable => replacement value
-        "$account": account_id,
-        "$region": region_name,
-        "$time": REFERENCE_DATE,
-    }
-    for key, value in event_template.items():
-        # Apply replacements for strings
-        if isinstance(value, str):
-            for replace_variable, replace_value in replacements.items():
-                if replace_variable in value:
-                    event_template[key] = value.replace(replace_variable, replace_value)
-        # Recurse into dicts
-        elif isinstance(value, dict):
-            event_template[key] = apply_event_template(value, account_id, region_name)
-    return event_template
-
-
-# TODO: having an easy way to filter would be nice => just a list of names would make it easy to comment them out
+# TODO: having an easy way to filter would be nice to have
 request_template_tuples = load_request_templates(REQUEST_TEMPLATE_DIR)
 
 
@@ -68,13 +46,13 @@ request_template_tuples = load_request_templates(REQUEST_TEMPLATE_DIR)
     "request_template,label", request_template_tuples, ids=[t[1] for t in request_template_tuples]
 )
 @markers.aws.validated
-def test_test_event_pattern(aws_client, snapshot, account_id, region_name, request_template, label):
+def test_test_event_pattern(aws_client, snapshot, request_template, label):
     """This parametrized test handles three outcomes:
     a) MATCH (default): The EventPattern matches the Event yielding true as result.
     b) NO MATCH (_NEG suffix): The EventPattern does NOT match the Event yielding false as result.
     c) EXCEPTION (_EXC suffix): The EventPattern is invalid and raises an exception.
     """
-    event = apply_event_template(request_template["Event"], account_id, region_name)
+    event = request_template["Event"]
     event_pattern = request_template["EventPattern"]
 
     if label.endswith("_EXC"):
