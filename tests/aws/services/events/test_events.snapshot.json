@@ -208,5 +208,17 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_custom_event_bus": {
+    "recorded-date": "27-03-2024, 09:15:34",
+    "recorded-content": {
+      "create-custom-event-bus": {
+        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
