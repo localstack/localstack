@@ -23,9 +23,7 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 
 class ResourceOutputTransformerJson(ResourceOutputTransformer):
     def _eval_body(self, env: Environment) -> None:
-        _: ReaderConfigOutput = (
-            env.stack.pop()
-        )  # Not used, but expected by workflow (hence should consume the stack).
+        reader_config: ReaderConfigOutput = env.stack.pop()
         resource_value: str = env.stack.pop()
 
         json_list = json.loads(resource_value)
@@ -45,4 +43,6 @@ class ResourceOutputTransformerJson(ResourceOutputTransformer):
             )
             raise FailureEventException(failure_event=failure_event)
 
-        env.stack.append(json_list)
+        max_items = reader_config["MaxItemsValue"]
+        json_list_slice = json_list[:max_items]
+        env.stack.append(json_list_slice)
