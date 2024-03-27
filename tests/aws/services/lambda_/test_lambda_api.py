@@ -409,7 +409,11 @@ class TestLambdaFunction:
 
     # TODO: fix type of AccessDeniedException yielding null
     @markers.snapshot.skip_snapshot_verify(
-        paths=["function_arn_other_account_exc..Error.Message", "$..CodeSha256"]
+        paths=[
+            "function_arn_other_account_exc..Error.Message",
+            "$..CodeSha256",
+            "$..CreateFunctionResponse.LoggingConfig",
+        ]
     )
     @markers.aws.validated
     def test_function_arns(
@@ -464,7 +468,9 @@ class TestLambdaFunction:
         max_function_arn_length = 140
         function_arn_prefix = f"arn:aws:lambda:{region_name}:{account_id}:function:"
         suffix_length = max_function_arn_length - len(function_arn_prefix) + 1
-        long_function_arn = function_arn_prefix + "a" * suffix_length
+        long_function_name = "a" * suffix_length
+        snapshot.add_transformer(snapshot.transform.regex(long_function_name, "<function-name>"))
+        long_function_arn = function_arn_prefix + long_function_name
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
                 FunctionName=long_function_arn,
