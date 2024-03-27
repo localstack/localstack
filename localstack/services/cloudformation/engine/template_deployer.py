@@ -182,7 +182,14 @@ def resolve_refs_recursively(
     value,
 ):
     result = _resolve_refs_recursively(
-        account_id, region_name, stack_name, resources, mappings, conditions, parameters, value
+        account_id,
+        region_name,
+        stack_name,
+        resources,
+        mappings,
+        conditions,
+        parameters,
+        value,
     )
 
     # localstack specific patches
@@ -314,7 +321,10 @@ def _resolve_refs_recursively(
             resource = resources.get(resource_logical_id)
 
             resolved_getatt = get_attr_from_model_instance(
-                resource, attribute_name, get_resource_type(resource), resource_logical_id
+                resource,
+                attribute_name,
+                get_resource_type(resource),
+                resource_logical_id,
             )
             # TODO: we should check the deployment state and not try to GetAtt from a resource that is still IN_PROGRESS or hasn't started yet.
             if resolved_getatt is None:
@@ -385,7 +395,8 @@ def _resolve_refs_recursively(
                     # We don't have access to the resource that's a dependency in this case,
                     # so do the best we can with the resource ids
                     raise DependencyNotYetSatisfied(
-                        resource_ids=key, message=f"Could not resolve {val} to terminal value type"
+                        resource_ids=key,
+                        message=f"Could not resolve {val} to terminal value type",
                     )
                 result = result.replace("${%s}" % key, resolved_val)
 
@@ -409,7 +420,12 @@ def _resolve_refs_recursively(
             if isinstance(mapping_id, dict) and "Ref" in mapping_id:
                 # TODO: ??
                 mapping_id = resolve_ref(
-                    account_id, region_name, stack_name, resources, parameters, mapping_id["Ref"]
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    parameters,
+                    mapping_id["Ref"],
                 )
 
             selected_map = mappings.get(mapping_id)
@@ -850,7 +866,9 @@ class TemplateDeployer:
             )
         except Exception as e:
             LOG.info(
-                "Unable to apply change set %s: %s", change_set.metadata.get("ChangeSetName"), e
+                "Unable to apply change set %s: %s",
+                change_set.metadata.get("ChangeSetName"),
+                e,
             )
             change_set.metadata["Status"] = f"{action}_FAILED"
             self.stack.set_stack_status(f"{action}_FAILED")
@@ -1155,6 +1173,7 @@ class TemplateDeployer:
 
         # TODO: ideally the entire template has to be replaced, but tricky at this point
         existing_stack.template["Metadata"] = new_stack.template.get("Metadata")
+        existing_stack.template_body = new_stack.template_body
 
         # start deployment loop
         return self.apply_changes_in_loop(
@@ -1162,7 +1181,11 @@ class TemplateDeployer:
         )
 
     def apply_changes_in_loop(
-        self, changes: list[ChangeConfig], stack, action: Optional[str] = None, new_stack=None
+        self,
+        changes: list[ChangeConfig],
+        stack,
+        action: Optional[str] = None,
+        new_stack=None,
     ):
         def _run(*args):
             status_reason = None
@@ -1303,7 +1326,8 @@ class TemplateDeployer:
         # check resource condition, if present
         if not evaluate_resource_condition(stack.resolved_conditions, resource):
             LOG.debug(
-                'Skipping deployment of "%s", as resource condition evaluates to false', resource_id
+                'Skipping deployment of "%s", as resource condition evaluates to false',
+                resource_id,
             )
             return False
 
