@@ -100,3 +100,8 @@ def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
     rs = aws_client.sns.list_topics()
     topics = [tp for tp in rs["Topics"] if tp["TopicArn"] == topic_arn]
     assert not topics
+
+
+@markers.aws.validated
+def test_update_subscription():
+    pass
