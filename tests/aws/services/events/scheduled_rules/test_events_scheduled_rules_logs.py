@@ -8,6 +8,7 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.events.helper_functions import is_v2_provider
 
 LOG = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ def logs_log_group(aws_client):
 
 
 @pytest.fixture
+@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def add_logs_resource_policy_for_rule(aws_client):
     policies = []
 
