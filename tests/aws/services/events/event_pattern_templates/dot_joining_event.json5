@@ -12,10 +12,8 @@
     }
   },
   "EventPattern": {
-    "detail" : {
-      "state:": {
-        "status": ["running"],
-      }
+    "detail": {
+      "state": { "status": [ "running" ] }
     }
   }
 }

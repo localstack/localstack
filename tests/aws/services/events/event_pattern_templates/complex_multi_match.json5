@@ -15,7 +15,7 @@
     }
   },
   "EventPattern": {
-    "time": [ { "prefix": "2017-10-02" } ],
+    "time": [ { "prefix": "2022-07-13" } ],
     "detail": {
       "state": [ { "anything-but": "initializing" } ],
       "c-count": [ { "numeric": [ ">", 0, "<=", 5 ] } ],

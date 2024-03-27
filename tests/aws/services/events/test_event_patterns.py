@@ -10,6 +10,10 @@ from localstack.testing.pytest import markers
 
 THIS_FOLDER: str = os.path.dirname(os.path.realpath(__file__))
 REQUEST_TEMPLATE_DIR = os.path.join(THIS_FOLDER, "event_pattern_templates")
+COMPLEX_MULTI_KEY_EVENT_PATTERN = os.path.join(
+    REQUEST_TEMPLATE_DIR, "complex_multi_key_event_pattern.json"
+)
+COMPLEX_MULTI_KEY_EVENT = os.path.join(REQUEST_TEMPLATE_DIR, "complex_multi_key_event.json")
 REFERENCE_DATE: str = (
     "2022-07-13T13:48:01Z"  # v1.0.0 commit timestamp cf26bd9199354a9a55e0b65e312ceee4c407f6c0
 )
@@ -65,25 +69,51 @@ request_template_tuples = load_request_templates(REQUEST_TEMPLATE_DIR)
 )
 @markers.aws.validated
 def test_test_event_pattern(aws_client, snapshot, account_id, region_name, request_template, label):
+    """This parametrized test handles three outcomes:
+    a) MATCH (default): The EventPattern matches the Event yielding true as result.
+    b) NO MATCH (_NEG suffix): The EventPattern does NOT match the Event yielding false as result.
+    c) EXCEPTION (_EXC suffix): The EventPattern is invalid and raises an exception.
+    """
     event = apply_event_template(request_template["Event"], account_id, region_name)
     event_pattern = request_template["EventPattern"]
 
-    # Handling both success and error cases enables parity testing all types of event/pattern configs
-    try:
+    if label.endswith("_EXC"):
+        with pytest.raises(Exception) as e:
+            aws_client.events.test_event_pattern(
+                Event=json.dumps(event),
+                EventPattern=json.dumps(event_pattern),
+            )
+            exception_info = {"exception_type": type(e), "exception_message": str(e)}
+            snapshot.match(label, exception_info)
+    else:
         response = aws_client.events.test_event_pattern(
             Event=json.dumps(event),
             EventPattern=json.dumps(event_pattern),
         )
-        snapshot.match(label, response)
 
         # Validate the test intention: The _NEG suffix indicates negative tests (i.e., a pattern not matching the event)
         if label.endswith("_NEG"):
             assert not response["Result"]
         else:
             assert response["Result"]
-    except Exception as e:
-        exception_info = {"exception_type": type(e), "exception_message": str(e)}
-        snapshot.match(label, exception_info)
 
-        # Validate the test intention: The _EXC suffix indicates an exception test (i.e., an invalid pattern)
-        assert label.endswith("_EXC")
+
+@markers.aws.validated
+def test_test_event_pattern_with_multi_key(aws_client):
+    """Test the special case of a duplicate JSON key separately because it requires working around the
+    uniqueness constraints of the JSON5 library and Python dicts, which would already de-deduplicate the key "location".
+    This example is based on the following AWS documentation:
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-complex-example
+    """
+
+    with open(COMPLEX_MULTI_KEY_EVENT, "r") as event_file, open(
+        COMPLEX_MULTI_KEY_EVENT_PATTERN, "r"
+    ) as event_pattern_file:
+        event = event_file.read()
+        event_pattern = event_pattern_file.read()
+
+        response = aws_client.events.test_event_pattern(
+            Event=event,
+            EventPattern=event_pattern,
+        )
+        assert response["Result"]

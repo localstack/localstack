@@ -1,0 +1,6 @@
+{
+  "detail": {
+    "location": [ { "prefix": "us-" } ],
+    "location": [ { "anything-but": "us-east" } ]
+  }
+}
