@@ -22,10 +22,10 @@ class MaxAttemptsDecl(EvalComponent):
     attempts: Final[int]
 
     def __init__(self, attempts: int = DEFAULT_ATTEMPTS):
-        if not (1 <= attempts <= MaxAttemptsDecl.MAX_VALUE):
+        if not (0 <= attempts <= MaxAttemptsDecl.MAX_VALUE):
             raise ValueError(
                 f"MaxAttempts value MUST be a positive integer between "
-                f"1 and {MaxAttemptsDecl.MAX_VALUE}, got '{attempts}'."
+                f"0 and {MaxAttemptsDecl.MAX_VALUE}, got '{attempts}'."
             )
         self.attempts = attempts
 
@@ -39,10 +39,7 @@ class MaxAttemptsDecl(EvalComponent):
         env.heap[self._attempt_number_key()] = attempt_number
 
     def _eval_body(self, env: Environment) -> None:
-        if self.attempts == 0:
-            env.stack.append(MaxAttemptsOutcome.SUCCESS)
-        else:
-            attempt_number: int = self._access_attempt_number(env=env)
-            attempt_number += 1
-            env.stack.append(MaxAttemptsOutcome(attempt_number < self.attempts))
-            self._store_attempt_number(env=env, attempt_number=attempt_number)
+        attempt_number: int = self._access_attempt_number(env=env)
+        attempt_number += 1
+        env.stack.append(MaxAttemptsOutcome(attempt_number < self.attempts))
+        self._store_attempt_number(env=env, attempt_number=attempt_number)

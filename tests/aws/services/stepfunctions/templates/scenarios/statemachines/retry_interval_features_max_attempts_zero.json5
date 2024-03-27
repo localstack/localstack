@@ -1,0 +1,30 @@
+{
+  "Comment": "RETRY_INTERVAL_FEATURES_MAX_ATTEMPTS_ZERO",
+  "StartAt": "LambdaTask",
+  "States": {
+    "LambdaTask": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName.$": "$.FunctionName",
+        "Payload": {
+          "RetryAttempt.$": "$$.State.RetryCount"
+        }
+      },
+      "Retry": [
+        {
+          "Comment": "Includes all retry language features with zero max attempts.",
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 3,
+          "MaxAttempts": 0,
+          "BackoffRate": 2,
+          "MaxDelaySeconds": 5,
+          "JitterStrategy": "FULL"
+        }
+      ],
+      "End": true
+    }
+  }
+}

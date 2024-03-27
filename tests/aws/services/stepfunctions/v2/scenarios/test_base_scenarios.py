@@ -4,6 +4,7 @@ from collections import OrderedDict
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -1537,6 +1538,36 @@ class TestBaseScenarios:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_retry_interval_features_max_attempts_zero(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
+            runtime=Runtime.python3_12,
+        )
+
+        template = ST.load_sfn_template(ST.RETRY_INTERVAL_FEATURES_MAX_ATTEMPTS_ZERO)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"FunctionName": function_name})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
