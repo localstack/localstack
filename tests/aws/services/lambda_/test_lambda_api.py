@@ -480,7 +480,6 @@ class TestLambdaFunction:
                 Role=lambda_su_role,
                 Runtime=Runtime.python3_12,
             )
-
         snapshot.match("long_function_arn_exc", e.value.response)
 
         # test other region in function arn than client
