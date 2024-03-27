@@ -153,7 +153,7 @@ DEFAULT_AWS_ACCOUNT_ID = "000000000000"
 TEST_AWS_ACCOUNT_ID = os.getenv("TEST_AWS_ACCOUNT_ID") or "000000000001"
 TEST_AWS_ACCESS_KEY_ID = os.getenv("TEST_AWS_ACCESS_KEY_ID") or "000000000001"
 TEST_AWS_SECRET_ACCESS_KEY = os.getenv("TEST_AWS_SECRET_ACCESS_KEY") or "test1"
-TEST_AWS_REGION_NAME = os.getenv("TEST_AWS_REGION") or "us-west-1"
+TEST_AWS_REGION_NAME = os.getenv("TEST_AWS_REGION") or "us-west-2"
 
 # Additional credentials used in the test suite (when running cross-account tests)
 SECONDARY_TEST_AWS_ACCOUNT_ID = os.getenv("SECONDARY_TEST_AWS_ACCOUNT_ID") or "000000000002"
