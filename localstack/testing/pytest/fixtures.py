@@ -48,7 +48,6 @@ from localstack.utils.json import CustomEncoder, json_safe
 from localstack.utils.net import wait_for_port_open
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, retry, wait_until
-from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO_HTTP
 
 LOG = logging.getLogger(__name__)
 
@@ -1304,6 +1303,32 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
 def create_echo_http_server(aws_client, create_lambda_function):
     lambda_client = aws_client.lambda_
 
+    handler_code = """
+import json
+
+
+def make_response(body: dict, status_code: int = 200):
+    return {
+        "statusCode": status_code,
+        "headers": {"Content-Type": "application/json"},
+        "body": body,
+    }
+
+
+def handler(event, context):
+    print(json.dumps(event))
+    response = {
+        "args": event.get("queryStringParameters", {}),
+        "data": event.get("body", ""),
+        "domain": event["requestContext"].get("domainName", ""),
+        "headers": event.get("headers", {}),
+        "method": event["requestContext"]["http"].get("method", ""),
+        "origin": event["requestContext"]["http"].get("sourceIp", ""),
+        "path": event["requestContext"]["http"].get("path", ""),
+    }
+    return make_response(response)
+"""
+
     def _create_echo_http_server() -> str:
         """Creates a server that will echo any request. Any request will be returned with the
         following format. Any unset values will have those defaults
@@ -1316,11 +1341,11 @@ def create_echo_http_server(aws_client, create_lambda_function):
           "origin": "",
           "path": ""
         }"""
+        zip_file = testutil.create_lambda_archive(handler_code, get_content=True)
         func_name = f"echo-http-{short_uid()}"
         create_lambda_function(
             func_name=func_name,
-            handler_file=TEST_LAMBDA_PYTHON_ECHO_HTTP,
-            handler="lambda_echo_http.handler",
+            zip_file=zip_file,
             runtime=Runtime.python3_9,
         )
         url_response = lambda_client.create_function_url_config(
