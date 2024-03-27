@@ -1547,6 +1547,36 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    def test_retry_interval_features_max_attempts_zero(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
+            runtime="python3.12",
+        )
+
+        template = ST.load_sfn_template(ST.RETRY_INTERVAL_FEATURES_MAX_ATTEMPTS_ZERO)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"FunctionName": function_name})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_wait_timestamp(
         self,
         aws_client,
