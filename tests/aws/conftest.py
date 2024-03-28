@@ -27,6 +27,13 @@ def pytest_configure(config: Config):
     )
 
 
+@pytest.hookimpl()
+def pytest_addhooks(pluginmanager):
+    from localstack.testing.pytest.resourcemon import ResourceMonitorPlugin
+
+    pluginmanager.register(ResourceMonitorPlugin())
+
+
 def pytest_runtestloop(session):
     # second pytest lifecycle hook (before test runner starts)
     test_init_functions = set()
