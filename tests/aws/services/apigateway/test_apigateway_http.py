@@ -28,6 +28,15 @@ def add_http_integration_transformers(snapshot):
     for key in key_value_transform:
         snapshot.add_transformer(snapshot.transform.key_value(key))
 
+    snapshot.add_transformer(
+        snapshot.transform.jsonpath(
+            "$.*.headers.content-length",
+            reference_replacement=True,
+            value_replacement="content_length",
+        ),
+        priority=1,
+    )
+
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
@@ -41,29 +50,29 @@ def add_http_integration_transformers(snapshot):
         "$..content.headers.x-localstack-edge",
         "$..headers.server",
         "$..headers.x-amz-apigw-id",  # TODO: we should add that header when forwarding the response
+        #  TODO the remapped headers are currently not added to apigateway response
+        "$..headers.x-amzn-remapped-connection",
+        "$..headers.x-amzn-remapped-content-length",
+        "$..headers.x-amzn-remapped-date",
+        "$..headers.x-amzn-remapped-x-amzn-requestid",
         "$..headers.x-amzn-requestid",
         "$..headers.x-amzn-trace-id",
         "$..origin",
     ]
 )
+@pytest.mark.parametrize("integration_type", ["HTTP", "HTTP_PROXY"])
 def test_http_integration_with_lambda(
+    integration_type,
     create_echo_http_server,
     create_rest_api_with_integration,
     snapshot,
     add_http_integration_transformers,
 ):
-    snapshot.add_transformer(
-        snapshot.transform.jsonpath(
-            "$.http-invocation-lambda-url.headers.content-length",
-            reference_replacement=False,
-            value_replacement="<content_length>",
-        )
-    )
     echo_server_url = create_echo_http_server(trim_x_headers=False)
     # create api gateway
     stage_name = "test"
     api_id = create_rest_api_with_integration(
-        integration_uri=echo_server_url, integration_type="HTTP", stage=stage_name
+        integration_uri=echo_server_url, integration_type=integration_type, stage=stage_name
     )
     snapshot.match("api_id", {"rest_api_id": api_id})
     invocation_url = api_invoke_url(
