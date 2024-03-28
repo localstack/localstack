@@ -66,9 +66,6 @@ class SNSSubscriptionProvider(ResourceProvider[SNSSubscriptionProperties]):
 
         params = util.select_attributes(model=model, params=["TopicArn", "Protocol", "Endpoint"])
 
-        def attr_val(val):
-            return json.dumps(val) if isinstance(val, (dict, list)) else str(val)
-
         attrs = [
             "DeliveryPolicy",
             "FilterPolicy",
@@ -76,7 +73,7 @@ class SNSSubscriptionProvider(ResourceProvider[SNSSubscriptionProperties]):
             "RawMessageDelivery",
             "RedrivePolicy",
         ]
-        attributes = {a: attr_val(model[a]) for a in attrs if a in model}
+        attributes = {a: self.attr_val(model[a]) for a in attrs if a in model}
 
         if attributes:
             params["Attributes"] = attributes
@@ -130,6 +127,7 @@ class SNSSubscriptionProvider(ResourceProvider[SNSSubscriptionProperties]):
 
         """
         model = request.desired_state
+        model["Id"] = request.previous_state["Id"]
         sns = request.aws_client_factory.sns
 
         attrs = [
@@ -144,11 +142,14 @@ class SNSSubscriptionProvider(ResourceProvider[SNSSubscriptionProperties]):
                 sns.set_subscription_attributes(
                     SubscriptionArn=model["Id"],
                     AttributeName=a,
-                    AttributeValue=json.dumps(model[a]),
+                    AttributeValue=self.attr_val(model[a]),
                 )
-
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
             resource_model=model,
             custom_context=request.custom_context,
         )
+
+    @staticmethod
+    def attr_val(val):
+        return json.dumps(val) if isinstance(val, dict) else str(val)

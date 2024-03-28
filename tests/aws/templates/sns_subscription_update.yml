@@ -1,0 +1,20 @@
+Parameters:
+  TopicArn:
+    Type: String
+    Description: The ARN of the SNS topic to subscribe to
+  QueueArn:
+    Type: String
+    Description: The URL of the SQS queue to send messages to
+Resources:
+    SnsSubscription:
+        Type: AWS::SNS::Subscription
+        Properties:
+          Protocol: sqs
+          TopicArn: !Ref TopicArn
+          Endpoint: !Ref QueueArn
+          RawMessageDelivery: false
+
+Outputs:
+  SubscriptionArn:
+    Value: !Ref SnsSubscription
+    Description: The ARN of the SNS subscription
