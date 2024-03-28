@@ -203,7 +203,7 @@ class LambdaVersionManager:
             self.function, self.function_version
         ) as provisioning_type:
             # TODO: potential race condition when changing provisioned concurrency after getting the lease but before
-            #   getting an an environment
+            #   getting an environment
             try:
                 # Blocks and potentially creates a new execution environment for this invocation
                 with self.assignment_service.get_environment(

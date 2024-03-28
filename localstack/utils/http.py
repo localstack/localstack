@@ -292,7 +292,7 @@ def download_github_artifact(url: str, target_file: str, timeout: int = None):
         except Exception as e:
             if print_error:
                 LOG.info(
-                    "Unable to download Github artifact from from %s to %s: %s %s"
+                    "Unable to download Github artifact from %s to %s: %s %s"
                     % (url, target_file, e, traceback.format_exc())
                 )
 
