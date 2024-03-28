@@ -601,7 +601,7 @@ class SdkDockerClient(ContainerClient):
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[SimpleVolumeBind]] = None,
-        ports: Optional[PortMappings] = None,
+        ports: Optional[Union[PortMappings, List[PortMappings]]] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -660,8 +660,9 @@ class SdkDockerClient(ContainerClient):
                 # but the behavior should be identical
                 kwargs["ports"] = {port: [] for port in exposed_ports}
             if ports:
-                kwargs.setdefault("ports", {})
-                kwargs["ports"].update(ports.to_dict())
+                ports = ensure_list(ports)
+                for port_mapping in ports:
+                    kwargs.setdefault("ports", {}).update(port_mapping.to_dict())
             if workdir:
                 kwargs["working_dir"] = workdir
             if privileged:
@@ -725,7 +726,7 @@ class SdkDockerClient(ContainerClient):
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[SimpleVolumeBind]] = None,
-        ports: Optional[PortMappings] = None,
+        ports: Optional[Union[PortMappings, List[PortMappings]]] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,

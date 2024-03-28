@@ -335,6 +335,28 @@ class PortMappings:
         return f"<PortMappings: {self.to_dict()}>"
 
 
+class PortBindings:
+    """
+    Defines a collection of PortMappings, grouped by their bind address
+    """
+
+    def __init__(self):
+        self.mappings: dict[str, PortMappings] = {}
+
+    def add(
+        self,
+        port: Union[int, PortRange],
+        mapped: Union[int, PortRange] = None,
+        protocol: PortProtocol = "tcp",
+        bind_address: str = "0.0.0.0",
+    ):
+        mappings = self.mappings.setdefault(bind_address, PortMappings(bind_host=bind_address))
+        mappings.add(port, mapped, protocol)
+
+    def __repr__(self) -> str:
+        return f"<PortBindings mappings: {self.mappings}>"
+
+
 SimpleVolumeBind = Tuple[str, str]
 """Type alias for a simple version of VolumeBind"""
 
@@ -440,7 +462,7 @@ class ContainerConfiguration:
     image_name: str
     name: Optional[str] = None
     volumes: VolumeMappings = dataclasses.field(default_factory=VolumeMappings)
-    ports: PortMappings = dataclasses.field(default_factory=PortMappings)
+    ports: List[PortMappings] = dataclasses.field(default_factory=list)
     exposed_ports: List[str] = dataclasses.field(default_factory=list)
     entrypoint: Optional[str] = None
     additional_flags: Optional[str] = None
@@ -853,7 +875,7 @@ class ContainerClient(metaclass=ABCMeta):
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[Union[VolumeMappings, List[SimpleVolumeBind]]] = None,
-        ports: Optional[PortMappings] = None,
+        ports: Optional[Union[PortMappings, List[PortMappings]]] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -887,7 +909,7 @@ class ContainerClient(metaclass=ABCMeta):
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[Union[VolumeMappings, List[SimpleVolumeBind]]] = None,
-        ports: Optional[PortMappings] = None,
+        ports: Optional[Union[PortMappings, List[PortMappings]]] = None,
         exposed_ports: Optional[List[str]] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
