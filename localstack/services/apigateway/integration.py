@@ -737,6 +737,12 @@ class S3Integration(BackendIntegration):
 
 
 class HTTPIntegration(BackendIntegration):
+    @staticmethod
+    def _set_http_apigw_headers(headers: Dict[str, Any], invocation_context: ApiInvocationContext):
+        del headers["host"]
+        headers["x-amzn-apigateway-api-id"] = invocation_context.api_id
+        return headers
+
     def invoke(self, invocation_context: ApiInvocationContext):
         invocation_path = invocation_context.path_with_query_string
         integration = invocation_context.integration
@@ -750,6 +756,7 @@ class HTTPIntegration(BackendIntegration):
         # resolve integration parameters
         integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
         headers.update(integration_parameters.get("headers", {}))
+        self._set_http_apigw_headers(headers, invocation_context)
 
         if ":servicediscovery:" in uri:
             # check if this is a servicediscovery integration URI

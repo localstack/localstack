@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import textwrap
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -1296,6 +1297,70 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
             logs_client.delete_log_group(logGroupName=log_group_name)
         except Exception:
             LOG.debug(f"Unable to delete log group {log_group_name} in cleanup")
+
+
+@pytest.fixture
+def create_echo_http_server(aws_client, create_lambda_function):
+    from localstack.aws.api.lambda_ import Runtime
+
+    lambda_client = aws_client.lambda_
+    handler_code = textwrap.dedent("""
+    import json
+
+
+    def make_response(body: dict, status_code: int = 200):
+        return {
+            "statusCode": status_code,
+            "headers": {"Content-Type": "application/json"},
+            "body": body,
+        }
+
+
+    def handler(event, context):
+        print(json.dumps(event))
+        response = {
+            "args": event.get("queryStringParameters", {}),
+            "data": event.get("body", ""),
+            "domain": event["requestContext"].get("domainName", ""),
+            "headers": event.get("headers", {}),
+            "method": event["requestContext"]["http"].get("method", ""),
+            "origin": event["requestContext"]["http"].get("sourceIp", ""),
+            "path": event["requestContext"]["http"].get("path", ""),
+        }
+        return make_response(response)""")
+
+    def _create_echo_http_server() -> str:
+        """Creates a server that will echo any request. Any request will be returned with the
+        following format. Any unset values will have those defaults
+        {
+          "args": {},
+          "headers": {},
+          "data": "",
+          "method": "",
+          "domain": "",
+          "origin": "",
+          "path": ""
+        }"""
+        zip_file = testutil.create_lambda_archive(handler_code, get_content=True)
+        func_name = f"echo-http-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            zip_file=zip_file,
+            runtime=Runtime.python3_9,
+        )
+        url_response = lambda_client.create_function_url_config(
+            FunctionName=func_name, AuthType="NONE"
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=func_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+        return url_response["FunctionUrl"]
+
+    yield _create_echo_http_server
 
 
 @pytest.fixture
