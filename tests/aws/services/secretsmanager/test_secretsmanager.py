@@ -367,7 +367,7 @@ class TestSecretsManager:
 
     @pytest.mark.parametrize("rotate_immediately", [True, None])
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Versions..KmsKeyIds", "$..VersionIdsToStages", "$..Versions"]
+        paths=["$..VersionIdsToStages", "$..Versions", "$..VersionId"]
     )
     @markers.aws.validated
     def test_rotate_secret_with_lambda_success(
