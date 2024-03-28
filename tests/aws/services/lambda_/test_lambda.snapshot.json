@@ -4008,5 +4008,31 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture": {
+    "recorded-date": "28-03-2024, 22:20:14",
+    "recorded-content": {
+      "url_response": {
+        "args": {
+          "q": "query"
+        },
+        "data": {
+          "foo": "bar"
+        },
+        "domain": "<domain:1>",
+        "headers": {
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate",
+          "content-length": "14",
+          "content-type": "application/json",
+          "extra-headers": "With WeiRd CapS",
+          "host": "<domain:1>",
+          "user-agent": "python-requests/2.31.0"
+        },
+        "method": "POST",
+        "origin": "<origin:1>",
+        "path": "/path/1"
+      }
+    }
   }
 }

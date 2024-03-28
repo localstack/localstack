@@ -1125,6 +1125,24 @@ class TestLambdaURL:
             )
         snapshot.match("invoke_function_invalid_invoke_type", e.value.response)
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..content.headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
+            "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
+        ]
+    )
+    @markers.aws.validated
+    def test_lambda_url_echo_http_fixture(self, create_echo_http_server, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("domain"))
+        snapshot.add_transformer(snapshot.transform.key_value("origin"))
+        echo_url = create_echo_http_server()
+        response = requests.post(
+            url=echo_url + "/path/1?q=query",
+            headers={"content-type": "application/json", "ExTrA-HeadErs": "With WeiRd CapS"},
+            json={"foo": "bar"},
+        )
+        snapshot.match("url_response", response.json())
+
 
 @pytest.mark.skipif(not is_aws_cloud(), reason="Not yet implemented")
 class TestLambdaPermissions:

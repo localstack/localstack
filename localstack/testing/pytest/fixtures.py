@@ -1306,6 +1306,7 @@ def create_echo_http_server(aws_client, create_lambda_function):
     lambda_client = aws_client.lambda_
     handler_code = textwrap.dedent("""
     import json
+    import os
 
 
     def make_response(body: dict, status_code: int = 200):
@@ -1316,22 +1317,33 @@ def create_echo_http_server(aws_client, create_lambda_function):
         }
 
 
+    def trim_headers(headers):
+        if not int(os.getenv("TRIM_X_HEADERS", 0)):
+            return headers
+        return {
+            key: value for key, value in headers.items()
+            if not (key.startswith("x-amzn") or key.startswith("x-forwarded-"))
+        }
+
+
     def handler(event, context):
         print(json.dumps(event))
         response = {
             "args": event.get("queryStringParameters", {}),
             "data": event.get("body", ""),
             "domain": event["requestContext"].get("domainName", ""),
-            "headers": event.get("headers", {}),
+            "headers": trim_headers(event.get("headers", {})),
             "method": event["requestContext"]["http"].get("method", ""),
             "origin": event["requestContext"]["http"].get("sourceIp", ""),
             "path": event["requestContext"]["http"].get("path", ""),
         }
         return make_response(response)""")
 
-    def _create_echo_http_server() -> str:
+    def _create_echo_http_server(trim_x_headers: bool = True) -> str:
         """Creates a server that will echo any request. Any request will be returned with the
-        following format. Any unset values will have those defaults
+        following format. Any unset values will have those defaults.
+        By default, it will trim some headers that are automatically added by lambda in
+        order to create easier Snapshot testing. This can be turned off through `trim_x_headers`
         {
           "args": {},
           "headers": {},
@@ -1347,6 +1359,7 @@ def create_echo_http_server(aws_client, create_lambda_function):
             func_name=func_name,
             zip_file=zip_file,
             runtime=Runtime.python3_9,
+            envvars={"TRIM_X_HEADERS": "1" if trim_x_headers else "0"},
         )
         url_response = lambda_client.create_function_url_config(
             FunctionName=func_name, AuthType="NONE"

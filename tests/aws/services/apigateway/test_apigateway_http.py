@@ -59,7 +59,7 @@ def test_http_integration_with_lambda(
             value_replacement="<content_length>",
         )
     )
-    echo_server_url = create_echo_http_server()
+    echo_server_url = create_echo_http_server(trim_x_headers=False)
     # create api gateway
     stage_name = "test"
     api_id = create_rest_api_with_integration(

@@ -149,6 +149,9 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_update_function_url_config": {
     "last_validated_date": "2024-02-19T15:49:42+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture": {
+    "last_validated_date": "2024-03-28T22:20:14+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[BUFFERED]": {
     "last_validated_date": "2024-02-19T16:25:40+00:00"
   },
