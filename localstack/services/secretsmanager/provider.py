@@ -792,7 +792,7 @@ def backend_rotate_secret(
                 raise pending_version.pop()
             # Fall through if there is no previously pending version so we'll "stuck" with a new
             # secret version in AWSPENDING state.
-
+    secret.last_rotation_date = int(time.time())
     return secret.to_short_dict(version_id=new_version_id)
 
 
