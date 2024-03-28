@@ -91,7 +91,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_ec2.py::test_transit_gateway_attachment": {
-    "recorded-date": "20-10-2023, 08:55:07",
+    "recorded-date": "28-03-2024, 06:48:11",
     "recorded-content": {
       "attachment": {
         "Association": {
@@ -132,7 +132,7 @@
         "Tags": [
           {
             "Key": "Application",
-            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-d2a69315/f9376240-6f4f-11ee-87a2-0a5f03ecaf83"
+            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-31597705/521e4e40-ecce-11ee-806c-0affc1ff51e7"
           }
         ],
         "TransitGatewayArn": "arn:aws:ec2:<region>:111111111111:transit-gateway/<transit-gateway-id:1>",

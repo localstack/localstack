@@ -1,6 +1,18 @@
+Parameters:
+  DeployRegion:
+    Type: String
+    Default: us-east-1
+
+Conditions:
+  DeployInUSEast1:
+    Fn::Equals:
+      - !Ref DeployRegion
+      - us-east-1
+
 Resources:
   Vpc8378EB38:
     Type: AWS::EC2::VPC
+    Condition: DeployInUSEast1
     Properties:
       CidrBlock: 10.0.0.0/20
       EnableDnsHostnames: true
@@ -8,6 +20,7 @@ Resources:
       InstanceTenancy: default
   myTransitGateway:
     Type: "AWS::EC2::TransitGateway"
+    Condition: DeployInUSEast1
     Properties:
       AmazonSideAsn: 65000
       Description: "TGW Route Integration Test"
@@ -20,22 +33,25 @@ Resources:
           Value: !Ref 'AWS::StackId'
   VpcIsolatedSubnet1SubnetE48C5737:
     Type: AWS::EC2::Subnet
+    Condition: DeployInUSEast1
     Properties:
       AvailabilityZone:
         Fn::Select:
           - 0
-          - Fn::GetAZs: ''
+          - Fn::GetAZs: !Ref DeployRegion
       CidrBlock: 10.0.0.0/24
       MapPublicIpOnLaunch: false
       VpcId:
         Ref: Vpc8378EB38
   VpcIsolatedSubnet1RouteTable4771E3E5:
     Type: AWS::EC2::RouteTable
+    Condition: DeployInUSEast1
     Properties:
       VpcId:
         Ref: Vpc8378EB38
   VpcIsolatedSubnet1RouteTableAssociationD300FCBB:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: DeployInUSEast1
     Properties:
       RouteTableId:
         Ref: VpcIsolatedSubnet1RouteTable4771E3E5
@@ -43,6 +59,7 @@ Resources:
         Ref: VpcIsolatedSubnet1SubnetE48C5737
   VpcIsolatedSubnet1TransitGatewayRouteA907B32D:
     Type: AWS::EC2::Route
+    Condition: DeployInUSEast1
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId:
@@ -52,22 +69,25 @@ Resources:
       - TransitGatewayVpcAttachment
   VpcIsolatedSubnet2Subnet16364B91:
     Type: AWS::EC2::Subnet
+    Condition: DeployInUSEast1
     Properties:
       AvailabilityZone:
         Fn::Select:
           - 1
-          - Fn::GetAZs: ''
+          - Fn::GetAZs: !Ref DeployRegion
       CidrBlock: 10.0.1.0/24
       MapPublicIpOnLaunch: false
       VpcId:
         Ref: Vpc8378EB38
   VpcIsolatedSubnet2RouteTable1D30AF7D:
     Type: AWS::EC2::RouteTable
+    Condition: DeployInUSEast1
     Properties:
       VpcId:
         Ref: Vpc8378EB38
   VpcIsolatedSubnet2RouteTableAssociationF7B18CCA:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: DeployInUSEast1
     Properties:
       RouteTableId:
         Ref: VpcIsolatedSubnet2RouteTable1D30AF7D
@@ -75,6 +95,7 @@ Resources:
         Ref: VpcIsolatedSubnet2Subnet16364B91
   VpcIsolatedSubnet2TransitGatewayRoute1E0D0BF2:
     Type: AWS::EC2::Route
+    Condition: DeployInUSEast1
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId:
@@ -84,6 +105,7 @@ Resources:
       - TransitGatewayVpcAttachment
   TransitGatewayVpcAttachment:
     Type: AWS::EC2::TransitGatewayAttachment
+    Condition: DeployInUSEast1
     Properties:
       SubnetIds:
         - Ref: VpcIsolatedSubnet1SubnetE48C5737
