@@ -11,17 +11,14 @@ from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
 @pytest.fixture
 def add_http_integration_transformers(snapshot):
     key_value_transform = [
-        "accept-encoding",  # TODO: We add an extra space when adding this header
         "date",
         "domain",
         "host",
         "origin",
-        "user-agent",
+        "rest_api_id",
         "x-amz-apigw-id",
-        "x-amzn-apigateway-api-id",
         "x-amzn-tls-cipher-suite",
         "x-amzn-tls-version",
-        "x-amzn-trace-id",
         "x-amzn-requestid",
         "x-amzn-trace-id",
         "x-forwarded-for",
@@ -31,16 +28,13 @@ def add_http_integration_transformers(snapshot):
     for key in key_value_transform:
         snapshot.add_transformer(snapshot.transform.key_value(key))
 
-    snapshot.add_transformer(
-        snapshot.transform.key_value(
-            "content-length", reference_replacement=False, value_replacement="<content_length>"
-        )
-    )
-
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
+        "$..content.headers.accept-encoding",  # TODO: We add an extra space when adding this header
+        # "$..content.headers.content-length",
+        "$..content.headers.user-agent",  # TODO: We have to properly set that header on non proxied requests.
         # TODO: x-forwarded-for header is actually set when the request is sent to `requests.request`.
         # Custom servers receive the header, but lambda execution code receives an empty string.
         "$..content.headers.x-forwarded-for",
@@ -58,12 +52,20 @@ def test_http_integration_with_lambda(
     snapshot,
     add_http_integration_transformers,
 ):
+    snapshot.add_transformer(
+        snapshot.transform.jsonpath(
+            "$.http-invocation-lambda-url.headers.content-length",
+            reference_replacement=False,
+            value_replacement="<content_length>",
+        )
+    )
     echo_server_url = create_echo_http_server()
     # create api gateway
     stage_name = "test"
     api_id = create_rest_api_with_integration(
         integration_uri=echo_server_url, integration_type="HTTP", stage=stage_name
     )
+    snapshot.match("api_id", {"rest_api_id": api_id})
     invocation_url = api_invoke_url(
         api_id=api_id,
         stage=stage_name,

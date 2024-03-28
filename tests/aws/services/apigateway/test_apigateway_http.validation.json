@@ -1,5 +1,5 @@
 {
   "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda": {
-    "last_validated_date": "2024-03-28T04:52:59+00:00"
+    "last_validated_date": "2024-03-28T19:24:09+00:00"
   }
 }
