@@ -1,7 +1,7 @@
 import ipaddress
 import json
 import re
-from typing import Any, List
+from typing import Any
 
 CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "exists"]
 
@@ -14,6 +14,7 @@ def filter_event(event_pattern_filter: dict[str, Any], event: dict[str, Any]):
     """
     for key, value in event_pattern_filter.items():
         fallback = object()
+        # TODO: why do we need key.lower() and the fallback?
         event_value = event.get(key.lower(), event.get(key, fallback))
         if event_value is fallback and event_pattern_prefix_bool_filter(value):
             return False
@@ -37,10 +38,7 @@ def filter_event(event_pattern_filter: dict[str, Any], event: dict[str, Any]):
                 if not filter_event_with_content_base_parameter(value, event_value):
                     return False
             else:
-                if (
-                    isinstance(event_value, list)
-                    and get_two_lists_intersection(value, event_value) == []
-                ):
+                if isinstance(event_value, list) and is_list_intersection_empty(value, event_value):
                     return False
                 if (
                     not isinstance(event_value, list)
@@ -134,9 +132,19 @@ def filter_event_with_content_base_parameter(pattern_value: list, event_value: s
     return False
 
 
-def get_two_lists_intersection(lst1: List, lst2: List) -> List:
-    lst3 = [value for value in lst1 if value in lst2]
-    return lst3
+def is_list_intersection_empty(list1: list, list2: list) -> bool:
+    """Checks if the intersection of two lists is empty.
+
+    Example: is_list_intersection_empty([1, 2, None], [None]) == False
+
+    Following the definition from AWS:
+    "If the value in the event is an array, then the event pattern matches if the intersection of the
+    event pattern array and the event array is non-empty."
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-arrays.html
+
+    Implementation: set operations are more efficient than using lists
+    """
+    return len(set(list1) & set(list2)) == 0
 
 
 # TODO: unclear shared responsibility for filtering with filter_event_with_content_base_parameter
@@ -156,7 +164,7 @@ def handle_prefix_filtering(event_pattern, value):
         elif isinstance(element, dict) and "exists" in element:
             if element.get("exists") and value:
                 return True
-        elif "numeric" in element:
+        elif isinstance(element, dict) and "numeric" in element:
             return handle_numeric_conditions(element.get("numeric"), value)
         elif isinstance(element, list):
             if value in list:
