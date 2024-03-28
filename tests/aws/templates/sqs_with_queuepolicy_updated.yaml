@@ -10,7 +10,7 @@ Resources:
               - sqs:SendMessage
               - sqs:GetQueueAttributes
               - sqs:GetQueueUrl
-            Effect: Allow
+            Effect: Deny
             Principal: "*"
             Resource:
               Fn::GetAtt:

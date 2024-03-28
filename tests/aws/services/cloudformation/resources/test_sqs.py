@@ -1,8 +1,10 @@
 import os
+from time import sleep
 
 import pytest
 from botocore.exceptions import ClientError
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
@@ -120,3 +122,34 @@ def test_update_queue_no_change(deploy_cfn_template, aws_client, snapshot):
         },
     )
     snapshot.match("outputs-2", updated_stack.outputs)
+
+
+@markers.aws.validated
+def test_update_sqs_queuepolicy(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sqs_with_queuepolicy.yaml"
+        )
+    )
+
+    policy = aws_client.sqs.get_queue_attributes(
+        QueueUrl=stack.outputs["QueueUrlOutput"], AttributeNames=["Policy"]
+    )
+    snapshot.match("policy1", policy["Attributes"]["Policy"])
+
+    updated_stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sqs_with_queuepolicy_updated.yaml"
+        ),
+        is_update=True,
+        stack_name=stack.stack_name,
+    )
+
+    if is_aws_cloud():
+        sleep(15)
+
+    policy = aws_client.sqs.get_queue_attributes(
+        QueueUrl=updated_stack.outputs["QueueUrlOutput"], AttributeNames=["Policy"]
+    )
+    snapshot.match("policy2", policy["Attributes"]["Policy"])
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
