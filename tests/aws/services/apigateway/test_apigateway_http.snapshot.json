@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda": {
-    "recorded-date": "27-03-2024, 01:47:41",
+    "recorded-date": "28-03-2024, 04:52:59",
     "recorded-content": {
       "http-invocation-lambda-url": {
         "content": {
@@ -8,34 +8,34 @@
           "data": {
             "message": "hello world"
           },
-          "domain": "domain",
+          "domain": "<domain:1>",
           "headers": {
             "accept": "application/json",
-            "accept-encoding": "accept-encoding",
-            "content-length": "content-length",
+            "accept-encoding": "<accept-encoding:1>",
+            "content-length": "<content_length>",
             "content-type": "application/json",
-            "host": "host",
-            "user-agent": "user-agent",
-            "x-amzn-apigateway-api-id": "x-amzn-apigateway-api-id",
-            "x-amzn-tls-cipher-suite": "x-amzn-tls-cipher-suite",
-            "x-amzn-tls-version": "x-amzn-tls-version",
-            "x-amzn-trace-id": "x-amzn-trace-id",
-            "x-forwarded-for": "44.218.97.60",
-            "x-forwarded-port": "x-forwarded-port",
-            "x-forwarded-proto": "x-forwarded-proto"
+            "host": "<domain:1>",
+            "user-agent": "<user-agent:1>",
+            "x-amzn-apigateway-api-id": "<x-amzn-apigateway-api-id:1>",
+            "x-amzn-tls-cipher-suite": "<x-amzn-tls-cipher-suite:1>",
+            "x-amzn-tls-version": "<x-amzn-tls-version:1>",
+            "x-amzn-trace-id": "<x-amzn-trace-id:1>",
+            "x-forwarded-for": "<origin:1>",
+            "x-forwarded-port": "<x-forwarded-port:1>",
+            "x-forwarded-proto": "<x-forwarded-proto:1>"
           },
           "method": "POST",
-          "origin": "44.218.97.60",
+          "origin": "<origin:1>",
           "path": "/"
         },
         "headers": {
           "connection": "keep-alive",
-          "content-length": "content-length",
+          "content-length": "<content_length>",
           "content-type": "application/json",
-          "date": "date",
-          "x-amz-apigw-id": "VRAdjEYQoAMEpeg=",
-          "x-amzn-requestid": "<uuid:1>",
-          "x-amzn-trace-id": "x-amzn-trace-id"
+          "date": "<date:1>",
+          "x-amz-apigw-id": "<x-amz-apigw-id:1>",
+          "x-amzn-requestid": "<x-amzn-requestid:1>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:2>"
         },
         "status_code": 200
       }

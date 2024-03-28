@@ -97,7 +97,7 @@ def create_rest_api_with_integration(
             policy = APIGATEWAY_DYNAMODB_POLICY
         elif ":kinesis:" in integration_uri:
             policy = APIGATEWAY_KINESIS_POLICY
-        elif "lambda-url" in integration_uri:
+        elif integration_type in ("HTTP", "HTTP_PROXY"):
             policy = None
         else:
             raise Exception(f"Unexpected integration URI: {integration_uri}")

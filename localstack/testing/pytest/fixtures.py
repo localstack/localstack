@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import textwrap
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -20,7 +21,6 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
@@ -1301,33 +1301,33 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
 
 @pytest.fixture
 def create_echo_http_server(aws_client, create_lambda_function):
+    from localstack.aws.api.lambda_ import Runtime
+
     lambda_client = aws_client.lambda_
-
-    handler_code = """
-import json
-
-
-def make_response(body: dict, status_code: int = 200):
-    return {
-        "statusCode": status_code,
-        "headers": {"Content-Type": "application/json"},
-        "body": body,
-    }
+    handler_code = textwrap.dedent("""
+    import json
 
 
-def handler(event, context):
-    print(json.dumps(event))
-    response = {
-        "args": event.get("queryStringParameters", {}),
-        "data": event.get("body", ""),
-        "domain": event["requestContext"].get("domainName", ""),
-        "headers": event.get("headers", {}),
-        "method": event["requestContext"]["http"].get("method", ""),
-        "origin": event["requestContext"]["http"].get("sourceIp", ""),
-        "path": event["requestContext"]["http"].get("path", ""),
-    }
-    return make_response(response)
-"""
+    def make_response(body: dict, status_code: int = 200):
+        return {
+            "statusCode": status_code,
+            "headers": {"Content-Type": "application/json"},
+            "body": body,
+        }
+
+
+    def handler(event, context):
+        print(json.dumps(event))
+        response = {
+            "args": event.get("queryStringParameters", {}),
+            "data": event.get("body", ""),
+            "domain": event["requestContext"].get("domainName", ""),
+            "headers": event.get("headers", {}),
+            "method": event["requestContext"]["http"].get("method", ""),
+            "origin": event["requestContext"]["http"].get("sourceIp", ""),
+            "path": event["requestContext"]["http"].get("path", ""),
+        }
+        return make_response(response)""")
 
     def _create_echo_http_server() -> str:
         """Creates a server that will echo any request. Any request will be returned with the

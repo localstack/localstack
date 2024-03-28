@@ -12,20 +12,30 @@ from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
 def add_http_integration_transformers(snapshot):
     key_value_transform = [
         "accept-encoding",  # TODO: We add an extra space when adding this header
-        "content-length",
         "date",
         "domain",
         "host",
+        "origin",
         "user-agent",
+        "x-amz-apigw-id",
         "x-amzn-apigateway-api-id",
         "x-amzn-tls-cipher-suite",
         "x-amzn-tls-version",
         "x-amzn-trace-id",
+        "x-amzn-requestid",
+        "x-amzn-trace-id",
+        "x-forwarded-for",
         "x-forwarded-port",
         "x-forwarded-proto",
     ]
     for key in key_value_transform:
-        snapshot.add_transformer(snapshot.transform.key_value(key, reference_replacement=False))
+        snapshot.add_transformer(snapshot.transform.key_value(key))
+
+    snapshot.add_transformer(
+        snapshot.transform.key_value(
+            "content-length", reference_replacement=False, value_replacement="<content_length>"
+        )
+    )
 
 
 @markers.aws.validated
@@ -35,8 +45,8 @@ def add_http_integration_transformers(snapshot):
         # Custom servers receive the header, but lambda execution code receives an empty string.
         "$..content.headers.x-forwarded-for",
         "$..content.headers.x-localstack-edge",
-        "$..headers.x-amz-apigw-id",  # TODO: we should add that header when forwardign the response
         "$..headers.server",
+        "$..headers.x-amz-apigw-id",  # TODO: we should add that header when forwarding the response
         "$..headers.x-amzn-requestid",
         "$..headers.x-amzn-trace-id",
         "$..origin",
@@ -61,19 +71,16 @@ def test_http_integration_with_lambda(
     )
 
     def invoke_api(url):
-        # use test header with different casing to check if it is preserved in the proxy payload
-        # authorization is a weird case, it will get Pascal cased by default
         response = requests.post(
             url,
             data=json.dumps({"message": "hello world"}),
             headers={
                 "Content-Type": "application/json",
-                "user-agent": "localstack/test",
                 "accept": "application/json",
             },
             verify=False,
         )
-        assert 200 == response.status_code
+        assert response.status_code == 200
         return {
             "content": response.json(),
             "headers": {k.lower(): v for k, v in dict(response.headers).items()},
