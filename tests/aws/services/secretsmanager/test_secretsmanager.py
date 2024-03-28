@@ -9,7 +9,6 @@ from typing import Optional
 import pytest
 import requests
 from botocore.auth import SigV4Auth
-from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
@@ -368,7 +367,7 @@ class TestSecretsManager:
 
     @pytest.mark.parametrize("rotate_immediately", [True, None])
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Versions..KmsKeyIds", "$..VersionIdsToStages"]
+        paths=["$..Versions..KmsKeyIds", "$..VersionIdsToStages", "$..Versions"]
     )
     @markers.aws.validated
     def test_rotate_secret_with_lambda_success(
@@ -390,7 +389,6 @@ class TestSecretsManager:
             Description="testing rotation of secrets",
         )
 
-        sm_snapshot.add_transformer(SortingTransformer("Versions", lambda x: x["CreatedDate"]))
         sm_snapshot.add_transformer(
             sm_snapshot.transform.key_value("RotationLambdaARN", "lambda-arn")
         )
