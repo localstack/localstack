@@ -13398,7 +13398,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_arns": {
-    "recorded-date": "08-12-2023, 12:27:16",
+    "recorded-date": "27-03-2024, 09:37:39",
     "recorded-content": {
       "create-function-arn-response": {
         "CreateEventSourceMappingResponse": null,
@@ -13419,6 +13419,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -13464,6 +13468,10 @@
           "FunctionName": "<function-name:2>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:2>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -13515,7 +13523,7 @@
       "long_function_arn_exc": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'arn:aws:lambda:<region>:111111111111:function:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 140"
+          "Message": "1 validation error detected: Value 'arn:aws:lambda:<region>:111111111111:function:<function-name>' at 'functionName' failed to satisfy constraint: Member must have length less than or equal to 140"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -13780,6 +13788,21 @@
         "Error": {
           "Code": "ValidationException",
           "Message": "1 validation error detected: Value '2024' at 'name' failed to satisfy constraint: Member must satisfy regular expression pattern: (?!^[0-9]+$)([a-zA-Z0-9-_]+)"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_invoke": {
+    "recorded-date": "26-02-2024, 17:04:08",
+    "recorded-content": {
+      "invoke_function_name_pattern_exc": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'arn:aws:lambda:<region>:123400000000@function:myfn' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

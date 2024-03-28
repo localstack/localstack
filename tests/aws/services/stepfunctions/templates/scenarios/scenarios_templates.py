@@ -141,6 +141,9 @@ class ScenariosTemplate(TemplateLoader):
     RETRY_INTERVAL_FEATURES_JITTER_NONE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/retry_interval_features_jitter_none.json5"
     )
+    RETRY_INTERVAL_FEATURES_MAX_ATTEMPTS_ZERO: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/retry_interval_features_max_attempts_zero.json5"
+    )
     WAIT_TIMESTAMP: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_timestamp.json5")
     WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/wait_timestamp_path.json5"

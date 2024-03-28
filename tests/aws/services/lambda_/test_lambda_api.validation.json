@@ -48,7 +48,7 @@
     "last_validated_date": "2023-11-20T15:46:21+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_arns": {
-    "last_validated_date": "2023-12-08T11:27:16+00:00"
+    "last_validated_date": "2024-03-27T09:37:34+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
     "last_validated_date": "2024-03-27T09:14:34+00:00"
@@ -76,6 +76,9 @@
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
     "last_validated_date": "2023-11-20T15:46:48+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_invoke": {
+    "last_validated_date": "2024-02-26T17:04:08+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
     "last_validated_date": "2023-11-20T15:46:59+00:00"
