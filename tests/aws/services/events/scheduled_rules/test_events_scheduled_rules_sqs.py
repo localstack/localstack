@@ -1,6 +1,8 @@
 import json
 import logging
 
+import pytest
+
 from localstack.testing.aws.eventbus_utils import (
     allow_event_rule_to_sqs_queue,
     trigger_scheduled_rule,
@@ -9,11 +11,13 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.events.helper_functions import is_v2_provider
 
 LOG = logging.getLogger(__name__)
 
 
 @markers.aws.validated
+@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_scheduled_rule_sqs(
     sqs_create_queue,
     events_put_rule,
