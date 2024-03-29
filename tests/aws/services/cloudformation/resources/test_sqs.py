@@ -1,12 +1,11 @@
 import os
-from time import sleep
 
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import wait_until
 
 
 @markers.aws.unknown
@@ -145,11 +144,18 @@ def test_update_sqs_queuepolicy(deploy_cfn_template, aws_client, snapshot):
         stack_name=stack.stack_name,
     )
 
-    if is_aws_cloud():
-        sleep(15)
+    def check_policy_updated():
+        policy_updated = aws_client.sqs.get_queue_attributes(
+            QueueUrl=updated_stack.outputs["QueueUrlOutput"], AttributeNames=["Policy"]
+        )
+        assert policy_updated["Attributes"]["Policy"] != policy["Attributes"]["Policy"]
+        return policy_updated
+
+    wait_until(check_policy_updated)
 
     policy = aws_client.sqs.get_queue_attributes(
         QueueUrl=updated_stack.outputs["QueueUrlOutput"], AttributeNames=["Policy"]
     )
+
     snapshot.match("policy2", policy["Attributes"]["Policy"])
     snapshot.add_transformer(snapshot.transform.cloudformation_api())

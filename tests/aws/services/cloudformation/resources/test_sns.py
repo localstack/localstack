@@ -103,7 +103,6 @@ def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(paths=["$..Attributes.RawMessageDelivery"])
 def test_update_subscription(snapshot, deploy_cfn_template, aws_client, sqs_queue, sns_topic):
     topic_arn = sns_topic["Attributes"]["TopicArn"]
     queue_url = sqs_queue
@@ -129,6 +128,9 @@ def test_update_subscription(snapshot, deploy_cfn_template, aws_client, sqs_queu
         stack_name=stack.stack_name,
         is_update=True,
     )
-    subscription = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
-    snapshot.match("subscription-2", subscription)
+    subscription_updated = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
+    snapshot.match("subscription-2", subscription_updated)
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(
+        snapshot.transform.jsonpath("$..Attributes..RawMessageDelivery", "bool")
+    )

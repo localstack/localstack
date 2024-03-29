@@ -67,7 +67,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_sns.py::test_update_subscription": {
-    "recorded-date": "28-03-2024, 18:29:30",
+    "recorded-date": "29-03-2024, 18:22:29",
     "recorded-content": {
       "subscription-1": {
         "Attributes": {
@@ -76,7 +76,7 @@
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
-          "RawMessageDelivery": "true",
+          "RawMessageDelivery": "<bool:1>",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
           "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
@@ -93,7 +93,7 @@
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
-          "RawMessageDelivery": "false",
+          "RawMessageDelivery": "<bool:2>",
           "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
           "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
           "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
