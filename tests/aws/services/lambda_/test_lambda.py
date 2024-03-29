@@ -1134,7 +1134,9 @@ class TestLambdaURL:
         ]
     )
     @markers.aws.validated
-    def test_lambda_url_echo_http_fixture_default(self, create_echo_http_server, snapshot, aws_client):
+    def test_lambda_url_echo_http_fixture_default(
+        self, create_echo_http_server, snapshot, aws_client
+    ):
         key_value_transform = [
             "domain",
             "origin",
@@ -1153,7 +1155,7 @@ class TestLambdaURL:
             headers={
                 "content-type": "application/json",
                 "ExTrA-HeadErs": "With WeiRd CapS",
-                "user-agent": "test/echo"
+                "user-agent": "test/echo",
             },
             json={"foo": "bar"},
         )
@@ -1166,7 +1168,9 @@ class TestLambdaURL:
         ]
     )
     @markers.aws.validated
-    def test_lambda_url_echo_http_fixture_trim_x_headers(self, create_echo_http_server, snapshot, aws_client):
+    def test_lambda_url_echo_http_fixture_trim_x_headers(
+        self, create_echo_http_server, snapshot, aws_client
+    ):
         snapshot.add_transformer(snapshot.transform.key_value("domain"))
         snapshot.add_transformer(snapshot.transform.key_value("origin"))
         echo_url = create_echo_http_server(trim_x_headers=True)
@@ -1175,7 +1179,7 @@ class TestLambdaURL:
             headers={
                 "content-type": "application/json",
                 "ExTrA-HeadErs": "With WeiRd CapS",
-                "user-agent": "test/echo"
+                "user-agent": "test/echo",
             },
             json={"foo": "bar"},
         )
