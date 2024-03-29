@@ -84,6 +84,7 @@ from localstack.utils.time import today_no_time
 AWSPREVIOUS: Final[str] = "AWSPREVIOUS"
 AWSPENDING: Final[str] = "AWSPENDING"
 AWSCURRENT: Final[str] = "AWSCURRENT"
+MAX_OUTDATED_SECRET_VERSIONS: Final[int] = 100
 #
 # Error Messages.
 AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[str] = (
@@ -262,9 +263,10 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         self, context: RequestContext, request: ListSecretVersionIdsRequest
     ) -> ListSecretVersionIdsResponse:
         secret_id = request["SecretId"]
+        include_deprecated = request.get("IncludeDeprecated", False)
         self._raise_if_invalid_secret_id(secret_id)
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
-        secrets = backend.list_secret_version_ids(secret_id)
+        secrets = backend.list_secret_version_ids(secret_id, include_deprecated=include_deprecated)
         return ListSecretVersionIdsResponse(**json.loads(secrets))
 
     @handler("PutResourcePolicy", expand=False)
@@ -480,7 +482,7 @@ def moto_smb_create_secret(fn, self, name, *args, **kwargs):
 
 
 @patch(SecretsManagerBackend.list_secret_version_ids)
-def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
+def moto_smb_list_secret_version_ids(_, self, secret_id, include_deprecated, *args, **kwargs):
     if secret_id not in self.secrets:
         raise SecretNotFoundException()
 
@@ -496,18 +498,21 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
     versions: list[SecretVersionsListEntry] = list()
     for version_id, version in secret.versions.items():
         version_stages = version["version_stages"]
-        entry = SecretVersionsListEntry(
-            CreatedDate=version["createdate"],
-            VersionId=version_id,
-            VersionStages=version_stages,
-        )
+        if len(version_stages) > 0 or include_deprecated:
+            entry = SecretVersionsListEntry(
+                CreatedDate=version["createdate"],
+                VersionId=version_id,
+            )
 
-        # Patch: bind LastAccessedDate if one exists for this version.
-        last_accessed_date = version.get("last_accessed_date")
-        if last_accessed_date:
-            entry["LastAccessedDate"] = last_accessed_date
+            if version_stages:
+                entry["VersionStages"] = version_stages
 
-        versions.append(entry)
+            # Patch: bind LastAccessedDate if one exists for this version.
+            last_accessed_date = version.get("last_accessed_date")
+            if last_accessed_date:
+                entry["LastAccessedDate"] = last_accessed_date
+
+            versions.append(entry)
 
     # Patch: sort versions by date.
     versions.sort(key=lambda v: v["CreatedDate"], reverse=True)
@@ -634,12 +639,19 @@ def backend_update_secret_version_stage(
 def fake_secret_reset_default_version(fn, self, secret_version, version_id):
     fn(self, secret_version, version_id)
 
-    # Remove versions with no version stages.
+    # Remove versions with no version stages, if max limit of outdated versions is exceeded.
     versions_no_stages = [
         version_id for version_id, version in self.versions.items() if not version["version_stages"]
     ]
-    for version_no_stages in versions_no_stages:
-        del self.versions[version_no_stages]
+    versions_to_delete = []
+
+    if len(versions_no_stages) >= MAX_OUTDATED_SECRET_VERSIONS:
+        versions_to_delete = versions_no_stages[
+            : len(versions_no_stages) - MAX_OUTDATED_SECRET_VERSIONS
+        ]
+
+    for version_to_delete in versions_to_delete:
+        del self.versions[version_to_delete]
 
 
 @patch(FakeSecret.remove_version_stages_from_old_versions)
