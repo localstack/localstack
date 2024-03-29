@@ -42,7 +42,6 @@ def add_http_integration_transformers(snapshot):
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..content.headers.accept-encoding",  # TODO: We add an extra space when adding this header
-        # "$..content.headers.content-length",
         "$..content.headers.user-agent",  # TODO: We have to properly set that header on non proxied requests.
         # TODO: x-forwarded-for header is actually set when the request is sent to `requests.request`.
         # Custom servers receive the header, but lambda execution code receives an empty string.
@@ -88,6 +87,7 @@ def test_http_integration_with_lambda(
             headers={
                 "Content-Type": "application/json",
                 "accept": "application/json",
+                "user-Agent": "test/integration",
             },
             verify=False,
         )

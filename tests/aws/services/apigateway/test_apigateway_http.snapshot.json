@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda[HTTP]": {
-    "recorded-date": "28-03-2024, 23:23:26",
+    "recorded-date": "29-03-2024, 15:12:45",
     "recorded-content": {
       "api_id": {
         "rest_api_id": "<rest_api_id:1>"
@@ -45,7 +45,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda[HTTP_PROXY]": {
-    "recorded-date": "28-03-2024, 23:23:31",
+    "recorded-date": "29-03-2024, 15:13:24",
     "recorded-content": {
       "api_id": {
         "rest_api_id": "<rest_api_id:1>"
@@ -63,7 +63,7 @@
             "content-length": "26",
             "content-type": "application/json",
             "host": "<domain:1>",
-            "user-agent": "python-requests/2.31.0",
+            "user-agent": "test/integration",
             "x-amzn-apigateway-api-id": "<rest_api_id:1>",
             "x-amzn-tls-cipher-suite": "<x-amzn-tls-cipher-suite:1>",
             "x-amzn-tls-version": "<x-amzn-tls-version:1>",
