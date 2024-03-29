@@ -580,12 +580,26 @@ class TestSNSSubscriptionCrud:
         queue_url = sqs_create_queue()
         queue_arn = sqs_get_queue_arn(queue_url)
 
+        with pytest.raises(ClientError) as e:
+            sns_subscription(
+                TopicArn=topic_arn,
+                Protocol="sqs",
+                Endpoint=queue_arn,
+                Attributes={
+                    "RawMessageDelivery": "wrongvalue",  # set an weird case value, SNS will lower it
+                    "FilterPolicyScope": "MessageBody",
+                    "FilterPolicy": "",
+                },
+                ReturnSubscriptionArn=True,
+            )
+        snapshot.match("subscribe-wrong-attr", e.value.response)
+
         subscribe_resp = sns_subscription(
             TopicArn=topic_arn,
             Protocol="sqs",
             Endpoint=queue_arn,
             Attributes={
-                "RawMessageDelivery": "true",
+                "RawMessageDelivery": "TrUe",  # set an weird case value, SNS will lower it
                 "FilterPolicyScope": "MessageBody",
                 "FilterPolicy": "",
             },
@@ -681,6 +695,22 @@ class TestSNSSubscriptionCrud:
                 AttributeValue="test-value",
             )
         snapshot.match("fake-attribute", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=sub_arn,
+                AttributeName="RawMessageDelivery",
+                AttributeValue="test-ValUe",
+            )
+        snapshot.match("raw-message-wrong-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=sub_arn,
+                AttributeName="RawMessageDelivery",
+                AttributeValue="",
+            )
+        snapshot.match("raw-message-empty-value", e.value.response)
 
         with pytest.raises(ClientError) as e:
             aws_client.sns.set_subscription_attributes(

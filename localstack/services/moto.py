@@ -59,7 +59,6 @@ def call_moto_with_request(
 
     :param context: the original request context
     :param service_request: the dictionary containing the service request parameters
-    :param override_headers: whether to override headers that are also request parameters
     :return: an ASF ServiceResponse (same as a service provider would return)
     """
     local_context = create_aws_request_context(
