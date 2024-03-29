@@ -3,6 +3,8 @@ import os
 import click
 import yaml
 
+from localstack import version as localstack_version
+
 
 def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, write: bool = False):
     volumes = []
@@ -15,11 +17,11 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, wri
         }
     )
 
-    egg_path = os.path.join(root_path, "localstack_core.egg-info")
+    egg_path = os.path.join(root_path, "localstack_core.egg-info/entry_points.txt")
     if pro:
         ext_path = os.path.join(root_path, "..", "localstack-ext")
         ext_code_path = os.path.join(ext_path, "localstack_ext")
-        egg_path = os.path.join(ext_path, "localstack_ext.egg-info")
+        egg_path = os.path.join(ext_path, "localstack_ext.egg-info/entry_points.txt")
 
         volumes.append(
             {
@@ -30,7 +32,7 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, wri
 
     volumes.append(
         {
-            "volume": f"{os.path.normpath(egg_path)}:/code/egg_info",
+            "volume": f"{os.path.normpath(egg_path)}:/code/entry_points",
             "nodeFilters": ["server:*", "agent:*"],
         }
     )
@@ -66,10 +68,13 @@ def generate_k8s_cluster_overrides(
 ):
     volumes = []
     for volume in cluster_config["volumes"]:
+        name = snake_to_kebab_case(volume["volume"].split(":")[-1].split("/")[-1])
+        volume_type = "Directory" if name != "entry-points" else "File"
         volumes.append(
             {
-                "name": snake_to_kebab_case(volume["volume"].split(":")[-1].split("/")[-1]),
-                "hostPath": {"path": volume["volume"].split(":")[-1], "type": "Directory"},
+                "name": name,
+                "hostPath": {"path": volume["volume"].split(":")[-1]},
+                "type": volume_type,
             }
         )
 
@@ -77,15 +82,15 @@ def generate_k8s_cluster_overrides(
     target_path = "/opt/code/localstack/"
     venv_path = os.path.join(target_path, ".venv", "lib", "python3.11", "site-packages")
     for volume in volumes:
-        if volume["name"] == "egg-info":
+        if volume["name"] == "entry-points":
+            project = "localstack_ext-" if pro else "localstack_core-"
+            version = localstack_version.__version__
+            dist_info = f"{project}{version}0.dist-info"
             volume_mounts.append(
                 {
                     "name": volume["name"],
                     "readOnly": True,
-                    "mountPath": os.path.join(
-                        target_path,
-                        "localstack-ext.egg-info" if pro else "localstack_core.egg-info",
-                    ),
+                    "mountPath": os.path.join(venv_path, dist_info, "entry_points.txt"),
                 }
             )
             continue
@@ -176,11 +181,11 @@ def run(
     config_file = config_file or "configuration.yml"
 
     if write:
-        write_file(overrides, output_dir, overrides_file)
         write_file(config, output_dir, config_file)
+        write_file(overrides, output_dir, overrides_file)
     else:
-        print_file(overrides, overrides_file)
         print_file(config, config_file)
+        print_file(overrides, overrides_file)
 
     overrides_file_path = os.path.join(output_dir, overrides_file)
     config_file_path = os.path.join(output_dir, config_file)
