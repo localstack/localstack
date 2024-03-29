@@ -1339,11 +1339,11 @@ def create_echo_http_server(aws_client, create_lambda_function):
         }
         return make_response(response)""")
 
-    def _create_echo_http_server(trim_x_headers: bool = True) -> str:
+    def _create_echo_http_server(trim_x_headers: bool = False) -> str:
         """Creates a server that will echo any request. Any request will be returned with the
         following format. Any unset values will have those defaults.
-        By default, it will trim some headers that are automatically added by lambda in
-        order to create easier Snapshot testing. This can be turned off through `trim_x_headers`
+        `trim_x_headers` can be set to True to trim some headers that are automatically added by lambda in
+        order to create easier Snapshot testing. Default: `False`
         {
           "args": {},
           "headers": {},

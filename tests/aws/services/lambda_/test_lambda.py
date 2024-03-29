@@ -1127,18 +1127,56 @@ class TestLambdaURL:
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            "$..headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
+            "$..headers.x-forwarded-for",
+            "$..headers.x-amzn-trace-id",
+            "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
+        ]
+    )
+    @markers.aws.validated
+    def test_lambda_url_echo_http_fixture_default(self, create_echo_http_server, snapshot, aws_client):
+        key_value_transform = [
+            "domain",
+            "origin",
+            "x-amzn-tls-cipher-suite",
+            "x-amzn-tls-version",
+            "x-amzn-trace-id",
+            "x-forwarded-for",
+            "x-forwarded-port",
+            "x-forwarded-proto",
+        ]
+        for key in key_value_transform:
+            snapshot.add_transformer(snapshot.transform.key_value(key))
+        echo_url = create_echo_http_server()
+        response = requests.post(
+            url=echo_url + "/path/1?q=query",
+            headers={
+                "content-type": "application/json",
+                "ExTrA-HeadErs": "With WeiRd CapS",
+                "user-agent": "test/echo"
+            },
+            json={"foo": "bar"},
+        )
+        snapshot.match("url_response", response.json())
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
             "$..content.headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
             "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
         ]
     )
     @markers.aws.validated
-    def test_lambda_url_echo_http_fixture(self, create_echo_http_server, snapshot, aws_client):
+    def test_lambda_url_echo_http_fixture_trim_x_headers(self, create_echo_http_server, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("domain"))
         snapshot.add_transformer(snapshot.transform.key_value("origin"))
-        echo_url = create_echo_http_server()
+        echo_url = create_echo_http_server(trim_x_headers=True)
         response = requests.post(
             url=echo_url + "/path/1?q=query",
-            headers={"content-type": "application/json", "ExTrA-HeadErs": "With WeiRd CapS"},
+            headers={
+                "content-type": "application/json",
+                "ExTrA-HeadErs": "With WeiRd CapS",
+                "user-agent": "test/echo"
+            },
             json={"foo": "bar"},
         )
         snapshot.match("url_response", response.json())

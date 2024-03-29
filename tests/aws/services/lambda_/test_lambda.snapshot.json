@@ -4009,8 +4009,8 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture": {
-    "recorded-date": "28-03-2024, 22:20:14",
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture_default": {
+    "recorded-date": "29-03-2024, 14:57:46",
     "recorded-content": {
       "url_response": {
         "args": {
@@ -4027,7 +4027,39 @@
           "content-type": "application/json",
           "extra-headers": "With WeiRd CapS",
           "host": "<domain:1>",
-          "user-agent": "python-requests/2.31.0"
+          "user-agent": "python-requests/2.31.0",
+          "x-amzn-tls-cipher-suite": "<x-amzn-tls-cipher-suite:1>",
+          "x-amzn-tls-version": "<x-amzn-tls-version:1>",
+          "x-amzn-trace-id": "<x-amzn-trace-id:1>",
+          "x-forwarded-for": "<origin:1>",
+          "x-forwarded-port": "<x-forwarded-port:1>",
+          "x-forwarded-proto": "<x-forwarded-proto:1>"
+        },
+        "method": "POST",
+        "origin": "<origin:1>",
+        "path": "/path/1"
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_http_fixture_trim_x_headers": {
+    "recorded-date": "29-03-2024, 15:03:37",
+    "recorded-content": {
+      "url_response": {
+        "args": {
+          "q": "query"
+        },
+        "data": {
+          "foo": "bar"
+        },
+        "domain": "<domain:1>",
+        "headers": {
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate",
+          "content-length": "14",
+          "content-type": "application/json",
+          "extra-headers": "With WeiRd CapS",
+          "host": "<domain:1>",
+          "user-agent": "test/echo"
         },
         "method": "POST",
         "origin": "<origin:1>",
