@@ -1393,7 +1393,7 @@ class TestCloudwatch:
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider,
         paths=[
-            "$..DashboardArn",
+            "$..DashboardArn",  # ARN has a typo in moto
             "$..DashboardEntries..Size",
         ],
     )
