@@ -15053,5 +15053,603 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_nested": {
+    "recorded-date": "29-03-2024, 16:26:02",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[[1, 2, 3], [4, 5, 6]]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[[1, 2, 3], [4, 5, 6]]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapL1"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 2
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapL1"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": "[1,2,3]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapL2"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 6,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 5,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 7,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapL2"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": "1",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapL2Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "MapL2Pass",
+              "output": "1",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 10,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapL2"
+            },
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 11,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapL2"
+            },
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateEnteredEventDetails": {
+              "input": "2",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapL2Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "stateExitedEventDetails": {
+              "name": "MapL2Pass",
+              "output": "2",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 14,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapL2"
+            },
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 15,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "MapL2"
+            },
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 16,
+            "previousEventId": 15,
+            "stateEnteredEventDetails": {
+              "input": "3",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapL2Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 17,
+            "previousEventId": 16,
+            "stateExitedEventDetails": {
+              "name": "MapL2Pass",
+              "output": "3",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 18,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "MapL2"
+            },
+            "previousEventId": 17,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 19,
+            "previousEventId": 18,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 20,
+            "previousEventId": 18,
+            "stateExitedEventDetails": {
+              "name": "MapL2",
+              "output": "[1,2,3]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 21,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapL1"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 22,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapL1"
+            },
+            "previousEventId": 20,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 23,
+            "previousEventId": 22,
+            "stateEnteredEventDetails": {
+              "input": "[4,5,6]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapL2"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 24,
+            "mapStateStartedEventDetails": {
+              "length": 3
+            },
+            "previousEventId": 23,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 25,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapL2"
+            },
+            "previousEventId": 24,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 26,
+            "previousEventId": 25,
+            "stateEnteredEventDetails": {
+              "input": "4",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapL2Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 27,
+            "previousEventId": 26,
+            "stateExitedEventDetails": {
+              "name": "MapL2Pass",
+              "output": "4",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 28,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapL2"
+            },
+            "previousEventId": 27,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 29,
+            "mapIterationStartedEventDetails": {
+              "index": 1,
+              "name": "MapL2"
+            },
+            "previousEventId": 27,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 30,
+            "previousEventId": 29,
+            "stateEnteredEventDetails": {
+              "input": "5",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapL2Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 31,
+            "previousEventId": 30,
+            "stateExitedEventDetails": {
+              "name": "MapL2Pass",
+              "output": "5",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 32,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapL2"
+            },
+            "previousEventId": 31,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 33,
+            "mapIterationStartedEventDetails": {
+              "index": 2,
+              "name": "MapL2"
+            },
+            "previousEventId": 31,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 34,
+            "previousEventId": 33,
+            "stateEnteredEventDetails": {
+              "input": "6",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapL2Pass"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 35,
+            "previousEventId": 34,
+            "stateExitedEventDetails": {
+              "name": "MapL2Pass",
+              "output": "6",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 36,
+            "mapIterationSucceededEventDetails": {
+              "index": 2,
+              "name": "MapL2"
+            },
+            "previousEventId": 35,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 37,
+            "previousEventId": 36,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 38,
+            "previousEventId": 36,
+            "stateExitedEventDetails": {
+              "name": "MapL2",
+              "output": "[4,5,6]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 39,
+            "mapIterationSucceededEventDetails": {
+              "index": 1,
+              "name": "MapL1"
+            },
+            "previousEventId": 38,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 40,
+            "previousEventId": 39,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 41,
+            "previousEventId": 39,
+            "stateExitedEventDetails": {
+              "name": "MapL1",
+              "output": "[[1,2,3],[4,5,6]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[[1,2,3],[4,5,6]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 42,
+            "previousEventId": 41,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_nested": {
+    "recorded-date": "29-03-2024, 17:05:02",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": "[[1, 2, 3], [4, 5, 6]]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[[1, 2, 3], [4, 5, 6]]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelStateL1"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[[1, 2, 3], [4, 5, 6]]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelStateL2"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": "[[1, 2, 3], [4, 5, 6]]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "BranchL2"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": [
+              0
+            ],
+            "previousEventId": 0,
+            "stateExitedEventDetails": {
+              "name": "BranchL2",
+              "output": "[[1, 2, 3], [4, 5, 6]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 11,
+            "previousEventId": 9,
+            "stateExitedEventDetails": {
+              "name": "ParallelStateL1",
+              "output": "[[[[1, 2, 3], [4, 5, 6]]]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[[[[1, 2, 3], [4, 5, 6]]]]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -1,0 +1,31 @@
+{
+  "StartAt": "MapL1",
+  "States": {
+    "MapL1": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemProcessor": {
+        "ProcessorConfig": { "Mode": "INLINE" },
+        "StartAt": "MapL2",
+        "States": {
+          "MapL2": {
+            "Type": "Map",
+            "MaxConcurrency": 1,
+            "ItemProcessor": {
+              "ProcessorConfig": { "Mode": "INLINE" },
+              "StartAt": "MapL2Pass",
+              "States": {
+                "MapL2Pass": {
+                  "Type": "Pass",
+                  "End": true
+                }
+              }
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}
