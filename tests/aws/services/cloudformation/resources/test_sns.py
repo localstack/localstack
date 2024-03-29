@@ -131,6 +131,3 @@ def test_update_subscription(snapshot, deploy_cfn_template, aws_client, sqs_queu
     subscription_updated = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
     snapshot.match("subscription-2", subscription_updated)
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
-    snapshot.add_transformer(
-        snapshot.transform.jsonpath("$..Attributes..RawMessageDelivery", "bool")
-    )
