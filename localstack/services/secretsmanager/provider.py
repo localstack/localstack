@@ -876,9 +876,19 @@ def put_resource_policy_response(self):
     )
 
 
+def _form_version_ids_to_stages_modal(self):
+    version_id_to_stages = {}
+    for key, value in self.versions.items():
+        if len(value["version_stages"]) > 0:
+            version_id_to_stages[key] = value["version_stages"]
+
+    return version_id_to_stages
+
+
 def apply_patches():
     SecretsManagerBackend.get_resource_policy = get_resource_policy_model
     SecretsManagerResponse.get_resource_policy = get_resource_policy_response
+    FakeSecret._form_version_ids_to_stages = _form_version_ids_to_stages_modal
 
     if not hasattr(SecretsManagerBackend, "delete_resource_policy"):
         SecretsManagerBackend.delete_resource_policy = delete_resource_policy_model
