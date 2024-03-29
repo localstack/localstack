@@ -73,12 +73,12 @@ def generate_k8s_cluster_overrides(
             }
         )
 
-    volumen_mounts = []
+    volume_mounts = []
     target_path = "/opt/code/localstack/"
     venv_path = os.path.join(target_path, ".venv", "lib", "python3.11", "site-packages")
     for volume in volumes:
         if volume["name"] == "egg-info":
-            volumen_mounts.append(
+            volume_mounts.append(
                 {
                     "name": volume["name"],
                     "readOnly": True,
@@ -90,7 +90,7 @@ def generate_k8s_cluster_overrides(
             )
             continue
 
-        volumen_mounts.append(
+        volume_mounts.append(
             {
                 "name": volume["name"],
                 "readOnly": True,
@@ -101,25 +101,25 @@ def generate_k8s_cluster_overrides(
     overrides = {
         "debug": True,
         "volumes": volumes,
-        "volumeMounts": volumen_mounts,
+        "volumeMounts": volume_mounts,
     }
-    if pro:
-        overrides["image"] = {
-            "repository": "localstack/localstack-pro",
-            "pullPolicy": "Always",
-        }
 
-    if write:
-        path = os.path.join(os.getcwd(), "cluster-overrides.yaml")
-        with open(path, "w") as f:
-            f.write(yaml.dump(overrides))
-            f.close()
-        print(f"Generated kubernetes cluster overrides file at {path}")
-    else:
-        print("Generated kubernetes cluster overrides:")
-        print("=====================================")
-        print(yaml.dump(overrides))
-        print("=====================================")
+    return overrides
+
+
+def write_file(content: dict, output_path: str, file_name: str):
+    path = os.path.join(output_path, file_name)
+    with open(path, "w") as f:
+        f.write(yaml.dump(content))
+        f.close()
+        print(f"Generated file at {path}")
+
+
+def print_file(content: dict, file_name: str):
+    print(f"Generated file:\t{file_name}")
+    print("=====================================")
+    print(yaml.dump(content))
+    print("=====================================")
 
 
 @click.command("run")
@@ -135,22 +135,65 @@ def generate_k8s_cluster_overrides(
     default=None,
     help="Write the configuration and overrides to files.",
 )
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(exists=True, file_okay=False, resolve_path=True),
+    help="Output directory for generated files.",
+)
+@click.option(
+    "--overrides-file",
+    "-of",
+    default=None,
+    help="Name of the overrides file (default: overrides.yml).",
+)
+@click.option(
+    "--config-file",
+    "-cf",
+    default=None,
+    help="Name of the configuration file (default: configuration.yml).",
+)
 @click.argument("command", nargs=-1, required=False)
-def run(pro: bool = None, mount_moto: bool = False, write: bool = False, command: str = None):
+def run(
+    pro: bool = None,
+    mount_moto: bool = False,
+    write: bool = False,
+    output_dir=None,
+    overrides_file: str = None,
+    config_file: str = None,
+    command: str = None,
+):
     """
     A tool for localstack developers to generate the kubernetes cluster configuration file and the overrides to mount the localstack code into the cluster.
     """
 
-    config = generate_k8s_cluster_config(pro=pro, mount_moto=mount_moto, write=write)
+    config = generate_k8s_cluster_config(pro=pro, mount_moto=mount_moto)
 
-    generate_k8s_cluster_overrides(pro, config, write=write)
+    overrides = generate_k8s_cluster_overrides(pro, config)
+
+    output_dir = output_dir or os.getcwd()
+    overrides_file = overrides_file or "overrides.yml"
+    config_file = config_file or "configuration.yml"
+
+    if write:
+        write_file(overrides, output_dir, overrides_file)
+        write_file(config, output_dir, config_file)
+    else:
+        print_file(overrides, overrides_file)
+        print_file(config, config_file)
+
+    overrides_file_path = os.path.join(output_dir, overrides_file)
+    config_file_path = os.path.join(output_dir, config_file)
 
     print("\nTo create a k3d cluster with the generated configuration, follow these steps:")
     print("1. Run the following command to create the cluster:")
-    print("\n    k3d cluster create --config cluster-config.yaml\n")
+    print(f"\n    k3d cluster create --config {config_file_path}\n")
 
     print("2. Once the cluster is created, start LocalStack with the generated overrides:")
-    print("\n   helm upgrade --install localstack ./charts/localstack -f cluster-overrides.yaml\n")
+    print("\n   helm repo add localstack https://localstack.github.io/helm-charts # (if required)")
+    print(
+        f"\n   helm upgrade --install localstack localstack/localstack -f {overrides_file_path}\n"
+    )
 
 
 def main():
