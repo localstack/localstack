@@ -653,8 +653,19 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_create_subscriptions_with_attributes": {
-    "recorded-date": "24-08-2023, 23:27:53",
+    "recorded-date": "29-03-2024, 19:44:43",
     "recorded-content": {
+      "subscribe-wrong-attr": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: RawMessageDelivery: Invalid value [wrongvalue]. Must be true or false.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "subscribe": {
         "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
         "ResponseMetadata": {
@@ -755,12 +766,34 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_validate_set_sub_attributes": {
-    "recorded-date": "24-08-2023, 23:27:58",
+    "recorded-date": "29-03-2024, 19:30:24",
     "recorded-content": {
       "fake-attribute": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: AttributeName",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "raw-message-wrong-value": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: RawMessageDelivery: Invalid value [test-ValUe]. Must be true or false.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "raw-message-empty-value": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: RawMessageDelivery: Invalid value []. Must be true or false.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -782,7 +815,7 @@
       "invalid-json-redrive-policy": {
         "Error": {
           "Code": "InvalidParameter",
-          "Message": "Invalid parameter: RedrivePolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: java.io.StringReader@5498a819; line: 1, column: 3]",
+          "Message": "Invalid parameter: RedrivePolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: java.io.StringReader@469cc9aa; line: 1, column: 3]",
           "Type": "Sender"
         },
         "ResponseMetadata": {
