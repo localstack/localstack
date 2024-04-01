@@ -92,5 +92,43 @@
         "status_code": 200
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_invoke_status_code_passthrough[HTTP]": {
+    "recorded-date": "01-04-2024, 21:02:52",
+    "recorded-content": {
+      "matching-response": {
+        "body": {
+          "message": "",
+          "status_code": 200
+        },
+        "status_code": 200
+      },
+      "non-matching-response": {
+        "body": {
+          "message": "",
+          "status_code": 400
+        },
+        "status_code": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_invoke_status_code_passthrough[HTTP_PROXY]": {
+    "recorded-date": "01-04-2024, 20:44:46",
+    "recorded-content": {
+      "matching-integration": {
+        "body": {
+          "message": "",
+          "status_code": 200
+        },
+        "status_code": 200
+      },
+      "non-matching-integration": {
+        "body": {
+          "message": "",
+          "status_code": 400
+        },
+        "status_code": 400
+      }
+    }
   }
 }

@@ -1,4 +1,10 @@
 {
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_invoke_status_code_passthrough[HTTP]": {
+    "last_validated_date": "2024-04-01T20:43:41+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_invoke_status_code_passthrough[HTTP_PROXY]": {
+    "last_validated_date": "2024-04-01T20:44:46+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_with_lambda": {
     "last_validated_date": "2024-03-28T19:24:09+00:00"
   },

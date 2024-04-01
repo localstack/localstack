@@ -13,6 +13,7 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
     delete_rest_api,
     import_rest_api,
 )
+from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO_STATUS_CODE
 
 # default name used for created REST API stages
 DEFAULT_STAGE_NAME = "dev"
@@ -69,6 +70,8 @@ def create_rest_api_with_integration(
 ):
     def _factory(
         integration_uri,
+        path_part="test",
+        req_parameters=None,
         req_templates=None,
         res_templates=None,
         integration_type=None,
@@ -80,8 +83,11 @@ def create_rest_api_with_integration(
         )
 
         resource_id, _ = create_rest_resource(
-            aws_client.apigateway, restApiId=api_id, parentId=root_id, pathPart="test"
+            aws_client.apigateway, restApiId=api_id, parentId=root_id, pathPart=path_part
         )
+
+        if req_parameters is None:
+            req_parameters = {}
 
         method, _ = create_rest_resource_method(
             aws_client.apigateway,
@@ -90,6 +96,7 @@ def create_rest_api_with_integration(
             httpMethod="POST",
             authorizationType="NONE",
             apiKeyRequired=False,
+            requestParameters={value: True for value in req_parameters.values()},
         )
 
         # set AWS policy to give API GW access to backend resources
@@ -120,6 +127,7 @@ def create_rest_api_with_integration(
             credentials=assume_role_arn,
             uri=integration_uri,
             requestTemplates=req_templates or {},
+            requestParameters=req_parameters,
         )
 
         create_rest_api_method_response(
@@ -148,6 +156,31 @@ def create_rest_api_with_integration(
         return api_id
 
     yield _factory
+
+
+@pytest.fixture
+def create_status_code_echo_server(aws_client, create_lambda_function):
+    lambda_client = aws_client.lambda_
+
+    def _create_status_code_echo_server():
+        function_name = f"lambda_fn_echo_status_{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO_STATUS_CODE,
+        )
+        create_url_response = lambda_client.create_function_url_config(
+            FunctionName=function_name, AuthType="NONE", InvokeMode="BUFFERED"
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+        return create_url_response["FunctionUrl"]
+
+    return _create_status_code_echo_server
 
 
 @pytest.fixture
