@@ -115,14 +115,14 @@
   "tests/aws/services/apigateway/test_apigateway_http.py::test_http_integration_invoke_status_code_passthrough[HTTP_PROXY]": {
     "recorded-date": "01-04-2024, 20:44:46",
     "recorded-content": {
-      "matching-integration": {
+      "matching-response": {
         "body": {
           "message": "",
           "status_code": 200
         },
         "status_code": 200
       },
-      "non-matching-integration": {
+      "non-matching-response": {
         "body": {
           "message": "",
           "status_code": 400
