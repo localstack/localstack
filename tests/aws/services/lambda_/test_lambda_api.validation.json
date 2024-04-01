@@ -47,11 +47,17 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
     "last_validated_date": "2023-11-20T15:46:21+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_advanced_configuration": {
+    "last_validated_date": "2024-03-28T09:54:41+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_advanced_logging_configuration": {
+    "last_validated_date": "2024-03-28T10:21:56+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_arns": {
     "last_validated_date": "2024-03-27T09:37:34+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "last_validated_date": "2024-03-27T09:14:34+00:00"
+    "last_validated_date": "2024-03-28T09:46:49+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[delete_function]": {
     "last_validated_date": "2023-11-20T15:46:45+00:00"

@@ -83,6 +83,7 @@ from localstack.aws.api.lambda_ import (
     ListProvisionedConcurrencyConfigsResponse,
     ListTagsResponse,
     ListVersionsByFunctionResponse,
+    LoggingConfig,
     LogType,
     MasterRegion,
     MaxFunctionEventInvokeConfigListItems,
@@ -906,6 +907,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         code=StateReasonCode.Creating,
                         reason="The function is being created.",
                     ),
+                    logging_config=LoggingConfig(
+                        log_format="Text",
+                        log_group=f"/aws/lambda/{function_name}"
+                    )
                 ),
             )
             fn.versions["$LATEST"] = version

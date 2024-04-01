@@ -75,9 +75,10 @@ def environment_length_bytes(e: dict) -> int:
 
 
 class TestLambdaFunction:
-
     @markers.aws.validated
-    def test_function_advanced_configuration(self, snapshot, create_lambda_function, lambda_su_role, aws_client):
+    def test_function_advanced_logging_configuration(
+        self, snapshot, create_lambda_function, lambda_su_role, aws_client
+    ):
         function_name = f"fn-{short_uid()}"
         create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -94,6 +95,22 @@ class TestLambdaFunction:
         get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
         snapshot.match("get_function_response", get_function_response)
 
+        function_config = aws_client.lambda_.get_function_configuration(FunctionName=function_name)
+        snapshot.match("function_config", function_config)
+
+        advanced_config = {
+            "LogFormat": "JSON",
+            "ApplicationLogLevel": "INFO",
+            "SystemLogLevel": "INFO",
+            "LogGroup": "cool_lambda",
+        }
+        updated_config = aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, LoggingConfig=advanced_config
+        )
+        snapshot.match("updated_config", updated_config)
+
+        received_conf = aws_client.lambda_.get_function_configuration(FunctionName=function_name,)
+        snapshot.match("received_config", received_conf)
 
     @markers.snapshot.skip_snapshot_verify(
         # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
