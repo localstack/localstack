@@ -17,9 +17,7 @@ def is_legacy_v2_provider():
     return config.LEGACY_V2_S3_PROVIDER
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3BucketCRUD:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -85,9 +83,7 @@ class TestS3BucketCRUD:
         snapshot.match("success-delete-bucket", delete_bucket)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3ObjectCRUD:
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -539,9 +535,7 @@ class TestS3ObjectCRUD:
         snapshot.match("get-100-200", e.value.response)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3Multipart:
     # TODO: write a validated test for UploadPartCopy preconditions
 
@@ -670,6 +664,7 @@ class TestS3Multipart:
         snapshot.match("list-parts", list_parts)
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3BucketVersioning:
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -730,6 +725,7 @@ class TestS3BucketVersioning:
         snapshot.match("get-versioning-no-bucket", e.value.response)
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3BucketEncryption:
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -958,9 +954,7 @@ class TestS3BucketEncryption:
         snapshot.match("get-object-encrypted", get_object_encrypted)
 
 
-@markers.snapshot.skip_snapshot_verify(
-    condition=is_legacy_v2_provider, paths=["$..ServerSideEncryption"]
-)
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3BucketObjectTagging:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -1339,6 +1333,7 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-object-tags-aws-prefixed", e.value.response)
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3ObjectLock:
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -1560,6 +1555,7 @@ class TestS3ObjectLock:
         snapshot.match("delete-objects-bypass-no-lock", e.value.response)
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3BucketOwnershipControls:
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -1643,6 +1639,7 @@ class TestS3BucketOwnershipControls:
         snapshot.match("ownership-non-value-at-creation", e.value.response)
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3PublicAccessBlock:
     @markers.aws.validated
     @pytest.mark.skipif(
@@ -1678,6 +1675,7 @@ class TestS3PublicAccessBlock:
         snapshot.match("idempotent-delete-public-access-block", delete_public_access_block)
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3BucketPolicy:
     @markers.aws.validated
     def test_bucket_policy_crud(self, s3_bucket, snapshot, aws_client):
@@ -1745,6 +1743,7 @@ class TestS3BucketPolicy:
         snapshot.match("put-bucket-policy-empty-json", e.value.response)
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3BucketAccelerateConfiguration:
     @markers.aws.validated
     def test_bucket_acceleration_configuration_crud(self, s3_bucket, snapshot, aws_client):

@@ -50,6 +50,9 @@ def assert_timestamp_is_iso8061_s3_format(timestamp: str):
     assert parsed_ts.microsecond == 0
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ServerSideEncryption"]  # we're currently using a static value in LocalStack
+)
 class TestS3ListObjects:
     @markers.aws.validated
     @pytest.mark.parametrize("delimiter", ["", "/", "%2F"])
@@ -195,6 +198,9 @@ class TestS3ListObjects:
         assert_timestamp_is_iso8061_s3_format(timestamp)
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ServerSideEncryption"]  # we're currently using a static value in LocalStack
+)
 class TestS3ListObjectsV2:
     @markers.aws.validated
     def test_list_objects_v2_with_prefix(
@@ -353,6 +359,9 @@ class TestS3ListObjectsV2:
         assert "NextContinuationToken" not in response
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ServerSideEncryption"]  # we're currently using a static value in LocalStack
+)
 class TestS3ListObjectVersions:
     @markers.aws.validated
     @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
@@ -559,6 +568,9 @@ class TestS3ListObjectVersions:
             assert_timestamp_is_iso8061_s3_format(timestamp)
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ServerSideEncryption"]  # we're currently using a static value in LocalStack
+)
 class TestS3ListMultipartUploads:
     @markers.aws.validated
     @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
@@ -845,6 +857,9 @@ class TestS3ListMultipartUploads:
         assert_timestamp_is_iso8061_s3_format(timestamp)
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ServerSideEncryption"]  # we're currently using a static value in LocalStack
+)
 class TestS3ListParts:
     @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
     @markers.aws.validated

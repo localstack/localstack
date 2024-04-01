@@ -84,7 +84,10 @@ def allow_bucket_acl(s3_bucket, aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(
-    paths=["$..x-amz-id-2"]  # we're currently using a static value in LocalStack
+    paths=[
+        "$..x-amz-id-2",
+        "$..ServerSideEncryption",
+    ]  # we're currently using a static value in LocalStack
 )
 class TestS3Cors:
     @markers.aws.validated

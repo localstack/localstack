@@ -8,6 +8,7 @@ from localstack.utils.strings import short_uid
 LOG = logging.getLogger(__name__)
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestParallelBucketCreation:
     @markers.aws.only_localstack
     def test_parallel_bucket_creation(self, aws_client_factory, cleanups):

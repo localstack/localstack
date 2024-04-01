@@ -211,7 +211,7 @@ docker-cp-coverage:
 		docker rm -v $$id
 
 test:              		  ## Run automated tests
-	($(VENV_RUN); DEBUG=$(DEBUG) DISABLE_BOTO_RETRIES=$(DISABLE_BOTO_RETRIES) pytest --html=report2.html --self-contained-html --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
+	($(VENV_RUN);  DEBUG=$(DEBUG) TEST_AWS_ACCESS_KEY_ID=$(TEST_AWS_ACCESS_KEY_ID) TEST_AWS_SECRET_ACCESS_KEY=$(TEST_AWS_SECRET_ACCESS_KEY) DISABLE_BOTO_RETRIES=$(DISABLE_BOTO_RETRIES) pytest --html=$(OUTPUT_FILE) --self-contained-html --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
 test-coverage:     		  ## Run automated tests and create coverage report
 	($(VENV_RUN); python -m coverage --version; \

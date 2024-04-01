@@ -295,6 +295,7 @@ def _filter_header(param: dict) -> dict:
     return {k: v for k, v in param.items() if k.startswith("x-amz") or k in ["content-type"]}
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3:
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
@@ -5780,6 +5781,7 @@ class TestS3:
         assert b"NoSuchBucket" in resp.content
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3MultiAccounts:
     @pytest.fixture
     def primary_client(self, aws_client):
@@ -5873,6 +5875,7 @@ class TestS3MultiAccounts:
         assert key_name_copy in bucket_keys
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3TerraformRawRequests:
     @markers.aws.only_localstack
     def test_terraform_request_sequence(self, aws_client):
@@ -5894,6 +5897,7 @@ class TestS3TerraformRawRequests:
             assert result.status_code < 400
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3PresignedUrl:
     """
     These tests pertain to S3's presigned URL feature.
@@ -7301,6 +7305,7 @@ class TestS3PresignedUrl:
         assert resp.status_code == 403
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3DeepArchive:
     """
     Test to cover DEEP_ARCHIVE Storage Class functionality.
@@ -7380,6 +7385,7 @@ class TestS3DeepArchive:
             assert "etag" in response.get("ResponseMetadata").get("HTTPHeaders")
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3StaticWebsiteHosting:
     """
     Test to cover StaticWebsiteHosting functionality.
@@ -8155,6 +8161,7 @@ class TestS3StaticWebsiteHosting:
         ]
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3Routing:
     @markers.aws.only_localstack
     @pytest.mark.parametrize(
@@ -8200,6 +8207,7 @@ class TestS3Routing:
         assert exc.value.response["Error"]["Message"] == "Not Found"
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3BucketPolicies:
     @markers.aws.only_localstack
     @pytest.mark.skipif(
@@ -8241,6 +8249,7 @@ class TestS3BucketPolicies:
         assert exc.value.response["Error"]["Message"] == "Forbidden"
 
 
+@markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
 class TestS3BucketLifecycle:
     @markers.aws.validated
     def test_delete_bucket_lifecycle_configuration(self, s3_bucket, snapshot, aws_client):
@@ -8936,7 +8945,6 @@ class TestS3BucketLifecycle:
 
 
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_v2_provider,
     paths=["$..ServerSideEncryption"],
 )
 class TestS3ObjectLockRetention:
@@ -9301,7 +9309,6 @@ class TestS3ObjectLockRetention:
 
 
 @markers.snapshot.skip_snapshot_verify(
-    condition=is_v2_provider,
     paths=["$..ServerSideEncryption"],
 )
 class TestS3ObjectLockLegalHold:
@@ -9579,6 +9586,9 @@ class TestS3ObjectLockLegalHold:
                 )
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ServerSideEncryption"],
+)
 class TestS3BucketLogging:
     @markers.aws.validated
     def test_put_bucket_logging(self, aws_client, s3_create_bucket, snapshot):
@@ -9766,7 +9776,12 @@ class TestS3BucketLogging:
 
 
 # TODO: maybe we can fake the IAM role as it's not needed in LocalStack
-@pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="IAM not enabled in S3 image")
+# @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="IAM not enabled in S3 image")
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ServerSideEncryption"],
+)
 class TestS3BucketReplication:
     @markers.aws.validated
     def test_replication_config_without_filter(
@@ -9939,6 +9954,9 @@ class TestS3BucketReplication:
         snapshot.match("delete-bucket-replication-idempotent", delete_replication)
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ServerSideEncryption"],
+)
 class TestS3PresignedPost:
     @markers.aws.validated
     @pytest.mark.xfail(

@@ -25,9 +25,7 @@ from localstack.config import is_env_true
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-    TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
-    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.aws.request_context import get_account_id_from_request
 from localstack.utils.sync import poll_condition
