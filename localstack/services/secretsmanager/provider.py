@@ -528,7 +528,7 @@ def fake_secret_to_dict(fn, self):
         del res_dict["RotationEnabled"]
     if self.auto_rotate_after_days is None and "RotationRules" in res_dict:
         del res_dict["RotationRules"]
-    if not self.tags and "Tags" in res_dict:
+    if self.tags is None and "Tags" in res_dict:
         del res_dict["Tags"]
     for null_field in [key for key, value in res_dict.items() if value is None]:
         del res_dict[null_field]

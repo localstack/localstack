@@ -2080,6 +2080,70 @@ class TestSecretsManager:
         )
         snapshot.match("put-secret-value", response)
 
+    @markers.aws.validated
+    def test_secret_tags(self, aws_client, create_secret, sm_snapshot, cleanups):
+        sm_snapshot.add_transformer(SortingTransformer("Tags", lambda x: x["Key"]))
+
+        secret_name = short_uid()
+        response = create_secret(
+            Name=secret_name,
+        )
+
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
+        )
+        sm_snapshot.match("create_secret", response)
+
+        secret_arn = response["ARN"]
+
+        describe_secret = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret", describe_secret)
+
+        tag_resource_1 = aws_client.secretsmanager.tag_resource(
+            SecretId=secret_arn, Tags=[{"Key": "tag1", "Value": "value1"}]
+        )
+        sm_snapshot.match("tag_resource_1", tag_resource_1)
+
+        describe_secret_1 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_1", describe_secret_1)
+
+        tag_resource_2 = aws_client.secretsmanager.tag_resource(
+            SecretId=secret_arn, Tags=[{"Key": "tag2", "Value": "value2"}]
+        )
+        sm_snapshot.match("tag_resource_2", tag_resource_2)
+
+        describe_secret_2 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_2", describe_secret_2)
+
+        untag_resource_1 = aws_client.secretsmanager.untag_resource(
+            SecretId=secret_arn, TagKeys=["tag1"]
+        )
+        sm_snapshot.match("untag_resource_1", untag_resource_1)
+
+        describe_secret_3 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_3", describe_secret_3)
+
+        untag_resource_2 = aws_client.secretsmanager.untag_resource(
+            SecretId=secret_arn, TagKeys=["tag2"]
+        )
+        sm_snapshot.match("untag_resource_2", untag_resource_2)
+
+        describe_secret_4 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_4", describe_secret_4)
+
+        aws_client.secretsmanager.tag_resource(
+            SecretId=secret_arn,
+            Tags=[{"Key": "tag3", "Value": "value3"}, {"Key": "tag4", "Value": "value4"}],
+        )
+
+        describe_secret_5 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_5", describe_secret_5)
+
+        aws_client.secretsmanager.untag_resource(SecretId=secret_arn, TagKeys=["tag3", "tag4"])
+
+        describe_secret_6 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_6", describe_secret_6)
+
 
 class TestSecretsManagerMultiAccounts:
     @markers.aws.validated
