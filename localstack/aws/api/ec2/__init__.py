@@ -17,6 +17,7 @@ BaselineIops = int
 BaselineThroughputInMBps = float
 Boolean = bool
 BoxedDouble = float
+BoxedInteger = int
 BundleId = str
 BurstablePerformanceFlag = bool
 CancelCapacityReservationFleetErrorCode = str
@@ -747,6 +748,18 @@ class CurrencyCodeValues(str):
 class DatafeedSubscriptionState(str):
     Active = "Active"
     Inactive = "Inactive"
+
+
+class DefaultInstanceMetadataEndpointState(str):
+    disabled = "disabled"
+    enabled = "enabled"
+    no_preference = "no-preference"
+
+
+class DefaultInstanceMetadataTagsState(str):
+    disabled = "disabled"
+    enabled = "enabled"
+    no_preference = "no-preference"
 
 
 class DefaultRouteTableAssociationValue(str):
@@ -2006,6 +2019,9 @@ class InstanceType(str):
     r7i_metal_48xl = "r7i.metal-48xl"
     r7iz_metal_16xl = "r7iz.metal-16xl"
     r7iz_metal_32xl = "r7iz.metal-32xl"
+    c7gd_metal = "c7gd.metal"
+    m7gd_metal = "m7gd.metal"
+    r7gd_metal = "r7gd.metal"
 
 
 class InstanceTypeHypervisor(str):
@@ -2350,6 +2366,12 @@ class MarketType(str):
 class MembershipType(str):
     static = "static"
     igmp = "igmp"
+
+
+class MetadataDefaultHttpTokensState(str):
+    optional = "optional"
+    required = "required"
+    no_preference = "no-preference"
 
 
 class MetricType(str):
@@ -15132,6 +15154,21 @@ class GetImageBlockPublicAccessStateResult(TypedDict, total=False):
     ImageBlockPublicAccessState: Optional[String]
 
 
+class GetInstanceMetadataDefaultsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class InstanceMetadataDefaultsResponse(TypedDict, total=False):
+    HttpTokens: Optional[HttpTokensState]
+    HttpPutResponseHopLimit: Optional[BoxedInteger]
+    HttpEndpoint: Optional[InstanceMetadataEndpointState]
+    InstanceMetadataTags: Optional[InstanceMetadataTagsState]
+
+
+class GetInstanceMetadataDefaultsResult(TypedDict, total=False):
+    AccountLevel: Optional[InstanceMetadataDefaultsResponse]
+
+
 VirtualizationTypeSet = List[VirtualizationType]
 
 
@@ -16486,6 +16523,18 @@ class ModifyInstanceMaintenanceOptionsRequest(ServiceRequest):
 class ModifyInstanceMaintenanceOptionsResult(TypedDict, total=False):
     InstanceId: Optional[String]
     AutoRecovery: Optional[InstanceAutoRecoveryState]
+
+
+class ModifyInstanceMetadataDefaultsRequest(ServiceRequest):
+    HttpTokens: Optional[MetadataDefaultHttpTokensState]
+    HttpPutResponseHopLimit: Optional[BoxedInteger]
+    HttpEndpoint: Optional[DefaultInstanceMetadataEndpointState]
+    InstanceMetadataTags: Optional[DefaultInstanceMetadataTagsState]
+    DryRun: Optional[Boolean]
+
+
+class ModifyInstanceMetadataDefaultsResult(TypedDict, total=False):
+    Return: Optional[Boolean]
 
 
 class ModifyInstanceMetadataOptionsRequest(ServiceRequest):
@@ -23455,6 +23504,12 @@ class Ec2Api:
     ) -> GetImageBlockPublicAccessStateResult:
         raise NotImplementedError
 
+    @handler("GetInstanceMetadataDefaults")
+    def get_instance_metadata_defaults(
+        self, context: RequestContext, dry_run: Boolean = None, **kwargs
+    ) -> GetInstanceMetadataDefaultsResult:
+        raise NotImplementedError
+
     @handler("GetInstanceTypesFromInstanceRequirements")
     def get_instance_types_from_instance_requirements(
         self,
@@ -24222,6 +24277,19 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> ModifyInstanceMaintenanceOptionsResult:
+        raise NotImplementedError
+
+    @handler("ModifyInstanceMetadataDefaults")
+    def modify_instance_metadata_defaults(
+        self,
+        context: RequestContext,
+        http_tokens: MetadataDefaultHttpTokensState = None,
+        http_put_response_hop_limit: BoxedInteger = None,
+        http_endpoint: DefaultInstanceMetadataEndpointState = None,
+        instance_metadata_tags: DefaultInstanceMetadataTagsState = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> ModifyInstanceMetadataDefaultsResult:
         raise NotImplementedError
 
     @handler("ModifyInstanceMetadataOptions")
