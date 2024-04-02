@@ -152,6 +152,9 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_inline_parameters": {
     "last_validated_date": "2024-02-08T21:07:39+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_nested": {
+    "last_validated_date": "2024-03-29T16:26:02+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_no_processor_config": {
     "last_validated_date": "2023-12-15T21:25:27+00:00"
   },
@@ -172,6 +175,9 @@
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state": {
     "last_validated_date": "2023-07-17T10:41:25+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_nested": {
+    "last_validated_date": "2024-03-29T17:05:02+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_order": {
     "last_validated_date": "2023-12-15T22:15:11+00:00"

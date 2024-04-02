@@ -158,6 +158,37 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS appears to have changed json encoding to include spaces after separators,
+            #  other v2 test suite snapshots need to be re-recorded
+            "$..events..stateEnteredEventDetails.input",
+            "$..events..stateExitedEventDetails.output",
+            "$..events..executionSucceededEventDetails.output",
+        ]
+    )
+    def test_parallel_state_nested(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(SfnNoneRecursiveParallelTransformer())
+        template = ST.load_sfn_template(ST.PARALLEL_NESTED_NESTED)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps([[1, 2, 3], [4, 5, 6]])
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_parallel_state_catch(
         self,
         aws_client,
@@ -211,6 +242,39 @@ class TestBaseScenarios:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS appears to have changed json encoding to include spaces after separators,
+            #  other v2 test suite snapshots need to be re-recorded
+            "$..events..stateEnteredEventDetails.input"
+        ]
+    )
+    def test_map_state_nested(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_NESTED)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            [
+                [1, 2, 3],
+                [4, 5, 6],
+            ]
+        )
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

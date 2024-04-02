@@ -38,7 +38,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     IterationWorker,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.job import (
-    Job,
+    JobClosed,
     JobPool,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
@@ -133,7 +133,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         if worker_exception is not None:
             raise worker_exception
 
-        closed_jobs: list[Job] = self._job_pool.get_closed_jobs()
+        closed_jobs: list[JobClosed] = self._job_pool.get_closed_jobs()
         outputs: list[Any] = [closed_job.job_output for closed_job in closed_jobs]
 
         env.stack.append(outputs)
