@@ -7,6 +7,7 @@ from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
     CreateEventBusResponse,
+    DescribeEventBusResponse,
     EventBusName,
     EventBusNameOrArn,
     EventsApi,
@@ -21,6 +22,7 @@ from localstack.aws.api.events import (
 from localstack.services.events.event_bus import (
     EventBus,
     EventBusDict,
+    event_bus_to_api_type_event_bus,
     event_bust_dict_to_list,
 )
 from localstack.services.plugins import ServiceLifecycleHook
@@ -80,6 +82,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
 
         return {"EventBuses": event_bust_dict_to_list(limited_event_buses_list)}
+
+    @handler("DescribeEventBus")
+    def describe_event_bus(
+        self, context: RequestContext, name: EventBusNameOrArn = None, **kwargs
+    ) -> DescribeEventBusResponse:
+        event_bus_key = self._extract_event_bus_name(name)
+        event_bus = self._get_event_bus(event_bus_key, context.region)
+        return event_bus_to_api_type_event_bus(event_bus)
 
     def _add_default_event_bus(self) -> None:
         name = "default"
