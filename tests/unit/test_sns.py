@@ -601,6 +601,14 @@ class TestSns:
                     ({"f1": "v3", "f2": "v5"}, False),
                 ),
             ),
+            (
+                {"f1": ["v1", "v2"]},  # f1 must be v1 OR v2 (f1=v1 OR f1=v2)
+                (
+                    ({"f1": ["v1"], "f2": "v4"}, True),
+                    ({"f1": ["v2", "v3"], "f2": "v5"}, True),
+                    ({"f1": ["v3", "v4"], "f2": "v5"}, False),
+                ),
+            ),
         ]
 
         sub_filter = SubscriptionFilter()
