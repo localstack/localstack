@@ -32,8 +32,8 @@
   "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_list_describe_delete_custom_event_bus": {
     "last_validated_date": "2024-04-02T13:04:38+00:00"
   },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_list_event_buses_with_prefix": {
-    "last_validated_date": "2024-04-03T14:38:19+00:00"
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_list_event_buses_with_limit": {
+    "last_validated_date": "2024-04-03T14:53:31+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventsEventBus::test_put_events_nonexistent_event_bus": {
     "last_validated_date": "2024-03-26T14:11:46+00:00"

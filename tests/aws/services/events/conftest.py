@@ -9,6 +9,40 @@ from localstack.utils.sync import retry
 
 
 @pytest.fixture
+def create_event_bus(aws_client):
+    event_bus_names = []
+
+    def _create_event_bus(bus_name, **kwargs):
+        response = aws_client.events.create_event_bus(Name=bus_name, **kwargs)
+        event_bus_names.append(bus_name)
+        return response
+
+    yield _create_event_bus
+
+    for event_bus_name in event_bus_names:
+        response = aws_client.events.list_rules(EventBusName=event_bus_name)
+        rules = [rule["Name"] for rule in response["Rules"]]
+
+        # Delete all rules for the current event bus
+        for rule in rules:
+            response = aws_client.events.list_targets_by_rule(
+                Rule=rule, EventBusName=event_bus_name
+            )
+            targets = [target["Id"] for target in response["Targets"]]
+
+            # Remove all targets for the current rule
+            if targets:
+                for target in targets:
+                    aws_client.events.remove_targets(
+                        Rule=rule, EventBusName=event_bus_name, Ids=[target]
+                    )
+
+            aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
+
+        aws_client.events.delete_event_bus(Name=event_bus_name)
+
+
+@pytest.fixture
 def events_allow_event_rule_to_sqs_queue(aws_client):
     def _allow_event_rule(sqs_queue_url, sqs_queue_arn, event_rule_arn) -> None:
         # allow event rule to write to sqs queue

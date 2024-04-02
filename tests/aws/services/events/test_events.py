@@ -744,6 +744,25 @@ class TestEventsEventBus:
         response = events.list_event_buses(NamePrefix=bus_name.split("-")[0])
         snapshot.match("list-event-buses-prefix", response)
 
+    @markers.aws.validated
+    def test_list_event_buses_with_limit(self, create_event_bus, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
+        events = aws_client.events
+        bus_name_prefix = "test-bus"
+        count = 6
+
+        for i in range(count):
+            bus_name = f"{bus_name_prefix}-{i}"
+            create_event_bus(bus_name)
+
+        response = events.list_event_buses(Limit=int(count / 2))
+        snapshot.match("list-event-buses-limit", response)
+
+        response = events.list_event_buses(
+            Limit=int(count / 2) + 2, NextToken=response["NextToken"]
+        )
+        snapshot.match("list-event-buses-limit-next-token", response)
+
     @markers.aws.unknown
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")

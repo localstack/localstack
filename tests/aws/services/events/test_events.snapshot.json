@@ -307,5 +307,55 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_list_event_buses_with_limit": {
+    "recorded-date": "03-04-2024, 14:53:31",
+    "recorded-content": {
+      "list-event-buses-limit": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
+            "Name": "default"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-0",
+            "Name": "test-bus-0"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-1",
+            "Name": "test-bus-1"
+          }
+        ],
+        "NextToken": "<next_token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-limit-next-token": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-2",
+            "Name": "test-bus-2"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-3",
+            "Name": "test-bus-3"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-4",
+            "Name": "test-bus-4"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-5",
+            "Name": "test-bus-5"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
