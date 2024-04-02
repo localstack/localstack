@@ -12,12 +12,16 @@ from localstack.aws.api.events import (
     EventsApi,
     EventSourceName,
     InternalException,
+    LimitMax100,
+    ListEventBusesResponse,
+    NextToken,
     ResourceNotFoundException,
     TagList,
 )
 from localstack.services.events.event_bus import (
     EventBus,
     EventBusDict,
+    event_bust_dict_to_list,
 )
 from localstack.services.plugins import ServiceLifecycleHook
 
@@ -59,6 +63,24 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         else:
             raise ResourceNotFoundException(f"EventBus {name} does not exist")
 
+    @handler("ListEventBuses")
+    def list_event_buses(
+        self,
+        context: RequestContext,
+        name_prefix: EventBusName = None,
+        next_token: NextToken = None,
+        limit: LimitMax100 = None,
+        **kwargs,
+    ) -> ListEventBusesResponse:
+        event_buses = (
+            self._get_filtered_event_buses(name_prefix) if name_prefix else self._event_buses
+        )
+        limited_event_buses_list = (
+            dict(list(event_buses.items())[:limit]) if limit is not None else event_buses
+        )
+
+        return {"EventBuses": event_bust_dict_to_list(limited_event_buses_list)}
+
     def _add_default_event_bus(self) -> None:
         name = "default"
         default_account_id = "000000000000"
@@ -84,6 +106,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def _get_event_bus_arn(self, name: EventBusName, region: str, account_id: str) -> str:
         return f"arn:aws:events:{region}:{account_id}:event-bus/{name}"
+
+    def _get_filtered_event_buses(self, name_prefix: EventBusName) -> EventBusDict:
+        return {
+            key: event_bus
+            for key, event_bus in self._event_buses.items()
+            if event_bus.name.startswith(name_prefix)
+        }
 
 
 class Event(TypedDict, total=False):
