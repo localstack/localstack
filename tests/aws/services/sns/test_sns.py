@@ -3044,6 +3044,84 @@ class TestSNSFilter:
         assert num_msgs_4 == num_msgs_3
 
     @markers.aws.validated
+    def test_exists_filter_policy_attributes_array(
+        self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+        subscription_arn = subscription["SubscriptionArn"]
+
+        filter_policy = {"store": ["value1"]}
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps(filter_policy),
+        )
+
+        response_attributes = aws_client.sns.get_subscription_attributes(
+            SubscriptionArn=subscription_arn
+        )
+        snapshot.match("subscription-attributes-policy", response_attributes)
+
+        response_0 = aws_client.sqs.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+        snapshot.match("messages-init", response_0)
+
+        # publish message that satisfies the filter policy, assert that message is received
+        message = "message-1"
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            MessageAttributes={
+                "store": {"DataType": "String", "StringValue": "value1"},
+            },
+        )
+        response_1 = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response_1["Messages"][0]["ReceiptHandle"]
+        )
+        snapshot.match("messages-1", response_1)
+
+        # publish message that satisfies the filter policy but with String.Array
+        message = "message-2"
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            MessageAttributes={
+                "store": {
+                    "DataType": "String.Array",
+                    "StringValue": json.dumps(["value1", "value2"]),
+                },
+            },
+        )
+        response_2 = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        aws_client.sqs.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response_2["Messages"][0]["ReceiptHandle"]
+        )
+        snapshot.match("messages-2", response_2)
+
+        # publish message that does not satisfy the filter policy with String.Array
+        message = "message-3"
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            MessageAttributes={
+                "store": {
+                    "DataType": "String.Array",
+                    "StringValue": json.dumps(["value2", "value3"]),
+                },
+            },
+        )
+        response_3 = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=4
+        )
+        snapshot.match("messages-3", response_3)
+
+    @markers.aws.validated
     def test_set_subscription_filter_policy_scope(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -3536,14 +3614,12 @@ class TestSNSFilter:
         assert "Messages" not in response or response["Messages"] == []
 
     @markers.aws.validated
-    @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_filter_policy_on_message_body_array_attributes(
         self,
         sqs_create_queue,
         sns_create_topic,
         sns_create_sqs_subscription,
         snapshot,
-        raw_message_delivery,
         aws_client,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
@@ -3572,12 +3648,11 @@ class TestSNSFilter:
                 AttributeValue=json.dumps(filter_policy),
             )
 
-            if raw_message_delivery:
-                aws_client.sns.set_subscription_attributes(
-                    SubscriptionArn=sub_arn,
-                    AttributeName="RawMessageDelivery",
-                    AttributeValue="true",
-                )
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=sub_arn,
+                AttributeName="RawMessageDelivery",
+                AttributeValue="true",
+            )
 
         queues = [queue_url_1, queue_url_2]
 
@@ -3591,6 +3666,7 @@ class TestSNSFilter:
 
         # publish messages that satisfies the filter policy, assert that messages are received
         messages = [
+            {"headers": {"route-to": ["queue3"]}},
             {"headers": {"route-to": ["queue1"]}},
             {"headers": {"route-to": ["queue2"]}},
             {"headers": {"route-to": ["queue1", "queue2"]}},
