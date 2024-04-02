@@ -730,6 +730,7 @@ workflows:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v2-provider
+            - itest-events-v2-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
@@ -743,6 +744,7 @@ workflows:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v2-provider
+            - itest-events-v2-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
