@@ -708,14 +708,24 @@ class TestEvents:
 
 class TestEventsEventBus:
     @markers.aws.validated
-    def test_create_custom_event_bus(self, aws_client, cleanups, snapshot):
+    def test_create_list_describe_delete_custom_event_bus(self, aws_client, snapshot):
         events = aws_client.events
         bus_name = "test-bus"
 
         response = events.create_event_bus(Name=bus_name)
-        cleanups.append(lambda: events.delete_event_bus(Name=bus_name))
-
         snapshot.match("create-custom-event-bus", response)
+
+        response = events.list_event_buses()
+        snapshot.match("list-event-buses-create", response)
+
+        response = events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-custom-event-bus", response)
+
+        response = events.delete_event_bus(Name=bus_name)
+        snapshot.match("delete-custom-event-bus", response)
+
+        response = events.list_event_buses()
+        snapshot.match("list-event-buses-delete", response)
 
     @markers.aws.unknown
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])

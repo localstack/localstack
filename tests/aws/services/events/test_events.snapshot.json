@@ -220,5 +220,59 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_list_describe_delete_custom_event_bus": {
+    "recorded-date": "02-04-2024, 13:04:38",
+    "recorded-content": {
+      "create-custom-event-bus": {
+        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-create": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
+            "Name": "default"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
+            "Name": "test-bus"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus": {
+        "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
+        "Name": "test-bus",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-delete": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
+            "Name": "default"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
