@@ -1,18 +1,6 @@
-Parameters:
-  DeployRegion:
-    Type: String
-    Default: us-east-1
-
-Conditions:
-  DeployInUSEast1:
-    Fn::Equals:
-      - !Ref DeployRegion
-      - us-east-1
-
 Resources:
   vpcA2121C38:
     Type: AWS::EC2::VPC
-    Condition: DeployInUSEast1
     Properties:
       CidrBlock: 10.0.0.0/16
       EnableDnsHostnames: true
@@ -23,7 +11,6 @@ Resources:
           Value: RdsTestStack/vpc
   vpcPublicSubnet1Subnet2E65531E:
     Type: AWS::EC2::Subnet
-    Condition: DeployInUSEast1
     Properties:
       CidrBlock: 10.0.0.0/18
       VpcId:
@@ -31,7 +18,7 @@ Resources:
       AvailabilityZone:
         Fn::Select:
           - 0
-          - Fn::GetAZs: !Ref DeployRegion
+          - Fn::GetAZs: ""
       MapPublicIpOnLaunch: true
       Tags:
         - Key: aws-cdk:subnet-name
@@ -42,7 +29,6 @@ Resources:
           Value: RdsTestStack/vpc/PublicSubnet1
   vpcPublicSubnet1RouteTable48A2DF9B:
     Type: AWS::EC2::RouteTable
-    Condition: DeployInUSEast1
     Properties:
       VpcId:
         Ref: vpcA2121C38
@@ -51,7 +37,6 @@ Resources:
           Value: RdsTestStack/vpc/PublicSubnet1
   vpcPublicSubnet1RouteTableAssociation5D3F4579:
     Type: AWS::EC2::SubnetRouteTableAssociation
-    Condition: DeployInUSEast1
     Properties:
       RouteTableId:
         Ref: vpcPublicSubnet1RouteTable48A2DF9B
@@ -59,7 +44,6 @@ Resources:
         Ref: vpcPublicSubnet1Subnet2E65531E
   vpcPublicSubnet1DefaultRoute10708846:
     Type: AWS::EC2::Route
-    Condition: DeployInUSEast1
     Properties:
       RouteTableId:
         Ref: vpcPublicSubnet1RouteTable48A2DF9B
@@ -70,7 +54,6 @@ Resources:
       - vpcVPCGW7984C166
   vpcPublicSubnet2Subnet009B674F:
     Type: AWS::EC2::Subnet
-    Condition: DeployInUSEast1
     Properties:
       CidrBlock: 10.0.64.0/18
       VpcId:
@@ -78,7 +61,7 @@ Resources:
       AvailabilityZone:
         Fn::Select:
           - 1
-          - Fn::GetAZs: !Ref DeployRegion
+          - Fn::GetAZs: ""
       MapPublicIpOnLaunch: true
       Tags:
         - Key: aws-cdk:subnet-name
@@ -89,7 +72,6 @@ Resources:
           Value: RdsTestStack/vpc/PublicSubnet2
   vpcPublicSubnet2RouteTableEB40D4CB:
     Type: AWS::EC2::RouteTable
-    Condition: DeployInUSEast1
     Properties:
       VpcId:
         Ref: vpcA2121C38
@@ -98,7 +80,6 @@ Resources:
           Value: RdsTestStack/vpc/PublicSubnet2
   vpcPublicSubnet2RouteTableAssociation21F81B59:
     Type: AWS::EC2::SubnetRouteTableAssociation
-    Condition: DeployInUSEast1
     Properties:
       RouteTableId:
         Ref: vpcPublicSubnet2RouteTableEB40D4CB
@@ -106,7 +87,6 @@ Resources:
         Ref: vpcPublicSubnet2Subnet009B674F
   vpcPublicSubnet2DefaultRouteA1EC0F60:
     Type: AWS::EC2::Route
-    Condition: DeployInUSEast1
     Properties:
       RouteTableId:
         Ref: vpcPublicSubnet2RouteTableEB40D4CB
@@ -117,7 +97,6 @@ Resources:
       - vpcVPCGW7984C166
   vpcIsolatedSubnet1Subnet8B28CEB3:
     Type: AWS::EC2::Subnet
-    Condition: DeployInUSEast1
     Properties:
       CidrBlock: 10.0.128.0/18
       VpcId:
@@ -125,7 +104,7 @@ Resources:
       AvailabilityZone:
         Fn::Select:
           - 0
-          - Fn::GetAZs: !Ref DeployRegion
+          - Fn::GetAZs: ""
       MapPublicIpOnLaunch: false
       Tags:
         - Key: aws-cdk:subnet-name
@@ -136,7 +115,6 @@ Resources:
           Value: RdsTestStack/vpc/IsolatedSubnet1
   vpcIsolatedSubnet1RouteTable0D6B2D3D:
     Type: AWS::EC2::RouteTable
-    Condition: DeployInUSEast1
     Properties:
       VpcId:
         Ref: vpcA2121C38
@@ -145,7 +123,6 @@ Resources:
           Value: RdsTestStack/vpc/IsolatedSubnet1
   vpcIsolatedSubnet1RouteTableAssociation172210D4:
     Type: AWS::EC2::SubnetRouteTableAssociation
-    Condition: DeployInUSEast1
     Properties:
       RouteTableId:
         Ref: vpcIsolatedSubnet1RouteTable0D6B2D3D
@@ -153,7 +130,6 @@ Resources:
         Ref: vpcIsolatedSubnet1Subnet8B28CEB3
   vpcIsolatedSubnet2Subnet2C6B375C:
     Type: AWS::EC2::Subnet
-    Condition: DeployInUSEast1
     Properties:
       CidrBlock: 10.0.192.0/18
       VpcId:
@@ -161,7 +137,7 @@ Resources:
       AvailabilityZone:
         Fn::Select:
           - 1
-          - Fn::GetAZs: !Ref DeployRegion
+          - Fn::GetAZs: ""
       MapPublicIpOnLaunch: false
       Tags:
         - Key: aws-cdk:subnet-name
@@ -172,7 +148,6 @@ Resources:
           Value: RdsTestStack/vpc/IsolatedSubnet2
   vpcIsolatedSubnet2RouteTable3455CBFC:
     Type: AWS::EC2::RouteTable
-    Condition: DeployInUSEast1
     Properties:
       VpcId:
         Ref: vpcA2121C38
@@ -181,7 +156,6 @@ Resources:
           Value: RdsTestStack/vpc/IsolatedSubnet2
   vpcIsolatedSubnet2RouteTableAssociation8A8FAF70:
     Type: AWS::EC2::SubnetRouteTableAssociation
-    Condition: DeployInUSEast1
     Properties:
       RouteTableId:
         Ref: vpcIsolatedSubnet2RouteTable3455CBFC
@@ -189,14 +163,12 @@ Resources:
         Ref: vpcIsolatedSubnet2Subnet2C6B375C
   vpcIGWE57CBDCA:
     Type: AWS::EC2::InternetGateway
-    Condition: DeployInUSEast1
     Properties:
       Tags:
         - Key: Name
           Value: RdsTestStack/vpc
   vpcVPCGW7984C166:
     Type: AWS::EC2::VPCGatewayAttachment
-    Condition: DeployInUSEast1
     Properties:
       VpcId:
         Ref: vpcA2121C38
