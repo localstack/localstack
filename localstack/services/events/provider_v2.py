@@ -57,9 +57,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if event_bus := self._event_buses.pop(event_bus_key):
             event_bus.delete()
         else:
-            raise ResourceNotFoundException(
-                f"EventBus {name} for region {context.region} does not exist"
-            )
+            raise ResourceNotFoundException(f"EventBus {name} does not exist")
 
     def _add_default_event_bus(self) -> None:
         name = "default"
@@ -78,7 +76,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def _get_event_bus(self, name: EventBusName, region: str) -> EventBus:
         event_bus_key = self._get_event_bus_key(name, region)
         if event_bus_key not in self._event_buses:
-            raise ResourceNotFoundException(f"EventBus {name} for region {region} does not exist")
+            raise ResourceNotFoundException(f"EventBus {name} does not exist")
         return self._event_buses[event_bus_key]
 
     def _get_event_bus_key(self, name: EventBusName, region: str) -> str:
