@@ -3535,6 +3535,102 @@ class TestSNSFilter:
         # assert there are no messages in the queue
         assert "Messages" not in response or response["Messages"] == []
 
+    @markers.aws.validated
+    @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    def test_filter_policy_on_message_body_array_attributes(
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription,
+        snapshot,
+        raw_message_delivery,
+        aws_client,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url_1 = sqs_create_queue()
+        queue_url_2 = sqs_create_queue()
+        subscription_1 = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url_1)
+        subscription_2 = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url_2)
+        subscription_arn_1 = subscription_1["SubscriptionArn"]
+        subscription_arn_2 = subscription_2["SubscriptionArn"]
+
+        filter_policy_1 = {"headers": {"route-to": ["queue1"]}}
+        filter_policy_2 = {"headers": {"route-to": ["queue2"]}}
+        for sub_arn, filter_policy in (
+            (subscription_arn_1, filter_policy_1),
+            (subscription_arn_2, filter_policy_2),
+        ):
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=sub_arn,
+                AttributeName="FilterPolicyScope",
+                AttributeValue="MessageBody",
+            )
+
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=sub_arn,
+                AttributeName="FilterPolicy",
+                AttributeValue=json.dumps(filter_policy),
+            )
+
+            if raw_message_delivery:
+                aws_client.sns.set_subscription_attributes(
+                    SubscriptionArn=sub_arn,
+                    AttributeName="RawMessageDelivery",
+                    AttributeValue="true",
+                )
+
+        queues = [queue_url_1, queue_url_2]
+
+        for i, queue_url in enumerate(queues):
+            response = aws_client.sqs.receive_message(
+                QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
+            )
+            snapshot.match(f"recv-init-{i}", response)
+            # assert there are no messages in the queue
+            assert "Messages" not in response or response["Messages"] == []
+
+        # publish messages that satisfies the filter policy, assert that messages are received
+        messages = [
+            {"headers": {"route-to": ["queue1"]}},
+            {"headers": {"route-to": ["queue2"]}},
+            {"headers": {"route-to": ["queue1", "queue2"]}},
+        ]
+        for i, message in enumerate(messages):
+            aws_client.sns.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
+
+        def get_messages(_queue_url: str, _recv_messages: list):
+            # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
+            sqs_response = aws_client.sqs.receive_message(
+                QueueUrl=_queue_url,
+                WaitTimeSeconds=1,
+                VisibilityTimeout=0,
+                MessageAttributeNames=["All"],
+                AttributeNames=["All"],
+            )
+            for _message in sqs_response["Messages"]:
+                _recv_messages.append(_message)
+                aws_client.sqs.delete_message(
+                    QueueUrl=_queue_url, ReceiptHandle=_message["ReceiptHandle"]
+                )
+
+            assert len(_recv_messages) == 2
+
+        for i, queue_url in enumerate(queues):
+            recv_messages = []
+            retry(
+                get_messages,
+                retries=10,
+                sleep=0.1,
+                _queue_url=queue_url,
+                _recv_messages=recv_messages,
+            )
+            # we need to sort the list (the order does not matter as we're not using FIFO)
+            recv_messages.sort(key=itemgetter("Body"))
+            snapshot.match(f"messages-queue-{i}", {"Messages": recv_messages})
+
 
 class TestSNSPlatformEndpoint:
     @markers.aws.only_localstack

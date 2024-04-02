@@ -14,6 +14,12 @@
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body[True]": {
     "last_validated_date": "2023-11-09T19:58:29+00:00"
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_attributes[False]": {
+    "last_validated_date": "2024-04-02T22:14:14+00:00"
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_attributes[True]": {
+    "last_validated_date": "2024-04-02T22:14:07+00:00"
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_dot_attribute": {
     "last_validated_date": "2023-11-09T17:50:59+00:00"
   },
