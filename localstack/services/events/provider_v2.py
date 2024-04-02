@@ -6,7 +6,6 @@ from typing import TypedDict
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
-    Arn,
     CreateEventBusResponse,
     EventBusName,
     EventBusNameOrArn,
@@ -14,11 +13,11 @@ from localstack.aws.api.events import (
     EventSourceName,
     InternalException,
     ResourceNotFoundException,
-    RoleArn,
-    RuleDescription,
-    RuleName,
-    RuleState,
     TagList,
+)
+from localstack.services.events.event_bus import (
+    EventBus,
+    EventBusDict,
 )
 from localstack.services.plugins import ServiceLifecycleHook
 
@@ -87,42 +86,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def _get_event_bus_arn(self, name: EventBusName, region: str, account_id: str) -> str:
         return f"arn:aws:events:{region}:{account_id}:event-bus/{name}"
-
-
-class EventBus:
-    def __init__(self, name: str, arn: Arn):
-        self.name = name
-        self.arn = arn
-        self._rules: RuleDict = {}
-
-    def delete(self):
-        self._rules.clear()
-
-
-EventBusDict = dict[str, EventBus]
-
-
-class Rule:
-    def __init__(
-        self,
-        name: RuleName,
-        state: RuleState = RuleState.ENABLED,
-        description: RuleDescription | None = None,
-        role_arn: RoleArn = None,
-    ):
-        self.name = name
-        self.state = state
-        self.description = description
-        self.role_arn = role_arn
-
-    def enable(self):
-        self.state = RuleState.ENABLED
-
-    def disable(self):
-        self.state = RuleState.DISABLED
-
-
-RuleDict = dict[str, Rule]
 
 
 class Event(TypedDict, total=False):
