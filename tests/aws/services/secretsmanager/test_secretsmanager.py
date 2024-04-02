@@ -9,7 +9,6 @@ from typing import Optional
 import pytest
 import requests
 from botocore.auth import SigV4Auth
-from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
@@ -367,7 +366,9 @@ class TestSecretsManager:
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @pytest.mark.parametrize("rotate_immediately", [True, None])
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Versions..KmsKeyIds"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..VersionIdsToStages", "$..Versions", "$..VersionId"]
+    )
     @markers.aws.validated
     def test_rotate_secret_with_lambda_success(
         self,
@@ -388,7 +389,9 @@ class TestSecretsManager:
             Description="testing rotation of secrets",
         )
 
-        sm_snapshot.add_transformer(SortingTransformer("Versions", lambda x: x["CreatedDate"]))
+        sm_snapshot.add_transformer(
+            sm_snapshot.transform.key_value("RotationLambdaARN", "lambda-arn")
+        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(cre_res, 0)
         )
@@ -422,6 +425,9 @@ class TestSecretsManager:
         sm_snapshot.match("rotate_secret_immediately", rot_res)
 
         self._wait_rotation(aws_client.secretsmanager, secret_name, rot_res["VersionId"])
+
+        response = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
+        sm_snapshot.match("describe_secret_rotated", response)
 
         list_secret_versions_1 = aws_client.secretsmanager.list_secret_version_ids(
             SecretId=secret_name
