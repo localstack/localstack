@@ -33,16 +33,15 @@ venv: $(VENV_ACTIVATE)    ## Create a new (empty) virtual environment
 freeze:                   ## Run pip freeze -l in the virtual environment
 	@$(VENV_RUN); pip freeze -l
 
-pip-tools: venv
-	$(VENV_RUN); $(PIP_CMD) install --upgrade pip-tools
-
-upgrade-pinned-dependencies: pip-tools
+upgrade-pinned-dependencies: venv
+	$(VENV_RUN); $(PIP_CMD) install --upgrade pip-tools pre-commit
 	$(VENV_RUN); pip-compile --upgrade --strip-extras -o requirements-basic.txt pyproject.toml
 	$(VENV_RUN); pip-compile --upgrade --extra runtime -o requirements-runtime.txt pyproject.toml
 	$(VENV_RUN); pip-compile --upgrade --extra test -o requirements-test.txt pyproject.toml
 	$(VENV_RUN); pip-compile --upgrade --extra dev -o requirements-dev.txt pyproject.toml
 	$(VENV_RUN); pip-compile --upgrade --extra typehint -o requirements-typehint.txt pyproject.toml
 	$(VENV_RUN); pip-compile --upgrade --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
+	$(VENV_RUN); pre-commit autoupdate
 
 install-basic: venv       ## Install basic dependencies for CLI usage into venv
 	$(VENV_RUN); $(PIP_CMD) install -r requirements-basic.txt
@@ -268,4 +267,4 @@ clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-.PHONY: usage freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist pip-tools upgrade-pinned-dependencies
+.PHONY: usage freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-run docker-mount-run docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code lint lint-modified format format-modified init-precommit clean clean-dist upgrade-pinned-dependencies
