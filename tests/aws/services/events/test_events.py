@@ -727,6 +727,23 @@ class TestEventsEventBus:
         response = events.list_event_buses()
         snapshot.match("list-event-buses-delete", response)
 
+    @markers.aws.validated
+    def test_list_event_buses_with_prefix(self, aws_client, cleanups, snapshot):
+        events = aws_client.events
+        bus_name = "test-bus"
+        bus_name_not_match = "no-prefix-match"
+
+        events.create_event_bus(Name=bus_name)
+        cleanups.append(lambda: events.delete_event_bus(Name=bus_name))
+        events.create_event_bus(Name=bus_name_not_match)
+        cleanups.append(lambda: events.delete_event_bus(Name=bus_name_not_match))
+
+        response = events.list_event_buses(NamePrefix=bus_name)
+        snapshot.match("list-event-buses-prefix-complete-name", response)
+
+        response = events.list_event_buses(NamePrefix=bus_name.split("-")[0])
+        snapshot.match("list-event-buses-prefix", response)
+
     @markers.aws.unknown
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")

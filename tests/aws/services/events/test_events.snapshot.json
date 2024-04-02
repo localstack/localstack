@@ -274,5 +274,38 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_desribe_delete_not_existing_event_bus": {
+    "recorded-date": "02-04-2024, 13:20:57",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_list_event_buses_with_prefix": {
+    "recorded-date": "03-04-2024, 14:38:19",
+    "recorded-content": {
+      "list-event-buses-prefix-complete-name": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
+            "Name": "test-bus"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-prefix": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
+            "Name": "test-bus"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
