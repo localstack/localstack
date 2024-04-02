@@ -35,9 +35,9 @@ aws-cdk-asset-awscli-v1==2.2.202
     # via aws-cdk-lib
 aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
-aws-cdk-asset-node-proxy-agent-v6==2.0.1
+aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.133.0
+aws-cdk-lib==2.135.0
     # via localstack-core
 aws-sam-translator==1.86.0
     # via
@@ -47,7 +47,7 @@ aws-xray-sdk==2.13.0
     # via moto-ext
 awscli==1.32.74
     # via localstack-core
-awscrt==0.20.5
+awscrt==0.20.6
     # via localstack-core
 blinker==1.7.0
     # via
@@ -69,7 +69,7 @@ botocore==1.34.74
     #   localstack-snapshot
     #   moto-ext
     #   s3transfer
-build==1.1.1
+build==1.2.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -123,7 +123,7 @@ cryptography==42.0.5
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.0.9
+cython==3.0.10
     # via localstack-core (pyproject.toml)
 decorator==5.1.1
     # via jsonpath-rw
@@ -154,7 +154,7 @@ docopt==0.6.2
     # via coveralls
 docutils==0.16
     # via awscli
-filelock==3.13.1
+filelock==3.13.3
     # via virtualenv
 flask==3.0.2
     # via
@@ -174,7 +174,7 @@ h2==4.1.0
     #   localstack-twisted
 hpack==4.0.0
     # via h2
-httpcore==1.0.4
+httpcore==1.0.5
     # via httpx
 httpx[http2]==0.27.0
     # via localstack-core
@@ -346,9 +346,9 @@ publication==0.0.3
     #   jsii
 py-partiql-parser==0.5.1
     # via moto-ext
-pyasn1==0.5.1
+pyasn1==0.6.0
     # via rsa
-pycparser==2.21
+pycparser==2.22
     # via cffi
 pydantic==2.6.4
     # via aws-sam-translator
@@ -356,7 +356,7 @@ pydantic-core==2.16.3
     # via pydantic
 pygments==2.17.2
     # via rich
-pymongo==4.6.2
+pymongo==4.6.3
     # via localstack-core
 pyopenssl==24.1.0
     # via
@@ -402,7 +402,7 @@ pyyaml==6.0.1
     #   moto-ext
     #   pre-commit
     #   responses
-quart==0.19.4
+quart==0.19.5
     # via localstack-core
 readerwriterlock==1.0.9
     # via localstack-core
@@ -446,7 +446,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.3.4
+ruff==0.3.5
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.1
     # via
@@ -512,7 +512,7 @@ websocket-client==1.7.0
     # via
     #   docker
     #   localstack-core
-werkzeug==3.0.1
+werkzeug==3.0.2
     # via
     #   flask
     #   localstack-core
