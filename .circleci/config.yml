@@ -679,6 +679,10 @@ workflows:
           requires:
             - preflight
             - test-selection
+      - itest-events-v2-provider:
+          requires:
+            - preflight
+            - test-selection
       - unit-tests:
           requires:
             - preflight
