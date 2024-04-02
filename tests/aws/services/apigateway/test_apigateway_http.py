@@ -1,4 +1,5 @@
 import json
+from http import HTTPMethod
 
 import pytest
 import requests
@@ -101,3 +102,47 @@ def test_http_integration_with_lambda(
     # retry is necessary against AWS, probably IAM permission delay
     invoke_response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
     snapshot.match("http-invocation-lambda-url", invoke_response)
+
+
+@markers.aws.validated
+@pytest.mark.parametrize("integration_type", ["HTTP", "HTTP_PROXY"])
+def test_http_integration_invoke_status_code_passthrough(
+    aws_client,
+    create_status_code_echo_server,
+    create_rest_api_with_integration,
+    snapshot,
+    integration_type,
+):
+    # Create echo serve
+    echo_server_url = create_status_code_echo_server()
+    # Create apigw
+    stage_name = "test"
+    apigw_id = create_rest_api_with_integration(
+        integration_uri=f"{echo_server_url}{{map}}",
+        integration_type=integration_type,
+        path_part="{map+}",
+        req_parameters={
+            "integration.request.path.map": "method.request.path.map",
+        },
+        stage=stage_name,
+    )
+
+    def invoke_api(url: str, method: HTTPMethod = HTTPMethod.POST):
+        response = requests.request(url=url, method=method)
+        status_code = response.status_code
+        assert status_code != 403
+        return {"body": response.json(), "status_code": status_code}
+
+    invocation_url = api_invoke_url(
+        api_id=apigw_id,
+        stage=stage_name,
+        path="/status",
+    )
+
+    # Invoke with matching response code
+    invoke_response = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/200")
+    snapshot.match("matching-response", invoke_response)
+
+    # invoke non matching response code
+    invoke_response = retry(invoke_api, sleep=2, retries=10, url=f"{invocation_url}/400")
+    snapshot.match("non-matching-response", invoke_response)

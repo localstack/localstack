@@ -802,9 +802,10 @@ class HTTPIntegration(BackendIntegration):
                 uri,
                 result.status_code,
             )
-        # apply custom response template
+        # apply custom response template for non-proxy integration
         invocation_context.response = result
-        self.response_templates.render(invocation_context)
+        if integration["type"] != "HTTP_PROXY":
+            self.response_templates.render(invocation_context)
         return invocation_context.response
 
 
