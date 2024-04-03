@@ -708,24 +708,33 @@ class TestEvents:
 
 class TestEventsEventBus:
     @markers.aws.validated
-    def test_create_list_describe_delete_custom_event_bus(self, aws_client, snapshot):
-        events = aws_client.events
+    @pytest.mark.parametrize("regions", [["us-east-1"], ["us-east-1", "us-west-1", "eu-central-1"]])
+    def test_create_list_describe_delete_custom_event_buses(
+        self, aws_client_factory, regions, snapshot
+    ):
         bus_name = "test-bus"
 
-        response = events.create_event_bus(Name=bus_name)
-        snapshot.match("create-custom-event-bus", response)
+        for region in regions:
+            events = aws_client_factory(region_name=region).events
 
-        response = events.list_event_buses()
-        snapshot.match("list-event-buses-create", response)
+            response = events.create_event_bus(Name=bus_name)
+            snapshot.match(f"create-custom-event-bus-{region}", response)
 
-        response = events.describe_event_bus(Name=bus_name)
-        snapshot.match("describe-custom-event-bus", response)
+            response = events.list_event_buses()
+            snapshot.match(f"list-event-buses-after-create-{region}", response)
 
-        response = events.delete_event_bus(Name=bus_name)
-        snapshot.match("delete-custom-event-bus", response)
+            response = events.describe_event_bus(Name=bus_name)
+            snapshot.match(f"describe-custom-event-bus-{region}", response)
 
-        response = events.list_event_buses()
-        snapshot.match("list-event-buses-delete", response)
+        # multiple event buses with same name in multiple regions before deleting them
+        for region in regions:
+            events = aws_client_factory(region_name=region).events
+
+            response = events.delete_event_bus(Name=bus_name)
+            snapshot.match(f"delete-custom-event-bus-{region}", response)
+
+            response = events.list_event_buses()
+            snapshot.match(f"list-event-buses-after-delete-{region}", response)
 
     @markers.aws.validated
     def test_describe_delete_not_existing_event_bus(self, aws_client, snapshot):
