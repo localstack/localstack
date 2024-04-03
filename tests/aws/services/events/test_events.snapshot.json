@@ -359,10 +359,10 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventsEventBus::test_describe_delete_not_existing_event_bus": {
-    "recorded-date": "03-04-2024, 11:38:11",
+    "recorded-date": "03-04-2024, 15:19:23",
     "recorded-content": {
-      "describe-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus test-bus does not exist.') tblen=3>",
-      "delete-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus test-bus does not exist.') tblen=3>"
+      "describe-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>",
+      "delete-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {

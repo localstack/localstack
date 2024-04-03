@@ -739,7 +739,8 @@ class TestEventsEventBus:
     @markers.aws.validated
     def test_describe_delete_not_existing_event_bus(self, aws_client, snapshot):
         events = aws_client.events
-        bus_name = "test-bus"
+        bus_name = f"this-bus-does-not-exist-1234567890-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
 
         with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as e:
             events.describe_event_bus(Name=bus_name)
