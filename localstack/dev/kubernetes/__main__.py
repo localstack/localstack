@@ -6,7 +6,7 @@ import yaml
 from localstack import version as localstack_version
 
 
-def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, write: bool = False):
+def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False):
     volumes = []
     root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
     localstack_code_path = os.path.join(root_path, "localstack")
@@ -45,17 +45,6 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, wri
 
     config = {"apiVersion": "k3d.io/v1alpha3", "kind": "Simple", "volumes": volumes}
 
-    if write:
-        path = os.path.join(os.getcwd(), "cluster-config.yaml")
-        with open(path, "w") as f:
-            f.write(yaml.dump(config))
-            f.close()
-            print(f"Generated kubernetes cluster configuration file at {path}")
-    else:
-        print("Generated kubernetes cluster configuration:")
-        print("=====================================")
-        print(yaml.dump(config))
-        print("=====================================")
     return config
 
 
