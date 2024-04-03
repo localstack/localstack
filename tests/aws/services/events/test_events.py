@@ -737,6 +737,15 @@ class TestEventsEventBus:
             snapshot.match(f"list-event-buses-after-delete-{region}", response)
 
     @markers.aws.validated
+    def test_create_multiple_event_buses_same_name(self, create_event_bus, aws_client, snapshot):
+        bus_name = "test-bus"
+        create_event_bus(bus_name)
+
+        with pytest.raises(aws_client.events.exceptions.ResourceAlreadyExistsException) as e:
+            create_event_bus(bus_name)
+        snapshot.match("create-multiple-event-buses-same-name", e)
+
+    @markers.aws.validated
     def test_describe_delete_not_existing_event_bus(self, aws_client, snapshot):
         events = aws_client.events
         bus_name = f"this-bus-does-not-exist-1234567890-{short_uid()}"

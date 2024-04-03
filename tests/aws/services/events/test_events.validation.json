@@ -35,6 +35,9 @@
   "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
     "last_validated_date": "2024-04-03T13:49:10+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_multiple_event_buses_same_name": {
+    "last_validated_date": "2024-04-03T15:30:52+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventsEventBus::test_describe_delete_not_existing_event_bus": {
     "last_validated_date": "2024-04-03T15:19:23+00:00"
   },

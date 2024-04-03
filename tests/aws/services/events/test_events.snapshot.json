@@ -570,5 +570,11 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_multiple_event_buses_same_name": {
+    "recorded-date": "03-04-2024, 15:30:52",
+    "recorded-content": {
+      "create-multiple-event-buses-same-name": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateEventBus operation: Event bus test-bus already exists.') tblen=4>"
+    }
   }
 }
