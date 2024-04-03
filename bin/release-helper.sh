@@ -159,8 +159,8 @@ function cmd-set-dep-ver() {
     dep=$1
     ver=$2
 
-    grep -Eh "^(\s*\")${dep}(\[[a-zA-Z0-9]+\])?(>|=|<)(.*\",)" ${DEPENDENCY_FILE} || { echo "dependency ${dep} not found in ${DEPENDENCY_FILE}"; return 1; }
-    sed -i -r "s/^(\s*\")(${dep})(\[[a-zA-Z0-9,]+\])?(>|=|<)(.*\",)/\1\2\3${ver}\",/g" ${DEPENDENCY_FILE}
+    egrep -h "^(\s*\"?)(${dep})(\[[a-zA-Z0-9,]+\])?(>=|==|<=)([^\"]*)(\")?(,)?$" ${DEPENDENCY_FILE} || { echo "dependency ${dep} not found in ${DEPENDENCY_FILE}"; return 1; }
+    sed -i -r "s/^(\s*\"?)(${dep})(\[[a-zA-Z0-9,]+\])?(>=|==|<=)([^\"]*)(\")?(,)?$/\1\2\3${ver}\6\7/g" ${DEPENDENCY_FILE}
 }
 
 function cmd-github-outputs() {
@@ -192,13 +192,17 @@ function cmd-git-commit-release() {
 
     echo $1 || verify_valid_version
 
-    git add ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}
+    for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
+            [ -e "$file" ] && git add "$file"
+    done
     git commit -m "release version ${1}"
     git tag -a "v${1}" -m "Release version ${1}"
 }
 
 function cmd-git-commit-increment() {
-    git add ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}
+    for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
+            [ -e "$file" ] && git add "$file"
+    done
     git commit -m "prepare next development iteration"
 }
 
