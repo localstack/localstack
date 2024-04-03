@@ -17,13 +17,21 @@ class InvalidEventPatternException(Exception):
         self.message = message or f"Event pattern is not valid. Reason: {reason}"
 
 
-# TODO: consider renaming this method to something more intention-revealing, for example `matches_rule(event, rule)`
-#  inspired by the AWS event-ruler API: https://github.com/aws/event-ruler
-def filter_event(event_pattern_filter: dict[str, any], event: dict[str, Any]):
-    """Matches an `event_pattern_filter` to an `event`.
-    Returns True if the `event_pattern_filter` matches the given `event` or False otherwise.
+def matches_event(event_pattern: dict[str, any], event: dict[str, Any]) -> bool:
+    """Decides whether an event pattern matches an event or not.
+    Returns True if the `event_pattern` matches the given `event` and False otherwise.
+
+    Implements "Amazon EventBridge event patterns":
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
+    Used in different places:
+    * EventBridge: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
+    * Lambda ESM: https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html
+    * EventBridge Pipes: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html
+    * SNS: https://docs.aws.amazon.com/sns/latest/dg/sns-subscription-filter-policies.html
+
+    Open source AWS rule engine: https://github.com/aws/event-ruler
     """
-    for key, value in event_pattern_filter.items():
+    for key, value in event_pattern.items():
         fallback = object()
         # Keys are case-sensitive according to the test case `key_case_sensitive_NEG`
         event_value = event.get(key, fallback)
@@ -67,7 +75,7 @@ def filter_event(event_pattern_filter: dict[str, any], event: dict[str, Any]):
             try:
                 # TODO: validate whether inner JSON-encoded strings actually get decoded recursively
                 value = json.loads(value) if isinstance(value, str) else value
-                if isinstance(value, dict) and not filter_event(value, event_value):
+                if isinstance(value, dict) and not matches_event(value, event_value):
                     return False
             except json.decoder.JSONDecodeError:
                 return False

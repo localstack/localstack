@@ -30,6 +30,8 @@ def filter_stream_records(records, filters: list[FilterCriteria]):
 
 def does_match_event(event_pattern: dict[str, any], event: dict[str, any]) -> bool:
     """Decides whether an event pattern matches an event or not.
+    Returns True if the `event_pattern` matches the given `event` and False otherwise.
+
     Implements "Amazon EventBridge event patterns":
     https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
     Used in different places:

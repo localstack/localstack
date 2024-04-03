@@ -41,7 +41,7 @@ from localstack.http import route
 from localstack.services.edge import ROUTER
 from localstack.services.events.models import EventsStore, events_stores
 from localstack.services.events.scheduler import JobScheduler
-from localstack.services.events.utils import filter_event
+from localstack.services.events.utils import matches_event
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import event_bus_arn, parse_arn
@@ -116,7 +116,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         # TODO: unify all these different implementation below ;)
 
         # EventBridge implementation:
-        result = filter_event(event_pattern_dict, event_dict)
+        result = matches_event(event_pattern_dict, event_dict)
 
         # EventSourceMapping implementation:
         # result = does_match_event(event_pattern_dict, event_dict)
@@ -409,7 +409,7 @@ def filter_event_based_on_event_format(
         return False
     if rule_information.event_pattern._pattern:
         event_pattern = rule_information.event_pattern._pattern
-        if not filter_event(event_pattern, event):
+        if not matches_event(event_pattern, event):
             return False
     return True
 
