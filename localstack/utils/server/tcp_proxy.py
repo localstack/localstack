@@ -33,8 +33,8 @@ class TCPProxy(Server):
         self._thread_pool = ThreadPoolExecutor(thread_name_prefix="tcp-proxy")
         self._server_socket = None
 
-    def do_run(self):
-        def handle_request(s_src: socket.socket):
+    def _handle_request(self, s_src: socket.socket):
+        try:
             s_dst = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             with s_src as s_src, s_dst as s_dst:
                 s_dst.connect((self._target_address, self._target_port))
@@ -59,16 +59,26 @@ class TCPProxy(Server):
                                 return
                         elif s == s_dst:
                             s_src.sendall(data)
+        except Exception as e:
+            LOG.error(
+                "Error while handling request from %s to %s:%s: %s",
+                s_src.getpeername(),
+                self._target_address,
+                self._target_port,
+                e,
+            )
 
+    def do_run(self):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind((self.host, self.port))
         self._server_socket.listen(1)
         self._server_socket.settimeout(10)
+
         with self._server_socket:
             while self.is_running():
                 try:
                     src_socket, _ = self._server_socket.accept()
-                    self._thread_pool.submit(handle_request, src_socket)
+                    self._thread_pool.submit(self._handle_request, src_socket)
                 except socket.timeout:
                     pass
                 except OSError as e:
