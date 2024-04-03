@@ -83,7 +83,7 @@ class TCPProxy(Server):
         )
 
         with self._server_socket:
-            while self.is_running():
+            while not self._stopped.is_set():
                 try:
                     src_socket, _ = self._server_socket.accept()
                     self._thread_pool.submit(self._handle_request, src_socket)
