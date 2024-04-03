@@ -34,6 +34,7 @@ class TCPProxy(Server):
         self._server_socket = None
 
     def _handle_request(self, s_src: socket.socket):
+        LOG.debug("Got new connection from %s", s_src.getpeername())
         try:
             s_dst = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             with s_src as s_src, s_dst as s_dst:
@@ -73,6 +74,13 @@ class TCPProxy(Server):
         self._server_socket.bind((self.host, self.port))
         self._server_socket.listen(1)
         self._server_socket.settimeout(10)
+        LOG.debug(
+            "Starting TCP proxy bound on %s:%s forwarding to %s:%s",
+            self.host,
+            self.port,
+            self._target_address,
+            self._target_port,
+        )
 
         with self._server_socket:
             while self.is_running():
@@ -85,8 +93,10 @@ class TCPProxy(Server):
                     # avoid creating an error message if OSError is thrown due to socket closing
                     if self.is_running():
                         LOG.warning("Error during during TCPProxy socket accept: %s", e)
+            LOG.debug("TCP server stopped")
 
     def do_shutdown(self):
+        LOG.debug("Shutting down proxy...")
         if self._server_socket:
             self._server_socket.shutdown(socket.SHUT_RDWR)
             self._server_socket.close()
