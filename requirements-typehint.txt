@@ -277,7 +277,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext[all]==5.0.3.post1
+moto-ext[all]==5.0.4.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -540,7 +540,7 @@ publication==0.0.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-py-partiql-parser==0.5.1
+py-partiql-parser==0.5.2
     # via moto-ext
 pyasn1==0.6.0
     # via rsa
