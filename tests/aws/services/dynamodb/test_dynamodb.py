@@ -2054,3 +2054,77 @@ class TestDynamoDB:
 
         retry(lambda: _get_records_amount(5), sleep=1, retries=3)
         snapshot.match("get-records", {"Records": records})
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..SizeBytes",
+            "$..DeletionProtectionEnabled",
+            "$..ProvisionedThroughput.NumberOfDecreasesToday",
+            "$..StreamDescription.CreationRequestDateTime",
+        ]
+    )
+    def test_transact_write_items_streaming_for_different_tables(
+        self,
+        dynamodb_create_table_with_parameters,
+        wait_for_dynamodb_stream_ready,
+        snapshot,
+        aws_client,
+        dynamodbstreams_snapshot_transformers,
+    ):
+        # TODO: add a test with both Kinesis and DDBStreams destinations
+        table_name_stream = f"test-ddb-table-{short_uid()}"
+        table_name_no_stream = f"test-ddb-table-{short_uid()}"
+        create_table_stream = dynamodb_create_table_with_parameters(
+            TableName=table_name_stream,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            StreamSpecification={"StreamEnabled": True, "StreamViewType": "NEW_AND_OLD_IMAGES"},
+        )
+        snapshot.match("create-table-stream", create_table_stream)
+
+        create_table_no_stream = dynamodb_create_table_with_parameters(
+            TableName=table_name_no_stream,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        snapshot.match("create-table-no-stream", create_table_no_stream)
+
+        stream_arn = create_table_stream["TableDescription"]["LatestStreamArn"]
+        wait_for_dynamodb_stream_ready(stream_arn=stream_arn)
+
+        describe_stream_result = aws_client.dynamodbstreams.describe_stream(StreamArn=stream_arn)
+        snapshot.match("describe-stream", describe_stream_result)
+
+        shard_id = describe_stream_result["StreamDescription"]["Shards"][0]["ShardId"]
+        shard_iterator = aws_client.dynamodbstreams.get_shard_iterator(
+            StreamArn=stream_arn, ShardId=shard_id, ShardIteratorType="TRIM_HORIZON"
+        )["ShardIterator"]
+
+        # Call TransactWriteItems on the 2 different tables at once
+        response = aws_client.dynamodb.transact_write_items(
+            TransactItems=[
+                {"Put": {"TableName": table_name_no_stream, "Item": {"id": {"S": "Fred"}}}},
+                {"Put": {"TableName": table_name_stream, "Item": {"id": {"S": "Fred"}}}},
+            ]
+        )
+        snapshot.match("transact-write-two-tables", response)
+
+        # Total amount of records should be 1:
+        # - TransactWriteItem on Fred insert for TableStream
+        records = []
+
+        def _get_records_amount(record_amount: int):
+            nonlocal shard_iterator
+            if len(records) < record_amount:
+                _resp = aws_client.dynamodbstreams.get_records(ShardIterator=shard_iterator)
+                records.extend(_resp["Records"])
+                if next_shard_iterator := _resp.get("NextShardIterator"):
+                    shard_iterator = next_shard_iterator
+
+            assert len(records) >= record_amount
+
+        retry(lambda: _get_records_amount(1), sleep=1, retries=3)
+        snapshot.match("get-records", {"Records": records})

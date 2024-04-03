@@ -1760,6 +1760,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             record = self.get_record_template(region_name)
             match request:
                 case {"Put": {"TableName": table_name, "Item": new_item}}:
+                    if not (stream_type := tables_stream_type.get(table_name)):
+                        continue
                     keys = SchemaExtractor.extract_keys(
                         item=new_item,
                         table_name=table_name,
@@ -1772,7 +1774,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     if existing_item == new_item:
                         continue
 
-                    stream_type = tables_stream_type[table_name]
                     if stream_type.stream_view_type:
                         record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
 
@@ -1790,6 +1791,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     continue
 
                 case {"Update": {"TableName": table_name, "Key": keys}}:
+                    if not (stream_type := tables_stream_type.get(table_name)):
+                        continue
                     updated_item = find_item_for_keys_values_in_batch(
                         table_name, keys, updated_items
                     )
@@ -1800,7 +1803,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         table_name, keys, existing_items
                     )
 
-                    stream_type = tables_stream_type[table_name]
                     if stream_type.stream_view_type:
                         record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
 
@@ -1818,13 +1820,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     continue
 
                 case {"Delete": {"TableName": table_name, "Key": keys}}:
+                    if not (stream_type := tables_stream_type.get(table_name)):
+                        continue
+
                     existing_item = find_item_for_keys_values_in_batch(
                         table_name, keys, existing_items
                     )
                     if not existing_item:
                         continue
 
-                    stream_type = tables_stream_type[table_name]
                     if stream_type.stream_view_type:
                         record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
 
