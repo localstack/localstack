@@ -1,7 +1,4 @@
 .antlr
 /.antlr*
 *.tokens
-<<<<<<< HEAD
 *.interp
-=======
->>>>>>> bea8438a7 (move antlr .gitignore to sfn project)
