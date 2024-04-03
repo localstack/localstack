@@ -83,6 +83,7 @@ from localstack.aws.api.lambda_ import (
     ListProvisionedConcurrencyConfigsResponse,
     ListTagsResponse,
     ListVersionsByFunctionResponse,
+    LogFormat,
     LoggingConfig,
     LogType,
     MasterRegion,
@@ -908,9 +909,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         reason="The function is being created.",
                     ),
                     logging_config=LoggingConfig(
-                        log_format="Text",
-                        log_group=f"/aws/lambda/{function_name}"
-                    )
+                        LogFormat=LogFormat.Text, LogGroup=f"/aws/lambda/{function_name}"
+                    ),
                 ),
             )
             fn.versions["$LATEST"] = version
@@ -1048,6 +1048,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 entrypoint=new_image_config.get("EntryPoint"),
                 working_directory=new_image_config.get("WorkingDirectory"),
             )
+
+        if "LoggingConfig" in request:
+            lambda_config = request["LoggingConfig"]
+            # when switching to JSON, app and system level log is auto set to INFO
+            if lambda_config.get("LogFormat", None) == LogFormat.JSON:
+                lambda_config = {
+                    "ApplicationLogLevel": "INFO",
+                    "SystemLogLevel": "INFO",
+                } | lambda_config
+
+            last_config = latest_version_config.logging_config
+
+            # add partial update
+            replace_kwargs["logging_config"] = last_config | lambda_config
 
         if "TracingConfig" in request:
             new_mode = request.get("TracingConfig", {}).get("Mode")
