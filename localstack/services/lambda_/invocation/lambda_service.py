@@ -149,6 +149,16 @@ class LambdaService:
 
         return event_manager
 
+    def _start_lambda_version(self, version_manager: LambdaVersionManager) -> None:
+        with self.update_locks[version_manager.function_version.id.qualified_arn()]:
+            if update_context.is_cancelled:
+                update_context.stopped = True
+                return
+            new_state = version_manager.start()
+            self.update_version_state(
+                function_version=version_manager.function_version, new_state=new_state
+            )
+
     def create_function_version(self, function_version: FunctionVersion) -> Future[None]:
         """
         Creates a new function version (manager), and puts it in the startup dict
@@ -160,22 +170,19 @@ class LambdaService:
             version_manager = self.lambda_starting_versions.get(qualified_arn)
             if version_manager:
                 raise Exception(
-                    "Version '%s' already starting up and in state %s",
-                    qualified_arn,
-                    version_manager.state,
+                    f"Version '{qualified_arn}' already starting up and in state {version_manager.state}"
                 )
             state = lambda_stores[function_version.id.account][function_version.id.region]
             fn = state.functions.get(function_version.id.function_name)
             version_manager = LambdaVersionManager(
                 function_arn=qualified_arn,
                 function_version=function_version,
-                lambda_service=self,
                 function=fn,
                 counting_service=self.counting_service,
                 assignment_service=self.assignment_service,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
-        return self.task_executor.submit(version_manager.start)
+        return self.task_executor.submit(self._start_lambda_version, version_manager)
 
     def publish_version(self, function_version: FunctionVersion):
         """
@@ -201,13 +208,12 @@ class LambdaService:
             version_manager = LambdaVersionManager(
                 function_arn=qualified_arn,
                 function_version=function_version,
-                lambda_service=self,
                 function=fn,
                 counting_service=self.counting_service,
                 assignment_service=self.assignment_service,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
-        version_manager.start()
+        self._start_lambda_version(version_manager)
 
     # Commands
     def invoke(

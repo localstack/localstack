@@ -456,12 +456,14 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         # cache the result to save time upon every invocation.
         get_runtime_client_path()
         if function_version.config.code:
+            # FIXME parallelize could be a problem
             function_version.config.code.prepare_for_execution()
             image_name = resolver.get_image_for_runtime(function_version.config.runtime)
             platform = docker_platform(function_version.config.architectures[0])
             # Pull image for a given platform upon function creation such that invocations do not time out.
             if (image_name, platform) not in PULLED_IMAGES:
                 try:
+                    # FIXME not specific to update, kinda sucks, multiple parallel downloads
                     CONTAINER_CLIENT.pull_image(image_name, platform)
                     PULLED_IMAGES.add((image_name, platform))
                 except NoSuchImage as e:
