@@ -8,16 +8,12 @@
     "region": "us-east-2",
     "time": "2022-07-13T13:48:01Z",
     "detail": {
-      "c-count": 42,
-      "d-count": 9,
-      "x-limit": 3.018e2
+      "equal": 5,
     }
   },
   "EventPattern": {
     "detail": {
-      "c-count": [ { "numeric": [ ">", 0, "<=", 5 ] } ],
-      "d-count": [ { "numeric": [ "<", 10 ] } ],
-      "x-limit": [ { "numeric": [ "=", 3.018e2 ] } ]
+      "equal": [ { "NUMERIC": [ "=", 5 ] } ],
     }
   }
 }

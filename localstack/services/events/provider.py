@@ -110,10 +110,28 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Test event pattern uses EventBridge event pattern matching:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
         """
-        event_pattern_dict = json.loads(str(event_pattern))
-        event_dict = json.loads(str(event))
+        event_pattern_dict = json.loads(event_pattern)
+        event_dict = json.loads(event)
 
+        # TODO: unify all these different implementation below ;)
+
+        # EventBridge implementation:
         result = filter_event(event_pattern_dict, event_dict)
+
+        # EventSourceMapping implementation:
+        # result = does_match_event(event_pattern_dict, event_dict)
+
+        # moto implementation:
+        # from moto.events.models import EventPattern as EventPatternMoto
+        #
+        # event_pattern = EventPatternMoto.load(event_pattern)
+        # result = event_pattern.matches_event(event_dict)
+
+        # SNS:
+        # from localstack.services.sns.publisher import SubscriptionFilter
+        # subscription_filter = SubscriptionFilter()
+        # result = subscription_filter._evaluate_nested_filter_policy_on_dict(event_pattern_dict, event_dict)
+
         return TestEventPatternResponse(Result=result)
 
     @staticmethod
