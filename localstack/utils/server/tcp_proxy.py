@@ -41,7 +41,7 @@ class TCPProxy(Server):
                 s_dst.connect((self._target_address, self._target_port))
 
                 sockets = [s_src, s_dst]
-                while self.is_running():
+                while not self._stopped.is_set():
                     s_read, _, _ = select.select(sockets, [], [], 1)
 
                     for s in s_read:
@@ -91,7 +91,7 @@ class TCPProxy(Server):
                     pass
                 except OSError as e:
                     # avoid creating an error message if OSError is thrown due to socket closing
-                    if self.is_running():
+                    if not self._stopped.is_set():
                         LOG.warning("Error during during TCPProxy socket accept: %s", e)
             LOG.debug("TCP server stopped")
 
