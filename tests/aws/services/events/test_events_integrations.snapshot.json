@@ -1,0 +1,153 @@
+{
+  "tests/aws/services/events/test_events_integrations.py::test_put_events_with_target_lambda_list_entry": {
+    "recorded-date": "03-04-2024, 19:52:23",
+    "recorded-content": {
+      "events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "payload": {
+              "userId": 10,
+              "businessId": 3,
+              "channelId": 6,
+              "card": {
+                "planLimitImposed": false,
+                "createdAt": "2024-02-09T14: 47: 22.694Z",
+                "updatedAt": "2024-02-20T16: 31: 53.468Z",
+                "id": "<uuid:2>",
+                "channelId": 6,
+                "userId": 10,
+                "sequenceNumber": 1,
+                "threadId": "<uuid:3>",
+                "cardDefinitionId": null,
+                "workflowTemplateId": "<uuid:4>",
+                "urgent": false,
+                "timezone": "America/New_York",
+                "name": "test 11143r",
+                "startDate": null,
+                "startDateOffset": 0,
+                "endDateOffset": null,
+                "recurrenceDate": "2024-02-09T14: 47: 22.694Z",
+                "fields": {
+                  "name": "test 11143r",
+                  "userId": [
+                    10
+                  ],
+                  "version": "v1",
+                  "createdAt": "2024-02-09T14: 47: 22.694Z",
+                  "updatedAt": "2024-02-20T16: 31: 53.468Z",
+                  "sequenceNumber": 1
+                },
+                "deletedAt": null,
+                "kanbanSortKey": "1707490042553",
+                "status": "ACTIVE",
+                "assignees": [],
+                "tags": [],
+                "relatedCards": [],
+                "cardReminders": [],
+                "entityRecurrence": null
+              },
+              "targetEntity": true,
+              "entityAuditTrailEvent": {
+                "timestamp": "timestamp",
+                "workflowTemplateId": "<uuid:4>",
+                "userId": 10,
+                "cardId": "<uuid:2>",
+                "entries": [
+                  {
+                    "componentId": "name",
+                    "componentType": "TEXT",
+                    "newData": {
+                      "value": "test 11143r"
+                    },
+                    "originalData": {
+                      "value": "test 11143r43"
+                    }
+                  }
+                ]
+              },
+              "automations": [
+                {
+                  "id": "123",
+                  "actions": [
+                    {
+                      "id": "321",
+                      "type": "SEND_NOTIFICATION",
+                      "settings": {
+                        "message": "",
+                        "recipientEmails": [],
+                        "subject": "",
+                        "type": "SEND_NOTIFICATION"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_integrations.py::test_put_events_with_target_lambda_list_entries_partial_match": {
+    "recorded-date": "03-04-2024, 20:00:13",
+    "recorded-content": {
+      "events": [
+        {
+          "version": "0",
+          "id": "<uuid:1>",
+          "detail-type": "core.update-account-command",
+          "source": "core.update-account-command",
+          "account": "111111111111",
+          "time": "date",
+          "region": "<region>",
+          "resources": [],
+          "detail": {
+            "payload": {
+              "userId": 10,
+              "businessId": 3,
+              "channelId": 6,
+              "card": {
+                "foo": "bar"
+              },
+              "targetEntity": true,
+              "entityAuditTrailEvent": {
+                "foo": "bar"
+              },
+              "automations": [
+                {
+                  "foo": "bar"
+                },
+                {
+                  "id": "123",
+                  "actions": [
+                    {
+                      "id": "321",
+                      "type": "SEND_NOTIFICATION",
+                      "settings": {
+                        "message": "",
+                        "recipientEmails": [],
+                        "subject": "",
+                        "type": "SEND_NOTIFICATION"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "bar": "foo"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
