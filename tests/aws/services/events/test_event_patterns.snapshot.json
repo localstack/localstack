@@ -1,74 +1,128 @@
 {
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_repeating]": {
-    "recorded-date": "28-03-2024, 21:25:30",
+    "recorded-date": "03-04-2024, 18:22:21",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_suffix_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:30",
+    "recorded-date": "03-04-2024, 18:22:21",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[complex_multi_match]": {
-    "recorded-date": "28-03-2024, 21:25:30",
+    "recorded-date": "03-04-2024, 18:22:21",
     "recorded-content": {}
   },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[int_nolist_EXC]": {
+    "recorded-date": "03-04-2024, 18:22:22",
+    "recorded-content": {
+      "int_nolist_EXC": {
+        "exception_message": {
+          "Error": {
+            "Code": "InvalidEventPatternException",
+            "Message": "Event pattern is not valid. Reason: \"int\" must be an object or an array\n at [Source: (String)\"{\"int\": 42}\"; line: 1, column: 11]"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 400
+          }
+        },
+        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
+      }
+    }
+  },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[arrays]": {
-    "recorded-date": "28-03-2024, 21:25:31",
+    "recorded-date": "03-04-2024, 18:22:22",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_repeating_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:31",
+    "recorded-date": "03-04-2024, 18:22:22",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_ignorecase_list_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:31",
+    "recorded-date": "03-04-2024, 18:22:22",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_simplified]": {
-    "recorded-date": "28-03-2024, 21:25:31",
+    "recorded-date": "03-04-2024, 18:22:23",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[or-exists]": {
-    "recorded-date": "28-03-2024, 21:25:31",
+    "recorded-date": "03-04-2024, 18:22:23",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_nonrepeating]": {
-    "recorded-date": "28-03-2024, 21:25:32",
+    "recorded-date": "03-04-2024, 18:22:23",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[complex_multi_match_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:32",
+    "recorded-date": "03-04-2024, 18:22:23",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_string]": {
-    "recorded-date": "28-03-2024, 21:25:32",
+    "recorded-date": "03-04-2024, 18:22:23",
     "recorded-content": {}
   },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_operatorcasing_EXC]": {
+    "recorded-date": "03-04-2024, 18:22:23",
+    "recorded-content": {
+      "content_numeric_operatorcasing_EXC": {
+        "exception_message": {
+          "Error": {
+            "Code": "InvalidEventPatternException",
+            "Message": "Event pattern is not valid. Reason: Unrecognized match type NUMERIC\n at [Source: (String)\"{\"detail\": {\"equal\": [{\"NUMERIC\": [\"=\", 5]}]}}\"; line: 1, column: 36]"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 400
+          }
+        },
+        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
+      }
+    }
+  },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_number_list_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:33",
+    "recorded-date": "03-04-2024, 18:22:24",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_ip_address]": {
-    "recorded-date": "28-03-2024, 21:25:33",
+    "recorded-date": "03-04-2024, 18:22:24",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_prefix_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:33",
+    "recorded-date": "03-04-2024, 18:22:24",
     "recorded-content": {}
   },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[string_nolist_EXC]": {
+    "recorded-date": "03-04-2024, 18:22:24",
+    "recorded-content": {
+      "string_nolist_EXC": {
+        "exception_message": {
+          "Error": {
+            "Code": "InvalidEventPatternException",
+            "Message": "Event pattern is not valid. Reason: \"string\" must be an object or an array\n at [Source: (String)\"{\"string\": \"my-value\"}\"; line: 1, column: 13]"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 400
+          }
+        },
+        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
+      }
+    }
+  },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_string_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:33",
+    "recorded-date": "03-04-2024, 18:22:25",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[boolean_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:33",
+    "recorded-date": "03-04-2024, 18:22:25",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[or-exists-parent]": {
-    "recorded-date": "28-03-2024, 21:25:34",
+    "recorded-date": "03-04-2024, 18:22:25",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[arrays_empty_EXC]": {
-    "recorded-date": "28-03-2024, 21:25:34",
+    "recorded-date": "03-04-2024, 18:22:25",
     "recorded-content": {
       "arrays_empty_EXC": {
         "exception_message": {
@@ -86,127 +140,171 @@
     }
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[dot_joining_pattern]": {
-    "recorded-date": "28-03-2024, 21:25:34",
+    "recorded-date": "03-04-2024, 18:22:26",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[operator_multiple_list]": {
+    "recorded-date": "03-04-2024, 18:22:26",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_string_list]": {
-    "recorded-date": "28-03-2024, 21:25:34",
+    "recorded-date": "03-04-2024, 18:22:26",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[dynamodb]": {
-    "recorded-date": "28-03-2024, 21:25:35",
+    "recorded-date": "03-04-2024, 18:22:26",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_ignorecase]": {
-    "recorded-date": "28-03-2024, 21:25:35",
+    "recorded-date": "03-04-2024, 18:22:26",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[string_empty]": {
-    "recorded-date": "28-03-2024, 21:25:35",
+    "recorded-date": "03-04-2024, 18:22:26",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[null_value]": {
-    "recorded-date": "28-03-2024, 21:25:35",
+    "recorded-date": "03-04-2024, 18:22:26",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_number_list]": {
-    "recorded-date": "28-03-2024, 21:25:35",
+    "recorded-date": "03-04-2024, 18:22:27",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_nonrepeating_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:35",
+    "recorded-date": "03-04-2024, 18:22:27",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_number_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:35",
+    "recorded-date": "03-04-2024, 18:22:27",
     "recorded-content": {}
   },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[operator_case_sensitive_EXC]": {
+    "recorded-date": "03-04-2024, 18:22:27",
+    "recorded-content": {
+      "operator_case_sensitive_EXC": {
+        "exception_message": {
+          "Error": {
+            "Code": "InvalidEventPatternException",
+            "Message": "Event pattern is not valid. Reason: Unrecognized match type EXISTS\n at [Source: (String)\"{\"my_key\": [{\"EXISTS\": true}]}\"; line: 1, column: 28]"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 400
+          }
+        },
+        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
+      }
+    }
+  },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_exists]": {
-    "recorded-date": "28-03-2024, 21:25:35",
+    "recorded-date": "03-04-2024, 18:22:27",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_ip_address_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:35",
+    "recorded-date": "03-04-2024, 18:22:28",
     "recorded-content": {}
   },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_EXC]": {
+    "recorded-date": "03-04-2024, 18:22:28",
+    "recorded-content": {
+      "content_numeric_EXC": {
+        "exception_message": {
+          "Error": {
+            "Code": "InvalidEventPatternException",
+            "Message": "Event pattern is not valid. Reason: Bad numeric range operator: >\n at [Source: (String)\"{\"detail\": {\"c-count\": [{\"numeric\": [\">\", 0, \">\", 0]}]}}\"; line: 1, column: 49]"
+          },
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 400
+          }
+        },
+        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
+      }
+    }
+  },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[complex_or_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:36",
+    "recorded-date": "03-04-2024, 18:22:28",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[complex_or]": {
-    "recorded-date": "28-03-2024, 21:25:36",
+    "recorded-date": "03-04-2024, 18:22:28",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_and_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:36",
+    "recorded-date": "03-04-2024, 18:22:29",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[dot_joining_event]": {
-    "recorded-date": "28-03-2024, 21:25:36",
+    "recorded-date": "03-04-2024, 18:22:29",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_suffix_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:37",
+    "recorded-date": "03-04-2024, 18:22:29",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_prefix_ignorecase]": {
-    "recorded-date": "28-03-2024, 21:25:37",
+    "recorded-date": "03-04-2024, 18:22:29",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_suffix_ignorecase]": {
-    "recorded-date": "28-03-2024, 21:25:37",
+    "recorded-date": "03-04-2024, 18:22:29",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[null_value_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:37",
+    "recorded-date": "03-04-2024, 18:22:29",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[dot_joining_pattern_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:37",
+    "recorded-date": "03-04-2024, 18:22:29",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_prefix]": {
-    "recorded-date": "28-03-2024, 21:25:37",
+    "recorded-date": "03-04-2024, 18:22:29",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[sample1]": {
-    "recorded-date": "28-03-2024, 21:25:37",
+    "recorded-date": "03-04-2024, 18:22:30",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[key_case_sensitive_NEG]": {
+    "recorded-date": "03-04-2024, 18:22:30",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[dot_joining_event_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:38",
+    "recorded-date": "03-04-2024, 18:22:30",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[prefix]": {
-    "recorded-date": "28-03-2024, 21:25:38",
+    "recorded-date": "03-04-2024, 18:22:30",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_suffix]": {
-    "recorded-date": "28-03-2024, 21:25:38",
+    "recorded-date": "03-04-2024, 18:22:30",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_ignorecase_list]": {
-    "recorded-date": "28-03-2024, 21:25:38",
+    "recorded-date": "03-04-2024, 18:22:30",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_prefix_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:38",
+    "recorded-date": "03-04-2024, 18:22:30",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[string]": {
-    "recorded-date": "28-03-2024, 21:25:38",
+    "recorded-date": "03-04-2024, 18:22:30",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[arrays_empty_null_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:38",
+    "recorded-date": "03-04-2024, 18:22:31",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_suffix_ignorecase_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:38",
+    "recorded-date": "03-04-2024, 18:22:31",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_wildcard_complex_EXC]": {
-    "recorded-date": "28-03-2024, 21:25:38",
+    "recorded-date": "03-04-2024, 18:22:31",
     "recorded-content": {
       "content_wildcard_complex_EXC": {
         "exception_message": {
@@ -224,97 +322,55 @@
     }
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_string_list_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:39",
+    "recorded-date": "03-04-2024, 18:22:31",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_prefix]": {
-    "recorded-date": "28-03-2024, 21:25:39",
+    "recorded-date": "03-04-2024, 18:22:31",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_ignorecase_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:39",
+    "recorded-date": "03-04-2024, 18:22:32",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[minimal]": {
-    "recorded-date": "28-03-2024, 21:25:40",
+    "recorded-date": "03-04-2024, 18:22:32",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_exists_false]": {
-    "recorded-date": "28-03-2024, 21:25:40",
+    "recorded-date": "03-04-2024, 18:22:32",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[number_comparison_float]": {
-    "recorded-date": "28-03-2024, 21:25:40",
+    "recorded-date": "03-04-2024, 18:22:32",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_ignorecase_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:40",
+    "recorded-date": "03-04-2024, 18:22:32",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_suffix]": {
-    "recorded-date": "28-03-2024, 21:25:40",
+    "recorded-date": "03-04-2024, 18:22:32",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[arrays_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:40",
+    "recorded-date": "03-04-2024, 18:22:32",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_ignorecase]": {
-    "recorded-date": "28-03-2024, 21:25:40",
+    "recorded-date": "03-04-2024, 18:22:32",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_exists_false_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:40",
+    "recorded-date": "03-04-2024, 18:22:33",
     "recorded-content": {}
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_exists_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:40",
+    "recorded-date": "03-04-2024, 18:22:33",
     "recorded-content": {}
-  },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_and]": {
-    "recorded-date": "28-03-2024, 21:25:41",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[boolean]": {
-    "recorded-date": "28-03-2024, 21:25:41",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_number]": {
-    "recorded-date": "28-03-2024, 21:25:41",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[or-anything-but]": {
-    "recorded-date": "28-03-2024, 21:25:41",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[key_case_sensitive]": {
-    "recorded-date": "28-03-2024, 16:49:38",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[key_case_sensitive_NEG]": {
-    "recorded-date": "28-03-2024, 21:25:37",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_EXC]": {
-    "recorded-date": "28-03-2024, 21:25:36",
-    "recorded-content": {
-      "content_numeric_EXC": {
-        "exception_message": {
-          "Error": {
-            "Code": "InvalidEventPatternException",
-            "Message": "Event pattern is not valid. Reason: Bad numeric range operator: >\n at [Source: (String)\"{\"detail\": {\"c-count\": [{\"numeric\": [\">\", 0, \">\", 0]}]}}\"; line: 1, column: 49]"
-          },
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 400
-          }
-        },
-        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
-      }
-    }
   },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_syntax_EXC]": {
-    "recorded-date": "28-03-2024, 21:25:41",
+    "recorded-date": "03-04-2024, 18:22:33",
     "recorded-content": {
       "content_numeric_syntax_EXC": {
         "exception_message": {
@@ -331,66 +387,20 @@
       }
     }
   },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[string_nolist]": {
-    "recorded-date": "28-03-2024, 21:06:11",
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_and]": {
+    "recorded-date": "03-04-2024, 18:22:33",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[string_nolist_EXC]": {
-    "recorded-date": "28-03-2024, 21:25:33",
-    "recorded-content": {
-      "string_nolist_EXC": {
-        "exception_message": {
-          "Error": {
-            "Code": "InvalidEventPatternException",
-            "Message": "Event pattern is not valid. Reason: \"string\" must be an object or an array\n at [Source: (String)\"{\"string\": \"my-value\"}\"; line: 1, column: 13]"
-          },
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 400
-          }
-        },
-        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
-      }
-    }
-  },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[int_nolist_EXC]": {
-    "recorded-date": "28-03-2024, 21:25:30",
-    "recorded-content": {
-      "int_nolist_EXC": {
-        "exception_message": {
-          "Error": {
-            "Code": "InvalidEventPatternException",
-            "Message": "Event pattern is not valid. Reason: \"int\" must be an object or an array\n at [Source: (String)\"{\"int\": 42}\"; line: 1, column: 11]"
-          },
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 400
-          }
-        },
-        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
-      }
-    }
-  },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_operatorcasing]": {
-    "recorded-date": "28-03-2024, 21:21:03",
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[boolean]": {
+    "recorded-date": "03-04-2024, 18:22:33",
     "recorded-content": {}
   },
-  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_numeric_operatorcasing_EXC]": {
-    "recorded-date": "28-03-2024, 21:25:32",
-    "recorded-content": {
-      "content_numeric_operatorcasing_EXC": {
-        "exception_message": {
-          "Error": {
-            "Code": "InvalidEventPatternException",
-            "Message": "Event pattern is not valid. Reason: Unrecognized match type NUMERIC\n at [Source: (String)\"{\"detail\": {\"equal\": [{\"NUMERIC\": [\"=\", 5]}]}}\"; line: 1, column: 36]"
-          },
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 400
-          }
-        },
-        "exception_type": "<class 'botocore.errorfactory.InvalidEventPatternException'>"
-      }
-    }
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[content_anything_but_number]": {
+    "recorded-date": "03-04-2024, 18:22:34",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[or-anything-but]": {
+    "recorded-date": "03-04-2024, 18:22:34",
+    "recorded-content": {}
   }
 }

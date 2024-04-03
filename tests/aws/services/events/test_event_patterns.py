@@ -6,6 +6,7 @@ from typing import List, Tuple
 import json5
 import pytest
 
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 
 THIS_FOLDER: str = os.path.dirname(os.path.realpath(__file__))
@@ -48,6 +49,7 @@ SKIP_LABELS = [
     "content_numeric_syntax_EXC",
     "content_wildcard_complex_EXC",
     "int_nolist_EXC",
+    "operator_case_sensitive_EXC",
     "string_nolist_EXC",
     # Failing tests:
     "complex_or",
@@ -73,7 +75,8 @@ SKIP_LABELS = [
 
 
 # TODO: extend these test cases based on the open source docs + tests: https://github.com/aws/event-ruler
-#  For example, JSON Array Matching or in particular rule validation and exception handling.
+#  For example, "JSON Array Matching", "And and Or Relationship among fields with Ruler", rule validation,
+#  and exception handling.
 @pytest.mark.parametrize(
     "request_template,label", request_template_tuples, ids=[t[1] for t in request_template_tuples]
 )
@@ -84,7 +87,7 @@ def test_test_event_pattern(aws_client, snapshot, request_template, label):
     b) NO MATCH (_NEG suffix): The EventPattern does NOT match the Event yielding false as result.
     c) EXCEPTION (_EXC suffix): The EventPattern is invalid and raises an exception.
     """
-    if label in SKIP_LABELS:
+    if label in SKIP_LABELS and not is_aws_cloud():
         pytest.skip("Not yet implemented")
 
     event = request_template["Event"]

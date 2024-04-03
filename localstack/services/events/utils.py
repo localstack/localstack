@@ -1,29 +1,44 @@
 import ipaddress
 import json
+import logging
 import re
 from typing import Any
 
 CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "exists"]
 
+LOG = logging.getLogger(__name__)
 
-# TODO: consider re-naming to matches_rule(event, rule) to match the AWS event-ruler API: https://github.com/aws/event-ruler
-# TODO: create companion PR to refactor the copy/pasted implementation in Pipes
-def filter_event(event_pattern_filter: dict[str, Any], event: dict[str, Any]):
-    """Matches an event_pattern_filter to an event.
-    Returns True if the event_pattern_filter matches or False otherwise.
+
+class InvalidEventPatternException(Exception):
+    reason: str
+
+    def __init__(self, reason=None, message=None) -> None:
+        self.reason = reason
+        self.message = message or f"Event pattern is not valid. Reason: {reason}"
+
+
+# TODO: consider renaming this method to something more intention-revealing, for example `matches_rule(event, rule)`
+#  inspired by the AWS event-ruler API: https://github.com/aws/event-ruler
+def filter_event(event_pattern_filter: dict[str, any], event: dict[str, Any]):
+    """Matches an `event_pattern_filter` to an `event`.
+    Returns True if the `event_pattern_filter` matches the given `event` or False otherwise.
     """
     for key, value in event_pattern_filter.items():
         fallback = object()
-        # TODO: why do we need key.lower() and the fallback?
-        event_value = event.get(key.lower(), event.get(key, fallback))
+        # Keys are case-sensitive according to the test case `key_case_sensitive_NEG`
+        event_value = event.get(key, fallback)
         if event_value is fallback and event_pattern_prefix_bool_filter(value):
             return False
 
         # 1. check if certain values in the event do not match the expected pattern
         if event_value and isinstance(event_value, dict):
             for key_a, value_a in event_value.items():
-                if key_a == "ip":
+                # TODO: why does the ip part appear here again, while cidr is handled in filter_event_with_content_base_parameter?
+                if key_a == "cidr":
                     # TODO add IP-Address check here
+                    LOG.warning(
+                        "Unsupported filter operator cidr. Please create a feature request."
+                    )
                     continue
                 if isinstance(value.get(key_a), (int, str)):
                     if value_a != value.get(key_a):
@@ -50,6 +65,7 @@ def filter_event(event_pattern_filter: dict[str, Any], event: dict[str, Any]):
         # 3. recursively call filter_event(..) for dict types
         elif isinstance(value, (str, dict)):
             try:
+                # TODO: validate whether inner JSON-encoded strings actually get decoded recursively
                 value = json.loads(value) if isinstance(value, str) else value
                 if isinstance(value, dict) and not filter_event(value, event_value):
                     return False
@@ -72,21 +88,23 @@ def filter_event_with_content_base_parameter(pattern_value: list, event_value: s
         if (isinstance(element, (str, int))) and (event_value == element or element in event_value):
             return True
         elif isinstance(element, dict):
-            element_key = list(element.keys())[0]
-            element_value = element.get(element_key)
-            if element_key.lower() == "prefix":
+            # Only the first operator gets evaluated and further operators in the list are silently ignored
+            operator = list(element.keys())[0]
+            element_value = element.get(operator)
+            # TODO: why do we implement the operators here again? They are already in handle_prefix_filtering?!
+            if operator == "prefix":
                 if isinstance(event_value, str) and event_value.startswith(element_value):
                     return True
-            elif element_key.lower() == "exists":
+            elif operator == "exists":
                 if element_value and event_value:
                     return True
                 elif not element_value and isinstance(event_value, object):
                     return True
-            elif element_key.lower() == "cidr":
+            elif operator == "cidr":
                 ips = [str(ip) for ip in ipaddress.IPv4Network(element_value)]
                 if event_value in ips:
                     return True
-            elif element_key.lower() == "numeric":
+            elif operator == "numeric":
                 if check_valid_numeric_content_base_rule(element_value):
                     for index in range(len(element_value)):
                         if isinstance(element_value[index], int):
@@ -115,10 +133,16 @@ def filter_event_with_content_base_parameter(pattern_value: list, event_value: s
                             and event_value > element_value[index + 1]
                         ):
                             break
+                        elif (
+                            element_value[index] == "="
+                            and isinstance(element_value[index + 1], int)
+                            and event_value == element_value[index + 1]
+                        ):
+                            break
                     else:
                         return True
 
-            elif element_key.lower() == "anything-but":
+            elif operator == "anything-but":
                 if isinstance(element_value, list) and event_value not in element_value:
                     return True
                 elif (isinstance(element_value, (str, int))) and event_value != element_value:
@@ -150,6 +174,7 @@ def is_list_intersection_empty(list1: list, list2: list) -> bool:
 # TODO: unclear shared responsibility for filtering with filter_event_with_content_base_parameter
 def handle_prefix_filtering(event_pattern, value):
     for element in event_pattern:
+        # TODO: fix direct int or string matching, which is not allowed. A list with possible values is required.
         if isinstance(element, (int, str)):
             if str(element) == str(value):
                 return True
@@ -167,7 +192,7 @@ def handle_prefix_filtering(event_pattern, value):
         elif isinstance(element, dict) and "numeric" in element:
             return handle_numeric_conditions(element.get("numeric"), value)
         elif isinstance(element, list):
-            if value in list:
+            if value in element:
                 return True
     return False
 
@@ -181,15 +206,18 @@ def identify_content_base_parameter_in_pattern(parameters) -> bool:
 
 
 def check_valid_numeric_content_base_rule(list_of_operators):
+    # TODO: validate?
     if len(list_of_operators) > 4:
         return False
 
+    # TODO: Why?
     if "=" in list_of_operators:
         return False
 
     if len(list_of_operators) > 2:
         upper_limit = None
         lower_limit = None
+        # TODO: what is this for, why another operator check?
         for index in range(len(list_of_operators)):
             if not isinstance(list_of_operators[index], int) and "<" in list_of_operators[index]:
                 upper_limit = list_of_operators[index + 1]
@@ -197,18 +225,46 @@ def check_valid_numeric_content_base_rule(list_of_operators):
                 lower_limit = list_of_operators[index + 1]
             if upper_limit and lower_limit and upper_limit < lower_limit:
                 return False
-            index = index + 1
     return True
 
 
-def handle_numeric_conditions(conditions: list[Any], value: float):
+def handle_numeric_conditions(conditions: list[any], value: int | float):
+    """Implements numeric matching for a given list of conditions.
+    Example: { "numeric": [ ">", 0, "<=", 5 ] }
+
+    Numeric matching works with values that are JSON numbers.
+    It is limited to values between -5.0e9 and +5.0e9 inclusive, with 15 digits of precision,
+    or six digits to the right of the decimal point.
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#filtering-numeric-matchinghttps://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#filtering-numeric-matching
+    """
+
+    # Invalid example for uneven list: { "numeric": [ ">", 0, "<" ] }
+    if len(conditions) % 2 > 0:
+        raise InvalidEventPatternException("Bad numeric range operator")
+
+    if not isinstance(value, (int, float)):
+        raise InvalidEventPatternException(
+            f"The value {value} for the numeric comparison {conditions} is not a valid number"
+        )
+
     for i in range(0, len(conditions), 2):
-        if conditions[i] == "<" and not (value < conditions[i + 1]):
+        operator = conditions[i]
+        second_operand_str = conditions[i + 1]
+        try:
+            second_operand = float(second_operand_str)
+        except ValueError:
+            raise InvalidEventPatternException(
+                f"Could not convert filter value {second_operand_str} to a valid number"
+            )
+
+        if operator == "<" and not (value < second_operand):
             return False
-        if conditions[i] == ">" and not (value > conditions[i + 1]):
+        if operator == ">" and not (value > second_operand):
             return False
-        if conditions[i] == "<=" and not (value <= conditions[i + 1]):
+        if operator == "<=" and not (value <= second_operand):
             return False
-        if conditions[i] == ">=" and not (value >= conditions[i + 1]):
+        if operator == ">=" and not (value >= second_operand):
+            return False
+        if operator == "=" and not (value == second_operand):
             return False
     return True
