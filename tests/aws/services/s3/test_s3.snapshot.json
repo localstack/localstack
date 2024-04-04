@@ -1078,7 +1078,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "recorded-date": "04-04-2024, 14:24:17",
+    "recorded-date": "04-04-2024, 17:13:12",
     "recorded-content": {
       "get_bucket_location_bucket_1": {
         "LocationConstraint": null,

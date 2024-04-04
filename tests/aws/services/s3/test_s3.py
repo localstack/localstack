@@ -2581,6 +2581,8 @@ class TestS3:
                 CreateBucketConfiguration={"LocationConstraint": region_us_east_1},
             )
         snapshot.match("create-bucket-constraint-us-east-1", exc.value.response)
+        if is_aws_cloud() or not is_v2_provider():
+            assert exc.value.response["Error"]["LocationConstraint"] == region_us_east_1
 
         # assert creation fails with location constraint with the region unset
         with pytest.raises(Exception) as exc:
