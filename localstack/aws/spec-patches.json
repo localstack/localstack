@@ -1190,6 +1190,26 @@
         "documentation": "<p>The specified location-constraint is not valid</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/EntityTooLarge",
+      "value": {
+        "type": "structure",
+        "members": {
+          "MaxSizeAllowed": {
+            "shape": "KeyLength"
+          },
+          "HostId": {
+            "shape": "HostId"
+          },
+          "ProposedSize": {
+            "shape": "ProposedSize"
+          }
+        },
+        "documentation": "<p>Your proposed upload exceeds the maximum allowed size</p>",
+        "exception": true
+      }
     }
   ]
 }

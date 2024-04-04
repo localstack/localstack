@@ -10544,6 +10544,216 @@ class TestS3PresignedPost:
         response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
         snapshot.match("list-objects", response)
 
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: wrong exception implement, still missing the extra input fields validation
+            "$.invalid-condition-missing-prefix.Error.Message",
+            # TODO: we should add HostId to every serialized exception for S3, and not have them as part as the spec
+            "$.invalid-condition-wrong-condition.Error.HostId",
+        ],
+    )
+    @markers.aws.validated
+    def test_post_object_policy_validation(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "HostId", reference_replacement=False, value_replacement="<host-id>"
+                ),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        object_key = "validate-policy-1"
+
+        redirect_location = "http://localhost.test/random"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                ["eq", "$success_action_redirect", redirect_location],
+            ],
+            ExpiresIn=60,
+        )
+
+        # PostObject with a wrong redirect location
+        presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 12},
+            verify=False,
+            allow_redirects=False,
+        )
+
+        # assert that it's rejected
+        assert response.status_code == 403
+        content = response.content
+        if not is_aws_cloud():
+            # AWS use double quotes in error messages and LocalStack uses single. Try to unify before snapshotting
+            content = content.replace(b"'", b'"')
+        snapshot.match("invalid-condition-eq", xmltodict.parse(content))
+
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                [
+                    "starts-with",
+                    "$success_action_redirect",
+                    "",
+                ],  # this allows to accept anything for it
+            ],
+            ExpiresIn=60,
+        )
+
+        # PostObject with a different redirect location, but should be accepted
+        presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 12},
+            verify=False,
+            allow_redirects=False,
+        )
+
+        # assert that it's accepted
+        assert response.status_code == 303
+        assert response.headers["Location"].startswith("http://wrong.location/test")
+
+        # PostObject with a wrong condition (missing $ prefix)
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                [
+                    "starts-with",
+                    "success_action_redirect",
+                    "",
+                ],  # this allows to accept anything for it
+            ],
+            ExpiresIn=60,
+        )
+
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 12},
+            verify=False,
+            allow_redirects=False,
+        )
+
+        # assert that it's rejected
+        assert response.status_code == 403
+        content = response.content
+        if not is_aws_cloud():
+            # AWS use double quotes in error messages and LocalStack uses single. Try to unify before snapshotting
+            content = content.replace(b"'", b'"')
+        snapshot.match("invalid-condition-missing-prefix", xmltodict.parse(content))
+
+        # PostObject with a wrong condition (multiple condition in one dict)
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                {"bucket": s3_bucket, "success_action_redirect": redirect_location},
+            ],
+            ExpiresIn=60,
+        )
+
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 12},
+            verify=False,
+            allow_redirects=False,
+        )
+
+        # assert that it's rejected
+        assert response.status_code == 400
+        snapshot.match("invalid-condition-wrong-condition", xmltodict.parse(response.content))
+
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: we should add HostId to every serialized exception for S3, and not have them as part as the spec
+            "$.invalid-content-length-too-small.Error.HostId",
+        ],
+    )
+    @markers.aws.validated
+    def test_post_object_policy_validation_size(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "HostId", reference_replacement=False, value_replacement="<host-id>"
+                ),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        object_key = "validate-policy-content-length"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["content-length-range", 5, 10],
+            ],
+        )
+        # PostObject with a body length of 12
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 12},
+            verify=False,
+        )
+
+        # assert that it's rejected
+        assert response.status_code == 400
+        snapshot.match("invalid-content-length-too-big", xmltodict.parse(response.content))
+
+        # PostObject with a body length of 1
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 1},
+            verify=False,
+        )
+
+        # assert that it's rejected
+        assert response.status_code == 400
+        snapshot.match("invalid-content-length-too-small", xmltodict.parse(response.content))
+
+        # PostObject with a body length of 5
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 5},
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        # PostObject with a body length of 10
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 10},
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        final_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("final-object", final_object)
+
 
 def _s3_client_pre_signed_client(conf: Config, endpoint_url: str = None):
     if is_aws_cloud():

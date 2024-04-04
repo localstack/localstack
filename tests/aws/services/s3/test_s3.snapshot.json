@@ -11454,5 +11454,73 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_validation": {
+    "recorded-date": "08-04-2024, 17:55:00",
+    "recorded-content": {
+      "invalid-condition-eq": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"http://localhost.test/random\"]",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "invalid-condition-missing-prefix": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Extra input fields: success_action_redirect",
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "invalid-condition-wrong-condition": {
+        "Error": {
+          "Code": "InvalidPolicyDocument",
+          "HostId": "<host-id>",
+          "Message": "Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
+          "RequestId": "<request-id:3>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_validation_size": {
+    "recorded-date": "08-04-2024, 17:29:34",
+    "recorded-content": {
+      "invalid-content-length-too-big": {
+        "Error": {
+          "Code": "EntityTooLarge",
+          "HostId": "<host-id>",
+          "MaxSizeAllowed": "10",
+          "Message": "Your proposed upload exceeds the maximum allowed size",
+          "ProposedSize": "12",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "invalid-content-length-too-small": {
+        "Error": {
+          "Code": "EntityTooSmall",
+          "HostId": "<host-id>",
+          "Message": "Your proposed upload is smaller than the minimum allowed size",
+          "MinSizeAllowed": "5",
+          "ProposedSize": "1",
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "final-object": {
+        "AcceptRanges": "bytes",
+        "Body": "aaaaaaaaaa",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e09c80c42fda55f9d992e59ca6b3307d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -21,10 +21,12 @@ from werkzeug.datastructures import Headers, ImmutableMultiDict
 
 from localstack import config
 from localstack.aws.accounts import get_account_id_from_access_key_id
-from localstack.aws.api import RequestContext
+from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.s3 import (
     AccessDenied,
     AuthorizationQueryParametersError,
+    EntityTooLarge,
+    EntityTooSmall,
     InvalidArgument,
     InvalidBucketName,
     SignatureDoesNotMatch,
@@ -707,7 +709,9 @@ def _validate_headers_for_moto(headers: Headers) -> None:
             raise SignatureDoesNotMatch('Wrong "X-Amz-Decoded-Content-Length" header')
 
 
-def validate_post_policy(request_form: ImmutableMultiDict) -> None:
+def validate_post_policy(
+    request_form: ImmutableMultiDict, additional_policy_metadata: dict
+) -> None:
     """
     Validate the pre-signed POST with its policy contained
     For now, only validates its expiration
@@ -715,6 +719,8 @@ def validate_post_policy(request_form: ImmutableMultiDict) -> None:
     SigV4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-authentication-HTTPPOST.html
 
     :param request_form: the form data contained in the pre-signed POST request
+    :param additional_policy_metadata: additional metadata needed to validate the policy (bucket name, object size,
+    also some specific headers but not yet covered)
     :raises AccessDenied, SignatureDoesNotMatch
     :return: None
     """
@@ -759,7 +765,71 @@ def validate_post_policy(request_form: ImmutableMultiDict) -> None:
             raise ex
 
     # TODO: validate the signature
-    # TODO: validate the request according to the policy
+
+    # See https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html
+    # for the list of conditions and what matching they support
+    # TODO:
+    #  1. only support the kind of matching the field supports: `success_action_status` does not support `starts-with`
+    #  matching
+    #  2. if there are fields that are not defined in the policy, we should reject it
+    conditions = policy_decoded.get("conditions", [])
+    for condition in conditions:
+        if not _verify_condition(condition, request_form, additional_policy_metadata):
+            raise AccessDenied(
+                f"Invalid according to Policy: Policy Condition failed: {condition}",
+                HostId=FAKE_HOST_ID,
+            )
+
+
+def _verify_condition(
+    condition: list | dict, form: ImmutableMultiDict, additional_policy_metadata: dict
+) -> bool:
+    match condition:
+        case ["eq", "$bucket", value]:
+            return additional_policy_metadata.get("bucket") == value
+
+        case {"bucket": value, **kwargs}:
+            if kwargs:
+                raise CommonServiceException(
+                    code="InvalidPolicyDocument",
+                    message="Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
+                )
+            return additional_policy_metadata.get("bucket") == value
+
+        case {**kwargs}:
+            if len(kwargs) != 1:
+                raise CommonServiceException(
+                    code="InvalidPolicyDocument",
+                    message="Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
+                )
+            return all(form.get(key) == val for key, val in kwargs.items())
+
+        case ["eq", key, value]:
+            return key.startswith("$") and form.get(key.lstrip("$")) == value
+
+        case ["starts-with", key, value]:
+            # You can set the `starts-with` value to an empty string to accept anything
+            return key.startswith("$") and (
+                not value or form.get(key.lstrip("$"), "").startswith(value)
+            )
+
+        case ["content-length-range", start, end]:
+            size = additional_policy_metadata.get("content_length", 0)
+            if size < start:
+                raise EntityTooSmall(
+                    "Your proposed upload is smaller than the minimum allowed size",
+                    ProposedSize=size,
+                    MinSizeAllowed=start,
+                )
+            elif size > end:
+                raise EntityTooLarge(
+                    "Your proposed upload exceeds the maximum allowed size",
+                    ProposedSize=size,
+                    MaxSizeAllowed=end,
+                    HostId=FAKE_HOST_ID,
+                )
+            else:
+                return True
 
 
 def _parse_policy_expiration_date(expiration_string: str) -> datetime.datetime:
