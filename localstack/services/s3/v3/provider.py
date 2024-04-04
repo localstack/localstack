@@ -101,6 +101,7 @@ from localstack.aws.api.s3 import (
     InvalidArgument,
     InvalidBucketName,
     InvalidDigest,
+    InvalidLocationConstraint,
     InvalidObjectState,
     InvalidPartNumber,
     InvalidPartOrder,
@@ -211,7 +212,6 @@ from localstack.services.s3.constants import (
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
     InvalidBucketState,
-    InvalidLocationConstraint,
     InvalidRequest,
     MalformedPolicy,
     MalformedXML,
@@ -433,7 +433,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 raise MalformedXML()
 
             if bucket_region == "us-east-1":
-                raise InvalidLocationConstraint("The specified location-constraint is not valid")
+                raise InvalidLocationConstraint(
+                    "The specified location-constraint is not valid",
+                    LocationConstraint=bucket_region,
+                )
         else:
             bucket_region = "us-east-1"
             if context.region != bucket_region:

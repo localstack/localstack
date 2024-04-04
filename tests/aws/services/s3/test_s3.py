@@ -2540,6 +2540,10 @@ class TestS3:
         snapshot.match("bucket-replication", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..Error.LocationConstraint"],  # not returned by Moto
+    )
     def test_different_location_constraint(
         self,
         s3_create_bucket,

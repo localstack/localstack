@@ -1176,6 +1176,20 @@
         "documentation": "<p>Your key is too long</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/InvalidLocationConstraint",
+      "value": {
+        "type": "structure",
+        "members": {
+          "LocationConstraint": {
+            "shape": "BucketRegion"
+          }
+        },
+        "documentation": "<p>The specified location-constraint is not valid</p>",
+        "exception": true
+      }
     }
   ]
 }
