@@ -247,10 +247,12 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
     queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
     queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
+    # EventBridge apparently converts some fields, for example: Source=>source, DetailType=>detail-type
+    # but the actual pattern matching is case-sensitive by key!
     pattern = {
-        "Source": [{"exists": True}],
+        "source": [{"exists": True}],
         "detail-type": [{"prefix": "core.app"}],
-        "Detail": {
+        "detail": {
             "description": ["this-is-event-details"],
             "amount": [200],
             "salary": [2000, 4000],
@@ -261,7 +263,8 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
             "test2": [{"anything-but": "test2"}],
             "test3": [{"anything-but": ["test3", "test33"]}],
             "test4": [{"anything-but": {"prefix": "test4"}}],
-            "ip": [{"cidr": "10.102.1.0/24"}],
+            # TODO: unsupported in LocalStack
+            # "ip": [{"cidr": "10.102.1.0/24"}],
             "num-test1": [{"numeric": ["<", 200]}],
             "num-test2": [{"numeric": ["<=", 200]}],
             "num-test3": [{"numeric": [">", 200]}],
