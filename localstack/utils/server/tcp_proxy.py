@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 from localstack.utils.serving import Server
-from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -42,8 +41,6 @@ class TCPProxy(Server):
         self._server_socket = None
 
     def _handle_request(self, s_src: socket.socket):
-        connection_id = short_uid()
-        LOG.debug("[%s] Got new connection from %s", connection_id, s_src.getpeername())
         try:
             s_dst = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             with s_src as s_src, s_dst as s_dst:
@@ -77,8 +74,6 @@ class TCPProxy(Server):
                 self._target_port,
                 e,
             )
-        finally:
-            LOG.debug("[%s] connection finished!", connection_id)
 
     def do_run(self):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -104,12 +99,10 @@ class TCPProxy(Server):
                     # avoid creating an error message if OSError is thrown due to socket closing
                     if not self._stopped.is_set():
                         LOG.warning("Error during during TCPProxy socket accept: %s", e)
-            LOG.debug("TCP server stopped")
 
     def do_shutdown(self):
-        LOG.debug("Shutting down proxy...")
         if self._server_socket:
             self._server_socket.shutdown(socket.SHUT_RDWR)
             self._server_socket.close()
         self._thread_pool.shutdown(cancel_futures=True)
-        LOG.debug("finished shutting down")
+        LOG.debug("Shut down TCPProxy on %s:%s", self.host, self.port)
