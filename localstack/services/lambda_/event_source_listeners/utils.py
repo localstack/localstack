@@ -2,7 +2,9 @@ import json
 import logging
 import re
 
+from localstack import config
 from localstack.aws.api.lambda_ import FilterCriteria
+from localstack.services.events.event_ruler import matches_rule
 from localstack.utils.strings import first_char_to_lower
 
 LOG = logging.getLogger(__name__)
@@ -21,8 +23,14 @@ def filter_stream_records(records, filters: list[FilterCriteria]):
     for record in records:
         for filter in filters:
             for rule in filter["Filters"]:
-                filter_pattern: dict[str, any] = json.loads(rule["Pattern"])
-                if does_match_event(filter_pattern, record):
+                if config.EVENT_RULE_ENGINE == "java":
+                    event_str = json.dumps(record)
+                    event_pattern_str = rule["Pattern"]
+                    match_result = matches_rule(event_str, event_pattern_str)
+                else:
+                    filter_pattern: dict[str, any] = json.loads(rule["Pattern"])
+                    match_result = does_match_event(filter_pattern, record)
+                if match_result:
                     filtered_records.append(record)
                     break
     return filtered_records

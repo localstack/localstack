@@ -39,6 +39,7 @@ from localstack.aws.api.events import (
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.http import route
 from localstack.services.edge import ROUTER
+from localstack.services.events.event_ruler import matches_rule
 from localstack.services.events.models import EventsStore, events_stores
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.utils import matches_event
@@ -110,13 +111,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Test event pattern uses EventBridge event pattern matching:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
         """
-        event_pattern_dict = json.loads(event_pattern)
-        event_dict = json.loads(event)
+        if config.EVENT_RULE_ENGINE == "java":
+            result = matches_rule(event, event_pattern)
+        else:
+            event_pattern_dict = json.loads(event_pattern)
+            event_dict = json.loads(event)
+            result = matches_event(event_pattern_dict, event_dict)
 
         # TODO: unify all these different implementation below ;)
-
         # EventBridge implementation:
-        result = matches_event(event_pattern_dict, event_dict)
+        # result = matches_event(event_pattern_dict, event_dict)
 
         # EventSourceMapping implementation:
         # result = does_match_event(event_pattern_dict, event_dict)
@@ -409,7 +413,13 @@ def filter_event_based_on_event_format(
         return False
     if rule_information.event_pattern._pattern:
         event_pattern = rule_information.event_pattern._pattern
-        if not matches_event(event_pattern, event):
+        if config.EVENT_RULE_ENGINE == "java":
+            event_str = json.dumps(event)
+            event_pattern_str = json.dumps(event_pattern)
+            match_result = matches_rule(event_str, event_pattern_str)
+        else:
+            match_result = matches_event(event_pattern, event)
+        if not match_result:
             return False
     return True
 

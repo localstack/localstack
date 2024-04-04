@@ -762,6 +762,11 @@ if not DOCKER_BRIDGE_IP:
 # get-function call.
 INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "949334387222"
 
+# Determine which implementation to use for the event rule / event filtering engine used by multiple services:
+# EventBridge, EventBridge Pipes, Lambda Event Source Mapping, SNS
+# Options: provider (default) | java
+EVENT_RULE_ENGINE = os.environ.get("EVENT_RULE_ENGINE", "").strip()
+
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
 # -----
