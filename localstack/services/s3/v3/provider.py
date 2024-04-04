@@ -421,7 +421,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if not is_bucket_name_valid(bucket_name):
             raise InvalidBucketName("The specified bucket is not valid.", BucketName=bucket_name)
-        if create_bucket_configuration := request.get("CreateBucketConfiguration"):
+
+        # the XML parser returns an empty dict if the body contains the following:
+        # <CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/" />
+        # but it also returns an empty dict if the body is fully empty. We need to differentiate the 2 cases by checking
+        # if the body is empty or not
+        if context.request.data and (
+            (create_bucket_configuration := request.get("CreateBucketConfiguration")) is not None
+        ):
             if not (bucket_region := create_bucket_configuration.get("LocationConstraint")):
                 raise MalformedXML()
 

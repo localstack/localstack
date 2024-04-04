@@ -2550,18 +2550,41 @@ class TestS3:
         aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(
-            snapshot.transform.key_value("Location", "<location>", reference_replacement=False)
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("Location", "<location>", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "LocationConstraint", "<location-constraint>", reference_replacement=False
+                ),
+            ]
         )
         bucket_1_name = f"bucket-{short_uid()}"
-        region_1 = "us-east-1"
-        client_1 = aws_client_factory(region_name=region_1).s3
+        region_us_east_1 = "us-east-1"
+        client_1 = aws_client_factory(
+            region_name=region_us_east_1, config=Config(parameter_validation=False)
+        ).s3
         s3_create_bucket_with_client(
             client_1,
             Bucket=bucket_1_name,
         )
         response = client_1.get_bucket_location(Bucket=bucket_1_name)
         snapshot.match("get_bucket_location_bucket_1", response)
+
+        # assert creation fails with location constraint for us-east-1 region
+        with pytest.raises(Exception) as exc:
+            client_1.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": region_us_east_1},
+            )
+        snapshot.match("create-bucket-constraint-us-east-1", exc.value.response)
+
+        # assert creation fails with location constraint with the region unset
+        with pytest.raises(Exception) as exc:
+            client_1.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": None},
+            )
+        snapshot.match("create-bucket-constraint-us-east-1-with-None", exc.value.response)
 
         region_2 = "us-east-2"
         snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
@@ -10413,7 +10436,7 @@ class TestS3PresignedPost:
         reason="not implemented in moto",
     )
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..HostId"],  # FIXME: in CI, it fails sporadically and the form is empty
+        paths=["$..HostId"],
     )
     def test_post_object_with_wrong_content_type(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformers_list(

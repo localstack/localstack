@@ -1078,7 +1078,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "recorded-date": "25-03-2024, 17:20:27",
+    "recorded-date": "04-04-2024, 14:24:17",
     "recorded-content": {
       "get_bucket_location_bucket_1": {
         "LocationConstraint": null,
@@ -1087,8 +1087,29 @@
           "HTTPStatusCode": 200
         }
       },
+      "create-bucket-constraint-us-east-1": {
+        "Error": {
+          "Code": "InvalidLocationConstraint",
+          "LocationConstraint": "<location-constraint>",
+          "Message": "The specified location-constraint is not valid"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-bucket-constraint-us-east-1-with-None": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "get_bucket_location_bucket_2": {
-        "LocationConstraint": "<region_2>",
+        "LocationConstraint": "<location-constraint>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1112,7 +1133,7 @@
         }
       },
       "get_bucket_location_bucket_3": {
-        "LocationConstraint": "<region_2>",
+        "LocationConstraint": "<location-constraint>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
