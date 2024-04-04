@@ -1,13 +1,26 @@
-from typing import TypedDict
+from typing import Optional, TypedDict
+
+from attr import dataclass
 
 from localstack.aws.api.core import ServiceException
-from localstack.aws.api.events import EventBusName
-from localstack.services.events.event_bus import EventBus
+from localstack.aws.api.events import Arn, EventBusName, TagList
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
     LocalAttribute,
 )
+
+
+@dataclass
+class EventBus:
+    name: str
+    arn: Arn
+    policy: Optional[str]
+    event_source_name: Optional[str]
+    tags: Optional[TagList]
+
+
+EventBusDict = dict[EventBusName, EventBus]
 
 
 class Event(TypedDict, total=False):
@@ -34,7 +47,7 @@ class ValidationException(ServiceException):
 
 class EventsStore(BaseStore):
     # Map of eventbus names to eventbus objects. The name MUST be unique per account and region (works with AccountRegionBundle)
-    event_bus: dict[EventBusName, EventBus] = LocalAttribute(default=dict)
+    event_buses: EventBusDict = LocalAttribute(default=dict)
 
 
 events_store = AccountRegionBundle("events", EventsStore)

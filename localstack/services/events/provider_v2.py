@@ -7,6 +7,7 @@ from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.events import (
     CreateEventBusResponse,
     DescribeEventBusResponse,
+    EventBusList,
     EventBusName,
     EventBusNameOrArn,
     EventsApi,
@@ -21,16 +22,33 @@ from localstack.aws.api.events import (
     RuleName,
     TagList,
 )
-from localstack.services.events.event_bus import (
-    EventBus,
-    EventBusDict,
-    event_bus_dict_to_api_type_event_bus,
-    event_bust_dict_to_list,
-)
-from localstack.services.events.models_v2 import EventsStore, events_store
+from localstack.aws.api.events import EventBus as ApiTypeEventBus
+from localstack.services.events.models_v2 import EventBus, EventBusDict, EventsStore, events_store
 from localstack.services.plugins import ServiceLifecycleHook
 
 LOG = logging.getLogger(__name__)
+
+
+def event_bus_dict_to_api_type_event_bus(event_bus: EventBus) -> ApiTypeEventBus:
+    if event_bus.policy:
+        event_bus = {
+            "Name": event_bus.name,
+            "Arn": event_bus.arn,
+            "Policy": event_bus.policy,
+        }
+    else:
+        event_bus = {
+            "Name": event_bus.name,
+            "Arn": event_bus.arn,
+        }
+    return event_bus
+
+
+def event_bust_dict_to_list(event_buses: EventBusDict) -> EventBusList:
+    event_bus_list = [
+        event_bus_dict_to_api_type_event_bus(event_bus) for event_bus in event_buses.values()
+    ]
+    return event_bus_list
 
 
 class EventsProvider(EventsApi, ServiceLifecycleHook):
@@ -49,10 +67,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         account_id = context.account_id
         region = context.region
         store = self._get_store(account_id, region)
-        if name in store.event_bus.keys():
+        if name in store.event_buses.keys():
             raise ResourceAlreadyExistsException(f"Event bus {name} already exists.")
         event_bus = self._create_event_bus(name, account_id, region, event_source_name, tags)
-        store.event_bus[event_bus.name] = event_bus
+        store.event_buses[event_bus.name] = event_bus
 
         response = CreateEventBusResponse(
             EventBusArn=event_bus.arn,
@@ -65,9 +83,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             raise InternalException("ValidationException", "Cannot delete event bus default.")
         store = self._get_store(context.account_id, context.region)
         try:
-            if event_bus := self._get_event_bus(name, store):
-                event_bus.delete()
-                del store.event_bus[name]
+            if self._get_event_bus(name, store):
+                del store.event_buses[name]
         except ResourceNotFoundException as e:
             return e
 
@@ -82,9 +99,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> ListEventBusesResponse:
         store = self._get_store(context.account_id, context.region)
         event_buses = (
-            self._get_filtered_event_buses(name_prefix, store.event_bus)
+            self._get_filtered_event_buses(name_prefix, store.event_buses)
             if name_prefix
-            else store.event_bus
+            else store.event_buses
         )
         event_buses_len = len(event_buses)
         start_index = self._decode_next_token(next_token) if next_token is not None else 0
@@ -128,9 +145,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = events_store[account_id][region]
         # create default event bus on first call
         name = "default"
-        if name not in store.event_bus.keys():
+        if name not in store.event_buses.keys():
             event_bus = self._create_event_bus(name, account_id, region)
-            store.event_bus[event_bus.name] = event_bus
+            store.event_buses[event_bus.name] = event_bus
 
         return store
 
@@ -139,20 +156,21 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         name: EventBusName,
         account_id: str,
         region: str,
-        event_source_name: EventSourceName = None,
+        policy: str | None = None,
+        event_source_name: EventSourceName | None = None,
         tags: TagList = None,
     ) -> EventBus:
-        event_bus_arn = self._get_event_bus_arn(name, region, account_id)
-        event_bus = EventBus(name, event_bus_arn, event_source_name, tags)
+        arn = self._get_event_bus_arn(name, region, account_id)
+        event_bus = EventBus(name, arn, policy, event_source_name, tags)
         return event_bus
 
     def _get_event_bus_arn(self, name: EventBusName, region: str, account_id: str) -> str:
         return f"arn:aws:events:{region}:{account_id}:event-bus/{name}"
 
     def _get_event_bus(self, name: EventBusName, store: EventsStore) -> EventBus:
-        if name not in store.event_bus.keys():
+        if name not in store.event_buses.keys():
             raise ResourceNotFoundException(f"Event bus {name} does not exist.")
-        return store.event_bus[name]
+        return store.event_buses[name]
 
     def _get_filtered_event_buses(
         self, name_prefix: EventBusName, event_buses: EventBusDict
