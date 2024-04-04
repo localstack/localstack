@@ -251,7 +251,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
         "Source": [{"exists": True}],
         "detail-type": [{"prefix": "core.app"}],
         "Detail": {
-            "decription": ["this-is-event-details"],
+            "description": ["this-is-event-details"],
             "amount": [200],
             "salary": [2000, 4000],
             "env": ["dev", "prod"],
@@ -278,7 +278,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
         "DetailType": "core.app.backend",
         "Detail": json.dumps(
             {
-                "decription": "this-is-event-details",
+                "description": "this-is-event-details",
                 "amount": 200,
                 "salary": 2000,
                 "env": "prod",
