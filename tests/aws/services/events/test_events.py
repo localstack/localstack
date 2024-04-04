@@ -1077,3 +1077,23 @@ class TestEventsEventBus:
         with pytest.raises(ClientError) as e:
             aws_client.events.describe_event_bus(Name=nonexistent_event_bus)
         snapshot.match("non-existent-bus", e.value.response)
+
+
+class TestEventRule:
+    @markers.aws.validated
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_put_rule(self, bus_name, create_event_bus, aws_client, snapshot):
+        if bus_name == "custom":
+            bus_name = f"bus-{short_uid()}"
+            snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
+            create_event_bus(bus_name)
+
+        rule_name = f"test-rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+        response = aws_client.events.put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            State="ENABLED",
+            EventBusName=bus_name,
+        )
+        snapshot.match("put-rule", response)

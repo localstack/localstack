@@ -576,5 +576,29 @@
     "recorded-content": {
       "create-multiple-event-buses-same-name": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateEventBus operation: Event bus test-bus already exists.') tblen=4>"
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_put_rule[custom]": {
+    "recorded-date": "04-04-2024, 10:47:20",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_put_rule[default]": {
+    "recorded-date": "04-04-2024, 10:47:21",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
