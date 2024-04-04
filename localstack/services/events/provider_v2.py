@@ -55,6 +55,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def __init__(self):
         self._events_workers = {}
 
+    ##########
+    # EventBus
+    ##########
+
     @handler("CreateEventBus")
     def create_event_bus(
         self,
@@ -128,6 +132,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self._get_store(context.account_id, context.region)
         event_bus = self._get_event_bus(name, store)
         return event_bus_dict_to_api_type_event_bus(event_bus)
+
+    #######
+    # Rules
+    #######
 
     @handler("ListRules")
     def list_rules(
