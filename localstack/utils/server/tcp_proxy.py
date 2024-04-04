@@ -5,11 +5,17 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 from localstack.utils.serving import Server
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
 
 class TCPProxy(Server):
+    """
+    Server based TCP proxy abstraction.
+    This uses a ThreadPoolExecutor, so the maximum number of parallel connections is limited.
+    """
+
     _target_address: str
     _target_port: int
     _handler: Callable[[bytes], tuple[bytes, bytes]] | None
@@ -30,11 +36,14 @@ class TCPProxy(Server):
         self._target_port = target_port
         self._handler = handler
         self._buffer_size = 1024
-        self._thread_pool = ThreadPoolExecutor(thread_name_prefix="tcp-proxy")
+        # thread pool limited to 64 workers for now - can be increased or made configurable if this should not suffice
+        # for certain use cases
+        self._thread_pool = ThreadPoolExecutor(thread_name_prefix="tcp-proxy", max_workers=64)
         self._server_socket = None
 
     def _handle_request(self, s_src: socket.socket):
-        LOG.debug("Got new connection from %s", s_src.getpeername())
+        connection_id = short_uid()
+        LOG.debug("[%s] Got new connection from %s", connection_id, s_src.getpeername())
         try:
             s_dst = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             with s_src as s_src, s_dst as s_dst:
@@ -68,6 +77,8 @@ class TCPProxy(Server):
                 self._target_port,
                 e,
             )
+        finally:
+            LOG.debug("[%s] connection finished!", connection_id)
 
     def do_run(self):
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -101,3 +112,4 @@ class TCPProxy(Server):
             self._server_socket.shutdown(socket.SHUT_RDWR)
             self._server_socket.close()
         self._thread_pool.shutdown(cancel_futures=True)
+        LOG.debug("finished shutting down")
