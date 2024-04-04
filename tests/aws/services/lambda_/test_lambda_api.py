@@ -25,7 +25,7 @@ from botocore.exceptions import ClientError, ParamValidationError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
-from localstack.aws.api.lambda_ import Architecture, Runtime
+from localstack.aws.api.lambda_ import Architecture, LogFormat, Runtime
 from localstack.services.lambda_.api_utils import ARCHITECTURES
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
@@ -75,14 +75,60 @@ def environment_length_bytes(e: dict) -> int:
 
 
 class TestLambdaFunction:
-    # TODO switch format to json and then back to text to see behaviour of default values
+    @markers.aws.validated
+    def test_advance_logging_configuration_format_switch(
+        self, snapshot, create_lambda_function, lambda_su_role, aws_client
+    ):
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+            MemorySize=256,
+            Timeout=5,
+        )
+
+        snapshot.match("create_response", create_response)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response", get_function_response)
+
+        function_config = aws_client.lambda_.get_function_configuration(FunctionName=function_name)
+        snapshot.match("function_config", function_config)
+
+        updated_config = aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, LoggingConfig={"LogFormat": LogFormat.JSON}
+        )
+        snapshot.match("updated_config", updated_config)
+
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        received_conf = aws_client.lambda_.get_function_configuration(
+            FunctionName=function_name,
+        )
+        snapshot.match("received_config", received_conf)
+
+        updated_config = aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, LoggingConfig={"LogFormat": LogFormat.Text}
+        )
+        snapshot.match("updated_config_v2", updated_config)
+
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        received_conf = aws_client.lambda_.get_function_configuration(
+            FunctionName=function_name,
+        )
+        snapshot.match("received_config_v2", received_conf)
+
     @markers.aws.validated
     @pytest.mark.parametrize(
         "partial_config",
         [
-            {"LogFormat": "JSON"},
-            {"LogFormat": "JSON", "ApplicationLogLevel": "DEBUG"},
-            {"LogFormat": "JSON", "SystemLogLevel": "DEBUG"},
+            {"LogFormat": LogFormat.JSON},
+            {"LogFormat": LogFormat.JSON, "ApplicationLogLevel": "DEBUG"},
+            {"LogFormat": LogFormat.JSON, "SystemLogLevel": "DEBUG"},
             {"LogGroup": "cool_lambda"},
         ],
     )
@@ -144,7 +190,7 @@ class TestLambdaFunction:
         snapshot.match("function_config", function_config)
 
         advanced_config = {
-            "LogFormat": "JSON",
+            "LogFormat": LogFormat.JSON,
             "ApplicationLogLevel": "INFO",
             "SystemLogLevel": "INFO",
             "LogGroup": "cool_lambda",

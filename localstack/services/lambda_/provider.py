@@ -1061,7 +1061,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             last_config = latest_version_config.logging_config
 
             # add partial update
-            replace_kwargs["logging_config"] = last_config | lambda_config
+            new_config = last_config | lambda_config
+
+            # in case we switched from JSON to Text we need to remove LogLevel keys
+            if (
+                new_config.get("LogFormat") == LogFormat.Text
+                and last_config.get("LogFormat") == LogFormat.JSON
+            ):
+                new_config.pop("ApplicationLogLevel", None)
+                new_config.pop("SystemLogLevel", None)
+
+            replace_kwargs["logging_config"] = new_config
 
         if "TracingConfig" in request:
             new_mode = request.get("TracingConfig", {}).get("Mode")

@@ -41,6 +41,9 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_function_name_variations": {
     "last_validated_date": "2023-12-15T09:58:47+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_advance_logging_configuration_format_switch": {
+    "last_validated_date": "2024-04-04T16:43:47+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
     "last_validated_date": "2024-03-12T15:42:35+00:00"
   },
