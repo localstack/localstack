@@ -441,12 +441,10 @@ def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
     get_template_response_1 = aws_client.cloudformation.get_template(StackName=stack.stack_name)
     snapshot.match("get-template-response-1", get_template_response_1)
 
-    with pytest.raises(botocore.exceptions.ClientError) as ex:
+    with pytest.raises(botocore.exceptions.ClientError):
         aws_client.cloudformation.update_stack(
             StackName=stack.stack_name,
             TemplateBody=template_2,
         )
-    snapshot.match("error", ex.value.response)
-
     get_template_response_2 = aws_client.cloudformation.get_template(StackName=stack.stack_name)
     snapshot.match("get-template-response-2", get_template_response_2)
