@@ -84,6 +84,8 @@ from localstack.utils.time import today_no_time
 AWSPREVIOUS: Final[str] = "AWSPREVIOUS"
 AWSPENDING: Final[str] = "AWSPENDING"
 AWSCURRENT: Final[str] = "AWSCURRENT"
+# The maximum number of outdated versions that can be stored in the secret.
+# see: https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_PutSecretValue.html
 MAX_OUTDATED_SECRET_VERSIONS: Final[int] = 100
 #
 # Error Messages.
@@ -498,6 +500,7 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, include_deprecated, *ar
     versions: list[SecretVersionsListEntry] = list()
     for version_id, version in secret.versions.items():
         version_stages = version["version_stages"]
+        # Patch: include version_stages in the response only if it is not empty.
         if len(version_stages) > 0 or include_deprecated:
             entry = SecretVersionsListEntry(
                 CreatedDate=version["createdate"],
@@ -645,6 +648,7 @@ def fake_secret_reset_default_version(fn, self, secret_version, version_id):
     ]
     versions_to_delete = []
 
+    # Patch: remove outdated versions if the max deprecated versions limit is exceeded.
     if len(versions_no_stages) >= MAX_OUTDATED_SECRET_VERSIONS:
         versions_to_delete = versions_no_stages[
             : len(versions_no_stages) - MAX_OUTDATED_SECRET_VERSIONS
@@ -814,6 +818,16 @@ def moto_secret_not_found_exception_init(fn, self):
     self.code = 400
 
 
+@patch(FakeSecret._form_version_ids_to_stages, pass_target=False)
+def _form_version_ids_to_stages_modal(self):
+    version_id_to_stages = {}
+    for key, value in self.versions.items():
+        # Patch: include version_stages in the response only if it is not empty.
+        if len(value["version_stages"]) > 0:
+            version_id_to_stages[key] = value["version_stages"]
+    return version_id_to_stages
+
+
 # patching resource policy in moto
 def get_resource_policy_model(self, secret_id):
     if self._is_valid_identifier(secret_id):
@@ -876,19 +890,9 @@ def put_resource_policy_response(self):
     )
 
 
-def _form_version_ids_to_stages_modal(self):
-    version_id_to_stages = {}
-    for key, value in self.versions.items():
-        if len(value["version_stages"]) > 0:
-            version_id_to_stages[key] = value["version_stages"]
-
-    return version_id_to_stages
-
-
 def apply_patches():
     SecretsManagerBackend.get_resource_policy = get_resource_policy_model
     SecretsManagerResponse.get_resource_policy = get_resource_policy_response
-    FakeSecret._form_version_ids_to_stages = _form_version_ids_to_stages_modal
 
     if not hasattr(SecretsManagerBackend, "delete_resource_policy"):
         SecretsManagerBackend.delete_resource_policy = delete_resource_policy_model
