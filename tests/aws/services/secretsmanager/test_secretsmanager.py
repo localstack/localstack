@@ -2082,8 +2082,6 @@ class TestSecretsManager:
 
     @markers.aws.validated
     def test_secret_tags(self, aws_client, create_secret, sm_snapshot, cleanups):
-        sm_snapshot.add_transformer(SortingTransformer("Tags", lambda x: x["Key"]))
-
         secret_name = short_uid()
         response = create_secret(
             Name=secret_name,
