@@ -327,7 +327,6 @@ class TestSecretsManager:
             response, [secret_name_1, secret_name_2], [secret_name_3, secret_name_4]
         )
 
-        # name and description based filtering
         response = aws_client.secretsmanager.list_secrets(
             Filters=[
                 {"Key": "description", "Values": ["a"]},
