@@ -500,7 +500,8 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, include_deprecated, *ar
     versions: list[SecretVersionsListEntry] = list()
     for version_id, version in secret.versions.items():
         version_stages = version["version_stages"]
-        # Patch: include version_stages in the response only if it is not empty.
+        # Patch: include deprecated versions if include_deprecated is True.
+        # version_stages is empty if the version is deprecated.
         if len(version_stages) > 0 or include_deprecated:
             entry = SecretVersionsListEntry(
                 CreatedDate=version["createdate"],
