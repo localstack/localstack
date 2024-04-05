@@ -106,9 +106,31 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_diff_after_update": {
-    "recorded-date": "05-04-2024, 09:45:00",
+    "recorded-date": "05-04-2024, 10:20:52",
     "recorded-content": {
-      "get-template-response": {
+      "get-template-response-1": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "\nResources:\n    SimpleParam1:\n        Type: AWS::SSM::Parameter\n        Properties:\n            Value: test1\n            Type: String\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Unable to update stack \"stack-ec268ea5\": No updates are to be performed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-template-response-2": {
         "StagesAvailable": [
           "Original",
           "Processed"
