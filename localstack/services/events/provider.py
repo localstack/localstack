@@ -24,6 +24,7 @@ from localstack.aws.api.events import (
     EventBusNameOrArn,
     EventPattern,
     EventsApi,
+    InvalidEventPatternException,
     PutRuleResponse,
     PutTargetsResponse,
     RoleArn,
@@ -42,6 +43,9 @@ from localstack.services.edge import ROUTER
 from localstack.services.events.event_ruler import matches_rule
 from localstack.services.events.models import EventsStore, events_stores
 from localstack.services.events.scheduler import JobScheduler
+from localstack.services.events.utils import (
+    InvalidEventPatternException as InternalInvalidEventPatternException,
+)
 from localstack.services.events.utils import matches_event
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -112,29 +116,42 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
         """
         if config.EVENT_RULE_ENGINE == "java":
-            result = matches_rule(event, event_pattern)
+            try:
+                result = matches_rule(event, event_pattern)
+            except InternalInvalidEventPatternException as e:
+                raise InvalidEventPatternException(e.message)
         else:
             event_pattern_dict = json.loads(event_pattern)
             event_dict = json.loads(event)
             result = matches_event(event_pattern_dict, event_dict)
 
-        # TODO: unify all these different implementation below ;)
-        # EventBridge implementation:
+        # TODO: unify the different implementations below:
+        # event_pattern_dict = json.loads(event_pattern)
+        # event_dict = json.loads(event)
+
+        # EventBridge:
         # result = matches_event(event_pattern_dict, event_dict)
 
-        # EventSourceMapping implementation:
+        # Lambda EventSourceMapping:
+        # from localstack.services.lambda_.event_source_listeners.utils import does_match_event
+        #
         # result = does_match_event(event_pattern_dict, event_dict)
 
-        # moto implementation:
+        # moto-ext EventBridge:
         # from moto.events.models import EventPattern as EventPatternMoto
         #
         # event_pattern = EventPatternMoto.load(event_pattern)
         # result = event_pattern.matches_event(event_dict)
 
-        # SNS:
+        # SNS: The SNS rule engine seems to differ slightly, for example not allowing the wildcard pattern.
         # from localstack.services.sns.publisher import SubscriptionFilter
         # subscription_filter = SubscriptionFilter()
         # result = subscription_filter._evaluate_nested_filter_policy_on_dict(event_pattern_dict, event_dict)
+
+        # moto-ext SNS:
+        # from moto.sns.utils import FilterPolicyMatcher
+        # filter_policy_matcher = FilterPolicyMatcher(event_pattern_dict, "MessageBody")
+        # result = filter_policy_matcher._body_based_match(event_dict)
 
         return TestEventPatternResponse(Result=result)
 

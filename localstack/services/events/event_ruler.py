@@ -2,6 +2,7 @@ import logging
 import os
 
 from localstack import config
+from localstack.services.events.utils import InvalidEventPatternException
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 # TODO: add on-demand jar downloading of selected jars (transitive deps)
@@ -14,6 +15,7 @@ if config.EVENT_RULE_ENGINE == "java":
     import jpype
     import jpype.imports
     from jpype import config as jpype_config
+    from jpype import java
 
     # TODO: double-check whether that's needed
     from jpype.types import *  # noqa: F403
@@ -34,7 +36,13 @@ if config.EVENT_RULE_ENGINE == "java":
         There is a single static boolean method Ruler.matchesRule(event, rule) -
         both arguments are provided as JSON strings.
         """
-        return Ruler.matchesRule(event, rule)
+
+        try:
+            return Ruler.matchesRule(event, rule)
+        except java.lang.Exception as e:
+            reason = e.args[0]
+            raise InvalidEventPatternException(reason=reason)
+
 else:
     # Provide an API-compatible import when using another rule engine to avoid conditional imports
     def matches_rule(event: str, rule: str) -> bool:
