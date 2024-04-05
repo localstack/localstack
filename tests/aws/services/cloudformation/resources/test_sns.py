@@ -100,3 +100,34 @@ def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
     rs = aws_client.sns.list_topics()
     topics = [tp for tp in rs["Topics"] if tp["TopicArn"] == topic_arn]
     assert not topics
+
+
+@markers.aws.validated
+def test_update_subscription(snapshot, deploy_cfn_template, aws_client, sqs_queue, sns_topic):
+    topic_arn = sns_topic["Attributes"]["TopicArn"]
+    queue_url = sqs_queue
+    queue_arn = aws_client.sqs.get_queue_attributes(
+        QueueUrl=queue_url, AttributeNames=["QueueArn"]
+    )["Attributes"]["QueueArn"]
+
+    stack = deploy_cfn_template(
+        parameters={"TopicArn": topic_arn, "QueueArn": queue_arn},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_subscription.yml"
+        ),
+    )
+    sub_arn = stack.outputs["SubscriptionArn"]
+    subscription = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
+    snapshot.match("subscription-1", subscription)
+
+    deploy_cfn_template(
+        parameters={"TopicArn": topic_arn, "QueueArn": queue_arn},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_subscription_update.yml"
+        ),
+        stack_name=stack.stack_name,
+        is_update=True,
+    )
+    subscription_updated = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
+    snapshot.match("subscription-2", subscription_updated)
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())

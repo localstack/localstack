@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements-basic.txt --strip-extras --unsafe-package=distribute --unsafe-package=localstack-core --unsafe-package=pip --unsafe-package=setuptools pyproject.toml
 #
-build==1.1.1
+build==1.2.1
     # via localstack-core (pyproject.toml)
 cachetools==5.3.3
     # via localstack-core (pyproject.toml)
@@ -38,7 +38,7 @@ plux==1.9.0
     # via localstack-core (pyproject.toml)
 psutil==5.9.8
     # via localstack-core (pyproject.toml)
-pycparser==2.21
+pycparser==2.22
     # via cffi
 pygments==2.17.2
     # via rich

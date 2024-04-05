@@ -301,20 +301,16 @@ def main():
     )
     if not metric_report_dir:
         print(missing_info)
-        print("missing METRIC_REPORT_DIR_PATH")
-        return
+        raise Exception("missing METRIC_REPORT_DIR_PATH")
     if not impl_coverage_file:
         print(missing_info)
-        print("missing IMPLEMENTATION_COVERAGE_FILE")
-        return
+        raise Exception("missing IMPLEMENTATION_COVERAGE_FILE")
     if not source_type:
         print(missing_info)
-        print("missing SOURCE_TYPE")
-        return
+        raise Exception("missing SOURCE_TYPE")
     if not token:
         print(missing_info)
-        print("missing TINYBIRD_PARITY_ANALYTICS_TOKEN")
-        return
+        raise Exception("missing TINYBIRD_PARITY_ANALYTICS_TOKEN")
 
     # create one timestamp that will be used for all the data sent
     timestamp: str = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")

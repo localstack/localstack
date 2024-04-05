@@ -949,7 +949,8 @@ class TestLambdaFunction:
     def test_invalid_invoke(self, aws_client, snapshot):
         with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
             aws_client.lambda_.invoke(
-                FunctionName="arn:aws:lambda:us-east-1:123400000000@function:myfn", Payload=b"{}"
+                FunctionName=f"arn:aws:lambda:{aws_client.lambda_.meta.region_name}:123400000000@function:myfn",
+                Payload=b"{}",
             )
         snapshot.match("invoke_function_name_pattern_exc", e.value.response)
 

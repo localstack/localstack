@@ -15,6 +15,9 @@ class ScenariosTemplate(TemplateLoader):
     PARALLEL_STATE_FAIL: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/parallel_state_fail.json5"
     )
+    PARALLEL_NESTED_NESTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/parallel_state_nested.json5"
+    )
     PARALLEL_STATE_CATCH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/parallel_state_catch.json5"
     )
@@ -57,6 +60,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_STATE_CONFIG_INLINE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_inline_item_selector.json5"
+    )
+    MAP_STATE_NESTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_nested.json5"
     )
     MAP_STATE_NO_PROCESSOR_CONFIG: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_no_processor_config.json5"

@@ -49,6 +49,9 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
 TEST_LAMBDA_PYTHON_ECHO_JSON_BODY = os.path.join(THIS_FOLDER, "functions/lambda_echo_json_body.py")
+TEST_LAMBDA_PYTHON_ECHO_STATUS_CODE = os.path.join(
+    THIS_FOLDER, "functions/lambda_echo_status_code.py"
+)
 TEST_LAMBDA_PYTHON_REQUEST_ID = os.path.join(THIS_FOLDER, "functions/lambda_request_id.py")
 TEST_LAMBDA_PYTHON_ECHO_VERSION_ENV = os.path.join(
     THIS_FOLDER, "functions/lambda_echo_version_env.py"
@@ -1124,6 +1127,66 @@ class TestLambdaURL:
                 FunctionName=function_name, AuthType="NONE", InvokeMode="UNKNOWN"
             )
         snapshot.match("invoke_function_invalid_invoke_type", e.value.response)
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
+            "$..headers.x-forwarded-for",
+            "$..headers.x-amzn-trace-id",
+            "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
+        ]
+    )
+    @markers.aws.validated
+    def test_lambda_url_echo_http_fixture_default(
+        self, create_echo_http_server, snapshot, aws_client
+    ):
+        key_value_transform = [
+            "domain",
+            "origin",
+            "x-amzn-tls-cipher-suite",
+            "x-amzn-tls-version",
+            "x-amzn-trace-id",
+            "x-forwarded-for",
+            "x-forwarded-port",
+            "x-forwarded-proto",
+        ]
+        for key in key_value_transform:
+            snapshot.add_transformer(snapshot.transform.key_value(key))
+        echo_url = create_echo_http_server()
+        response = requests.post(
+            url=echo_url + "/path/1?q=query",
+            headers={
+                "content-type": "application/json",
+                "ExTrA-HeadErs": "With WeiRd CapS",
+                "user-agent": "test/echo",
+            },
+            json={"foo": "bar"},
+        )
+        snapshot.match("url_response", response.json())
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..content.headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
+            "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
+        ]
+    )
+    @markers.aws.validated
+    def test_lambda_url_echo_http_fixture_trim_x_headers(
+        self, create_echo_http_server, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("domain"))
+        snapshot.add_transformer(snapshot.transform.key_value("origin"))
+        echo_url = create_echo_http_server(trim_x_headers=True)
+        response = requests.post(
+            url=echo_url + "/path/1?q=query",
+            headers={
+                "content-type": "application/json",
+                "ExTrA-HeadErs": "With WeiRd CapS",
+                "user-agent": "test/echo",
+            },
+            json={"foo": "bar"},
+        )
+        snapshot.match("url_response", response.json())
 
 
 @pytest.mark.skipif(not is_aws_cloud(), reason="Not yet implemented")

@@ -610,9 +610,11 @@ def _resolve_refs_recursively(
                 )
                 or region_name
             )
-            azs = []
-            for az in ("a", "b", "c", "d", "e", "f"):
-                azs.append("%s%s" % (region, az))
+
+            get_availability_zones = connect_to(
+                aws_access_key_id=account_id, region_name=region
+            ).ec2.describe_availability_zones()["AvailabilityZones"]
+            azs = [az["ZoneName"] for az in get_availability_zones]
 
             return azs
 
