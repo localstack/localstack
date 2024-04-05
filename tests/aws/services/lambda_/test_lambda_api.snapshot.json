@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "recorded-date": "28-03-2024, 09:46:50",
+    "recorded-date": "04-04-2024, 17:05:55",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -327,7 +327,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_redundant_updates": {
-    "recorded-date": "20-11-2023, 16:46:07",
+    "recorded-date": "04-04-2024, 17:06:02",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -348,11 +348,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -394,11 +398,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -435,11 +443,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -481,11 +493,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -525,11 +541,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:4>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -571,11 +591,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:5>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -598,7 +622,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[delete_function]": {
-    "recorded-date": "20-11-2023, 16:46:08",
+    "recorded-date": "04-04-2024, 17:06:03",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -627,7 +651,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function]": {
-    "recorded-date": "20-11-2023, 16:46:08",
+    "recorded-date": "04-04-2024, 17:06:03",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -656,7 +680,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function_configuration]": {
-    "recorded-date": "20-11-2023, 16:46:08",
+    "recorded-date": "04-04-2024, 17:06:03",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -685,7 +709,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function]": {
-    "recorded-date": "20-11-2023, 16:46:11",
+    "recorded-date": "04-04-2024, 17:06:07",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -702,7 +726,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_configuration]": {
-    "recorded-date": "20-11-2023, 16:46:14",
+    "recorded-date": "04-04-2024, 17:06:10",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -719,7 +743,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_event_invoke_config]": {
-    "recorded-date": "20-11-2023, 16:46:18",
+    "recorded-date": "04-04-2024, 17:06:13",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -736,7 +760,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
-    "recorded-date": "20-11-2023, 16:46:21",
+    "recorded-date": "04-04-2024, 17:06:17",
     "recorded-content": {
       "delete_function_response_non_existent": {
         "Error": {
@@ -765,7 +789,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[delete_function]": {
-    "recorded-date": "20-11-2023, 16:46:22",
+    "recorded-date": "04-04-2024, 17:06:17",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -782,7 +806,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function]": {
-    "recorded-date": "20-11-2023, 16:46:22",
+    "recorded-date": "04-04-2024, 17:06:17",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -799,7 +823,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_configuration]": {
-    "recorded-date": "20-11-2023, 16:46:22",
+    "recorded-date": "04-04-2024, 17:06:17",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -816,7 +840,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_url_config]": {
-    "recorded-date": "20-11-2023, 16:46:22",
+    "recorded-date": "04-04-2024, 17:06:18",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -833,7 +857,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_code_signing_config]": {
-    "recorded-date": "20-11-2023, 16:46:23",
+    "recorded-date": "04-04-2024, 17:06:18",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -850,7 +874,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_event_invoke_config]": {
-    "recorded-date": "20-11-2023, 16:46:23",
+    "recorded-date": "04-04-2024, 17:06:18",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -867,7 +891,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_concurrency]": {
-    "recorded-date": "20-11-2023, 16:46:23",
+    "recorded-date": "04-04-2024, 17:06:18",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -884,7 +908,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function]": {
-    "recorded-date": "20-11-2023, 16:46:26",
+    "recorded-date": "04-04-2024, 17:06:21",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -901,7 +925,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_configuration]": {
-    "recorded-date": "20-11-2023, 16:46:29",
+    "recorded-date": "04-04-2024, 17:06:24",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -918,7 +942,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_url_config]": {
-    "recorded-date": "20-11-2023, 16:46:32",
+    "recorded-date": "04-04-2024, 17:06:27",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -935,7 +959,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_code_signing_config]": {
-    "recorded-date": "20-11-2023, 16:46:35",
+    "recorded-date": "04-04-2024, 17:06:30",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -952,7 +976,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_event_invoke_config]": {
-    "recorded-date": "20-11-2023, 16:46:38",
+    "recorded-date": "04-04-2024, 17:06:33",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -969,7 +993,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_concurrency]": {
-    "recorded-date": "20-11-2023, 16:46:41",
+    "recorded-date": "04-04-2024, 17:06:36",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -986,7 +1010,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[delete_function]": {
-    "recorded-date": "20-11-2023, 16:46:45",
+    "recorded-date": "04-04-2024, 17:06:39",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -1003,7 +1027,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
-    "recorded-date": "20-11-2023, 16:46:48",
+    "recorded-date": "04-04-2024, 17:06:42",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -1020,7 +1044,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
-    "recorded-date": "20-11-2023, 16:46:52",
+    "recorded-date": "04-04-2024, 17:06:46",
     "recorded-content": {
       "create-response-zip-file": {
         "Architectures": [
@@ -1036,11 +1060,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -1081,11 +1109,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -1122,11 +1154,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -1167,11 +1203,15 @@
           "LastUpdateStatus": "InProgress",
           "LastUpdateStatusReason": "The function is being created.",
           "LastUpdateStatusReasonCode": "Creating",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -1194,7 +1234,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
-    "recorded-date": "20-11-2023, 16:46:59",
+    "recorded-date": "04-04-2024, 17:06:52",
     "recorded-content": {
       "create_response_s3": {
         "Architectures": [
@@ -1210,11 +1250,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -1255,11 +1299,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -1296,11 +1344,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -1341,11 +1393,15 @@
           "LastUpdateStatus": "InProgress",
           "LastUpdateStatusReason": "The function is being created.",
           "LastUpdateStatusReasonCode": "Creating",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -1368,7 +1424,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_version_on_create": {
-    "recorded-date": "20-11-2023, 16:56:44",
+    "recorded-date": "04-04-2024, 17:18:22",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1384,11 +1440,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -1429,11 +1489,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -1473,11 +1537,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -1517,11 +1585,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -1557,11 +1629,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:2>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -1586,11 +1662,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:3>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -1622,11 +1702,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -1661,11 +1745,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:2>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -1690,11 +1778,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:3>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -1714,7 +1806,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_version_lifecycle": {
-    "recorded-date": "20-11-2023, 16:56:51",
+    "recorded-date": "04-04-2024, 17:18:29",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1730,11 +1822,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -1775,11 +1871,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -1815,11 +1915,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:2>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -1853,11 +1957,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -1896,11 +2004,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -1935,11 +2047,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:5>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -1978,11 +2094,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:5>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -2017,11 +2137,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:5>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2057,11 +2181,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:6>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2100,11 +2228,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:5>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -2139,11 +2271,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:7>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2177,11 +2313,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:7>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2216,11 +2356,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:8>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -2245,11 +2389,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:5>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -2274,11 +2422,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:7>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -2415,7 +2567,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_with_wrong_sha256": {
-    "recorded-date": "20-11-2023, 16:56:54",
+    "recorded-date": "04-04-2024, 17:18:32",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2431,11 +2583,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2476,11 +2632,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -2527,11 +2687,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2553,7 +2717,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_with_update": {
-    "recorded-date": "20-11-2023, 16:56:57",
+    "recorded-date": "04-04-2024, 17:18:35",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2569,11 +2733,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2614,11 +2782,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -2652,11 +2824,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2696,11 +2872,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "index.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -2744,11 +2924,15 @@
           "LastUpdateStatus": "InProgress",
           "LastUpdateStatusReason": "The function is being created.",
           "LastUpdateStatusReasonCode": "Creating",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -2771,7 +2955,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "20-11-2023, 16:57:06",
+    "recorded-date": "04-04-2024, 17:18:44",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2792,11 +2976,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2837,11 +3025,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2880,11 +3072,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -2960,11 +3156,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -3009,11 +3209,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -3343,7 +3547,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "20-11-2023, 16:57:21",
+    "recorded-date": "04-04-2024, 17:18:58",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3364,11 +3568,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "index.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -3409,11 +3617,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -3452,11 +3664,15 @@
         "Handler": "index.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -3641,7 +3857,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_create_tag_on_fn_create": {
-    "recorded-date": "20-11-2023, 16:57:41",
+    "recorded-date": "04-04-2024, 17:19:23",
     "recorded-content": {
       "get_function_result": {
         "Code": {
@@ -3666,11 +3882,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -3705,7 +3925,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle": {
-    "recorded-date": "20-11-2023, 16:57:46",
+    "recorded-date": "04-04-2024, 17:19:28",
     "recorded-content": {
       "tag_single_response": {
         "ResponseMetadata": {
@@ -3820,7 +4040,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_nonexisting_resource": {
-    "recorded-date": "20-11-2023, 16:57:50",
+    "recorded-date": "04-04-2024, 17:19:32",
     "recorded-content": {
       "pre_delete_get_function": {
         "Code": {
@@ -3845,11 +4065,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -3908,7 +4132,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_exceptions": {
-    "recorded-date": "20-11-2023, 16:58:16",
+    "recorded-date": "04-04-2024, 17:19:58",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -3928,11 +4152,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },
@@ -4565,7 +4793,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
-    "recorded-date": "20-11-2023, 16:58:20",
+    "recorded-date": "04-04-2024, 17:20:01",
     "recorded-content": {
       "put_function_concurrency_with_function_name_doesnotexist": {
         "Error": {
@@ -4606,7 +4834,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
-    "recorded-date": "20-11-2023, 18:04:09",
+    "recorded-date": "04-04-2024, 17:20:08",
     "recorded-content": {
       "put_function_concurrency_with_reserved_0": {
         "ReservedConcurrentExecutions": 0,
@@ -4644,7 +4872,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "20-11-2023, 16:58:43",
+    "recorded-date": "04-04-2024, 17:22:42",
     "recorded-content": {
       "create_lambda": {
         "CreateEventSourceMappingResponse": null,
@@ -4665,11 +4893,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -4741,7 +4973,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
-    "recorded-date": "20-11-2023, 16:58:58",
+    "recorded-date": "04-04-2024, 17:22:57",
     "recorded-content": {
       "add_permission_1": {
         "Statement": {
@@ -4885,7 +5117,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_create_multiple_lambda_permissions": {
-    "recorded-date": "20-11-2023, 16:59:01",
+    "recorded-date": "04-04-2024, 17:23:01",
     "recorded-content": {
       "add_permission_response_1": {
         "Statement": {
@@ -4951,7 +5183,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "recorded-date": "20-11-2023, 16:59:22",
+    "recorded-date": "04-04-2024, 17:23:20",
     "recorded-content": {
       "url_creation": {
         "AuthType": "NONE",
@@ -5030,7 +5262,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_lambda": {
-    "recorded-date": "21-11-2023, 10:44:33",
+    "recorded-date": "04-04-2024, 17:24:38",
     "recorded-content": {
       "create_function_large_zip": {
         "Architectures": [
@@ -5046,11 +5278,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -5074,7 +5310,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_variables_fails": {
-    "recorded-date": "20-11-2023, 17:00:32",
+    "recorded-date": "04-04-2024, 17:24:56",
     "recorded-content": {
       "failed_create_fn_result": {
         "Error": {
@@ -5091,7 +5327,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_fails_multiple_keys": {
-    "recorded-date": "20-11-2023, 17:00:49",
+    "recorded-date": "04-04-2024, 17:25:13",
     "recorded-content": {
       "failured_create_fn_result_multi_key": {
         "Error": {
@@ -5108,7 +5344,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_lambda_envvars_near_limit_succeeds": {
-    "recorded-date": "20-11-2023, 17:00:52",
+    "recorded-date": "04-04-2024, 17:25:17",
     "recorded-content": {
       "successful_create_fn_result": {
         "CreateEventSourceMappingResponse": null,
@@ -5131,11 +5367,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -5160,7 +5400,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestCodeSigningConfig::test_function_code_signing_config": {
-    "recorded-date": "20-11-2023, 17:00:57",
+    "recorded-date": "04-04-2024, 17:25:21",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -5284,7 +5524,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestCodeSigningConfig::test_code_signing_not_found_excs": {
-    "recorded-date": "20-11-2023, 17:01:02",
+    "recorded-date": "04-04-2024, 17:25:26",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -5463,7 +5703,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings": {
-    "recorded-date": "20-11-2023, 17:01:02",
+    "recorded-date": "04-04-2024, 17:25:27",
     "recorded-content": {
       "acc_settings_modded": {
         "AccountLimit": [
@@ -5485,7 +5725,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_exceptions": {
-    "recorded-date": "20-11-2023, 17:01:28",
+    "recorded-date": "04-04-2024, 17:25:46",
     "recorded-content": {
       "get_unknown_uuid": {
         "Error": {
@@ -5550,7 +5790,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "recorded-date": "20-11-2023, 17:01:43",
+    "recorded-date": "04-04-2024, 17:26:01",
     "recorded-content": {
       "update_table_response": {
         "TableDescription": {
@@ -5679,7 +5919,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
-    "recorded-date": "20-11-2023, 17:02:01",
+    "recorded-date": "04-04-2024, 17:28:51",
     "recorded-content": {
       "tag_lambda_invalidarn": {
         "Error": {
@@ -5753,7 +5993,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_limits": {
-    "recorded-date": "20-11-2023, 17:02:05",
+    "recorded-date": "04-04-2024, 17:28:55",
     "recorded-content": {
       "tag_lambda_too_many_tags": {
         "Error": {
@@ -5854,11 +6094,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -5945,7 +6189,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_lifecycle": {
-    "recorded-date": "20-11-2023, 17:02:14",
+    "recorded-date": "04-04-2024, 17:29:04",
     "recorded-content": {
       "list_tags_response_postfncreate": {
         "Tags": {
@@ -5979,11 +6223,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -6048,11 +6296,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -6121,11 +6373,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -6186,11 +6442,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -6245,11 +6505,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:5>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -6284,7 +6548,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_exceptions": {
-    "recorded-date": "20-11-2023, 16:58:30",
+    "recorded-date": "04-04-2024, 17:20:15",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -6304,11 +6568,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },
@@ -6533,7 +6801,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_lambda_provisioned_lifecycle": {
-    "recorded-date": "20-11-2023, 18:06:43",
+    "recorded-date": "04-04-2024, 17:22:33",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -6553,11 +6821,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },
@@ -6679,7 +6951,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_request_create_lambda": {
-    "recorded-date": "21-11-2023, 10:41:36",
+    "recorded-date": "04-04-2024, 17:23:32",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -6694,7 +6966,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_versions": {
-    "recorded-date": "20-11-2023, 17:02:09",
+    "recorded-date": "04-04-2024, 17:28:59",
     "recorded-content": {
       "tag_resource_exception": {
         "Error": {
@@ -6723,7 +6995,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_list_paging": {
-    "recorded-date": "20-11-2023, 16:59:17",
+    "recorded-date": "04-04-2024, 17:23:16",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -6743,11 +7015,15 @@
         "Handler": "lambda_handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-        "Runtime": "nodejs14.x",
+        "Runtime": "nodejs20.x",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },
@@ -6843,7 +7119,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "recorded-date": "20-11-2023, 16:59:12",
+    "recorded-date": "04-04-2024, 17:23:10",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -6863,11 +7139,15 @@
         "Handler": "lambda_handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-        "Runtime": "nodejs14.x",
+        "Runtime": "nodejs20.x",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },
@@ -7277,7 +7557,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_permission_exceptions": {
-    "recorded-date": "20-11-2023, 16:58:39",
+    "recorded-date": "04-04-2024, 17:22:38",
     "recorded-content": {
       "add_permission_invalid_statement_id": {
         "Error": {
@@ -7458,7 +7738,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_unzipped_lambda": {
-    "recorded-date": "21-11-2023, 10:43:40",
+    "recorded-date": "04-04-2024, 17:24:04",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -7475,7 +7755,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "12-03-2024, 15:42:35",
+    "recorded-date": "04-04-2024, 17:07:00",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7490,10 +7770,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7502,10 +7782,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7547,7 +7827,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_update_lambda_exceptions": {
-    "recorded-date": "12-03-2024, 16:08:14",
+    "recorded-date": "04-04-2024, 17:07:03",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7562,10 +7842,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7574,10 +7854,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7586,7 +7866,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_list_functions": {
-    "recorded-date": "20-11-2023, 16:47:16",
+    "recorded-date": "04-04-2024, 17:07:16",
     "recorded-content": {
       "create_response_1": {
         "CreateEventSourceMappingResponse": null,
@@ -7607,11 +7887,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -7652,11 +7936,15 @@
           "FunctionName": "<function-name:2>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:2>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -7707,11 +7995,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "handler.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:3>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -7739,11 +8031,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "handler.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:4>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -7771,11 +8067,15 @@
             "FunctionName": "<function-name:2>",
             "Handler": "handler.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:2>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:5>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -7807,11 +8107,15 @@
             "FunctionName": "<function-name:1>",
             "Handler": "handler.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:3>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -7839,11 +8143,15 @@
             "FunctionName": "<function-name:2>",
             "Handler": "handler.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:2>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:5>",
             "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-            "Runtime": "python3.9",
+            "Runtime": "python3.12",
             "SnapStart": {
               "ApplyOn": "None",
               "OptimizationStatus": "Off"
@@ -7859,14 +8167,14 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "recorded-date": "12-03-2024, 15:42:16",
+    "recorded-date": "04-04-2024, 17:29:25",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "python3.9"
+          "python3.12"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -8037,7 +8345,7 @@
       "publish_layer_version_exc_invalid_runtime_arch": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+          "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8047,7 +8355,7 @@
       "publish_layer_version_exc_partially_invalid_values": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs16.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs20.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8057,7 +8365,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_lifecycle": {
-    "recorded-date": "20-11-2023, 17:04:38",
+    "recorded-date": "04-04-2024, 17:31:14",
     "recorded-content": {
       "get_fn_result": {
         "Code": {
@@ -8082,11 +8390,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -8124,11 +8436,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -8152,7 +8468,7 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "python3.9"
+          "python3.12"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:2>",
@@ -8175,7 +8491,7 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "python3.9"
+          "python3.12"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:2>",
@@ -8219,11 +8535,15 @@
             "CodeSize": "<code-size>"
           }
         ],
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -8266,11 +8586,15 @@
             "CodeSize": "<code-size>"
           }
         ],
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -8294,7 +8618,7 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "python3.9"
+          "python3.12"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:2>",
@@ -8317,7 +8641,7 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "python3.9"
+          "python3.12"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:2>",
@@ -8342,7 +8666,7 @@
               "x86_64"
             ],
             "CompatibleRuntimes": [
-              "python3.9"
+              "python3.12"
             ],
             "CreatedDate": "date",
             "Description": "<description>",
@@ -8355,7 +8679,7 @@
               "x86_64"
             ],
             "CompatibleRuntimes": [
-              "python3.9"
+              "python3.12"
             ],
             "CreatedDate": "date",
             "Description": "<description>",
@@ -8399,11 +8723,15 @@
             "CodeSize": "<code-size>"
           }
         ],
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -8440,7 +8768,7 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "python3.9"
+          "python3.12"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:2>",
@@ -8461,14 +8789,14 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_policy_exceptions": {
-    "recorded-date": "20-11-2023, 17:04:54",
+    "recorded-date": "04-04-2024, 17:31:23",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "python3.9"
+          "python3.12"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -8644,14 +8972,14 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_policy_lifecycle": {
-    "recorded-date": "20-11-2023, 17:05:00",
+    "recorded-date": "04-04-2024, 17:31:28",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
           "x86_64"
         ],
         "CompatibleRuntimes": [
-          "python3.9"
+          "python3.12"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -8772,7 +9100,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_s3_content": {
-    "recorded-date": "20-11-2023, 17:04:46",
+    "recorded-date": "04-04-2024, 17:31:20",
     "recorded-content": {
       "publish_layer_result": {
         "Content": {
@@ -8793,7 +9121,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_function_exceptions": {
-    "recorded-date": "20-11-2023, 17:03:22",
+    "recorded-date": "04-04-2024, 17:30:05",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8878,11 +9206,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
           },
@@ -8965,7 +9297,7 @@
       "add_layer_arn_without_version_exc": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value '[arn:aws:lambda:<region>:111111111111:layer:<resource:1>]' at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-zA-Z0-9-]+:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]"
+          "Message": "1 validation error detected: Value '[arn:aws:lambda:<region>:111111111111:layer:<resource:1>]' at 'layers' failed to satisfy constraint: Member must satisfy constraint: [Member must have length less than or equal to 140, Member must have length greater than or equal to 1, Member must satisfy regular expression pattern: (arn:[a-zA-Z0-9-]+:lambda:[a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+), Member must not be null]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8987,7 +9319,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_image_crud": {
-    "recorded-date": "20-11-2023, 16:55:07",
+    "recorded-date": "04-04-2024, 17:16:47",
     "recorded-content": {
       "create-image-response": {
         "Architectures": [
@@ -9007,6 +9339,10 @@
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:1>",
@@ -9053,6 +9389,10 @@
           "FunctionName": "<function-name:1>",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Image",
           "RevisionId": "<uuid:2>",
@@ -9092,6 +9432,10 @@
         "FunctionName": "<function-name:1>",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:2>",
@@ -9144,6 +9488,10 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:3>",
@@ -9188,6 +9536,10 @@
           "FunctionName": "<function-name:1>",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Image",
           "RevisionId": "<uuid:4>",
@@ -9227,6 +9579,10 @@
         "FunctionName": "<function-name:1>",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:4>",
@@ -9249,7 +9605,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_image_and_image_config_crud": {
-    "recorded-date": "20-11-2023, 16:55:56",
+    "recorded-date": "04-04-2024, 17:17:35",
     "recorded-content": {
       "create-image-with-config-response": {
         "Architectures": [
@@ -9281,6 +9637,10 @@
           }
         },
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:1>",
@@ -9339,6 +9699,10 @@
           },
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Image",
           "RevisionId": "<uuid:2>",
@@ -9390,6 +9754,10 @@
         },
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:2>",
@@ -9439,6 +9807,10 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:3>",
@@ -9492,6 +9864,10 @@
           },
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Image",
           "RevisionId": "<uuid:4>",
@@ -9540,6 +9916,10 @@
         },
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:4>",
@@ -9580,6 +9960,10 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:5>",
@@ -9624,6 +10008,10 @@
           "FunctionName": "<function-name:1>",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Image",
           "RevisionId": "<uuid:6>",
@@ -9663,6 +10051,10 @@
         "FunctionName": "<function-name:1>",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:6>",
@@ -9685,7 +10077,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_zip_file_to_image": {
-    "recorded-date": "20-11-2023, 16:55:22",
+    "recorded-date": "04-04-2024, 17:17:01",
     "recorded-content": {
       "create-image-response": {
         "Architectures": [
@@ -9701,11 +10093,15 @@
         "FunctionName": "<function-name:1>",
         "Handler": "handler.handler",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -9746,11 +10142,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -9785,11 +10185,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -9840,11 +10244,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -9879,11 +10287,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -9905,7 +10317,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size": {
-    "recorded-date": "20-11-2023, 17:01:20",
+    "recorded-date": "04-04-2024, 17:25:38",
     "recorded-content": {
       "total_code_size_diff_create_function": 276,
       "total_code_size_diff_update_function": 276,
@@ -9914,7 +10326,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size_config_update": {
-    "recorded-date": "20-11-2023, 17:01:26",
+    "recorded-date": "04-04-2024, 17:25:44",
     "recorded-content": {
       "is_total_code_size_diff_create_function_more_than_200": true,
       "total_code_size_diff_update_function_configuration": 0,
@@ -9922,7 +10334,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_lifecycle": {
-    "recorded-date": "20-11-2023, 16:57:57",
+    "recorded-date": "04-04-2024, 17:19:39",
     "recorded-content": {
       "put_invokeconfig_retries_0": {
         "DestinationConfig": {
@@ -10041,11 +10453,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },
@@ -10285,7 +10701,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_fields": {
-    "recorded-date": "20-11-2023, 16:58:54",
+    "recorded-date": "04-04-2024, 17:22:53",
     "recorded-content": {
       "add_permission_principal_wildcard": {
         "Statement": {
@@ -10404,7 +10820,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_lambda_permission_fn_versioning": {
-    "recorded-date": "20-11-2023, 16:58:49",
+    "recorded-date": "04-04-2024, 17:22:48",
     "recorded-content": {
       "add_permission": {
         "Statement": {
@@ -10471,11 +10887,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:3>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:4>"
         },
@@ -10517,11 +10937,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:3>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:4>"
           },
@@ -11037,7 +11461,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_basic": {
-    "recorded-date": "20-11-2023, 16:57:28",
+    "recorded-date": "04-04-2024, 17:19:10",
     "recorded-content": {
       "create_function_response_rev1": {
         "CreateEventSourceMappingResponse": null,
@@ -11058,11 +11482,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "index.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -11107,11 +11535,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -11163,11 +11595,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -11209,11 +11645,15 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -11265,6 +11705,10 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:5>",
@@ -11311,6 +11755,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:6>",
@@ -11338,7 +11786,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_version_and_alias": {
-    "recorded-date": "20-11-2023, 16:57:33",
+    "recorded-date": "04-04-2024, 17:19:15",
     "recorded-content": {
       "create_function_response_rev1": {
         "CreateEventSourceMappingResponse": null,
@@ -11359,11 +11807,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -11408,11 +11860,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -11462,11 +11918,15 @@
         "Handler": "handler.handler",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -11508,11 +11968,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -11555,11 +12019,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -11613,11 +12081,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -11660,11 +12132,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -11710,7 +12186,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_permissions": {
-    "recorded-date": "20-11-2023, 16:57:37",
+    "recorded-date": "04-04-2024, 17:19:20",
     "recorded-content": {
       "add_permission_revision_exception": {
         "Error": {
@@ -11782,7 +12258,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_function_quota_exception": {
-    "recorded-date": "20-11-2023, 17:04:11",
+    "recorded-date": "04-04-2024, 17:30:48",
     "recorded-content": {
       "create_function_with_six_layers": {
         "Error": {
@@ -11799,7 +12275,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_validation": {
-    "recorded-date": "20-11-2023, 17:01:56",
+    "recorded-date": "04-04-2024, 17:28:46",
     "recorded-content": {
       "error": {
         "Error": {
@@ -11816,15 +12292,15 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_exceptions": {
-    "recorded-date": "20-11-2023, 17:08:17",
+    "recorded-date": "04-04-2024, 17:37:31",
     "recorded-content": {
       "create_function_unsupported_snapstart_runtime": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "python3.9 is not supported for SnapStart enabled functions."
+          "Message": "python3.12 is not supported for SnapStart enabled functions."
         },
         "Type": "User",
-        "message": "python3.9 is not supported for SnapStart enabled functions.",
+        "message": "python3.12 is not supported for SnapStart enabled functions.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -11843,7 +12319,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_image_versions": {
-    "recorded-date": "20-11-2023, 16:56:31",
+    "recorded-date": "04-04-2024, 17:18:09",
     "recorded-content": {
       "create_image_response": {
         "Architectures": [
@@ -11863,6 +12339,10 @@
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
         "FunctionName": "<function-name:1>",
         "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:1>",
@@ -11909,6 +12389,10 @@
           "FunctionName": "<function-name:1>",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Image",
           "RevisionId": "<uuid:2>",
@@ -11949,6 +12433,10 @@
             "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
             "FunctionName": "<function-name:1>",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Image",
             "RevisionId": "<uuid:2>",
@@ -11981,6 +12469,10 @@
             "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:1",
             "FunctionName": "<function-name:1>",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<function-name:1>"
+            },
             "MemorySize": 128,
             "PackageType": "Image",
             "RevisionId": "<uuid:3>",
@@ -12022,6 +12514,10 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:4>",
@@ -12066,6 +12562,10 @@
           "FunctionName": "<function-name:1>",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Image",
           "RevisionId": "<uuid:5>",
@@ -12117,6 +12617,10 @@
         "FunctionName": "<function-name:1>",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:6>",
@@ -12157,6 +12661,10 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:7>",
@@ -12201,6 +12709,10 @@
           "FunctionName": "<function-name:1>",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Image",
           "RevisionId": "<uuid:8>",
@@ -12240,6 +12752,10 @@
         "FunctionName": "<function-name:1>",
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Image",
         "RevisionId": "<uuid:9>",
@@ -12262,7 +12778,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java11]": {
-    "recorded-date": "20-11-2023, 17:53:04",
+    "recorded-date": "04-04-2024, 17:33:28",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12283,6 +12799,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -12332,6 +12852,10 @@
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -12379,6 +12903,10 @@
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
@@ -12406,7 +12934,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java17]": {
-    "recorded-date": "20-11-2023, 17:54:39",
+    "recorded-date": "04-04-2024, 17:35:29",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12427,6 +12955,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -12476,6 +13008,10 @@
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -12523,6 +13059,10 @@
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
@@ -12643,7 +13183,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java17]": {
-    "recorded-date": "20-11-2023, 17:08:17",
+    "recorded-date": "04-04-2024, 17:37:31",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12664,6 +13204,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -12710,6 +13254,10 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 128,
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
@@ -12736,7 +13284,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_vpc_config": {
-    "recorded-date": "20-11-2023, 17:50:21",
+    "recorded-date": "04-04-2024, 17:15:35",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12757,11 +13305,15 @@
           "FunctionName": "<function-name:1>",
           "Handler": "handler.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 256,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -12816,11 +13368,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 256,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -12870,11 +13426,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 256,
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -12926,11 +13486,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 256,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -12980,11 +13544,15 @@
         "LastUpdateStatus": "InProgress",
         "LastUpdateStatusReason": "The function is being created.",
         "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
         "MemorySize": 256,
         "PackageType": "Zip",
         "RevisionId": "<uuid:5>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -13032,11 +13600,15 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 256,
           "PackageType": "Zip",
           "RevisionId": "<uuid:6>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -13106,7 +13678,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "recorded-date": "21-03-2024, 08:24:39",
+    "recorded-date": "04-04-2024, 17:29:09",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13147,7 +13719,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "recorded-date": "21-03-2024, 08:24:44",
+    "recorded-date": "04-04-2024, 17:29:13",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13185,7 +13757,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_limits": {
-    "recorded-date": "20-11-2023, 16:58:33",
+    "recorded-date": "04-04-2024, 17:20:18",
     "recorded-content": {
       "put_provisioned_concurrency_account_limit_exceeded": {
         "Error": {
@@ -13212,7 +13784,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_limits": {
-    "recorded-date": "20-11-2023, 16:58:23",
+    "recorded-date": "04-04-2024, 17:20:04",
     "recorded-content": {
       "put_function_concurrency_account_limit_exceeded": {
         "Error": {
@@ -13239,7 +13811,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java21]": {
-    "recorded-date": "20-11-2023, 17:56:15",
+    "recorded-date": "04-04-2024, 17:37:24",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -13260,6 +13832,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -13309,6 +13885,10 @@
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -13356,6 +13936,10 @@
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
@@ -13383,7 +13967,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_zipped_create_lambda": {
-    "recorded-date": "21-11-2023, 10:43:03",
+    "recorded-date": "04-04-2024, 17:23:46",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -13398,7 +13982,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_arns": {
-    "recorded-date": "27-03-2024, 09:37:39",
+    "recorded-date": "04-04-2024, 17:06:59",
     "recorded-content": {
       "create-function-arn-response": {
         "CreateEventSourceMappingResponse": null,
@@ -13555,7 +14139,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_function_name_variations": {
-    "recorded-date": "15-12-2023, 10:58:47",
+    "recorded-date": "04-04-2024, 17:27:29",
     "recorded-content": {
       "name_only_create_esm": {
         "BatchSize": 10,
@@ -13665,7 +14249,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_naming": {
-    "recorded-date": "13-02-2024, 08:44:31",
+    "recorded-date": "04-04-2024, 17:19:02",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -13694,7 +14278,7 @@
         "PackageType": "Zip",
         "RevisionId": "<uuid:1>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -13743,7 +14327,7 @@
         "PackageType": "Zip",
         "RevisionId": "<uuid:2>",
         "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
         },
@@ -13797,12 +14381,12 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_invoke": {
-    "recorded-date": "26-02-2024, 17:04:08",
+    "recorded-date": "04-04-2024, 17:15:35",
     "recorded-content": {
       "invoke_function_name_pattern_exc": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'arn:aws:lambda:<region>:123400000000@function:myfn' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+          "Message": "1 validation error detected: Value 'arn:aws:lambda:<region>:123400000000@function:myfn' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -14060,7 +14644,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_advanced_logging_configuration": {
-    "recorded-date": "02-04-2024, 12:25:40",
+    "recorded-date": "04-04-2024, 17:05:48",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -14306,7 +14890,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_partial_advanced_logging_configuration_update[partial_config0]": {
-    "recorded-date": "03-04-2024, 18:09:23",
+    "recorded-date": "04-04-2024, 17:05:27",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -14552,7 +15136,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_partial_advanced_logging_configuration_update[partial_config1]": {
-    "recorded-date": "03-04-2024, 18:09:28",
+    "recorded-date": "04-04-2024, 17:05:32",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -14798,7 +15382,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_partial_advanced_logging_configuration_update[partial_config2]": {
-    "recorded-date": "03-04-2024, 18:09:35",
+    "recorded-date": "04-04-2024, 17:05:37",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -15044,7 +15628,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_partial_advanced_logging_configuration_update[partial_config3]": {
-    "recorded-date": "03-04-2024, 18:09:40",
+    "recorded-date": "04-04-2024, 17:05:43",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -15286,7 +15870,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_advance_logging_configuration_format_switch": {
-    "recorded-date": "04-04-2024, 16:43:48",
+    "recorded-date": "04-04-2024, 17:05:21",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -15612,6 +16196,107 @@
         },
         "State": "Active",
         "Timeout": 5,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java21]": {
+    "recorded-date": "04-04-2024, 17:37:27",
+    "recorded-content": {
+      "create_function_response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java21",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "update_function_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "Environment": {
+          "Variables": {}
+        },
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
+        "LastModified": "date",
+        "LastUpdateStatus": "InProgress",
+        "LastUpdateStatusReason": "The function is being created.",
+        "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:2>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "java21",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "PublishedVersions",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 30,
         "TracingConfig": {
           "Mode": "PassThrough"
         },

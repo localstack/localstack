@@ -277,7 +277,7 @@ class TestLambdaFunction:
         create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             Description="Initial description",
         )
         snapshot.match("create_response", create_response)
@@ -353,7 +353,7 @@ class TestLambdaFunction:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             Description="Initial description",
         )
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
@@ -369,7 +369,7 @@ class TestLambdaFunction:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             Description="Initial description",
         )
         # it seems delete function on a random qualifier is idempotent
@@ -428,7 +428,7 @@ class TestLambdaFunction:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             Description="Initial description",
         )
         wrong_region = (
@@ -453,7 +453,7 @@ class TestLambdaFunction:
             Code={"ZipFile": zip_file_bytes},
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
         )
         snapshot.match("create-response-zip-file", create_response)
         get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
@@ -502,7 +502,7 @@ class TestLambdaFunction:
             Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
         )
         snapshot.match("create_response_s3", create_response)
         get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
@@ -544,7 +544,6 @@ class TestLambdaFunction:
         paths=[
             "function_arn_other_account_exc..Error.Message",
             "$..CodeSha256",
-            "$..CreateFunctionResponse.LoggingConfig",
         ]
     )
     @markers.aws.validated
@@ -667,7 +666,7 @@ class TestLambdaFunction:
                 Code={"ZipFile": zip_file_bytes},
                 PackageType="Zip",
                 Role="r1",
-                Runtime=Runtime.python3_9,
+                Runtime=Runtime.python3_12,
             )
         snapshot.match("invalid_role_arn_exc", e.value.response)
         # test invalid runtimes
@@ -700,7 +699,7 @@ class TestLambdaFunction:
                 Code={"ZipFile": zip_file_bytes},
                 PackageType="Zip",
                 Role=lambda_su_role,
-                Runtime=Runtime.python3_9,
+                Runtime=Runtime.python3_12,
                 Architectures=[],
             )
         snapshot.match("empty_architectures", e.value)
@@ -713,7 +712,7 @@ class TestLambdaFunction:
                 Code={"ZipFile": zip_file_bytes},
                 PackageType="Zip",
                 Role=lambda_su_role,
-                Runtime=Runtime.python3_9,
+                Runtime=Runtime.python3_12,
                 Architectures=[Architecture.x86_64, Architecture.arm64],
             )
         snapshot.match("multiple_architectures", e.value.response)
@@ -726,7 +725,7 @@ class TestLambdaFunction:
                 Code={"ZipFile": zip_file_bytes},
                 PackageType="Zip",
                 Role=lambda_su_role,
-                Runtime=Runtime.python3_9,
+                Runtime=Runtime.python3_12,
                 Architectures=["X86_64"],
             )
         snapshot.match("uppercase_architecture", e.value.response)
@@ -756,7 +755,7 @@ class TestLambdaFunction:
             Code={"ZipFile": zip_file_bytes},
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
         )
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.update_function_configuration(
@@ -792,7 +791,7 @@ class TestLambdaFunction:
         create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name_1,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
             Publish=True,
         )
@@ -801,7 +800,7 @@ class TestLambdaFunction:
         create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name_2,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         snapshot.match("create_response_2", create_response)
@@ -887,7 +886,7 @@ class TestLambdaFunction:
         create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
             MemorySize=256,
             Timeout=5,
@@ -1078,7 +1077,7 @@ class TestLambdaImages:
         create_image_response = create_lambda_function_aws(
             FunctionName=function_name,
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
             Handler="handler.handler",
             Code={
                 "ZipFile": create_lambda_archive(
@@ -1260,7 +1259,7 @@ class TestLambdaVersions:
             },
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
             Publish=True,
         )
         snapshot.match("create_response", create_response)
@@ -1312,7 +1311,7 @@ class TestLambdaVersions:
             },
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
             Description="No version :(",
         )
         snapshot.match("create_response", create_response)
@@ -1389,7 +1388,7 @@ class TestLambdaVersions:
             },
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
         )
         snapshot.match("create_response", create_response)
 
@@ -1425,7 +1424,7 @@ class TestLambdaVersions:
             },
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
         )
         snapshot.match("create_response", create_response)
 
@@ -1478,7 +1477,7 @@ class TestLambdaAlias:
             },
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
             Environment={"Variables": {"testenv": "staging"}},
         )
         snapshot.match("create_response", create_response)
@@ -1637,7 +1636,7 @@ class TestLambdaAlias:
             },
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
             Publish=True,
             Environment={"Variables": {"testenv": "staging"}},
         )
@@ -1782,7 +1781,6 @@ class TestLambdaAlias:
             )
         snapshot.match("alias_does_not_exist_esc", e.value.response)
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_alias_naming(self, aws_client, snapshot, create_lambda_function_aws, lambda_su_role):
         """
@@ -1799,7 +1797,7 @@ class TestLambdaAlias:
             },
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
             Environment={"Variables": {"testenv": "staging"}},
         )
         snapshot.match("create_response", create_response)
@@ -1853,7 +1851,7 @@ class TestLambdaRevisions:
             func_name=function_name,
             zip_file=zip_file_content,
             handler="index.handler",
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         snapshot.match("create_function_response_rev1", create_function_response)
         rev1_create_function = create_function_response["CreateFunctionResponse"]["RevisionId"]
@@ -1927,7 +1925,7 @@ class TestLambdaRevisions:
         create_function_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         snapshot.match("create_function_response_rev1", create_function_response)
         rev1_create_function = create_function_response["CreateFunctionResponse"]["RevisionId"]
@@ -2018,7 +2016,7 @@ class TestLambdaRevisions:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         # rev2: created function becomes active
@@ -2080,7 +2078,7 @@ class TestLambdaTag:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         yield aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
@@ -2095,7 +2093,7 @@ class TestLambdaTag:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             Tags={"testtag": custom_tag},
         )
         get_function_result = aws_client.lambda_.get_function(FunctionName=function_name)
@@ -2199,7 +2197,7 @@ class TestLambdaEventInvokeConfig:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
 
@@ -2314,7 +2312,7 @@ class TestLambdaEventInvokeConfig:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         get_fn_result = lambda_client.get_function(FunctionName=function_name)
@@ -2323,7 +2321,7 @@ class TestLambdaEventInvokeConfig:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name_2,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         get_fn_result_2 = lambda_client.get_function(FunctionName=function_name_2)
@@ -2664,7 +2662,7 @@ class TestLambdaReservedConcurrency:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         fn = aws_client.lambda_.get_function_configuration(
             FunctionName=function_name, Qualifier="$LATEST"
@@ -2701,7 +2699,7 @@ class TestLambdaReservedConcurrency:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         account_settings = aws_client.lambda_.get_account_settings()
@@ -2737,7 +2735,7 @@ class TestLambdaReservedConcurrency:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         # Disable the function by throttling all incoming events.
@@ -2792,7 +2790,7 @@ class TestLambdaProvisionedConcurrency:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         publish_version_result = lambda_client.publish_version(FunctionName=function_name)
@@ -2950,7 +2948,7 @@ class TestLambdaProvisionedConcurrency:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         publish_version_result = lambda_client.publish_version(FunctionName=function_name)
@@ -3000,7 +2998,7 @@ class TestLambdaProvisionedConcurrency:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         publish_version_result = aws_client.lambda_.publish_version(FunctionName=function_name)
         function_version = publish_version_result["Version"]
@@ -3103,7 +3101,7 @@ class TestLambdaPermissions:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         # invalid statement id
@@ -3266,7 +3264,7 @@ class TestLambdaPermissions:
         lambda_create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         snapshot.match("create_lambda", lambda_create_response)
         # create lambda permission
@@ -3295,7 +3293,7 @@ class TestLambdaPermissions:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         # create lambda permission
@@ -3424,7 +3422,7 @@ class TestLambdaPermissions:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         resp = aws_client.lambda_.add_permission(
@@ -3498,7 +3496,7 @@ class TestLambdaPermissions:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         action = "lambda:InvokeFunction"
@@ -3567,7 +3565,7 @@ class TestLambdaPermissions:
 
         create_lambda_function(
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
         )
 
@@ -3624,7 +3622,7 @@ class TestLambdaUrl:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_handler.handler",
         )
         fn_arn = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
@@ -3742,7 +3740,7 @@ class TestLambdaUrl:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_handler.handler",
         )
 
@@ -3810,7 +3808,7 @@ class TestLambdaUrl:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_handler.handler",
         )
 
@@ -3860,7 +3858,7 @@ class TestLambdaSizeLimits:
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
-            code_str, get_content=True, runtime=Runtime.python3_9
+            code_str, get_content=True, runtime=Runtime.python3_12
         )
 
         # enlarge the request beyond its limit while accounting for the zip file size
@@ -3874,7 +3872,7 @@ class TestLambdaSizeLimits:
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
                 FunctionName=function_name,
-                Runtime=Runtime.python3_9,
+                Runtime=Runtime.python3_12,
                 Handler="handler.handler",
                 Role=lambda_su_role,
                 Code={"ZipFile": zip_file},
@@ -3893,14 +3891,14 @@ class TestLambdaSizeLimits:
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
-            code_str, get_content=True, runtime=Runtime.python3_9
+            code_str, get_content=True, runtime=Runtime.python3_12
         )
 
         # create lambda function
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
                 FunctionName=function_name,
-                Runtime=Runtime.python3_9,
+                Runtime=Runtime.python3_12,
                 Handler="handler.handler",
                 Role=lambda_su_role,
                 Code={"ZipFile": zip_file},
@@ -3918,7 +3916,7 @@ class TestLambdaSizeLimits:
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
-            code_str, get_content=True, runtime=Runtime.python3_9
+            code_str, get_content=True, runtime=Runtime.python3_12
         )
         aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
@@ -3926,7 +3924,7 @@ class TestLambdaSizeLimits:
         with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
             aws_client.lambda_.create_function(
                 FunctionName=function_name,
-                Runtime=Runtime.python3_9,
+                Runtime=Runtime.python3_12,
                 Handler="handler.handler",
                 Role=lambda_su_role,
                 Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
@@ -3945,14 +3943,14 @@ class TestLambdaSizeLimits:
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
-            code_str, get_content=True, runtime=Runtime.python3_9
+            code_str, get_content=True, runtime=Runtime.python3_12
         )
         aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
         result = aws_client.lambda_.create_function(
             FunctionName=function_name,
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
             Handler="handler.handler",
             Role=lambda_su_role,
             Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
@@ -3984,7 +3982,7 @@ class TestLambdaSizeLimits:
             create_lambda_function(
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
                 func_name=function_name,
-                runtime=Runtime.python3_9,
+                runtime=Runtime.python3_12,
                 envvars={
                     "LARGE_VAR": large_envvar,
                 },
@@ -4019,7 +4017,7 @@ class TestLambdaSizeLimits:
             create_lambda_function(
                 handler_file=TEST_LAMBDA_PYTHON_ECHO,
                 func_name=function_name,
-                runtime=Runtime.python3_9,
+                runtime=Runtime.python3_12,
                 envvars=env,
             )
 
@@ -4047,7 +4045,7 @@ class TestLambdaSizeLimits:
         res = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             envvars={
                 "LARGE_VAR": large_envvar,
             },
@@ -4071,7 +4069,7 @@ class TestCodeSigningConfig:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         response = aws_client.lambda_.create_code_signing_config(
@@ -4132,7 +4130,7 @@ class TestCodeSigningConfig:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         response = aws_client.lambda_.create_code_signing_config(
@@ -4265,7 +4263,7 @@ class TestLambdaAccountSettings:
             zip_file=zip_file_content,
             handler="index.handler",
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         acc_settings1 = aws_client.lambda_.get_account_settings()
         assert (
@@ -4352,7 +4350,7 @@ class TestLambdaAccountSettings:
         create_lambda_function(
             handler_file=TEST_LAMBDA_NODEJS,
             func_name=function_name,
-            runtime=Runtime.nodejs16_x,
+            runtime=Runtime.nodejs18_x,
         )
         acc_settings1 = aws_client.lambda_.get_account_settings()
         assert (
@@ -4371,7 +4369,7 @@ class TestLambdaAccountSettings:
 
         # 2) update function configuration (i.e., code remains identical)
         aws_client.lambda_.update_function_configuration(
-            FunctionName=function_name, Runtime=Runtime.nodejs18_x
+            FunctionName=function_name, Runtime=Runtime.nodejs20_x
         )
         aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
         acc_settings2 = aws_client.lambda_.get_account_settings()
@@ -4483,7 +4481,7 @@ class TestLambdaEventSourceMappings:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         # "minimal"
@@ -4585,7 +4583,7 @@ class TestLambdaEventSourceMappings:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
 
@@ -4614,7 +4612,7 @@ class TestLambdaTags:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         function_arn = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
             "FunctionArn"
@@ -4675,7 +4673,7 @@ class TestLambdaTags:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         function_arn = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
             "FunctionArn"
@@ -4711,7 +4709,7 @@ class TestLambdaTags:
         create_function_result = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             Tags={"key_a": "value_a"},
         )
         function_arn = create_function_result["CreateFunctionResponse"]["FunctionArn"]
@@ -4754,7 +4752,7 @@ class TestLambdaTags:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             Tags={"key_a": "value_a"},
         )
         fn_arn = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
@@ -4832,7 +4830,7 @@ class TestLambdaLayer:
 
         publish_result = aws_client.lambda_.publish_layer_version(
             LayerName=layer_name,
-            CompatibleRuntimes=[Runtime.python3_9],
+            CompatibleRuntimes=[Runtime.python3_12],
             Content={"ZipFile": dummylayer},
             CompatibleArchitectures=[Architecture.x86_64],
         )
@@ -4938,7 +4936,7 @@ class TestLambdaLayer:
             aws_client.lambda_.publish_layer_version(
                 LayerName=f"testlayer-2-{short_uid()}",
                 Content={"ZipFile": dummylayer},
-                CompatibleRuntimes=["invalidruntime", "invalidruntime2", Runtime.nodejs16_x],
+                CompatibleRuntimes=["invalidruntime", "invalidruntime2", Runtime.nodejs20_x],
                 CompatibleArchitectures=["invalidarch", Architecture.x86_64],
             )
         snapshot.match("publish_layer_version_exc_partially_invalid_values", e.value.response)
@@ -5000,7 +4998,7 @@ class TestLambdaLayer:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         get_fn_result = aws_client.lambda_.get_function(FunctionName=function_name)
         snapshot.match("get_fn_result", get_fn_result)
@@ -5139,7 +5137,7 @@ class TestLambdaLayer:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         get_fn_result = aws_client.lambda_.get_function(FunctionName=function_name)
         snapshot.match("get_fn_result", get_fn_result)
@@ -5151,7 +5149,7 @@ class TestLambdaLayer:
 
         publish_result = aws_client.lambda_.publish_layer_version(
             LayerName=layer_name,
-            CompatibleRuntimes=[Runtime.python3_9],
+            CompatibleRuntimes=[Runtime.python3_12],
             LicenseInfo=license_info,
             Description=description,
             Content={"ZipFile": dummylayer},
@@ -5167,7 +5165,7 @@ class TestLambdaLayer:
         # note: we don't even need to change anything for a second version to be published
         publish_result_2 = aws_client.lambda_.publish_layer_version(
             LayerName=layer_name,
-            CompatibleRuntimes=[Runtime.python3_9],
+            CompatibleRuntimes=[Runtime.python3_12],
             LicenseInfo=license_info,
             Description=description,
             Content={"ZipFile": dummylayer},
@@ -5233,7 +5231,7 @@ class TestLambdaLayer:
         # creating a new layer version should still increment the previous version
         publish_result_3 = aws_client.lambda_.publish_layer_version(
             LayerName=layer_name,
-            CompatibleRuntimes=[Runtime.python3_9],
+            CompatibleRuntimes=[Runtime.python3_12],
             LicenseInfo=license_info,
             Description=description,
             Content={"ZipFile": dummylayer},
@@ -5275,7 +5273,7 @@ class TestLambdaLayer:
 
         publish_result = aws_client.lambda_.publish_layer_version(
             LayerName=layer_name,
-            CompatibleRuntimes=[Runtime.python3_9],
+            CompatibleRuntimes=[Runtime.python3_12],
             Content={"ZipFile": dummylayer},
             CompatibleArchitectures=[Architecture.x86_64],
         )
@@ -5406,7 +5404,7 @@ class TestLambdaLayer:
 
         publish_result = aws_client.lambda_.publish_layer_version(
             LayerName=layer_name,
-            CompatibleRuntimes=[Runtime.python3_9],
+            CompatibleRuntimes=[Runtime.python3_12],
             Content={"ZipFile": dummylayer},
             CompatibleArchitectures=[Architecture.x86_64],
         )
@@ -5499,7 +5497,7 @@ class TestLambdaSnapStart:
         snapshot.match("get_function_response_version_1", get_function_response)
 
     @markers.aws.validated
-    @pytest.mark.parametrize("runtime", [Runtime.java11, Runtime.java17])
+    @pytest.mark.parametrize("runtime", [Runtime.java21, Runtime.java17])
     def test_snapstart_update_function_configuration(
         self, create_lambda_function, snapshot, aws_client, runtime
     ):
@@ -5534,7 +5532,7 @@ class TestLambdaSnapStart:
                 Code={"ZipFile": zip_file_bytes},
                 PackageType="Zip",
                 Role=lambda_su_role,
-                Runtime=Runtime.python3_9,
+                Runtime=Runtime.python3_12,
                 SnapStart={"ApplyOn": "PublishedVersions"},
             )
         snapshot.match("create_function_unsupported_snapstart_runtime", e.value.response)
@@ -5546,7 +5544,7 @@ class TestLambdaSnapStart:
                 Code={"ZipFile": zip_file_bytes},
                 PackageType="Zip",
                 Role=lambda_su_role,
-                Runtime=Runtime.java11,
+                Runtime=Runtime.java21,
                 SnapStart={"ApplyOn": "invalidOption"},
             )
         snapshot.match("create_function_invalid_snapstart_apply", e.value.response)
