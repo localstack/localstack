@@ -104,5 +104,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_diff_after_update": {
+    "recorded-date": "05-04-2024, 09:45:00",
+    "recorded-content": {
+      "get-template-response": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "\nResources:\n    SimpleParam1:\n        Type: AWS::SSM::Parameter\n        Properties:\n            Value: test1\n            Type: String\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
