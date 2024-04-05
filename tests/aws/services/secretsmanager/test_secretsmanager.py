@@ -283,7 +283,6 @@ class TestSecretsManager:
                 assert secret["Name"] in include_secrets
                 assert secret["Name"] not in exclude_secrets
 
-        # name based filtering
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "name", "Values": ["/"]}]
         )
@@ -305,7 +304,6 @@ class TestSecretsManager:
             response, [], [secret_name_1, secret_name_2, secret_name_3, secret_name_4]
         )
 
-        # description based filtering
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "description", "Values": ["a"]}]
         )
