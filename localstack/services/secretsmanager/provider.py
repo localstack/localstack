@@ -502,6 +502,7 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, include_deprecated, *ar
         version_stages = version["version_stages"]
         # Patch: include deprecated versions if include_deprecated is True.
         # version_stages is empty if the version is deprecated.
+        # see: https://docs.aws.amazon.com/secretsmanager/latest/userguide/getting-started.html#term_version
         if len(version_stages) > 0 or include_deprecated:
             entry = SecretVersionsListEntry(
                 CreatedDate=version["createdate"],
