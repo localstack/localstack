@@ -1433,3 +1433,37 @@ class TestSnfApi:
                 stateMachineArn=state_machine_arn, statusFilter="succeeded"
             )
         sfn_snapshot.match("list_executions_filter_exc", e.value.response)
+
+    @markers.aws.validated
+    def test_start_sync_execution(
+        self,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_create_queue,
+        sfn_snapshot,
+        aws_client,
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}")
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs_queue_url"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        creation_response = create_state_machine(
+            name=f"statemachine_{short_uid()}",
+            definition=definition_str,
+            roleArn=snf_role_arn,
+            type="STANDARD",
+        )
+        state_machine_arn = creation_response["stateMachineArn"]
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_response, 0))
+        sfn_snapshot.match("creation_response", creation_response)
+
+        with pytest.raises(Exception) as ex:
+            aws_client.stepfunctions.start_sync_execution(
+                stateMachineArn=state_machine_arn, input=json.dumps({}), name="SyncExecution"
+            )
+        sfn_snapshot.match("start_sync_execution_error", ex.value.response)

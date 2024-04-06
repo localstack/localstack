@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/stepfunctions/v2/express/test_express_async.py::TestExpressAsync::test_pass_state": {
+    "last_validated_date": "2024-04-06T16:50:53+00:00"
+  }
+}

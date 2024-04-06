@@ -38,6 +38,31 @@ class TestSnfApiVersioning:
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
 
     @markers.aws.validated
+    def test_create_express_with_publish(
+        self,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        aws_client,
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        sm_name = f"statemachine_{short_uid()}"
+        creation_resp_1 = create_state_machine(
+            name=sm_name,
+            definition=definition_str,
+            roleArn=snf_role_arn,
+            publish=True,
+            type="EXPRESS",
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp_1, 0))
+        sfn_snapshot.match("creation_resp_1", creation_resp_1)
+
+    @markers.aws.validated
     def test_create_with_version_description_no_publish(
         self,
         create_iam_role_for_sfn,

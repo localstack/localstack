@@ -809,6 +809,20 @@
       }
     }
   },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_create_express_with_publish": {
+    "recorded-date": "05-04-2024, 19:53:29",
+    "recorded-content": {
+      "creation_resp_1": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineVersionArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>:1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_versioning.py::TestSnfApiVersioning::test_list_state_machine_versions_pagination": {
     "recorded-date": "01-07-2024, 12:20:00",
     "recorded-content": {
