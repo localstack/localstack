@@ -1,4 +1,5 @@
-"""Module for localstack internal resources, such as health, graph, or _localstack/cloudformation/deploy. """
+"""Module for localstack internal resources, such as health, graph, or _localstack/cloudformation/deploy."""
+
 import json
 import logging
 import os
@@ -160,7 +161,7 @@ class CloudFormationUi:
             "stackName": "stack1",
             "templateBody": "{}",
             "errorMessage": "''",
-            "regions": json.dumps(sorted(list(get_valid_regions()))),
+            "regions": json.dumps(sorted(get_valid_regions())),
         }
 
         download_url = req_params.get("templateURL")
@@ -219,7 +220,7 @@ class PluginsResource:
     """
 
     def on_get(self, request):
-        from plugin import PluginManager
+        from plux import PluginManager
 
         from localstack.runtime import hooks
         from localstack.services.plugins import SERVICE_PLUGINS

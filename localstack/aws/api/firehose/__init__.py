@@ -21,6 +21,7 @@ BooleanObject = bool
 BucketARN = str
 ClusterJDBCURL = str
 CopyOptions = str
+CustomTimeZone = str
 DataTableColumns = str
 DataTableName = str
 DeliveryStreamARN = str
@@ -38,6 +39,7 @@ ElasticsearchTypeName = str
 ErrorCode = str
 ErrorMessage = str
 ErrorOutputPrefix = str
+FileExtension = str
 HECAcknowledgmentTimeoutInSeconds = int
 HECEndpoint = str
 HECToken = str
@@ -239,11 +241,13 @@ class ProcessorParameterName(str):
     SubRecordType = "SubRecordType"
     Delimiter = "Delimiter"
     CompressionFormat = "CompressionFormat"
+    DataMessageExtraction = "DataMessageExtraction"
 
 
 class ProcessorType(str):
     RecordDeAggregation = "RecordDeAggregation"
     Decompression = "Decompression"
+    CloudWatchLogProcessing = "CloudWatchLogProcessing"
     Lambda = "Lambda"
     MetadataExtraction = "MetadataExtraction"
     AppendDelimiterToRecord = "AppendDelimiterToRecord"
@@ -785,6 +789,8 @@ class ExtendedS3DestinationConfiguration(TypedDict, total=False):
     S3BackupConfiguration: Optional[S3DestinationConfiguration]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DeliveryStreamEncryptionConfigurationInput(TypedDict, total=False):
@@ -931,6 +937,8 @@ class ExtendedS3DestinationDescription(TypedDict, total=False):
     S3BackupDescription: Optional[S3DestinationDescription]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class DestinationDescription(TypedDict, total=False):
@@ -1043,6 +1051,8 @@ class ExtendedS3DestinationUpdate(TypedDict, total=False):
     S3BackupUpdate: Optional[S3DestinationUpdate]
     DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
     DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
+    FileExtension: Optional[FileExtension]
+    CustomTimeZone: Optional[CustomTimeZone]
 
 
 class HttpEndpointDestinationUpdate(TypedDict, total=False):
@@ -1248,7 +1258,7 @@ class FirehoseApi:
         amazon_open_search_serverless_destination_configuration: AmazonOpenSearchServerlessDestinationConfiguration = None,
         msk_source_configuration: MSKSourceConfiguration = None,
         snowflake_destination_configuration: SnowflakeDestinationConfiguration = None,
-        **kwargs
+        **kwargs,
     ) -> CreateDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1258,7 +1268,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         allow_force_delete: BooleanObject = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1269,7 +1279,7 @@ class FirehoseApi:
         delivery_stream_name: DeliveryStreamName,
         limit: DescribeDeliveryStreamInputLimit = None,
         exclusive_start_destination_id: DestinationId = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1280,7 +1290,7 @@ class FirehoseApi:
         limit: ListDeliveryStreamsInputLimit = None,
         delivery_stream_type: DeliveryStreamType = None,
         exclusive_start_delivery_stream_name: DeliveryStreamName = None,
-        **kwargs
+        **kwargs,
     ) -> ListDeliveryStreamsOutput:
         raise NotImplementedError
 
@@ -1291,7 +1301,7 @@ class FirehoseApi:
         delivery_stream_name: DeliveryStreamName,
         exclusive_start_tag_key: TagKey = None,
         limit: ListTagsForDeliveryStreamInputLimit = None,
-        **kwargs
+        **kwargs,
     ) -> ListTagsForDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1301,7 +1311,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         record: Record,
-        **kwargs
+        **kwargs,
     ) -> PutRecordOutput:
         raise NotImplementedError
 
@@ -1311,7 +1321,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         records: PutRecordBatchRequestEntryList,
-        **kwargs
+        **kwargs,
     ) -> PutRecordBatchOutput:
         raise NotImplementedError
 
@@ -1321,7 +1331,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         delivery_stream_encryption_configuration_input: DeliveryStreamEncryptionConfigurationInput = None,
-        **kwargs
+        **kwargs,
     ) -> StartDeliveryStreamEncryptionOutput:
         raise NotImplementedError
 
@@ -1337,7 +1347,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tags: TagDeliveryStreamInputTagList,
-        **kwargs
+        **kwargs,
     ) -> TagDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1347,7 +1357,7 @@ class FirehoseApi:
         context: RequestContext,
         delivery_stream_name: DeliveryStreamName,
         tag_keys: TagKeyList,
-        **kwargs
+        **kwargs,
     ) -> UntagDeliveryStreamOutput:
         raise NotImplementedError
 
@@ -1367,6 +1377,6 @@ class FirehoseApi:
         http_endpoint_destination_update: HttpEndpointDestinationUpdate = None,
         amazon_open_search_serverless_destination_update: AmazonOpenSearchServerlessDestinationUpdate = None,
         snowflake_destination_update: SnowflakeDestinationUpdate = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateDestinationOutput:
         raise NotImplementedError

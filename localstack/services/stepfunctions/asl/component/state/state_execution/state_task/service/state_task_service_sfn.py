@@ -62,6 +62,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                 f"{ex.response['Error']['Message']} ({'; '.join(error_cause_details)})"
             )
             return FailureEvent(
+                env=env,
                 error_name=CustomErrorName(error_name),
                 event_type=HistoryEventType.TaskFailed,
                 event_details=EventDetails(
@@ -159,6 +160,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
                 else:
                     raise FailureEventException(
                         FailureEvent(
+                            env=env,
                             error_name=StatesErrorName(typ=StatesErrorNameType.StatesTaskFailed),
                             event_type=HistoryEventType.TaskFailed,
                             event_details=EventDetails(
@@ -175,6 +177,7 @@ class StateTaskServiceSfn(StateTaskServiceCallback):
 
         termination_output: Optional[dict] = None
         while env.is_running() and not termination_output:
+            self._throttle_sync_iteration()
             termination_output: Optional[dict] = _has_terminated()
 
         env.stack.append(termination_output)

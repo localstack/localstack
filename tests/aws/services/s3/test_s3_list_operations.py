@@ -2,8 +2,8 @@
 This file is to test specific behaviour of List* operations of S3, especially pagination, which is pretty specific to
 each implementation. They all have subtle differences which make it difficult to test.
 """
+
 import datetime
-import os
 from io import BytesIO
 
 import pytest
@@ -30,7 +30,7 @@ def _bucket_url(bucket_name: str, region: str = "", localstack_host: str = None)
 def _endpoint_url(region: str = "", localstack_host: str = None) -> str:
     if not region:
         region = AWS_REGION_US_EAST_1
-    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+    if is_aws_cloud():
         if region == "us-east-1":
             return "https://s3.amazonaws.com"
         else:

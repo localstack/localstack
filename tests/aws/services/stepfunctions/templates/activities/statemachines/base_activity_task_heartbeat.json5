@@ -1,0 +1,13 @@
+{
+  "Comment": "BASE_ACTIVITY_TASK_HEARTBEAT",
+  "StartAt": "ActivityTask",
+  "States": {
+    "ActivityTask": {
+      "Type": "Task",
+      "TimeoutSeconds": 60,
+      "HeartbeatSeconds": 10,
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
+      "End": true
+    }
+  }
+}

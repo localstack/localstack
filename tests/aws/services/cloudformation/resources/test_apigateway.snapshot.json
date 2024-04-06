@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
-    "recorded-date": "27-05-2023, 19:00:45",
+    "recorded-date": "21-02-2024, 12:50:57",
     "recorded-content": {
       "rest_api": {
         "apiKeySource": "HEADER",
@@ -13,6 +13,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "tags": {
           "aws:cloudformation:logical-id": "<name:1>",
           "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
@@ -39,20 +40,16 @@
                 "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,POST'",
                 "method.response.header.Access-Control-Allow-Origin": "'*'"
               },
-              "responseTemplates": {},
               "statusCode": "200"
             }
           },
           "passthroughBehavior": "WHEN_NO_MATCH",
-          "requestParameters": {},
-          "requestTemplates": {},
           "timeoutInMillis": 29000,
           "type": "HTTP_PROXY",
           "uri": "http://www.example.com"
         },
         "methodResponses": {
           "200": {
-            "responseModels": {},
             "responseParameters": {
               "method.response.header.Access-Control-Allow-Headers": true,
               "method.response.header.Access-Control-Allow-Methods": true,
@@ -61,8 +58,6 @@
             "statusCode": "200"
           }
         },
-        "requestModels": {},
-        "requestParameters": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -525,6 +520,51 @@
             "statusCode": "200"
           }
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_usage_plan": {
+    "recorded-date": "20-03-2024, 22:33:14",
+    "recorded-content": {
+      "usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "<stage:1>"
+          }
+        ],
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 5000,
+          "offset": 0,
+          "period": "MONTH"
+        },
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "<stage:1>"
+          }
+        ],
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 7000,
+          "offset": 0,
+          "period": "MONTH"
+        },
+        "tags": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

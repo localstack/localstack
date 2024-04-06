@@ -61,6 +61,7 @@ The result of the parser methods are the operation model of the
 service's action which the request was aiming for, as well as the
 parsed parameters for the service's function invocation.
 """
+
 import abc
 import base64
 import datetime
@@ -846,9 +847,9 @@ class BaseJSONRequestParser(RequestParser, ABC):
         parsed = {}
         key_shape = shape.key
         value_shape = shape.value
-        for key, value in value.items():
+        for key, val in value.items():
             actual_key = self._parse_shape(request, key_shape, key, uri_params)
-            actual_value = self._parse_shape(request, value_shape, value, uri_params)
+            actual_value = self._parse_shape(request, value_shape, val, uri_params)
             parsed[actual_key] = actual_value
         return parsed
 

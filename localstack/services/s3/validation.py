@@ -276,7 +276,7 @@ def validate_website_configuration(website_config: WebsiteConfiguration) -> None
         if len(routing_rules) == 0:
             raise MalformedXML()
         if len(routing_rules) > 50:
-            raise "Something?"
+            raise ValueError("Too many routing rules")  # TODO: correct exception
         for routing_rule in routing_rules:
             redirect = routing_rule.get("Redirect", {})
             # todo: this does not raise an error? check what GetWebsiteConfig returns? empty field?

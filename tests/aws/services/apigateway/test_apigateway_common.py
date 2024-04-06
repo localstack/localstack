@@ -1,4 +1,5 @@
 import json
+import time
 
 import pytest
 import requests
@@ -294,6 +295,71 @@ class TestApiGatewayCommon:
         response_get = requests.get(url)
         assert response_get.ok
 
+    @markers.aws.validated
+    def test_integration_request_parameters_mapping(
+        self, create_rest_apigw, aws_client, echo_http_server_post
+    ):
+        api_id, _, root = create_rest_apigw(
+            name=f"test-api-{short_uid()}",
+            description="this is my api",
+        )
+
+        create_rest_resource_method(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            authorizationType="none",
+            requestParameters={
+                "method.request.header.customHeader": False,
+            },
+        )
+
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id, resourceId=root, httpMethod="GET", statusCode="200"
+        )
+
+        create_rest_api_integration(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            integrationHttpMethod="POST",
+            type="HTTP",
+            uri=echo_http_server_post,
+            requestParameters={
+                "integration.request.header.testHeader": "method.request.header.customHeader",
+                "integration.request.header.contextHeader": "context.resourceId",
+            },
+        )
+
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=root,
+            httpMethod="GET",
+            statusCode="200",
+            selectionPattern="2\\d{2}",
+            responseTemplates={},
+        )
+
+        deployment_id, _ = create_rest_api_deployment(aws_client.apigateway, restApiId=api_id)
+        create_rest_api_stage(
+            aws_client.apigateway, restApiId=api_id, stageName="dev", deploymentId=deployment_id
+        )
+
+        invocation_url = api_invoke_url(api_id=api_id, stage="dev", path="/")
+
+        def invoke_api(url):
+            _response = requests.get(url, verify=False, headers={"customHeader": "test"})
+            assert _response.ok
+            content = _response.json()
+            return content
+
+        response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+        lower_case_headers = {k.lower(): v for k, v in response_data["headers"].items()}
+        assert lower_case_headers["contextheader"] == root
+        assert lower_case_headers["testheader"] == "test"
+
 
 class TestUsagePlans:
     @markers.aws.validated
@@ -473,9 +539,86 @@ class TestUsagePlans:
             patchOperations=[
                 {"op": "replace", "path": "/throttle/burstLimit", "value": "100"},
                 {"op": "replace", "path": "/throttle/rateLimit", "value": "200"},
+                {"op": "replace", "path": "/quota/period", "value": "MONTH"},
+                {"op": "replace", "path": "/quota/limit", "value": "5000"},
             ],
         )
         snapshot.match("update-usage-plan", response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id + "1",  # wrong ID
+                patchOperations=[
+                    {"op": "replace", "path": "/throttle/burstLimit", "value": "100"},
+                    {"op": "replace", "path": "/throttle/rateLimit", "value": "200"},
+                ],
+            )
+        snapshot.match("update-wrong-id", e.value.response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id,
+                patchOperations=[
+                    {"op": "remove", "path": "/apiStages"},
+                ],
+            )
+        snapshot.match("update-wrong-api-stages-no-value", e.value.response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
+
+        with pytest.raises(ClientError) as e:
+            wrong_api_id = api_id + "b"
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id,
+                patchOperations=[
+                    {"op": "remove", "path": "/apiStages", "value": f"{wrong_api_id}:{stage}"},
+                ],
+            )
+        snapshot.match("update-wrong-api-stages-wrong-api", e.value.response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id,
+                patchOperations=[
+                    {"op": "remove", "path": "/apiStages", "value": f"{api_id}:fakestagename"},
+                ],
+            )
+        snapshot.match("update-wrong-api-stages-wrong-stage", e.value.response)
+
+        if is_aws_cloud():
+            # avoid TooManyRequests
+            time.sleep(10)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_usage_plan(
+                usagePlanId=usage_plan_id,
+                patchOperations=[
+                    {"op": "remove", "path": "/apiStages", "value": "fakevalue"},
+                ],
+            )
+        snapshot.match("update-wrong-api-stages-wrong-value", e.value.response)
+
+        # get usage plan after update
+        response = aws_client.apigateway.get_usage_plan(usagePlanId=usage_plan_id)
+        snapshot.match("get-usage-plan-after-update", response)
+
+        # get usage plans after update
+        response = aws_client.apigateway.get_usage_plans()
+        snapshot.match("get-usage-plans-after-update", response)
 
 
 class TestDocumentations:
@@ -518,39 +661,53 @@ class TestDocumentations:
 
 
 class TestStages:
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
-    def test_create_update_stages(
+    @pytest.fixture
+    def _create_api_with_stage(
         self, aws_client, create_rest_apigw, apigw_add_transformers, snapshot
     ):
         client = aws_client.apigateway
 
-        # create API, method, integration, deployment
-        api_id, api_name, root_id = create_rest_apigw()
-        client.put_method(
-            restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
-        )
-        client.put_integration(restApiId=api_id, resourceId=root_id, httpMethod="GET", type="MOCK")
-        response = client.create_deployment(restApiId=api_id)
-        deployment_id = response["id"]
+        def _create():
+            # create API, method, integration, deployment
+            api_id, api_name, root_id = create_rest_apigw()
+            client.put_method(
+                restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
+            )
+            client.put_integration(
+                restApiId=api_id, resourceId=root_id, httpMethod="GET", type="MOCK"
+            )
+            response = client.create_deployment(restApiId=api_id)
+            deployment_id = response["id"]
 
-        # create documentation
-        client.create_documentation_part(
-            restApiId=api_id,
-            location={"type": "API"},
-            properties=json.dumps({"foo": "bar"}),
-        )
-        client.create_documentation_version(restApiId=api_id, documentationVersion="v123")
+            # create documentation
+            client.create_documentation_part(
+                restApiId=api_id,
+                location={"type": "API"},
+                properties=json.dumps({"foo": "bar"}),
+            )
+            client.create_documentation_version(restApiId=api_id, documentationVersion="v123")
 
-        # create stage
-        response = client.create_stage(
-            restApiId=api_id,
-            stageName="s1",
-            deploymentId=deployment_id,
-            description="my stage",
-            documentationVersion="v123",
-        )
-        snapshot.match("create-stage", response)
+            # create stage
+            response = client.create_stage(
+                restApiId=api_id,
+                stageName="s1",
+                deploymentId=deployment_id,
+                description="my stage",
+                documentationVersion="v123",
+            )
+            snapshot.match("create-stage", response)
+
+            return api_id
+
+        return _create
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
+    def test_create_update_stages(
+        self, _create_api_with_stage, aws_client, create_rest_apigw, snapshot
+    ):
+        client = aws_client.apigateway
+        api_id = _create_api_with_stage()
 
         # negative tests for immutable/non-updateable attributes
 
@@ -593,8 +750,8 @@ class TestStages:
         response = client.get_stage(restApiId=api_id, stageName="s1")
         snapshot.match("get-stage", response)
 
-        # show that updating */* does not override previously set values, only provides default values then like shown
-        # above
+        # show that updating */* does not override previously set values, only
+        # provides default values then like shown above
         response = client.update_stage(
             restApiId=api_id,
             stageName="s1",
@@ -603,6 +760,48 @@ class TestStages:
             ],
         )
         snapshot.match("update-stage-override", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..createdDate", "$..lastUpdatedDate"])
+    def test_update_stage_remove_wildcard(self, aws_client, _create_api_with_stage, snapshot):
+        client = aws_client.apigateway
+        api_id = _create_api_with_stage()
+
+        response = client.get_stage(restApiId=api_id, stageName="s1")
+        snapshot.match("get-stage", response)
+
+        def _delete_wildcard():
+            # remove all attributes at path */* (this is an operation Terraform executes when deleting APIs)
+            response = client.update_stage(
+                restApiId=api_id,
+                stageName="s1",
+                patchOperations=[
+                    {"op": "remove", "path": "/*/*"},
+                ],
+            )
+            snapshot.match("update-stage-reset", response)
+
+        # attempt to delete wildcard method settings (should initially fail)
+        with pytest.raises(ClientError) as exc:
+            _delete_wildcard()
+        snapshot.match("delete-error", exc.value.response)
+
+        # run a patch operation that creates a method mapping for */*
+        response = client.update_stage(
+            restApiId=api_id,
+            stageName="s1",
+            patchOperations=[
+                {"op": "replace", "path": "/*/*/caching/enabled", "value": "true"},
+            ],
+        )
+        snapshot.match("update-stage", response)
+
+        # delete wildcard method settings (should now succeed)
+        _delete_wildcard()
+
+        # assert the content of the stage after the update
+        response = client.get_stage(restApiId=api_id, stageName="s1")
+        snapshot.match("get-stage-after-reset", response)
 
 
 class TestDeployments:
@@ -713,7 +912,41 @@ class TestDeployments:
         snapshot.match("delete-deployment-2-error", ctx.value.response)
 
 
-class TestProxyRouting:
+class TestApigatewayRouting:
+    def _create_mock_integration_with_200_response_template(
+        self, aws_client, api_id: str, resource_id: str, http_method: str, response_template: dict
+    ):
+        aws_client.apigateway.put_method(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod=http_method,
+            authorizationType="NONE",
+        )
+
+        aws_client.apigateway.put_method_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod=http_method,
+            statusCode="200",
+        )
+
+        aws_client.apigateway.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod=http_method,
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        aws_client.apigateway.put_integration_response(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod=http_method,
+            statusCode="200",
+            selectionPattern="",
+            responseTemplates={"application/json": json.dumps(response_template)},
+        )
+
     @markers.aws.validated
     def test_proxy_routing_with_hardcoded_resource_sibling(
         self,
@@ -723,48 +956,14 @@ class TestProxyRouting:
     ):
         api_id, _, root_id = create_rest_apigw(name="test proxy routing")
 
-        def _create_mock_integration_with_200_response_template(
-            resource_id: str, http_method: str, response_template: dict
-        ):
-            aws_client.apigateway.put_method(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=http_method,
-                authorizationType="NONE",
-            )
-
-            aws_client.apigateway.put_method_response(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=http_method,
-                statusCode="200",
-            )
-
-            aws_client.apigateway.put_integration(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=http_method,
-                type="MOCK",
-                requestTemplates={"application/json": '{"statusCode": 200}'},
-            )
-
-            aws_client.apigateway.put_integration_response(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=http_method,
-                statusCode="200",
-                selectionPattern="",
-                responseTemplates={"application/json": json.dumps(response_template)},
-            )
-
         resource = aws_client.apigateway.create_resource(
             restApiId=api_id, parentId=root_id, pathPart="test"
         )
         hardcoded_resource_id = resource["id"]
 
         response_template_post = {"statusCode": 200, "message": "POST request"}
-        _create_mock_integration_with_200_response_template(
-            hardcoded_resource_id, "POST", response_template_post
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, hardcoded_resource_id, "POST", response_template_post
         )
 
         resource = aws_client.apigateway.create_resource(
@@ -773,8 +972,8 @@ class TestProxyRouting:
         any_resource_id = resource["id"]
 
         response_template_any = {"statusCode": 200, "message": "ANY request"}
-        _create_mock_integration_with_200_response_template(
-            any_resource_id, "ANY", response_template_any
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, any_resource_id, "ANY", response_template_any
         )
 
         resource = aws_client.apigateway.create_resource(
@@ -782,8 +981,8 @@ class TestProxyRouting:
         )
         proxy_resource_id = resource["id"]
         response_template_options = {"statusCode": 200, "message": "OPTIONS request"}
-        _create_mock_integration_with_200_response_template(
-            proxy_resource_id, "OPTIONS", response_template_options
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, proxy_resource_id, "OPTIONS", response_template_options
         )
 
         stage_name = "dev"
@@ -830,4 +1029,77 @@ class TestProxyRouting:
             req_url=any_url,
             http_method="GET",
             expected_type="ANY",
+        )
+
+    @markers.aws.validated
+    def test_routing_with_hardcoded_resource_sibling_order(
+        self,
+        aws_client,
+        create_rest_apigw,
+        apigw_redeploy_api,
+    ):
+        api_id, _, root_id = create_rest_apigw(name="test parameter routing")
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="part1"
+        )
+        hardcoded_resource_id = resource["id"]
+
+        response_template_get = {"statusCode": 200, "message": "part1"}
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, hardcoded_resource_id, "GET", response_template_get
+        )
+
+        # define the proxy before so that it would come up as the first resource iterated over
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=root_id, pathPart="{param+}"
+        )
+        proxy_resource_id = resource["id"]
+        response_template_get = {"statusCode": 200, "message": "proxy"}
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, proxy_resource_id, "GET", response_template_get
+        )
+
+        resource = aws_client.apigateway.create_resource(
+            restApiId=api_id, parentId=hardcoded_resource_id, pathPart="hardcoded-value"
+        )
+        any_resource_id = resource["id"]
+
+        response_template_get = {"statusCode": 200, "message": "hardcoded-value"}
+        self._create_mock_integration_with_200_response_template(
+            aws_client, api_id, any_resource_id, "GET", response_template_get
+        )
+
+        stage_name = "dev"
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+        def _invoke_api(path: str, expected_response: str):
+            url = api_invoke_url(api_id=api_id, stage=stage_name, path=path)
+            _response = requests.get(url)
+            assert _response.ok
+            assert _response.json()["message"] == expected_response
+
+        retries = 10 if is_aws_cloud() else 3
+        sleep = 3 if is_aws_cloud() else 1
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            path="/part1",
+            expected_response="part1",
+        )
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            path="/part1/hardcoded-value",
+            expected_response="hardcoded-value",
+        )
+
+        retry(
+            _invoke_api,
+            retries=retries,
+            sleep=sleep,
+            path="/part1/random-value",
+            expected_response="proxy",
         )

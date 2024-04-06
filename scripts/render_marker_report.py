@@ -17,6 +17,7 @@ $ MARKER_REPORT_PATH='./target/marker-report.json' \
     COMMIT_SHA=e62e04509d0f950af3027c0f6df4e18c7385c630 \
     python scripts/render_marker_report.py
 """
+
 import dataclasses
 import datetime
 import json

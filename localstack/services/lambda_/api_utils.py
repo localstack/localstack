@@ -1,6 +1,7 @@
-""" Utilities related to Lambda API operations such as ARN handling, validations, and output formatting.
+"""Utilities related to Lambda API operations such as ARN handling, validations, and output formatting.
 Everything related to behavior or implicit functionality goes into `lambda_utils.py`.
 """
+
 import datetime
 import random
 import re
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
     )
     from localstack.services.lambda_.invocation.models import LambdaStore
 
+
 # Pattern for a full (both with and without qualifier) lambda function ARN
 FULL_FN_ARN_PATTERN = re.compile(
     r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
@@ -54,6 +56,10 @@ LAYER_VERSION_ARN_PATTERN = re.compile(
 # Pattern for a valid destination arn
 DESTINATION_ARN_PATTERN = re.compile(
     r"^$|arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
+)
+
+AWS_FUNCTION_NAME_REGEX = re.compile(
+    "^(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?$"
 )
 
 # Pattern for extracting various attributes from a full or partial ARN or just a function name.
@@ -83,7 +89,7 @@ VERSION_REGEX = re.compile(r"^[0-9]+$")
 # Pattern for an alias qualifier
 # Rules: https://docs.aws.amazon.com/lambda/latest/dg/API_CreateAlias.html#SSS-CreateAlias-request-Name
 # The original regex from AWS misses ^ and $ in the second regex, which allowed for partial substring matches
-ALIAS_REGEX = re.compile(r"(?!^[0-9]+)(^[a-zA-Z0-9-_]+$)")
+ALIAS_REGEX = re.compile(r"(?!^[0-9]+$)(^[a-zA-Z0-9-_]+$)")
 # Permission statement id
 STATEMENT_ID_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
 
@@ -104,6 +110,7 @@ def map_function_url_config(model: "FunctionUrlConfig") -> api_spec.FunctionUrlC
         LastModifiedTime=model.last_modified_time,
         Cors=model.cors,
         AuthType=model.auth_type,
+        InvokeMode=model.invoke_mode,
     )
 
 
@@ -616,3 +623,7 @@ def validate_layer_runtimes_and_architectures(
 
 def is_layer_arn(layer_name: str) -> bool:
     return LAYER_VERSION_ARN_PATTERN.match(layer_name) is not None
+
+
+def validate_function_name(function_name):
+    return AWS_FUNCTION_NAME_REGEX.match(function_name)

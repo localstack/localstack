@@ -30,7 +30,7 @@ from localstack.services.lambda_.invocation.metrics import (
     record_cw_metric_invocation,
 )
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.utils.strings import truncate
+from localstack.utils.strings import long_uid, truncate
 from localstack.utils.threads import FuncThread, start_thread
 
 if TYPE_CHECKING:
@@ -67,6 +67,7 @@ class LambdaVersionManager:
         counting_service: CountingService,
         assignment_service: AssignmentService,
     ):
+        self.id = long_uid()
         self.function_arn = function_arn
         self.function_version = function_version
         self.function = function
@@ -127,7 +128,7 @@ class LambdaVersionManager:
         )
         self.shutdown_event.set()
         self.log_handler.stop()
-        self.assignment_service.stop_environments_for_version(self.function_version)
+        self.assignment_service.stop_environments_for_version(self.id)
         get_runtime_executor().cleanup_version(self.function_version)  # TODO: make pluggable?
 
     def update_provisioned_concurrency_config(
@@ -157,7 +158,7 @@ class LambdaVersionManager:
 
         def scale_environments(*args, **kwargs) -> None:
             futures = self.assignment_service.scale_provisioned_concurrency(
-                self.function_version, provisioned_concurrent_executions
+                self.id, self.function_version, provisioned_concurrent_executions
             )
 
             concurrent.futures.wait(futures)
@@ -202,11 +203,11 @@ class LambdaVersionManager:
             self.function, self.function_version
         ) as provisioning_type:
             # TODO: potential race condition when changing provisioned concurrency after getting the lease but before
-            #   getting an an environment
+            #   getting an environment
             try:
                 # Blocks and potentially creates a new execution environment for this invocation
                 with self.assignment_service.get_environment(
-                    self.function_version, provisioning_type
+                    self.id, self.function_version, provisioning_type
                 ) as execution_env:
                     invocation_result = execution_env.invoke(invocation)
                     invocation_result.executed_version = self.function_version.id.qualifier

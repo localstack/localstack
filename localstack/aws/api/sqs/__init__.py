@@ -505,7 +505,7 @@ class SqsApi:
         label: String,
         aws_account_ids: AWSAccountIdList,
         actions: ActionNameList,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -522,7 +522,7 @@ class SqsApi:
         queue_url: String,
         receipt_handle: String,
         visibility_timeout: Integer,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -532,7 +532,7 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         entries: ChangeMessageVisibilityBatchRequestEntryList,
-        **kwargs
+        **kwargs,
     ) -> ChangeMessageVisibilityBatchResult:
         raise NotImplementedError
 
@@ -543,7 +543,7 @@ class SqsApi:
         queue_name: String,
         attributes: QueueAttributeMap = None,
         tags: TagMap = None,
-        **kwargs
+        **kwargs,
     ) -> CreateQueueResult:
         raise NotImplementedError
 
@@ -559,7 +559,7 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         entries: DeleteMessageBatchRequestEntryList,
-        **kwargs
+        **kwargs,
     ) -> DeleteMessageBatchResult:
         raise NotImplementedError
 
@@ -573,7 +573,7 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         attribute_names: AttributeNameList = None,
-        **kwargs
+        **kwargs,
     ) -> GetQueueAttributesResult:
         raise NotImplementedError
 
@@ -583,7 +583,7 @@ class SqsApi:
         context: RequestContext,
         queue_name: String,
         queue_owner_aws_account_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> GetQueueUrlResult:
         raise NotImplementedError
 
@@ -594,7 +594,7 @@ class SqsApi:
         queue_url: String,
         next_token: Token = None,
         max_results: BoxedInteger = None,
-        **kwargs
+        **kwargs,
     ) -> ListDeadLetterSourceQueuesResult:
         raise NotImplementedError
 
@@ -617,7 +617,7 @@ class SqsApi:
         queue_name_prefix: String = None,
         next_token: Token = None,
         max_results: BoxedInteger = None,
-        **kwargs
+        **kwargs,
     ) -> ListQueuesResult:
         raise NotImplementedError
 
@@ -636,7 +636,7 @@ class SqsApi:
         visibility_timeout: Integer = None,
         wait_time_seconds: Integer = None,
         receive_request_attempt_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> ReceiveMessageResult:
         raise NotImplementedError
 
@@ -657,7 +657,7 @@ class SqsApi:
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
         message_group_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> SendMessageResult:
         raise NotImplementedError
 
@@ -667,7 +667,7 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         entries: SendMessageBatchRequestEntryList,
-        **kwargs
+        **kwargs,
     ) -> SendMessageBatchResult:
         raise NotImplementedError
 
@@ -684,7 +684,7 @@ class SqsApi:
         source_arn: String,
         destination_arn: String = None,
         max_number_of_messages_per_second: Integer = None,
-        **kwargs
+        **kwargs,
     ) -> StartMessageMoveTaskResult:
         raise NotImplementedError
 

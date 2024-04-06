@@ -1,0 +1,138 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_describe_delete_activity": {
+    "recorded-date": "03-03-2024, 06:03:28",
+    "recorded-content": {
+      "create_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_activity_response_duplicate": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_activity_response": {
+        "activityArn": "activity_arn",
+        "creationDate": "creation-date",
+        "name": "activity_name",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_activity_response_2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_create_activity_invalid_name": {
+    "recorded-date": "04-03-2024, 14:18:50",
+    "recorded-content": {
+      "invalid_name": {
+        "Error": {
+          "Code": "InvalidName",
+          "Message": "Invalid Name: 'TestActivity InvalidName$'"
+        },
+        "message": "Invalid Name: 'TestActivity InvalidName$'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_describe_deleted_activity": {
+    "recorded-date": "17-03-2024, 10:33:44",
+    "recorded-content": {
+      "no_such_activity": {
+        "Error": {
+          "Code": "ActivityDoesNotExist",
+          "Message": "Activity Does Not Exist: 'activity_arn'"
+        },
+        "message": "Activity Does Not Exist: 'activity_arn'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_get_activity_task_deleted": {
+    "recorded-date": "17-03-2024, 10:34:59",
+    "recorded-content": {
+      "no_such_activity": {
+        "Error": {
+          "Code": "ActivityDoesNotExist",
+          "Message": "Activity Does Not Exist: 'activity_arn'"
+        },
+        "message": "Activity Does Not Exist: 'activity_arn'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_describe_activity_invalid_arn": {
+    "recorded-date": "11-03-2024, 20:38:07",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the DescribeActivity operation: Invalid Arn: 'Invalid ARN prefix: no_an_activity_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_get_activity_task_invalid_arn": {
+    "recorded-date": "11-03-2024, 20:40:26",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "InvalidArn",
+        "exception_value": "An error occurred (InvalidArn) when calling the GetActivityTask operation: Invalid Arn: 'Invalid ARN prefix: no_an_activity_arn'"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_activities.py::TestSnfApiActivities::test_list_activities": {
+    "recorded-date": "17-03-2024, 11:26:07",
+    "recorded-content": {
+      "list_activities_response": {
+        "activities": [
+          {
+            "activityArn": "activity_arn_0",
+            "creationDate": "datetime",
+            "name": "activity_name_0"
+          },
+          {
+            "activityArn": "activity_arn_1",
+            "creationDate": "datetime",
+            "name": "activity_name_1"
+          },
+          {
+            "activityArn": "activity_arn_2",
+            "creationDate": "datetime",
+            "name": "activity_name_2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@
 This module contains utilities to call a backend (e.g., an external service process like
 DynamoDBLocal) from a service provider.
 """
+
 from typing import Any, Callable, Mapping, Optional, Union
 from urllib.parse import urlsplit
 
@@ -149,7 +150,7 @@ def HttpFallbackDispatcher(provider: object, forward_url_getter: Callable[[str, 
 
 
 def get_request_forwarder_http(
-    forward_url_getter: Callable[[str, str], str]
+    forward_url_getter: Callable[[str, str], str],
 ) -> ServiceRequestHandler:
     """
     Returns a ServiceRequestHandler that creates for each invocation a new AwsRequestProxy with the result of

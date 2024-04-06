@@ -4,6 +4,7 @@ Basic opt-in performance tests for Lambda. Usage:
 2) Set TEST_PERFORMANCE_RESULTS_DIR=$HOME/Downloads if you want to export performance results as CSV
 3) Adjust repeat=100 to configure the number of repetitions
 """
+
 import csv
 import json
 import logging
@@ -23,9 +24,10 @@ from botocore.config import Config
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime
 from localstack.config import is_env_true
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid, to_bytes
-from localstack.utils.sync import retry
+from localstack.utils.sync import poll_condition, retry
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_S3_INTEGRATION,
@@ -114,13 +116,10 @@ class ThreadSafeCounter:
             self.counter += 1
 
 
-@markers.aws.unknown
-def test_number_of_function_versions(create_lambda_function, s3_bucket, aws_client):
-    """Test how many function versions LocalStack can support.
-    This test mainly idles and does one sync + async invoke as a sanity check."""
-    # TODO: validate whether pollers for older function versions remain active because the verbose logs indicated that
-    #   only two pollers were active despite many function versions. Try to async invoke an older function version.
-    num_function_versions = 1000
+@markers.aws.validated
+def test_number_of_function_versions_sync(create_lambda_function, s3_bucket, aws_client):
+    """Test how many function versions LocalStack can support; validating **synchronous** invokes."""
+    num_function_versions = 2 if is_aws_cloud() else 100
 
     function_name = f"test-lambda-perf-{short_uid()}"
     create_lambda_function(
@@ -130,44 +129,91 @@ def test_number_of_function_versions(create_lambda_function, s3_bucket, aws_clie
         Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
     )
 
-    for _ in range(num_function_versions):
-        aws_client.lambda_.publish_version(FunctionName=function_name)
+    # Publish function versions
+    versions = ["$LATEST"]
+    for i in range(num_function_versions):
+        # Publishing a new function version requires updating the function configuration or code
+        aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, Description=str(i + 1)
+        )
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        publish_version_response = aws_client.lambda_.publish_version(FunctionName=function_name)
+        versions.append(publish_version_response["Version"])
 
-    # idle for a while to see if the pollers can manage the load and any errors occur
-    time.sleep(90)
+    # Invoke each function version once
+    for version in versions:
+        invoke_response = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType=InvocationType.RequestResponse,
+            Qualifier=version,
+        )
+        assert "FunctionError" not in invoke_response
+        assert invoke_response["ExecutedVersion"] == version
+        payload = json.load(invoke_response["Payload"])
+        assert payload["function_version"] == version
+        request_id = invoke_response["ResponseMetadata"]["RequestId"]
+        assert payload["s3_key"] == request_id
 
-    result_1 = aws_client.lambda_.invoke(
-        FunctionName=function_name,
-        InvocationType=InvocationType.RequestResponse,
+
+@markers.aws.validated
+def test_number_of_function_versions_async(create_lambda_function, s3_bucket, aws_client):
+    """Test how many function versions LocalStack can support; validating **asynchronous** invokes."""
+    num_function_versions = 2 if is_aws_cloud() else 100
+    # Timeout for waiting until all async invokes are completed depends on num_function_version and machine
+    timeout_seconds = 5 * 60
+
+    function_name = f"test-lambda-perf-{short_uid()}"
+    create_lambda_function(
+        handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
+        func_name=function_name,
+        runtime=Runtime.python3_12,
+        Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
     )
-    assert "FunctionError" not in result_1
-    request_id_1 = result_1["ResponseMetadata"]["RequestId"]
 
-    result_2 = aws_client.lambda_.invoke(
-        FunctionName=function_name,
-        InvocationType=InvocationType.Event,
-    )
-    assert "FunctionError" not in result_2
-    request_id_2 = result_2["ResponseMetadata"]["RequestId"]
+    # Publish function versions
+    versions = ["$LATEST"]
+    for i in range(num_function_versions):
+        # Publishing a new function version requires updating the function configuration or code
+        aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, Description=str(i + 1)
+        )
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+        publish_version_response = aws_client.lambda_.publish_version(FunctionName=function_name)
+        versions.append(publish_version_response["Version"])
 
-    # wait to complete the event invoke without causing extra load through polling
-    LOG.info("Waiting for the event invoke to be processed ...")
-    time.sleep(10)
+    # Invoke each function version once
+    request_ids = []
+    for version in versions:
+        invoke_response = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType=InvocationType.Event,
+            Qualifier=version,
+        )
+        assert "FunctionError" not in invoke_response
+        request_id = invoke_response["ResponseMetadata"]["RequestId"]
+        request_ids.append(request_id)
 
-    LOG.info("Validate invocations")
+    # Wait until all event invokes are completed
+    def assert_s3_objects():
+        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
+        return len(s3_keys_output) == len(versions)
+
+    assert poll_condition(assert_s3_objects, timeout=timeout_seconds, interval=5)
+
     s3_request_ids = get_s3_keys(aws_client, s3_bucket)
-    assert set(s3_request_ids) == {request_id_1, request_id_2}
+    assert set(s3_request_ids) == set(request_ids)
 
 
-@markers.aws.unknown
-def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_client_factory):
-    """Test how many active functions LocalStack can support.
-    This test invokes each function synchronously (all functions first) + asynchronously validates invokes using S3.
-    """
-    num_functions = 150
+@markers.aws.validated
+def test_number_of_functions_sync(
+    create_lambda_function, s3_bucket, aws_client, aws_client_factory
+):
+    """Test how many active functions LocalStack can support; validating **synchronous** invokes."""
+    # TODO: investigate why ~56/150 Lambda containers don't shut down in host mode (N=150 => 5min)
+    num_functions = 2 if is_aws_cloud() else 150
+
+    function_names = []
     uuid = short_uid()
-
-    LOG.info("Create functions")
     for num in range(num_functions):
         function_name = f"test-lambda-perf-{uuid}-{num}"
         create_lambda_function(
@@ -176,40 +222,57 @@ def test_number_of_functions(create_lambda_function, s3_bucket, aws_client, aws_
             runtime=Runtime.python3_12,
             Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
         )
+        function_names.append(function_name)
 
-    # idle for a while to see if the pollers can manage the load and any errors occur
-    LOG.info("Idle for steady state")
-    time.sleep(30)
-
-    LOG.info("Invoke each function once synchronously")
-    request_ids = []
-    lambda_client = aws_client_factory(config=CLIENT_CONFIG).lambda_
-    for num in range(num_functions):
-        function_name = f"test-lambda-perf-{uuid}-{num}"
-        result_1 = lambda_client.invoke(
+    # Invoke each function once
+    for function_name in function_names:
+        invoke_response = aws_client.lambda_.invoke(
             FunctionName=function_name,
             InvocationType=InvocationType.RequestResponse,
         )
-        assert "FunctionError" not in result_1
-        request_id_1 = result_1["ResponseMetadata"]["RequestId"]
-        request_ids.append(request_id_1)
+        assert "FunctionError" not in invoke_response
 
-    LOG.info("Invoke each function once asynchronously")
+
+@markers.aws.validated
+def test_number_of_functions_async(
+    create_lambda_function, s3_bucket, aws_client, aws_client_factory
+):
+    """Test how many active functions LocalStack can support; validating **asynchronous** invokes."""
+    # TODO: investigate why ~7/150 Lambda containers don't shut down in host mode (N=150 => 5min)
+    num_functions = 2 if is_aws_cloud() else 150
+    # Timeout for waiting until all async invokes are completed depends on num_functions and machine
+    timeout_seconds = 5 * 60
+
+    function_names = []
+    uuid = short_uid()
     for num in range(num_functions):
         function_name = f"test-lambda-perf-{uuid}-{num}"
-        result_2 = lambda_client.invoke(
+        create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            Environment={"Variables": {"S3_BUCKET_NAME": s3_bucket}},
+        )
+        function_names.append(function_name)
+
+    # Invoke each function once
+    request_ids = []
+    for function_name in function_names:
+        invoke_response = aws_client.lambda_.invoke(
             FunctionName=function_name,
             InvocationType=InvocationType.Event,
         )
-        assert "FunctionError" not in result_2
-        request_id_2 = result_2["ResponseMetadata"]["RequestId"]
-        request_ids.append(request_id_2)
+        assert "FunctionError" not in invoke_response
+        request_id = invoke_response["ResponseMetadata"]["RequestId"]
+        request_ids.append(request_id)
 
-    # wait to complete the event invoke without causing extra load through polling
-    LOG.info("Waiting for event invokes to be processed ...")
-    time.sleep(200)
+    # Wait until all event invokes are completed
+    def assert_s3_objects():
+        s3_keys_output = get_s3_keys(aws_client, s3_bucket)
+        return len(s3_keys_output) == len(request_ids)
 
-    LOG.info("Validate invocations")
+    assert poll_condition(assert_s3_objects, timeout=timeout_seconds, interval=5)
+
     s3_request_ids = get_s3_keys(aws_client, s3_bucket)
     assert set(s3_request_ids) == set(request_ids)
 

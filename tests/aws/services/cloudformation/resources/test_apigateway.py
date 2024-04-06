@@ -267,6 +267,17 @@ def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client)
     assert result.status_code == 400
 
 
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..methodIntegration.integrationResponses",
+        "$..methodIntegration.requestParameters",  # missing {}
+        "$..methodIntegration.requestTemplates",  # missing {}
+        "$..methodResponses",  # missing {}
+        "$..requestModels",  # missing {}
+        "$..requestParameters",  # missing {}
+        "$..rootResourceId",  # shouldn't exist
+    ]
+)
 @markers.aws.validated
 def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
@@ -285,6 +296,7 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
     rest_api_id = stack.outputs["RestApiId"]
     rest_api = aws_client.apigateway.get_rest_api(restApiId=rest_api_id)
     snapshot.match("rest_api", rest_api)
+    snapshot.add_transformer(snapshot.transform.key_value("rootResourceId"))
 
     resource_id = stack.outputs["ResourceId"]
     method = aws_client.apigateway.get_method(
@@ -385,7 +397,15 @@ def test_account(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-def test_update_usage_plan(deploy_cfn_template, aws_client):
+def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("apiId"),
+            snapshot.transform.key_value("stage"),
+            snapshot.transform.key_value("id"),
+            snapshot.transform.key_value("name"),
+        ]
+    )
     rest_api_name = f"api-{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -395,6 +415,7 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
     )
 
     usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
+    snapshot.match("usage-plan", usage_plan)
     assert usage_plan["quota"]["limit"] == 5000
 
     deploy_cfn_template(
@@ -407,7 +428,8 @@ def test_update_usage_plan(deploy_cfn_template, aws_client):
     )
 
     usage_plan = aws_client.apigateway.get_usage_plan(usagePlanId=stack.outputs["UsagePlanId"])
-    assert 7000 == usage_plan["quota"]["limit"]
+    snapshot.match("updated-usage-plan", usage_plan)
+    assert usage_plan["quota"]["limit"] == 7000
 
 
 @markers.aws.validated
@@ -515,3 +537,94 @@ def test_rest_api_serverless_ref_resolving(
             restApiId=rest_api_id, resourceId=root_resource["id"], httpMethod=http_method
         )
         snapshot.match(f"get-method-{http_method}", method)
+
+
+class TestServerlessApigwLambda:
+    @markers.aws.validated
+    def test_serverless_like_deployment_with_update(
+        self, deploy_cfn_template, aws_client, cleanups
+    ):
+        """
+        Regression test for serverless. Since adding a delete handler for the "AWS::ApiGateway::Deployment" resource,
+        the update was failing due to the delete raising an Exception because of a still connected Stage.
+
+        This test recreates a simple recreated deployment procedure as done by "serverless" where
+        `serverless deploy` actually both creates a stack and then immediately updates it.
+        The second UpdateStack is then caused by another `serverless deploy`, e.g. when changing the lambda configuration
+        """
+
+        # 1. deploy create
+        template_content = load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/serverless-apigw-lambda.create.json"
+            )
+        )
+        stack_name = f"slsstack-{short_uid()}"
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template_content,
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+        )
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        # 2. update first
+        # get deployed bucket name
+        outputs = aws_client.cloudformation.describe_stacks(StackName=stack["StackId"])["Stacks"][
+            0
+        ]["Outputs"]
+        outputs = {k["OutputKey"]: k["OutputValue"] for k in outputs}
+        bucket_name = outputs["ServerlessDeploymentBucketName"]
+
+        # upload zip file to s3 bucket
+        # "serverless/test-service/local/1708076358388-2024-02-16T09:39:18.388Z/api.zip"
+        handler1_filename = os.path.join(os.path.dirname(__file__), "handlers/handler1/api.zip")
+        aws_client.s3.upload_file(
+            Filename=handler1_filename,
+            Bucket=bucket_name,
+            Key="serverless/test-service/local/1708076358388-2024-02-16T09:39:18.388Z/api.zip",
+        )
+
+        template_content = load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/serverless-apigw-lambda.update.json"
+            )
+        )
+        stack = aws_client.cloudformation.update_stack(
+            StackName=stack_name,
+            TemplateBody=template_content,
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        get_fn_1 = aws_client.lambda_.get_function(FunctionName="test-service-local-api")
+        assert get_fn_1["Configuration"]["Handler"] == "index.handler"
+
+        # # 3. update second
+        # # upload zip file to s3 bucket
+        handler2_filename = os.path.join(os.path.dirname(__file__), "handlers/handler2/api.zip")
+        aws_client.s3.upload_file(
+            Filename=handler2_filename,
+            Bucket=bucket_name,
+            Key="serverless/test-service/local/1708076568092-2024-02-16T09:42:48.092Z/api.zip",
+        )
+
+        template_content = load_file(
+            os.path.join(
+                os.path.dirname(__file__), "../../../templates/serverless-apigw-lambda.update2.json"
+            )
+        )
+        stack = aws_client.cloudformation.update_stack(
+            StackName=stack_name,
+            TemplateBody=template_content,
+            Capabilities=["CAPABILITY_NAMED_IAM"],
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack["StackId"]
+        )
+        get_fn_2 = aws_client.lambda_.get_function(FunctionName="test-service-local-api")
+        assert get_fn_2["Configuration"]["Handler"] == "index.handler2"

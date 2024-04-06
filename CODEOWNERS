@@ -91,6 +91,9 @@
 /tests/bootstrap @simonrw
 /localstack/testing/pytest/container.py @dominikschubert @simonrw
 
+# Test Selection
+/localstack/testing/testselection @dominikschubert @alexrashed 
+
 ######################
 ### SERVICE OWNERS ###
 ######################
@@ -102,97 +105,85 @@
 /tests/aws/services/acm/ @alexrashed
 
 # apigateway
-/localstack/aws/api/apigateway/ @calvernaz @bentsku
-/localstack/services/apigateway/ @calvernaz @bentsku
-/localstack/services/cloudformation/models/apigateway.py @calvernaz @bentsku
-/tests/aws/services/apigateway/ @calvernaz @bentsku
-/tests/unit/test_apigateway.py @calvernaz @bentsku
+/localstack/aws/api/apigateway/ @bentsku
+/localstack/services/apigateway/ @bentsku
+/tests/aws/services/apigateway/ @bentsku
+/tests/unit/test_apigateway.py @bentsku
 
 # cloudformation
-/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw
-/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw
-# left empty (without owner) because the models belong to the specific service owners
-# you can overwrite this for single services afterwards
-/localstack/services/cloudformation/models/
-/localstack/services/cloudformation/models/cloudformation.py @dominikschubert @pinzon @simonrw
-/tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw
-/tests/unit/test_cloudformation.py @dominikschubert @pinzon @simonrw
-/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw
+/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
+/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
+/tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
+/tests/unit/test_cloudformation.py @dominikschubert @pinzon @simonrw @Morijarti
+/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
 
 # cloudwatch
 /localstack/aws/api/cloudwatch/ @steffyP @pinzon
 /localstack/services/cloudwatch/ @steffyP @pinzon
-/localstack/services/cloudformation/models/cloudwatch.py @steffyP @pinzon
 /tests/aws/services/cloudwatch/ @steffyP @pinzon
 /tests/unit/test_cloudwatch.py @steffyP @pinzon
 
 # dynamodb
 /localstack/aws/api/dynamodb/ @viren-nadkarni @giograno
 /localstack/services/dynamodb/ @viren-nadkarni @giograno
-/localstack/services/cloudformation/models/dynamodb.py @viren-nadkarni @giograno
 /tests/aws/services/dynamodb/ @viren-nadkarni @giograno
 /tests/unit/test_dynamodb.py @viren-nadkarni @giograno
 
 # ec2
-/localstack/aws/api/ec2/ @viren-nadkarni
-/localstack/services/ec2/ @viren-nadkarni
-/localstack/services/cloudformation/models/ec2.py @viren-nadkarni
-/tests/aws/services/ec2/ @viren-nadkarni
+/localstack/aws/api/ec2/ @viren-nadkarni @macnev2013
+/localstack/services/ec2/ @viren-nadkarni @macnev2013
+/tests/aws/services/ec2/ @viren-nadkarni @macnev2013
 
 # ecr
 /localstack/services/ecr/ @dfangl
-/localstack/services/cloudformation/models/ecr.py @dfangl
 
 # es
 /localstack/aws/api/es/ @alexrashed @silv-io
 /localstack/services/es/ @alexrashed @silv-io
-/localstack/services/cloudformation/models/es.py @alexrashed @silv-io
 /tests/aws/services/es/ @alexrashed @silv-io
 
 # events
 /localstack/aws/api/events/ @dominikschubert @dfangl
 /localstack/services/events/ @dominikschubert @dfangl
-/localstack/services/cloudformation/models/events.py @dominikschubert @dfangl
 /tests/aws/services/events/ @dominikschubert @dfangl
+
+# firehose
+/localstack/aws/api/firehose/ @pinzon
+/localstack/services/firehose/ @pinzon
+/tests/aws/services/firehose/ @pinzon
 
 # iam
 /localstack/aws/api/iam/ @dfangl @pinzon
 /localstack/services/iam/ @dfangl @pinzon
-/localstack/services/cloudformation/models/iam.py @dfangl @pinzon
 /tests/aws/services/iam/ @dfangl @pinzon
 
 # kms
-/localstack/aws/api/kms/ @sannya-singal @silv-io
-/localstack/services/kms/ @sannya-singal @silv-io
-/localstack/services/cloudformation/models/kms.py @sannya-singal @silv-io
-/tests/aws/services/kms/ @sannya-singal @silv-io
-/tests/unit/test_kms.py @sannya-singal @silv-io
+/localstack/aws/api/kms/ @sannya-singal
+/localstack/services/kms/ @sannya-singal
+/tests/aws/services/kms/ @sannya-singal
+/tests/unit/test_kms.py @sannya-singal
 
 # lambda
 /localstack/aws/api/lambda_/ @joe4dev @dominikschubert @dfangl
 /localstack/services/lambda_/ @joe4dev @dominikschubert @dfangl
-/localstack/services/cloudformation/models/lambda_.py @joe4dev @dominikschubert @dfangl
 /tests/aws/services/lambda_/ @joe4dev @dominikschubert @dfangl
 /tests/unit/services/lambda_/ @joe4dev @dominikschubert @dfangl
 
 # logs
 /localstack/aws/api/logs/ @steffyP
 /localstack/services/logs/ @steffyP
-/localstack/services/cloudformation/models/logs.py @steffyP
 /tests/aws/services/logs/ @steffyP
 /tests/unit/test_logs.py @steffyP
 
 # opensearch
 /localstack/aws/api/opensearch/ @alexrashed @silv-io
 /localstack/services/opensearch/ @alexrashed @silv-io
-/localstack/services/cloudformation/models/opensearch.py @alexrashed @silv-io
 /tests/aws/services/opensearch/ @alexrashed @silv-io
 /tests/unit/services/opensearch/ @alexrashed @silv-io
 
 # route53
 /localstack/aws/api/route53/ @giograno
 /localstack/services/route53/ @giograno
-/localstack/services/cloudformation/models/route53.py @giograno
 /tests/aws/services/route53/ @giograno
 
 # route53resolver
@@ -201,18 +192,21 @@
 /tests/aws/services/route53resolver/ @macnev2013 @sannya-singal
 
 # s3
-/localstack/aws/api/s3/ @bentsku @macnev2013
-/localstack/services/s3/ @bentsku @macnev2013
-/localstack/services/cloudformation/models/s3.py @bentsku @macnev2013
-/tests/aws/services/s3/ @bentsku @macnev2013
-/tests/unit/test_s3.py @bentsku @macnev2013
-/tests/unit/services/s3/ @bentsku @macnev2013
+/localstack/aws/api/s3/ @bentsku
+/localstack/services/s3/ @bentsku
+/tests/aws/services/s3/ @bentsku
+/tests/unit/test_s3.py @bentsku
+/tests/unit/services/s3/ @bentsku
+
+# scheduler
+/localstack/aws/api/scheduler/ @joe4dev
+/localstack/services/scheduler/ @joe4dev
+/tests/aws/services/scheduler/ @joe4dev
 
 # secretsmanager
-/localstack/aws/api/secretsmanager/ @dominikschubert @MEPalma
-/localstack/services/secretsmanager/ @dominikschubert @MEPalma
-/localstack/services/cloudformation/models/secretsmanager.py @dominikschubert @MEPalma
-/tests/aws/services/secretsmanager/ @dominikschubert @MEPalma
+/localstack/aws/api/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
+/localstack/services/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
+/tests/aws/services/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
 
 # ses
 /localstack/aws/api/ses/ @viren-nadkarni
@@ -222,28 +216,29 @@
 # sns
 /localstack/aws/api/sns/ @bentsku @thrau
 /localstack/services/sns/ @bentsku @thrau
-/localstack/services/cloudformation/models/sns.py @bentsku @thrau
 /tests/aws/services/sns/ @bentsku @thrau
 /tests/unit/test_sns.py @bentsku @thrau
 
 # sqs
 /localstack/aws/api/sqs/ @thrau @baermat
 /localstack/services/sqs/ @thrau @baermat
-/localstack/services/cloudformation/models/sqs.py @thrau @baermat
 /tests/aws/services/sqs/ @thrau @baermat
 /tests/unit/test_sqs.py @thrau @baermat
 
 # ssm
 /localstack/aws/api/ssm/ @dominikschubert
 /localstack/services/ssm/ @dominikschubert
-/localstack/services/cloudformation/models/ssm.py @dominikschubert
 /tests/aws/services/ssm/ @dominikschubert
 
 # stepfunctions
 /localstack/aws/api/stepfunctions/ @dominikschubert @MEPalma
 /localstack/services/stepfunctions/ @dominikschubert @MEPalma
-/localstack/services/cloudformation/models/stepfunctions.py @dominikschubert @MEPalma
 /tests/aws/services/stepfunctions/ @dominikschubert @MEPalma
+
+# sts
+/localstack/aws/api/sts/ @pinzon
+/localstack/services/sts/ @pinzon
+/tests/aws/services/sts/ @pinzon
 
 # transcribe
 /localstack/aws/api/transcribe/ @sannya-singal @ackdav

@@ -79,8 +79,15 @@ from localstack.services.stepfunctions.asl.component.common.retry.backoff_rate_d
 from localstack.services.stepfunctions.asl.component.common.retry.interval_seconds_decl import (
     IntervalSecondsDecl,
 )
+from localstack.services.stepfunctions.asl.component.common.retry.jitter_strategy_decl import (
+    JitterStrategy,
+    JitterStrategyDecl,
+)
 from localstack.services.stepfunctions.asl.component.common.retry.max_attempts_decl import (
     MaxAttemptsDecl,
+)
+from localstack.services.stepfunctions.asl.component.common.retry.max_delay_seconds_decl import (
+    MaxDelaySecondsDecl,
 )
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_decl import RetrierDecl
 from localstack.services.stepfunctions.asl.component.common.retry.retrier_props import RetrierProps
@@ -150,6 +157,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
     ReaderConfig,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_props import (
+    ReaderConfigProps,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
@@ -455,6 +465,7 @@ class Preprocessor(ASLParserVisitor):
                 ),
             ),
             next_stmt=composite_stmts.get(Next),
+            comment=composite_stmts.get(Comment),
         )
 
     def visitChoice_rule_comparison_variable(
@@ -475,7 +486,11 @@ class Preprocessor(ASLParserVisitor):
             ),
         )
         comparison_variable = ComparisonVariable(variable=variable, func=comparison_func)
-        return ChoiceRule(comparison=comparison_variable, next_stmt=comparison_stmts.get(Next))
+        return ChoiceRule(
+            comparison=comparison_variable,
+            next_stmt=comparison_stmts.get(Next),
+            comment=comparison_stmts.get(Comment),
+        )
 
     def visitChoices_decl(self, ctx: ASLParser.Choices_declContext) -> ChoicesDecl:
         rules: list[ChoiceRule] = list()
@@ -588,7 +603,7 @@ class Preprocessor(ASLParserVisitor):
                 typ=States,
                 raise_on_missing=ValueError(f"Expected a States declaration at '{ctx.getText()}'."),
             ),
-            processor_config=props.get(typ=ProcessorConfig),
+            processor_config=props.get(typ=ProcessorConfig) or ProcessorConfig(),
         )
 
     def visitIterator_decl(self, ctx: ASLParser.Iterator_declContext) -> IteratorDecl:
@@ -608,6 +623,7 @@ class Preprocessor(ASLParserVisitor):
                 typ=States,
                 raise_on_missing=ValueError(f"Expected a States declaration at '{ctx.getText()}'."),
             ),
+            processor_config=props.get(typ=ProcessorConfig) or ProcessorConfig(),
         )
 
     def visitItem_selector_decl(self, ctx: ASLParser.Item_selector_declContext) -> ItemSelector:
@@ -630,7 +646,7 @@ class Preprocessor(ASLParserVisitor):
         )
 
     def visitReader_config_decl(self, ctx: ASLParser.Reader_config_declContext) -> ReaderConfig:
-        props = TypedProps()
+        props = ReaderConfigProps()
         for child in ctx.children:
             cmp = self.visit(child)
             props.add(cmp)
@@ -641,7 +657,7 @@ class Preprocessor(ASLParserVisitor):
                     f"Expected a InputType declaration at '{ctx.getText()}'."
                 ),
             ),
-            max_items=props.get(typ=MaxItemsDecl),
+            max_items_decl=props.get(typ=MaxItemsDecl),
             csv_header_location=props.get(CSVHeaderLocation),
             csv_headers=props.get(CSVHeaders),
         )
@@ -731,6 +747,20 @@ class Preprocessor(ASLParserVisitor):
 
     def visitBackoff_rate_decl(self, ctx: ASLParser.Backoff_rate_declContext) -> BackoffRateDecl:
         return BackoffRateDecl(rate=float(ctx.children[-1].getText()))
+
+    def visitMax_delay_seconds_decl(
+        self, ctx: ASLParser.Max_delay_seconds_declContext
+    ) -> MaxDelaySecondsDecl:
+        return MaxDelaySecondsDecl(max_delays_seconds=int(ctx.INT().getText()))
+
+    def visitJitter_strategy_decl(
+        self, ctx: ASLParser.Jitter_strategy_declContext
+    ) -> JitterStrategyDecl:
+        last_child: ParseTree = ctx.children[-1]
+        strategy_child: Optional[TerminalNodeImpl] = Antlr4Utils.is_terminal(last_child)
+        strategy_value = strategy_child.getSymbol().type
+        jitter_strategy = JitterStrategy(strategy_value)
+        return JitterStrategyDecl(jitter_strategy=jitter_strategy)
 
     def visitCatch_decl(self, ctx: ASLParser.Catch_declContext) -> CatchDecl:
         catchers: list[CatcherDecl] = list()
@@ -849,3 +879,6 @@ class Preprocessor(ASLParserVisitor):
             version=props.get(typ=Version),
         )
         return program
+
+    def visitState_machine(self, ctx: ASLParser.State_machineContext) -> Program:
+        return self.visit(ctx.program_decl())

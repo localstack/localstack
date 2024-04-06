@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import abc
 import copy
-from typing import Any, Final, Optional
+import json
+from typing import Any, Final, Optional, Union
 
-from botocore.model import OperationModel, StructureShape
+from botocore.model import ListShape, OperationModel, StringShape, StructureShape
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
+    TaskFailedEventDetails,
     TaskScheduledEventDetails,
     TaskStartedEventDetails,
     TaskSucceededEventDetails,
@@ -17,6 +19,7 @@ from localstack.aws.api.stepfunctions import (
 from localstack.aws.spec import load_service
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+    FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
     StatesErrorName,
@@ -34,6 +37,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.quotas import is_within_size_quota
 from localstack.utils.strings import camel_to_snake_case, snake_to_camel_case
 
 
@@ -51,8 +55,9 @@ class StateTaskService(StateTask, abc.ABC):
     def _get_sfn_resource_type(self) -> str:
         return self.resource.service_name
 
-    def _get_timed_out_failure_event(self) -> FailureEvent:
+    def _get_timed_out_failure_event(self, env: Environment) -> FailureEvent:
         return FailureEvent(
+            env=env,
             error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
             event_type=HistoryEventType.TaskTimedOut,
             event_details=EventDetails(
@@ -87,24 +92,25 @@ class StateTaskService(StateTask, abc.ABC):
 
     def _to_boto_args(self, parameters: dict, structure_shape: StructureShape) -> None:
         shape_members = structure_shape.members
-        norm_member_binds: dict[str, tuple[str, Optional[StructureShape]]] = {
-            camel_to_snake_case(member_key): (
-                member_key,
-                member_value if isinstance(member_value, StructureShape) else None,
-            )
+        norm_member_binds: dict[str, tuple[str, StructureShape]] = {
+            camel_to_snake_case(member_key): (member_key, member_value)
             for member_key, member_value in shape_members.items()
         }
         parameters_bind_keys: list[str] = list(parameters.keys())
         for parameter_key in parameters_bind_keys:
             norm_parameter_key = camel_to_snake_case(parameter_key)
-            norm_member_bind: Optional[
-                tuple[str, Optional[StructureShape]]
-            ] = norm_member_binds.get(norm_parameter_key)
+            norm_member_bind: Optional[tuple[str, Optional[StructureShape]]] = (
+                norm_member_binds.get(norm_parameter_key)
+            )
             if norm_member_bind is not None:
                 norm_member_bind_key, norm_member_bind_shape = norm_member_bind
                 parameter_value = parameters.pop(parameter_key)
-                if norm_member_bind_shape is not None:
+                if isinstance(norm_member_bind_shape, StructureShape):
                     self._to_boto_args(parameter_value, norm_member_bind_shape)
+                elif isinstance(norm_member_bind_shape, StringShape) and not isinstance(
+                    parameter_value, str
+                ):
+                    parameter_value = to_json_str(parameter_value)
                 parameters[norm_member_bind_key] = parameter_value
 
     @staticmethod
@@ -129,6 +135,9 @@ class StateTaskService(StateTask, abc.ABC):
                 response_value = response.pop(response_key)
                 if isinstance(shape_member, StructureShape):
                     self._from_boto_response(response_value, shape_member)
+                elif isinstance(shape_member, ListShape) and isinstance(response_value, list):
+                    for response_value_member in response_value:
+                        self._from_boto_response(response_value_member, shape_member.member)  # noqa
                 response[norm_response_key] = response_value
 
     def _get_boto_service_name(self, boto_service_name: Optional[str] = None) -> str:
@@ -167,14 +176,39 @@ class StateTaskService(StateTask, abc.ABC):
         if output_shape is not None:
             self._from_boto_response(response, output_shape)  # noqa
 
+    def _verify_size_quota(self, env: Environment, value: Union[str, json]) -> None:
+        is_within: bool = is_within_size_quota(value)
+        if is_within:
+            return
+        resource_type = self._get_sfn_resource_type()
+        resource = self._get_sfn_resource()
+        cause = (
+            f"The state/task '{resource_type}' returned a result with a size "
+            "exceeding the maximum number of bytes service limit."
+        )
+        raise FailureEventException(
+            failure_event=FailureEvent(
+                env=env,
+                error_name=StatesErrorName(typ=StatesErrorNameType.StatesStatesDataLimitExceeded),
+                event_type=HistoryEventType.TaskFailed,
+                event_details=EventDetails(
+                    taskFailedEventDetails=TaskFailedEventDetails(
+                        error=StatesErrorNameType.StatesStatesDataLimitExceeded.to_name(),
+                        cause=cause,
+                        resourceType=resource_type,
+                        resource=resource,
+                    )
+                ),
+            )
+        )
+
     @abc.abstractmethod
     def _eval_service_task(
         self,
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-    ):
-        ...
+    ): ...
 
     def _before_eval_execution(
         self, env: Environment, resource_runtime_part: ResourceRuntimePart, raw_parameters: dict
@@ -218,6 +252,7 @@ class StateTaskService(StateTask, abc.ABC):
         normalised_parameters: dict,
     ) -> None:
         output = env.stack[-1]
+        self._verify_size_quota(env=env, value=output)
         env.event_history.add_event(
             context=env.event_history_context,
             hist_type_event=HistoryEventType.TaskSucceeded,

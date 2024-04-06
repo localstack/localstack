@@ -58,7 +58,7 @@ class AmazonStateLanguageParser(abc.ABC):
         parser = ASLParser(stream)
         parser.removeErrorListeners()
         parser.addErrorListener(syntax_error_listener)
-        tree = parser.program_decl()
+        tree = parser.state_machine()
 
         errors = syntax_error_listener.errors
         if errors:

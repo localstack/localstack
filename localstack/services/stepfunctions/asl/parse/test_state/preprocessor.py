@@ -56,7 +56,8 @@ def _decorated_updates_inspection_data(method, inspection_data_key: InspectionDa
 def _decorate_state_field(state_field: CommonStateField) -> None:
     if isinstance(state_field, ExecutionState):
         state_field._eval_execution = _decorated_updates_inspection_data(
-            method=state_field._eval_execution, inspection_data_key=InspectionDataKey.RESULT  # noqa
+            method=state_field._eval_execution,
+            inspection_data_key=InspectionDataKey.RESULT,  # noqa
         )
     elif isinstance(state_field, StateChoice):
         state_field._eval_body = _decorated_updated_choice_inspection_data(
@@ -114,6 +115,7 @@ class TestStatePreprocessor(Preprocessor):
     def visitResult_decl(self, ctx: ASLParser.Result_declContext) -> Result:
         result: Result = super().visitResult_decl(ctx=ctx)
         result._eval_body = _decorated_updates_inspection_data(
-            method=result._eval_body, inspection_data_key=InspectionDataKey.RESULT  # noqa
+            method=result._eval_body,
+            inspection_data_key=InspectionDataKey.RESULT,  # noqa
         )
         return result

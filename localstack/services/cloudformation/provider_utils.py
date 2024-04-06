@@ -4,12 +4,14 @@ A set of utils for use in resource providers.
 Avoid any imports to localstack here and keep external imports to a minimum!
 This is because we want to be able to package a resource provider without including localstack code.
 """
+
 import builtins
 import json
 import re
 import uuid
 from copy import deepcopy
 from pathlib import Path
+from typing import Callable
 
 
 def generate_default_name(stack_name: str, logical_resource_id: str):
@@ -39,6 +41,39 @@ def select_attributes(model: dict, params: list[str]) -> dict:
 
 def keys_lower(model: dict) -> dict:
     return {k.lower(): v for k, v in model.items()}
+
+
+def convert_pascalcase_to_lower_camelcase(item: str) -> str:
+    if len(item) <= 1:
+        return item.lower()
+    else:
+        return f"{item[0].lower()}{item[1:]}"
+
+
+def _recurse_properties(obj: dict | list, fn: Callable) -> dict | list:
+    obj = fn(obj)
+    if isinstance(obj, dict):
+        return {k: _recurse_properties(v, fn) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_recurse_properties(v, fn) for v in obj]
+    else:
+        return obj
+
+
+def recurse_properties(properties: dict, fn: Callable) -> dict:
+    return _recurse_properties(deepcopy(properties), fn)
+
+
+def keys_pascalcase_to_lower_camelcase(model: dict) -> dict:
+    """Recursively change any dicts keys to lower camelcase"""
+
+    def _keys_pascalcase_to_lower_camelcase(obj):
+        if isinstance(obj, dict):
+            return {convert_pascalcase_to_lower_camelcase(k): v for k, v in obj.items()}
+        else:
+            return obj
+
+    return _recurse_properties(model, _keys_pascalcase_to_lower_camelcase)
 
 
 def transform_list_to_dict(param, key_attr_name="Key", value_attr_name="Value"):

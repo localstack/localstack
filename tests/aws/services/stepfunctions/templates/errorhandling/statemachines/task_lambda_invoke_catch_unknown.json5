@@ -4,7 +4,7 @@
   "States": {
     "Start": {
       "Type": "Task",
-      "Resource": "__tbd__",
+      "Resource": "__tbd__",  // Resource field to be replaced dynamically.
       "Parameters": {
         "FunctionName.$": "$.FunctionName",
         "Payload.$": "$.Payload",

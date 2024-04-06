@@ -1,7 +1,6 @@
 from rolo.asgi import (
     ASGIAdapter,
     ASGILifespanListener,
-    ASGIWebSocket,
     RawHTTPRequestEventStreamAdapter,
     WebSocketEnvironment,
     WebSocketListener,
@@ -17,7 +16,6 @@ __all__ = [
     "RawHTTPRequestEventStreamAdapter",
     "WsgiStartResponse",
     "ASGILifespanListener",
-    "ASGIWebSocket",
     "WebSocketListener",
     "ASGIAdapter",
 ]

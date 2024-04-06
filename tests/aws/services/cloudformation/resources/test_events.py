@@ -2,7 +2,6 @@ import json
 import logging
 import os
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
@@ -262,12 +261,12 @@ def test_cfn_handle_events_rule(deploy_cfn_template, aws_client):
 
 # {"LogicalResourceId": "TestStateMachine", "ResourceType": "AWS::StepFunctions::StateMachine", "ResourceStatus": "CREATE_FAILED", "ResourceStatusReason": "Resource handler returned message: \"Cross-account pass role is not allowed."}
 @markers.aws.needs_fixing
-def test_cfn_handle_events_rule_without_name(deploy_cfn_template, aws_client):
+def test_cfn_handle_events_rule_without_name(deploy_cfn_template, aws_client, account_id):
     rs = aws_client.events.list_rules()
     rule_names = [rule["Name"] for rule in rs["Rules"]]
 
     stack = deploy_cfn_template(
-        template=TEST_TEMPLATE_18 % arns.iam_role_arn("sfn_role", account_id=TEST_AWS_ACCOUNT_ID),
+        template=TEST_TEMPLATE_18 % arns.iam_role_arn("sfn_role", account_id=account_id),
     )
 
     rs = aws_client.events.list_rules()

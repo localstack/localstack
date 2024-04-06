@@ -1,9 +1,9 @@
 import json
 
 import pytest
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.utils import (
@@ -513,6 +513,43 @@ class TestSnfApiVersioning:
             stateMachineArn=state_machine_arn
         )
         sfn_snapshot.match("list_versions_resp", list_versions_resp)
+
+    @markers.aws.validated
+    def test_publish_state_machine_version_no_such_machine(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+        sm_name = f"statemachine_{short_uid()}"
+
+        creation_resp_1 = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        state_machine_arn: str = creation_resp_1["stateMachineArn"]
+
+        sm_nonexistent_name = f"statemachine_{short_uid()}"
+        sm_nonexistent_arn = state_machine_arn.replace(sm_name, sm_nonexistent_name)
+        sfn_snapshot.add_transformer(RegexTransformer(sm_nonexistent_arn, "ssm_nonexistent_arn"))
+
+        with pytest.raises(Exception) as exc:
+            aws_client.stepfunctions.publish_state_machine_version(
+                stateMachineArn=sm_nonexistent_arn
+            )
+        sfn_snapshot.match(
+            "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
+    def test_publish_state_machine_version_invalid_arn(self, sfn_snapshot, aws_client):
+        with pytest.raises(Exception) as exc:
+            aws_client.stepfunctions.publish_state_machine_version(stateMachineArn="invalid_arn")
+        sfn_snapshot.match(
+            "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
+        )
 
     @markers.aws.validated
     def test_empty_revision_with_publish_and_publish_on_creation(

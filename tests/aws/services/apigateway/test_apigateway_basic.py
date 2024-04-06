@@ -38,7 +38,6 @@ from localstack.utils.collections import select_attributes
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.json import clone
-from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from localstack.utils.urls import localstack_host
@@ -67,7 +66,6 @@ from tests.aws.services.apigateway.conftest import (
     STEPFUNCTIONS_ASSUME_ROLE_POLICY,
 )
 from tests.aws.services.lambda_.test_lambda import (
-    TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_NODEJS_APIGW_502,
@@ -221,53 +219,6 @@ class TestAPIGateway:
             patchOperations=patch_operations,
         )
         assert deployment["description"] == "new-description"
-
-    @markers.aws.unknown
-    def test_api_gateway_lambda_integration(
-        self, create_rest_apigw, create_lambda_function, aws_client
-    ):
-        """
-        API gateway to lambda integration test returns a response with the same body as the lambda
-        function input event.
-        """
-        fn_name = f"test-{short_uid()}"
-        lambda_arn = create_lambda_function(
-            func_name=fn_name,
-            handler_file=TEST_LAMBDA_AWS_PROXY,
-            runtime=Runtime.python3_9,
-        )["CreateFunctionResponse"]["FunctionArn"]
-
-        api_id, _, root = create_rest_apigw(name="aws lambda api")
-        resource_id, _ = create_rest_resource(
-            aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="test"
-        )
-
-        # create method and integration
-        create_rest_resource_method(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="GET",
-            authorizationType="NONE",
-        )
-        create_rest_api_integration(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="GET",
-            integrationHttpMethod="GET",
-            type="AWS_PROXY",
-            uri=f"arn:aws:apigateway:{TEST_AWS_REGION_NAME}:lambda:path//2015-03-31/function"
-            f"s/{lambda_arn}/invocations",
-        )
-
-        url = api_invoke_url(api_id=api_id, stage="local", path="/test")
-        response = requests.get(url)
-        body = response.json()
-        assert response.status_code == 200
-        # authorizer contains an object that does not contain the authorizer type ('lambda', 'sns')
-        # TODO this should not only be empty, but the key should not exist (like in aws)
-        assert not body.get("requestContext").get("authorizer")
 
     @markers.aws.validated
     def test_api_gateway_lambda_integration_aws_type(
@@ -680,7 +631,9 @@ class TestAPIGateway:
             )
 
     @markers.aws.unknown
-    def test_malformed_response_apigw_invocation(self, create_lambda_function, aws_client):
+    def test_malformed_response_apigw_invocation(
+        self, create_lambda_function, aws_client, region_name
+    ):
         lambda_name = f"test_lambda_{short_uid()}"
         lambda_resource = "/api/v1/{proxy+}"
         lambda_path = "/api/v1/hello/world"
@@ -692,7 +645,7 @@ class TestAPIGateway:
             handler="apigw_502.handler",
         )["CreateFunctionResponse"]["FunctionArn"]
 
-        target_uri = f"arn:aws:apigateway:{TEST_AWS_REGION_NAME}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
+        target_uri = f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
         result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
             "test_gateway",
             target_uri,
@@ -748,12 +701,10 @@ class TestAPIGateway:
 
     @markers.aws.unknown
     def test_apigateway_with_custom_authorization_method(
-        self, create_rest_apigw, aws_client, integration_lambda
+        self, create_rest_apigw, aws_client, account_id, region_name, integration_lambda
     ):
         # create Lambda function
-        lambda_uri = arns.lambda_function_arn(
-            integration_lambda, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
-        )
+        lambda_uri = arns.lambda_function_arn(integration_lambda, account_id, region_name)
 
         # create REST API
         api_id, _, _ = create_rest_apigw(name="test-api")
@@ -765,9 +716,7 @@ class TestAPIGateway:
             name="lambda_authorizer",
             type="TOKEN",
             authorizerUri="arn:aws:apigateway:us-east-1:lambda:path/ \
-                2015-03-31/functions/{}/invocations".format(
-                lambda_uri
-            ),
+                2015-03-31/functions/{}/invocations".format(lambda_uri),
             identitySource="method.request.header.Auth",
         )
 
@@ -1423,56 +1372,105 @@ class TestAPIGateway:
         body = xmltodict.parse(response.content)
         assert body.get("message") == "completed"
 
-    @markers.aws.unknown
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..headers.Content-Length",
+            "$..headers.Content-Type",
+            "$..headers.X-Amzn-Trace-Id",
+            "$..latency",
+            "$..log",
+            "$..multiValueHeaders.Content-Length",
+            "$..multiValueHeaders.Content-Type",
+            "$..multiValueHeaders.X-Amzn-Trace-Id",
+        ]
+    )
     def test_apigw_test_invoke_method_api(
-        self, create_rest_apigw, create_lambda_function, aws_client
+        self,
+        create_rest_apigw,
+        create_lambda_function,
+        aws_client,
+        create_role_with_policy,
+        region_name,
+        snapshot,
     ):
+        _, role_arn = create_role_with_policy(
+            "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+        )
         # create test Lambda
-        fn_name = f"test-{short_uid()}"
-        lambda_arn_1 = create_lambda_function(
-            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=Runtime.nodejs16_x
-        )["CreateFunctionResponse"]["FunctionArn"]
+        function_name = f"test-{short_uid()}"
+        create_function_response = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_NODEJS,
+            handler="lambda_handler.handler",
+            runtime=Runtime.nodejs18_x,
+        )
+        lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+        target_uri = arns.apigateway_invocations_arn(lambda_arn, region_name)
 
         # create REST API and test resource
-        rest_api_id, _, _ = create_rest_apigw(name="test", description="test")
-        root_resource = aws_client.apigateway.get_resources(restApiId=rest_api_id)
-        resource = aws_client.apigateway.create_resource(
-            restApiId=rest_api_id, parentId=root_resource["items"][0]["id"], pathPart="foo"
+        rest_api_id, _, root = create_rest_apigw(name=f"test-{short_uid()}")
+        resource_id, _ = create_rest_resource(
+            aws_client.apigateway, restApiId=rest_api_id, parentId=root, pathPart="foo"
         )
 
         # create method and integration
         aws_client.apigateway.put_method(
             restApiId=rest_api_id,
-            resourceId=resource["id"],
+            resourceId=resource_id,
             httpMethod="GET",
             authorizationType="NONE",
         )
         aws_client.apigateway.put_integration(
             restApiId=rest_api_id,
-            resourceId=resource["id"],
+            resourceId=resource_id,
             httpMethod="GET",
-            integrationHttpMethod="GET",
+            integrationHttpMethod="POST",
             type="AWS",
-            uri="arn:aws:apigateway:{}:lambda:path//2015-03-31/functions/{}/invocations".format(
-                TEST_AWS_REGION_NAME, lambda_arn_1
-            ),
+            uri=target_uri,
+            credentials=role_arn,
+        )
+        status_code = create_rest_api_method_response(
+            aws_client.apigateway,
+            restApiId=rest_api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+        aws_client.apigateway.put_integration_response(
+            restApiId=rest_api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode=status_code,
+            selectionPattern="",
+        )
+        deployment_id, _ = create_rest_api_deployment(aws_client.apigateway, restApiId=rest_api_id)
+        create_rest_api_stage(
+            aws_client.apigateway,
+            restApiId=rest_api_id,
+            stageName="local",
+            deploymentId=deployment_id,
         )
 
         # run test_invoke_method API #1
-        response = aws_client.apigateway.test_invoke_method(
-            restApiId=rest_api_id,
-            resourceId=resource["id"],
-            httpMethod="GET",
-            pathWithQueryString="/foo",
-        )
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-        assert 200 == response.get("status")
-        assert "response from" in json.loads(response.get("body")).get("body")
+        def test_invoke_call():
+            response = aws_client.apigateway.test_invoke_method(
+                restApiId=rest_api_id,
+                resourceId=resource_id,
+                httpMethod="GET",
+                pathWithQueryString="/foo",
+            )
+            assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+            assert 200 == response.get("status")
+            assert "response from" in json.loads(response.get("body")).get("body")
+            snapshot.match("test_invoke_method_response", response)
+
+        retry(test_invoke_call, retries=15, sleep=1)
 
         # run test_invoke_method API #2
         response = aws_client.apigateway.test_invoke_method(
             restApiId=rest_api_id,
-            resourceId=resource["id"],
+            resourceId=resource_id,
             httpMethod="GET",
             pathWithQueryString="/foo",
             body='{"test": "val123"}',
@@ -1482,6 +1480,7 @@ class TestAPIGateway:
         assert 200 == response.get("status")
         assert "response from" in json.loads(response.get("body")).get("body")
         assert "val123" in json.loads(response.get("body")).get("body")
+        snapshot.match("test_invoke_method_response_with_body", response)
 
     @markers.aws.validated
     @pytest.mark.parametrize("stage_name", ["local", "dev"])
@@ -1600,9 +1599,9 @@ class TestAPIGateway:
             resource_util.create_dynamodb_table(
                 "MusicCollection", partition_key="id", client=dynamodb_client
             )
-            kwargs[
-                "uri"
-            ] = f"arn:aws:apigateway:{apigw_client.meta.region_name}:dynamodb:action/PutItem&Table=MusicCollection"
+            kwargs["uri"] = (
+                f"arn:aws:apigateway:{apigw_client.meta.region_name}:dynamodb:action/PutItem&Table=MusicCollection"
+            )
 
         if role_arn:
             kwargs["credentials"] = role_arn
@@ -1650,7 +1649,7 @@ class TestAPIGateway:
 
 class TestTagging:
     @markers.aws.unknown
-    def test_tag_api(self, create_rest_apigw, aws_client):
+    def test_tag_api(self, create_rest_apigw, aws_client, account_id, region_name):
         api_name = f"api-{short_uid()}"
         tags = {"foo": "bar"}
 
@@ -1658,7 +1657,7 @@ class TestTagging:
         api_id, _, _ = create_rest_apigw(name=api_name, tags={TAG_KEY_CUSTOM_ID: "c0stIOm1d"})
         assert api_id == "c0stIOm1d"
 
-        api_arn = arns.apigateway_restapi_arn(api_id, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
+        api_arn = arns.apigateway_restapi_arn(api_id, account_id, region_name)
         aws_client.apigateway.tag_resource(resourceArn=api_arn, tags=tags)
 
         # receive and assert tags
@@ -1666,8 +1665,8 @@ class TestTagging:
         assert tags == tags_saved
 
 
-@pytest.mark.skipif(get_arch() == "arm64", reason="Lambda only available for amd64")
 @markers.aws.unknown
+@markers.only_on_amd64
 def test_apigateway_rust_lambda(
     create_rest_apigw, create_lambda_function, create_iam_role_with_policy, aws_client
 ):
@@ -1709,8 +1708,8 @@ def test_apigateway_rust_lambda(
         restApiId=rest_api_id,
         resourceId=root_resource_id,
         httpMethod="GET",
-        type="AWS_PROXY",
         integrationHttpMethod="POST",
+        type="AWS_PROXY",
         uri=lambda_target_uri,
         credentials=role_arn,
     )
@@ -1723,8 +1722,8 @@ def test_apigateway_rust_lambda(
 
 
 @markers.aws.unknown
-def test_apigw_call_api_with_aws_endpoint_url(aws_client):
-    headers = mock_aws_request_headers("apigateway", TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME)
+def test_apigw_call_api_with_aws_endpoint_url(aws_client, region_name):
+    headers = mock_aws_request_headers("apigateway", TEST_AWS_ACCESS_KEY_ID, region_name)
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
     url = f"{config.internal_service_url()}/apikeys?includeValues=true&name=test%40example.org"
     response = requests.get(url, headers=headers)
@@ -1800,7 +1799,7 @@ def test_rest_api_multi_region(
         resourceId=resource_eu_id,
         httpMethod=method,
         type="AWS_PROXY",
-        integrationHttpMethod=method,
+        integrationHttpMethod="POST",
         uri=uri_eu,
     )
 
@@ -1812,7 +1811,7 @@ def test_rest_api_multi_region(
         resourceId=resource_us_id,
         httpMethod=method,
         type="AWS_PROXY",
-        integrationHttpMethod=method,
+        integrationHttpMethod="POST",
         uri=uri_us,
     )
 
@@ -1994,6 +1993,7 @@ class TestIntegrations:
     def test_api_gateway_kinesis_integration(
         self,
         aws_client,
+        region_name,
         create_iam_role_with_policy,
         kinesis_create_stream,
         wait_for_stream_ready,
@@ -2006,7 +2006,7 @@ class TestIntegrations:
         # create API Gateway and connect it to the target stream
         api_name = f"test-gw-kinesis-{short_uid()}"
         client = aws_client_factory(
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
         ).apigateway
 
         role_arn = create_iam_role_with_policy(
@@ -2020,7 +2020,7 @@ class TestIntegrations:
             client,
             api_name,
             stream_name,
-            TEST_AWS_REGION_NAME,
+            region_name,
             role_arn,
         )
 
@@ -2052,7 +2052,7 @@ class TestIntegrations:
 
     @markers.aws.unknown
     def test_api_gateway_sqs_integration_with_event_source(
-        self, aws_client, integration_lambda, sqs_queue
+        self, aws_client, account_id, region_name, integration_lambda, sqs_queue
     ):
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
@@ -2060,8 +2060,8 @@ class TestIntegrations:
             stage_name=TEST_STAGE_NAME,
             queue_arn=sqs_queue,
             path="/data",
-            account_id=TEST_AWS_ACCOUNT_ID,
-            region_name=TEST_AWS_REGION_NAME,
+            account_id=account_id,
+            region_name=region_name,
         )
 
         # create event source for sqs lambda processor

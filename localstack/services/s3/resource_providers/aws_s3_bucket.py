@@ -594,9 +594,9 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
         #   https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html
         #   "Amazon S3 website endpoints do not support HTTPS. If you want to use HTTPS,
         #   you can use Amazon CloudFront [...]"
-        model[
-            "WebsiteURL"
-        ] = f"http://{model['BucketName']}.{S3_STATIC_WEBSITE_HOSTNAME}:{localstack_host().port}"
+        model["WebsiteURL"] = (
+            f"http://{model['BucketName']}.{S3_STATIC_WEBSITE_HOSTNAME}:{localstack_host().port}"
+        )
         # resource["Properties"]["DualStackDomainName"] = ?
 
     def _create_bucket_if_does_not_exist(self, model, region_name, s3_client):

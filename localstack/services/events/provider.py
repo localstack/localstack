@@ -163,10 +163,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     event = default_event
                     if target.get("InputPath"):
                         event = filter_event_with_target_input_path(target, event)
-                    if target.get("InputTransformer"):
-                        LOG.warning(
-                            "InputTransformer is currently not supported for scheduled rules"
-                        )
+                    if input_transformer := target.get("InputTransformer"):
+                        event = process_event_with_input_transformer(input_transformer, event)
 
                 attr = pick_attributes(target, ["$.SqsParameters", "$.KinesisParameters"])
 
@@ -603,10 +601,33 @@ def filter_event_with_target_input_path(target: Dict, event: Dict) -> Dict:
     return event
 
 
+def process_event_with_input_transformer(input_transformer: Dict, event: Dict) -> Dict:
+    """
+    Process the event with the input transformer of the target event,
+    by replacing the message with the populated InputTemplate.
+    docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html
+    """
+    try:
+        input_paths = input_transformer["InputPathsMap"]
+        input_template = input_transformer["InputTemplate"]
+    except KeyError as e:
+        LOG.error("%s key does not exist in input_transformer.", e)
+        raise e
+    for key, path in input_paths.items():
+        value = extract_jsonpath(event, path)
+        if not value:
+            value = ""
+        input_template = input_template.replace(f"<{key}>", value)
+    templated_event = re.sub('"', "", input_template)
+    return templated_event
+
+
 def process_events(event: Dict, targets: list[Dict]):
     for target in targets:
         arn = target["Arn"]
         changed_event = filter_event_with_target_input_path(target, event)
+        if input_transformer := target.get("InputTransformer"):
+            changed_event = process_event_with_input_transformer(input_transformer, changed_event)
         if target.get("Input"):
             changed_event = json.loads(target.get("Input"))
         try:
@@ -636,7 +657,7 @@ def events_handler_put_events(self):
     if config.is_local_test_mode():
         TEST_EVENTS_CACHE.extend(entries)
 
-    events = list(map(lambda event: {"event": event, "uuid": str(long_uid())}, entries))
+    events = [{"event": event, "uuid": str(long_uid())} for event in entries]
 
     _dump_events_to_files(events)
 
@@ -688,13 +709,12 @@ def events_handler_put_events(self):
                 ).get("Targets", [])
 
                 targets.extend([{"RuleArn": rule.arn} | target for target in rule_targets])
-
         # process event
         process_events(formatted_event, targets)
 
     content = {
         "FailedEntryCount": 0,  # TODO: dynamically set proper value when refactoring
-        "Entries": list(map(lambda event: {"EventId": event["uuid"]}, events)),
+        "Entries": [{"EventId": event["uuid"]} for event in events],
     }
 
     self.response_headers.update(

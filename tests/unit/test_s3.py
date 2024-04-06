@@ -663,20 +663,19 @@ class TestS3TemporaryStorageBackend:
     def test_get_fileobj_no_bucket(self, tmpdir):
         temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
         fake_object = S3Object(key="test-key")
-        s3_stored_object = temp_storage_backend.open("test-bucket", fake_object)
+        with temp_storage_backend.open("test-bucket", fake_object, mode="w") as s3_stored_object:
+            s3_stored_object.write(BytesIO(b"abc"))
 
-        s3_stored_object.write(BytesIO(b"abc"))
+            assert s3_stored_object.read() == b"abc"
 
-        assert s3_stored_object.read() == b"abc"
+            s3_stored_object.seek(1)
+            assert s3_stored_object.read() == b"bc"
 
-        s3_stored_object.seek(1)
-        assert s3_stored_object.read() == b"bc"
+            s3_stored_object.seek(0)
+            assert s3_stored_object.read(1) == b"a"
 
-        s3_stored_object.seek(0)
-        assert s3_stored_object.read(1) == b"a"
-
-        temp_storage_backend.remove("test-bucket", fake_object)
-        assert s3_stored_object.file.closed
+            temp_storage_backend.remove("test-bucket", fake_object)
+            assert s3_stored_object.file.closed
 
         temp_storage_backend.close()
 
@@ -689,15 +688,19 @@ class TestS3TemporaryStorageBackend:
         stored_parts = []
         for i in range(1, 6):
             fake_s3_part = S3Part(part_number=i)
-            stored_part = s3_stored_multipart.open(fake_s3_part)
-            stored_part.write(BytesIO(b"abc"))
-            parts.append(fake_s3_part)
-            stored_parts.append(stored_part)
+            with s3_stored_multipart.open(fake_s3_part, mode="w") as stored_part:
+                stored_part.write(BytesIO(b"abc"))
+                parts.append(fake_s3_part)
+                stored_parts.append(stored_part)
 
-        s3_stored_object = s3_stored_multipart.complete_multipart(parts=parts)
+        s3_stored_multipart.complete_multipart(parts=parts)
         temp_storage_backend.remove_multipart("test-bucket", fake_multipart)
 
-        assert s3_stored_object.read() == b"abc" * 5
+        fake_object = S3Object(key="test-multipart")
+        with temp_storage_backend.open(
+            bucket="test-bucket", s3_object=fake_object, mode="r"
+        ) as s3_stored_object:
+            assert s3_stored_object.read() == b"abc" * 5
 
         assert all(stored_part.file.closed for stored_part in stored_parts)
 
@@ -707,24 +710,40 @@ class TestS3TemporaryStorageBackend:
     def test_concurrent_file_access(self, tmpdir):
         temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
         fake_object = S3Object(key="test-key")
-        s3_stored_object_1 = temp_storage_backend.open("test-bucket", fake_object)
-        s3_stored_object_2 = temp_storage_backend.open("test-bucket", fake_object)
 
+        with temp_storage_backend.open("test-bucket", fake_object, mode="w") as s3_object_writer:
+            s3_object_writer.write(BytesIO(b"abc"))
+
+        with (
+            temp_storage_backend.open("test-bucket", fake_object, mode="r") as s3_stored_object_1,
+            temp_storage_backend.open("test-bucket", fake_object, mode="r") as s3_stored_object_2,
+        ):
+            assert s3_stored_object_1.read() == b"abc"
+
+            # assert that another StoredObject moving the position does not influence the other object
+            s3_stored_object_1.seek(1)
+            s3_stored_object_2.seek(2)
+            assert s3_stored_object_1.read() == b"bc"
+            assert s3_stored_object_2.read() == b"c"
+
+            s3_stored_object_1.seek(0)
+            assert s3_stored_object_1.read(1) == b"a"
+
+            temp_storage_backend.remove("test-bucket", fake_object)
+            assert s3_stored_object_1.file.closed
+            assert s3_stored_object_2.file.closed
+
+        temp_storage_backend.close()
+
+    def test_s3_context_manager(self, tmpdir):
+        temp_storage_backend = EphemeralS3ObjectStore(root_directory=tmpdir)
+        fake_object = S3Object(key="test-key")
+        s3_stored_object_1 = temp_storage_backend.open("test-bucket", fake_object, mode="w")
         s3_stored_object_1.write(BytesIO(b"abc"))
-
-        assert s3_stored_object_1.read() == b"abc"
-
-        # assert that another StoredObject moving the position does not influence the other object
-        s3_stored_object_1.seek(1)
-        s3_stored_object_2.seek(2)
-        assert s3_stored_object_1.read() == b"bc"
-        assert s3_stored_object_2.read() == b"c"
-
-        s3_stored_object_1.seek(0)
-        assert s3_stored_object_1.read(1) == b"a"
-
-        temp_storage_backend.remove("test-bucket", fake_object)
-        assert s3_stored_object_1.file.closed
-        assert s3_stored_object_2.file.closed
+        s3_stored_object_1.close()
+        # you can't call a context manager __enter__ on a closed S3 Object
+        with pytest.raises(ValueError):
+            with s3_stored_object_1:
+                pass
 
         temp_storage_backend.close()

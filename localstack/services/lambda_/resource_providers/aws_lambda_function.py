@@ -161,7 +161,7 @@ def send(event, context, responseStatus, responseData, physicalResourceId=None, 
 """
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
-NODEJS_CFN_RESPONSE_CONTENT = """
+NODEJS_CFN_RESPONSE_CONTENT = r"""
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
@@ -189,7 +189,7 @@ exports.send = function(event, context, responseStatus, responseData, physicalRe
     var parsedUrl = url.parse(event.ResponseURL);
     var options = {
         hostname: parsedUrl.hostname,
-        port: 443,
+        port: parsedUrl.port, // Modified line: LS uses port 4566 for https; hard coded 443 causes error
         path: parsedUrl.path,
         method: "PUT",
         headers: {
@@ -495,6 +495,7 @@ class LambdaFunctionProvider(ResourceProvider[LambdaFunctionProperties]):
                 _include_arch=True,
             )
             client.update_function_code(FunctionName=function_name, **code)
+            client.get_waiter("function_updated_v2").wait(FunctionName=function_name)
         if "Environment" in update_config_props:
             environment_variables = update_config_props["Environment"].get("Variables", {})
             update_config_props["Environment"]["Variables"] = {

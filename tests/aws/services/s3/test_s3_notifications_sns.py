@@ -226,7 +226,7 @@ class TestS3NotificationsToSns:
         assert event["s3"]["object"]["key"] == test_key2
 
     @markers.aws.validated
-    def test_bucket_not_exist(self, account_id, region, snapshot, aws_client):
+    def test_bucket_not_exist(self, account_id, region_name, snapshot, aws_client):
         bucket_name = f"this-bucket-does-not-exist-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.s3_api())
         config = {
@@ -234,7 +234,7 @@ class TestS3NotificationsToSns:
                 {
                     "Id": "id123",
                     "Events": ["s3:ObjectCreated:*"],
-                    "TopicArn": f"{arns.sns_topic_arn('my-topic', account_id=account_id, region_name=region)}",
+                    "TopicArn": f"{arns.sns_topic_arn('my-topic', account_id=account_id, region_name=region_name)}",
                 }
             ]
         }
@@ -251,7 +251,9 @@ class TestS3NotificationsToSns:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Error.ArgumentName", "$..Error.ArgumentValue"],
     )
-    def test_invalid_topic_arn(self, s3_create_bucket, account_id, region, snapshot, aws_client):
+    def test_invalid_topic_arn(
+        self, s3_create_bucket, account_id, region_name, snapshot, aws_client
+    ):
         bucket_name = s3_create_bucket()
         config = {
             "TopicConfigurations": [
@@ -280,9 +282,9 @@ class TestS3NotificationsToSns:
         snapshot.match("invalid_skip", e.value.response)
 
         # set valid but not-existing topic
-        config["TopicConfigurations"][0][
-            "TopicArn"
-        ] = f"{arns.sns_topic_arn('my-topic', account_id=account_id, region_name=region)}"
+        config["TopicConfigurations"][0]["TopicArn"] = (
+            f"{arns.sns_topic_arn('my-topic', account_id=account_id, region_name=region_name)}"
+        )
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name,

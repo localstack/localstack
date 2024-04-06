@@ -1,5 +1,5 @@
 <p align="center">
-:zap: We are excited to announce that we released LocalStack 3.0! You can find all information about the release and the new features in our <a href="https://localstack.cloud/blog/2023-11-16-announcing-localstack-30-general-availability/">blog</a> :zap:
+:zap: We are thrilled to announce the release of <a href="https://discuss.localstack.cloud/t/localstack-release-v3-3-0/828">LocalStack 3.3</a> :zap:
 </p>
 
 <p align="center">
@@ -16,6 +16,7 @@
   <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/localstack/sponsors/badge.svg"></a>
   <a href="https://img.shields.io/pypi/l/localstack.svg"><img alt="PyPI License" src="https://img.shields.io/pypi/l/localstack.svg"></a>
   <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+  <a href="https://github.com/astral-sh/ruff"><img alt="Ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"></a>
   <a href="https://twitter.com/localstack"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>
 </p>
 
@@ -92,7 +93,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 3.1.0
+ 💻 LocalStack CLI 3.3.0
  👤 Profile: default
 
 [12:47:13] starting LocalStack in Docker mode 🐳                       localstack.py:494
@@ -147,7 +148,7 @@ To start using LocalStack, check out our [documentation](https://docs.localstack
 - [LocalStack Integrations](https://docs.localstack.cloud/user-guide/integrations/)
 - [LocalStack Tools](https://docs.localstack.cloud/user-guide/tools/)
 - [Understanding LocalStack](https://docs.localstack.cloud/references/)
-- [Frequency Asked Questions](https://docs.localstack.cloud/getting-started/faq/)
+- [Frequently Asked Questions](https://docs.localstack.cloud/getting-started/faq/)
 
 To use LocalStack with a graphical user interface, you can use the following UI clients:
 

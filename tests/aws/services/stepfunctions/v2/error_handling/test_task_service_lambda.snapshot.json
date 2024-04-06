@@ -511,7 +511,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_lambda.py::TestTaskServiceLambda::test_invoke_timeout": {
-    "recorded-date": "22-06-2023, 13:30:31",
+    "recorded-date": "10-03-2024, 16:41:35",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -558,7 +558,7 @@
               "region": "<region>",
               "resource": "invoke",
               "resourceType": "lambda",
-              "timeoutInSeconds": 1
+              "timeoutInSeconds": 5
             },
             "timestamp": "timestamp",
             "type": "TaskScheduled"

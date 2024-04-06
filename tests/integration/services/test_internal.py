@@ -50,10 +50,10 @@ class TestInfoEndpoint:
         assert response.ok
         doc = response.json()
 
-        from localstack import __version__ as version
+        from localstack.constants import VERSION
 
         # we're being specifically vague here since we want this test to be robust against pro or community
-        assert doc["version"].startswith(str(version))
+        assert doc["version"].startswith(str(VERSION))
         assert doc["session_id"]
         assert doc["machine_id"]
         assert doc["system"]

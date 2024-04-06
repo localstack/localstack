@@ -25,7 +25,7 @@ GET_USER_POLICY_DOC = """{
 
 class TestIAMExtensions:
     @markers.aws.validated
-    def test_get_user_without_username_as_user(self, create_user, aws_client, region):
+    def test_get_user_without_username_as_user(self, create_user, aws_client, region_name):
         user_name = f"user-{short_uid()}"
         policy_name = f"policy={short_uid()}"
         create_user(UserName=user_name)
@@ -34,8 +34,8 @@ class TestIAMExtensions:
         )
         account_id = aws_client.sts.get_caller_identity()["Account"]
         keys = aws_client.iam.create_access_key(UserName=user_name)["AccessKey"]
-        wait_for_user(keys, region)
-        iam_client_as_user = create_client_with_keys("iam", keys=keys, region_name=region)
+        wait_for_user(keys, region_name)
+        iam_client_as_user = create_client_with_keys("iam", keys=keys, region_name=region_name)
         user_response = iam_client_as_user.get_user()
         user = user_response["User"]
         assert user["UserName"] == user_name
@@ -52,7 +52,7 @@ class TestIAMExtensions:
 
     @markers.aws.validated
     def test_get_user_without_username_as_role(
-        self, create_role, wait_and_assume_role, aws_client, region
+        self, create_role, wait_and_assume_role, aws_client, region_name
     ):
         role_name = f"role-{short_uid()}"
         policy_name = f"policy={short_uid()}"
@@ -75,7 +75,7 @@ class TestIAMExtensions:
             RoleName=role_name, PolicyName=policy_name, PolicyDocument=GET_USER_POLICY_DOC
         )
         keys = wait_and_assume_role(role_arn=created_role_arn, session_name=session_name)
-        iam_client_as_role = create_client_with_keys("iam", keys=keys, region_name=region)
+        iam_client_as_role = create_client_with_keys("iam", keys=keys, region_name=region_name)
         with pytest.raises(ClientError) as e:
             iam_client_as_role.get_user()
         e.match("Must specify userName when calling with non-User credentials")

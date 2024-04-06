@@ -1,4 +1,5 @@
 """Slightly extends the ``botocore.validate`` package to provide better integration with our parser/serializer."""
+
 from typing import Any, Dict, List, NamedTuple
 
 from botocore.model import OperationModel, Shape

@@ -67,7 +67,7 @@ from localstack.aws.api.iam import (
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.moto import call_moto
-from localstack.utils.aws.aws_stack import extract_access_key_id_from_auth_header
+from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.common import short_uid
 from localstack.utils.patch import patch
 
@@ -243,9 +243,7 @@ class IamProvider(IamApi):
             # Permission boundary should not be a part of the response
             response_role.pop("PermissionsBoundary", None)
             response_roles.append(response_role)
-            if (
-                path_prefix
-            ):  # TODO: this is consistent with the patch it migrates, but should add tests for this.
+            if path_prefix:  # TODO: this is consistent with the patch it migrates, but should add tests for this.
                 response_role["AssumeRolePolicyDocument"] = quote(
                     json.dumps(moto_role.assume_role_policy_document or {})
                 )

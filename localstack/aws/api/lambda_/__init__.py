@@ -235,6 +235,7 @@ class Runtime(str):
     dotnetcore2_1 = "dotnetcore2.1"
     dotnetcore3_1 = "dotnetcore3.1"
     dotnet6 = "dotnet6"
+    dotnet8 = "dotnet8"
     nodejs4_3_edge = "nodejs4.3-edge"
     go1_x = "go1.x"
     ruby2_5 = "ruby2.5"
@@ -1759,7 +1760,7 @@ class LambdaApi:
         principal: LayerPermissionAllowedPrincipal,
         organization_id: OrganizationId = None,
         revision_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> AddLayerVersionPermissionResponse:
         raise NotImplementedError
 
@@ -1778,7 +1779,7 @@ class LambdaApi:
         revision_id: String = None,
         principal_org_id: PrincipalOrgID = None,
         function_url_auth_type: FunctionUrlAuthType = None,
-        **kwargs
+        **kwargs,
     ) -> AddPermissionResponse:
         raise NotImplementedError
 
@@ -1791,7 +1792,7 @@ class LambdaApi:
         function_version: Version,
         description: Description = None,
         routing_config: AliasRoutingConfiguration = None,
-        **kwargs
+        **kwargs,
     ) -> AliasConfiguration:
         raise NotImplementedError
 
@@ -1802,7 +1803,7 @@ class LambdaApi:
         allowed_publishers: AllowedPublishers,
         description: Description = None,
         code_signing_policies: CodeSigningPolicies = None,
-        **kwargs
+        **kwargs,
     ) -> CreateCodeSigningConfigResponse:
         raise NotImplementedError
 
@@ -1833,7 +1834,7 @@ class LambdaApi:
         self_managed_kafka_event_source_config: SelfManagedKafkaEventSourceConfig = None,
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
-        **kwargs
+        **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
@@ -1865,7 +1866,7 @@ class LambdaApi:
         ephemeral_storage: EphemeralStorage = None,
         snap_start: SnapStart = None,
         logging_config: LoggingConfig = None,
-        **kwargs
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -1878,7 +1879,7 @@ class LambdaApi:
         qualifier: FunctionUrlQualifier = None,
         cors: Cors = None,
         invoke_mode: InvokeMode = None,
-        **kwargs
+        **kwargs,
     ) -> CreateFunctionUrlConfigResponse:
         raise NotImplementedError
 
@@ -1906,7 +1907,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: FunctionName,
         qualifier: Qualifier = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1928,7 +1929,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: FunctionName,
         qualifier: Qualifier = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1938,7 +1939,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: FunctionName,
         qualifier: FunctionUrlQualifier = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1948,7 +1949,7 @@ class LambdaApi:
         context: RequestContext,
         layer_name: LayerName,
         version_number: LayerVersionNumber,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1986,7 +1987,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
-        **kwargs
+        **kwargs,
     ) -> GetFunctionResponse:
         raise NotImplementedError
 
@@ -2008,7 +2009,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
-        **kwargs
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2018,7 +2019,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: FunctionName,
         qualifier: Qualifier = None,
-        **kwargs
+        **kwargs,
     ) -> FunctionEventInvokeConfig:
         raise NotImplementedError
 
@@ -2028,7 +2029,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: FunctionName,
         qualifier: FunctionUrlQualifier = None,
-        **kwargs
+        **kwargs,
     ) -> GetFunctionUrlConfigResponse:
         raise NotImplementedError
 
@@ -2038,7 +2039,7 @@ class LambdaApi:
         context: RequestContext,
         layer_name: LayerName,
         version_number: LayerVersionNumber,
-        **kwargs
+        **kwargs,
     ) -> GetLayerVersionResponse:
         raise NotImplementedError
 
@@ -2054,7 +2055,7 @@ class LambdaApi:
         context: RequestContext,
         layer_name: LayerName,
         version_number: LayerVersionNumber,
-        **kwargs
+        **kwargs,
     ) -> GetLayerVersionPolicyResponse:
         raise NotImplementedError
 
@@ -2064,7 +2065,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
-        **kwargs
+        **kwargs,
     ) -> GetPolicyResponse:
         raise NotImplementedError
 
@@ -2080,7 +2081,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,
-        **kwargs
+        **kwargs,
     ) -> GetRuntimeManagementConfigResponse:
         raise NotImplementedError
 
@@ -2094,7 +2095,7 @@ class LambdaApi:
         client_context: String = None,
         payload: IO[Blob] = None,
         qualifier: Qualifier = None,
-        **kwargs
+        **kwargs,
     ) -> InvocationResponse:
         raise NotImplementedError
 
@@ -2104,7 +2105,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: NamespacedFunctionName,
         invoke_args: IO[BlobStream],
-        **kwargs
+        **kwargs,
     ) -> InvokeAsyncResponse:
         raise NotImplementedError
 
@@ -2118,7 +2119,7 @@ class LambdaApi:
         client_context: String = None,
         qualifier: Qualifier = None,
         payload: IO[Blob] = None,
-        **kwargs
+        **kwargs,
     ) -> InvokeWithResponseStreamResponse:
         raise NotImplementedError
 
@@ -2130,7 +2131,7 @@ class LambdaApi:
         function_version: Version = None,
         marker: String = None,
         max_items: MaxListItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListAliasesResponse:
         raise NotImplementedError
 
@@ -2140,7 +2141,7 @@ class LambdaApi:
         context: RequestContext,
         marker: String = None,
         max_items: MaxListItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListCodeSigningConfigsResponse:
         raise NotImplementedError
 
@@ -2152,7 +2153,7 @@ class LambdaApi:
         function_name: FunctionName = None,
         marker: String = None,
         max_items: MaxListItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListEventSourceMappingsResponse:
         raise NotImplementedError
 
@@ -2163,7 +2164,7 @@ class LambdaApi:
         function_name: FunctionName,
         marker: String = None,
         max_items: MaxFunctionEventInvokeConfigListItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListFunctionEventInvokeConfigsResponse:
         raise NotImplementedError
 
@@ -2174,7 +2175,7 @@ class LambdaApi:
         function_name: FunctionName,
         marker: String = None,
         max_items: MaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListFunctionUrlConfigsResponse:
         raise NotImplementedError
 
@@ -2186,7 +2187,7 @@ class LambdaApi:
         function_version: FunctionVersion = None,
         marker: String = None,
         max_items: MaxListItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListFunctionsResponse:
         raise NotImplementedError
 
@@ -2197,7 +2198,7 @@ class LambdaApi:
         code_signing_config_arn: CodeSigningConfigArn,
         marker: String = None,
         max_items: MaxListItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListFunctionsByCodeSigningConfigResponse:
         raise NotImplementedError
 
@@ -2210,7 +2211,7 @@ class LambdaApi:
         marker: String = None,
         max_items: MaxLayerListItems = None,
         compatible_architecture: Architecture = None,
-        **kwargs
+        **kwargs,
     ) -> ListLayerVersionsResponse:
         raise NotImplementedError
 
@@ -2222,7 +2223,7 @@ class LambdaApi:
         marker: String = None,
         max_items: MaxLayerListItems = None,
         compatible_architecture: Architecture = None,
-        **kwargs
+        **kwargs,
     ) -> ListLayersResponse:
         raise NotImplementedError
 
@@ -2233,7 +2234,7 @@ class LambdaApi:
         function_name: FunctionName,
         marker: String = None,
         max_items: MaxProvisionedConcurrencyConfigListItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListProvisionedConcurrencyConfigsResponse:
         raise NotImplementedError
 
@@ -2250,7 +2251,7 @@ class LambdaApi:
         function_name: NamespacedFunctionName,
         marker: String = None,
         max_items: MaxListItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListVersionsByFunctionResponse:
         raise NotImplementedError
 
@@ -2264,7 +2265,7 @@ class LambdaApi:
         compatible_runtimes: CompatibleRuntimes = None,
         license_info: LicenseInfo = None,
         compatible_architectures: CompatibleArchitectures = None,
-        **kwargs
+        **kwargs,
     ) -> PublishLayerVersionResponse:
         raise NotImplementedError
 
@@ -2276,7 +2277,7 @@ class LambdaApi:
         code_sha256: String = None,
         description: Description = None,
         revision_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2286,7 +2287,7 @@ class LambdaApi:
         context: RequestContext,
         code_signing_config_arn: CodeSigningConfigArn,
         function_name: FunctionName,
-        **kwargs
+        **kwargs,
     ) -> PutFunctionCodeSigningConfigResponse:
         raise NotImplementedError
 
@@ -2296,7 +2297,7 @@ class LambdaApi:
         context: RequestContext,
         function_name: FunctionName,
         reserved_concurrent_executions: ReservedConcurrentExecutions,
-        **kwargs
+        **kwargs,
     ) -> Concurrency:
         raise NotImplementedError
 
@@ -2309,7 +2310,7 @@ class LambdaApi:
         maximum_retry_attempts: MaximumRetryAttempts = None,
         maximum_event_age_in_seconds: MaximumEventAgeInSeconds = None,
         destination_config: DestinationConfig = None,
-        **kwargs
+        **kwargs,
     ) -> FunctionEventInvokeConfig:
         raise NotImplementedError
 
@@ -2320,7 +2321,7 @@ class LambdaApi:
         function_name: FunctionName,
         qualifier: Qualifier,
         provisioned_concurrent_executions: PositiveInteger,
-        **kwargs
+        **kwargs,
     ) -> PutProvisionedConcurrencyConfigResponse:
         raise NotImplementedError
 
@@ -2332,7 +2333,7 @@ class LambdaApi:
         update_runtime_on: UpdateRuntimeOn,
         qualifier: Qualifier = None,
         runtime_version_arn: RuntimeVersionArn = None,
-        **kwargs
+        **kwargs,
     ) -> PutRuntimeManagementConfigResponse:
         raise NotImplementedError
 
@@ -2344,7 +2345,7 @@ class LambdaApi:
         version_number: LayerVersionNumber,
         statement_id: StatementId,
         revision_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2356,7 +2357,7 @@ class LambdaApi:
         statement_id: NamespacedStatementId,
         qualifier: Qualifier = None,
         revision_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2382,7 +2383,7 @@ class LambdaApi:
         description: Description = None,
         routing_config: AliasRoutingConfiguration = None,
         revision_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> AliasConfiguration:
         raise NotImplementedError
 
@@ -2394,7 +2395,7 @@ class LambdaApi:
         description: Description = None,
         allowed_publishers: AllowedPublishers = None,
         code_signing_policies: CodeSigningPolicies = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateCodeSigningConfigResponse:
         raise NotImplementedError
 
@@ -2418,7 +2419,7 @@ class LambdaApi:
         function_response_types: FunctionResponseTypeList = None,
         scaling_config: ScalingConfig = None,
         document_db_event_source_config: DocumentDBEventSourceConfig = None,
-        **kwargs
+        **kwargs,
     ) -> EventSourceMappingConfiguration:
         raise NotImplementedError
 
@@ -2436,7 +2437,7 @@ class LambdaApi:
         dry_run: Boolean = None,
         revision_id: String = None,
         architectures: ArchitecturesList = None,
-        **kwargs
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2463,7 +2464,7 @@ class LambdaApi:
         ephemeral_storage: EphemeralStorage = None,
         snap_start: SnapStart = None,
         logging_config: LoggingConfig = None,
-        **kwargs
+        **kwargs,
     ) -> FunctionConfiguration:
         raise NotImplementedError
 
@@ -2476,7 +2477,7 @@ class LambdaApi:
         maximum_retry_attempts: MaximumRetryAttempts = None,
         maximum_event_age_in_seconds: MaximumEventAgeInSeconds = None,
         destination_config: DestinationConfig = None,
-        **kwargs
+        **kwargs,
     ) -> FunctionEventInvokeConfig:
         raise NotImplementedError
 
@@ -2489,6 +2490,6 @@ class LambdaApi:
         auth_type: FunctionUrlAuthType = None,
         cors: Cors = None,
         invoke_mode: InvokeMode = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateFunctionUrlConfigResponse:
         raise NotImplementedError

@@ -88,22 +88,22 @@ class Preprocessor(ASLIntrinsicParserVisitor):
         text: str = self._text_of_str(ctx.STRING())
         return FunctionArgumentString(string=text)
 
-    def visitContext_path(
-        self, ctx: ASLIntrinsicParser.Context_pathContext
+    def visitFunc_arg_context_path(
+        self, ctx: ASLIntrinsicParser.Func_arg_context_pathContext
     ) -> FunctionArgumentContextPath:
-        json_path: str = ctx.json_path().getText()
+        json_path: str = ctx.CONTEXT_PATH_STRING().getText()[1:]
         return FunctionArgumentContextPath(json_path=json_path)
 
     def visitFunc_arg_json_path(
         self, ctx: ASLIntrinsicParser.Func_arg_json_pathContext
     ) -> FunctionArgumentJsonPath:
-        json_path: str = ctx.getText()
+        json_path: str = ctx.JSON_PATH_STRING().getText()
         return FunctionArgumentJsonPath(json_path=json_path)
 
     def visitFunc_arg_func_decl(
         self, ctx: ASLIntrinsicParser.Func_arg_func_declContext
     ) -> FunctionArgumentFunction:
-        function: Function = self.visit(ctx.func_decl())
+        function: Function = self.visit(ctx.states_func_decl())
         return FunctionArgumentFunction(function=function)
 
     def visitFunc_arg_bool(

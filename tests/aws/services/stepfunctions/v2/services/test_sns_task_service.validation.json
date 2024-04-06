@@ -1,4 +1,10 @@
 {
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_fifo_message_attribute[input_params0-True]": {
+    "last_validated_date": "2024-02-08T10:06:30+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_fifo_message_attribute[input_params1-False]": {
+    "last_validated_date": "2024-02-08T10:06:49+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/services/test_sns_task_service.py::TestTaskServiceSns::test_publish_base[1]": {
     "last_validated_date": "2023-09-03T11:33:55+00:00"
   },

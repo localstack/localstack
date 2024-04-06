@@ -2,8 +2,9 @@ import os
 import time
 
 import click
-from plugin import PluginManager
-from plugin.entrypoint import find_plugins, spec_to_entry_point
+from plux import PluginManager
+from plux.build.setuptools import find_plugins
+from plux.core.entrypoint import spec_to_entry_point
 from rich import print as rprint
 from rich.console import Console
 from rich.table import Table

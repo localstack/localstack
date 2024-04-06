@@ -2,8 +2,9 @@
 
 set -e
 
-VERSION_FILE=${VERSION_FILE-*/__init__.py}
-DEPENDENCY_FILE=${DEPENDENCY_FILE-setup.cfg}
+VERSION_FILE=${VERSION_FILE-VERSION}
+VERSION_PY=${VERSION_PY-*/version.py}
+DEPENDENCY_FILE=${DEPENDENCY_FILE-pyproject.toml}
 
 function usage() {
     echo "A set of commands that facilitate release automation"
@@ -47,7 +48,7 @@ function usage() {
 }
 
 function get_current_version() {
-    egrep -h "^__version__ = " ${VERSION_FILE} | sed -r 's/^__version__ = "(.*)"/\1/g'
+    cat ${VERSION_FILE}
 }
 
 function remove_ver_suffix() {
@@ -113,14 +114,14 @@ function release_env_validate() {
 }
 
 function explain_release_steps() {
-    echo "- bump __version__: ${CURRENT_VER} -> ${RELEASE_VER}"
+    echo "- bump VERSION: ${CURRENT_VER} -> ${RELEASE_VER}"
     echo "- set synced dependencies to ==${RELEASE_VER}"
     echo "- perform release"
     echo "  - git commit -a -m 'Release version ${RELEASE_VER}'"
     echo "  - make publish"
     echo "  - git tag -a 'v${RELEASE_VER}' -m 'Release version ${RELEASE_VER}'"
     echo "  - git push && git push --tags"
-    echo "- bump __version__: ${RELEASE_VER} -> ${DEVELOP_VER}"
+    echo "- bump VERSION: ${RELEASE_VER} -> ${DEVELOP_VER}"
     echo "- set synced dependencies to >=${DEVELOP_VER},<${BOUNDARY_VER}"
     echo "- prepare development iteration"
     echo "  - git commit -a -m 'Prepare next development iteration'"
@@ -149,8 +150,7 @@ function cmd-next-dev-ver() {
 function cmd-set-ver() {
     [[ $# -eq 1 ]] || { usage; exit 1; }
 
-    ver=$1
-    sed -i -r "s/^__version__ = \"(.*)\"/__version__ = \"${ver}\"/" ${VERSION_FILE}
+    echo $1 > ${VERSION_FILE}
 }
 
 function cmd-set-dep-ver() {
@@ -159,8 +159,8 @@ function cmd-set-dep-ver() {
     dep=$1
     ver=$2
 
-    egrep -h "^(\s*)${dep}(\[[a-zA-Z0-9]+\])?(>|=|<)(.*)" ${DEPENDENCY_FILE} || { echo "dependency ${dep} not found in ${DEPENDENCY_FILE}"; return 1; }
-    sed -i -r "s/^(\s*)(${dep})(\[[a-zA-Z0-9,]+\])?(>|=|<)(.*)/\1\2\3${ver}/g" ${DEPENDENCY_FILE}
+    egrep -h "^(\s*\"?)(${dep})(\[[a-zA-Z0-9,\-]+\])?(>=|==|<=)([^\"]*)(\")?(,)?$" ${DEPENDENCY_FILE} || { echo "dependency ${dep} not found in ${DEPENDENCY_FILE}"; return 1; }
+    sed -i -r "s/^(\s*\"?)(${dep})(\[[a-zA-Z0-9,\-]+\])?(>=|==|<=)([^\"]*)(\")?(,)?$/\1\2\3${ver}\6\7/g" ${DEPENDENCY_FILE}
 }
 
 function cmd-github-outputs() {
@@ -192,13 +192,17 @@ function cmd-git-commit-release() {
 
     echo $1 || verify_valid_version
 
-    git add ${VERSION_FILE} ${DEPENDENCY_FILE}
+    for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
+            [ -e "$file" ] && git add "$file"
+    done
     git commit -m "release version ${1}"
     git tag -a "v${1}" -m "Release version ${1}"
 }
 
 function cmd-git-commit-increment() {
-    git add ${VERSION_FILE} ${DEPENDENCY_FILE}
+    for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
+            [ -e "$file" ] && git add "$file"
+    done
     git commit -m "prepare next development iteration"
 }
 

@@ -1,15 +1,10 @@
 import os
 
-import localstack
+from localstack.version import __version__
 
-# LocalStack version
-VERSION = localstack.__version__
-
-# constant to represent the "local" region, i.e., local machine
-REGION_LOCAL = "local"
-
-# dev environment
-ENV_DEV = "dev"
+# temporary fix to avoid issues with missing version package in image
+# FIXME: remove this once all images contain the version package
+VERSION = __version__
 
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = "x-localstack-edge"
@@ -120,7 +115,7 @@ ELASTICSEARCH_PLUGIN_LIST = [
 ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 
 # the version of opensearch which is used by default
-OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.9"
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.11"
 
 # See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
 OPENSEARCH_PLUGIN_LIST = [
@@ -154,13 +149,13 @@ DEFAULT_AWS_ACCOUNT_ID = "000000000000"
 TEST_AWS_ACCOUNT_ID = os.getenv("TEST_AWS_ACCOUNT_ID") or DEFAULT_AWS_ACCOUNT_ID
 TEST_AWS_ACCESS_KEY_ID = os.getenv("TEST_AWS_ACCESS_KEY_ID") or "test"
 TEST_AWS_SECRET_ACCESS_KEY = os.getenv("TEST_AWS_SECRET_ACCESS_KEY") or "test"
-TEST_AWS_REGION_NAME = os.getenv("TEST_AWS_REGION") or "us-east-1"
+TEST_AWS_REGION_NAME = os.getenv("TEST_AWS_REGION_NAME") or "us-east-1"
 
 # Additional credentials used in the test suite (when running cross-account tests)
 SECONDARY_TEST_AWS_ACCOUNT_ID = os.getenv("SECONDARY_TEST_AWS_ACCOUNT_ID") or "000000000002"
 SECONDARY_TEST_AWS_ACCESS_KEY_ID = os.getenv("SECONDARY_TEST_AWS_ACCESS_KEY_ID") or "000000000002"
 SECONDARY_TEST_AWS_SECRET_ACCESS_KEY = os.getenv("SECONDARY_TEST_AWS_SECRET_ACCESS_KEY") or "test2"
-SECONDARY_TEST_AWS_REGION_NAME = os.getenv("SECONDARY_TEST_AWS_REGION") or "ap-southeast-1"
+SECONDARY_TEST_AWS_REGION_NAME = os.getenv("SECONDARY_TEST_AWS_REGION_NAME") or "ap-southeast-1"
 
 # Credentials used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"

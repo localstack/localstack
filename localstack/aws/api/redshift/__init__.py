@@ -69,6 +69,12 @@ class DataShareStatusForProducer(str):
     REJECTED = "REJECTED"
 
 
+class ImpactRankingType(str):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
 class LogDestinationType(str):
     s3 = "s3"
     cloudwatch = "cloudwatch"
@@ -106,6 +112,11 @@ class PartnerIntegrationStatus(str):
     Inactive = "Inactive"
     RuntimeFailure = "RuntimeFailure"
     ConnectionFailure = "ConnectionFailure"
+
+
+class RecommendedActionType(str):
+    SQL = "SQL"
+    CLI = "CLI"
 
 
 class ReservedNodeExchangeActionType(str):
@@ -2821,6 +2832,54 @@ class InboundIntegrationsMessage(TypedDict, total=False):
     InboundIntegrations: Optional[InboundIntegrationList]
 
 
+class ListRecommendationsMessage(ServiceRequest):
+    ClusterIdentifier: Optional[String]
+    NamespaceArn: Optional[String]
+    MaxRecords: Optional[IntegerOptional]
+    Marker: Optional[String]
+
+
+class ReferenceLink(TypedDict, total=False):
+    Text: Optional[String]
+    Link: Optional[String]
+
+
+ReferenceLinkList = List[ReferenceLink]
+
+
+class RecommendedAction(TypedDict, total=False):
+    Text: Optional[String]
+    Database: Optional[String]
+    Command: Optional[String]
+    Type: Optional[RecommendedActionType]
+
+
+RecommendedActionList = List[RecommendedAction]
+
+
+class Recommendation(TypedDict, total=False):
+    Id: Optional[String]
+    ClusterIdentifier: Optional[String]
+    NamespaceArn: Optional[String]
+    CreatedAt: Optional[TStamp]
+    RecommendationType: Optional[String]
+    Title: Optional[String]
+    Description: Optional[String]
+    Observation: Optional[String]
+    ImpactRanking: Optional[ImpactRankingType]
+    RecommendationText: Optional[String]
+    RecommendedActions: Optional[RecommendedActionList]
+    ReferenceLinks: Optional[ReferenceLinkList]
+
+
+RecommendationList = List[Recommendation]
+
+
+class ListRecommendationsResult(TypedDict, total=False):
+    Recommendations: Optional[RecommendationList]
+    Marker: Optional[String]
+
+
 class LoggingStatus(TypedDict, total=False):
     LoggingEnabled: Optional[Boolean]
     BucketName: Optional[String]
@@ -3377,7 +3436,7 @@ class RedshiftApi:
         context: RequestContext,
         reserved_node_id: String,
         target_reserved_node_offering_id: String,
-        **kwargs
+        **kwargs,
     ) -> AcceptReservedNodeExchangeOutputMessage:
         raise NotImplementedError
 
@@ -3389,7 +3448,7 @@ class RedshiftApi:
         cluster_identifier: PartnerIntegrationClusterIdentifier,
         database_name: PartnerIntegrationDatabaseName,
         partner_name: PartnerIntegrationPartnerName,
-        **kwargs
+        **kwargs,
     ) -> PartnerIntegrationOutputMessage:
         raise NotImplementedError
 
@@ -3402,7 +3461,7 @@ class RedshiftApi:
         consumer_arn: String = None,
         consumer_region: String = None,
         allow_writes: BooleanOptional = None,
-        **kwargs
+        **kwargs,
     ) -> DataShare:
         raise NotImplementedError
 
@@ -3414,7 +3473,7 @@ class RedshiftApi:
         cidrip: String = None,
         ec2_security_group_name: String = None,
         ec2_security_group_owner_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> AuthorizeClusterSecurityGroupIngressResult:
         raise NotImplementedError
 
@@ -3425,7 +3484,7 @@ class RedshiftApi:
         data_share_arn: String,
         consumer_identifier: String,
         allow_writes: BooleanOptional = None,
-        **kwargs
+        **kwargs,
     ) -> DataShare:
         raise NotImplementedError
 
@@ -3436,7 +3495,7 @@ class RedshiftApi:
         account: String,
         cluster_identifier: String = None,
         vpc_ids: VpcIdentifierList = None,
-        **kwargs
+        **kwargs,
     ) -> EndpointAuthorization:
         raise NotImplementedError
 
@@ -3448,7 +3507,7 @@ class RedshiftApi:
         snapshot_identifier: String = None,
         snapshot_arn: String = None,
         snapshot_cluster_identifier: String = None,
-        **kwargs
+        **kwargs,
     ) -> AuthorizeSnapshotAccessResult:
         raise NotImplementedError
 
@@ -3465,7 +3524,7 @@ class RedshiftApi:
         snapshot_identifier_list: SnapshotIdentifierList,
         manual_snapshot_retention_period: IntegerOptional = None,
         force: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> BatchModifyClusterSnapshotsOutputMessage:
         raise NotImplementedError
 
@@ -3483,7 +3542,7 @@ class RedshiftApi:
         target_snapshot_identifier: String,
         source_snapshot_cluster_identifier: String = None,
         manual_snapshot_retention_period: IntegerOptional = None,
-        **kwargs
+        **kwargs,
     ) -> CopyClusterSnapshotResult:
         raise NotImplementedError
 
@@ -3493,7 +3552,7 @@ class RedshiftApi:
         context: RequestContext,
         authentication_profile_name: AuthenticationProfileNameString,
         authentication_profile_content: String,
-        **kwargs
+        **kwargs,
     ) -> CreateAuthenticationProfileResult:
         raise NotImplementedError
 
@@ -3540,7 +3599,7 @@ class RedshiftApi:
         ip_address_type: String = None,
         multi_az: BooleanOptional = None,
         redshift_idc_application_arn: String = None,
-        **kwargs
+        **kwargs,
     ) -> CreateClusterResult:
         raise NotImplementedError
 
@@ -3552,7 +3611,7 @@ class RedshiftApi:
         parameter_group_family: String,
         description: String,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateClusterParameterGroupResult:
         raise NotImplementedError
 
@@ -3563,7 +3622,7 @@ class RedshiftApi:
         cluster_security_group_name: String,
         description: String,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateClusterSecurityGroupResult:
         raise NotImplementedError
 
@@ -3575,7 +3634,7 @@ class RedshiftApi:
         cluster_identifier: String,
         manual_snapshot_retention_period: IntegerOptional = None,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateClusterSnapshotResult:
         raise NotImplementedError
 
@@ -3587,7 +3646,7 @@ class RedshiftApi:
         description: String,
         subnet_ids: SubnetIdentifierList,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateClusterSubnetGroupResult:
         raise NotImplementedError
 
@@ -3598,7 +3657,7 @@ class RedshiftApi:
         custom_domain_name: CustomDomainNameString,
         custom_domain_certificate_arn: CustomDomainCertificateArnString,
         cluster_identifier: String,
-        **kwargs
+        **kwargs,
     ) -> CreateCustomDomainAssociationResult:
         raise NotImplementedError
 
@@ -3611,7 +3670,7 @@ class RedshiftApi:
         cluster_identifier: String = None,
         resource_owner: String = None,
         vpc_security_group_ids: VpcSecurityGroupIdList = None,
-        **kwargs
+        **kwargs,
     ) -> EndpointAccess:
         raise NotImplementedError
 
@@ -3627,7 +3686,7 @@ class RedshiftApi:
         severity: String = None,
         enabled: BooleanOptional = None,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateEventSubscriptionResult:
         raise NotImplementedError
 
@@ -3637,7 +3696,7 @@ class RedshiftApi:
         context: RequestContext,
         hsm_client_certificate_identifier: String,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateHsmClientCertificateResult:
         raise NotImplementedError
 
@@ -3652,7 +3711,7 @@ class RedshiftApi:
         hsm_partition_password: String,
         hsm_server_public_certificate: String,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateHsmConfigurationResult:
         raise NotImplementedError
 
@@ -3667,7 +3726,7 @@ class RedshiftApi:
         identity_namespace: IdentityNamespaceString = None,
         authorized_token_issuer_list: AuthorizedTokenIssuerList = None,
         service_integrations: ServiceIntegrationList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateRedshiftIdcApplicationResult:
         raise NotImplementedError
 
@@ -3683,7 +3742,7 @@ class RedshiftApi:
         start_time: TStamp = None,
         end_time: TStamp = None,
         enable: BooleanOptional = None,
-        **kwargs
+        **kwargs,
     ) -> ScheduledAction:
         raise NotImplementedError
 
@@ -3694,7 +3753,7 @@ class RedshiftApi:
         snapshot_copy_grant_name: String,
         kms_key_id: String = None,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateSnapshotCopyGrantResult:
         raise NotImplementedError
 
@@ -3708,7 +3767,7 @@ class RedshiftApi:
         tags: TagList = None,
         dry_run: BooleanOptional = None,
         next_invocations: IntegerOptional = None,
-        **kwargs
+        **kwargs,
     ) -> SnapshotSchedule:
         raise NotImplementedError
 
@@ -3729,7 +3788,7 @@ class RedshiftApi:
         period: UsageLimitPeriod = None,
         breach_action: UsageLimitBreachAction = None,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> UsageLimit:
         raise NotImplementedError
 
@@ -3744,7 +3803,7 @@ class RedshiftApi:
         self,
         context: RequestContext,
         authentication_profile_name: AuthenticationProfileNameString,
-        **kwargs
+        **kwargs,
     ) -> DeleteAuthenticationProfileResult:
         raise NotImplementedError
 
@@ -3756,7 +3815,7 @@ class RedshiftApi:
         skip_final_cluster_snapshot: Boolean = None,
         final_cluster_snapshot_identifier: String = None,
         final_cluster_snapshot_retention_period: IntegerOptional = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteClusterResult:
         raise NotImplementedError
 
@@ -3778,7 +3837,7 @@ class RedshiftApi:
         context: RequestContext,
         snapshot_identifier: String,
         snapshot_cluster_identifier: String = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteClusterSnapshotResult:
         raise NotImplementedError
 
@@ -3794,7 +3853,7 @@ class RedshiftApi:
         context: RequestContext,
         cluster_identifier: String,
         custom_domain_name: CustomDomainNameString,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3830,7 +3889,7 @@ class RedshiftApi:
         cluster_identifier: PartnerIntegrationClusterIdentifier,
         database_name: PartnerIntegrationDatabaseName,
         partner_name: PartnerIntegrationPartnerName,
-        **kwargs
+        **kwargs,
     ) -> PartnerIntegrationOutputMessage:
         raise NotImplementedError
 
@@ -3885,7 +3944,7 @@ class RedshiftApi:
         self,
         context: RequestContext,
         authentication_profile_name: AuthenticationProfileNameString = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeAuthenticationProfilesResult:
         raise NotImplementedError
 
@@ -3896,7 +3955,7 @@ class RedshiftApi:
         cluster_identifier: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> ClusterDbRevisionsMessage:
         raise NotImplementedError
 
@@ -3909,7 +3968,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> ClusterParameterGroupsMessage:
         raise NotImplementedError
 
@@ -3921,7 +3980,7 @@ class RedshiftApi:
         source: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> ClusterParameterGroupDetails:
         raise NotImplementedError
 
@@ -3934,7 +3993,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> ClusterSecurityGroupMessage:
         raise NotImplementedError
 
@@ -3955,7 +4014,7 @@ class RedshiftApi:
         tag_values: TagValueList = None,
         cluster_exists: BooleanOptional = None,
         sorting_entities: SnapshotSortingEntityList = None,
-        **kwargs
+        **kwargs,
     ) -> SnapshotMessage:
         raise NotImplementedError
 
@@ -3968,7 +4027,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> ClusterSubnetGroupMessage:
         raise NotImplementedError
 
@@ -3979,7 +4038,7 @@ class RedshiftApi:
         maintenance_track_name: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> TrackListMessage:
         raise NotImplementedError
 
@@ -3991,7 +4050,7 @@ class RedshiftApi:
         cluster_parameter_group_family: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> ClusterVersionsMessage:
         raise NotImplementedError
 
@@ -4004,7 +4063,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> ClustersMessage:
         raise NotImplementedError
 
@@ -4016,7 +4075,7 @@ class RedshiftApi:
         custom_domain_certificate_arn: CustomDomainCertificateArnString = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> CustomDomainAssociationsMessage:
         raise NotImplementedError
 
@@ -4027,7 +4086,7 @@ class RedshiftApi:
         data_share_arn: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDataSharesResult:
         raise NotImplementedError
 
@@ -4039,7 +4098,7 @@ class RedshiftApi:
         status: DataShareStatusForConsumer = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDataSharesForConsumerResult:
         raise NotImplementedError
 
@@ -4051,7 +4110,7 @@ class RedshiftApi:
         status: DataShareStatusForProducer = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDataSharesForProducerResult:
         raise NotImplementedError
 
@@ -4062,7 +4121,7 @@ class RedshiftApi:
         parameter_group_family: String,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDefaultClusterParametersResult:
         raise NotImplementedError
 
@@ -4076,7 +4135,7 @@ class RedshiftApi:
         vpc_id: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> EndpointAccessList:
         raise NotImplementedError
 
@@ -4089,7 +4148,7 @@ class RedshiftApi:
         grantee: BooleanOptional = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> EndpointAuthorizationList:
         raise NotImplementedError
 
@@ -4108,7 +4167,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> EventSubscriptionsMessage:
         raise NotImplementedError
 
@@ -4123,7 +4182,7 @@ class RedshiftApi:
         duration: IntegerOptional = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> EventsMessage:
         raise NotImplementedError
 
@@ -4136,7 +4195,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> HsmClientCertificateMessage:
         raise NotImplementedError
 
@@ -4149,7 +4208,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> HsmConfigurationMessage:
         raise NotImplementedError
 
@@ -4161,7 +4220,7 @@ class RedshiftApi:
         target_arn: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> InboundIntegrationsMessage:
         raise NotImplementedError
 
@@ -4183,7 +4242,7 @@ class RedshiftApi:
         filters: NodeConfigurationOptionsFilterList = None,
         marker: String = None,
         max_records: IntegerOptional = None,
-        **kwargs
+        **kwargs,
     ) -> NodeConfigurationOptionsMessage:
         raise NotImplementedError
 
@@ -4195,7 +4254,7 @@ class RedshiftApi:
         node_type: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> OrderableClusterOptionsMessage:
         raise NotImplementedError
 
@@ -4207,7 +4266,7 @@ class RedshiftApi:
         cluster_identifier: PartnerIntegrationClusterIdentifier,
         database_name: PartnerIntegrationDatabaseName = None,
         partner_name: PartnerIntegrationPartnerName = None,
-        **kwargs
+        **kwargs,
     ) -> DescribePartnersOutputMessage:
         raise NotImplementedError
 
@@ -4218,7 +4277,7 @@ class RedshiftApi:
         redshift_idc_application_arn: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeRedshiftIdcApplicationsResult:
         raise NotImplementedError
 
@@ -4230,7 +4289,7 @@ class RedshiftApi:
         reserved_node_exchange_request_id: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeReservedNodeExchangeStatusOutputMessage:
         raise NotImplementedError
 
@@ -4241,7 +4300,7 @@ class RedshiftApi:
         reserved_node_offering_id: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> ReservedNodeOfferingsMessage:
         raise NotImplementedError
 
@@ -4252,7 +4311,7 @@ class RedshiftApi:
         reserved_node_id: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> ReservedNodesMessage:
         raise NotImplementedError
 
@@ -4274,7 +4333,7 @@ class RedshiftApi:
         filters: ScheduledActionFilterList = None,
         marker: String = None,
         max_records: IntegerOptional = None,
-        **kwargs
+        **kwargs,
     ) -> ScheduledActionsMessage:
         raise NotImplementedError
 
@@ -4287,7 +4346,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> SnapshotCopyGrantMessage:
         raise NotImplementedError
 
@@ -4301,7 +4360,7 @@ class RedshiftApi:
         tag_values: TagValueList = None,
         marker: String = None,
         max_records: IntegerOptional = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeSnapshotSchedulesOutputMessage:
         raise NotImplementedError
 
@@ -4317,7 +4376,7 @@ class RedshiftApi:
         table_restore_request_id: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> TableRestoreStatusMessage:
         raise NotImplementedError
 
@@ -4331,7 +4390,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> TaggedResourceListMessage:
         raise NotImplementedError
 
@@ -4346,7 +4405,7 @@ class RedshiftApi:
         marker: String = None,
         tag_keys: TagKeyList = None,
         tag_values: TagValueList = None,
-        **kwargs
+        **kwargs,
     ) -> UsageLimitList:
         raise NotImplementedError
 
@@ -4370,7 +4429,7 @@ class RedshiftApi:
         disassociate_entire_account: BooleanOptional = None,
         consumer_arn: String = None,
         consumer_region: String = None,
-        **kwargs
+        **kwargs,
     ) -> DataShare:
         raise NotImplementedError
 
@@ -4383,7 +4442,7 @@ class RedshiftApi:
         s3_key_prefix: String = None,
         log_destination_type: LogDestinationType = None,
         log_exports: LogTypeList = None,
-        **kwargs
+        **kwargs,
     ) -> LoggingStatus:
         raise NotImplementedError
 
@@ -4396,7 +4455,7 @@ class RedshiftApi:
         retention_period: IntegerOptional = None,
         snapshot_copy_grant_name: String = None,
         manual_snapshot_retention_period: IntegerOptional = None,
-        **kwargs
+        **kwargs,
     ) -> EnableSnapshotCopyResult:
         raise NotImplementedError
 
@@ -4417,7 +4476,7 @@ class RedshiftApi:
         auto_create: BooleanOptional = None,
         db_groups: DbGroupList = None,
         custom_domain_name: String = None,
-        **kwargs
+        **kwargs,
     ) -> ClusterCredentials:
         raise NotImplementedError
 
@@ -4429,7 +4488,7 @@ class RedshiftApi:
         cluster_identifier: String = None,
         duration_seconds: IntegerOptional = None,
         custom_domain_name: String = None,
-        **kwargs
+        **kwargs,
     ) -> ClusterExtendedCredentials:
         raise NotImplementedError
 
@@ -4442,7 +4501,7 @@ class RedshiftApi:
         snapshot_identifier: String = None,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> GetReservedNodeExchangeConfigurationOptionsOutputMessage:
         raise NotImplementedError
 
@@ -4453,7 +4512,7 @@ class RedshiftApi:
         reserved_node_id: String,
         max_records: IntegerOptional = None,
         marker: String = None,
-        **kwargs
+        **kwargs,
     ) -> GetReservedNodeExchangeOfferingsOutputMessage:
         raise NotImplementedError
 
@@ -4463,13 +4522,25 @@ class RedshiftApi:
     ) -> GetResourcePolicyResult:
         raise NotImplementedError
 
+    @handler("ListRecommendations")
+    def list_recommendations(
+        self,
+        context: RequestContext,
+        cluster_identifier: String = None,
+        namespace_arn: String = None,
+        max_records: IntegerOptional = None,
+        marker: String = None,
+        **kwargs,
+    ) -> ListRecommendationsResult:
+        raise NotImplementedError
+
     @handler("ModifyAquaConfiguration")
     def modify_aqua_configuration(
         self,
         context: RequestContext,
         cluster_identifier: String,
         aqua_configuration_status: AquaConfigurationStatus = None,
-        **kwargs
+        **kwargs,
     ) -> ModifyAquaOutputMessage:
         raise NotImplementedError
 
@@ -4479,7 +4550,7 @@ class RedshiftApi:
         context: RequestContext,
         authentication_profile_name: AuthenticationProfileNameString,
         authentication_profile_content: String,
-        **kwargs
+        **kwargs,
     ) -> ModifyAuthenticationProfileResult:
         raise NotImplementedError
 
@@ -4516,7 +4587,7 @@ class RedshiftApi:
         master_password_secret_kms_key_id: String = None,
         ip_address_type: String = None,
         multi_az: BooleanOptional = None,
-        **kwargs
+        **kwargs,
     ) -> ModifyClusterResult:
         raise NotImplementedError
 
@@ -4534,7 +4605,7 @@ class RedshiftApi:
         add_iam_roles: IamRoleArnList = None,
         remove_iam_roles: IamRoleArnList = None,
         default_iam_role_arn: String = None,
-        **kwargs
+        **kwargs,
     ) -> ModifyClusterIamRolesResult:
         raise NotImplementedError
 
@@ -4548,7 +4619,7 @@ class RedshiftApi:
         defer_maintenance_start_time: TStamp = None,
         defer_maintenance_end_time: TStamp = None,
         defer_maintenance_duration: IntegerOptional = None,
-        **kwargs
+        **kwargs,
     ) -> ModifyClusterMaintenanceResult:
         raise NotImplementedError
 
@@ -4558,7 +4629,7 @@ class RedshiftApi:
         context: RequestContext,
         parameter_group_name: String,
         parameters: ParametersList,
-        **kwargs
+        **kwargs,
     ) -> ClusterParameterGroupNameMessage:
         raise NotImplementedError
 
@@ -4569,7 +4640,7 @@ class RedshiftApi:
         snapshot_identifier: String,
         manual_snapshot_retention_period: IntegerOptional = None,
         force: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> ModifyClusterSnapshotResult:
         raise NotImplementedError
 
@@ -4580,7 +4651,7 @@ class RedshiftApi:
         cluster_identifier: String,
         schedule_identifier: String = None,
         disassociate_schedule: BooleanOptional = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4591,7 +4662,7 @@ class RedshiftApi:
         cluster_subnet_group_name: String,
         subnet_ids: SubnetIdentifierList,
         description: String = None,
-        **kwargs
+        **kwargs,
     ) -> ModifyClusterSubnetGroupResult:
         raise NotImplementedError
 
@@ -4602,7 +4673,7 @@ class RedshiftApi:
         custom_domain_name: CustomDomainNameString,
         custom_domain_certificate_arn: CustomDomainCertificateArnString,
         cluster_identifier: String,
-        **kwargs
+        **kwargs,
     ) -> ModifyCustomDomainAssociationResult:
         raise NotImplementedError
 
@@ -4612,7 +4683,7 @@ class RedshiftApi:
         context: RequestContext,
         endpoint_name: String,
         vpc_security_group_ids: VpcSecurityGroupIdList = None,
-        **kwargs
+        **kwargs,
     ) -> EndpointAccess:
         raise NotImplementedError
 
@@ -4627,7 +4698,7 @@ class RedshiftApi:
         event_categories: EventCategoriesList = None,
         severity: String = None,
         enabled: BooleanOptional = None,
-        **kwargs
+        **kwargs,
     ) -> ModifyEventSubscriptionResult:
         raise NotImplementedError
 
@@ -4641,7 +4712,7 @@ class RedshiftApi:
         idc_display_name: IdcDisplayNameString = None,
         authorized_token_issuer_list: AuthorizedTokenIssuerList = None,
         service_integrations: ServiceIntegrationList = None,
-        **kwargs
+        **kwargs,
     ) -> ModifyRedshiftIdcApplicationResult:
         raise NotImplementedError
 
@@ -4657,7 +4728,7 @@ class RedshiftApi:
         start_time: TStamp = None,
         end_time: TStamp = None,
         enable: BooleanOptional = None,
-        **kwargs
+        **kwargs,
     ) -> ScheduledAction:
         raise NotImplementedError
 
@@ -4668,7 +4739,7 @@ class RedshiftApi:
         cluster_identifier: String,
         retention_period: Integer,
         manual: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> ModifySnapshotCopyRetentionPeriodResult:
         raise NotImplementedError
 
@@ -4678,7 +4749,7 @@ class RedshiftApi:
         context: RequestContext,
         schedule_identifier: String,
         schedule_definitions: ScheduleDefinitionList,
-        **kwargs
+        **kwargs,
     ) -> SnapshotSchedule:
         raise NotImplementedError
 
@@ -4689,7 +4760,7 @@ class RedshiftApi:
         usage_limit_id: String,
         amount: LongOptional = None,
         breach_action: UsageLimitBreachAction = None,
-        **kwargs
+        **kwargs,
     ) -> UsageLimit:
         raise NotImplementedError
 
@@ -4705,7 +4776,7 @@ class RedshiftApi:
         context: RequestContext,
         reserved_node_offering_id: String,
         node_count: IntegerOptional = None,
-        **kwargs
+        **kwargs,
     ) -> PurchaseReservedNodeOfferingResult:
         raise NotImplementedError
 
@@ -4734,7 +4805,7 @@ class RedshiftApi:
         parameter_group_name: String,
         reset_all_parameters: Boolean = None,
         parameters: ParametersList = None,
-        **kwargs
+        **kwargs,
     ) -> ClusterParameterGroupNameMessage:
         raise NotImplementedError
 
@@ -4749,7 +4820,7 @@ class RedshiftApi:
         classic: BooleanOptional = None,
         reserved_node_id: String = None,
         target_reserved_node_offering_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> ResizeClusterResult:
         raise NotImplementedError
 
@@ -4794,7 +4865,7 @@ class RedshiftApi:
         master_password_secret_kms_key_id: String = None,
         ip_address_type: String = None,
         multi_az: BooleanOptional = None,
-        **kwargs
+        **kwargs,
     ) -> RestoreFromClusterSnapshotResult:
         raise NotImplementedError
 
@@ -4811,7 +4882,7 @@ class RedshiftApi:
         target_database_name: String = None,
         target_schema_name: String = None,
         enable_case_sensitive_identifier: BooleanOptional = None,
-        **kwargs
+        **kwargs,
     ) -> RestoreTableFromClusterSnapshotResult:
         raise NotImplementedError
 
@@ -4829,7 +4900,7 @@ class RedshiftApi:
         cidrip: String = None,
         ec2_security_group_name: String = None,
         ec2_security_group_owner_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> RevokeClusterSecurityGroupIngressResult:
         raise NotImplementedError
 
@@ -4841,7 +4912,7 @@ class RedshiftApi:
         account: String = None,
         vpc_ids: VpcIdentifierList = None,
         force: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> EndpointAuthorization:
         raise NotImplementedError
 
@@ -4853,7 +4924,7 @@ class RedshiftApi:
         snapshot_identifier: String = None,
         snapshot_arn: String = None,
         snapshot_cluster_identifier: String = None,
-        **kwargs
+        **kwargs,
     ) -> RevokeSnapshotAccessResult:
         raise NotImplementedError
 
@@ -4873,6 +4944,6 @@ class RedshiftApi:
         partner_name: PartnerIntegrationPartnerName,
         status: PartnerIntegrationStatus,
         status_message: PartnerIntegrationStatusMessage = None,
-        **kwargs
+        **kwargs,
     ) -> PartnerIntegrationOutputMessage:
         raise NotImplementedError

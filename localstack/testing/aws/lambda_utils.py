@@ -7,9 +7,10 @@ import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Mapping, Optional, Sequence, overload
 
+from localstack import config
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
-from localstack.utils.common import to_str
 from localstack.utils.files import load_file
+from localstack.utils.platform import Arch, get_arch
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, retry
 from localstack.utils.testutil import get_lambda_log_events
@@ -32,25 +33,22 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 HANDLERS = {
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "handler.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "index.handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "handler.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "echo.Handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("custom"), "function.handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "main"),
-    "dotnetcore3.1": "dotnetcore31::dotnetcore31.Function::FunctionHandler",  # TODO lets see if we can accumulate those
-    "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("dotnet"), "dotnet::Dotnet.Function::FunctionHandler"),
+    # The handler value does not matter unless the custom runtime reads it in some way, but it is a required field.
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "function.handler"),
 }
 
 PACKAGE_FOR_RUNTIME = {
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "python"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "nodejs"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "python"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "java"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("custom"), "provided"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("go"), "go"),
-    "dotnet6": "dotnet6",
-    "dotnetcore3.1": "dotnetcore3.1",
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("dotnet"), "dotnet"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "provided"),
 }
 
 
@@ -95,7 +93,7 @@ def package_for_lang(scenario: str, runtime: str, root_folder: Path) -> str:
     generic_runtime_dir_candidate = scenario_dir / runtime_folder
 
     # if a more specific folder exists, use that one
-    # otherwise: try to fall back to generic runtime (e.g. python for python3.9)
+    # otherwise: try to fall back to generic runtime (e.g. python for python3.12)
     if runtime_dir_candidate.exists() and runtime_dir_candidate.is_dir():
         runtime_dir = runtime_dir_candidate
     else:
@@ -110,7 +108,19 @@ def package_for_lang(scenario: str, runtime: str, root_folder: Path) -> str:
         return package_path
 
     # packaging
-    result = subprocess.run(["make", "build"], cwd=runtime_dir)
+    # Use the default Lambda architecture x86_64 unless the ignore architecture flag is configured.
+    # This enables local testing of both architectures on multi-architecture platforms such as Apple Silicon machines.
+    architecture = "x86_64"
+    if config.LAMBDA_IGNORE_ARCHITECTURE:
+        architecture = "arm64" if get_arch() == Arch.arm64 else "x86_64"
+    build_cmd = ["make", "build", f"ARCHITECTURE={architecture}"]
+    LOG.debug(
+        "Building Lambda function for scenario %s and runtime %s using %s.",
+        scenario,
+        runtime,
+        " ".join(build_cmd),
+    )
+    result = subprocess.run(build_cmd, cwd=runtime_dir)
     if result.returncode != 0:
         raise Exception(
             f"Failed to build multiruntime {scenario=} for {runtime=} with error code: {result.returncode}"
@@ -188,8 +198,7 @@ class ParametrizedLambda:
         CodeSigningConfigArn: Optional[str] = None,
         Architectures: Optional[Sequence["ArchitectureType"]] = None,
         EphemeralStorage: Optional["EphemeralStorageTypeDef"] = None,
-    ) -> "FunctionConfigurationResponseMetadataTypeDef":
-        ...
+    ) -> "FunctionConfigurationResponseMetadataTypeDef": ...
 
     def create_function(self, **kwargs):
         kwargs.setdefault("FunctionName", f"{self.scenario}-{short_uid()}")
@@ -254,7 +263,7 @@ def get_invoke_init_type(
 ) -> Literal["on-demand", "provisioned-concurrency"]:
     """check the environment in the lambda for AWS_LAMBDA_INITIALIZATION_TYPE indicating ondemand/provisioned"""
     invoke_result = client.invoke(FunctionName=function_name, Qualifier=qualifier)
-    return json.loads(to_str(invoke_result["Payload"].read()))
+    return json.load(invoke_result["Payload"])
 
 
 lambda_role = {

@@ -4,7 +4,6 @@ import pytest
 from botocore.exceptions import ClientError
 from moto.ec2 import ec2_backends
 
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
@@ -172,9 +171,9 @@ class TestEc2Integrations:
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
     @markers.aws.unknown
-    def test_vcp_peering_difference_regions(self, aws_client_factory):
-        region1 = TEST_AWS_REGION_NAME
-        region2 = TEST_AWS_REGION_NAME  # When cross-region peering is supported, change to SECONDARY_TEST_AWS_REGION_NAME
+    def test_vcp_peering_difference_regions(self, aws_client_factory, region_name):
+        region1 = region_name
+        region2 = region_name  # When cross-region peering is supported, change to SECONDARY_TEST_AWS_REGION_NAME
 
         # Note: different regions currently not supported due to set_default_region_in_headers(..) in edge.py
         ec2_client1 = aws_client_factory(region_name=region1).ec2
@@ -275,7 +274,7 @@ class TestEc2Integrations:
         aws_client.ec2.delete_vpc(VpcId=vpc_id)
 
     @markers.aws.unknown
-    def test_describe_vpc_endpoints_with_filter(self, aws_client):
+    def test_describe_vpc_endpoints_with_filter(self, aws_client, region_name):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         vpc_id = vpc["Vpc"]["VpcId"]
 
@@ -289,8 +288,8 @@ class TestEc2Integrations:
         assert 200 == vpc_endpoint_gateway_services["ResponseMetadata"]["HTTPStatusCode"]
         services = vpc_endpoint_gateway_services["ServiceNames"]
         assert 2 == len(services)
-        assert f"com.amazonaws.{TEST_AWS_REGION_NAME}.dynamodb" in services
-        assert f"com.amazonaws.{TEST_AWS_REGION_NAME}.s3" in services
+        assert f"com.amazonaws.{region_name}.dynamodb" in services
+        assert f"com.amazonaws.{region_name}.s3" in services
 
         # test filter of Interface endpoint services
         vpc_endpoint_interface_services = aws_client.ec2.describe_vpc_endpoint_services(
@@ -303,9 +302,9 @@ class TestEc2Integrations:
         services = vpc_endpoint_interface_services["ServiceNames"]
         assert len(services) > 0
         assert (
-            f"com.amazonaws.{TEST_AWS_REGION_NAME}.s3" in services
+            f"com.amazonaws.{region_name}.s3" in services
         )  # S3 is both gateway and interface service
-        assert f"com.amazonaws.{TEST_AWS_REGION_NAME}.kinesis-firehose" in services
+        assert f"com.amazonaws.{region_name}.kinesis-firehose" in services
 
         # test filter that does not exist
         vpc_endpoint_interface_services = aws_client.ec2.describe_vpc_endpoint_services(

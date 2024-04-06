@@ -239,9 +239,7 @@ class TestArgumentParsing:
 
 
 def list_in(a, b):
-    return len(a) <= len(b) and any(
-        map(lambda x: b[x : x + len(a)] == a, range(len(b) - len(a) + 1))
-    )
+    return len(a) <= len(b) and any((b[x : x + len(a)] == a for x in range(len(b) - len(a) + 1)))
 
 
 class TestPortMappings:

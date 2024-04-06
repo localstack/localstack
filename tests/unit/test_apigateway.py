@@ -1,15 +1,18 @@
 import json
 import unittest
+import xml
 from json import JSONDecodeError
 from typing import Any, Dict
 from unittest.mock import MagicMock, Mock
 
 import boto3
 import pytest
+import xmltodict
 
 from localstack.aws.api.apigateway import Model
 from localstack.constants import (
     APPLICATION_JSON,
+    APPLICATION_XML,
     AWS_REGION_US_EAST_1,
     DEFAULT_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
@@ -65,12 +68,16 @@ class TestApiGatewayPaths:
         [
             ("/foo/bar", ["/foo/{param1}"], "/foo/{param1}"),
             ("/foo/bar", ["/foo/bar", "/foo/{param1}"], "/foo/bar"),
+            ("/foo/bar", ["/foo/{param1}", "/foo/bar"], "/foo/bar"),
             ("/foo/bar/baz", ["/foo/bar", "/foo/{proxy+}"], "/foo/{proxy+}"),
             ("/foo/bar/baz", ["/{proxy+}", "/foo/{proxy+}"], "/foo/{proxy+}"),
             ("/foo/bar", ["/foo/bar1", "/foo/bar2"], None),
             ("/foo/bar", ["/{param1}/bar1", "/foo/bar2"], None),
             ("/foo/bar", ["/{param1}/{param2}/foo/{param3}", "/{param}/bar"], "/{param}/bar"),
             ("/foo/bar", ["/{param1}/{param2}", "/{param}/bar"], "/{param}/bar"),
+            ("/foo/bar", ["/{param}/bar", "/{param1}/{param2}"], "/{param}/bar"),
+            ("/foo/bar", ["/foo/bar", "/foo/{param+}"], "/foo/bar"),
+            ("/foo/bar", ["/foo/{param+}", "/foo/bar"], "/foo/bar"),
             (
                 "/foo/bar/baz",
                 ["/{param1}/{param2}/baz", "/{param1}/bar/{param2}"],
@@ -78,6 +85,7 @@ class TestApiGatewayPaths:
             ),
             ("/foo/bar/baz", ["/foo123/{param1}/baz"], None),
             ("/foo/bar/baz", ["/foo/{param1}/baz", "/foo/{param1}/{param2}"], "/foo/{param1}/baz"),
+            ("/foo/bar/baz", ["/foo/{param1}/{param2}", "/foo/{param1}/baz"], "/foo/{param1}/baz"),
         ],
     )
     def test_path_matches(self, path, path_parts, expected):
@@ -523,7 +531,7 @@ class TestApplyTemplate(unittest.TestCase):
         self.assertEqual("[]", rendered_request)
 
 
-RESPONSE_TEMPLATE = """
+RESPONSE_TEMPLATE_JSON = """
 
 #set( $body = $input.json("$") )
 #define( $loop )
@@ -566,21 +574,82 @@ RESPONSE_TEMPLATE = """
 }
 """
 
+RESPONSE_TEMPLATE_WRONG_JSON = """
+#set( $body = $input.json("$") )
+  {
+    "body": $body,
+    "method": $context.httpMethod,
+  }
+"""
+
+RESPONSE_TEMPLATE_XML = """
+
+#set( $body = $input.json("$") )
+#define( $loop )
+    #foreach($e in $map.keySet())
+       #set( $k = $e )
+       #set( $v = $map.get($k))
+       <$k>$v</$k>
+    #end
+#end
+  <root method="$context.httpMethod" principalId="$context.authorizer.principalId" requestPath="$context.resourcePath">
+    <body>$body</body>
+    <stage>$context.stage</stage>
+    <cognitoPoolClaims>
+       <sub>$context.authorizer.claims.sub</sub>
+    </cognitoPoolClaims>
+
+    #set( $map = $context.authorizer )
+    <enhancedAuthContext>$loop</enhancedAuthContext>
+
+    #set( $map = $input.params().header )
+    <headers>$loop</headers>
+
+    #set( $map = $input.params().querystring )
+    <query>$loop</query>
+
+    #set( $map = $input.params().path )
+    <path>$loop</path>
+
+    #set( $map = $context.identity )
+    <identity>$loop</identity>
+
+    #set( $map = $stageVariables )
+    <stageVariables>$loop</stageVariables>
+  </root>
+"""
+
+RESPONSE_TEMPLATE_WRONG_XML = """
+#set( $body = $input.json("$") )
+<root>
+  <body>$body</body>
+  <not-closed>$context.stage
+</root>
+"""
+
 
 class TestTemplates:
-    @pytest.mark.parametrize("template", [RequestTemplates(), ResponseTemplates()])
-    def test_render_custom_template(self, template):
+    @pytest.mark.parametrize(
+        "template,accept_content_type",
+        [
+            (RequestTemplates(), APPLICATION_JSON),
+            (ResponseTemplates(), APPLICATION_JSON),
+            (RequestTemplates(), "*/*"),
+            (ResponseTemplates(), "*/*"),
+        ],
+    )
+    def test_render_custom_template(self, template, accept_content_type):
         api_context = ApiInvocationContext(
             method="POST",
             path="/foo/bar?baz=test",
             data=b'{"spam": "eggs"}',
-            headers={"content-type": APPLICATION_JSON},
+            headers={"content-type": APPLICATION_JSON, "accept": accept_content_type},
             stage="local",
         )
         api_context.integration = {
-            "requestTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE},
+            "requestTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE_JSON},
             "integrationResponses": {
-                "200": {"responseTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE}}
+                "200": {"responseTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE_JSON}}
             },
         }
         api_context.resource_path = "/{proxy+}"
@@ -604,7 +673,10 @@ class TestTemplates:
         assert result_as_json.get("stage") == "local"
         assert result_as_json.get("enhancedAuthContext") == {"principalId": "12233"}
         assert result_as_json.get("identity") == {"accountId": "00000", "apiKey": "11111"}
-        assert result_as_json.get("headers") == {"content-type": APPLICATION_JSON}
+        assert result_as_json.get("headers") == {
+            "content-type": APPLICATION_JSON,
+            "accept": accept_content_type,
+        }
         assert result_as_json.get("query") == {"baz": "test"}
         assert result_as_json.get("path") == {"id": "bar"}
         assert result_as_json.get("stageVariables") == {
@@ -617,15 +689,105 @@ class TestTemplates:
 
         # assert that boolean results of _render_json_result(..) are JSON-parseable
         tstring = '{"mybool": $boolTrue}'
-        result = template._render_as_json(tstring, {"boolTrue": "true"})
+        result = template._render_as_text(tstring, {"boolTrue": "true"})
         assert json.loads(result) == {"mybool": True}
-        result = template._render_as_json(tstring, {"boolTrue": True})
+        result = template._render_as_text(tstring, {"boolTrue": True})
         assert json.loads(result) == {"mybool": True}
 
         # older versions of `airspeed` were rendering booleans as False/True, which is no longer valid now
         tstring = '{"mybool": False}'
         with pytest.raises(JSONDecodeError):
-            template._render_as_json(tstring, {})
+            result = template._render_as_text(tstring, {})
+            template._validate_json(result)
+
+    def test_error_when_render_invalid_json(self):
+        api_context = ApiInvocationContext(
+            method="POST",
+            path="/foo/bar?baz=test",
+            data=b"<root></root>",
+            headers={},
+        )
+        api_context.integration = {
+            "integrationResponses": {
+                "200": {"responseTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE_WRONG_JSON}}
+            },
+        }
+        api_context.response = requests_response({"spam": "eggs"})
+        api_context.context = {}
+        api_context.stage_variables = {}
+
+        template = ResponseTemplates()
+        with pytest.raises(JSONDecodeError):
+            template.render(api_context=api_context)
+
+    @pytest.mark.parametrize("template", [RequestTemplates(), ResponseTemplates()])
+    def test_render_custom_template_in_xml(self, template):
+        api_context = ApiInvocationContext(
+            method="POST",
+            path="/foo/bar?baz=test",
+            data=b'{"spam": "eggs"}',
+            headers={"content-type": APPLICATION_XML, "accept": APPLICATION_XML},
+            stage="local",
+        )
+        api_context.integration = {
+            "requestTemplates": {APPLICATION_XML: RESPONSE_TEMPLATE_XML},
+            "integrationResponses": {
+                "200": {"responseTemplates": {APPLICATION_XML: RESPONSE_TEMPLATE_XML}}
+            },
+        }
+        api_context.resource_path = "/{proxy+}"
+        api_context.path_params = {"id": "bar"}
+        api_context.response = requests_response({"spam": "eggs"})
+        api_context.context = {
+            "httpMethod": api_context.method,
+            "stage": api_context.stage,
+            "authorizer": {"principalId": "12233"},
+            "identity": {"accountId": "00000", "apiKey": "11111"},
+            "resourcePath": api_context.resource_path,
+        }
+        api_context.stage_variables = {"stageVariable1": "value1", "stageVariable2": "value2"}
+
+        rendered_request = template.render(api_context=api_context, template_key=APPLICATION_XML)
+        result_as_xml = xmltodict.parse(rendered_request).get("root", {})
+
+        assert result_as_xml.get("body") == '{"spam": "eggs"}'
+        assert result_as_xml.get("@method") == "POST"
+        assert result_as_xml.get("@principalId") == "12233"
+        assert result_as_xml.get("stage") == "local"
+        assert result_as_xml.get("enhancedAuthContext") == {"principalId": "12233"}
+        assert result_as_xml.get("identity") == {"accountId": "00000", "apiKey": "11111"}
+        assert result_as_xml.get("headers") == {
+            "content-type": APPLICATION_XML,
+            "accept": APPLICATION_XML,
+        }
+        assert result_as_xml.get("query") == {"baz": "test"}
+        assert result_as_xml.get("path") == {"id": "bar"}
+        assert result_as_xml.get("stageVariables") == {
+            "stageVariable1": "value1",
+            "stageVariable2": "value2",
+        }
+
+    def test_error_when_render_invalid_xml(self):
+        api_context = ApiInvocationContext(
+            method="POST",
+            path="/foo/bar?baz=test",
+            data=b"<root></root>",
+            headers={"content-type": APPLICATION_XML, "accept": APPLICATION_XML},
+            stage="local",
+        )
+        api_context.integration = {
+            "integrationResponses": {
+                "200": {"responseTemplates": {APPLICATION_XML: RESPONSE_TEMPLATE_WRONG_XML}}
+            },
+        }
+        api_context.resource_path = "/{proxy+}"
+        api_context.response = requests_response({"spam": "eggs"})
+        api_context.context = {}
+        api_context.stage_variables = {}
+
+        template = ResponseTemplates()
+        with pytest.raises(xml.parsers.expat.ExpatError):
+            template.render(api_context=api_context, template_key=APPLICATION_XML)
 
 
 def test_openapi_resolver_given_unresolvable_references():
@@ -795,6 +957,7 @@ class TestRequestParameterResolver:
                 "integration.request.querystring.env": "stageVariables.enviroment",
                 "integration.request.header.Content-Type": "'application/json'",
                 "integration.request.header.body-header": "method.request.body",
+                "integration.request.header.testContext": "context.authorizer.myvalue",
             }
         }
 
@@ -808,13 +971,18 @@ class TestRequestParameterResolver:
         context.path_params = {"id": "bar"}
         context.integration = integration
         context.stage_variables = {"enviroment": "dev"}
+        context.auth_context["authorizer"] = {"MyValue": 1}
         resolver = RequestParametersResolver()
         result = resolver.resolve(context)
 
         assert result == {
             "path": {"pathParam": "bar"},
             "querystring": {"baz": "test", "token": "Bearer 1234", "env": "dev"},
-            "headers": {"Content-Type": "application/json", "body-header": "spam_eggs"},
+            "headers": {
+                "Content-Type": "application/json",
+                "body-header": "spam_eggs",
+                "testContext": "1",
+            },
         }
 
 

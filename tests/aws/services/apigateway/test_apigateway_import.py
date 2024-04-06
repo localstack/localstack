@@ -7,14 +7,13 @@ from operator import itemgetter
 import pytest
 import requests
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.apigateway import Resources
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
@@ -178,7 +177,9 @@ def apigw_create_rest_api(aws_client):
 
 
 @pytest.fixture(scope="class")
-def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_su_role):
+def apigateway_placeholder_authorizer_lambda_invocation_arn(
+    aws_client, region_name, lambda_su_role
+):
     """
     Using this fixture to create only one lambda in AWS to be used for every test, as we need a real lambda ARN
     to be able to import an API. We need a class scoped fixture here, so the code is pulled from
@@ -228,7 +229,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(aws_client, lambda_s
         response = retry(_create_function, retries=3, sleep=4)
 
         lambda_invocation_arn = arns.apigateway_invocations_arn(
-            response["FunctionArn"], TEST_AWS_REGION_NAME
+            response["FunctionArn"], region_name
         )
 
         yield lambda_invocation_arn
@@ -271,11 +272,13 @@ class TestApiGatewayImportRestApi:
             "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
             "$.resources.items..resourceMethods.OPTIONS",
             "$.resources.items..resourceMethods.POST",
+            "$..rootResourceId",
             "$.get-authorizers.items[1].authorizerResultTtlInSeconds",
         ]
     )
     def test_import_swagger_api(
         self,
+        region_name,
         import_apigw,
         snapshot,
         aws_client,
@@ -300,11 +303,13 @@ class TestApiGatewayImportRestApi:
         )
         spec_file = load_file(PETSTORE_SWAGGER_JSON)
         spec_file = spec_file.replace(
+            "${uri}", f"http://petstore.execute-api.{region_name}.amazonaws.com/petstore/pets"
+        )
+
+        spec_file = spec_file.replace(
             "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:account-id:function:function-name/invocations",
             apigateway_placeholder_authorizer_lambda_invocation_arn,
-        ).replace(
-            "arn:aws:iam::account-id:role", lambda_su_role
-        )  # we just need a placeholder role
+        ).replace("arn:aws:iam::account-id:role", lambda_su_role)  # we just need a placeholder role
 
         response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
 

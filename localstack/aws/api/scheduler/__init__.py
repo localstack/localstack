@@ -471,7 +471,7 @@ class SchedulerApi:
         schedule_expression_timezone: ScheduleExpressionTimezone = None,
         start_date: StartDate = None,
         state: ScheduleState = None,
-        **kwargs
+        **kwargs,
     ) -> CreateScheduleOutput:
         raise NotImplementedError
 
@@ -482,7 +482,7 @@ class SchedulerApi:
         name: ScheduleGroupName,
         client_token: ClientToken = None,
         tags: TagList = None,
-        **kwargs
+        **kwargs,
     ) -> CreateScheduleGroupOutput:
         raise NotImplementedError
 
@@ -493,7 +493,7 @@ class SchedulerApi:
         name: Name,
         client_token: ClientToken = None,
         group_name: ScheduleGroupName = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteScheduleOutput:
         raise NotImplementedError
 
@@ -503,7 +503,7 @@ class SchedulerApi:
         context: RequestContext,
         name: ScheduleGroupName,
         client_token: ClientToken = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteScheduleGroupOutput:
         raise NotImplementedError
 
@@ -526,7 +526,7 @@ class SchedulerApi:
         max_results: MaxResults = None,
         name_prefix: ScheduleGroupNamePrefix = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListScheduleGroupsOutput:
         raise NotImplementedError
 
@@ -539,7 +539,7 @@ class SchedulerApi:
         name_prefix: NamePrefix = None,
         next_token: NextToken = None,
         state: ScheduleState = None,
-        **kwargs
+        **kwargs,
     ) -> ListSchedulesOutput:
         raise NotImplementedError
 
@@ -578,6 +578,6 @@ class SchedulerApi:
         schedule_expression_timezone: ScheduleExpressionTimezone = None,
         start_date: StartDate = None,
         state: ScheduleState = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateScheduleOutput:
         raise NotImplementedError

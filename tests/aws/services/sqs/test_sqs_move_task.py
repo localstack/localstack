@@ -5,71 +5,14 @@ import uuid
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.services.sqs.utils import decode_move_task_handle, encode_move_task_handle
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
-from localstack.utils.sync import poll_condition, retry
+from localstack.utils.sync import retry
+
+from .utils import sqs_collect_messages, sqs_wait_queue_size
 
 QueueUrl = str
-
-
-def sqs_collect_messages(
-    sqs_client, queue_url: str, expected: int, timeout: int, delete: bool = True
-):
-    collected = []
-
-    def _receive():
-        response = sqs_client.receive_message(
-            QueueUrl=queue_url,
-            # try not to wait too long, but also not poll too often
-            WaitTimeSeconds=min(max(1, timeout), 5),
-            MaxNumberOfMessages=1,
-        )
-
-        if messages := response.get("Messages"):
-            collected.extend(messages)
-
-            if delete:
-                for m in messages:
-                    sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"])
-
-        return len(collected) >= expected
-
-    if not poll_condition(_receive, timeout=timeout):
-        raise TimeoutError(
-            f"gave up waiting for messages (expected={expected}, actual={len(collected)}"
-        )
-
-    return collected
-
-
-def get_approx_number_of_messages(
-    sqs_client,
-    queue_url: str,
-) -> int:
-    response = sqs_client.get_queue_attributes(
-        QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
-    )
-    return int(response["Attributes"]["ApproximateNumberOfMessages"])
-
-
-def sqs_wait_queue_size(
-    sqs_client,
-    queue_url: str,
-    expected_num_messages: int,
-    timeout: float = None,
-) -> int:
-    def _check_num_messages():
-        return get_approx_number_of_messages(sqs_client, queue_url) >= expected_num_messages
-
-    if not poll_condition(_check_num_messages, timeout=timeout):
-        raise TimeoutError(
-            f"gave up waiting for messages (expected={expected_num_messages}, "
-            f"actual={get_approx_number_of_messages(sqs_client, queue_url)})"
-        )
-
-    return get_approx_number_of_messages(sqs_client, queue_url)
 
 
 @pytest.fixture(autouse=True)
@@ -78,7 +21,7 @@ def sqs_snapshot_transformer(snapshot):
 
 
 @pytest.fixture()
-def sqs_create_dlq_pipe(sqs_create_queue):
+def sqs_create_dlq_pipe(sqs_create_queue, region_name):
     def _factory(max_receive_count: int = 1) -> tuple[QueueUrl, QueueUrl]:
         dl_queue_url = sqs_create_queue()
 
@@ -87,7 +30,7 @@ def sqs_create_dlq_pipe(sqs_create_queue):
         dl_target_arn = arns.sqs_queue_arn(
             url_parts[-1],
             account_id=url_parts[len(url_parts) - 2],
-            region_name=TEST_AWS_REGION_NAME,
+            region_name=region_name,
         )
         queue_url = sqs_create_queue(
             Attributes={
@@ -231,6 +174,143 @@ def test_basic_move_task_workflow(
         _response = aws_client.sqs.list_message_move_tasks(SourceArn=source_arn)
         # this test also covers a check that `ApproximateNumberOfMessagesMoved` is set correctly at some point
         assert int(_response["Results"][0]["ApproximateNumberOfMessagesMoved"]) == 2
+        return _response
+
+    response = retry(_wait_for_task_completion, retries=30, sleep=1)
+    snapshot.match("list-message-move-task-response", response)
+
+    # assert messages are no longer in DLQ
+    response = aws_client.sqs.receive_message(QueueUrl=dl_queue_url, WaitTimeSeconds=1)
+    assert not response.get("Messages")
+
+
+@markers.aws.validated
+def test_move_task_workflow_with_default_destination(
+    sqs_create_queue,
+    sqs_create_dlq_pipe,
+    sqs_get_queue_arn,
+    aws_client,
+    snapshot,
+):
+    # tests that, if the destination arn is left blank, the messages will be redriven back to their
+    # respective original source queues.
+    sqs = aws_client.sqs
+
+    # create dlq pipe: some-queue -> dlq (source) -> some-queue
+    queue_url, dl_queue_url = sqs_create_dlq_pipe(max_receive_count=1)
+    source_arn = sqs_get_queue_arn(dl_queue_url)
+
+    snapshot.match("source-arn", source_arn)
+    snapshot.match("original-source", sqs_get_queue_arn(queue_url))
+
+    # send two messages
+    sqs.send_message(QueueUrl=queue_url, MessageBody="message-1")
+    sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
+
+    # receive each message two times to move them into the dlq
+    sqs.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+
+    # wait until the messages arrive in the DLQ
+    assert sqs_wait_queue_size(sqs, dl_queue_url, expected_num_messages=2, timeout=10) == 2
+
+    response = aws_client.sqs.start_message_move_task(SourceArn=source_arn)
+    snapshot.match("start-message-move-task-response", response)
+
+    # check task handle format
+    task_handle = response["TaskHandle"]
+    decoded_task_id, decoded_source_arn = decode_move_task_handle(task_handle)
+    assert uuid.UUID(decoded_task_id)
+    assert decoded_source_arn == source_arn
+
+    # check that messages arrived in destination queue correctly
+    messages = sqs_collect_messages(sqs, queue_url, expected=2, timeout=10)
+    assert {message["Body"] for message in messages} == {"message-1", "message-2"}
+
+    # check move task completion (in AWS, approximate number of messages may take a while to update)
+    def _wait_for_task_completion():
+        _response = aws_client.sqs.list_message_move_tasks(SourceArn=source_arn)
+        # this test also covers a check that `ApproximateNumberOfMessagesMoved` is set correctly at some point
+        assert int(_response["Results"][0]["ApproximateNumberOfMessagesMoved"]) == 2
+        return _response
+
+    response = retry(_wait_for_task_completion, retries=30, sleep=1)
+    snapshot.match("list-message-move-task-response", response)
+
+    # assert messages are no longer in DLQ
+    response = aws_client.sqs.receive_message(QueueUrl=dl_queue_url, WaitTimeSeconds=1)
+    assert not response.get("Messages")
+
+
+@markers.aws.validated
+def test_move_task_workflow_with_multiple_sources_as_default_destination(
+    sqs_create_queue,
+    sqs_create_dlq_pipe,
+    sqs_get_queue_arn,
+    aws_client,
+    snapshot,
+):
+    # tests that, if the destination arn is left blank, the messages will be redriven back to their
+    # respective original source queues, where there is more than one source queue.
+    sqs = aws_client.sqs
+
+    # create dlq pipe: some-queue -> dlq (source) -> some-queue
+    queue1_url, dl_queue_url = sqs_create_dlq_pipe(max_receive_count=1)
+    source_arn = sqs_get_queue_arn(dl_queue_url)
+    # create another DLQ pipe with the same DLQ (re
+    queue2_url = sqs_create_queue(
+        Attributes={
+            "RedrivePolicy": json.dumps(
+                {
+                    "deadLetterTargetArn": source_arn,
+                    "maxReceiveCount": 1,
+                }
+            )
+        },
+    )
+
+    snapshot.match("source-arn", source_arn)
+    snapshot.match("original-source-1", sqs_get_queue_arn(queue1_url))
+    snapshot.match("original-source-2", sqs_get_queue_arn(queue2_url))
+
+    # send two messages to q1
+    sqs.send_message(QueueUrl=queue1_url, MessageBody="message-1-1")
+    sqs.send_message(QueueUrl=queue1_url, MessageBody="message-1-2")
+
+    # send two messages to q2
+    sqs.send_message(QueueUrl=queue2_url, MessageBody="message-2-1")
+    sqs.send_message(QueueUrl=queue2_url, MessageBody="message-2-2")
+
+    # receive each message two times to move them into the dlq
+    sqs.receive_message(QueueUrl=queue1_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue1_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue1_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue1_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue2_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue2_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue2_url, VisibilityTimeout=0)
+    sqs.receive_message(QueueUrl=queue2_url, VisibilityTimeout=0)
+
+    # wait until the messages arrive in the DLQ
+    assert sqs_wait_queue_size(sqs, dl_queue_url, expected_num_messages=4, timeout=10) == 4
+
+    response = aws_client.sqs.start_message_move_task(SourceArn=source_arn)
+    snapshot.match("start-message-move-task-response", response)
+
+    # check that messages arrived in destination queue correctly
+    messages = sqs_collect_messages(sqs, queue1_url, expected=2, timeout=10)
+    assert {message["Body"] for message in messages} == {"message-1-1", "message-1-2"}
+
+    messages = sqs_collect_messages(sqs, queue2_url, expected=2, timeout=10)
+    assert {message["Body"] for message in messages} == {"message-2-1", "message-2-2"}
+
+    # check move task completion (in AWS, approximate number of messages may take a while to update)
+    def _wait_for_task_completion():
+        _response = aws_client.sqs.list_message_move_tasks(SourceArn=source_arn)
+        # this test also covers a check that `ApproximateNumberOfMessagesMoved` is set correctly at some point
+        assert int(_response["Results"][0]["ApproximateNumberOfMessagesMoved"]) == 4
         return _response
 
     response = retry(_wait_for_task_completion, retries=30, sleep=1)

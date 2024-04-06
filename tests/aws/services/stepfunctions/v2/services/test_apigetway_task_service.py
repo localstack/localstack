@@ -1,13 +1,12 @@
 import json
 
 import pytest
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import JsonpathTransformer
 from localstack.utils.aws import arns, aws_stack
 from localstack.utils.strings import short_uid
 from tests.aws.services.apigateway.apigateway_fixtures import create_rest_resource
@@ -102,7 +101,7 @@ class TestTaskApiGateway:
             "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
         )
         lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
-        target_uri = arns.apigateway_invocations_arn(lambda_arn, TEST_AWS_REGION_NAME)
+        target_uri = arns.apigateway_invocations_arn(lambda_arn, apigw_client.meta.region_name)
 
         api_id, _, root = create_rest_apigw(name=f"sfn-test-api-{short_uid()}")
         resource_id, _ = create_rest_resource(

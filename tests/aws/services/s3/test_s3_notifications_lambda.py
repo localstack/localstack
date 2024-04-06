@@ -223,9 +223,9 @@ class TestS3NotificationsToLambda:
         snapshot.match("invalid_skip", e.value.response)
 
         # set valid but not-existing lambda
-        config["LambdaFunctionConfigurations"][0][
-            "LambdaFunctionArn"
-        ] = f"{arns.lambda_function_arn('my-lambda', account_id=account_id, region_name=aws_client.s3.meta.region_name)}"
+        config["LambdaFunctionConfigurations"][0]["LambdaFunctionArn"] = (
+            f"{arns.lambda_function_arn('my-lambda', account_id=account_id, region_name=aws_client.s3.meta.region_name)}"
+        )
         with pytest.raises(ClientError) as e:
             aws_client.s3.put_bucket_notification_configuration(
                 Bucket=bucket_name,

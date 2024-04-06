@@ -6,6 +6,7 @@ from localstack.services.lambda_.api_utils import (
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     IMAGE_MAPPING,
+    MISSING_RUNTIMES,
     SUPPORTED_RUNTIMES,
     TESTED_RUNTIMES,
     VALID_LAYER_RUNTIMES,
@@ -30,7 +31,7 @@ class TestApiUtils:
         # Ensure that valid runtimes (i.e., API-level validation) match the actually supported runtimes
         # HINT: Update your botocore version if this check fails
         valid_runtimes = VALID_RUNTIMES[1:-1].split(", ")
-        assert set(SUPPORTED_RUNTIMES) == set(
+        assert set(SUPPORTED_RUNTIMES).union(MISSING_RUNTIMES) == set(
             valid_runtimes
         ), "mismatch between supported and API-valid runtimes"
 
@@ -60,6 +61,8 @@ class TestApiUtils:
     def test_qualifier_is_alias(self):
         assert qualifier_is_alias("abczABCZ")
         assert qualifier_is_alias("a01239")
-        assert not qualifier_is_alias("1numeric")
+        assert qualifier_is_alias("1numeric")
+        assert qualifier_is_alias("2024-01-01")
+        assert not qualifier_is_alias("20240101")
         assert not qualifier_is_alias("invalid-with-$-char")
         assert not qualifier_is_alias("invalid-with-?-char")

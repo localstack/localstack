@@ -485,7 +485,7 @@ Timestamp = datetime
 
 class PhoneNumberInformation(TypedDict, total=False):
     CreatedAt: Optional[Timestamp]
-    PhoneNumber: Optional[String]
+    PhoneNumber: Optional[PhoneNumber]
     Status: Optional[String]
     Iso2CountryCode: Optional[Iso2CountryCode]
     RouteType: Optional[RouteType]
@@ -645,7 +645,7 @@ class PublishBatchResponse(TypedDict, total=False):
 class PublishInput(ServiceRequest):
     TopicArn: Optional[topicARN]
     TargetArn: Optional[String]
-    PhoneNumber: Optional[String]
+    PhoneNumber: Optional[PhoneNumber]
     Message: message
     Subject: Optional[subject]
     MessageStructure: Optional[messageStructure]
@@ -757,7 +757,7 @@ class SnsApi:
         label: label,
         aws_account_id: DelegatesList,
         action_name: ActionsList,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -774,7 +774,7 @@ class SnsApi:
         topic_arn: topicARN,
         token: token,
         authenticate_on_unsubscribe: authenticateOnUnsubscribe = None,
-        **kwargs
+        **kwargs,
     ) -> ConfirmSubscriptionResponse:
         raise NotImplementedError
 
@@ -785,7 +785,7 @@ class SnsApi:
         name: String,
         platform: String,
         attributes: MapStringToString,
-        **kwargs
+        **kwargs,
     ) -> CreatePlatformApplicationResponse:
         raise NotImplementedError
 
@@ -797,7 +797,7 @@ class SnsApi:
         token: String,
         custom_user_data: String = None,
         attributes: MapStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> CreateEndpointResponse:
         raise NotImplementedError
 
@@ -807,7 +807,7 @@ class SnsApi:
         context: RequestContext,
         phone_number: PhoneNumberString,
         language_code: LanguageCodeString = None,
-        **kwargs
+        **kwargs,
     ) -> CreateSMSSandboxPhoneNumberResult:
         raise NotImplementedError
 
@@ -819,7 +819,7 @@ class SnsApi:
         attributes: TopicAttributesMap = None,
         tags: TagList = None,
         data_protection_policy: attributeValue = None,
-        **kwargs
+        **kwargs,
     ) -> CreateTopicResponse:
         raise NotImplementedError
 
@@ -891,7 +891,7 @@ class SnsApi:
         context: RequestContext,
         platform_application_arn: String,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> ListEndpointsByPlatformApplicationResponse:
         raise NotImplementedError
 
@@ -901,7 +901,7 @@ class SnsApi:
         context: RequestContext,
         next_token: nextToken = None,
         max_results: MaxItemsListOriginationNumbers = None,
-        **kwargs
+        **kwargs,
     ) -> ListOriginationNumbersResult:
         raise NotImplementedError
 
@@ -923,7 +923,7 @@ class SnsApi:
         context: RequestContext,
         next_token: nextToken = None,
         max_results: MaxItems = None,
-        **kwargs
+        **kwargs,
     ) -> ListSMSSandboxPhoneNumbersResult:
         raise NotImplementedError
 
@@ -964,13 +964,13 @@ class SnsApi:
         message: message,
         topic_arn: topicARN = None,
         target_arn: String = None,
-        phone_number: String = None,
+        phone_number: PhoneNumber = None,
         subject: subject = None,
         message_structure: messageStructure = None,
         message_attributes: MessageAttributeMap = None,
         message_deduplication_id: String = None,
         message_group_id: String = None,
-        **kwargs
+        **kwargs,
     ) -> PublishResponse:
         raise NotImplementedError
 
@@ -980,7 +980,7 @@ class SnsApi:
         context: RequestContext,
         topic_arn: topicARN,
         publish_batch_request_entries: PublishBatchRequestEntryList,
-        **kwargs
+        **kwargs,
     ) -> PublishBatchResponse:
         raise NotImplementedError
 
@@ -990,7 +990,7 @@ class SnsApi:
         context: RequestContext,
         resource_arn: topicARN,
         data_protection_policy: attributeValue,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1012,7 +1012,7 @@ class SnsApi:
         context: RequestContext,
         platform_application_arn: String,
         attributes: MapStringToString,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1029,7 +1029,7 @@ class SnsApi:
         subscription_arn: subscriptionARN,
         attribute_name: attributeName,
         attribute_value: attributeValue = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1040,7 +1040,7 @@ class SnsApi:
         topic_arn: topicARN,
         attribute_name: attributeName,
         attribute_value: attributeValue = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1053,7 +1053,7 @@ class SnsApi:
         endpoint: endpoint = None,
         attributes: SubscriptionAttributesMap = None,
         return_subscription_arn: boolean = None,
-        **kwargs
+        **kwargs,
     ) -> SubscribeResponse:
         raise NotImplementedError
 
@@ -1075,7 +1075,7 @@ class SnsApi:
         context: RequestContext,
         resource_arn: AmazonResourceName,
         tag_keys: TagKeyList,
-        **kwargs
+        **kwargs,
     ) -> UntagResourceResponse:
         raise NotImplementedError
 
@@ -1085,6 +1085,6 @@ class SnsApi:
         context: RequestContext,
         phone_number: PhoneNumberString,
         one_time_password: OTPCode,
-        **kwargs
+        **kwargs,
     ) -> VerifySMSSandboxPhoneNumberResult:
         raise NotImplementedError

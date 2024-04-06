@@ -33,9 +33,9 @@ class StreamEventSourceListener(EventSourceListener):
     these two services.
     """
 
-    _COORDINATOR_THREAD: Optional[
-        FuncThread
-    ] = None  # Thread for monitoring state of event source mappings
+    _COORDINATOR_THREAD: Optional[FuncThread] = (
+        None  # Thread for monitoring state of event source mappings
+    )
     _STREAM_LISTENER_THREADS: Dict[
         str, FuncThread
     ] = {}  # Threads for listening to stream shards and forwarding data to mapped Lambdas
@@ -333,7 +333,7 @@ class StreamEventSourceListener(EventSourceListener):
             "streamArn": source_arn,
         }
         payload[self._FAILURE_PAYLOAD_DETAILS_FIELD_NAME] = details
-        send_event_to_target(destination, payload)
+        send_event_to_target(target_arn=destination, event=payload, source_arn=source_arn)
 
     def _monitor_stream_event_sources(self, *args):
         """

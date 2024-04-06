@@ -2,11 +2,11 @@
 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
 from localstack.aws.api.sqs import QueueAttributeName
 
-MSG_CONTENT_REGEX = "^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$"
+MSG_CONTENT_REGEX = "^[\u0009\u000a\u000d\u0020-\ud7ff\ue000-\ufffd\U00010000-\U0010ffff]*$"
 
 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-message-metadata.html
 # While not documented, umlauts seem to be allowed
-ATTR_NAME_CHAR_REGEX = "^[\u00C0-\u017Fa-zA-Z0-9_.-]*$"
+ATTR_NAME_CHAR_REGEX = "^[\u00c0-\u017fa-zA-Z0-9_.-]*$"
 ATTR_NAME_PREFIX_SUFFIX_REGEX = r"^(?!(aws\.|amazon\.|\.)).*(?<!\.)$"
 ATTR_TYPE_REGEX = "^(String|Number|Binary).*$"
 FIFO_MSG_REGEX = "^[0-9a-zA-z!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-]*$"

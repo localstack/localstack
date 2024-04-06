@@ -1,3 +1,6 @@
+import json
+from typing import Union
+
 from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import InvocationRequest, InvocationType
@@ -14,6 +17,7 @@ from localstack.services.stepfunctions.asl.component.common.error_name.custom_er
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+    FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
     StatesErrorName,
@@ -34,6 +38,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.quotas import is_within_size_quota
 
 
 class StateTaskLambda(StateTask):
@@ -42,6 +47,7 @@ class StateTaskLambda(StateTask):
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
         if isinstance(ex, TimeoutError):
             return FailureEvent(
+                env=env,
                 error_name=StatesErrorName(typ=StatesErrorNameType.StatesTimeout),
                 event_type=HistoryEventType.LambdaFunctionTimedOut,
                 event_details=EventDetails(
@@ -50,6 +56,8 @@ class StateTaskLambda(StateTask):
                     )
                 ),
             )
+        if isinstance(ex, FailureEventException):
+            return ex.failure_event
 
         error = "Exception"
         if isinstance(ex, lambda_eval_utils.LambdaFunctionErrorException):
@@ -63,6 +71,7 @@ class StateTaskLambda(StateTask):
             cause = str(ex)
 
         return FailureEvent(
+            env=env,
             error_name=error_name,
             event_type=HistoryEventType.LambdaFunctionFailed,
             event_details=EventDetails(
@@ -71,6 +80,29 @@ class StateTaskLambda(StateTask):
                     cause=cause,
                 )
             ),
+        )
+
+    def _verify_size_quota(self, env: Environment, value: Union[str, json]) -> None:
+        is_within: bool = is_within_size_quota(value=value)
+        if is_within:
+            return
+        error_type = StatesErrorNameType.StatesStatesDataLimitExceeded
+        cause = (
+            f"The state/task '{self.resource.resource_arn}' returned a result "
+            "with a size exceeding the maximum number of bytes service limit."
+        )
+        raise FailureEventException(
+            failure_event=FailureEvent(
+                env=env,
+                error_name=StatesErrorName(typ=error_type),
+                event_type=HistoryEventType.LambdaFunctionFailed,
+                event_details=EventDetails(
+                    lambdaFunctionFailedEventDetails=LambdaFunctionFailedEventDetails(
+                        error=error_type.to_name(),
+                        cause=cause,
+                    )
+                ),
+            )
         )
 
     def _eval_parameters(self, env: Environment) -> dict:
@@ -123,6 +155,8 @@ class StateTaskLambda(StateTask):
 
         # In lambda invocations, only payload is passed on as output.
         output = env.stack.pop()
+        self._verify_size_quota(env=env, value=output)
+
         output_payload = output["Payload"]
         env.stack.append(output_payload)
 

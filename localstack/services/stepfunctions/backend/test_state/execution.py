@@ -21,6 +21,7 @@ from localstack.services.stepfunctions.asl.eval.test_state.program_state import 
     ProgramChoiceSelected,
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.backend.activity import Activity
 from localstack.services.stepfunctions.backend.execution import BaseExecutionWorkerComm, Execution
 from localstack.services.stepfunctions.backend.state_machine import StateMachineInstance
 from localstack.services.stepfunctions.backend.test_state.execution_worker import (
@@ -55,18 +56,20 @@ class TestStateExecution(Execution):
         region_name: str,
         state_machine: StateMachineInstance,
         start_date: Timestamp,
+        activity_store: dict[Arn, Activity],
         input_data: Optional[dict] = None,
     ):
         super().__init__(
-            name,
-            role_arn,
-            exec_arn,
-            account_id,
-            region_name,
-            state_machine,
-            start_date,
-            input_data,
-            None,
+            name=name,
+            role_arn=role_arn,
+            exec_arn=exec_arn,
+            account_id=account_id,
+            region_name=region_name,
+            state_machine=state_machine,
+            start_date=start_date,
+            activity_store=activity_store,
+            input_data=input_data,
+            trace_header=None,
         )
         self._execution_terminated_event = threading.Event()
         self.next_state = None
@@ -81,6 +84,7 @@ class TestStateExecution(Execution):
             exec_comm=self._get_start_execution_worker_comm(),
             context_object_init=self._get_start_context_object_init_data(),
             aws_execution_details=self._get_start_aws_execution_details(),
+            activity_store=self._activity_store,
         )
 
     def publish_execution_status_change_event(self):

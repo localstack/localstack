@@ -1,11 +1,11 @@
 import json
 
 from botocore.config import Config
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.aws.api.stepfunctions import InspectionLevel
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import RegexTransformer
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,

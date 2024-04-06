@@ -13,11 +13,10 @@ import pytest
 import requests
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.pytest.snapshot import is_aws
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.aws import arns
 from localstack.utils.aws.request_context import mock_aws_request_headers
@@ -76,7 +75,7 @@ class TestCloudwatch:
         snapshot.match("get_metric_statistics", stats)
 
     @markers.aws.only_localstack
-    def test_put_metric_data_gzip(self, aws_client):
+    def test_put_metric_data_gzip(self, aws_client, region_name):
         metric_name = "test-metric"
         namespace = "namespace"
         data = (
@@ -90,11 +89,11 @@ class TestCloudwatch:
         headers = mock_aws_request_headers(
             "cloudwatch",
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            region_name=TEST_AWS_REGION_NAME,
+            region_name=region_name,
             internal=True,
         )
         authorization = mock_aws_request_headers(
-            "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "monitoring", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
         )["Authorization"]
 
         headers.update(
@@ -523,7 +522,7 @@ class TestCloudwatch:
 
     @markers.aws.only_localstack
     # this feature was a customer request and added with https://github.com/localstack/localstack/pull/3535
-    def test_raw_metric_data(self, aws_client):
+    def test_raw_metric_data(self, aws_client, region_name):
         """
         tests internal endpoint at "/_aws/cloudwatch/metrics/raw"
         """
@@ -533,7 +532,7 @@ class TestCloudwatch:
         )
         # the new v2 provider doesn't need the headers, will return results for all accounts/regions
         headers = mock_aws_request_headers(
-            "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
+            "cloudwatch", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
         )
         url = f"{config.external_service_url()}{PATH_GET_RAW_METRICS}"
         result = requests.get(url, headers=headers)
@@ -1392,9 +1391,17 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..DashboardArn"], condition=is_old_provider
-    )  # ARN has a typo in moto
-    def test_dashboard_lifecycle(self, aws_client, snapshot):
+        condition=is_old_provider,
+        paths=[
+            "$..DashboardArn",  # ARN has a typo in moto
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..DashboardEntries..Size",  # need to be skipped because size changes if the region name length is longer
+        ]
+    )
+    def test_dashboard_lifecycle(self, aws_client, region_name, snapshot):
         dashboard_name = f"test-{short_uid()}"
         dashboard_body = {
             "widgets": [
@@ -1406,7 +1413,7 @@ class TestCloudwatch:
                     "height": 6,
                     "properties": {
                         "metrics": [["AWS/EC2", "CPUUtilization", "InstanceId", "i-12345678"]],
-                        "region": TEST_AWS_REGION_NAME,
+                        "region": region_name,
                         "view": "timeSeries",
                         "stacked": False,
                     },
@@ -2221,6 +2228,12 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_get_metric_with_null_dimensions(self, aws_client, snapshot):
+        """
+        This test validates the behaviour when there is metric data with dimensions and the get_metric_data call
+        has no dimensions specified. The expected behaviour is that the call should return the metric data with
+        no dimensions, which in this test, there is no such data, so the total sum should equal 0. And since the
+        Sum equals 0, the response will have no values.
+        """
         snapshot.add_transformer(snapshot.transform.key_value("Id"))
         snapshot.add_transformer(snapshot.transform.key_value("Label"))
         namespace = f"n-{short_uid()}"
@@ -2261,9 +2274,10 @@ class TestCloudwatch:
                 StartTime=datetime.utcnow() - timedelta(hours=1),
                 EndTime=datetime.utcnow(),
             )
+            assert len(response["MetricDataResults"][0]["Values"]) == 0
             snapshot.match("get_metric_with_null_dimensions", response)
 
-        retry(assert_results, retries=10, sleep=1.0, sleep_before=2.0 if is_aws_cloud() else 0.0)
+        retry(assert_results, retries=10, sleep=1.0, sleep_before=2 if is_aws_cloud() else 0.0)
 
     @markers.aws.validated
     def test_alarm_lambda_target(
@@ -2327,8 +2341,8 @@ class TestCloudwatch:
 
         invocation_res = retry(
             lambda: _get_lambda_logs(aws_client.logs, fn_name=fn_name),
-            retries=200 if is_aws() else 20,
-            sleep=10 if is_aws() else 1,
+            retries=200 if is_aws_cloud() else 20,
+            sleep=10 if is_aws_cloud() else 1,
         )
         snapshot.match("lambda-alarm-invocations", invocation_res)
 
@@ -2526,9 +2540,7 @@ def _sqs_messages_snapshot(expected_state, sqs_client, sqs_queue, snapshot, iden
             found_msg = message
             receipt_handle = msg["ReceiptHandle"]
             break
-    assert (
-        found_msg
-    ), f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
+    assert found_msg, f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
     sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
     snapshot.match(f"{identifier}-sqs-msg", found_msg)
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from localstack.aws.api.stepfunctions import InspectionData
+from localstack.aws.api.stepfunctions import Arn, InspectionData
 from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     ContextObjectInitData,
@@ -13,6 +13,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunn
 from localstack.services.stepfunctions.asl.eval.test_state.program_state import (
     ProgramChoiceSelected,
 )
+from localstack.services.stepfunctions.backend.activity import Activity
 
 
 class TestStateEnvironment(Environment):
@@ -23,11 +24,13 @@ class TestStateEnvironment(Environment):
         aws_execution_details: AWSExecutionDetails,
         context_object_init: ContextObjectInitData,
         event_history_context: EventHistoryContext,
+        activity_store: dict[Arn, Activity],
     ):
         super().__init__(
             aws_execution_details=aws_execution_details,
             context_object_init=context_object_init,
             event_history_context=event_history_context,
+            activity_store=activity_store,
         )
         self.inspection_data = InspectionData()
 

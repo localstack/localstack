@@ -21,6 +21,7 @@ class TestStateExecutionWorker(ExecutionWorker):
             aws_execution_details=self._aws_execution_details,
             context_object_init=self._context_object_init,
             event_history_context=EventHistoryContext.of_program_start(),
+            activity_store=self._activity_store,
         )
 
     def start(self):

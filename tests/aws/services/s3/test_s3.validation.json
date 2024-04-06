@@ -63,7 +63,7 @@
     "last_validated_date": "2023-10-22T02:25:14+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "last_validated_date": "2023-08-03T02:16:27+00:00"
+    "last_validated_date": "2024-04-04T17:13:12+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_empty_bucket_fixture": {
     "last_validated_date": "2023-09-08T16:52:15+00:00"
@@ -194,29 +194,29 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[SHA256]": {
     "last_validated_date": "2023-10-05T18:33:43+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE]": {
-    "last_validated_date": "2023-08-03T02:24:54+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[DEEP_ARCHIVE-False]": {
+    "last_validated_date": "2024-03-05T17:17:44+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER]": {
-    "last_validated_date": "2023-08-03T02:24:44+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER-False]": {
+    "last_validated_date": "2024-03-05T17:17:33+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR]": {
-    "last_validated_date": "2023-08-03T02:24:46+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[GLACIER_IR-True]": {
+    "last_validated_date": "2024-03-05T17:17:36+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING]": {
-    "last_validated_date": "2023-08-03T02:24:52+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[INTELLIGENT_TIERING-True]": {
+    "last_validated_date": "2024-03-05T17:17:42+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA]": {
-    "last_validated_date": "2023-08-03T02:24:50+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[ONEZONE_IA-True]": {
+    "last_validated_date": "2024-03-05T17:17:40+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY]": {
-    "last_validated_date": "2023-08-03T02:24:48+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[REDUCED_REDUNDANCY-True]": {
+    "last_validated_date": "2024-03-05T17:17:38+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD]": {
-    "last_validated_date": "2023-08-03T02:24:40+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD-True]": {
+    "last_validated_date": "2024-03-05T17:17:29+00:00"
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA]": {
-    "last_validated_date": "2023-08-03T02:24:42+00:00"
+  "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class[STANDARD_IA-True]": {
+    "last_validated_date": "2024-03-05T17:17:31+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_storage_class_outposts": {
     "last_validated_date": "2023-08-03T02:24:56+00:00"
@@ -234,7 +234,7 @@
     "last_validated_date": "2023-08-03T02:14:18+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "last_validated_date": "2023-08-03T02:13:15+00:00"
+    "last_validated_date": "2024-03-21T08:05:13+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure": {
     "last_validated_date": "2024-01-03T16:46:18+00:00"
@@ -278,6 +278,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_storage_class": {
     "last_validated_date": "2023-08-03T02:15:24+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_versioned": {
+    "last_validated_date": "2024-03-19T18:12:57+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_website_redirect_location": {
     "last_validated_date": "2023-08-03T02:15:36+00:00"
   },
@@ -301,6 +304,9 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_with_checksum[SHA256]": {
     "last_validated_date": "2023-08-03T02:15:56+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_wrong_format": {
+    "last_validated_date": "2024-02-27T11:11:22+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_tagging_directive[COPY]": {
     "last_validated_date": "2023-08-03T02:15:09+00:00"
@@ -351,7 +357,7 @@
     "last_validated_date": "2023-08-03T02:26:19+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_lambda_integration": {
-    "last_validated_date": "2023-08-03T02:18:58+00:00"
+    "last_validated_date": "2024-03-08T01:15:54+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_multipart_upload_acls": {
     "last_validated_date": "2023-08-03T14:53:20+00:00"
@@ -512,6 +518,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_exc": {
     "last_validated_date": "2023-08-09T15:58:37+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_file_as_string": {
+    "last_validated_date": "2024-02-24T01:01:59+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_metadata": {
     "last_validated_date": "2023-08-14T17:54:15+00:00"
   },
@@ -529,6 +538,9 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_tags[single]": {
     "last_validated_date": "2023-08-14T17:32:11+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_wrong_content_type": {
+    "last_validated_date": "2024-02-23T23:47:44+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_request_expires": {
     "last_validated_date": "2023-08-04T21:58:47+00:00"
@@ -575,8 +587,17 @@
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication_expired[s3v4-True]": {
     "last_validated_date": "2023-08-04T22:00:20+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_v4_signed_headers_in_qs": {
+    "last_validated_date": "2024-03-08T01:01:09+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_v4_x_amz_in_qs": {
-    "last_validated_date": "2023-11-17T14:56:39+00:00"
+    "last_validated_date": "2024-03-08T01:17:39+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_with_different_user_credentials": {
+    "last_validated_date": "2024-02-19T11:00:08+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_with_session_token": {
+    "last_validated_date": "2024-02-19T11:10:15+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_put_object": {
     "last_validated_date": "2023-08-04T21:58:39+00:00"

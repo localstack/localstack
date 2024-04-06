@@ -10,10 +10,11 @@ from click.testing import CliRunner
 
 import localstack.constants
 import localstack.utils.analytics.cli
-from localstack import config, constants
+from localstack import config
 from localstack.cli.localstack import create_with_plugins, is_frozen_bundle
 from localstack.cli.localstack import localstack as cli
 from localstack.config import HostAndPort
+from localstack.constants import VERSION
 from localstack.utils import testutil
 from localstack.utils.common import is_command_available
 from localstack.utils.container_utils.container_client import ContainerException, DockerNotAvailable
@@ -61,13 +62,13 @@ def test_create_with_plugins(runner):
     localstack_cli = create_with_plugins()
     result = runner.invoke(localstack_cli.group, ["--version"])
     assert result.exit_code == 0
-    assert result.output.strip() == constants.VERSION
+    assert result.output.strip() == VERSION
 
 
 def test_version(runner):
     result = runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
-    assert result.output.strip() == constants.VERSION
+    assert result.output.strip() == VERSION
 
 
 def test_status_services_error(runner):

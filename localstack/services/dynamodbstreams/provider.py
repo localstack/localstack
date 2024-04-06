@@ -26,6 +26,7 @@ from localstack.aws.api.dynamodbstreams import (
 from localstack.aws.connect import connect_to
 from localstack.services.dynamodbstreams.dynamodbstreams_api import (
     get_dynamodbstreams_store,
+    get_kinesis_client,
     get_kinesis_stream_name,
     get_shard_id,
     kinesis_shard_id,
@@ -55,9 +56,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> DescribeStreamOutput:
         store = get_dynamodbstreams_store(context.account_id, context.region)
-        kinesis = connect_to(
-            aws_access_key_id=context.account_id, region_name=context.region
-        ).kinesis
+        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
         for stream in store.ddb_streams.values():
             if stream["StreamArn"] == stream_arn:
                 # get stream details
@@ -97,9 +96,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
 
     @handler("GetRecords", expand=False)
     def get_records(self, context: RequestContext, payload: GetRecordsInput) -> GetRecordsOutput:
-        kinesis = connect_to(
-            aws_access_key_id=context.account_id, region_name=context.region
-        ).kinesis
+        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
         prefix, _, payload["ShardIterator"] = payload["ShardIterator"].rpartition("|")
         try:
             kinesis_records = kinesis.get_records(**payload)
@@ -127,9 +124,7 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
     ) -> GetShardIteratorOutput:
         stream_name = stream_name_from_stream_arn(stream_arn)
         stream_shard_id = kinesis_shard_id(shard_id)
-        kinesis = connect_to(
-            aws_access_key_id=context.account_id, region_name=context.region
-        ).kinesis
+        kinesis = get_kinesis_client(account_id=context.account_id, region_name=context.region)
 
         kwargs = {"StartingSequenceNumber": sequence_number} if sequence_number else {}
         result = kinesis.get_shard_iterator(

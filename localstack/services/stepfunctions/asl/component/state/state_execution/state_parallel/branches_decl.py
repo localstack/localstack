@@ -85,9 +85,9 @@ class BranchesDecl(EvalComponent):
         branch_worker_pool.wait()
 
         # Propagate exception if parallel task failed.
-        exit_event_details: Optional[
-            ExecutionFailedEventDetails
-        ] = branch_worker_pool.get_exit_event_details()
+        exit_event_details: Optional[ExecutionFailedEventDetails] = (
+            branch_worker_pool.get_exit_event_details()
+        )
         if exit_event_details is not None:
             for branch_worker in branch_workers:
                 branch_worker.stop(stop_date=datetime.datetime.now(), cause=None, error=None)
@@ -96,6 +96,7 @@ class BranchesDecl(EvalComponent):
             exit_error_name = exit_event_details.get("error")
             raise FailureEventException(
                 failure_event=FailureEvent(
+                    env=env,
                     error_name=CustomErrorName(error_name=exit_error_name),
                     event_type=HistoryEventType.ExecutionFailed,
                     event_details=EventDetails(executionFailedEventDetails=exit_event_details),

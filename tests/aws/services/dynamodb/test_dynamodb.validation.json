@@ -62,6 +62,12 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_get_items": {
     "last_validated_date": "2023-08-23T14:33:37+00:00"
   },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming": {
+    "last_validated_date": "2024-03-15T01:54:32+00:00"
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming_for_different_tables": {
+    "last_validated_date": "2024-04-02T21:45:36+00:00"
+  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transaction_write_binary_data": {
     "last_validated_date": "2023-08-23T14:33:31+00:00"
   },

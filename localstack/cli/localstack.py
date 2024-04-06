@@ -8,8 +8,9 @@ from typing import Dict, List, Optional, Tuple, TypedDict
 import click
 import requests
 
-from localstack import __version__, config
+from localstack import config
 from localstack.cli.exceptions import CLIError
+from localstack.constants import VERSION
 from localstack.utils.analytics.cli import publish_invocation
 from localstack.utils.bootstrap import get_container_default_logfile_location
 from localstack.utils.json import CustomEncoder
@@ -154,7 +155,7 @@ _click_format_option = click.option(
         "show_default": True,
     },
 )
-@click.version_option(__version__, "--version", "-v", message="%(version)s")
+@click.version_option(VERSION, "--version", "-v", message="%(version)s")
 @click.option("-d", "--debug", is_flag=True, help="Enable CLI debugging mode")
 @click.option("-p", "--profile", type=str, help="Set the configuration profile")
 def localstack(debug, profile) -> None:
@@ -883,7 +884,7 @@ def localstack_completion(ctx: click.Context, shell: str) -> None:
 
 
 def print_version() -> None:
-    console.print(f" :laptop_computer: [bold]LocalStack CLI[/bold] [blue]{__version__}[/blue]")
+    console.print(f" :laptop_computer: [bold]LocalStack CLI[/bold] [blue]{VERSION}[/blue]")
 
 
 def print_profile() -> None:

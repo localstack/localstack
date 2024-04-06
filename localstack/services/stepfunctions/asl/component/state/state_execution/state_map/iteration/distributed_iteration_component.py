@@ -16,21 +16,29 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
+from localstack.services.stepfunctions.asl.component.common.parameters import Parameters
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.item_reader_decl import (
     ItemReader,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
+    ItemSelector,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.inline_iteration_component import (
     InlineIterationComponent,
+    InlineIterationComponentEvalInput,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
     MapRunRecord,
+)
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.processor_config import (
+    ProcessorConfig,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.iteration_worker import (
     IterationWorker,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.job import (
-    Job,
+    JobClosed,
     JobPool,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
@@ -42,14 +50,25 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory
 
 
-class DistributedIterationComponentEvalInput:
-    state_name: Final[str]
-    max_concurrency: Final[int]
-    item_reader: Final[ItemReader]
+class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
+    item_reader: Final[Optional[ItemReader]]
 
-    def __init__(self, state_name: str, max_concurrency: int, item_reader: ItemReader):
-        self.state_name = state_name
-        self.max_concurrency = max_concurrency
+    def __init__(
+        self,
+        state_name: str,
+        max_concurrency: int,
+        input_items: list[json],
+        parameters: Optional[Parameters],
+        item_selector: Optional[ItemSelector],
+        item_reader: Optional[ItemReader],
+    ):
+        super().__init__(
+            state_name=state_name,
+            max_concurrency=max_concurrency,
+            input_items=input_items,
+            parameters=parameters,
+            item_selector=item_selector,
+        )
         self.item_reader = item_reader
 
 
@@ -59,15 +78,18 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
     _map_run_record: Optional[MapRunRecord]
     _workers: list[IterationWorker]
 
-    def __init__(self, start_at: StartAt, states: States, comment: Comment):
-        super().__init__(start_at=start_at, states=states, comment=comment)
+    def __init__(
+        self, start_at: StartAt, states: States, comment: Comment, processor_config: ProcessorConfig
+    ):
+        super().__init__(
+            start_at=start_at, states=states, comment=comment, processor_config=processor_config
+        )
         self._mutex = threading.Lock()
         self._map_run_record = None
         self._workers = list()
 
     @abc.abstractmethod
-    def _create_worker(self, env: Environment) -> IterationWorker:
-        ...
+    def _create_worker(self, env: Environment) -> IterationWorker: ...
 
     def _launch_worker(self, env: Environment) -> IterationWorker:
         worker = super()._launch_worker(env=env)
@@ -88,7 +110,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
                     self._workers.remove(worker)
 
     def _map_run(self, env: Environment) -> None:
-        input_items: list[json] = env.stack.pop()
+        input_items: list[json] = env.stack[-1]
 
         input_item_prog: Final[Program] = Program(
             start_at=self._start_at,
@@ -111,7 +133,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         if worker_exception is not None:
             raise worker_exception
 
-        closed_jobs: list[Job] = self._job_pool.get_closed_jobs()
+        closed_jobs: list[JobClosed] = self._job_pool.get_closed_jobs()
         outputs: list[Any] = [closed_job.job_output for closed_job in closed_jobs]
 
         env.stack.append(outputs)
@@ -138,7 +160,11 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
 
         execution_event_history = env.event_history
         try:
-            self._eval_input.item_reader.eval(env=env)
+            if self._eval_input.item_reader:
+                self._eval_input.item_reader.eval(env=env)
+            else:
+                env.stack.append(self._eval_input.input_items)
+
             # TODO: investigate if this is truly propagated also to eventual sub programs in map run states.
             env.event_history = EventHistory()
             self._map_run(env=env)

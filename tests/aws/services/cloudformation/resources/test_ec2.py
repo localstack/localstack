@@ -1,10 +1,10 @@
 import os
 
 import pytest
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer import SortingTransformer
 
 THIS_FOLDER = os.path.dirname(__file__)
 
@@ -45,7 +45,7 @@ def test_simple_route_table_creation(deploy_cfn_template, aws_client):
         ec2.describe_route_tables(RouteTableIds=[route_table_id])
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_vpc_creates_default_sg(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
         template_path=os.path.join(THIS_FOLDER, "../../../templates/ec2_vpc_default_sg.yaml")

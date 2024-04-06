@@ -4,7 +4,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from functools import lru_cache
-from http import HTTPStatus
+from http import HTTPMethod, HTTPStatus
 from typing import Any, Dict
 from urllib.parse import urljoin
 
@@ -53,7 +53,7 @@ from localstack.utils.aws.templating import VtlTemplate
 from localstack.utils.collections import dict_multi_values, remove_attributes
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.http import add_query_params_to_url, canonicalize_headers, parse_request_data
-from localstack.utils.json import json_safe
+from localstack.utils.json import json_safe, try_json
 from localstack.utils.strings import camel_to_snake_case, to_bytes
 
 LOG = logging.getLogger(__name__)
@@ -123,18 +123,27 @@ class BackendIntegration(ABC):
     def render_template_selection_expression(cls, invocation_context: ApiInvocationContext):
         integration = invocation_context.integration
         template_selection_expression = integration.get("templateSelectionExpression")
+
+        # AWS template selection relies on the content type
+        # to select an input template or output mapping AND template selection expressions.
+        # All of them will fall back to the $default template if a matching template is not found.
         if not template_selection_expression:
+            content_type = invocation_context.headers.get(HEADER_CONTENT_TYPE, APPLICATION_JSON)
+            if integration.get("RequestTemplates", {}).get(content_type):
+                return content_type
             return "$default"
+
+        data = try_json(invocation_context.data)
         variables = {
             "request": {
                 "header": invocation_context.headers,
                 "querystring": invocation_context.query_params(),
-                "body": invocation_context.data_as_string(),
+                "body": data,
                 "context": invocation_context.context or {},
                 "stage_variables": invocation_context.stage_variables or {},
             }
         }
-        return VtlTemplate().render_vtl(template_selection_expression, variables)
+        return VtlTemplate().render_vtl(template_selection_expression, variables) or "$default"
 
 
 @lru_cache(maxsize=64)
@@ -216,10 +225,16 @@ class LambdaProxyIntegration(BackendIntegration):
         parsed_result = common.json_safe(parsed_result)
         parsed_result = {} if parsed_result is None else parsed_result
 
-        keys = parsed_result.keys()
-        if "statusCode" not in keys or "body" not in keys:
+        if set(parsed_result) - {
+            "body",
+            "statusCode",
+            "headers",
+            "isBase64Encoded",
+            "multiValueHeaders",
+        }:
             LOG.warning(
-                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
+                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}\n Lambda output: %s',
+                parsed_result,
             )
             response.status_code = 502
             response._content = json.dumps({"message": "Internal server error"})
@@ -252,6 +267,11 @@ class LambdaProxyIntegration(BackendIntegration):
         del path_params["proxy+"]
         path_params["proxy"] = proxy_path_param_value
 
+    @staticmethod
+    def validate_integration_method(invocation_context: ApiInvocationContext):
+        if invocation_context.integration["httpMethod"] != HTTPMethod.POST:
+            raise ApiGatewayIntegrationError("Internal server error", status_code=500)
+
     @classmethod
     def construct_invocation_event(
         cls, method, path, headers, data, query_string_params=None, is_base64_encoded=False
@@ -261,11 +281,20 @@ class LambdaProxyIntegration(BackendIntegration):
         single_value_query_string_params = {
             k: v[-1] if isinstance(v, list) else v for k, v in query_string_params.items()
         }
+        # Some headers get capitalized like in CloudFront, see
+        # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html#add-origin-custom-headers-forward-authorization
+        # It seems AWS_PROXY lambda integrations are behind cloudfront, as seen by the returned headers in AWS
+        to_capitalize: list[str] = ["authorization"]  # some headers get capitalized
+        headers = {
+            k.capitalize() if k.lower() in to_capitalize else k: v for k, v in headers.items()
+        }
+
         # AWS canonical header names, converting them to lower-case
         headers = canonicalize_headers(headers)
+
         return {
             "path": path,
-            "headers": dict(headers),
+            "headers": headers,
             "multiValueHeaders": multi_value_dict_for_list(headers),
             "body": data,
             "isBase64Encoded": is_base64_encoded,
@@ -325,6 +354,7 @@ class LambdaProxyIntegration(BackendIntegration):
             )
 
     def invoke(self, invocation_context: ApiInvocationContext):
+        self.validate_integration_method(invocation_context)
         uri = (
             invocation_context.integration.get("uri")
             or invocation_context.integration.get("integrationUri")
@@ -365,11 +395,16 @@ class LambdaProxyIntegration(BackendIntegration):
         parsed_result = common.json_safe(parsed_result)
         parsed_result = {} if parsed_result is None else parsed_result
 
-        keys = parsed_result.keys()
-
-        if not ("statusCode" in keys and "body" in keys):
+        if set(parsed_result) - {
+            "body",
+            "statusCode",
+            "headers",
+            "isBase64Encoded",
+            "multiValueHeaders",
+        }:
             LOG.warning(
-                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}'
+                'Lambda output should follow the next JSON format: { "isBase64Encoded": true|false, "statusCode": httpStatusCode, "headers": { "headerName": "headerValue", ... },"body": "..."}\n Lambda output: %s',
+                parsed_result,
             )
             response.status_code = 502
             response._content = json.dumps({"message": "Internal server error"})
@@ -402,7 +437,7 @@ class LambdaProxyIntegration(BackendIntegration):
 
 class LambdaIntegration(BackendIntegration):
     def invoke(self, invocation_context: ApiInvocationContext):
-        invocation_context.context = helpers.get_event_request_context(invocation_context)
+        # invocation_context.context = helpers.get_event_request_context(invocation_context)
         invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
         headers = invocation_context.headers
 
@@ -414,12 +449,20 @@ class LambdaIntegration(BackendIntegration):
             invocation_context.context["authorizer"] = invocation_context.authorizer_result
 
         func_arn = self._lambda_integration_uri(invocation_context)
-        event = self.request_templates.render(invocation_context) or b""
+        # integration type "AWS" is only supported for WebSocket APIs and REST
+        # API (v1), but the template selection expression is only supported for
+        # Websockets
+        if invocation_context.is_websocket_request():
+            template_key = self.render_template_selection_expression(invocation_context)
+            payload = self.request_templates.render(invocation_context, template_key)
+        else:
+            payload = self.request_templates.render(invocation_context)
+
         asynchronous = headers.get("X-Amz-Invocation-Type", "").strip("'") == "Event"
         try:
             result = call_lambda(
                 function_arn=func_arn,
-                event=to_bytes(event),
+                event=to_bytes(payload or ""),
                 asynchronous=asynchronous,
                 invocation_context=invocation_context,
             )
@@ -466,8 +509,9 @@ class KinesisIntegration(BackendIntegration):
         integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
         integration_type = integration_type_orig.upper()
         uri = integration.get("uri") or integration.get("integrationUri") or ""
+        integration_subtype = integration.get("integrationSubtype")
 
-        if uri.endswith("kinesis:action/PutRecord"):
+        if uri.endswith("kinesis:action/PutRecord") or integration_subtype == "Kinesis-PutRecord":
             target = "Kinesis_20131202.PutRecord"
         elif uri.endswith("kinesis:action/PutRecords"):
             target = "Kinesis_20131202.PutRecords"
@@ -481,7 +525,9 @@ class KinesisIntegration(BackendIntegration):
 
         try:
             # xXx this "event" request context is used in multiple places, we probably
-            # want to refactor this into a model class
+            # want to refactor this into a model class.
+            # I'd argue we should not make a decision on the event_request_context inside the integration because,
+            # it's different between API types (REST, HTTP, WebSocket) and per event version
             invocation_context.context = helpers.get_event_request_context(invocation_context)
             invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
 
@@ -492,7 +538,12 @@ class KinesisIntegration(BackendIntegration):
                 template_key = self.render_template_selection_expression(invocation_context)
                 payload = self.request_templates.render(invocation_context, template_key)
             else:
-                payload = self.request_templates.render(invocation_context)
+                # For HTTP APIs with a specified integration_subtype,
+                # a key-value map specifying parameters that are passed to AWS_PROXY integrations
+                if integration_type == "AWS_PROXY" and integration_subtype == "Kinesis-PutRecord":
+                    payload = self._create_request_parameters(invocation_context)
+                else:
+                    payload = self.request_templates.render(invocation_context)
 
         except Exception as e:
             LOG.warning("Unable to convert API Gateway payload to str", e)
@@ -515,6 +566,70 @@ class KinesisIntegration(BackendIntegration):
         invocation_context.response = result
         self.response_templates.render(invocation_context)
         return invocation_context.response
+
+    @classmethod
+    def _validate_required_params(cls, request_parameters: Dict[str, Any]) -> None:
+        if not request_parameters:
+            raise BadRequestException("Missing required parameters")
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services-reference.html#Kinesis-PutRecord
+        stream_name = request_parameters.get("StreamName")
+        partition_key = request_parameters.get("PartitionKey")
+        data = request_parameters.get("Data")
+
+        if not stream_name:
+            raise BadRequestException("StreamName")
+
+        if not partition_key:
+            raise BadRequestException("PartitionKey")
+
+        if not data:
+            raise BadRequestException("Data")
+
+    def _create_request_parameters(
+        self, invocation_context: ApiInvocationContext
+    ) -> Dict[str, Any]:
+        request_parameters = invocation_context.integration.get("requestParameters", {})
+        self._validate_required_params(request_parameters)
+
+        variables = {
+            "request": {
+                "header": invocation_context.headers,
+                "querystring": invocation_context.query_params(),
+                "body": invocation_context.data_as_string(),
+                "context": invocation_context.context or {},
+                "stage_variables": invocation_context.stage_variables or {},
+            }
+        }
+
+        if invocation_context.headers.get("Content-Type") == "application/json":
+            variables["request"]["body"] = json.loads(invocation_context.data_as_string())
+        else:
+            # AWS parity no content type still yields a valid response from Kinesis
+            variables["request"]["body"] = try_json(invocation_context.data_as_string())
+
+        # Required parameters
+        payload = {
+            "StreamName": VtlTemplate().render_vtl(request_parameters.get("StreamName"), variables),
+            "Data": VtlTemplate().render_vtl(request_parameters.get("Data"), variables),
+            "PartitionKey": VtlTemplate().render_vtl(
+                request_parameters.get("PartitionKey"), variables
+            ),
+        }
+        # Optional Parameters
+        if "ExplicitHashKey" in request_parameters:
+            payload["ExplicitHashKey"] = VtlTemplate().render_vtl(
+                request_parameters.get("ExplicitHashKey"), variables
+            )
+        if "SequenceNumberForOrdering" in request_parameters:
+            payload["SequenceNumberForOrdering"] = VtlTemplate().render_vtl(
+                request_parameters.get("SequenceNumberForOrdering"), variables
+            )
+        # TODO: XXX we don't support the Region parameter
+        # if "Region" in request_parameters:
+        #     payload["Region"] = VtlTemplate().render_vtl(
+        #         request_parameters.get("Region"), variables
+        #     )
+        return json.dumps(payload)
 
 
 class DynamoDBIntegration(BackendIntegration):
@@ -622,6 +737,12 @@ class S3Integration(BackendIntegration):
 
 
 class HTTPIntegration(BackendIntegration):
+    @staticmethod
+    def _set_http_apigw_headers(headers: Dict[str, Any], invocation_context: ApiInvocationContext):
+        del headers["host"]
+        headers["x-amzn-apigateway-api-id"] = invocation_context.api_id
+        return headers
+
     def invoke(self, invocation_context: ApiInvocationContext):
         invocation_path = invocation_context.path_with_query_string
         integration = invocation_context.integration
@@ -635,6 +756,7 @@ class HTTPIntegration(BackendIntegration):
         # resolve integration parameters
         integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
         headers.update(integration_parameters.get("headers", {}))
+        self._set_http_apigw_headers(headers, invocation_context)
 
         if ":servicediscovery:" in uri:
             # check if this is a servicediscovery integration URI
@@ -680,9 +802,10 @@ class HTTPIntegration(BackendIntegration):
                 uri,
                 result.status_code,
             )
-        # apply custom response template
+        # apply custom response template for non-proxy integration
         invocation_context.response = result
-        self.response_templates.render(invocation_context)
+        if integration["type"] != "HTTP_PROXY":
+            self.response_templates.render(invocation_context)
         return invocation_context.response
 
 
@@ -738,7 +861,11 @@ class SNSIntegration(BackendIntegration):
         uri = integration.get("uri") or integration.get("integrationUri") or ""
 
         try:
-            payload = self.request_templates.render(invocation_context)
+            if invocation_context.is_websocket_request():
+                template_key = self.render_template_selection_expression(invocation_context)
+                payload = self.request_templates.render(invocation_context, template_key)
+            else:
+                payload = self.request_templates.render(invocation_context)
         except Exception as e:
             LOG.warning("Failed to apply template for SNS integration", e)
             raise
@@ -746,10 +873,13 @@ class SNSIntegration(BackendIntegration):
         headers = mock_aws_request_headers(
             service="sns", aws_access_key_id=invocation_context.account_id, region_name=region_name
         )
-        result = make_http_request(
+        response = make_http_request(
             config.internal_service_url(), method="POST", headers=headers, data=payload
         )
-        return self.apply_response_parameters(invocation_context, result)
+
+        invocation_context.response = response
+        response._content = self.response_templates.render(invocation_context)
+        return self.apply_response_parameters(invocation_context, response)
 
 
 class StepFunctionIntegration(BackendIntegration):

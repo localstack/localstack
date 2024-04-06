@@ -8,7 +8,6 @@ import requests
 from boto3.s3.transfer import KB, TransferConfig
 from botocore.exceptions import ClientError
 
-from localstack.constants import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
@@ -437,6 +436,7 @@ class TestS3NotificationsToSQS:
         snapshot,
         aws_client,
         aws_client_factory,
+        secondary_region_name,
     ):
         """This test validates that pre-signed URL works with notification, and that the awsRegion field is the
         bucket's region"""
@@ -462,10 +462,10 @@ class TestS3NotificationsToSQS:
 
         # test with the bucket in a different region than the client
         bucket_name_region_2 = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": SECONDARY_TEST_AWS_REGION_NAME},
+            CreateBucketConfiguration={"LocationConstraint": secondary_region_name},
         )
         # the SQS queue needs to be in the same region as the S3 bucket
-        sqs_client_region_2 = aws_client_factory(region_name=SECONDARY_TEST_AWS_REGION_NAME).sqs
+        sqs_client_region_2 = aws_client_factory(region_name=secondary_region_name).sqs
         queue_url_region_2 = sqs_create_queue_with_client(sqs_client_region_2)
         s3_create_sqs_bucket_notification(
             bucket_name=bucket_name_region_2,
@@ -597,9 +597,9 @@ class TestS3NotificationsToSQS:
 
         # add boto hook
         def add_xray_header(request, **kwargs):
-            request.headers[
-                "X-Amzn-Trace-Id"
-            ] = "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            request.headers["X-Amzn-Trace-Id"] = (
+                "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            )
 
         aws_client.s3.meta.events.register("before-send.s3.*", add_xray_header)
         # make sure the hook gets cleaned up after the test

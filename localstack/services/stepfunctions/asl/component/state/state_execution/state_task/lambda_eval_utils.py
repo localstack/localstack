@@ -1,13 +1,12 @@
 import json
 from json import JSONDecodeError
-from typing import Any, Final, Optional
+from typing import IO, Any, Final, Optional, Union
 
 from localstack.aws.api.lambda_ import InvocationResponse
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 
 
@@ -20,21 +19,36 @@ class LambdaFunctionErrorException(Exception):
         self.payload = payload
 
 
+def _from_payload(payload_streaming_body: IO[bytes]) -> Union[json, str]:
+    """
+    This method extracts the lambda payload. The payload may be a string or a JSON stringified object.
+    In the first case, this function converts the output into a UTF-8 string, otherwise it parses the
+    JSON string into a JSON object.
+    """
+
+    payload_bytes: bytes = payload_streaming_body.read()
+    decoded_data: str = payload_bytes.decode("utf-8")
+    try:
+        json_data: json = json.loads(decoded_data)
+        return json_data
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return decoded_data
+
+
 def exec_lambda_function(env: Environment, parameters: dict, region: str, account: str) -> None:
     lambda_client = boto_client_for(region=region, account=account, service="lambda")
 
     invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
 
     func_error: Optional[str] = invocation_resp.get("FunctionError")
+
+    payload = invocation_resp["Payload"]
+    payload_json = _from_payload(payload)
     if func_error:
-        payload = json.loads(to_str(invocation_resp["Payload"].read()))
-        payload_str = json.dumps(payload, separators=(",", ":"))
+        payload_str = json.dumps(payload_json, separators=(",", ":"))
         raise LambdaFunctionErrorException(func_error, payload_str)
 
-    resp_payload = invocation_resp["Payload"].read()
-    resp_payload_str = to_str(resp_payload)
-    resp_payload_json: json = json.loads(resp_payload_str)
-    invocation_resp["Payload"] = resp_payload_json
+    invocation_resp["Payload"] = payload_json
 
     response = select_from_typed_dict(typed_dict=InvocationResponse, obj=invocation_resp)
     env.stack.append(response)

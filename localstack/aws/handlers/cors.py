@@ -1,6 +1,7 @@
 """
 A set of handlers which handle Cross Origin Resource Sharing (CORS).
 """
+
 import logging
 import re
 from typing import List, Set
@@ -92,7 +93,7 @@ def _get_allowed_cors_ports() -> Set[int]:
     Construct the list of allowed ports for CORS enforcement purposes
     Defined as function to allow easier testing with monkeypatch of config values
     """
-    return set([host_and_port.port for host_and_port in config.GATEWAY_LISTEN])
+    return {host_and_port.port for host_and_port in config.GATEWAY_LISTEN}
 
 
 _ALLOWED_INTERNAL_PORTS = _get_allowed_cors_ports()

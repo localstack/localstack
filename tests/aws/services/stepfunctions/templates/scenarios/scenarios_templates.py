@@ -15,6 +15,9 @@ class ScenariosTemplate(TemplateLoader):
     PARALLEL_STATE_FAIL: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/parallel_state_fail.json5"
     )
+    PARALLEL_NESTED_NESTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/parallel_state_nested.json5"
+    )
     PARALLEL_STATE_CATCH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/parallel_state_catch.json5"
     )
@@ -28,6 +31,39 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_legacy.json5"
     )
+    MAP_STATE_LEGACY_CONFIG_INLINE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_config_inline.json5"
+    )
+    MAP_STATE_LEGACY_CONFIG_DISTRIBUTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_config_distributed.json5"
+    )
+    MAP_STATE_LEGACY_CONFIG_DISTRIBUTED_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_config_distributed_parameters.json5"
+    )
+    MAP_STATE_LEGACY_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_config_distributed_item_selector.json5"
+    )
+    MAP_STATE_LEGACY_CONFIG_INLINE_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_config_inline_parameters.json5"
+    )
+    MAP_STATE_LEGACY_CONFIG_INLINE_ITEM_SELECTOR: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_config_inline_item_selector.json5"
+    )
+    MAP_STATE_CONFIG_DISTRIBUTED_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_parameters.json5"
+    )
+    MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector.json5"
+    )
+    MAP_STATE_CONFIG_INLINE_PARAMETERS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_inline_parameters.json5"
+    )
+    MAP_STATE_CONFIG_INLINE_ITEM_SELECTOR: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_inline_item_selector.json5"
+    )
+    MAP_STATE_NESTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_nested.json5"
+    )
     MAP_STATE_NO_PROCESSOR_CONFIG: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_no_processor_config.json5"
     )
@@ -37,11 +73,20 @@ class ScenariosTemplate(TemplateLoader):
     MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_csv_headers_first_line.json5"
     )
+    MAP_ITEM_READER_BASE_CSV_MAX_ITEMS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_csv_max_items.json5"
+    )
+    MAP_ITEM_READER_BASE_CSV_MAX_ITEMS_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_csv_max_items_path.json5"
+    )
     MAP_ITEM_READER_BASE_CSV_HEADERS_DECL: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_csv_headers_decl.json5"
     )
     MAP_ITEM_READER_BASE_JSON: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_json.json5"
+    )
+    MAP_ITEM_READER_BASE_JSON_MAX_ITEMS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_json_max_items.json5"
     )
     MAP_STATE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_item_selector.json5"
@@ -95,6 +140,15 @@ class ScenariosTemplate(TemplateLoader):
     )
     LAMBDA_SERVICE_INVOKE_WITH_RETRY_BASE_EXTENDED_INPUT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/lambda_service_invoke_with_retry_extended_input.json5"
+    )
+    RETRY_INTERVAL_FEATURES: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/retry_interval_features.json5"
+    )
+    RETRY_INTERVAL_FEATURES_JITTER_NONE: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/retry_interval_features_jitter_none.json5"
+    )
+    RETRY_INTERVAL_FEATURES_MAX_ATTEMPTS_ZERO: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/retry_interval_features_max_attempts_zero.json5"
     )
     WAIT_TIMESTAMP: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_timestamp.json5")
     WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(

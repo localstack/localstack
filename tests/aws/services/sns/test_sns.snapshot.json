@@ -343,7 +343,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_publish_wrong_arn_format": {
-    "recorded-date": "24-08-2023, 22:31:40",
+    "recorded-date": "11-03-2024, 10:36:34",
     "recorded-content": {
       "invalid-topic-arn": {
         "Error": {
@@ -360,6 +360,17 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 2",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "empty-topic": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not 1",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -642,8 +653,19 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_create_subscriptions_with_attributes": {
-    "recorded-date": "24-08-2023, 23:27:53",
+    "recorded-date": "29-03-2024, 19:44:43",
     "recorded-content": {
+      "subscribe-wrong-attr": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: RawMessageDelivery: Invalid value [wrongvalue]. Must be true or false.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "subscribe": {
         "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:1>",
         "ResponseMetadata": {
@@ -744,12 +766,34 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_validate_set_sub_attributes": {
-    "recorded-date": "24-08-2023, 23:27:58",
+    "recorded-date": "29-03-2024, 19:30:24",
     "recorded-content": {
       "fake-attribute": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: AttributeName",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "raw-message-wrong-value": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: RawMessageDelivery: Invalid value [test-ValUe]. Must be true or false.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "raw-message-empty-value": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: RawMessageDelivery: Invalid value []. Must be true or false.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -771,7 +815,7 @@
       "invalid-json-redrive-policy": {
         "Error": {
           "Code": "InvalidParameter",
-          "Message": "Invalid parameter: RedrivePolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: java.io.StringReader@5498a819; line: 1, column: 3]",
+          "Message": "Invalid parameter: RedrivePolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: java.io.StringReader@469cc9aa; line: 1, column: 3]",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -4976,6 +5020,205 @@
         "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
         "Type": "Notification",
         "UnsubscribeUrl": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_exists_filter_policy_attributes_array": {
+    "recorded-date": "02-04-2024, 22:27:18",
+    "recorded-content": {
+      "subscription-attributes-policy": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "FilterPolicy": {
+            "store": [
+              "value1"
+            ]
+          },
+          "FilterPolicyScope": "MessageAttributes",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sqs",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-1": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:1>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "Message": "message-1",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "MessageAttributes": {
+                "store": {
+                  "Type": "String",
+                  "Value": "value1"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-2": {
+        "Messages": [
+          {
+            "Body": {
+              "Type": "Notification",
+              "MessageId": "<uuid:3>",
+              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "Message": "message-2",
+              "Timestamp": "date",
+              "SignatureVersion": "1",
+              "Signature": "<signature>",
+              "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "MessageAttributes": {
+                "store": {
+                  "Type": "String.Array",
+                  "Value": "[\"value1\", \"value2\"]"
+                }
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-3": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_attributes": {
+    "recorded-date": "02-04-2024, 22:36:25",
+    "recorded-content": {
+      "recv-init-0": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recv-init-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages-queue-0": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "headers": {
+                "route-to": [
+                  "queue1",
+                  "queue2"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "headers": {
+                "route-to": [
+                  "queue1"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ]
+      },
+      "messages-queue-1": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "headers": {
+                "route-to": [
+                  "queue1",
+                  "queue2"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "headers": {
+                "route-to": [
+                  "queue2"
+                ]
+              }
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:4>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ]
       }
     }
   }

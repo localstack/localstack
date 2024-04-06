@@ -1,6 +1,6 @@
 {
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs14.x]": {
-    "recorded-date": "20-11-2023, 23:31:57",
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs20.x]": {
+    "recorded-date": "13-03-2024, 08:54:28",
     "recorded-content": {
       "creation-result": {
         "CreateEventSourceMappingResponse": null,
@@ -21,11 +21,81 @@
           "FunctionName": "<function-name:1>",
           "Handler": "lambda_handler_es6.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "nodejs14.x",
+          "Runtime": "nodejs20.x",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "invocation-result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "statusCode": 200,
+          "body": "\"response from localstack lambda: {\\\"event_type\\\":\\\"test_lambda\\\"}\""
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs18.x]": {
+    "recorded-date": "13-03-2024, 08:54:34",
+    "recorded-content": {
+      "creation-result": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<<code-sha-256>:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "lambda_handler_es6.handler",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "nodejs18.x",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -62,7 +132,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs16.x]": {
-    "recorded-date": "20-11-2023, 23:31:45",
+    "recorded-date": "13-03-2024, 08:54:44",
     "recorded-content": {
       "creation-result": {
         "CreateEventSourceMappingResponse": null,
@@ -83,6 +153,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "lambda_handler_es6.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -124,7 +198,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_runtime_with_lib": {
-    "recorded-date": "20-11-2023, 23:32:13",
+    "recorded-date": "13-03-2024, 08:55:00",
     "recorded-content": {
       "create-result-jar-with-lib": {
         "CreateEventSourceMappingResponse": null,
@@ -145,6 +219,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -199,6 +277,10 @@
           "FunctionName": "<function-name:2>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:2>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -253,6 +335,10 @@
           "FunctionName": "<function-name:3>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithLib",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:3>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
@@ -290,8 +376,8 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8]": {
-    "recorded-date": "20-11-2023, 23:32:31",
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java21]": {
+    "recorded-date": "13-03-2024, 08:55:03",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -304,8 +390,8 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8.al2]": {
-    "recorded-date": "20-11-2023, 23:32:27",
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java17]": {
+    "recorded-date": "13-03-2024, 08:55:06",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -319,7 +405,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java11]": {
-    "recorded-date": "20-11-2023, 23:32:24",
+    "recorded-date": "13-03-2024, 08:55:10",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -332,8 +418,22 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java8]": {
-    "recorded-date": "20-11-2023, 23:33:04",
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java8.al2]": {
+    "recorded-date": "13-03-2024, 08:55:13",
+    "recorded-content": {
+      "invoke_result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {},
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java21]": {
+    "recorded-date": "13-03-2024, 08:55:20",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -354,11 +454,149 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "java8",
+          "Runtime": "java21",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "invoke-result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "bucket": "test_bucket",
+          "key": "test_key",
+          "validated": true
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java17]": {
+    "recorded-date": "13-03-2024, 08:55:25",
+    "recorded-content": {
+      "create-result": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<<code-sha-256>:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java17",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "invoke-result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "bucket": "test_bucket",
+          "key": "test_key",
+          "validated": true
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java11]": {
+    "recorded-date": "13-03-2024, 08:55:31",
+    "recorded-content": {
+      "create-result": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<<code-sha-256>:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "java11",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
           },
@@ -396,7 +634,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java8.al2]": {
-    "recorded-date": "20-11-2023, 23:32:57",
+    "recorded-date": "13-03-2024, 08:55:36",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -417,6 +655,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -458,71 +700,8 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java11]": {
-    "recorded-date": "20-11-2023, 23:32:50",
-    "recorded-content": {
-      "create-result": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "java11",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invoke-result": {
-        "ExecutedVersion": "$LATEST",
-        "Payload": {
-          "bucket": "test_bucket",
-          "key": "test_key",
-          "validated": true
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom-CUSTOM]": {
-    "recorded-date": "20-11-2023, 23:33:12",
+    "recorded-date": "13-03-2024, 08:55:45",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -543,6 +722,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -581,7 +764,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom-INTERFACE]": {
-    "recorded-date": "20-11-2023, 23:33:19",
+    "recorded-date": "13-03-2024, 08:55:54",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -602,6 +785,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -640,7 +827,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_custom_handler_method_specification[cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequest-INTERFACE]": {
-    "recorded-date": "20-11-2023, 23:33:30",
+    "recorded-date": "13-03-2024, 08:56:01",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -661,6 +848,10 @@
           "FunctionName": "<function-name:1>",
           "Handler": "cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequest",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -699,7 +890,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_java_lambda_subscribe_sns_topic": {
-    "recorded-date": "20-11-2023, 23:33:53",
+    "recorded-date": "13-03-2024, 08:56:26",
     "recorded-content": {
       "get-function": {
         "Code": {
@@ -724,6 +915,10 @@
           "Handler": "cloud.localstack.sample.LambdaHandler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -770,663 +965,174 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.7]": {
-    "recorded-date": "20-11-2023, 23:34:14",
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.12]": {
+    "recorded-date": "13-03-2024, 08:56:29",
     "recorded-content": {}
   },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.8]": {
-    "recorded-date": "20-11-2023, 23:34:10",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.9]": {
-    "recorded-date": "20-11-2023, 23:34:07",
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.11]": {
+    "recorded-date": "13-03-2024, 08:56:32",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.10]": {
-    "recorded-date": "20-11-2023, 23:34:03",
+    "recorded-date": "13-03-2024, 08:56:36",
     "recorded-content": {}
   },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.7]": {
-    "recorded-date": "20-11-2023, 23:34:33",
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.9]": {
+    "recorded-date": "13-03-2024, 08:56:39",
     "recorded-content": {}
   },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.8]": {
-    "recorded-date": "20-11-2023, 23:34:31",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.9]": {
-    "recorded-date": "20-11-2023, 23:34:27",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.10]": {
-    "recorded-date": "20-11-2023, 23:34:24",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.7]": {
-    "recorded-date": "01-08-2023, 13:20:15",
-    "recorded-content": {
-      "creation_response": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.7",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invocation_response": {
-        "ExecutedVersion": "$LATEST",
-        "FunctionError": "Unhandled",
-        "Payload": {
-          "errorMessage": "some error occurred",
-          "errorType": "CustomException",
-          "stackTrace": [
-            "  File \"/var/task/handler.py\", line 6, in handler\n    raise CustomException(\"some error occurred\")\n"
-          ]
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.8]": {
-    "recorded-date": "01-08-2023, 13:20:18",
-    "recorded-content": {
-      "creation_response": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.8",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invocation_response": {
-        "ExecutedVersion": "$LATEST",
-        "FunctionError": "Unhandled",
-        "Payload": {
-          "errorMessage": "some error occurred",
-          "errorType": "CustomException",
-          "stackTrace": [
-            "  File \"/var/task/handler.py\", line 6, in handler\n    raise CustomException(\"some error occurred\")\n"
-          ]
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.9]": {
-    "recorded-date": "01-08-2023, 13:20:21",
-    "recorded-content": {
-      "creation_response": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.9",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invocation_response": {
-        "ExecutedVersion": "$LATEST",
-        "FunctionError": "Unhandled",
-        "Payload": {
-          "errorMessage": "some error occurred",
-          "errorType": "CustomException",
-          "requestId": "<uuid:2>",
-          "stackTrace": [
-            "  File \"/var/task/handler.py\", line 6, in handler\n    raise CustomException(\"some error occurred\")\n"
-          ]
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.10]": {
-    "recorded-date": "01-08-2023, 13:20:24",
-    "recorded-content": {
-      "creation_response": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.10",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invocation_response": {
-        "ExecutedVersion": "$LATEST",
-        "FunctionError": "Unhandled",
-        "Payload": {
-          "errorMessage": "some error occurred",
-          "errorType": "CustomException",
-          "requestId": "<uuid:2>",
-          "stackTrace": [
-            "  File \"/var/task/handler.py\", line 6, in handler\n    raise CustomException(\"some error occurred\")\n"
-          ]
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java17]": {
-    "recorded-date": "20-11-2023, 23:32:20",
-    "recorded-content": {
-      "invoke_result": {
-        "ExecutedVersion": "$LATEST",
-        "Payload": {},
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java17]": {
-    "recorded-date": "20-11-2023, 23:32:44",
-    "recorded-content": {
-      "create-result": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "java17",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invoke-result": {
-        "ExecutedVersion": "$LATEST",
-        "Payload": {
-          "bucket": "test_bucket",
-          "key": "test_key",
-          "validated": true
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.11]": {
-    "recorded-date": "20-11-2023, 23:34:00",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.11]": {
-    "recorded-date": "20-11-2023, 23:34:21",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_unhandled_errors[python3.11]": {
-    "recorded-date": "01-08-2023, 13:20:27",
-    "recorded-content": {
-      "creation_response": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "handler.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "python3.11",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invocation_response": {
-        "ExecutedVersion": "$LATEST",
-        "FunctionError": "Unhandled",
-        "Payload": {
-          "errorMessage": "some error occurred",
-          "errorType": "CustomException",
-          "requestId": "<uuid:2>",
-          "stackTrace": [
-            "  File \"/var/task/handler.py\", line 6, in handler\n    raise CustomException(\"some error occurred\")\n"
-          ]
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs18.x]": {
-    "recorded-date": "20-11-2023, 23:31:39",
-    "recorded-content": {
-      "creation-result": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "lambda_handler_es6.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "nodejs18.x",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invocation-result": {
-        "ExecutedVersion": "$LATEST",
-        "Payload": {
-          "statusCode": 200,
-          "body": "\"response from localstack lambda: {\\\"event_type\\\":\\\"test_lambda\\\"}\""
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestNodeJSRuntimes::test_invoke_nodejs_es6_lambda[nodejs20.x]": {
-    "recorded-date": "20-11-2023, 23:31:32",
-    "recorded-content": {
-      "creation-result": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "lambda_handler_es6.handler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "nodejs20.x",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invocation-result": {
-        "ExecutedVersion": "$LATEST",
-        "Payload": {
-          "statusCode": 200,
-          "body": "\"response from localstack lambda: {\\\"event_type\\\":\\\"test_lambda\\\"}\""
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_stream_handler[java21]": {
-    "recorded-date": "20-11-2023, 23:32:17",
-    "recorded-content": {
-      "invoke_result": {
-        "ExecutedVersion": "$LATEST",
-        "Payload": {},
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestJavaRuntimes::test_serializable_input_object[java21]": {
-    "recorded-date": "20-11-2023, 23:32:38",
-    "recorded-content": {
-      "create-result": {
-        "CreateEventSourceMappingResponse": null,
-        "CreateFunctionResponse": {
-          "Architectures": [
-            "x86_64"
-          ],
-          "CodeSha256": "<<code-sha-256>:1>",
-          "CodeSize": "<code-size>",
-          "Description": "",
-          "Environment": {
-            "Variables": {}
-          },
-          "EphemeralStorage": {
-            "Size": 512
-          },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
-          "FunctionName": "<function-name:1>",
-          "Handler": "cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
-          "LastModified": "date",
-          "MemorySize": 128,
-          "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
-          "Runtime": "java21",
-          "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
-          },
-          "SnapStart": {
-            "ApplyOn": "None",
-            "OptimizationStatus": "Off"
-          },
-          "State": "Pending",
-          "StateReason": "The function is being created.",
-          "StateReasonCode": "Creating",
-          "Timeout": 30,
-          "TracingConfig": {
-            "Mode": "PassThrough"
-          },
-          "Version": "$LATEST",
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 201
-          }
-        }
-      },
-      "invoke-result": {
-        "ExecutedVersion": "$LATEST",
-        "Payload": {
-          "bucket": "test_bucket",
-          "key": "test_key",
-          "validated": true
-        },
-        "StatusCode": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.12]": {
-    "recorded-date": "20-11-2023, 23:33:57",
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_handler_in_submodule[python3.8]": {
+    "recorded-date": "13-03-2024, 08:56:42",
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.12]": {
-    "recorded-date": "20-11-2023, 23:34:17",
+    "recorded-date": "13-03-2024, 08:56:45",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.11]": {
+    "recorded-date": "13-03-2024, 08:56:48",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.10]": {
+    "recorded-date": "13-03-2024, 08:56:51",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.9]": {
+    "recorded-date": "13-03-2024, 08:56:54",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestPythonRuntimes::test_python_runtime_correct_versions[python3.8]": {
+    "recorded-date": "13-03-2024, 08:56:57",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_uncaught_exception_invoke[provided.al2023]": {
+    "recorded-date": "14-03-2024, 17:15:53",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<<code-sha-256>:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "function.handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "provided.al2023",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "error_result": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Error: some_error_msg",
+          "errorType": "errorString"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_uncaught_exception_invoke[provided.al2]": {
+    "recorded-date": "14-03-2024, 17:15:56",
+    "recorded-content": {
+      "create_function_result": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<<code-sha-256>:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "function.handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "provided.al2",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "error_result": {
+        "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
+        "Payload": {
+          "errorMessage": "Error: some_error_msg",
+          "errorType": "errorString"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_manual_endpoint_injection[provided.al2023]": {
+    "recorded-date": "14-03-2024, 17:19:05",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_runtimes.py::TestGoProvidedRuntimes::test_manual_endpoint_injection[provided.al2]": {
+    "recorded-date": "14-03-2024, 17:19:10",
     "recorded-content": {}
   }
 }

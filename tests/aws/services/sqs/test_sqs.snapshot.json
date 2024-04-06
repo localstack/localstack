@@ -2615,5 +2615,536 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs]": {
+    "recorded-date": "12-02-2024, 16:08:11",
+    "recorded-content": {
+      "inital-fifo-receive": {
+        "Messages": [
+          {
+            "Body": "Message 1",
+            "MD5OfBody": "68390233272823b7adf13a1db79b2cd7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "empty-fifo-receive": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "final-fifo-receive": {
+        "Messages": [
+          {
+            "Body": "Message 2",
+            "MD5OfBody": "88ef8f31ed540f1c4c03d5fdb06a7935",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs_json]": {
+    "recorded-date": "12-02-2024, 16:08:14",
+    "recorded-content": {
+      "inital-fifo-receive": {
+        "Messages": [
+          {
+            "Body": "Message 1",
+            "MD5OfBody": "68390233272823b7adf13a1db79b2cd7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "empty-fifo-receive": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "final-fifo-receive": {
+        "Messages": [
+          {
+            "Body": "Message 2",
+            "MD5OfBody": "88ef8f31ed540f1c4c03d5fdb06a7935",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_same_dedup_id_different_message_groups[sqs_json]": {
+    "recorded-date": "15-02-2024, 13:18:31",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test",
+            "MD5OfBody": "0cbc6611f5540bd0809a388dc95a615b",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_same_dedup_id_different_message_groups[sqs]": {
+    "recorded-date": "15-02-2024, 13:18:33",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test",
+            "MD5OfBody": "0cbc6611f5540bd0809a388dc95a615b",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_high_throughput_ordering[sqs_json]": {
+    "recorded-date": "19-02-2024, 13:05:25",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test1",
+            "MD5OfBody": "e1b849f9631ffc1829b2e31402373e3c",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "Messages": [
+          {
+            "Body": "Test2",
+            "MD5OfBody": "c454552d52d55d3ef56408742887362b",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_high_throughput_ordering[sqs]": {
+    "recorded-date": "19-02-2024, 13:05:27",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test1",
+            "MD5OfBody": "e1b849f9631ffc1829b2e31402373e3c",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "Messages": [
+          {
+            "Body": "Test2",
+            "MD5OfBody": "c454552d52d55d3ef56408742887362b",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs_json]": {
+    "recorded-date": "26-02-2024, 18:54:41",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test1",
+            "MD5OfBody": "e1b849f9631ffc1829b2e31402373e3c",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-to-high-throughput": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "messageGroup",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perMessageGroupId",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-high-throughput": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-high-throughput-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs]": {
+    "recorded-date": "26-02-2024, 18:54:48",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test1",
+            "MD5OfBody": "e1b849f9631ffc1829b2e31402373e3c",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-to-high-throughput": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "messageGroup",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perMessageGroupId",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-high-throughput": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-high-throughput-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs_json]": {
+    "recorded-date": "26-02-2024, 19:05:27",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test1",
+            "MD5OfBody": "e1b849f9631ffc1829b2e31402373e3c",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "Messages": [
+          {
+            "Body": "Test2",
+            "MD5OfBody": "c454552d52d55d3ef56408742887362b",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-to-regular-throughput": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-regular-throughput": {
+        "Messages": [
+          {
+            "Body": "Test3",
+            "MD5OfBody": "b3f66ec1535de7702c38e94408fa4a17",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs]": {
+    "recorded-date": "26-02-2024, 19:05:32",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test1",
+            "MD5OfBody": "e1b849f9631ffc1829b2e31402373e3c",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "Messages": [
+          {
+            "Body": "Test2",
+            "MD5OfBody": "c454552d52d55d3ef56408742887362b",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-to-regular-throughput": {
+        "Attributes": {
+          "ApproximateNumberOfMessages": "0",
+          "ApproximateNumberOfMessagesDelayed": "0",
+          "ApproximateNumberOfMessagesNotVisible": "0",
+          "ContentBasedDeduplication": "false",
+          "CreatedTimestamp": "timestamp",
+          "DeduplicationScope": "queue",
+          "DelaySeconds": "0",
+          "FifoQueue": "true",
+          "FifoThroughputLimit": "perQueue",
+          "LastModifiedTimestamp": "timestamp",
+          "MaximumMessageSize": "262144",
+          "MessageRetentionPeriod": "345600",
+          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "ReceiveMessageWaitTimeSeconds": "0",
+          "SqsManagedSseEnabled": "true",
+          "VisibilityTimeout": "30"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-regular-throughput": {
+        "Messages": [
+          {
+            "Body": "Test3",
+            "MD5OfBody": "b3f66ec1535de7702c38e94408fa4a17",
+            "MessageId": "<uuid:3>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_message_attributes": {
+    "recorded-date": "08-03-2024, 23:14:22",
+    "recorded-content": {
+      "dlq-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+      "sourcen-arn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+      "rec-pre-dlq": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
+          "Body": "message-1",
+          "Attributes": {
+            "ApproximateFirstReceiveTimestamp": "timestamp",
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "timestamp",
+            "AWSTraceHeader": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1"
+          },
+          "MD5OfMessageAttributes": "adb59cd4678ea5a855436b949cd07ab6",
+          "MessageAttributes": {
+            "MyAttribute": {
+              "StringValue": "foobar",
+              "DataType": "String"
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "95ef155b66299d14edf7ed57c468c13b",
+          "Body": "message-2",
+          "Attributes": {
+            "ApproximateFirstReceiveTimestamp": "timestamp",
+            "ApproximateReceiveCount": "1",
+            "SentTimestamp": "timestamp"
+          }
+        }
+      ],
+      "dlq-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:3>",
+          "MD5OfBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
+          "Body": "message-1",
+          "Attributes": {
+            "ApproximateFirstReceiveTimestamp": "timestamp",
+            "ApproximateReceiveCount": "2",
+            "SentTimestamp": "timestamp",
+            "AWSTraceHeader": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1",
+            "DeadLetterQueueSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          },
+          "MD5OfMessageAttributes": "adb59cd4678ea5a855436b949cd07ab6",
+          "MessageAttributes": {
+            "MyAttribute": {
+              "StringValue": "foobar",
+              "DataType": "String"
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:4>",
+          "MD5OfBody": "95ef155b66299d14edf7ed57c468c13b",
+          "Body": "message-2",
+          "Attributes": {
+            "ApproximateFirstReceiveTimestamp": "timestamp",
+            "ApproximateReceiveCount": "2",
+            "SentTimestamp": "timestamp",
+            "DeadLetterQueueSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+          }
+        }
+      ]
+    }
   }
 }
