@@ -392,6 +392,15 @@ class PermissionModels(str):
     SELF_MANAGED = "SELF_MANAGED"
 
 
+class PolicyAction(str):
+    Delete = "Delete"
+    Retain = "Retain"
+    Snapshot = "Snapshot"
+    ReplaceAndDelete = "ReplaceAndDelete"
+    ReplaceAndRetain = "ReplaceAndRetain"
+    ReplaceAndSnapshot = "ReplaceAndSnapshot"
+
+
 class ProvisioningType(str):
     NON_PROVISIONABLE = "NON_PROVISIONABLE"
     IMMUTABLE = "IMMUTABLE"
@@ -923,6 +932,7 @@ Scope = List[ResourceAttribute]
 
 
 class ResourceChange(TypedDict, total=False):
+    PolicyAction: Optional[PolicyAction]
     Action: Optional[ChangeAction]
     LogicalResourceId: Optional[LogicalResourceId]
     PhysicalResourceId: Optional[PhysicalResourceId]

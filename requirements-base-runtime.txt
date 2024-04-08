@@ -14,9 +14,9 @@ blinker==1.7.0
     # via
     #   flask
     #   quart
-boto3==1.34.74
+boto3==1.34.79
     # via localstack-core (pyproject.toml)
-botocore==1.34.74
+botocore==1.34.79
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
