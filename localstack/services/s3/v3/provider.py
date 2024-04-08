@@ -101,6 +101,7 @@ from localstack.aws.api.s3 import (
     InvalidArgument,
     InvalidBucketName,
     InvalidDigest,
+    InvalidLocationConstraint,
     InvalidObjectState,
     InvalidPartNumber,
     InvalidPartOrder,
@@ -211,7 +212,6 @@ from localstack.services.s3.constants import (
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
     InvalidBucketState,
-    InvalidLocationConstraint,
     InvalidRequest,
     MalformedPolicy,
     MalformedXML,
@@ -421,12 +421,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if not is_bucket_name_valid(bucket_name):
             raise InvalidBucketName("The specified bucket is not valid.", BucketName=bucket_name)
-        if create_bucket_configuration := request.get("CreateBucketConfiguration"):
+
+        # the XML parser returns an empty dict if the body contains the following:
+        # <CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/" />
+        # but it also returns an empty dict if the body is fully empty. We need to differentiate the 2 cases by checking
+        # if the body is empty or not
+        if context.request.data and (
+            (create_bucket_configuration := request.get("CreateBucketConfiguration")) is not None
+        ):
             if not (bucket_region := create_bucket_configuration.get("LocationConstraint")):
                 raise MalformedXML()
 
             if bucket_region == "us-east-1":
-                raise InvalidLocationConstraint("The specified location-constraint is not valid")
+                raise InvalidLocationConstraint(
+                    "The specified location-constraint is not valid",
+                    LocationConstraint=bucket_region,
+                )
         else:
             bucket_region = "us-east-1"
             if context.region != bucket_region:

@@ -1,11 +1,6 @@
 from localstack.aws.api import CommonServiceException
 
 
-class InvalidLocationConstraint(CommonServiceException):
-    def __init__(self, message=None):
-        super().__init__("InvalidLocationConstraint", status_code=400, message=message)
-
-
 class MalformedXML(CommonServiceException):
     def __init__(self, message=None):
         if not message:

@@ -925,6 +925,13 @@ class KeyTooLongError(ServiceException):
     Size: Optional[KeyLength]
 
 
+class InvalidLocationConstraint(ServiceException):
+    code: str = "InvalidLocationConstraint"
+    sender_fault: bool = False
+    status_code: int = 400
+    LocationConstraint: Optional[BucketRegion]
+
+
 AbortDate = datetime
 
 
