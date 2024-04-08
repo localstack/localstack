@@ -239,6 +239,202 @@ def test_put_events_with_target_lambda(create_lambda_function, cleanups, aws_cli
 
 @markers.aws.validated
 @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+def test_put_events_with_target_lambda_list_entry(
+    create_lambda_function, cleanups, aws_client, clean_up, snapshot
+):
+    rule_name = f"rule-{short_uid()}"
+    function_name = f"lambda-func-{short_uid()}"
+    target_id = f"target-{short_uid()}"
+    bus_name = f"bus-{short_uid()}"
+
+    # clean up
+    cleanups.append(lambda: clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id))
+
+    create_lambda_response = create_lambda_function(
+        handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        func_name=function_name,
+        runtime=Runtime.python3_12,
+    )
+
+    func_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
+
+    event_pattern = {"detail": {"payload": {"automations": {"id": [{"exists": True}]}}}}
+
+    aws_client.events.create_event_bus(Name=bus_name)
+    put_rule_response = aws_client.events.put_rule(
+        Name=rule_name,
+        EventBusName=bus_name,
+        EventPattern=json.dumps(event_pattern),
+    )
+    aws_client.lambda_.add_permission(
+        FunctionName=function_name,
+        StatementId=f"{rule_name}-Event",
+        Action="lambda:InvokeFunction",
+        Principal="events.amazonaws.com",
+        SourceArn=put_rule_response["RuleArn"],
+    )
+    put_target_response = aws_client.events.put_targets(
+        Rule=rule_name,
+        EventBusName=bus_name,
+        Targets=[{"Id": target_id, "Arn": func_arn}],
+    )
+
+    assert "FailedEntryCount" in put_target_response
+    assert "FailedEntries" in put_target_response
+    assert put_target_response["FailedEntryCount"] == 0
+    assert put_target_response["FailedEntries"] == []
+
+    event_detail = {
+        "payload": {
+            "userId": 10,
+            "businessId": 3,
+            "channelId": 6,
+            "card": {"foo": "bar"},
+            "targetEntity": True,
+            "entityAuditTrailEvent": {"foo": "bar"},
+            "automations": [
+                {
+                    "id": "123",
+                    "actions": [
+                        {
+                            "id": "321",
+                            "type": "SEND_NOTIFICATION",
+                            "settings": {
+                                "message": "",
+                                "recipientEmails": [],
+                                "subject": "",
+                                "type": "SEND_NOTIFICATION",
+                            },
+                        }
+                    ],
+                }
+            ],
+        }
+    }
+    aws_client.events.put_events(
+        Entries=[
+            {
+                "EventBusName": bus_name,
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(event_detail),
+            }
+        ]
+    )
+
+    # Get lambda's log events
+    events = retry(
+        check_expected_lambda_log_events_length,
+        retries=15,
+        sleep=1,
+        function_name=function_name,
+        expected_length=1,
+        logs_client=aws_client.logs,
+    )
+    snapshot.match("events", events)
+
+
+@markers.aws.validated
+@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+def test_put_events_with_target_lambda_list_entries_partial_match(
+    create_lambda_function, cleanups, aws_client, clean_up, snapshot
+):
+    rule_name = f"rule-{short_uid()}"
+    function_name = f"lambda-func-{short_uid()}"
+    target_id = f"target-{short_uid()}"
+    bus_name = f"bus-{short_uid()}"
+
+    # clean up
+    cleanups.append(lambda: clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id))
+
+    rs = create_lambda_function(
+        handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        func_name=function_name,
+        runtime=Runtime.python3_12,
+    )
+
+    func_arn = rs["CreateFunctionResponse"]["FunctionArn"]
+
+    event_pattern = {"detail": {"payload": {"automations": {"id": [{"exists": True}]}}}}
+
+    aws_client.events.create_event_bus(Name=bus_name)
+    rs = aws_client.events.put_rule(
+        Name=rule_name,
+        EventBusName=bus_name,
+        EventPattern=json.dumps(event_pattern),
+    )
+    aws_client.lambda_.add_permission(
+        FunctionName=function_name,
+        StatementId=f"{rule_name}-Event",
+        Action="lambda:InvokeFunction",
+        Principal="events.amazonaws.com",
+        SourceArn=rs["RuleArn"],
+    )
+    rs = aws_client.events.put_targets(
+        Rule=rule_name,
+        EventBusName=bus_name,
+        Targets=[{"Id": target_id, "Arn": func_arn}],
+    )
+
+    assert "FailedEntryCount" in rs
+    assert "FailedEntries" in rs
+    assert rs["FailedEntryCount"] == 0
+    assert rs["FailedEntries"] == []
+
+    event_detail_partial_match = {
+        "payload": {
+            "userId": 10,
+            "businessId": 3,
+            "channelId": 6,
+            "card": {"foo": "bar"},
+            "targetEntity": True,
+            "entityAuditTrailEvent": {"foo": "bar"},
+            "automations": [
+                {"foo": "bar"},
+                {
+                    "id": "123",
+                    "actions": [
+                        {
+                            "id": "321",
+                            "type": "SEND_NOTIFICATION",
+                            "settings": {
+                                "message": "",
+                                "recipientEmails": [],
+                                "subject": "",
+                                "type": "SEND_NOTIFICATION",
+                            },
+                        }
+                    ],
+                },
+                {"bar": "foo"},
+            ],
+        }
+    }
+    aws_client.events.put_events(
+        Entries=[
+            {
+                "EventBusName": bus_name,
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(event_detail_partial_match),
+            },
+        ]
+    )
+
+    # Get lambda's log events
+    events = retry(
+        check_expected_lambda_log_events_length,
+        retries=15,
+        sleep=1,
+        function_name=function_name,
+        expected_length=1,
+        logs_client=aws_client.logs,
+    )
+    snapshot.match("events", events)
+
+
+@markers.aws.validated
+@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_should_ignore_schedules_for_put_event(create_lambda_function, cleanups, aws_client):
     """Regression test for https://github.com/localstack/localstack/issues/7847"""
     fn_name = f"test-event-fn-{short_uid()}"
