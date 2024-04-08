@@ -44,6 +44,9 @@ if config.EVENT_RULE_ENGINE == "java":
         """
 
         try:
+            # "Static rule matching" is the easiest implementation to get started.
+            # "Matching with a machine" using a compiled machine is faster and enables rule validation before matching.
+            # https://github.com/aws/event-ruler?tab=readme-ov-file#matching-with-a-machine
             return Ruler.matchesRule(event, rule)
         except java.lang.Exception as e:
             reason = e.args[0]
