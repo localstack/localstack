@@ -1154,3 +1154,12 @@ class TestEventRule:
             Limit=int(count / 2) + 2, NextToken=response["NextToken"]
         )
         snapshot.match("list-rules-limit-next-token", response)
+
+    @markers.aws.validated
+    def test_describe_nonexistent_rule(self, aws_client, snapshot):
+        rule_name = f"this-rule-does-not-exist-1234567890-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+
+        with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as e:
+            aws_client.events.describe_rule(Name=rule_name)
+        snapshot.match("describe-not-existing-rule", e)

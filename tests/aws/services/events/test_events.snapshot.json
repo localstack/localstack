@@ -934,5 +934,11 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_describe_nonexistent_rule": {
+    "recorded-date": "08-04-2024, 17:32:17",
+    "recorded-content": {
+      "describe-not-existing-rule": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeRule operation: Rule <rule-name> does not exist on EventBus default.') tblen=3>"
+    }
   }
 }
