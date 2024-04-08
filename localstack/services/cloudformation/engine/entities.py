@@ -89,7 +89,7 @@ class Stack:
         for resource_id, resource in self.template_resources.items():
             resource["LogicalResourceId"] = self.template_original["Resources"][resource_id][
                 "LogicalResourceId"
-            ] = (resource.get("LogicalResourceId") or resource_id)
+            ] = resource.get("LogicalResourceId") or resource_id
         # initialize stack template attributes
         stack_id = self.metadata.get("StackId") or arns.cloudformation_stack_arn(
             self.stack_name,

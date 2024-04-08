@@ -14,7 +14,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::aws-sdk:sfn:startExecution",
       "Parameters": {
-        "StateMachineArn": "__tbd__",
+        "StateMachineArn": "__tbd__",  // Field to be replaced dynamically.
         "Input.$": "$.Input"
       },
       "End": true

@@ -158,6 +158,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
     ReaderConfig,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_props import (
+    ReaderConfigProps,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
@@ -600,7 +603,7 @@ class Preprocessor(ASLParserVisitor):
                 typ=States,
                 raise_on_missing=ValueError(f"Expected a States declaration at '{ctx.getText()}'."),
             ),
-            processor_config=props.get(typ=ProcessorConfig),
+            processor_config=props.get(typ=ProcessorConfig) or ProcessorConfig(),
         )
 
     def visitIterator_decl(self, ctx: ASLParser.Iterator_declContext) -> IteratorDecl:
@@ -620,6 +623,7 @@ class Preprocessor(ASLParserVisitor):
                 typ=States,
                 raise_on_missing=ValueError(f"Expected a States declaration at '{ctx.getText()}'."),
             ),
+            processor_config=props.get(typ=ProcessorConfig) or ProcessorConfig(),
         )
 
     def visitItem_selector_decl(self, ctx: ASLParser.Item_selector_declContext) -> ItemSelector:
@@ -642,7 +646,7 @@ class Preprocessor(ASLParserVisitor):
         )
 
     def visitReader_config_decl(self, ctx: ASLParser.Reader_config_declContext) -> ReaderConfig:
-        props = TypedProps()
+        props = ReaderConfigProps()
         for child in ctx.children:
             cmp = self.visit(child)
             props.add(cmp)
@@ -653,7 +657,7 @@ class Preprocessor(ASLParserVisitor):
                     f"Expected a InputType declaration at '{ctx.getText()}'."
                 ),
             ),
-            max_items=props.get(typ=MaxItemsDecl),
+            max_items_decl=props.get(typ=MaxItemsDecl),
             csv_header_location=props.get(CSVHeaderLocation),
             csv_headers=props.get(CSVHeaders),
         )
@@ -875,3 +879,6 @@ class Preprocessor(ASLParserVisitor):
             version=props.get(typ=Version),
         )
         return program
+
+    def visitState_machine(self, ctx: ASLParser.State_machineContext) -> Program:
+        return self.visit(ctx.program_decl())

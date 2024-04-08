@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AWSProjectType>Lambda</AWSProjectType>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- https://www.nuget.org/packages/Amazon.Lambda.Core -->
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
+    <!-- https://www.nuget.org/packages/Amazon.Lambda.Serialization.SystemTextJson -->
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.0" />
+  </ItemGroup>
+</Project>

@@ -1,5 +1,6 @@
 """Tests for Lambda behavior and implicit functionality.
 Everything related to API operations goes into test_lambda_api.py instead."""
+
 import base64
 import json
 import logging
@@ -36,7 +37,7 @@ from localstack.utils.aws import arns
 from localstack.utils.aws.arns import lambda_function_name
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
-from localstack.utils.platform import Arch, get_arch, is_arm_compatible, standardized_arch
+from localstack.utils.platform import Arch, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
@@ -48,6 +49,9 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
 TEST_LAMBDA_PYTHON_ECHO_JSON_BODY = os.path.join(THIS_FOLDER, "functions/lambda_echo_json_body.py")
+TEST_LAMBDA_PYTHON_ECHO_STATUS_CODE = os.path.join(
+    THIS_FOLDER, "functions/lambda_echo_status_code.py"
+)
 TEST_LAMBDA_PYTHON_REQUEST_ID = os.path.join(THIS_FOLDER, "functions/lambda_request_id.py")
 TEST_LAMBDA_PYTHON_ECHO_VERSION_ENV = os.path.join(
     THIS_FOLDER, "functions/lambda_echo_version_env.py"
@@ -74,14 +78,8 @@ TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_int
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
 TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
 TEST_LAMBDA_NODEJS_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.js")
-TEST_LAMBDA_HELLO_WORLD = os.path.join(THIS_FOLDER, "functions/lambda_hello_world.py")
 TEST_LAMBDA_NODEJS_APIGW_INTEGRATION = os.path.join(THIS_FOLDER, "functions/apigw_integration.js")
 TEST_LAMBDA_NODEJS_APIGW_502 = os.path.join(THIS_FOLDER, "functions/apigw_502.js")
-TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions/golang/handler.zip")
-TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions/lambda_integration.rb")
-TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "functions/dotnetcore31/dotnetcore31.zip")
-TEST_LAMBDA_DOTNET6 = os.path.join(THIS_FOLDER, "functions/dotnet6/dotnet6.zip")
-TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions/custom-runtime")
 TEST_LAMBDA_HTTP_RUST = os.path.join(THIS_FOLDER, "functions/rust-lambda/function.zip")
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
     THIS_FOLDER, "functions/java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
@@ -117,17 +115,9 @@ TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
     THIS_FOLDER, "functions/lambda_multiple_handlers.py"
 )
 
-TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
-TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
-
-# TODO: arch conditional should only apply in CI because it prevents test execution in multi-arch environments
-PYTHON_TEST_RUNTIMES = (
-    RUNTIMES_AGGREGATED["python"] if (get_arch() != Arch.arm64) else [Runtime.python3_11]
-)
-NODE_TEST_RUNTIMES = (
-    RUNTIMES_AGGREGATED["nodejs"] if (get_arch() != Arch.arm64) else [Runtime.nodejs16_x]
-)
-JAVA_TEST_RUNTIMES = RUNTIMES_AGGREGATED["java"] if (get_arch() != Arch.arm64) else [Runtime.java11]
+PYTHON_TEST_RUNTIMES = RUNTIMES_AGGREGATED["python"]
+NODE_TEST_RUNTIMES = RUNTIMES_AGGREGATED["nodejs"]
+JAVA_TEST_RUNTIMES = RUNTIMES_AGGREGATED["java"]
 
 TEST_LAMBDA_LIBS = [
     "requests",
@@ -253,7 +243,7 @@ class TestLambdaBaseFeatures:
                 .paginate(logGroupName=f"/aws/lambda/{function_name}")
                 .build_full_result()
             )
-            assert any(["generating bytes" in e["message"] for e in log_events["events"]])
+            assert any("generating bytes" in e["message"] for e in log_events["events"])
 
         retry(_check_print_in_logs, retries=10)
 
@@ -440,9 +430,8 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_uid",
         ],
     )
-    # TODO: fix arch compatibility detection for supported emulations
-    @pytest.mark.skipif(get_arch() == Arch.arm64, reason="Cannot inspect x86 runtime on arm")
     @markers.aws.validated
+    @markers.only_on_amd64
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_x86_{short_uid()}"
         create_lambda_function(
@@ -456,10 +445,6 @@ class TestLambdaBehavior:
         invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_x86_introspection", invoke_result)
 
-    @pytest.mark.skipif(
-        not is_arm_compatible() and not is_aws_cloud(),
-        reason="ARM architecture not supported on this host",
-    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # requires creating a new user `slicer` and chown /var/task
@@ -469,6 +454,7 @@ class TestLambdaBehavior:
         ],
     )
     @markers.aws.validated
+    @markers.only_on_arm64
     def test_runtime_introspection_arm(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_arm_{short_uid()}"
         create_lambda_function(
@@ -526,7 +512,6 @@ class TestLambdaBehavior:
         lambda_arch = standardized_arch(payload.get("platform_machine"))
         assert lambda_arch == native_arch
 
-    @pytest.mark.skip  # TODO remove once is_arch_compatible checks work properly
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..LoggingConfig",
@@ -535,6 +520,9 @@ class TestLambdaBehavior:
         ]
     )
     @markers.aws.validated
+    # Special case requiring both architectures
+    @markers.only_on_amd64
+    @markers.only_on_arm64
     def test_mixed_architecture(self, create_lambda_function, aws_client, snapshot):
         """Test emulation of a lambda function changing architectures.
         Limitation: only works on hosts that support both ARM and AMD64 architectures.
@@ -638,9 +626,9 @@ class TestLambdaBehavior:
                 logGroupName=log_group_name, logStreamName=log_stream_name
             )["events"]
 
-            assert any(["starting wait" in e["message"] for e in log_events])
+            assert any("starting wait" in e["message"] for e in log_events)
             # TODO: this part is a bit flaky, at least locally with old provider
-            assert not any(["done waiting" in e["message"] for e in log_events])
+            assert not any("done waiting" in e["message"] for e in log_events)
 
         retry(assert_events, retries=15)
 
@@ -673,8 +661,8 @@ class TestLambdaBehavior:
             log_events = aws_client.logs.get_log_events(
                 logGroupName=log_group_name, logStreamName=log_stream_name
             )["events"]
-            return any(["starting wait" in e["message"] for e in log_events]) and any(
-                ["done waiting" in e["message"] for e in log_events]
+            return any("starting wait" in e["message"] for e in log_events) and any(
+                "done waiting" in e["message"] for e in log_events
             )
 
         wait_until(_assert_log_output, strategy="linear")
@@ -742,9 +730,9 @@ class TestLambdaBehavior:
                 logGroupName=log_group_name, logStreamName=log_stream_name
             )["events"]
 
-            assert any(["starting wait" in e["message"] for e in log_events])
+            assert any("starting wait" in e["message"] for e in log_events)
             # TODO: this part is a bit flaky, at least locally with old provider
-            assert not any(["done waiting" in e["message"] for e in log_events])
+            assert not any("done waiting" in e["message"] for e in log_events)
 
         retry(assert_events, retries=15)
 
@@ -782,6 +770,7 @@ class TestLambdaBehavior:
             "$..Payload.environment.LOCALSTACK_USER",
             "$..Payload.environment.LOCALSTACK_POST_INVOKE_WAIT_MS",
             "$..Payload.environment.LOCALSTACK_MAX_PAYLOAD_SIZE",
+            "$..Payload.environment.LOCALSTACK_CHMOD_PATHS",
             # internal AWS lambda functionality
             "$..Payload.environment._AWS_XRAY_DAEMON_ADDRESS",
             "$..Payload.environment._LAMBDA_CONSOLE_SOCKET",
@@ -1138,6 +1127,66 @@ class TestLambdaURL:
                 FunctionName=function_name, AuthType="NONE", InvokeMode="UNKNOWN"
             )
         snapshot.match("invoke_function_invalid_invoke_type", e.value.response)
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
+            "$..headers.x-forwarded-for",
+            "$..headers.x-amzn-trace-id",
+            "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
+        ]
+    )
+    @markers.aws.validated
+    def test_lambda_url_echo_http_fixture_default(
+        self, create_echo_http_server, snapshot, aws_client
+    ):
+        key_value_transform = [
+            "domain",
+            "origin",
+            "x-amzn-tls-cipher-suite",
+            "x-amzn-tls-version",
+            "x-amzn-trace-id",
+            "x-forwarded-for",
+            "x-forwarded-port",
+            "x-forwarded-proto",
+        ]
+        for key in key_value_transform:
+            snapshot.add_transformer(snapshot.transform.key_value(key))
+        echo_url = create_echo_http_server()
+        response = requests.post(
+            url=echo_url + "/path/1?q=query",
+            headers={
+                "content-type": "application/json",
+                "ExTrA-HeadErs": "With WeiRd CapS",
+                "user-agent": "test/echo",
+            },
+            json={"foo": "bar"},
+        )
+        snapshot.match("url_response", response.json())
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..content.headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
+            "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
+        ]
+    )
+    @markers.aws.validated
+    def test_lambda_url_echo_http_fixture_trim_x_headers(
+        self, create_echo_http_server, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("domain"))
+        snapshot.add_transformer(snapshot.transform.key_value("origin"))
+        echo_url = create_echo_http_server(trim_x_headers=True)
+        response = requests.post(
+            url=echo_url + "/path/1?q=query",
+            headers={
+                "content-type": "application/json",
+                "ExTrA-HeadErs": "With WeiRd CapS",
+                "user-agent": "test/echo",
+            },
+            json={"foo": "bar"},
+        )
+        snapshot.match("url_response", response.json())
 
 
 @pytest.mark.skipif(not is_aws_cloud(), reason="Not yet implemented")
@@ -2717,7 +2766,7 @@ class TestRequestIdHandling:
 
         def fetch_logs():
             log_events_result = aws_client.logs.filter_log_events(logGroupName=log_group_name)
-            assert any(["REPORT" in e["message"] for e in log_events_result["events"]])
+            assert any("REPORT" in e["message"] for e in log_events_result["events"])
             return log_events_result
 
         log_events = retry(fetch_logs, retries=10, sleep=2)
@@ -2779,7 +2828,7 @@ class TestRequestIdHandling:
 
         def fetch_logs():
             log_events_result = aws_client.logs.filter_log_events(logGroupName=log_group_name)
-            assert any(["REPORT" in e["message"] for e in log_events_result["events"]])
+            assert any("REPORT" in e["message"] for e in log_events_result["events"])
             return log_events_result
 
         log_events = retry(fetch_logs, retries=10, sleep=2)
@@ -2828,7 +2877,7 @@ class TestRequestIdHandling:
         log_events = aws_client.logs.filter_log_events(logGroupName=log_group_name)
         report_messages = [e for e in log_events["events"] if "REPORT" in e["message"]]
         assert len(report_messages) == 2
-        assert all([request_id in rm["message"] for rm in report_messages])
+        assert all(request_id in rm["message"] for rm in report_messages)
         end_messages = [
             e["message"].rstrip() for e in log_events["events"] if "END" in e["message"]
         ]

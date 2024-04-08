@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/events/test_events_inputs.py::TestEventsInputTransformers::test_put_events_with_input_transformation_to_sqs": {
+    "last_validated_date": "2024-03-26T15:48:35+00:00"
+  }
+}

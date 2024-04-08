@@ -1,4 +1,4 @@
-""" A set of common handlers to build an AWS server application."""
+"""A set of common handlers to build an AWS server application."""
 
 from .. import chain
 from . import (

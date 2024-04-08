@@ -1,4 +1,4 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLIntrinsicParser.g4 by ANTLR 4.13.1
+# Generated from ASLIntrinsicParser.g4 by ANTLR 4.13.1
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -10,20 +10,21 @@ else:
 
 def serializedATN():
     return [
-        4,1,33,44,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,1,0,1,0,1,1,1,
-        1,1,1,1,1,1,1,1,2,1,2,1,3,1,3,1,3,1,3,5,3,24,8,3,10,3,12,3,27,9,
-        3,1,3,1,3,1,3,1,3,3,3,33,8,3,1,4,1,4,1,4,1,4,1,4,1,4,1,4,3,4,42,
-        8,4,1,4,0,0,5,0,2,4,6,8,0,2,1,0,11,28,1,0,8,9,46,0,10,1,0,0,0,2,
-        12,1,0,0,0,4,17,1,0,0,0,6,32,1,0,0,0,8,41,1,0,0,0,10,11,3,2,1,0,
-        11,1,1,0,0,0,12,13,5,10,0,0,13,14,5,7,0,0,14,15,3,4,2,0,15,16,3,
-        6,3,0,16,3,1,0,0,0,17,18,7,0,0,0,18,5,1,0,0,0,19,20,5,4,0,0,20,25,
-        3,8,4,0,21,22,5,6,0,0,22,24,3,8,4,0,23,21,1,0,0,0,24,27,1,0,0,0,
-        25,23,1,0,0,0,25,26,1,0,0,0,26,28,1,0,0,0,27,25,1,0,0,0,28,29,5,
-        5,0,0,29,33,1,0,0,0,30,31,5,4,0,0,31,33,5,5,0,0,32,19,1,0,0,0,32,
-        30,1,0,0,0,33,7,1,0,0,0,34,42,5,29,0,0,35,42,5,30,0,0,36,42,5,31,
-        0,0,37,42,7,1,0,0,38,42,5,1,0,0,39,42,5,2,0,0,40,42,3,0,0,0,41,34,
-        1,0,0,0,41,35,1,0,0,0,41,36,1,0,0,0,41,37,1,0,0,0,41,38,1,0,0,0,
-        41,39,1,0,0,0,41,40,1,0,0,0,42,9,1,0,0,0,3,25,32,41
+        4,1,33,45,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,1,0,1,0,1,0,1,
+        1,1,1,1,1,1,1,1,1,1,2,1,2,1,3,1,3,1,3,1,3,5,3,25,8,3,10,3,12,3,28,
+        9,3,1,3,1,3,1,3,1,3,3,3,34,8,3,1,4,1,4,1,4,1,4,1,4,1,4,1,4,3,4,43,
+        8,4,1,4,0,0,5,0,2,4,6,8,0,2,1,0,11,28,1,0,8,9,47,0,10,1,0,0,0,2,
+        13,1,0,0,0,4,18,1,0,0,0,6,33,1,0,0,0,8,42,1,0,0,0,10,11,3,2,1,0,
+        11,12,5,0,0,1,12,1,1,0,0,0,13,14,5,10,0,0,14,15,5,7,0,0,15,16,3,
+        4,2,0,16,17,3,6,3,0,17,3,1,0,0,0,18,19,7,0,0,0,19,5,1,0,0,0,20,21,
+        5,4,0,0,21,26,3,8,4,0,22,23,5,6,0,0,23,25,3,8,4,0,24,22,1,0,0,0,
+        25,28,1,0,0,0,26,24,1,0,0,0,26,27,1,0,0,0,27,29,1,0,0,0,28,26,1,
+        0,0,0,29,30,5,5,0,0,30,34,1,0,0,0,31,32,5,4,0,0,32,34,5,5,0,0,33,
+        20,1,0,0,0,33,31,1,0,0,0,34,7,1,0,0,0,35,43,5,29,0,0,36,43,5,30,
+        0,0,37,43,5,31,0,0,38,43,7,1,0,0,39,43,5,1,0,0,40,43,5,2,0,0,41,
+        43,3,2,1,0,42,35,1,0,0,0,42,36,1,0,0,0,42,37,1,0,0,0,42,38,1,0,0,
+        0,42,39,1,0,0,0,42,40,1,0,0,0,42,41,1,0,0,0,43,9,1,0,0,0,3,26,33,
+        42
     ]
 
 class ASLIntrinsicParser ( Parser ):
@@ -117,6 +118,9 @@ class ASLIntrinsicParser ( Parser ):
             return self.getTypedRuleContext(ASLIntrinsicParser.States_func_declContext,0)
 
 
+        def EOF(self):
+            return self.getToken(ASLIntrinsicParser.EOF, 0)
+
         def getRuleIndex(self):
             return ASLIntrinsicParser.RULE_func_decl
 
@@ -145,6 +149,8 @@ class ASLIntrinsicParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 10
             self.states_func_decl()
+            self.state = 11
+            self.match(ASLIntrinsicParser.EOF)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -201,13 +207,13 @@ class ASLIntrinsicParser ( Parser ):
         self.enterRule(localctx, 2, self.RULE_states_func_decl)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 12
-            self.match(ASLIntrinsicParser.States)
             self.state = 13
-            self.match(ASLIntrinsicParser.DOT)
+            self.match(ASLIntrinsicParser.States)
             self.state = 14
-            self.state_fun_name()
+            self.match(ASLIntrinsicParser.DOT)
             self.state = 15
+            self.state_fun_name()
+            self.state = 16
             self.func_arg_list()
         except RecognitionException as re:
             localctx.exception = re
@@ -306,7 +312,7 @@ class ASLIntrinsicParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 17
+            self.state = 18
             _la = self._input.LA(1)
             if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 536868864) != 0)):
                 self._errHandler.recoverInline(self)
@@ -374,36 +380,36 @@ class ASLIntrinsicParser ( Parser ):
         self.enterRule(localctx, 6, self.RULE_func_arg_list)
         self._la = 0 # Token type
         try:
-            self.state = 32
+            self.state = 33
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,1,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 19
-                self.match(ASLIntrinsicParser.LPAREN)
                 self.state = 20
+                self.match(ASLIntrinsicParser.LPAREN)
+                self.state = 21
                 self.func_arg()
-                self.state = 25
+                self.state = 26
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 while _la==6:
-                    self.state = 21
-                    self.match(ASLIntrinsicParser.COMMA)
                     self.state = 22
+                    self.match(ASLIntrinsicParser.COMMA)
+                    self.state = 23
                     self.func_arg()
-                    self.state = 27
+                    self.state = 28
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-                self.state = 28
+                self.state = 29
                 self.match(ASLIntrinsicParser.RPAREN)
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 30
-                self.match(ASLIntrinsicParser.LPAREN)
                 self.state = 31
+                self.match(ASLIntrinsicParser.LPAREN)
+                self.state = 32
                 self.match(ASLIntrinsicParser.RPAREN)
                 pass
 
@@ -488,8 +494,8 @@ class ASLIntrinsicParser ( Parser ):
             super().__init__(parser)
             self.copyFrom(ctx)
 
-        def func_decl(self):
-            return self.getTypedRuleContext(ASLIntrinsicParser.Func_declContext,0)
+        def states_func_decl(self):
+            return self.getTypedRuleContext(ASLIntrinsicParser.States_func_declContext,0)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -612,31 +618,31 @@ class ASLIntrinsicParser ( Parser ):
         self.enterRule(localctx, 8, self.RULE_func_arg)
         self._la = 0 # Token type
         try:
-            self.state = 41
+            self.state = 42
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [29]:
                 localctx = ASLIntrinsicParser.Func_arg_stringContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 34
+                self.state = 35
                 self.match(ASLIntrinsicParser.STRING)
                 pass
             elif token in [30]:
                 localctx = ASLIntrinsicParser.Func_arg_intContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 35
+                self.state = 36
                 self.match(ASLIntrinsicParser.INT)
                 pass
             elif token in [31]:
                 localctx = ASLIntrinsicParser.Func_arg_floatContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 36
+                self.state = 37
                 self.match(ASLIntrinsicParser.NUMBER)
                 pass
             elif token in [8, 9]:
                 localctx = ASLIntrinsicParser.Func_arg_boolContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
-                self.state = 37
+                self.state = 38
                 _la = self._input.LA(1)
                 if not(_la==8 or _la==9):
                     self._errHandler.recoverInline(self)
@@ -647,20 +653,20 @@ class ASLIntrinsicParser ( Parser ):
             elif token in [1]:
                 localctx = ASLIntrinsicParser.Func_arg_context_pathContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
-                self.state = 38
+                self.state = 39
                 self.match(ASLIntrinsicParser.CONTEXT_PATH_STRING)
                 pass
             elif token in [2]:
                 localctx = ASLIntrinsicParser.Func_arg_json_pathContext(self, localctx)
                 self.enterOuterAlt(localctx, 6)
-                self.state = 39
+                self.state = 40
                 self.match(ASLIntrinsicParser.JSON_PATH_STRING)
                 pass
             elif token in [10]:
                 localctx = ASLIntrinsicParser.Func_arg_func_declContext(self, localctx)
                 self.enterOuterAlt(localctx, 7)
-                self.state = 40
-                self.func_decl()
+                self.state = 41
+                self.states_func_decl()
                 pass
             else:
                 raise NoViableAltException(self)

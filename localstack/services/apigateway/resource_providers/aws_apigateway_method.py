@@ -111,6 +111,7 @@ class ApiGatewayMethodProvider(ResourceProvider[ApiGatewayMethodProperties]):
             "httpMethod",
             "apiKeyRequired",
             "authorizationType",
+            "authorizationScopes",
             "authorizerId",
             "requestParameters",
             "requestModels",

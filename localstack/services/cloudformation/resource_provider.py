@@ -11,12 +11,10 @@ from logging import Logger
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
 
 import botocore
-from botocore.exceptions import UnknownServiceError
 from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
-from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
     convert_data_types,
@@ -26,7 +24,7 @@ from localstack.services.cloudformation.deployment_utils import (
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
-from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE, GenericBaseModel
+from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE
 
 PRO_RESOURCE_PROVIDERS = False
 try:
@@ -362,217 +360,6 @@ def resolve_resource_parameters(
     return params
 
 
-LEGACY_ACTION_MAP = {
-    "Add": "create",
-    "Remove": "delete",
-    # TODO: modify
-}
-
-
-class LegacyResourceProvider(ResourceProvider):
-    """
-    Adapter around a legacy base model to conform to the new API
-    """
-
-    def __init__(
-        self, resource_type: str, resource_provider_cls: Type[GenericBaseModel], resources: dict
-    ):
-        super().__init__()
-
-        self.resource_type = resource_type
-        self.resource_provider_cls = resource_provider_cls
-        self.all_resources = resources
-
-    def create(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        return self.create_or_delete(request)
-
-    def update(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        physical_resource_id = self.all_resources[request.logical_resource_id]["PhysicalResourceId"]
-        resource_provider = self.resource_provider_cls(
-            # TODO: other top level keys
-            resource_json={
-                "Type": self.resource_type,
-                "Properties": request.desired_state,
-                # just a temporary workaround, technically we're setting _state_ here to _last_deployed_state
-                "_state_": request.previous_state,
-                # "_last_deployed_state": request
-                "PhysicalResourceId": physical_resource_id,
-                "LogicalResourceId": request.logical_resource_id,
-            },
-            account_id=request.account_id,
-            region_name=request.region_name,
-        )
-        if not resource_provider.is_updatable():
-            LOG.warning(
-                'Unable to update resource type "%s", id "%s"',
-                self.resource_type,
-                request.logical_resource_id,
-            )
-            # TODO: should not really claim the update was successful, but the
-            #   API does not really let us signal this in any other way.
-            return ProgressEvent(
-                status=OperationStatus.SUCCESS,
-                resource_model={**request.previous_state, **request.desired_state},
-            )
-
-        LOG.info("Updating resource %s of type %s", request.logical_resource_id, self.resource_type)
-
-        resource_provider.update_resource(
-            self.all_resources[request.logical_resource_id],
-            stack_name=request.stack_name,
-            resources=self.all_resources,
-        )
-
-        # incredibly hacky :|
-        resource_provider.resource_json["PhysicalResourceId"] = self.all_resources[
-            request.logical_resource_id
-        ]["PhysicalResourceId"]
-        resource_provider.fetch_and_update_state(
-            stack_name=request.stack_name, resources=self.all_resources
-        )
-        self.all_resources[request.logical_resource_id][
-            "_state_"
-        ] = resource_provider.resource_json["_state_"]
-
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=resource_provider.props,
-        )
-
-    def delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        return self.create_or_delete(request)
-
-    def create_or_delete(self, request: ResourceRequest[Properties]) -> ProgressEvent[Properties]:
-        resource_provider = self.resource_provider_cls(
-            account_id=request.account_id,
-            region_name=request.region_name,
-            # TODO: other top level keys
-            resource_json={
-                "Type": self.resource_type,
-                "Properties": request.desired_state,
-                "PhysicalResourceId": self.all_resources[request.logical_resource_id].get(
-                    "PhysicalResourceId"
-                ),
-                "_state_": request.previous_state,
-                "LogicalResourceId": request.logical_resource_id,
-            },
-        )
-        # TODO: only really necessary for the create and update operation
-        resource_provider.add_defaults(
-            self.all_resources[request.logical_resource_id], request.stack_name
-        )
-        # for some reason add_defaults doesn't even change the values in the resource provider...
-        # incredibly hacky again but should take care of the defaults
-        resource_provider.resource_json["Properties"] = self.all_resources[
-            request.logical_resource_id
-        ]["Properties"]
-        resource_provider.properties = self.all_resources[request.logical_resource_id]["Properties"]
-
-        func_details = resource_provider.get_deploy_templates()
-        # TODO: be less strict about the return value of func_details
-        LOG.debug(
-            'Running action "%s" for resource type "%s" id "%s"',
-            request.action,
-            self.resource_type,
-            request.logical_resource_id,
-        )
-
-        func_details = func_details.get(LEGACY_ACTION_MAP[request.action])
-        if not func_details:
-            # TODO: raise here and see where we are missing handlers
-            LOG.debug(
-                "No resource handler for %s action on resource type %s available. Skipping.",
-                request.action,
-                self.resource_type,
-            )
-            return ProgressEvent(status=OperationStatus.SUCCESS, resource_model={})
-        func_details = func_details if isinstance(func_details, list) else [func_details]
-        results = []
-        # TODO: other top level keys
-        resource = self.all_resources[request.logical_resource_id]
-
-        for func in func_details:
-            result = None
-            executed = False
-            # TODO(srw) 3 - callable function
-            if callable(func.get("function")):
-                result = func["function"](
-                    request.account_id,
-                    request.region_name,
-                    request.logical_resource_id,
-                    resource,
-                    request.stack_name,
-                )
-
-                results.append(result)
-                executed = True
-            elif not executed:
-                service = get_service_name(resource)
-                try:
-                    client = request.aws_client_factory.get_client(service=service)
-                    if client:
-                        # get the method on that function
-                        function = getattr(client, func["function"])
-
-                        # unify the resource parameters
-                        params = resolve_resource_parameters(
-                            request.account_id,
-                            request.region_name,
-                            request.stack_name,
-                            resource,
-                            self.all_resources,
-                            request.logical_resource_id,
-                            func,
-                        )
-                        if params is None:
-                            result = None
-                        else:
-                            result = invoke_function(
-                                request.account_id,
-                                request.region_name,
-                                function,
-                                params,
-                                self.resource_type,
-                                func,
-                                request.action,
-                                resource,
-                            )
-                        results.append(result)
-                        executed = True
-                except UnknownServiceError:
-                    # e.g. CDK has resources but is not a valid service
-                    return ProgressEvent(
-                        status=OperationStatus.SUCCESS, resource_model=resource["Properties"]
-                    )
-            if "result_handler" in func and executed:
-                LOG.debug(
-                    f"Executing callback method for {self.resource_type}:{request.logical_resource_id}"
-                )
-                result_handler = func["result_handler"]
-                result_handler(
-                    request.account_id,
-                    request.region_name,
-                    result,
-                    request.logical_resource_id,
-                    self.all_resources[request.logical_resource_id],
-                )
-
-        if request.action.lower() == "add":
-            resource_provider.resource_json["PhysicalResourceId"] = self.all_resources[
-                request.logical_resource_id
-            ]["PhysicalResourceId"]
-
-            # incredibly hacky :|
-            resource_provider.fetch_and_update_state(
-                stack_name=request.stack_name, resources=self.all_resources
-            )
-            self.all_resources[request.logical_resource_id][
-                "_state_"
-            ] = resource_provider.resource_json["_state_"]
-
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=resource_provider.props)
-
-
 class NoResourceProvider(Exception):
     pass
 
@@ -602,19 +389,16 @@ class ResourceProviderExecutor:
         *,
         stack_name: str,
         stack_id: str,
-        provider_config: dict[str, str],
-        # FIXME: legacy
-        resources: dict[str, dict],
-        legacy_base_models: dict[str, Type[GenericBaseModel]],
     ):
         self.stack_name = stack_name
         self.stack_id = stack_id
-        self.provider_config = provider_config
-        self.resources = resources
-        self.legacy_base_models = legacy_base_models
 
     def deploy_loop(
-        self, raw_payload: ResourceProviderPayload, max_iterations: int = 30, sleep_time: float = 5
+        self,
+        resource: dict,
+        raw_payload: ResourceProviderPayload,
+        max_iterations: int = 30,
+        sleep_time: float = 5,
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
 
@@ -625,30 +409,18 @@ class ResourceProviderExecutor:
             try:
                 resource_provider = self.load_resource_provider(resource_type)
 
-                logical_resource_id = raw_payload["requestData"]["logicalResourceId"]
-                resource = self.resources[logical_resource_id]
-
                 resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
 
                 event = self.execute_action(resource_provider, payload)
 
-                if event.status == OperationStatus.FAILED:
-                    return event
-
-                if event.status == OperationStatus.SUCCESS:
-                    if not isinstance(resource_provider, LegacyResourceProvider):
-                        # branch for non-legacy providers
-                        # TODO: move out of if? (physical res id can be set earlier possibly)
-                        if isinstance(resource_provider, LegacyResourceProvider):
-                            raise Exception(
-                                "A GenericBaseModel should always have a PhysicalResourceId set after deployment"
-                            )
-
+                match event.status:
+                    case OperationStatus.FAILED:
+                        return event
+                    case OperationStatus.SUCCESS:
                         if not hasattr(resource_provider, "SCHEMA"):
                             raise Exception(
                                 "A ResourceProvider should always have a SCHEMA property defined."
                             )
-
                         resource_type_schema = resource_provider.SCHEMA
                         physical_resource_id = (
                             self.extract_physical_resource_id_from_model_with_schema(
@@ -660,18 +432,22 @@ class ResourceProviderExecutor:
 
                         resource["PhysicalResourceId"] = physical_resource_id
                         resource["Properties"] = event.resource_model
-                    resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
-                    return event
+                        resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
+                        return event
+                    case OperationStatus.IN_PROGRESS:
+                        # update the shared state
+                        context = {**payload["callbackContext"], **event.custom_context}
+                        payload["callbackContext"] = context
+                        payload["requestData"]["resourceProperties"] = event.resource_model
 
-                # update the shared state
-                context = {**payload["callbackContext"], **event.custom_context}
-                payload["callbackContext"] = context
-                payload["requestData"]["resourceProperties"] = event.resource_model
-
-                if current_iteration == 0:
-                    time.sleep(0)
-                else:
-                    time.sleep(sleep_time)
+                        if current_iteration == 0:
+                            time.sleep(0)
+                        else:
+                            time.sleep(sleep_time)
+                    case invalid_status:
+                        raise ValueError(
+                            f"Invalid OperationStatus ({invalid_status}) returned for resource {raw_payload['requestData']['logicalResourceId']} (type {raw_payload['resourceType']})"
+                        )
 
             except NoResourceProvider:
                 log_not_available_message(
@@ -686,7 +462,9 @@ class ResourceProviderExecutor:
                     raise  # re-raise here if explicitly enabled
 
         else:
-            raise TimeoutError("Could not perform deploy loop action")
+            raise TimeoutError(
+                f"Resource deployment for resource {raw_payload['requestData']['logicalResourceId']} (type {raw_payload['resourceType']}) timed out."
+            )
 
     def execute_action(
         self, resource_provider: ResourceProvider, raw_payload: ResourceProviderPayload
@@ -745,27 +523,12 @@ class ResourceProviderExecutor:
             case _:
                 raise NotImplementedError(change_type)  # TODO: change error type
 
-    def should_use_legacy_provider(self, resource_type: str) -> bool:
-        # any config overwrites take precedence over the default order
-        return self.provider_config.get(resource_type) == "GenericBaseModel"
-
     def load_resource_provider(self, resource_type: str) -> ResourceProvider:
         # TODO: unify namespace of plugins
-
-        # opt-in to switch to older resource provider
-        if self.should_use_legacy_provider(resource_type):
-            return self._load_legacy_resource_provider(resource_type)
 
         # 1. try to load pro resource provider
         # prioritise pro resource providers
         if PRO_RESOURCE_PROVIDERS:
-            # temporary patch until this has equivalent resource providers in -ext
-            if resource_type in {
-                "AWS::ECR::Repository",
-                "AWS::SecretsManager::SecretTargetAttachment",
-                "AWS::EC2::SubnetRouteTableAssociation",
-            }:
-                return self._load_legacy_resource_provider(resource_type)
             try:
                 plugin = pro_plugin_manager.load(resource_type)
                 return plugin.factory()
@@ -794,23 +557,7 @@ class ResourceProviderExecutor:
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
-        try:
-            # 3. try to load legacy resource provider (and raise if nothing found)
-            return self._load_legacy_resource_provider(resource_type)
-        except NoResourceProvider:
-            LOG.warning("Failed to load resource provider for resource type %s", resource_type)
-            raise
-
-    def _load_legacy_resource_provider(self, resource_type: str) -> LegacyResourceProvider:
-        if resource_type in self.legacy_base_models:
-            return LegacyResourceProvider(
-                resource_type=resource_type,
-                resource_provider_cls=self.legacy_base_models[resource_type],
-                resources=self.resources,
-            )
-        else:
-            usage.missing_resource_types.record(resource_type)
-            raise NoResourceProvider
+        raise NoResourceProvider
 
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type: str, resource_type_schema: dict

@@ -1617,7 +1617,7 @@ class ApigatewayApi:
         stage_keys: ListOfStageKeys = None,
         customer_id: String = None,
         tags: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> ApiKey:
         raise NotImplementedError
 
@@ -1635,7 +1635,7 @@ class ApigatewayApi:
         rest_api_id: String,
         base_path: String = None,
         stage: String = None,
-        **kwargs
+        **kwargs,
     ) -> BasePathMapping:
         raise NotImplementedError
 
@@ -1652,7 +1652,7 @@ class ApigatewayApi:
         variables: MapOfStringToString = None,
         canary_settings: DeploymentCanarySettings = None,
         tracing_enabled: NullableBoolean = None,
-        **kwargs
+        **kwargs,
     ) -> Deployment:
         raise NotImplementedError
 
@@ -1663,7 +1663,7 @@ class ApigatewayApi:
         rest_api_id: String,
         location: DocumentationPartLocation,
         properties: String,
-        **kwargs
+        **kwargs,
     ) -> DocumentationPart:
         raise NotImplementedError
 
@@ -1675,7 +1675,7 @@ class ApigatewayApi:
         documentation_version: String,
         stage_name: String = None,
         description: String = None,
-        **kwargs
+        **kwargs,
     ) -> DocumentationVersion:
         raise NotImplementedError
 
@@ -1696,7 +1696,7 @@ class ApigatewayApi:
         security_policy: SecurityPolicy = None,
         mutual_tls_authentication: MutualTlsAuthenticationInput = None,
         ownership_verification_certificate_arn: String = None,
-        **kwargs
+        **kwargs,
     ) -> DomainName:
         raise NotImplementedError
 
@@ -1709,7 +1709,7 @@ class ApigatewayApi:
         content_type: String,
         description: String = None,
         schema: String = None,
-        **kwargs
+        **kwargs,
     ) -> Model:
         raise NotImplementedError
 
@@ -1721,7 +1721,7 @@ class ApigatewayApi:
         name: String = None,
         validate_request_body: Boolean = None,
         validate_request_parameters: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> RequestValidator:
         raise NotImplementedError
 
@@ -1732,7 +1732,7 @@ class ApigatewayApi:
         rest_api_id: String,
         parent_id: String,
         path_part: String,
-        **kwargs
+        **kwargs,
     ) -> Resource:
         raise NotImplementedError
 
@@ -1751,7 +1751,7 @@ class ApigatewayApi:
         policy: String = None,
         tags: MapOfStringToString = None,
         disable_execute_api_endpoint: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> RestApi:
         raise NotImplementedError
 
@@ -1770,7 +1770,7 @@ class ApigatewayApi:
         canary_settings: CanarySettings = None,
         tracing_enabled: Boolean = None,
         tags: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> Stage:
         raise NotImplementedError
 
@@ -1784,7 +1784,7 @@ class ApigatewayApi:
         throttle: ThrottleSettings = None,
         quota: QuotaSettings = None,
         tags: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> UsagePlan:
         raise NotImplementedError
 
@@ -1795,7 +1795,7 @@ class ApigatewayApi:
         usage_plan_id: String,
         key_id: String,
         key_type: String,
-        **kwargs
+        **kwargs,
     ) -> UsagePlanKey:
         raise NotImplementedError
 
@@ -1807,7 +1807,7 @@ class ApigatewayApi:
         target_arns: ListOfString,
         description: String = None,
         tags: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> VpcLink:
         raise NotImplementedError
 
@@ -1861,7 +1861,7 @@ class ApigatewayApi:
         context: RequestContext,
         rest_api_id: String,
         response_type: GatewayResponseType,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1872,7 +1872,7 @@ class ApigatewayApi:
         rest_api_id: String,
         resource_id: String,
         http_method: String,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1884,7 +1884,7 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1895,7 +1895,7 @@ class ApigatewayApi:
         rest_api_id: String,
         resource_id: String,
         http_method: String,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1907,7 +1907,7 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -1971,7 +1971,7 @@ class ApigatewayApi:
         context: RequestContext,
         description: String = None,
         tags: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> ClientCertificate:
         raise NotImplementedError
 
@@ -1985,7 +1985,7 @@ class ApigatewayApi:
         context: RequestContext,
         api_key: String,
         include_value: NullableBoolean = None,
-        **kwargs
+        **kwargs,
     ) -> ApiKey:
         raise NotImplementedError
 
@@ -1998,7 +1998,7 @@ class ApigatewayApi:
         name_query: String = None,
         customer_id: String = None,
         include_values: NullableBoolean = None,
-        **kwargs
+        **kwargs,
     ) -> ApiKeys:
         raise NotImplementedError
 
@@ -2015,7 +2015,7 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> Authorizers:
         raise NotImplementedError
 
@@ -2032,7 +2032,7 @@ class ApigatewayApi:
         domain_name: String,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> BasePathMappings:
         raise NotImplementedError
 
@@ -2048,7 +2048,7 @@ class ApigatewayApi:
         context: RequestContext,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> ClientCertificates:
         raise NotImplementedError
 
@@ -2059,7 +2059,7 @@ class ApigatewayApi:
         rest_api_id: String,
         deployment_id: String,
         embed: ListOfString = None,
-        **kwargs
+        **kwargs,
     ) -> Deployment:
         raise NotImplementedError
 
@@ -2070,7 +2070,7 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> Deployments:
         raise NotImplementedError
 
@@ -2099,7 +2099,7 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> DocumentationVersions:
         raise NotImplementedError
 
@@ -2113,7 +2113,7 @@ class ApigatewayApi:
         context: RequestContext,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> DomainNames:
         raise NotImplementedError
 
@@ -2126,7 +2126,7 @@ class ApigatewayApi:
         export_type: String,
         parameters: MapOfStringToString = None,
         accepts: String = None,
-        **kwargs
+        **kwargs,
     ) -> ExportResponse:
         raise NotImplementedError
 
@@ -2136,7 +2136,7 @@ class ApigatewayApi:
         context: RequestContext,
         rest_api_id: String,
         response_type: GatewayResponseType,
-        **kwargs
+        **kwargs,
     ) -> GatewayResponse:
         raise NotImplementedError
 
@@ -2147,7 +2147,7 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> GatewayResponses:
         raise NotImplementedError
 
@@ -2158,7 +2158,7 @@ class ApigatewayApi:
         rest_api_id: String,
         resource_id: String,
         http_method: String,
-        **kwargs
+        **kwargs,
     ) -> Integration:
         raise NotImplementedError
 
@@ -2170,7 +2170,7 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
-        **kwargs
+        **kwargs,
     ) -> IntegrationResponse:
         raise NotImplementedError
 
@@ -2181,7 +2181,7 @@ class ApigatewayApi:
         rest_api_id: String,
         resource_id: String,
         http_method: String,
-        **kwargs
+        **kwargs,
     ) -> Method:
         raise NotImplementedError
 
@@ -2193,7 +2193,7 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         status_code: StatusCode,
-        **kwargs
+        **kwargs,
     ) -> MethodResponse:
         raise NotImplementedError
 
@@ -2204,7 +2204,7 @@ class ApigatewayApi:
         rest_api_id: String,
         model_name: String,
         flatten: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> Model:
         raise NotImplementedError
 
@@ -2221,7 +2221,7 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> Models:
         raise NotImplementedError
 
@@ -2238,7 +2238,7 @@ class ApigatewayApi:
         rest_api_id: String,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> RequestValidators:
         raise NotImplementedError
 
@@ -2249,7 +2249,7 @@ class ApigatewayApi:
         rest_api_id: String,
         resource_id: String,
         embed: ListOfString = None,
-        **kwargs
+        **kwargs,
     ) -> Resource:
         raise NotImplementedError
 
@@ -2261,7 +2261,7 @@ class ApigatewayApi:
         position: String = None,
         limit: NullableInteger = None,
         embed: ListOfString = None,
-        **kwargs
+        **kwargs,
     ) -> Resources:
         raise NotImplementedError
 
@@ -2275,7 +2275,7 @@ class ApigatewayApi:
         context: RequestContext,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> RestApis:
         raise NotImplementedError
 
@@ -2287,7 +2287,7 @@ class ApigatewayApi:
         stage_name: String,
         sdk_type: String,
         parameters: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> SdkResponse:
         raise NotImplementedError
 
@@ -2301,7 +2301,7 @@ class ApigatewayApi:
         context: RequestContext,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> SdkTypes:
         raise NotImplementedError
 
@@ -2324,7 +2324,7 @@ class ApigatewayApi:
         resource_arn: String,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> Tags:
         raise NotImplementedError
 
@@ -2338,7 +2338,7 @@ class ApigatewayApi:
         key_id: String = None,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> Usage:
         raise NotImplementedError
 
@@ -2360,7 +2360,7 @@ class ApigatewayApi:
         position: String = None,
         limit: NullableInteger = None,
         name_query: String = None,
-        **kwargs
+        **kwargs,
     ) -> UsagePlanKeys:
         raise NotImplementedError
 
@@ -2371,7 +2371,7 @@ class ApigatewayApi:
         position: String = None,
         key_id: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> UsagePlans:
         raise NotImplementedError
 
@@ -2385,7 +2385,7 @@ class ApigatewayApi:
         context: RequestContext,
         position: String = None,
         limit: NullableInteger = None,
-        **kwargs
+        **kwargs,
     ) -> VpcLinks:
         raise NotImplementedError
 
@@ -2396,7 +2396,7 @@ class ApigatewayApi:
         body: IO[Blob],
         format: ApiKeysFormat,
         fail_on_warnings: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> ApiKeyIds:
         raise NotImplementedError
 
@@ -2408,7 +2408,7 @@ class ApigatewayApi:
         body: IO[Blob],
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> DocumentationPartIds:
         raise NotImplementedError
 
@@ -2419,7 +2419,7 @@ class ApigatewayApi:
         body: IO[Blob],
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> RestApi:
         raise NotImplementedError
 
@@ -2432,7 +2432,7 @@ class ApigatewayApi:
         status_code: StatusCode = None,
         response_parameters: MapOfStringToString = None,
         response_templates: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> GatewayResponse:
         raise NotImplementedError
 
@@ -2454,7 +2454,7 @@ class ApigatewayApi:
         response_parameters: MapOfStringToString = None,
         response_templates: MapOfStringToString = None,
         content_handling: ContentHandlingStrategy = None,
-        **kwargs
+        **kwargs,
     ) -> IntegrationResponse:
         raise NotImplementedError
 
@@ -2473,7 +2473,7 @@ class ApigatewayApi:
         request_models: MapOfStringToString = None,
         request_validator_id: String = None,
         authorization_scopes: ListOfString = None,
-        **kwargs
+        **kwargs,
     ) -> Method:
         raise NotImplementedError
 
@@ -2487,7 +2487,7 @@ class ApigatewayApi:
         status_code: StatusCode,
         response_parameters: MapOfStringToBoolean = None,
         response_models: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> MethodResponse:
         raise NotImplementedError
 
@@ -2500,7 +2500,7 @@ class ApigatewayApi:
         mode: PutMode = None,
         fail_on_warnings: Boolean = None,
         parameters: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> RestApi:
         raise NotImplementedError
 
@@ -2522,7 +2522,7 @@ class ApigatewayApi:
         body: String = None,
         stage_variables: MapOfStringToString = None,
         additional_context: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> TestInvokeAuthorizerResponse:
         raise NotImplementedError
 
@@ -2539,7 +2539,7 @@ class ApigatewayApi:
         multi_value_headers: MapOfStringToList = None,
         client_certificate_id: String = None,
         stage_variables: MapOfStringToString = None,
-        **kwargs
+        **kwargs,
     ) -> TestInvokeMethodResponse:
         raise NotImplementedError
 
@@ -2561,7 +2561,7 @@ class ApigatewayApi:
         context: RequestContext,
         api_key: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> ApiKey:
         raise NotImplementedError
 
@@ -2572,7 +2572,7 @@ class ApigatewayApi:
         rest_api_id: String,
         authorizer_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> Authorizer:
         raise NotImplementedError
 
@@ -2583,7 +2583,7 @@ class ApigatewayApi:
         domain_name: String,
         base_path: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> BasePathMapping:
         raise NotImplementedError
 
@@ -2593,7 +2593,7 @@ class ApigatewayApi:
         context: RequestContext,
         client_certificate_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> ClientCertificate:
         raise NotImplementedError
 
@@ -2604,7 +2604,7 @@ class ApigatewayApi:
         rest_api_id: String,
         deployment_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> Deployment:
         raise NotImplementedError
 
@@ -2615,7 +2615,7 @@ class ApigatewayApi:
         rest_api_id: String,
         documentation_part_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> DocumentationPart:
         raise NotImplementedError
 
@@ -2626,7 +2626,7 @@ class ApigatewayApi:
         rest_api_id: String,
         documentation_version: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> DocumentationVersion:
         raise NotImplementedError
 
@@ -2636,7 +2636,7 @@ class ApigatewayApi:
         context: RequestContext,
         domain_name: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> DomainName:
         raise NotImplementedError
 
@@ -2647,7 +2647,7 @@ class ApigatewayApi:
         rest_api_id: String,
         response_type: GatewayResponseType,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> GatewayResponse:
         raise NotImplementedError
 
@@ -2659,7 +2659,7 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> Integration:
         raise NotImplementedError
 
@@ -2672,7 +2672,7 @@ class ApigatewayApi:
         http_method: String,
         status_code: StatusCode,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> IntegrationResponse:
         raise NotImplementedError
 
@@ -2684,7 +2684,7 @@ class ApigatewayApi:
         resource_id: String,
         http_method: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> Method:
         raise NotImplementedError
 
@@ -2697,7 +2697,7 @@ class ApigatewayApi:
         http_method: String,
         status_code: StatusCode,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> MethodResponse:
         raise NotImplementedError
 
@@ -2708,7 +2708,7 @@ class ApigatewayApi:
         rest_api_id: String,
         model_name: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> Model:
         raise NotImplementedError
 
@@ -2719,7 +2719,7 @@ class ApigatewayApi:
         rest_api_id: String,
         request_validator_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> RequestValidator:
         raise NotImplementedError
 
@@ -2730,7 +2730,7 @@ class ApigatewayApi:
         rest_api_id: String,
         resource_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> Resource:
         raise NotImplementedError
 
@@ -2740,7 +2740,7 @@ class ApigatewayApi:
         context: RequestContext,
         rest_api_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> RestApi:
         raise NotImplementedError
 
@@ -2751,7 +2751,7 @@ class ApigatewayApi:
         rest_api_id: String,
         stage_name: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> Stage:
         raise NotImplementedError
 
@@ -2762,7 +2762,7 @@ class ApigatewayApi:
         usage_plan_id: String,
         key_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> Usage:
         raise NotImplementedError
 
@@ -2772,7 +2772,7 @@ class ApigatewayApi:
         context: RequestContext,
         usage_plan_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> UsagePlan:
         raise NotImplementedError
 
@@ -2782,6 +2782,6 @@ class ApigatewayApi:
         context: RequestContext,
         vpc_link_id: String,
         patch_operations: ListOfPatchOperation = None,
-        **kwargs
+        **kwargs,
     ) -> VpcLink:
         raise NotImplementedError

@@ -675,7 +675,7 @@ class KinesisApi:
         tags: TagMap,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -686,7 +686,7 @@ class KinesisApi:
         stream_name: StreamName,
         shard_count: PositiveIntegerObject = None,
         stream_mode_details: StreamModeDetails = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -697,7 +697,7 @@ class KinesisApi:
         retention_period_hours: RetentionPeriodHours,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -714,7 +714,7 @@ class KinesisApi:
         stream_name: StreamName = None,
         enforce_consumer_deletion: BooleanObject = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -725,7 +725,7 @@ class KinesisApi:
         stream_arn: StreamARN = None,
         consumer_name: ConsumerName = None,
         consumer_arn: ConsumerARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -741,7 +741,7 @@ class KinesisApi:
         limit: DescribeStreamInputLimit = None,
         exclusive_start_shard_id: ShardId = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStreamOutput:
         raise NotImplementedError
 
@@ -752,7 +752,7 @@ class KinesisApi:
         stream_arn: StreamARN = None,
         consumer_name: ConsumerName = None,
         consumer_arn: ConsumerARN = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStreamConsumerOutput:
         raise NotImplementedError
 
@@ -762,7 +762,7 @@ class KinesisApi:
         context: RequestContext,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeStreamSummaryOutput:
         raise NotImplementedError
 
@@ -773,7 +773,7 @@ class KinesisApi:
         shard_level_metrics: MetricsNameList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> EnhancedMonitoringOutput:
         raise NotImplementedError
 
@@ -784,7 +784,7 @@ class KinesisApi:
         shard_level_metrics: MetricsNameList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> EnhancedMonitoringOutput:
         raise NotImplementedError
 
@@ -795,7 +795,7 @@ class KinesisApi:
         shard_iterator: ShardIterator,
         limit: GetRecordsInputLimit = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> GetRecordsOutput:
         raise NotImplementedError
 
@@ -815,7 +815,7 @@ class KinesisApi:
         starting_sequence_number: SequenceNumber = None,
         timestamp: Timestamp = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> GetShardIteratorOutput:
         raise NotImplementedError
 
@@ -826,7 +826,7 @@ class KinesisApi:
         retention_period_hours: RetentionPeriodHours,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -841,7 +841,7 @@ class KinesisApi:
         stream_creation_timestamp: Timestamp = None,
         shard_filter: ShardFilter = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> ListShardsOutput:
         raise NotImplementedError
 
@@ -853,7 +853,7 @@ class KinesisApi:
         next_token: NextToken = None,
         max_results: ListStreamConsumersInputLimit = None,
         stream_creation_timestamp: Timestamp = None,
-        **kwargs
+        **kwargs,
     ) -> ListStreamConsumersOutput:
         raise NotImplementedError
 
@@ -864,7 +864,7 @@ class KinesisApi:
         limit: ListStreamsInputLimit = None,
         exclusive_start_stream_name: StreamName = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListStreamsOutput:
         raise NotImplementedError
 
@@ -876,7 +876,7 @@ class KinesisApi:
         exclusive_start_tag_key: TagKey = None,
         limit: ListTagsForStreamInputLimit = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> ListTagsForStreamOutput:
         raise NotImplementedError
 
@@ -888,7 +888,7 @@ class KinesisApi:
         adjacent_shard_to_merge: ShardId,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -902,7 +902,7 @@ class KinesisApi:
         explicit_hash_key: HashKey = None,
         sequence_number_for_ordering: SequenceNumber = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> PutRecordOutput:
         raise NotImplementedError
 
@@ -913,7 +913,7 @@ class KinesisApi:
         records: PutRecordsRequestEntryList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> PutRecordsOutput:
         raise NotImplementedError
 
@@ -936,7 +936,7 @@ class KinesisApi:
         tag_keys: TagKeyList,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -948,7 +948,7 @@ class KinesisApi:
         new_starting_hash_key: HashKey,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -960,7 +960,7 @@ class KinesisApi:
         key_id: KeyId,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -972,7 +972,7 @@ class KinesisApi:
         key_id: KeyId,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -983,7 +983,7 @@ class KinesisApi:
         consumer_arn: ConsumerARN,
         shard_id: ShardId,
         starting_position: StartingPosition,
-        **kwargs
+        **kwargs,
     ) -> SubscribeToShardOutput:
         raise NotImplementedError
 
@@ -995,7 +995,7 @@ class KinesisApi:
         scaling_type: ScalingType,
         stream_name: StreamName = None,
         stream_arn: StreamARN = None,
-        **kwargs
+        **kwargs,
     ) -> UpdateShardCountOutput:
         raise NotImplementedError
 
@@ -1005,6 +1005,6 @@ class KinesisApi:
         context: RequestContext,
         stream_arn: StreamARN,
         stream_mode_details: StreamModeDetails,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError

@@ -254,6 +254,17 @@ def _start_kcl_client_process(
 
     properties_file = os.path.join(tempfile.gettempdir(), f"kclipy.{short_uid()}.properties")
     app_name = f"{stream_name}{ddb_lease_table_suffix}"
+    if not config.DISTRIBUTED_MODE:
+        kinesis_endpoint = config.internal_service_url(protocol="http")
+        dynamodb_endpoint = config.internal_service_url(protocol="http")
+    else:
+        kinesis_endpoint = config.external_service_url(
+            protocol="http", subdomains=f"kinesis.{region_name}"
+        )
+        dynamodb_endpoint = config.external_service_url(
+            protocol="http", subdomains=f"dynamodb.{region_name}"
+        )
+
     # create config file
     kclipy_helper.create_config_file(
         config_file=properties_file,
@@ -264,8 +275,8 @@ def _start_kcl_client_process(
         metricsLevel="NONE",
         initialPositionInStream="LATEST",
         # set parameters for local connection
-        kinesisEndpoint=config.internal_service_url(protocol="http"),
-        dynamoDBEndpoint=config.internal_service_url(protocol="http"),
+        kinesisEndpoint=kinesis_endpoint,
+        dynamoDBEndpoint=dynamodb_endpoint,
         disableCertChecking="true",
     )
     TMP_FILES.append(properties_file)

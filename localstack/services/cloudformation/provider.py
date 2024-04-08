@@ -95,8 +95,10 @@ from localstack.services.cloudformation.engine.transformers import (
 )
 from localstack.services.cloudformation.stores import (
     cloudformation_stores,
+    find_active_stack_by_name_or_id,
     find_change_set,
     find_stack,
+    find_stack_by_id,
     get_cloudformation_store,
 )
 from localstack.state import StateVisitor
@@ -298,7 +300,10 @@ class CloudformationProvider(CloudformationApi):
         client_request_token: ClientRequestToken = None,
         **kwargs,
     ) -> None:
-        stack = find_stack(context.account_id, context.region, stack_name)
+        stack = find_active_stack_by_name_or_id(context.account_id, context.region, stack_name)
+        if not stack:
+            # aws will silently ignore invalid stack names - we should do the same
+            return
         deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         deployer.delete_stack()
 
@@ -705,16 +710,16 @@ class CloudformationProvider(CloudformationApi):
         if not changes:
             change_set.metadata["Status"] = "FAILED"
             change_set.metadata["ExecutionStatus"] = "UNAVAILABLE"
-            change_set.metadata[
-                "StatusReason"
-            ] = "The submitted information didn't contain changes. Submit different information to create a change set."
+            change_set.metadata["StatusReason"] = (
+                "The submitted information didn't contain changes. Submit different information to create a change set."
+            )
         else:
-            change_set.metadata[
-                "Status"
-            ] = "CREATE_COMPLETE"  # technically for some time this should first be CREATE_PENDING
-            change_set.metadata[
-                "ExecutionStatus"
-            ] = "AVAILABLE"  # technically for some time this should first be UNAVAILABLE
+            change_set.metadata["Status"] = (
+                "CREATE_COMPLETE"  # technically for some time this should first be CREATE_PENDING
+            )
+            change_set.metadata["ExecutionStatus"] = (
+                "AVAILABLE"  # technically for some time this should first be UNAVAILABLE
+            )
 
         return CreateChangeSetOutput(StackId=change_set.stack_id, Id=change_set.change_set_id)
 
@@ -874,14 +879,19 @@ class CloudformationProvider(CloudformationApi):
         next_token: NextToken = None,
         **kwargs,
     ) -> DescribeStackEventsOutput:
-        state = get_cloudformation_store(context.account_id, context.region)
+        if stack_name is None:
+            raise ValidationError(
+                "1 validation error detected: Value null at 'stackName' failed to satisfy constraint: Member must not be null"
+            )
 
-        events = []
-        for stack_id, stack in state.stacks.items():
-            if stack_name in [None, stack.stack_name, stack.stack_id]:
-                events.extend(stack.events)
-
-        return DescribeStackEventsOutput(StackEvents=events)
+        stack = find_active_stack_by_name_or_id(context.account_id, context.region, stack_name)
+        if not stack:
+            stack = find_stack_by_id(
+                account_id=context.account_id, region_name=context.region, stack_id=stack_name
+            )
+        if not stack:
+            raise ValidationError(f"Stack [{stack_name}] does not exist")
+        return DescribeStackEventsOutput(StackEvents=stack.events)
 
     @handler("DescribeStackResource")
     def describe_stack_resource(

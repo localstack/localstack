@@ -1,6 +1,6 @@
 import json
 from json import JSONDecodeError
-from typing import Any, Final, Optional
+from typing import IO, Any, Final, Optional, Union
 
 from localstack.aws.api.lambda_ import InvocationResponse
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -19,13 +19,31 @@ class LambdaFunctionErrorException(Exception):
         self.payload = payload
 
 
+def _from_payload(payload_streaming_body: IO[bytes]) -> Union[json, str]:
+    """
+    This method extracts the lambda payload. The payload may be a string or a JSON stringified object.
+    In the first case, this function converts the output into a UTF-8 string, otherwise it parses the
+    JSON string into a JSON object.
+    """
+
+    payload_bytes: bytes = payload_streaming_body.read()
+    decoded_data: str = payload_bytes.decode("utf-8")
+    try:
+        json_data: json = json.loads(decoded_data)
+        return json_data
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return decoded_data
+
+
 def exec_lambda_function(env: Environment, parameters: dict, region: str, account: str) -> None:
     lambda_client = boto_client_for(region=region, account=account, service="lambda")
 
     invocation_resp: InvocationResponse = lambda_client.invoke(**parameters)
 
     func_error: Optional[str] = invocation_resp.get("FunctionError")
-    payload_json = json.load(invocation_resp["Payload"])
+
+    payload = invocation_resp["Payload"]
+    payload_json = _from_payload(payload)
     if func_error:
         payload_str = json.dumps(payload_json, separators=(",", ":"))
         raise LambdaFunctionErrorException(func_error, payload_str)

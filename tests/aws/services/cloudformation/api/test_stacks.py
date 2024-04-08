@@ -198,7 +198,7 @@ class TestStacksApi:
         ]
         resources_before = len(resources)
         assert resources_before == 3
-        statuses = set([res["ResourceStatus"] for res in resources])
+        statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"CREATE_COMPLETE"}
 
         # remove one resource from the template, then update stack (via change set)
@@ -218,7 +218,7 @@ class TestStacksApi:
             "StackResourceSummaries"
         ]
         assert len(resources) == resources_before - 1
-        statuses = set([res["ResourceStatus"] for res in resources])
+        statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"UPDATE_COMPLETE"}
 
     @markers.aws.needs_fixing
@@ -579,7 +579,7 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
         "StackEvents"
     ]
 
-    resource_types = list(set([event["ResourceType"] for event in events]))
+    resource_types = list({event["ResourceType"] for event in events})
     resource_types.sort()
     snapshot.match("resource_types", resource_types)
 
@@ -709,6 +709,11 @@ def test_name_conflicts(aws_client, snapshot, cleanups):
         aws_client.cloudformation.describe_stacks(StackName=stack_name)
     snapshot.match("deleted_stack_not_found_exc", e.value.response)
 
+    # describe events with name fails
+    with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+        aws_client.cloudformation.describe_stack_events(StackName=stack_name)
+    snapshot.match("deleted_stack_events_not_found_by_name", e.value.response)
+
     # describe with stack id (ARN) succeeds
     deleted_stack_desc = aws_client.cloudformation.describe_stacks(StackName=stack_id)
     snapshot.match("deleted_stack_desc", deleted_stack_desc)
@@ -733,3 +738,31 @@ def test_name_conflicts(aws_client, snapshot, cleanups):
     new_stack_id_desc = aws_client.cloudformation.describe_stacks(StackName=new_stack_id)
     snapshot.match("stack_id_desc", stack_id_desc)
     snapshot.match("new_stack_id_desc", new_stack_id_desc)
+
+    # check if the describing the stack events return the right stack
+    stack_events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)[
+        "StackEvents"
+    ]
+    assert all(stack_event["StackId"] == new_stack_id for stack_event in stack_events)
+    # describing events by the old stack id should still yield the old events
+    stack_events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)[
+        "StackEvents"
+    ]
+    assert all(stack_event["StackId"] == stack_id for stack_event in stack_events)
+
+    # deleting the stack by name should delete the new, not already deleted stack
+    aws_client.cloudformation.delete_stack(StackName=stack_name)
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)
+    # describe with stack id returns stack deleted
+    deleted_stack_desc = aws_client.cloudformation.describe_stacks(StackName=new_stack_id)
+    snapshot.match("deleted_second_stack_desc", deleted_stack_desc)
+
+
+@markers.aws.validated
+def test_describe_stack_events_errors(aws_client, snapshot):
+    with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+        aws_client.cloudformation.describe_stack_events()
+    snapshot.match("describe_stack_events_no_stack_name", e.value.response)
+    with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+        aws_client.cloudformation.describe_stack_events(StackName="does-not-exist")
+    snapshot.match("describe_stack_events_stack_not_found", e.value.response)

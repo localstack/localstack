@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import os
 import uuid
 from datetime import datetime
 from random import getrandbits
@@ -8,11 +9,14 @@ from random import getrandbits
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
+from cryptography.hazmat.primitives import hashes, hmac, serialization
+from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
+from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.testing.pytest import markers
+from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
 
 
@@ -106,6 +110,65 @@ class TestKMS:
         result = aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"]
         assert result["KeyId"] == key_id
         assert result["Arn"].endswith(f":key/{key_id}")
+
+    @markers.aws.only_localstack
+    def test_create_key_custom_key_material_hmac(self, kms_create_key, aws_client):
+        custom_key_material = b"custom test key material"
+        custom_key_tag_value = base64.b64encode(custom_key_material).decode("utf-8")
+        message = "some important message"
+        key_spec = "HMAC_256"
+        mac_algo = "HMAC_SHA_256"
+
+        # Generate expected MAC
+        h = hmac.HMAC(custom_key_material, hashes.SHA256())
+        h.update(message.encode("utf-8"))
+        expected_mac = h.finalize()
+
+        key_id = kms_create_key(
+            KeySpec=key_spec,
+            KeyUsage="GENERATE_VERIFY_MAC",
+            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_tag_value}],
+        )["KeyId"]
+
+        mac = aws_client.kms.generate_mac(
+            KeyId=key_id,
+            Message=message,
+            MacAlgorithm=mac_algo,
+        )["Mac"]
+        assert mac == expected_mac
+
+        verify_mac_response = aws_client.kms.verify_mac(
+            KeyId=key_id,
+            Message="some important message",
+            MacAlgorithm=mac_algo,
+            Mac=expected_mac,
+        )
+        assert verify_mac_response["MacValid"]
+
+    @markers.aws.only_localstack
+    def test_create_key_custom_key_material_symmetric_decrypt(self, kms_create_key, aws_client):
+        custom_key_material = b"custom test key material"
+        custom_key_tag_value = base64.b64encode(custom_key_material).decode("utf-8")
+        algo = "SYMMETRIC_DEFAULT"
+        message = b"test message 123 !%$@ 1234567890"
+
+        key_id = kms_create_key(
+            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_tag_value}]
+        )["KeyId"]
+
+        # Generate expected cipher text
+        iv = os.urandom(IV_LEN)
+        ciphertext, tag = encrypt(custom_key_material, message, iv, b"")
+        expected_ciphertext_blob = _serialize_ciphertext_blob(
+            ciphertext=Ciphertext(key_id=key_id, iv=iv, ciphertext=ciphertext, tag=tag)
+        )
+
+        plaintext = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=expected_ciphertext_blob,
+            EncryptionAlgorithm=algo,
+        )["Plaintext"]
+        assert plaintext == message
 
     @markers.aws.validated
     def test_get_key_in_different_region(
@@ -559,7 +622,7 @@ class TestKMS:
         assert key_id in _get_all_key_ids(aws_client.kms)
 
     @markers.aws.validated
-    def test_import_key(self, kms_create_key, aws_client, snapshot):
+    def test_import_key_symmetric(self, kms_create_key, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("Description"))
         key = kms_create_key(Origin="EXTERNAL")
         snapshot.match("created-key", key)
@@ -573,7 +636,7 @@ class TestKMS:
 
         # get key import params
         params = aws_client.kms.get_parameters_for_import(
-            KeyId=key_id, WrappingAlgorithm="RSAES_PKCS1_V1_5", WrappingKeySpec="RSA_2048"
+            KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_2048"
         )
         assert params["KeyId"] == key["Arn"]
         assert params["ImportToken"]
@@ -586,7 +649,12 @@ class TestKMS:
 
         # import symmetric key (key material) into KMS
         public_key = load_der_public_key(params["PublicKey"])
-        encrypted_key = public_key.encrypt(symmetric_key, PKCS1v15())
+        encrypted_key = public_key.encrypt(
+            symmetric_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+            ),
+        )
         describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
         snapshot.match("describe-key-before-import", describe_key_before_import)
 
@@ -620,6 +688,71 @@ class TestKMS:
         with pytest.raises(ClientError) as e:
             aws_client.kms.encrypt(Plaintext=plaintext, KeyId=key_id)
         snapshot.match("encrypt-after-delete-error", e.value.response)
+
+    @markers.aws.validated
+    def test_import_key_asymmetric(self, kms_create_key, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Description"))
+        key = kms_create_key(Origin="EXTERNAL", KeySpec="ECC_NIST_P256", KeyUsage="SIGN_VERIFY")
+        snapshot.match("created-key", key)
+        key_id = key["KeyId"]
+
+        crypto_key = ec.generate_private_key(ec.SECP256R1())
+        raw_private_key = crypto_key.private_bytes(
+            serialization.Encoding.DER,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        raw_public_key = crypto_key.public_key().public_bytes(
+            serialization.Encoding.DER,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        plaintext = b"test content 123 !#"
+
+        # get key import params
+        params = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_2048"
+        )
+
+        # import asymmetric key (key material) into KMS
+        public_key = load_der_public_key(params["PublicKey"])
+        encrypted_key = public_key.encrypt(
+            raw_private_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+            ),
+        )
+        describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-before-import", describe_key_before_import)
+
+        aws_client.kms.import_key_material(
+            KeyId=key_id,
+            ImportToken=params["ImportToken"],
+            EncryptedKeyMaterial=encrypted_key,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+        )
+        describe_key_after_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-import", describe_key_after_import)
+
+        # Check whether public key is derived correctly
+        get_public_key_after_import = aws_client.kms.get_public_key(KeyId=key_id)
+        assert get_public_key_after_import["PublicKey"] == raw_public_key
+
+        # Do a sign/verify cycle
+        signed_data = aws_client.kms.sign(
+            Message=plaintext, MessageType="RAW", SigningAlgorithm="ECDSA_SHA_256", KeyId=key_id
+        )
+        verify_data = aws_client.kms.verify(
+            Message=plaintext,
+            Signature=signed_data["Signature"],
+            MessageType="RAW",
+            SigningAlgorithm="ECDSA_SHA_256",
+            KeyId=key_id,
+        )
+        assert verify_data["SignatureValid"]
+
+        aws_client.kms.delete_imported_key_material(KeyId=key_id)
+        describe_key_after_deleted_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-deleted-import", describe_key_after_deleted_import)
 
     @markers.aws.validated
     def test_list_aliases_of_key(self, kms_create_key, kms_create_alias, aws_client):

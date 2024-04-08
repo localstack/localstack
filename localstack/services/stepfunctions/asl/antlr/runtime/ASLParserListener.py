@@ -1,4 +1,4 @@
-# Generated from /Users/mep/LocalStack/localstack/localstack/services/stepfunctions/asl/antlr/ASLParser.g4 by ANTLR 4.13.1
+# Generated from ASLParser.g4 by ANTLR 4.13.1
 from antlr4 import *
 if "." in __name__:
     from .ASLParser import ASLParser
@@ -7,6 +7,15 @@ else:
 
 # This class defines a complete listener for a parse tree produced by ASLParser.
 class ASLParserListener(ParseTreeListener):
+
+    # Enter a parse tree produced by ASLParser#state_machine.
+    def enterState_machine(self, ctx:ASLParser.State_machineContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#state_machine.
+    def exitState_machine(self, ctx:ASLParser.State_machineContext):
+        pass
+
 
     # Enter a parse tree produced by ASLParser#program_decl.
     def enterProgram_decl(self, ctx:ASLParser.Program_declContext):

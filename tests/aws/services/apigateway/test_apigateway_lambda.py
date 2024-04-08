@@ -33,7 +33,6 @@ RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.
         "$..headers.Accept",
         "$..headers.Content-Length",
         "$..headers.Accept-Encoding",
-        "$..headers.Authorization",
         "$..headers.CloudFront-Forwarded-Proto",
         "$..headers.CloudFront-Is-Desktop-Viewer",
         "$..headers.CloudFront-Is-Mobile-Viewer",
@@ -58,7 +57,6 @@ RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.
         "$..multiValueHeaders.Content-Length",
         "$..multiValueHeaders.Accept",
         "$..multiValueHeaders.Accept-Encoding",
-        "$..multiValueHeaders.Authorization",
         "$..multiValueHeaders.CloudFront-Forwarded-Proto",
         "$..multiValueHeaders.CloudFront-Is-Desktop-Viewer",
         "$..multiValueHeaders.CloudFront-Is-Mobile-Viewer",
@@ -83,6 +81,7 @@ RESPONSE_TEMPLATE_VM = os.path.join(THIS_FOLDER, "../../files/response-template.
         "$..pathParameters",
         "$..requestContext.apiId",
         "$..requestContext.authorizer",
+        "$..requestContext.deploymentId",
         "$..requestContext.domainName",
         "$..requestContext.domainPrefix",
         "$..requestContext.extendedRequestId",
@@ -106,6 +105,7 @@ def test_lambda_aws_proxy_integration(
     stage_name = "test"
     snapshot.add_transformer(snapshot.transform.apigateway_api())
     snapshot.add_transformer(snapshot.transform.apigateway_proxy_event())
+    snapshot.add_transformer(snapshot.transform.key_value("deploymentId"))
 
     # create lambda
     create_function_response = create_lambda_function(
@@ -157,9 +157,14 @@ def test_lambda_aws_proxy_integration(
 
     def invoke_api(url):
         # use test header with different casing to check if it is preserved in the proxy payload
+        # authorization is a weird case, it will get Pascal cased by default
         response = requests.get(
             url,
-            headers={"User-Agent": "python-requests/testing", "tEsT-HEADeR": "aValUE"},
+            headers={
+                "User-Agent": "python-requests/testing",
+                "tEsT-HEADeR": "aValUE",
+                "authorization": "random-value",
+            },
             verify=False,
         )
         assert 200 == response.status_code
@@ -228,7 +233,7 @@ def test_lambda_aws_proxy_integration(
     def invoke_api_with_multi_value_header(url):
         headers = {
             "Content-Type": "application/json;charset=utf-8",
-            "Authorization": "Bearer token123;API key456",
+            "aUThorization": "Bearer token123;API key456",  # test the casing of the Authorization header
             "User-Agent": "python-requests/testing",
         }
 
@@ -245,6 +250,75 @@ def test_lambda_aws_proxy_integration(
 
     responses = retry(invoke_api_with_multi_value_header, sleep=2, retries=10, url=invocation_url)
     snapshot.match("invocation-payload-with-params-encoding-multi", responses.json())
+
+
+@markers.aws.validated
+def test_lambda_aws_proxy_integration_non_post_method(
+    create_rest_apigw, create_lambda_function, create_role_with_policy, snapshot, aws_client
+):
+    function_name = f"test-function-{short_uid()}"
+    stage_name = "test"
+
+    # create lambda
+    create_function_response = create_lambda_function(
+        func_name=function_name,
+        handler_file=TEST_LAMBDA_AWS_PROXY,
+        handler="lambda_aws_proxy.handler",
+        runtime=Runtime.python3_9,
+    )
+    # create invocation role
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
+    lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
+    # create rest api
+    api_id, _, root = create_rest_apigw(
+        name=f"test-api-{short_uid()}",
+        description="Integration test API",
+    )
+    resource_id = aws_client.apigateway.create_resource(
+        restApiId=api_id, parentId=root, pathPart="{proxy+}"
+    )["id"]
+    aws_client.apigateway.put_method(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        authorizationType="NONE",
+    )
+
+    # Lambda AWS_PROXY integration
+    aws_client.apigateway.put_integration(
+        restApiId=api_id,
+        resourceId=resource_id,
+        httpMethod="ANY",
+        type="AWS_PROXY",
+        integrationHttpMethod="GET",  # GET is not allowed. We expect this to fail
+        uri=f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        credentials=role_arn,
+    )
+    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+
+    # invoke rest api
+    invocation_url = api_invoke_url(
+        api_id=api_id,
+        stage=stage_name,
+        path="/test-path",
+    )
+
+    def invoke_api(url):
+        invoke_response = requests.get(
+            url,
+            headers={
+                "User-Agent": "python-requests/testing",
+            },
+            verify=False,
+        )
+        assert invoke_response.status_code == 500
+        return invoke_response
+
+    # retry is necessary against AWS, probably IAM permission delay
+    response = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
+    snapshot.match("invocation-payload-with-get-proxy-method", response.json())
 
 
 @markers.aws.validated

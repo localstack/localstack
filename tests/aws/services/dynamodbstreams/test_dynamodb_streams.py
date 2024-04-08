@@ -66,7 +66,7 @@ class TestDynamoDBStreams:
         # assert stream has been deleted
         retry(_assert_stream_deleted, sleep=0.4, retries=5)
 
-    @pytest.mark.skip(reason="Flaky")
+    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Flaky")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..EncryptionType", "$..SizeBytes"])
     def test_enable_kinesis_streaming_destination(

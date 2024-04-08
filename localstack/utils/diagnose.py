@@ -1,4 +1,5 @@
 """Diagnostic tool for a localstack instance running in a container."""
+
 import inspect
 import os
 import socket
@@ -129,8 +130,8 @@ def traverse_file_tree(root: str) -> List[str]:
     try:
         result = []
         if config.in_docker():
-            for root, _, _ in os.walk(root):
-                result.append(root)
+            for dirpath, _, _ in os.walk(root):
+                result.append(dirpath)
         return result
     except Exception as e:
         return ["traversing files failed %s" % e]

@@ -1,7 +1,8 @@
-""" Handlers for compatibility with legacy edge proxy and the quart http framework."""
+"""Handlers for compatibility with legacy edge proxy and the quart http framework."""
 
 import logging
 
+from localstack import config
 from localstack.http import Response
 
 from ..api import RequestContext
@@ -28,6 +29,8 @@ def pop_request_context(_chain: HandlerChain, _context: RequestContext, _respons
 def set_close_connection_header(_chain: HandlerChain, context: RequestContext, response: Response):
     """This is a hack to work around performance issues with h11 and boto. See
     https://github.com/localstack/localstack/issues/6557"""
+    if config.GATEWAY_SERVER != "hypercorn":
+        return
     if conn := context.request.headers.get("Connection"):
         if conn.lower() == "keep-alive":
             # don't set Connection: close header if keep-alive is explicitly asked for

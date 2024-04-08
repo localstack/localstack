@@ -4,5 +4,5 @@ def handler(event, context):
         environment = f.read()
     environment = environment.split("\x00")
     env_partition = [env.partition("=") for env in environment if env]
-    env_dict = dict((env[0], env[2]) for env in env_partition)
+    env_dict = {env[0]: env[2] for env in env_partition}
     return {"environment": env_dict}

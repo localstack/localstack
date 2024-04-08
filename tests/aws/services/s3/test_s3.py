@@ -55,7 +55,6 @@ from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
 from localstack.utils.run import run
-from localstack.utils.server import http2_server
 from localstack.utils.strings import (
     checksum_crc32,
     checksum_crc32c,
@@ -341,14 +340,16 @@ class TestS3:
     @markers.snapshot.skip_snapshot_verify(paths=["$..AccessPointAlias"])
     def test_region_header_exists(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
+        region = "eu-west-1"
+        snapshot.add_transformer(RegexTransformer(region, "<region>"))
         bucket_name = s3_create_bucket(
-            CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
+            CreateBucketConfiguration={"LocationConstraint": region},
         )
         response = aws_client.s3.head_bucket(Bucket=bucket_name)
-        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
+        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == region
         snapshot.match("head_bucket", response)
         response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
-        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == "eu-west-1"
+        assert response["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == region
         snapshot.match("list_objects_v2", response)
 
     @markers.aws.validated
@@ -1412,6 +1413,65 @@ class TestS3:
                 ACL="public-read",
             )
         snapshot.match("copy-object-in-place-with-acl", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not raise exception",
+    )
+    def test_s3_copy_object_in_place_versioned(
+        self, s3_bucket, allow_bucket_acl, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID", value_replacement="owner-id"),
+            ]
+        )
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        object_key = "source-object"
+
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put_object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head_object", head_object)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ObjectAttributes=["StorageClass"],
+        )
+        snapshot.match("object-attrs", object_attrs)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.copy_object(
+                Bucket=s3_bucket, CopySource=f"{s3_bucket}/{object_key}", Key=object_key
+            )
+        snapshot.match("copy-object-in-place-no-change", e.value.response)
+
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-in-place-versioned", copy_obj)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-copied", head_object)
+
+        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-copied", get_obj)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -2480,21 +2540,33 @@ class TestS3:
         snapshot.match("bucket-replication", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$..Error.LocationConstraint"],  # not returned by Moto
+    )
     def test_different_location_constraint(
         self,
         s3_create_bucket,
         aws_client_factory,
         s3_create_bucket_with_client,
+        region_name,
         snapshot,
         aws_client,
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
-        snapshot.add_transformer(
-            snapshot.transform.key_value("Location", "<location>", reference_replacement=False)
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("Location", "<location>", reference_replacement=False),
+                snapshot.transform.key_value(
+                    "LocationConstraint", "<location-constraint>", reference_replacement=False
+                ),
+            ]
         )
         bucket_1_name = f"bucket-{short_uid()}"
-        region_1 = "us-east-1"
-        client_1 = aws_client_factory(region_name=region_1).s3
+        region_us_east_1 = "us-east-1"
+        client_1 = aws_client_factory(
+            region_name=region_us_east_1, config=Config(parameter_validation=False)
+        ).s3
         s3_create_bucket_with_client(
             client_1,
             Bucket=bucket_1_name,
@@ -2502,7 +2574,26 @@ class TestS3:
         response = client_1.get_bucket_location(Bucket=bucket_1_name)
         snapshot.match("get_bucket_location_bucket_1", response)
 
+        # assert creation fails with location constraint for us-east-1 region
+        with pytest.raises(Exception) as exc:
+            client_1.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": region_us_east_1},
+            )
+        snapshot.match("create-bucket-constraint-us-east-1", exc.value.response)
+        if is_aws_cloud() or not is_v2_provider():
+            assert exc.value.response["Error"]["LocationConstraint"] == region_us_east_1
+
+        # assert creation fails with location constraint with the region unset
+        with pytest.raises(Exception) as exc:
+            client_1.create_bucket(
+                Bucket=f"bucket-{short_uid()}",
+                CreateBucketConfiguration={"LocationConstraint": None},
+            )
+        snapshot.match("create-bucket-constraint-us-east-1-with-None", exc.value.response)
+
         region_2 = "us-east-2"
+        snapshot.add_transformer(RegexTransformer(region_2, "<region_2>"))
         client_2 = aws_client_factory(region_name=region_2).s3
         bucket_2_name = f"bucket-{short_uid()}"
         s3_create_bucket_with_client(
@@ -3313,13 +3404,11 @@ class TestS3:
             func_name=function_name,
             role=lambda_su_role,
             runtime=Runtime.python3_9,
-            envvars=dict(
-                {
-                    "BUCKET_NAME": bucket_name,
-                    "OBJECT_NAME": key,
-                    "LOCAL_FILE_NAME": "/tmp/" + key,
-                }
-            ),
+            envvars={
+                "BUCKET_NAME": bucket_name,
+                "OBJECT_NAME": key,
+                "LOCAL_FILE_NAME": "/tmp/" + key,
+            },
         )
         aws_client.lambda_.invoke(FunctionName=function_name, InvocationType="Event")
 
@@ -3609,7 +3698,7 @@ class TestS3:
     ):
         snapshot.add_transformer(snapshot.transform.s3_api())
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration.mjs"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -3620,7 +3709,7 @@ class TestS3:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_s3_integration.handler",
             role=lambda_su_role,
         )
@@ -4593,19 +4682,25 @@ class TestS3:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "storage_class",
+        "storage_class, is_retrievable",
         [
-            StorageClass.STANDARD,
-            StorageClass.STANDARD_IA,
-            StorageClass.GLACIER,
-            StorageClass.GLACIER_IR,
-            StorageClass.REDUCED_REDUNDANCY,
-            StorageClass.ONEZONE_IA,
-            StorageClass.INTELLIGENT_TIERING,
-            StorageClass.DEEP_ARCHIVE,
+            (StorageClass.STANDARD, True),
+            (StorageClass.STANDARD_IA, True),
+            (StorageClass.GLACIER, False),
+            (StorageClass.GLACIER_IR, True),
+            (StorageClass.REDUCED_REDUNDANCY, True),
+            (StorageClass.ONEZONE_IA, True),
+            (StorageClass.INTELLIGENT_TIERING, True),
+            (StorageClass.DEEP_ARCHIVE, False),
         ],
     )
-    def test_put_object_storage_class(self, s3_bucket, snapshot, storage_class, aws_client):
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="GLACIER_IR is considered as an archive class in Moto and raises an exception",
+    )
+    def test_put_object_storage_class(
+        self, s3_bucket, snapshot, storage_class, is_retrievable, aws_client
+    ):
         key_name = "test-put-object-storage-class"
         aws_client.s3.put_object(
             Bucket=s3_bucket,
@@ -4620,6 +4715,14 @@ class TestS3:
             ObjectAttributes=["StorageClass"],
         )
         snapshot.match("get-object-storage-class", response)
+
+        if is_retrievable:
+            response = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+            snapshot.match("get-object", response)
+        else:
+            with pytest.raises(ClientError) as e:
+                aws_client.s3.get_object(Bucket=s3_bucket, Key=key_name)
+            snapshot.match("get-object", e.value.response)
 
     @markers.aws.validated
     def test_put_object_storage_class_outposts(
@@ -6530,9 +6633,9 @@ class TestS3PresignedUrl:
             # Moto does not register the default returned value from STS as a valid IAM user, which is way we can't
             # retrieve the secret access key
             # we need to hardcode the secret access key to the default one
-            response["Credentials"][
-                "SecretAccessKey"
-            ] = s3_constants.DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
+            response["Credentials"]["SecretAccessKey"] = (
+                s3_constants.DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY
+            )
 
         client = boto3.client(
             "s3",
@@ -6700,28 +6803,19 @@ class TestS3PresignedUrl:
         assert request_response.status_code == 200
 
     @markers.aws.only_localstack
-    @pytest.mark.parametrize("case_sensitive_headers", [True, False])
-    def test_s3_get_response_case_sensitive_headers(
-        self, s3_bucket, case_sensitive_headers, aws_client
-    ):
-        # Test that RETURN_CASE_SENSITIVE_HEADERS is respected
+    def test_s3_get_response_case_sensitive_headers(self, s3_bucket, aws_client):
+        # Test that ETag headers is case sensitive
         object_key = "key-by-hostname"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="something")
 
         # get object and assert headers
-        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
-        try:
-            url = aws_client.s3.generate_presigned_url(
-                "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
-            )
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
-            response = requests.get(url, verify=False)
-            # expect that Etag is contained
-            header_names = list(response.headers.keys())
-            expected_etag = "ETag" if case_sensitive_headers else "etag"
-            assert expected_etag in header_names
-        finally:
-            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
+        url = aws_client.s3.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": object_key}
+        )
+        response = requests.get(url, verify=False)
+        # expect that Etag is contained
+        header_names = list(response.headers.keys())
+        assert "ETag" in header_names
 
     @pytest.mark.parametrize(
         "signature_version, use_virtual_address",
@@ -6978,7 +7072,7 @@ class TestS3PresignedUrl:
         assert "bar-complicated-no-random" not in url
 
         handler_file = os.path.join(
-            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.js"
+            os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_presign.mjs"
         )
         temp_folder = create_tmp_folder_lambda(
             handler_file,
@@ -6989,7 +7083,7 @@ class TestS3PresignedUrl:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_s3_integration_presign.handler",
             role=lambda_su_role,
             envvars={
@@ -7051,16 +7145,14 @@ class TestS3PresignedUrl:
         handler_file = os.path.join(
             os.path.dirname(__file__), "../lambda_/functions/lambda_s3_integration_sdk_v2.js"
         )
-        temp_folder = create_tmp_folder_lambda(
-            handler_file,
-            run_command="npm i @aws-sdk/util-endpoints @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/middleware-endpoint",
-        )
+        temp_folder = create_tmp_folder_lambda(handler_file)
 
         function_name = f"func-integration-{short_uid()}"
+        # we need the AWS SDK v2, and Node 16 still has it by default
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(temp_folder, get_content=True),
-            runtime=Runtime.nodejs14_x,
+            runtime=Runtime.nodejs16_x,
             handler="lambda_s3_integration_sdk_v2.handler",
             role=lambda_su_role,
             envvars={
@@ -7992,7 +8084,7 @@ class TestS3StaticWebsiteHosting:
                     Bucket=s3_bucket,
                     WebsiteConfiguration=invalid_configuration,
                 )
-                assert False, f"{invalid_configuration} should have raised an exception"
+                raise AssertionError(f"{invalid_configuration} should have raised an exception")
             except ClientError as e:
                 snapshot.match(f"invalid-website-conf-{index}", e.response)
 
@@ -10350,7 +10442,7 @@ class TestS3PresignedPost:
         reason="not implemented in moto",
     )
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..HostId"],  # FIXME: in CI, it fails sporadically and the form is empty
+        paths=["$..HostId"],
     )
     def test_post_object_with_wrong_content_type(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformers_list(

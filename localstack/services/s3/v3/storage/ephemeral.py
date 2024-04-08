@@ -1,14 +1,14 @@
 import base64
-import contextlib
 import hashlib
 import os
 import threading
+import time
 from collections import defaultdict
-from io import BytesIO
+from io import BytesIO, UnsupportedOperation
 from shutil import rmtree
 from tempfile import SpooledTemporaryFile, mkdtemp
 from threading import RLock
-from typing import IO, Iterator, Optional, TypedDict
+from typing import IO, Iterator, Literal, Optional, TypedDict
 
 from readerwriterlock import rwlock
 
@@ -18,7 +18,13 @@ from localstack.services.s3.utils import ChecksumHash, ObjectRange, get_s3_check
 from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 from localstack.utils.files import mkdir
 
-from .core import LimitedStream, S3ObjectStore, S3StoredMultipart, S3StoredObject
+from .core import (
+    LimitedStream,
+    S3ObjectStore,
+    S3StoredMultipart,
+    S3StoredObject,
+    should_copy_in_place,
+)
 
 # max file size for S3 objects kept in memory (500 KB by default)
 # TODO: make it configurable
@@ -37,6 +43,7 @@ class LockedFileMixin:
         # currently iterating over it.
         # see:
         self.readwrite_lock = rwlock.RWLockWrite()
+        self.internal_last_modified = 0
 
 
 class LockedSpooledTemporaryFile(LockedFileMixin, SpooledTemporaryFile):
@@ -57,26 +64,40 @@ class EphemeralS3StoredObject(S3StoredObject):
     etag: Optional[str]
     checksum_hash: Optional[ChecksumHash]
     _checksum: Optional[str]
+    _lock: rwlock.Lockable
 
-    def __init__(self, s3_object: S3Object | S3Part, file: LockedSpooledTemporaryFile):
-        super().__init__(s3_object=s3_object)
+    def __init__(
+        self,
+        s3_object: S3Object | S3Part,
+        file: LockedSpooledTemporaryFile,
+        mode: Literal["r", "w"] = "r",
+    ):
+        super().__init__(s3_object=s3_object, mode=mode)
         self.file = file
         self.size = 0
         self._etag = None
         self.checksum_hash = None
         self._checksum = None
         self._pos = 0
+        self._lock = (
+            self.file.readwrite_lock.gen_wlock()
+            if mode == "w"
+            else self.file.readwrite_lock.gen_rlock()
+        )
+        self._lock.acquire()
 
     def read(self, s: int = -1) -> bytes | None:
         """Read at most `s` bytes from the underlying fileobject, and keeps the internal position"""
         with self.file.position_lock:
             self.file.seek(self._pos)
             data = self.file.read(s)
-        if not data:
-            return b""
 
-        read = len(data)
-        self._pos += read
+            if not data:
+                return b""
+
+            read = len(data)
+            self._pos += read
+
         return data
 
     def seek(self, offset: int, whence: int = 0) -> int:
@@ -98,8 +119,15 @@ class EphemeralS3StoredObject(S3StoredObject):
         :param size: size to resize the stream to, or position if not given
         :return: the new file size
         """
+        if self._mode != "w":
+            raise UnsupportedOperation("S3 object is not in write mode")
+
         with self.file.position_lock:
-            return self.file.truncate(size)
+            truncate = self.file.truncate(size)
+            self.s3_object.internal_last_modified = self.file.internal_last_modified = (
+                time.time_ns()
+            )
+            return truncate
 
     def write(self, stream: IO[bytes] | "EphemeralS3StoredObject" | LimitedStream) -> int:
         """
@@ -111,6 +139,9 @@ class EphemeralS3StoredObject(S3StoredObject):
         :param stream: can be a regular IO[bytes] or an EphemeralS3StoredObject
         :return: number of bytes written
         """
+        if self._mode != "w":
+            raise UnsupportedOperation("S3 object is not in write mode")
+
         if stream is None:
             stream = BytesIO()
 
@@ -118,34 +149,28 @@ class EphemeralS3StoredObject(S3StoredObject):
             self.checksum_hash = get_s3_checksum(self.s3_object.checksum_algorithm)
 
         file = self.file
-        # if the incoming stream has a file containing a readwrite_lock, from a `copy` call, then we need to lock
-        # around the iteration to block any concurrent write of the underlying object
-        if hasattr(stream, "file") and hasattr(stream.file, "readwrite_lock"):
-            read_lock = stream.file.readwrite_lock.gen_rlock()
-        else:
-            read_lock = contextlib.nullcontext()
-
-        with file.readwrite_lock.gen_wlock():
+        with file.position_lock:
             file.seek(0)
             file.truncate()
 
             etag = hashlib.md5(usedforsecurity=False)
 
-            with read_lock:
-                while data := stream.read(S3_CHUNK_SIZE):
-                    file.write(data)
-                    etag.update(data)
-                    if self.checksum_hash:
-                        self.checksum_hash.update(data)
+            while data := stream.read(S3_CHUNK_SIZE):
+                file.write(data)
+                etag.update(data)
+                if self.checksum_hash:
+                    self.checksum_hash.update(data)
 
             etag = etag.hexdigest()
             self.size = self.s3_object.size = file.tell()
             self._etag = self.s3_object.etag = etag
+            self.s3_object.internal_last_modified = self.file.internal_last_modified = (
+                time.time_ns()
+            )
 
-            file.seek(0)
-            self._pos = 0
+            self._pos = file.seek(0)
 
-            return self.size
+        return self.size
 
     def append(self, part: "EphemeralS3StoredObject") -> int:
         """
@@ -154,19 +179,27 @@ class EphemeralS3StoredObject(S3StoredObject):
         :param part: EphemeralS3StoredObject
         :return: number of written bytes
         """
+        if self._mode != "w":
+            raise UnsupportedOperation("S3 object is not in write mode")
+
         read = 0
-        with part.file.readwrite_lock.gen_rlock():
-            while data := part.read(S3_CHUNK_SIZE):
-                self.file.write(data)
-                read += len(data)
+        while data := part.read(S3_CHUNK_SIZE):
+            self.file.write(data)
+            read += len(data)
 
         self.size += read
         self.s3_object.size = self.size
+        self.s3_object.internal_last_modified = self.file.internal_last_modified = time.time_ns()
         return read
 
     def close(self):
-        """This is a noop, because closing the underlying file object will delete it"""
-        pass
+        """We only release the lock, because closing the underlying file object will delete it"""
+        self._lock.release()
+        self.closed = True
+
+    @property
+    def last_modified(self) -> int:
+        return self.file.internal_last_modified
 
     @property
     def checksum(self) -> Optional[str]:
@@ -207,22 +240,22 @@ class EphemeralS3StoredObject(S3StoredObject):
 
     def __iter__(self) -> Iterator[bytes]:
         """
-        This is mostly used as convenience to directly passed this object to a Werkzeug response object, hiding the
+        This is mostly used as convenience to directly pass this object to a Werkzeug response object, hiding the
         iteration locking logic.
+        The caller needs to call `close()` once it is done to release the lock.
         :return:
         """
-        with self.file.readwrite_lock.gen_rlock():
-            while data := self.read(S3_CHUNK_SIZE):
-                if not data:
-                    return b""
+        while data := self.read(S3_CHUNK_SIZE):
+            if not data:
+                return b""
 
-                yield data
+            yield data
 
 
 class EphemeralS3StoredMultipart(S3StoredMultipart):
     upload_dir: str
     _s3_store: "EphemeralS3ObjectStore"
-    parts: dict[PartNumber, EphemeralS3StoredObject]
+    parts: dict[PartNumber, LockedSpooledTemporaryFile]
 
     def __init__(
         self,
@@ -234,20 +267,20 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         super().__init__(s3_store=s3_store, bucket=bucket, s3_multipart=s3_multipart)
         self.upload_dir = upload_dir
 
-    def open(self, s3_part: S3Part) -> EphemeralS3StoredObject:
+    def open(self, s3_part: S3Part, mode: Literal["r", "w"] = "r") -> EphemeralS3StoredObject:
         """
         Returns an EphemeralS3StoredObject for an S3Part, allowing direct access to the object. This will add a part
-        into the Multipart collection. We can directly store the EphemeralS3StoredObject in the collection, as S3Part
+        into the Multipart collection. We can directly store the EphemeralS3Stored Object in the collection, as S3Part
         cannot be accessed/read directly from the API.
         :param s3_part: S3Part object
+        :param mode: opening mode, "read" or "write"
         :return: EphemeralS3StoredObject, most often to directly `write` into it.
         """
-        if not (stored_part := self.parts.get(s3_part.part_number)):
+        if not (file := self.parts.get(s3_part.part_number)):
             file = LockedSpooledTemporaryFile(dir=self.upload_dir, max_size=S3_MAX_FILE_SIZE_BYTES)
-            stored_part = EphemeralS3StoredObject(s3_part, file)
-            self.parts[s3_part.part_number] = stored_part
+            self.parts[s3_part.part_number] = file
 
-        return stored_part
+        return EphemeralS3StoredObject(s3_part, file, mode=mode)
 
     def remove_part(self, s3_part: S3Part):
         """
@@ -255,34 +288,34 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :param s3_part: S3Part
         :return:
         """
-        stored_part = self.parts.pop(s3_part.part_number, None)
-        if stored_part:
-            stored_part.file.close()
+        stored_part_file = self.parts.pop(s3_part.part_number, None)
+        if stored_part_file:
+            stored_part_file.close()
 
-    def complete_multipart(self, parts: list[S3Part]) -> EphemeralS3StoredObject:
+    def complete_multipart(self, parts: list[S3Part]) -> None:
         """
         Takes a list of parts numbers, and will iterate over it to assemble all parts together into a single
         EphemeralS3StoredObject containing all those parts.
         :param parts: list of PartNumber
         :return: the resulting EphemeralS3StoredObject
         """
-        s3_stored_object = self._s3_store.open(self.bucket, self.s3_multipart.object)
-        # reset the file to overwrite
-        s3_stored_object.seek(0)
-        s3_stored_object.truncate()
-        for s3_part in parts:
-            stored_part = self.parts.get(s3_part.part_number)
-            s3_stored_object.append(stored_part)
-
-        return s3_stored_object
+        with self._s3_store.open(
+            self.bucket, self.s3_multipart.object, mode="w"
+        ) as s3_stored_object:
+            # reset the file to overwrite
+            s3_stored_object.seek(0)
+            s3_stored_object.truncate()
+            for s3_part in parts:
+                with self.open(s3_part, mode="r") as stored_part:
+                    s3_stored_object.append(stored_part)
 
     def close(self):
         """
         Iterates over all parts of the collection to close them and clean them up. Closing a part will delete it.
         :return:
         """
-        for part in self.parts.values():
-            part.file.close()
+        for stored_part_file in self.parts.values():
+            stored_part_file.close()
         self.parts.clear()
 
     def copy_from_object(
@@ -301,15 +334,15 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :param range_data: the range data from which the S3Part will copy its data.
         :return: the EphemeralS3StoredObject representing the stored part
         """
-        src_stored_object = self._s3_store.open(src_bucket, src_s3_object)
-        stored_part = self.open(s3_part)
+        with self._s3_store.open(
+            src_bucket, src_s3_object, mode="r"
+        ) as src_stored_object, self.open(s3_part, mode="w") as stored_part:
+            if not range_data:
+                stored_part.write(src_stored_object)
+                return
 
-        if not range_data:
-            stored_part.write(src_stored_object)
-            return
-
-        object_slice = LimitedStream(src_stored_object, range_data=range_data)
-        stored_part.write(object_slice)
+            object_slice = LimitedStream(src_stored_object, range_data=range_data)
+            stored_part.write(object_slice)
 
 
 class BucketTemporaryFileSystem(TypedDict):
@@ -345,13 +378,16 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         self.root_directory = root_directory
         self._lock_multipart_create = threading.RLock()
 
-    def open(self, bucket: BucketName, s3_object: S3Object) -> EphemeralS3StoredObject:
+    def open(
+        self, bucket: BucketName, s3_object: S3Object, mode: Literal["r", "w"] = "r"
+    ) -> EphemeralS3StoredObject:
         """
         Returns a EphemeralS3StoredObject from an S3Object, a wrapper around an underlying fileobject underneath,
         exposing higher level actions for the provider to interact with. This allows the provider to store data for an
         S3Object.
         :param bucket: the S3Object bucket
         :param s3_object: an S3Object
+        :param mode: read or write mode for the object to open
         :return: EphemeralS3StoredObject
         """
         key = self._key_from_s3_object(s3_object)
@@ -360,7 +396,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
             file = LockedSpooledTemporaryFile(dir=bucket_tmp_dir, max_size=S3_MAX_FILE_SIZE_BYTES)
             self._filesystem[bucket]["keys"][key] = file
 
-        return EphemeralS3StoredObject(s3_object=s3_object, file=file)
+        return EphemeralS3StoredObject(s3_object=s3_object, file=file, mode=mode)
 
     def remove(self, bucket: BucketName, s3_object: S3Object | list[S3Object]):
         """
@@ -395,14 +431,13 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         :return: the destination EphemeralS3StoredObject
         """
         # If this is an in-place copy, directly return the EphemeralS3StoredObject of the destination S3Object, no need
-        # to copy the underlying data.
-        if src_bucket == dest_bucket and src_object.key == dest_object.key:
-            return self.open(dest_bucket, dest_object)
+        # to copy the underlying data except if we are in a versioned bucket.
+        if should_copy_in_place(src_bucket, src_object, dest_bucket, dest_object):
+            return self.open(dest_bucket, dest_object, mode="r")
 
-        src_stored_object = self.open(src_bucket, src_object)
-        dest_stored_object = self.open(dest_bucket, dest_object)
-
-        dest_stored_object.write(src_stored_object)
+        with self.open(src_bucket, src_object, mode="r") as src_stored_object:
+            dest_stored_object = self.open(dest_bucket, dest_object, mode="w")
+            dest_stored_object.write(src_stored_object)
 
         return dest_stored_object
 

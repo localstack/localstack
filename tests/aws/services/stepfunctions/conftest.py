@@ -4,7 +4,11 @@ from typing import Final
 
 import pytest
 from jsonpath_ng.ext import parse
-from localstack_snapshot.snapshots.transformer import TransformContext
+from localstack_snapshot.snapshots.transformer import (
+    JsonpathTransformer,
+    RegexTransformer,
+    TransformContext,
+)
 
 from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -22,6 +26,74 @@ LOG = logging.getLogger(__name__)
 def sfn_snapshot(snapshot):
     snapshot.add_transformers_list(snapshot.transform.stepfunctions_api())
     return snapshot
+
+
+@pytest.fixture
+def sfn_ecs_snapshot(sfn_snapshot):
+    sfn_snapshot.add_transformer(JsonpathTransformer(jsonpath="$..TaskArn", replacement="task_arn"))
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..ContainerArn", replacement="container_arn")
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..PrivateIpv4Address", replacement="private_ipv4_address")
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..RuntimeId", replacement="runtime_id")
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..ImageDigest", replacement="image_digest")
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..PullStartedAt", replacement="time", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..PullStoppedAt", replacement="time", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..StartedAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..StoppedAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..StoppingAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(jsonpath="$..CreatedAt", replacement="time", replace_reference=False)
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..ExecutionStoppedAt", replacement="time", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..ConnectivityAt", replacement="time", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..PullStartedAt", replacement="time", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(
+        JsonpathTransformer(
+            jsonpath="$..PullStoppedAt", replacement="time", replace_reference=False
+        )
+    )
+    sfn_snapshot.add_transformer(RegexTransformer("subnet-[0-9a-zA-Z]+", "subnet_value"))
+    sfn_snapshot.add_transformer(RegexTransformer("sg-[0-9a-zA-Z]+", "sg_value"))
+    sfn_snapshot.add_transformer(RegexTransformer("eni-[0-9a-zA-Z]+", "eni_value"))
+    sfn_snapshot.add_transformer(RegexTransformer("ip-[0-9-]+", "ip_value"))
+    sfn_snapshot.add_transformer(
+        RegexTransformer(":".join(["[0-9a-z][0-9a-z]?[0-9a-z]?"] * 4), "ip_value")
+    )
+    sfn_snapshot.add_transformer(RegexTransformer(":".join(["[0-9a-z][0-9a-z]+"] * 6), "mac_value"))
+    return sfn_snapshot
 
 
 class SfnNoneRecursiveParallelTransformer:
@@ -182,9 +254,32 @@ def create_state_machine(aws_client):
 
     for state_machine_arn in _state_machine_arns:
         try:
+            executions = aws_client.stepfunctions.list_executions(stateMachineArn=state_machine_arn)
+            for execution in executions["executions"]:
+                aws_client.stepfunctions.stop_execution(executionArn=execution["executionArn"])
+
             aws_client.stepfunctions.delete_state_machine(stateMachineArn=state_machine_arn)
         except Exception:
             LOG.debug(f"Unable to delete state machine '{state_machine_arn}' during cleanup.")
+
+
+@pytest.fixture
+def create_activity(aws_client):
+    activities_arns: Final[list[str]] = list()
+
+    def _create_activity(**kwargs):
+        create_output = aws_client.stepfunctions.create_activity(**kwargs)
+        create_output_arn = create_output["activityArn"]
+        activities_arns.append(create_output_arn)
+        return create_output
+
+    yield _create_activity
+
+    for activity_arn in activities_arns:
+        try:
+            aws_client.stepfunctions.delete_activity(activityArn=activity_arn)
+        except Exception:
+            LOG.debug(f"Unable to delete Activity '{activity_arn}' during cleanup.")
 
 
 @pytest.fixture
@@ -249,6 +344,26 @@ def sqs_send_heartbeat_and_task_success_state_machine(
         aws_client.stepfunctions.start_execution(
             stateMachineArn=state_machine_arn,
             input=json.dumps({"QueueUrl": sqs_queue_url, "Iterator": {"Count": 300}}),
+        )
+
+    return _create_state_machine
+
+
+@pytest.fixture
+def sfn_activity_consumer(aws_client, create_state_machine, create_iam_role_for_sfn):
+    def _create_state_machine(template, activity_arn):
+        snf_role_arn = create_iam_role_for_sfn()
+        sm_name: str = f"activity_send_task_failure_on_task_{short_uid()}"
+        definition = json.dumps(template)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition, roleArn=snf_role_arn
+        )
+        state_machine_arn = creation_resp["stateMachineArn"]
+
+        aws_client.stepfunctions.start_execution(
+            stateMachineArn=state_machine_arn,
+            input=json.dumps({"ActivityArn": activity_arn}),
         )
 
     return _create_state_machine

@@ -30,6 +30,8 @@ def serve_gateway(
         return _serve_hypercorn(gateway, listens, use_ssl, asynchronous)
     elif config.GATEWAY_SERVER == "werkzeug":
         return _serve_werkzeug(gateway, listens, use_ssl, asynchronous)
+    elif config.GATEWAY_SERVER == "twisted":
+        return _serve_twisted(gateway, listens, use_ssl, asynchronous)
     else:
         raise ValueError(f"Unknown gateway server type {config.GATEWAY_SERVER}")
 
@@ -107,3 +109,11 @@ def _serve_hypercorn(
     if not asynchronous:
         server.join()
     return server._thread
+
+
+def _serve_twisted(
+    gateway: LocalstackAwsGateway, listen: List[HostAndPort], use_ssl: bool, asynchronous: bool
+):
+    from .twisted import serve_gateway
+
+    return serve_gateway(gateway, listen, use_ssl, asynchronous)

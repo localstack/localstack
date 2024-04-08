@@ -38,6 +38,9 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json": {
     "last_validated_date": "2023-09-21T12:08:16+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_json_max_items": {
+    "last_validated_date": "2024-03-25T18:19:14+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_base_list_objects_v2": {
     "last_validated_date": "2023-09-21T11:54:23+00:00"
   },
@@ -52,6 +55,42 @@
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_headers_first_row_typed_headers": {
     "last_validated_date": "2023-09-21T12:26:55+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[-1]": {
+    "last_validated_date": "2024-03-22T21:03:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[0]": {
+    "last_validated_date": "2024-03-25T15:36:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[1.5]": {
+    "last_validated_date": "2024-03-22T21:04:40+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[100000000]": {
+    "last_validated_date": "2024-03-25T15:37:24+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[100000001]": {
+    "last_validated_date": "2024-03-22T21:05:22+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items[2]": {
+    "last_validated_date": "2024-03-25T15:37:04+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[-1]": {
+    "last_validated_date": "2024-03-25T17:38:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[0]": {
+    "last_validated_date": "2024-03-25T17:39:20+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[1.5]": {
+    "last_validated_date": "2024-03-25T17:40:01+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[100000000]": {
+    "last_validated_date": "2024-03-25T17:40:23+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[100000001]": {
+    "last_validated_date": "2024-03-25T17:40:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_csv_max_items_paths[2]": {
+    "last_validated_date": "2024-03-25T17:39:44+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_item_reader_json_no_json_list_object": {
     "last_validated_date": "2023-09-21T12:30:11+00:00"
@@ -74,6 +113,18 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_catch_legacy": {
     "last_validated_date": "2023-07-24T09:19:21+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_item_selector": {
+    "last_validated_date": "2024-02-08T21:44:04+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_parameters": {
+    "last_validated_date": "2024-02-08T21:44:45+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_inline_item_selector": {
+    "last_validated_date": "2024-02-08T21:47:17+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_inline_parameters": {
+    "last_validated_date": "2024-02-08T21:46:03+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_item_selector": {
     "last_validated_date": "2023-07-19T11:47:54+00:00"
   },
@@ -82,6 +133,27 @@
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy": {
     "last_validated_date": "2023-07-23T18:46:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_distributed": {
+    "last_validated_date": "2024-02-08T11:27:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_distributed_item_selector": {
+    "last_validated_date": "2024-02-08T20:28:00+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_distributed_parameters": {
+    "last_validated_date": "2024-02-08T20:22:08+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_inline": {
+    "last_validated_date": "2024-02-08T11:26:05+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_inline_item_selector": {
+    "last_validated_date": "2024-02-08T21:08:16+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_inline_parameters": {
+    "last_validated_date": "2024-02-08T21:07:39+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_nested": {
+    "last_validated_date": "2024-03-29T16:26:02+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_no_processor_config": {
     "last_validated_date": "2023-12-15T21:25:27+00:00"
@@ -104,14 +176,20 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state": {
     "last_validated_date": "2023-07-17T10:41:25+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_nested": {
+    "last_validated_date": "2024-03-29T17:05:02+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_order": {
     "last_validated_date": "2023-12-15T22:15:11+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_retry_interval_features": {
-    "last_validated_date": "2024-02-18T20:08:18+00:00"
+    "last_validated_date": "2024-02-23T08:36:58+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_retry_interval_features_jitter_none": {
-    "last_validated_date": "2024-02-22T21:30:46+00:00"
+    "last_validated_date": "2024-02-23T08:37:40+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_retry_interval_features_max_attempts_zero": {
+    "last_validated_date": "2024-03-27T09:30:20+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_wait_timestamp": {
     "last_validated_date": "2023-10-31T18:01:20+00:00"

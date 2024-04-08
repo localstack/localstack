@@ -685,9 +685,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         state.layers[layer_name] = layer
                     else:
                         # Create layer version if another version of the same layer already exists
-                        state.layers[layer_name].layer_versions[
-                            layer_version_str
-                        ] = layer.layer_versions.get(layer_version_str)
+                        state.layers[layer_name].layer_versions[layer_version_str] = (
+                            layer.layer_versions.get(layer_version_str)
+                        )
 
             # only the first two matches in the array are considered for the error message
             layer_arn = ":".join(layer_version_arn.split(":")[:-1])
@@ -1323,7 +1323,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 version, return_qualified_arn=bool(qualifier), alias_name=alias_name
             ),
             Code=code_location,  # TODO
-            **additional_fields
+            **additional_fields,
             # Concurrency={},  # TODO
         )
 
@@ -1359,6 +1359,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         **kwargs,
     ) -> InvocationResponse:
         account_id, region = api_utils.get_account_and_region(function_name, context)
+        if not api_utils.validate_function_name(function_name):
+            raise ValidationException(
+                f"1 validation error detected: Value '{function_name}' at 'functionName' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{{2}}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{{1}}:)?(\\d{{12}}:)?(function:)?([a-zA-Z0-9-_\\.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?"
+            )
+
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
@@ -1689,10 +1694,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
-        if "EventSourceArn" not in request:
-            raise InvalidParameterValueException("Unrecognized event source.", Type="User")
+        service = None
 
-        service = extract_service_from_arn(request["EventSourceArn"])
+        if "SelfManagedEventSource" in request:
+            service = "kafka"
+
+        if service is None and "EventSourceArn" not in request:
+            raise InvalidParameterValueException("Unrecognized event source.", Type="User")
+        if service is None:
+            service = extract_service_from_arn(request["EventSourceArn"])
         if service in ["dynamodb", "kinesis", "kafka"] and "StartingPosition" not in request:
             raise InvalidParameterValueException(
                 "1 validation error detected: Value null at 'startingPosition' failed to satisfy constraint: Member must not be null.",
@@ -1849,9 +1859,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 function_name, qualifier, account_id, region
             )
 
-        temp_params = (
-            {}
-        )  # values only set for the returned response, not saved internally (e.g. transient state)
+        temp_params = {}  # values only set for the returned response, not saved internally (e.g. transient state)
 
         if request.get("Enabled") is not None:
             if request["Enabled"]:

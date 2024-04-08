@@ -21,6 +21,7 @@ from localstack.aws.connect import (
 from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH, load_service
+from localstack.config import is_env_true
 from localstack.constants import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -195,7 +196,7 @@ def base_aws_session() -> boto3.Session:
 
 def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
     config = None
-    if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
+    if is_env_true("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
         config = botocore.config.Config(
             connect_timeout=1_000,
             read_timeout=1_000,

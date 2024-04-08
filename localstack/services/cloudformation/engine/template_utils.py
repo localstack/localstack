@@ -37,7 +37,7 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
             elif k == "Ref":
                 items.add(v)
             elif k == "Fn::GetAtt":
-                items.add(v[0])
+                items.add(v[0] if isinstance(v, list) else v.split(".")[0])
             elif k == "Fn::Sub":
                 # we can assume anything in there is a ref
                 if isinstance(v, str):
@@ -74,8 +74,8 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
                     items = items.union(resolve_dependencies(item, evaluated_conditions))
             else:
                 pass
-
-    return {i for i in items if not i.startswith("AWS::")}
+    r = {i for i in items if not i.startswith("AWS::")}
+    return r
 
 
 def resolve_stack_conditions(

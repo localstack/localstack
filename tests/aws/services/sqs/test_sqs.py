@@ -32,6 +32,8 @@ from localstack.utils.urls import localstack_host
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON
 
+from .utils import sqs_collect_messages
+
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
 
@@ -332,9 +334,9 @@ class TestSqsProvider:
             )
             i += 1
         assert len(result_recv["Messages"]) == message_count
-        assert set(result_recv["Messages"][b]["Body"] for b in range(message_count)) == set(
+        assert {result_recv["Messages"][b]["Body"] for b in range(message_count)} == {
             f"message-{b}" for b in range(message_count)
-        )
+        }
 
     @markers.aws.validated
     def test_send_message_batch_with_empty_list(self, sqs_create_queue, aws_sqs_client):
@@ -2802,6 +2804,80 @@ class TestSqsProvider:
             == result_send["MessageId"]
         )
 
+    @markers.aws.validated
+    def test_dead_letter_queue_message_attributes(
+        self,
+        aws_client,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        snapshot,
+    ):
+        sqs = aws_client.sqs
+
+        queue_name = f"queue-{short_uid()}"
+        dead_letter_queue_name = f"dl-queue-{short_uid()}"
+        dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
+        dl_queue_arn = sqs_get_queue_arn(dl_queue_url)
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={
+                "RedrivePolicy": json.dumps(
+                    {"deadLetterTargetArn": dl_queue_arn, "maxReceiveCount": 1}
+                )
+            },
+        )
+
+        snapshot.match("dlq-arn", dl_queue_arn)
+        snapshot.match("sourcen-arn", sqs_get_queue_arn(queue_url))
+
+        # check that attributes are retained
+        msg_attrs = {"MyAttribute": {"StringValue": "foobar", "DataType": "String"}}
+        msg_system_attrs = {
+            "AWSTraceHeader": {
+                "StringValue": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1",
+                "DataType": "String",
+            }
+        }
+        # send a messages
+        sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody="message-1",
+            MessageSystemAttributes=msg_system_attrs,
+            MessageAttributes=msg_attrs,
+        )
+        sqs.send_message(QueueUrl=queue_url, MessageBody="message-2")
+
+        # receive each message two times to move them into the dlq
+        messages = []
+        for i in range(4):
+            result = sqs.receive_message(
+                QueueUrl=queue_url,
+                VisibilityTimeout=0,
+                AttributeNames=["All"],
+                MessageAttributeNames=["All"],
+            )
+            messages.extend(result.get("Messages", []))
+        messages.sort(key=lambda m: m["Body"])
+        for message in messages:
+            # FIXME: SenderId = account and is messing up the snapshot matching somehow
+            del message["Attributes"]["SenderId"]
+
+        snapshot.match("rec-pre-dlq", messages)
+
+        messages = sqs_collect_messages(
+            sqs,
+            dl_queue_url,
+            expected=2,
+            timeout=10,
+            attribute_names=["All"],
+            message_attribute_names=["All"],
+        )
+        messages.sort(key=lambda m: m["Body"])
+        for message in messages:
+            del message["Attributes"]["SenderId"]
+
+        snapshot.match("dlq-messages", messages)
+
     @markers.aws.needs_fixing
     def test_dead_letter_queue_chain(
         self, sqs_create_queue, aws_sqs_client, account_id, region_name
@@ -3315,6 +3391,7 @@ class TestSqsProvider:
         self, sqs_create_queue, create_lambda_function, aws_sqs_client, region_name
     ):
         # TODO: lambda triggered dead letter delivery does not preserve the message id
+        # FIXME: message id is now preserved, but test is broken
         # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = "dl-queue-{}".format(short_uid())

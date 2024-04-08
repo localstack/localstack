@@ -6,7 +6,7 @@ import threading
 import traceback
 
 from localstack import config, constants
-from localstack.constants import LOCALSTACK_INFRA_PROCESS
+from localstack.constants import LOCALSTACK_INFRA_PROCESS, VERSION
 from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.runtime import events, hooks
 from localstack.runtime.exceptions import LocalstackExit
@@ -198,7 +198,7 @@ def print_runtime_information(in_docker=False):
     # FIXME: this is legacy code from the old CLI, reconcile with new CLI and runtime output
 
     print()
-    print("LocalStack version: %s" % constants.VERSION)
+    print(f"LocalStack version: {VERSION}")
     if in_docker:
         id = get_main_container_id()
         if id:
@@ -278,13 +278,13 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         from localstack.packages.debugpy import debugpy_package
 
         debugpy_package.install()
-        import debugpy
+        import debugpy  # noqa: T100
 
         LOG.info("Starting debug server at: %s:%s", constants.BIND_HOST, config.DEVELOP_PORT)
-        debugpy.listen((constants.BIND_HOST, config.DEVELOP_PORT))
+        debugpy.listen((constants.BIND_HOST, config.DEVELOP_PORT))  # noqa: T100
 
         if config.WAIT_FOR_DEBUGGER:
-            debugpy.wait_for_client()
+            debugpy.wait_for_client()  # noqa: T100
 
     @log_duration()
     def prepare_environment():

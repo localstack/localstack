@@ -4,7 +4,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from functools import lru_cache
-from http import HTTPStatus
+from http import HTTPMethod, HTTPStatus
 from typing import Any, Dict
 from urllib.parse import urljoin
 
@@ -267,6 +267,11 @@ class LambdaProxyIntegration(BackendIntegration):
         del path_params["proxy+"]
         path_params["proxy"] = proxy_path_param_value
 
+    @staticmethod
+    def validate_integration_method(invocation_context: ApiInvocationContext):
+        if invocation_context.integration["httpMethod"] != HTTPMethod.POST:
+            raise ApiGatewayIntegrationError("Internal server error", status_code=500)
+
     @classmethod
     def construct_invocation_event(
         cls, method, path, headers, data, query_string_params=None, is_base64_encoded=False
@@ -276,11 +281,20 @@ class LambdaProxyIntegration(BackendIntegration):
         single_value_query_string_params = {
             k: v[-1] if isinstance(v, list) else v for k, v in query_string_params.items()
         }
+        # Some headers get capitalized like in CloudFront, see
+        # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html#add-origin-custom-headers-forward-authorization
+        # It seems AWS_PROXY lambda integrations are behind cloudfront, as seen by the returned headers in AWS
+        to_capitalize: list[str] = ["authorization"]  # some headers get capitalized
+        headers = {
+            k.capitalize() if k.lower() in to_capitalize else k: v for k, v in headers.items()
+        }
+
         # AWS canonical header names, converting them to lower-case
         headers = canonicalize_headers(headers)
+
         return {
             "path": path,
-            "headers": dict(headers),
+            "headers": headers,
             "multiValueHeaders": multi_value_dict_for_list(headers),
             "body": data,
             "isBase64Encoded": is_base64_encoded,
@@ -340,6 +354,7 @@ class LambdaProxyIntegration(BackendIntegration):
             )
 
     def invoke(self, invocation_context: ApiInvocationContext):
+        self.validate_integration_method(invocation_context)
         uri = (
             invocation_context.integration.get("uri")
             or invocation_context.integration.get("integrationUri")
@@ -722,6 +737,12 @@ class S3Integration(BackendIntegration):
 
 
 class HTTPIntegration(BackendIntegration):
+    @staticmethod
+    def _set_http_apigw_headers(headers: Dict[str, Any], invocation_context: ApiInvocationContext):
+        del headers["host"]
+        headers["x-amzn-apigateway-api-id"] = invocation_context.api_id
+        return headers
+
     def invoke(self, invocation_context: ApiInvocationContext):
         invocation_path = invocation_context.path_with_query_string
         integration = invocation_context.integration
@@ -735,6 +756,7 @@ class HTTPIntegration(BackendIntegration):
         # resolve integration parameters
         integration_parameters = self.request_params_resolver.resolve(context=invocation_context)
         headers.update(integration_parameters.get("headers", {}))
+        self._set_http_apigw_headers(headers, invocation_context)
 
         if ":servicediscovery:" in uri:
             # check if this is a servicediscovery integration URI
@@ -780,9 +802,10 @@ class HTTPIntegration(BackendIntegration):
                 uri,
                 result.status_code,
             )
-        # apply custom response template
+        # apply custom response template for non-proxy integration
         invocation_context.response = result
-        self.response_templates.render(invocation_context)
+        if integration["type"] != "HTTP_PROXY":
+            self.response_templates.render(invocation_context)
         return invocation_context.response
 
 

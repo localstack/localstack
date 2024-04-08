@@ -45,7 +45,11 @@ jobs:
           python3 -m localstack.aws.scaffold upgrade
 
       - name: Format code
-        run: make format-modified
+        run: |
+          source .venv/bin/activate
+          # explicitly perform an unsafe fix to remove unused imports in the generated ASF APIs
+          ruff check --select F401 --unsafe-fixes --fix . --config "lint.ignore-init-module-imports = false"
+          make format-modified
 
       - name: Check for changes
         id: check-for-changes
@@ -62,23 +66,30 @@ jobs:
           echo "$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Update botocore pin
+      - name: Update botocore and transitive pins
         # only update the pin if we have updates in the ASF code
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
         run: |
           source .venv/bin/activate
           # determine botocore version in venv
           BOTOCORE_VERSION=$(python -c "import botocore; print(botocore.__version__)");
-          echo "Pinning botocore to version $BOTOCORE_VERSION"
+          echo "Pinning botocore, boto3, and boto3-stubs to version $BOTOCORE_VERSION"
           bin/release-helper.sh set-dep-ver botocore "==$BOTOCORE_VERSION"
+          bin/release-helper.sh set-dep-ver boto3 "==$BOTOCORE_VERSION"
+          bin/release-helper.sh set-dep-ver boto3-stubs "==$BOTOCORE_VERSION"
+
+          # aws-cli is two minor versions behind botocore
+          AWSCLI_VERSION=$(python -c 'import botocore; from packaging.version import Version; version = Version(botocore.__version__); print(f"{version.major}.{version.minor - 2}.{version.micro}")')
+          echo "Pinning aws-cli to version $AWSCLI_VERSION"
+          bin/release-helper.sh set-dep-ver awscli "==$AWSCLI_VERSION"
 
           # upgrade the requirements files only for the botocore package
           pip install pip-tools
-          pip-compile --upgrade-package botocore --upgrade-package boto3 --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
-          pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra runtime -o requirements-runtime.txt pyproject.toml
-          pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra test -o requirements-test.txt pyproject.toml
-          pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra dev -o requirements-dev.txt pyproject.toml
-          pip-compile --upgrade-package botocore --upgrade-package boto3 --upgrade-package awscli --extra typehint -o requirements-typehint.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra runtime -o requirements-runtime.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra test -o requirements-test.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra dev -o requirements-dev.txt pyproject.toml
+          pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --upgrade-package "boto3-stubs==$BOTOCORE_VERSION" --extra typehint -o requirements-typehint.txt pyproject.toml
 
       - name: Read PR markdown template
         if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}

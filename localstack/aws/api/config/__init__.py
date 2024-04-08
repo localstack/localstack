@@ -2966,7 +2966,7 @@ class ConfigApi:
         context: RequestContext,
         configuration_aggregator_name: ConfigurationAggregatorName,
         resource_identifiers: ResourceIdentifiersList,
-        **kwargs
+        **kwargs,
     ) -> BatchGetAggregateResourceConfigResponse:
         raise NotImplementedError
 
@@ -2982,7 +2982,7 @@ class ConfigApi:
         context: RequestContext,
         authorized_account_id: AccountId,
         authorized_aws_region: AwsRegion,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2997,7 +2997,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         configuration_aggregator_name: ConfigurationAggregatorName,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3030,7 +3030,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         organization_config_rule_name: OrganizationConfigRuleName,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3039,7 +3039,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         organization_conformance_pack_name: OrganizationConformancePackName,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3049,7 +3049,7 @@ class ConfigApi:
         context: RequestContext,
         requester_account_id: AccountId,
         requester_aws_region: AwsRegion,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3059,7 +3059,7 @@ class ConfigApi:
         context: RequestContext,
         config_rule_name: ConfigRuleName,
         resource_type: String = None,
-        **kwargs
+        **kwargs,
     ) -> DeleteRemediationConfigurationResponse:
         raise NotImplementedError
 
@@ -3069,7 +3069,7 @@ class ConfigApi:
         context: RequestContext,
         config_rule_name: ConfigRuleName,
         resource_keys: RemediationExceptionResourceKeys,
-        **kwargs
+        **kwargs,
     ) -> DeleteRemediationExceptionsResponse:
         raise NotImplementedError
 
@@ -3079,7 +3079,7 @@ class ConfigApi:
         context: RequestContext,
         resource_type: ResourceTypeString,
         resource_id: ResourceId,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3088,7 +3088,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         retention_configuration_name: RetentionConfigurationName,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3112,7 +3112,7 @@ class ConfigApi:
         filters: ConfigRuleComplianceFilters = None,
         limit: GroupByAPILimit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeAggregateComplianceByConfigRulesResponse:
         raise NotImplementedError
 
@@ -3124,7 +3124,7 @@ class ConfigApi:
         filters: AggregateConformancePackComplianceFilters = None,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeAggregateComplianceByConformancePacksResponse:
         raise NotImplementedError
 
@@ -3141,7 +3141,7 @@ class ConfigApi:
         config_rule_names: ConfigRuleNames = None,
         compliance_types: ComplianceTypes = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeComplianceByConfigRuleResponse:
         raise NotImplementedError
 
@@ -3154,7 +3154,7 @@ class ConfigApi:
         compliance_types: ComplianceTypes = None,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeComplianceByResourceResponse:
         raise NotImplementedError
 
@@ -3165,7 +3165,7 @@ class ConfigApi:
         config_rule_names: ConfigRuleNames = None,
         next_token: String = None,
         limit: RuleLimit = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConfigRuleEvaluationStatusResponse:
         raise NotImplementedError
 
@@ -3176,7 +3176,7 @@ class ConfigApi:
         config_rule_names: ConfigRuleNames = None,
         next_token: String = None,
         filters: DescribeConfigRulesFilters = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConfigRulesResponse:
         raise NotImplementedError
 
@@ -3188,7 +3188,7 @@ class ConfigApi:
         update_status: AggregatedSourceStatusTypeList = None,
         next_token: String = None,
         limit: Limit = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConfigurationAggregatorSourcesStatusResponse:
         raise NotImplementedError
 
@@ -3199,7 +3199,7 @@ class ConfigApi:
         configuration_aggregator_names: ConfigurationAggregatorNameList = None,
         next_token: String = None,
         limit: Limit = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConfigurationAggregatorsResponse:
         raise NotImplementedError
 
@@ -3208,7 +3208,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         configuration_recorder_names: ConfigurationRecorderNameList = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConfigurationRecorderStatusResponse:
         raise NotImplementedError
 
@@ -3217,7 +3217,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         configuration_recorder_names: ConfigurationRecorderNameList = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConfigurationRecordersResponse:
         raise NotImplementedError
 
@@ -3229,7 +3229,7 @@ class ConfigApi:
         filters: ConformancePackComplianceFilters = None,
         limit: DescribeConformancePackComplianceLimit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConformancePackComplianceResponse:
         raise NotImplementedError
 
@@ -3240,7 +3240,7 @@ class ConfigApi:
         conformance_pack_names: ConformancePackNamesList = None,
         limit: PageSizeLimit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConformancePackStatusResponse:
         raise NotImplementedError
 
@@ -3251,7 +3251,7 @@ class ConfigApi:
         conformance_pack_names: ConformancePackNamesList = None,
         limit: PageSizeLimit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeConformancePacksResponse:
         raise NotImplementedError
 
@@ -3260,7 +3260,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         delivery_channel_names: DeliveryChannelNameList = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDeliveryChannelStatusResponse:
         raise NotImplementedError
 
@@ -3269,7 +3269,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         delivery_channel_names: DeliveryChannelNameList = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeDeliveryChannelsResponse:
         raise NotImplementedError
 
@@ -3280,7 +3280,7 @@ class ConfigApi:
         organization_config_rule_names: OrganizationConfigRuleNames = None,
         limit: CosmosPageLimit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeOrganizationConfigRuleStatusesResponse:
         raise NotImplementedError
 
@@ -3291,7 +3291,7 @@ class ConfigApi:
         organization_config_rule_names: OrganizationConfigRuleNames = None,
         limit: CosmosPageLimit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeOrganizationConfigRulesResponse:
         raise NotImplementedError
 
@@ -3302,7 +3302,7 @@ class ConfigApi:
         organization_conformance_pack_names: OrganizationConformancePackNames = None,
         limit: CosmosPageLimit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeOrganizationConformancePackStatusesResponse:
         raise NotImplementedError
 
@@ -3313,7 +3313,7 @@ class ConfigApi:
         organization_conformance_pack_names: OrganizationConformancePackNames = None,
         limit: CosmosPageLimit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeOrganizationConformancePacksResponse:
         raise NotImplementedError
 
@@ -3323,7 +3323,7 @@ class ConfigApi:
         context: RequestContext,
         limit: DescribePendingAggregationRequestsLimit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribePendingAggregationRequestsResponse:
         raise NotImplementedError
 
@@ -3341,7 +3341,7 @@ class ConfigApi:
         resource_keys: RemediationExceptionResourceKeys = None,
         limit: Limit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeRemediationExceptionsResponse:
         raise NotImplementedError
 
@@ -3353,7 +3353,7 @@ class ConfigApi:
         resource_keys: ResourceKeys = None,
         limit: Limit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeRemediationExecutionStatusResponse:
         raise NotImplementedError
 
@@ -3363,7 +3363,7 @@ class ConfigApi:
         context: RequestContext,
         retention_configuration_names: RetentionConfigurationNameList = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> DescribeRetentionConfigurationsResponse:
         raise NotImplementedError
 
@@ -3378,7 +3378,7 @@ class ConfigApi:
         compliance_type: ComplianceType = None,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetAggregateComplianceDetailsByConfigRuleResponse:
         raise NotImplementedError
 
@@ -3391,7 +3391,7 @@ class ConfigApi:
         group_by_key: ConfigRuleComplianceSummaryGroupKey = None,
         limit: GroupByAPILimit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetAggregateConfigRuleComplianceSummaryResponse:
         raise NotImplementedError
 
@@ -3404,7 +3404,7 @@ class ConfigApi:
         group_by_key: AggregateConformancePackComplianceSummaryGroupKey = None,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetAggregateConformancePackComplianceSummaryResponse:
         raise NotImplementedError
 
@@ -3417,7 +3417,7 @@ class ConfigApi:
         group_by_key: ResourceCountGroupKey = None,
         limit: GroupByAPILimit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetAggregateDiscoveredResourceCountsResponse:
         raise NotImplementedError
 
@@ -3427,7 +3427,7 @@ class ConfigApi:
         context: RequestContext,
         configuration_aggregator_name: ConfigurationAggregatorName,
         resource_identifier: AggregateResourceIdentifier,
-        **kwargs
+        **kwargs,
     ) -> GetAggregateResourceConfigResponse:
         raise NotImplementedError
 
@@ -3439,7 +3439,7 @@ class ConfigApi:
         compliance_types: ComplianceTypes = None,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetComplianceDetailsByConfigRuleResponse:
         raise NotImplementedError
 
@@ -3452,7 +3452,7 @@ class ConfigApi:
         compliance_types: ComplianceTypes = None,
         next_token: String = None,
         resource_evaluation_id: ResourceEvaluationId = None,
-        **kwargs
+        **kwargs,
     ) -> GetComplianceDetailsByResourceResponse:
         raise NotImplementedError
 
@@ -3476,7 +3476,7 @@ class ConfigApi:
         filters: ConformancePackEvaluationFilters = None,
         limit: GetConformancePackComplianceDetailsLimit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetConformancePackComplianceDetailsResponse:
         raise NotImplementedError
 
@@ -3487,7 +3487,7 @@ class ConfigApi:
         conformance_pack_names: ConformancePackNamesToSummarizeList,
         limit: PageSizeLimit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetConformancePackComplianceSummaryResponse:
         raise NotImplementedError
 
@@ -3504,7 +3504,7 @@ class ConfigApi:
         resource_types: ResourceTypes = None,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetDiscoveredResourceCountsResponse:
         raise NotImplementedError
 
@@ -3516,7 +3516,7 @@ class ConfigApi:
         filters: StatusDetailFilters = None,
         limit: CosmosPageLimit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> GetOrganizationConfigRuleDetailedStatusResponse:
         raise NotImplementedError
 
@@ -3528,7 +3528,7 @@ class ConfigApi:
         filters: OrganizationResourceDetailedStatusFilters = None,
         limit: CosmosPageLimit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> GetOrganizationConformancePackDetailedStatusResponse:
         raise NotImplementedError
 
@@ -3537,7 +3537,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         organization_config_rule_name: OrganizationConfigRuleName,
-        **kwargs
+        **kwargs,
     ) -> GetOrganizationCustomRulePolicyResponse:
         raise NotImplementedError
 
@@ -3552,7 +3552,7 @@ class ConfigApi:
         chronological_order: ChronologicalOrder = None,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> GetResourceConfigHistoryResponse:
         raise NotImplementedError
 
@@ -3577,7 +3577,7 @@ class ConfigApi:
         filters: ResourceFilters = None,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListAggregateDiscoveredResourcesResponse:
         raise NotImplementedError
 
@@ -3590,7 +3590,7 @@ class ConfigApi:
         sort_by: SortBy = None,
         limit: PageSizeLimit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListConformancePackComplianceScoresResponse:
         raise NotImplementedError
 
@@ -3604,7 +3604,7 @@ class ConfigApi:
         limit: Limit = None,
         include_deleted_resources: Boolean = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListDiscoveredResourcesResponse:
         raise NotImplementedError
 
@@ -3615,7 +3615,7 @@ class ConfigApi:
         filters: ResourceEvaluationFilters = None,
         limit: ListResourceEvaluationsPageItemLimit = None,
         next_token: String = None,
-        **kwargs
+        **kwargs,
     ) -> ListResourceEvaluationsResponse:
         raise NotImplementedError
 
@@ -3625,7 +3625,7 @@ class ConfigApi:
         context: RequestContext,
         next_token: String = None,
         max_results: Limit = None,
-        **kwargs
+        **kwargs,
     ) -> ListStoredQueriesResponse:
         raise NotImplementedError
 
@@ -3636,7 +3636,7 @@ class ConfigApi:
         resource_arn: AmazonResourceName,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> ListTagsForResourceResponse:
         raise NotImplementedError
 
@@ -3647,7 +3647,7 @@ class ConfigApi:
         authorized_account_id: AccountId,
         authorized_aws_region: AwsRegion,
         tags: TagsList = None,
-        **kwargs
+        **kwargs,
     ) -> PutAggregationAuthorizationResponse:
         raise NotImplementedError
 
@@ -3665,7 +3665,7 @@ class ConfigApi:
         account_aggregation_sources: AccountAggregationSourceList = None,
         organization_aggregation_source: OrganizationAggregationSource = None,
         tags: TagsList = None,
-        **kwargs
+        **kwargs,
     ) -> PutConfigurationAggregatorResponse:
         raise NotImplementedError
 
@@ -3686,7 +3686,7 @@ class ConfigApi:
         delivery_s3_key_prefix: DeliveryS3KeyPrefix = None,
         conformance_pack_input_parameters: ConformancePackInputParameters = None,
         template_ssm_document_details: TemplateSSMDocumentDetails = None,
-        **kwargs
+        **kwargs,
     ) -> PutConformancePackResponse:
         raise NotImplementedError
 
@@ -3703,7 +3703,7 @@ class ConfigApi:
         result_token: String,
         evaluations: Evaluations = None,
         test_mode: Boolean = None,
-        **kwargs
+        **kwargs,
     ) -> PutEvaluationsResponse:
         raise NotImplementedError
 
@@ -3713,7 +3713,7 @@ class ConfigApi:
         context: RequestContext,
         config_rule_name: ConfigRuleName,
         external_evaluation: ExternalEvaluation,
-        **kwargs
+        **kwargs,
     ) -> PutExternalEvaluationResponse:
         raise NotImplementedError
 
@@ -3726,7 +3726,7 @@ class ConfigApi:
         organization_custom_rule_metadata: OrganizationCustomRuleMetadata = None,
         excluded_accounts: ExcludedAccounts = None,
         organization_custom_policy_rule_metadata: OrganizationCustomPolicyRuleMetadata = None,
-        **kwargs
+        **kwargs,
     ) -> PutOrganizationConfigRuleResponse:
         raise NotImplementedError
 
@@ -3741,7 +3741,7 @@ class ConfigApi:
         delivery_s3_key_prefix: DeliveryS3KeyPrefix = None,
         conformance_pack_input_parameters: ConformancePackInputParameters = None,
         excluded_accounts: ExcludedAccounts = None,
-        **kwargs
+        **kwargs,
     ) -> PutOrganizationConformancePackResponse:
         raise NotImplementedError
 
@@ -3750,7 +3750,7 @@ class ConfigApi:
         self,
         context: RequestContext,
         remediation_configurations: RemediationConfigurations,
-        **kwargs
+        **kwargs,
     ) -> PutRemediationConfigurationsResponse:
         raise NotImplementedError
 
@@ -3762,7 +3762,7 @@ class ConfigApi:
         resource_keys: RemediationExceptionResourceKeys,
         message: StringWithCharLimit1024 = None,
         expiration_time: Date = None,
-        **kwargs
+        **kwargs,
     ) -> PutRemediationExceptionsResponse:
         raise NotImplementedError
 
@@ -3776,7 +3776,7 @@ class ConfigApi:
         configuration: Configuration,
         resource_name: ResourceName = None,
         tags: Tags = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -3801,7 +3801,7 @@ class ConfigApi:
         limit: Limit = None,
         max_results: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> SelectAggregateResourceConfigResponse:
         raise NotImplementedError
 
@@ -3812,7 +3812,7 @@ class ConfigApi:
         expression: Expression,
         limit: Limit = None,
         next_token: NextToken = None,
-        **kwargs
+        **kwargs,
     ) -> SelectResourceConfigResponse:
         raise NotImplementedError
 
@@ -3834,7 +3834,7 @@ class ConfigApi:
         context: RequestContext,
         config_rule_name: ConfigRuleName,
         resource_keys: ResourceKeys,
-        **kwargs
+        **kwargs,
     ) -> StartRemediationExecutionResponse:
         raise NotImplementedError
 
@@ -3847,7 +3847,7 @@ class ConfigApi:
         evaluation_context: EvaluationContext = None,
         evaluation_timeout: EvaluationTimeout = None,
         client_token: ClientToken = None,
-        **kwargs
+        **kwargs,
     ) -> StartResourceEvaluationResponse:
         raise NotImplementedError
 
@@ -3869,6 +3869,6 @@ class ConfigApi:
         context: RequestContext,
         resource_arn: AmazonResourceName,
         tag_keys: TagKeyList,
-        **kwargs
+        **kwargs,
     ) -> None:
         raise NotImplementedError

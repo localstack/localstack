@@ -210,5 +210,64 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_default_destination": {
+    "recorded-date": "07-03-2024, 19:07:58",
+    "recorded-content": {
+      "source-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+      "original-source": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+      "start-message-move-task-response": {
+        "TaskHandle": "<task-handle:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-message-move-task-response": {
+        "Results": [
+          {
+            "ApproximateNumberOfMessagesMoved": 2,
+            "ApproximateNumberOfMessagesToMove": 2,
+            "SourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "StartedTimestamp": "timestamp",
+            "Status": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_multiple_sources_as_default_destination": {
+    "recorded-date": "07-03-2024, 18:42:16",
+    "recorded-content": {
+      "source-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+      "original-source-1": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+      "original-source-2": "arn:aws:sqs:<region>:111111111111:<resource:3>",
+      "start-message-move-task-response": {
+        "TaskHandle": "<task-handle:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-message-move-task-response": {
+        "Results": [
+          {
+            "ApproximateNumberOfMessagesMoved": 4,
+            "ApproximateNumberOfMessagesToMove": 4,
+            "SourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "StartedTimestamp": "timestamp",
+            "Status": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

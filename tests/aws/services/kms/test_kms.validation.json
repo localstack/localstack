@@ -83,8 +83,11 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key_invalid_operations": {
     "last_validated_date": "2023-04-13T09:31:06+00:00"
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key": {
-    "last_validated_date": "2023-04-13T09:30:39+00:00"
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
+    "last_validated_date": "2024-01-24T10:44:14+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_symmetric": {
+    "last_validated_date": "2024-01-24T10:44:12+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_224-HMAC_SHA_256]": {
     "last_validated_date": "2023-04-13T09:31:14+00:00"

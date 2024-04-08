@@ -68,7 +68,7 @@ class TestMultiAccounts:
         # Calls originating in Moto must make use of client provided account ID
         ec2_client1.create_vpc(CidrBlock="10.1.0.0/16")
         vpcs = ec2_client1.describe_vpcs()["Vpcs"]
-        assert all([vpc["OwnerId"] == account_id1 for vpc in vpcs])
+        assert all(vpc["OwnerId"] == account_id1 for vpc in vpcs)
 
     @markers.aws.only_localstack
     def test_account_id_namespacing_for_localstack_backends(self, client_factory):

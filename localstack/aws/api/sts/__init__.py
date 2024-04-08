@@ -271,7 +271,7 @@ class StsApi:
         token_code: tokenCodeType = None,
         source_identity: sourceIdentityType = None,
         provided_contexts: ProvidedContextsListType = None,
-        **kwargs
+        **kwargs,
     ) -> AssumeRoleResponse:
         raise NotImplementedError
 
@@ -285,7 +285,7 @@ class StsApi:
         policy_arns: policyDescriptorListType = None,
         policy: sessionPolicyDocumentType = None,
         duration_seconds: roleDurationSecondsType = None,
-        **kwargs
+        **kwargs,
     ) -> AssumeRoleWithSAMLResponse:
         raise NotImplementedError
 
@@ -300,7 +300,7 @@ class StsApi:
         policy_arns: policyDescriptorListType = None,
         policy: sessionPolicyDocumentType = None,
         duration_seconds: roleDurationSecondsType = None,
-        **kwargs
+        **kwargs,
     ) -> AssumeRoleWithWebIdentityResponse:
         raise NotImplementedError
 
@@ -329,7 +329,7 @@ class StsApi:
         policy_arns: policyDescriptorListType = None,
         duration_seconds: durationSecondsType = None,
         tags: tagListType = None,
-        **kwargs
+        **kwargs,
     ) -> GetFederationTokenResponse:
         raise NotImplementedError
 
@@ -340,6 +340,6 @@ class StsApi:
         duration_seconds: durationSecondsType = None,
         serial_number: serialNumberType = None,
         token_code: tokenCodeType = None,
-        **kwargs
+        **kwargs,
     ) -> GetSessionTokenResponse:
         raise NotImplementedError

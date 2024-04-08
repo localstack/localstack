@@ -15,6 +15,7 @@ dynamically simulate functions that look like::
             "isBase64Encoded": False,
         }
 """
+
 import json
 
 

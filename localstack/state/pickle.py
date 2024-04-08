@@ -27,6 +27,7 @@ entire subclass hierarchy::
 To learn more about this mechanism, read https://docs.python.org/3/library/copyreg.html and
 https://dill.readthedocs.io/en/latest/index.html?highlight=register#dill.Pickler.dispatch.
 """
+
 import inspect
 from typing import Any, BinaryIO, Callable, Generic, Type, TypeVar
 

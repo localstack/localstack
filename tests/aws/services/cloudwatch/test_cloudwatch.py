@@ -1391,8 +1391,16 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..DashboardArn"], condition=is_old_provider
-    )  # ARN has a typo in moto
+        condition=is_old_provider,
+        paths=[
+            "$..DashboardArn",  # ARN has a typo in moto
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..DashboardEntries..Size",  # need to be skipped because size changes if the region name length is longer
+        ]
+    )
     def test_dashboard_lifecycle(self, aws_client, region_name, snapshot):
         dashboard_name = f"test-{short_uid()}"
         dashboard_body = {
@@ -2220,6 +2228,12 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_get_metric_with_null_dimensions(self, aws_client, snapshot):
+        """
+        This test validates the behaviour when there is metric data with dimensions and the get_metric_data call
+        has no dimensions specified. The expected behaviour is that the call should return the metric data with
+        no dimensions, which in this test, there is no such data, so the total sum should equal 0. And since the
+        Sum equals 0, the response will have no values.
+        """
         snapshot.add_transformer(snapshot.transform.key_value("Id"))
         snapshot.add_transformer(snapshot.transform.key_value("Label"))
         namespace = f"n-{short_uid()}"
@@ -2260,9 +2274,10 @@ class TestCloudwatch:
                 StartTime=datetime.utcnow() - timedelta(hours=1),
                 EndTime=datetime.utcnow(),
             )
+            assert len(response["MetricDataResults"][0]["Values"]) == 0
             snapshot.match("get_metric_with_null_dimensions", response)
 
-        retry(assert_results, retries=10, sleep=1.0, sleep_before=2.0 if is_aws_cloud() else 0.0)
+        retry(assert_results, retries=10, sleep=1.0, sleep_before=2 if is_aws_cloud() else 0.0)
 
     @markers.aws.validated
     def test_alarm_lambda_target(
@@ -2525,9 +2540,7 @@ def _sqs_messages_snapshot(expected_state, sqs_client, sqs_queue, snapshot, iden
             found_msg = message
             receipt_handle = msg["ReceiptHandle"]
             break
-    assert (
-        found_msg
-    ), f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
+    assert found_msg, f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
     sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
     snapshot.match(f"{identifier}-sqs-msg", found_msg)
 

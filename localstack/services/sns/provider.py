@@ -29,8 +29,10 @@ from localstack.aws.api.sns import (
     PublishBatchResponse,
     PublishBatchResultEntry,
     PublishResponse,
+    SetSubscriptionAttributesInput,
     SnsApi,
     String,
+    SubscribeInput,
     SubscribeResponse,
     SubscriptionAttributesMap,
     TagKeyList,
@@ -51,7 +53,7 @@ from localstack.aws.api.sns import (
 from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.http import Request, Response, Router, route
 from localstack.services.edge import ROUTER
-from localstack.services.moto import call_moto
+from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.certificate import SNS_SERVER_CERT
@@ -213,16 +215,13 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     )
 
             if is_fifo := (".fifo" in topic_arn):
-                if not all(["MessageGroupId" in entry for entry in publish_batch_request_entries]):
+                if not all("MessageGroupId" in entry for entry in publish_batch_request_entries):
                     raise InvalidParameterException(
                         "Invalid parameter: The MessageGroupId parameter is required for FIFO topics"
                     )
                 if moto_topic.content_based_deduplication == "false":
                     if not all(
-                        [
-                            "MessageDeduplicationId" in entry
-                            for entry in publish_batch_request_entries
-                        ]
+                        "MessageDeduplicationId" in entry for entry in publish_batch_request_entries
                     ):
                         raise InvalidParameterException(
                             "Invalid parameter: The topic should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly",
@@ -267,8 +266,15 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             topic_arn=sub["TopicArn"],
             endpoint=sub["Endpoint"],
         )
+        if attribute_name == "RawMessageDelivery":
+            attribute_value = attribute_value.lower()
         try:
-            call_moto(context)
+            request = SetSubscriptionAttributesInput(
+                SubscriptionArn=subscription_arn,
+                AttributeName=attribute_name,
+                AttributeValue=attribute_value,
+            )
+            call_moto_with_request(context, service_request=request)
         except CommonServiceException as e:
             # Moto errors don't send the "Type": "Sender" field in their SNS exception
             if e.code == "InvalidParameter":
@@ -616,9 +622,25 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     attribute_value=attr_value,
                     topic_arn=topic_arn,
                     endpoint=endpoint,
+                    is_subscribe_call=True,
                 )
+        if attributes and "RawMessageDelivery" in attributes:
+            # Moto does not lower case the value, so we need to override the request
+            attrs_copy = {
+                **attributes,
+                "RawMessageDelivery": attributes["RawMessageDelivery"].lower(),
+            }
+            request = SubscribeInput(
+                TopicArn=topic_arn,
+                Protocol=protocol,
+                Endpoint=endpoint,
+                Attributes=attrs_copy,
+                ReturnSubscriptionArn=return_subscription_arn,
+            )
+            moto_response = call_moto_with_request(context, service_request=request)
+        else:
+            moto_response = call_moto(context)
 
-        moto_response = call_moto(context)
         subscription_arn = moto_response.get("SubscriptionArn")
         parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
 
@@ -661,6 +683,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 store.subscription_filter_policy[subscription_arn] = (
                     json.loads(attributes["FilterPolicy"]) if attributes["FilterPolicy"] else None
                 )
+            if raw_msg_delivery := attributes.get("RawMessageDelivery"):
+                subscription["RawMessageDelivery"] = raw_msg_delivery.lower()
 
         store.subscriptions[subscription_arn] = subscription
 
@@ -773,6 +797,7 @@ def validate_subscription_attribute(
     attribute_value: str,
     topic_arn: str,
     endpoint: str,
+    is_subscribe_call: bool = False,
 ) -> None:
     """
     Validate the subscription attribute to be set. See:
@@ -781,40 +806,45 @@ def validate_subscription_attribute(
     :param attribute_value: the subscription attribute value
     :param topic_arn: the topic_arn of the subscription, needed to know if it is FIFO
     :param endpoint: the subscription endpoint (like an SQS queue ARN)
+    :param is_subscribe_call: the error message is different if called from Subscribe or SetSubscriptionAttributes
     :raises InvalidParameterException
     :return:
     """
+    error_prefix = (
+        "Invalid parameter: Attributes Reason: " if is_subscribe_call else "Invalid parameter: "
+    )
     if attribute_name not in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
-        raise InvalidParameterException("Invalid parameter: AttributeName")
+        raise InvalidParameterException(f"{error_prefix}AttributeName")
 
     if attribute_name == "FilterPolicy":
         try:
             json.loads(attribute_value or "{}")
         except json.JSONDecodeError:
-            raise InvalidParameterException(
-                "Invalid parameter: FilterPolicy: failed to parse JSON."
-            )
+            raise InvalidParameterException(f"{error_prefix}FilterPolicy: failed to parse JSON.")
     elif attribute_name == "FilterPolicyScope":
         if attribute_value not in ("MessageAttributes", "MessageBody"):
             raise InvalidParameterException(
-                f"Invalid parameter: FilterPolicyScope: Invalid value [{attribute_value}]. Please use either MessageBody or MessageAttributes"
+                f"{error_prefix}FilterPolicyScope: Invalid value [{attribute_value}]. "
+                f"Please use either MessageBody or MessageAttributes"
             )
     elif attribute_name == "RawMessageDelivery":
         # TODO: only for SQS and https(s) subs, + firehose
-        return
+        if attribute_value.lower() not in ("true", "false"):
+            raise InvalidParameterException(
+                f"{error_prefix}RawMessageDelivery: Invalid value [{attribute_value}]. "
+                f"Must be true or false."
+            )
 
     elif attribute_name == "RedrivePolicy":
         try:
             dlq_target_arn = json.loads(attribute_value).get("deadLetterTargetArn", "")
         except json.JSONDecodeError:
-            raise InvalidParameterException(
-                "Invalid parameter: RedrivePolicy: failed to parse JSON."
-            )
+            raise InvalidParameterException(f"{error_prefix}RedrivePolicy: failed to parse JSON.")
         try:
             parsed_arn = parse_arn(dlq_target_arn)
         except InvalidArnException:
             raise InvalidParameterException(
-                "Invalid parameter: RedrivePolicy: deadLetterTargetArn is an invalid arn"
+                f"{error_prefix}RedrivePolicy: deadLetterTargetArn is an invalid arn"
             )
 
         if topic_arn.endswith(".fifo"):
@@ -822,7 +852,7 @@ def validate_subscription_attribute(
                 not parsed_arn["resource"].endswith(".fifo") or "sqs" not in parsed_arn["service"]
             ):
                 raise InvalidParameterException(
-                    "Invalid parameter: RedrivePolicy: must use a FIFO queue as DLQ for a FIFO Subscription to a FIFO Topic."
+                    f"{error_prefix}RedrivePolicy: must use a FIFO queue as DLQ for a FIFO Subscription to a FIFO Topic."
                 )
 
 
@@ -911,7 +941,8 @@ def extract_tags(
     return True
 
 
-def parse_and_validate_topic_arn(topic_arn: str) -> ArnData:
+def parse_and_validate_topic_arn(topic_arn: str | None) -> ArnData:
+    topic_arn = topic_arn or ""
     try:
         return parse_arn(topic_arn)
     except InvalidArnException:

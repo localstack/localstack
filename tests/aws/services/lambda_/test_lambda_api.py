@@ -8,6 +8,7 @@ Don't add tests for asynchronous, blocking or implicit behavior here.
 # TODO: VPC config https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html
 
 """
+
 import base64
 import io
 import json
@@ -408,7 +409,11 @@ class TestLambdaFunction:
 
     # TODO: fix type of AccessDeniedException yielding null
     @markers.snapshot.skip_snapshot_verify(
-        paths=["function_arn_other_account_exc..Error.Message", "$..CodeSha256"]
+        paths=[
+            "function_arn_other_account_exc..Error.Message",
+            "$..CodeSha256",
+            "$..CreateFunctionResponse.LoggingConfig",
+        ]
     )
     @markers.aws.validated
     def test_function_arns(
@@ -463,7 +468,9 @@ class TestLambdaFunction:
         max_function_arn_length = 140
         function_arn_prefix = f"arn:aws:lambda:{region_name}:{account_id}:function:"
         suffix_length = max_function_arn_length - len(function_arn_prefix) + 1
-        long_function_arn = function_arn_prefix + "a" * suffix_length
+        long_function_name = "a" * suffix_length
+        snapshot.add_transformer(snapshot.transform.regex(long_function_name, "<function-name>"))
+        long_function_arn = function_arn_prefix + long_function_name
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
                 FunctionName=long_function_arn,
@@ -806,6 +813,15 @@ class TestLambdaFunction:
         snapshot.match(
             "delete_vpcconfig_get_function_response", delete_vpcconfig_get_function_response
         )
+
+    @markers.aws.validated
+    def test_invalid_invoke(self, aws_client, snapshot):
+        with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
+            aws_client.lambda_.invoke(
+                FunctionName=f"arn:aws:lambda:{aws_client.lambda_.meta.region_name}:123400000000@function:myfn",
+                Payload=b"{}",
+            )
+        snapshot.match("invoke_function_name_pattern_exc", e.value.response)
 
 
 class TestLambdaImages:
@@ -4097,8 +4113,8 @@ class TestLambdaAccountSettings:
         }"""
         acc_settings = aws_client.lambda_.get_account_settings()
         acc_settings_modded = acc_settings
-        acc_settings_modded["AccountLimit"] = sorted(list(acc_settings["AccountLimit"].keys()))
-        acc_settings_modded["AccountUsage"] = sorted(list(acc_settings["AccountUsage"].keys()))
+        acc_settings_modded["AccountLimit"] = sorted(acc_settings["AccountLimit"].keys())
+        acc_settings_modded["AccountUsage"] = sorted(acc_settings["AccountUsage"].keys())
         snapshot.match("acc_settings_modded", acc_settings_modded)
 
     @markers.aws.validated

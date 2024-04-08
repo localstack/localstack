@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess as sp
 import zipfile
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -69,7 +68,7 @@ def resolve_ref(schema: ResourceSchema, target: str) -> dict:
     """
     Given a schema {"a": {"b": "c"}} and the ref "#/a/b" return "c"
     """
-    target_path = filter(None, map(lambda elem: elem.strip(), target.lstrip("#").split("/")))
+    target_path = filter(None, (elem.strip() for elem in target.lstrip("#").split("/")))
 
     T = TypeVar("T")
 
@@ -114,26 +113,11 @@ class ResourceName:
         )
 
 
-def run_black(text: str) -> str:
-    """Black does not have an API, so spawn a subprocess"""
-    try:
-        proc = sp.run(["black", "--code", text], capture_output=True, check=True)
-    except FileNotFoundError:
-        # The user does not have black installed
-        return text
-    output = proc.stdout.decode("utf8")
-    return output
-
-
 def get_formatted_template_output(
-    env: Environment, template_name: str, do_run_black: bool, *render_args, **render_kwargs
+    env: Environment, template_name: str, *render_args, **render_kwargs
 ) -> str:
     template = env.get_template(template_name)
-    raw_text = template.render(*render_args, **render_kwargs)
-    if do_run_black:
-        return run_black(raw_text)
-    else:
-        return raw_text
+    return template.render(*render_args, **render_kwargs)
 
 
 class SchemaProvider:
@@ -233,9 +217,6 @@ class FileType(Enum):
     plugin = auto()
     provider = auto()
 
-    # meta test files
-    conftest = auto()
-
     # test files
     integration_test = auto()
     getatt_test = auto()
@@ -262,7 +243,6 @@ class TemplateRenderer:
         self,
         file_type: FileType,
         resource_name: ResourceName,
-        do_run_black: bool,
     ) -> str:
         # Generated outputs (template, schema)
         # templates
@@ -285,7 +265,6 @@ class TemplateRenderer:
             FileType.integration_test: "test_integration_template.py.j2",
             # FileType.cloudcontrol_test: "test_cloudcontrol_template.py.j2",
             FileType.parity_test: "test_parity_template.py.j2",
-            FileType.conftest: "conftest.py.j2",
         }
         kwargs = dict(
             name=resource_name.full_name,  # AWS::SNS::Topic
@@ -353,13 +332,11 @@ class TemplateRenderer:
             # case FileType.cloudcontrol_test:
             case FileType.parity_test:
                 kwargs["parity_test_filename"] = "test_parity.py"
-            case FileType.conftest:
-                pass
             case _:
                 raise NotImplementedError(f"Rendering template of type {file_type}")
 
         return get_formatted_template_output(
-            self.environment, template_mapping[file_type], do_run_black, **kwargs
+            self.environment, template_mapping[file_type], **kwargs
         )
 
     def get_getatt_targets(self) -> Generator[str, None, None]:
@@ -564,11 +541,6 @@ class FileWriter:
                 self.resource_name.path_compatible_full_name(),
                 "test_parity.py",
             ),
-            FileType.conftest: tests_root_dir(self.pro).joinpath(
-                self.resource_name.python_compatible_service_name.lower(),
-                self.resource_name.path_compatible_full_name(),
-                "conftest.py",
-            ),
         }
 
         # output files that are templates
@@ -602,12 +574,6 @@ class FileWriter:
                 self.ensure_python_init_files(destination_path)
                 self.write_text(contents, file_destination)
                 self.console.print(f"Written plugin to {file_destination}")
-
-            # tests meta
-            case FileType.conftest:
-                self.ensure_python_init_files(destination_path)
-                self.write_text(contents, file_destination)
-                self.console.print(f"Written pytest conftest to {file_destination}")
 
             # tests
             case FileType.integration_test:
@@ -685,15 +651,13 @@ class OutputFactory:
         template_renderer: TemplateRenderer,
         printer: Console,
         writer: FileWriter,
-        do_run_black: bool,
     ):
         self.template_renderer = template_renderer
         self.printer = printer
         self.writer = writer
-        self.do_run_black = do_run_black
 
     def get(self, file_type: FileType, resource_name: ResourceName) -> Output:
-        contents = self.template_renderer.render(file_type, resource_name, self.do_run_black)
+        contents = self.template_renderer.render(file_type, resource_name)
         return Output(contents, file_type, self.printer, self.writer, resource_name)
 
 
@@ -762,9 +726,6 @@ class Output:
             case FileType.schema:
                 self.printer.print("\n[underline]Schema[/underline]\n")
                 self.printer.print(Syntax(self.contents, "json"))
-            case FileType.conftest:
-                self.printer.print("\n[underline]Test conftest[/underline]\n")
-                self.printer.print(Syntax(self.contents, "python"))
             case _:
                 raise NotImplementedError(self.file_type)
 
@@ -784,14 +745,12 @@ def cli():
 @click.option("-w", "--write/--no-write", default=False)
 @click.option("--overwrite", is_flag=True, default=False)
 @click.option("-t", "--write-tests/--no-write-tests", default=False)
-@click.option("--run-black/--no-run-black", "do_run_black", default=True)
 @click.option("--pro", is_flag=True, default=False)
 def generate(
     resource_type: str,
     write: bool,
     write_tests: bool,
     overwrite: bool,
-    do_run_black: bool,
     pro: bool,
 ):
     console = Console()
@@ -820,13 +779,12 @@ def generate(
 
         template_renderer = TemplateRenderer(schema, env, pro)
         writer = FileWriter(resource_name, console, overwrite, pro)
-        output_factory = OutputFactory(template_renderer, console, writer, do_run_black)  # noqa
+        output_factory = OutputFactory(template_renderer, console, writer)  # noqa
         for file_type in FileType:
             if not write_tests and file_type in {
                 FileType.integration_test,
                 FileType.getatt_test,
                 FileType.parity_test,
-                FileType.conftest,
                 FileType.minimal_template,
                 FileType.update_without_replacement_template,
                 FileType.attribute_template,

@@ -128,6 +128,7 @@ class ExecutionState(CommonStateField, abc.ABC):
             "State Task encountered an unhandled exception that lead to a State.Runtime error."
         )
         return FailureEvent(
+            env=env,
             error_name=StatesErrorName(typ=StatesErrorNameType.StatesRuntime),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
@@ -139,8 +140,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         )
 
     @abc.abstractmethod
-    def _eval_execution(self, env: Environment) -> None:
-        ...
+    def _eval_execution(self, env: Environment) -> None: ...
 
     def _handle_retry(self, env: Environment, failure_event: FailureEvent) -> RetryOutcome:
         env.stack.append(failure_event.error_name)

@@ -5,7 +5,7 @@
     "Start": {
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
-      "TimeoutSeconds": 1,
+      "TimeoutSeconds": 5,
       "Parameters": {
         "FunctionName.$": "$.FunctionName",
         "Payload.$": "$.Payload",

@@ -52,7 +52,7 @@ class VtlTemplate:
             return template
 
         # fix "#set" commands
-        template = re.sub(r"(^|\n)#\s+set(.*)", r"\1#set\2", template, re.MULTILINE)
+        template = re.sub(r"(^|\n)#\s+set(.*)", r"\1#set\2", template, count=re.MULTILINE)
 
         # enable syntax like "test#${foo.bar}"
         empty_placeholder = " __pLaCe-HoLdEr__ "
@@ -60,12 +60,15 @@ class VtlTemplate:
             r"([^\s]+)#\$({)?(.*)",
             r"\1#%s$\2\3" % empty_placeholder,
             template,
-            re.MULTILINE,
+            count=re.MULTILINE,
         )
 
         # add extensions for common string functions below
 
         class ExtendedString(str):
+            def toString(self, *_, **__):
+                return self
+
             def trim(self, *args, **kwargs):
                 return ExtendedString(self.strip(*args, **kwargs))
 
@@ -74,6 +77,13 @@ class VtlTemplate:
 
             def toUpperCase(self, *_, **__):
                 return ExtendedString(self.upper())
+
+            def contains(self, *args):
+                return self.find(*args) >= 0
+
+            def replaceAll(self, regex, replacement):
+                escaped_replacement = replacement.replace("$", "\\")
+                return ExtendedString(re.sub(regex, escaped_replacement, self))
 
         def apply(obj, **_):
             if isinstance(obj, dict):

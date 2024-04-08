@@ -4,6 +4,7 @@ LocalStack client stack.
 This module provides the interface to perform cross-service communication between
 LocalStack providers.
 """
+
 import json
 import logging
 import re
@@ -26,7 +27,7 @@ from localstack.constants import (
     MAX_POOL_CONNECTIONS,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.utils.aws.aws_stack import get_local_service_url, get_s3_hostname
+from localstack.utils.aws.aws_stack import get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
@@ -102,6 +103,17 @@ def attribute_name_to_service_name(attribute_name):
         attribute_name = attribute_name[:-1]
     # replace all _ with -: cognito_idp -> cognito-idp
     return attribute_name.replace("_", "-")
+
+
+def get_service_endpoint() -> str | None:
+    """
+    Returns the endpoint the client should target.
+
+    :return: Endpoint url
+    """
+    if localstack_config.DISTRIBUTED_MODE:
+        return None
+    return localstack_config.internal_service_url()
 
 
 #
@@ -474,8 +486,8 @@ class InternalClientFactory(ClientFactory):
         else:
             config = self._config.merge(config)
 
-        endpoint_url = endpoint_url or get_local_service_url(service_name)
-        if service_name == "s3":
+        endpoint_url = endpoint_url or get_service_endpoint()
+        if service_name == "s3" and endpoint_url:
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
 
@@ -538,7 +550,7 @@ class ExternalClientFactory(ClientFactory):
             if region_name == AWS_REGION_US_EAST_1:
                 config = config.merge(Config(region_name=region_name))
 
-        endpoint_url = endpoint_url or get_local_service_url(service_name)
+        endpoint_url = endpoint_url or get_service_endpoint()
         if service_name == "s3":
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
@@ -612,7 +624,7 @@ class ExternalAwsClientFactory(ClientFactory):
         )
 
 
-connect_to = InternalClientFactory()
+connect_to = InternalClientFactory(use_ssl=localstack_config.DISTRIBUTED_MODE)
 connect_externally_to = ExternalClientFactory()
 
 #

@@ -30,7 +30,7 @@ class TestLambdaUtils:
             Runtime.dotnetcore3_1,
         )
         assert "test/handler.rb" == get_handler_file_from_name(
-            "test.handler.execute", Runtime.ruby2_7
+            "test.handler.execute", Runtime.ruby3_2
         )
         assert "test.handler.execute" == get_handler_file_from_name(
             "test.handler.execute", Runtime.go1_x
@@ -141,4 +141,10 @@ class TestFilterStreamRecords:
             }
         ]
 
+        assert [] == filter_stream_records(self.records, filters)
+
+    def test_no_match_exists_dict(self):
+        filters = [
+            {"Filters": [{"Pattern": json.dumps({"data": {"Foo": {"S": [{"exists": True}]}}})}]}
+        ]
         assert [] == filter_stream_records(self.records, filters)

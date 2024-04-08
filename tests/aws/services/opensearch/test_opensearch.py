@@ -364,7 +364,7 @@ class TestOpensearchProvider:
                 f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
             )
             plugins_response = requests.get(plugins_url, headers={"Accept": "application/json"})
-            installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
+            installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
             requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
             assert requested_plugins.issubset(installed_plugins)
         finally:
@@ -400,7 +400,7 @@ class TestOpensearchProvider:
             plugins_url, headers={"Accept": "application/json"}, auth=master_user_auth
         )
         assert plugins_response.status_code == 200
-        installed_plugins = set(plugin["component"] for plugin in plugins_response.json())
+        installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
         assert "opensearch-security" in installed_plugins
 
         # create a new index with the admin user
@@ -536,11 +536,15 @@ class TestOpensearchProvider:
             connection.putrequest(method, parsed.path, skip_accept_encoding=True)
             connection.endheaders()
             response = connection.getresponse()
-            connection.close()
-            return response
+            try:
+                return response, response.read()
+            finally:
+                # make sure to close the connectio *after* we've called ``response.read()``.
+                response.close()
 
-        plain_response = send_plain_request("GET", opensearch_endpoint)
-        assert "cluster_name" in to_str(plain_response.read())
+        plain_response, data = send_plain_request("GET", opensearch_endpoint)
+        assert plain_response.status == 200
+        assert "cluster_name" in to_str(data)
 
         # ensure that requests with the "Accept-Encoding": "gzip" header receive gzip compressed responses
         gzip_accept_headers = {"Accept-Encoding": "gzip"}

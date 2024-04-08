@@ -603,7 +603,7 @@ class ContainerClient(metaclass=ABCMeta):
     def get_running_container_names(self) -> List[str]:
         """Returns a list of the names of all running containers"""
         result = self.list_containers(all=False)
-        result = list(map(lambda container: container["name"], result))
+        result = [container["name"] for container in result]
         return result
 
     def is_container_running(self, container_name: str) -> bool:

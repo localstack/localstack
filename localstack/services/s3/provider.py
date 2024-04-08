@@ -192,9 +192,9 @@ from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
-os.environ[
-    "MOTO_S3_CUSTOM_ENDPOINTS"
-] = f"s3.{localstack_host().host_and_port()},s3.{localstack_host().host}"
+os.environ["MOTO_S3_CUSTOM_ENDPOINTS"] = (
+    f"s3.{localstack_host().host_and_port()},s3.{localstack_host().host}"
+)
 
 MOTO_CANONICAL_USER_ID = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a"
 # max file size for S3 objects kept in memory (500 KB by default)
@@ -669,9 +669,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             dest_key_object.checksum_algorithm = checksum_algorithm
 
-            response["CopyObjectResult"][
-                f"Checksum{checksum_algorithm.upper()}"
-            ] = dest_key_object.checksum_value  # noqa
+            response["CopyObjectResult"][f"Checksum{checksum_algorithm.upper()}"] = (
+                dest_key_object.checksum_value
+            )  # noqa
 
         self._notify(context)
         return response
@@ -1530,9 +1530,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if "ObjectSize" in object_attrs:
             response["ObjectSize"] = key.size
         if "Checksum" in object_attrs and (checksum_algorithm := key.checksum_algorithm):
-            response["Checksum"] = {
-                f"Checksum{checksum_algorithm.upper()}": key.checksum_value
-            }  # noqa
+            response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": key.checksum_value}  # noqa
 
         response["LastModified"] = key.last_modified
 
@@ -1597,9 +1595,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
 
-        analytics_configurations: Dict[
-            AnalyticsId, AnalyticsConfiguration
-        ] = store.bucket_analytics_configuration.get(bucket, {})
+        analytics_configurations: Dict[AnalyticsId, AnalyticsConfiguration] = (
+            store.bucket_analytics_configuration.get(bucket, {})
+        )
         analytics_configurations: AnalyticsConfigurationList = sorted(
             analytics_configurations.values(), key=lambda x: x["Id"]
         )
@@ -1722,13 +1720,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         source_bucket_region = moto_bucket.region_name
         if target_bucket.region_name != source_bucket_region:
-            raise CrossLocationLoggingProhibitted(
-                "Cross S3 location logging not allowed. ",
-                TargetBucketLocation=target_bucket.region_name,
-            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
-                "Cross S3 location logging not allowed. ",
-                SourceBucketLocation=source_bucket_region,
-                TargetBucketLocation=target_bucket.region_name,
+            raise (
+                CrossLocationLoggingProhibitted(
+                    "Cross S3 location logging not allowed. ",
+                    TargetBucketLocation=target_bucket.region_name,
+                )
+                if source_bucket_region == AWS_REGION_US_EAST_1
+                else CrossLocationLoggingProhibitted(
+                    "Cross S3 location logging not allowed. ",
+                    SourceBucketLocation=source_bucket_region,
+                    TargetBucketLocation=target_bucket.region_name,
+                )
             )
 
         moto_bucket.logging = logging_config

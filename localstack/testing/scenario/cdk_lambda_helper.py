@@ -19,7 +19,7 @@ def load_python_lambda_to_s3(
     bucket_name: str,
     key_name: str,
     code_path: str,
-    additional_python_packages: list[str] = [],
+    additional_python_packages: list[str] = None,
 ):
     """
     Helper function to setup Lambdas that need additional python libs.
@@ -65,8 +65,8 @@ def load_nodejs_lambda_to_s3(
     bucket_name: str,
     key_name: str,
     code_path: str,
-    additional_nodjs_packages: list[str] = [],
-    additional_resources: list[str] = [],
+    additional_nodjs_packages: list[str] = None,
+    additional_resources: list[str] = None,
 ):
     """
     Helper function to setup nodeJS Lambdas that need additional libs.
@@ -81,6 +81,8 @@ def load_nodejs_lambda_to_s3(
     :param additional_resources: list of path-strings to resources or internal libs that should be packaged into the lambda
     :return: None
     """
+    additional_resources = additional_resources or []
+
     try:
         temp_dir = tempfile.mkdtemp()
         tmp_zip_path = os.path.join(tempfile.gettempdir(), "helper.zip")
