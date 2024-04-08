@@ -2022,6 +2022,16 @@ class InstanceType(str):
     c7gd_metal = "c7gd.metal"
     m7gd_metal = "m7gd.metal"
     r7gd_metal = "r7gd.metal"
+    g6_xlarge = "g6.xlarge"
+    g6_2xlarge = "g6.2xlarge"
+    g6_4xlarge = "g6.4xlarge"
+    g6_8xlarge = "g6.8xlarge"
+    g6_12xlarge = "g6.12xlarge"
+    g6_16xlarge = "g6.16xlarge"
+    g6_24xlarge = "g6.24xlarge"
+    g6_48xlarge = "g6.48xlarge"
+    gr6_4xlarge = "gr6.4xlarge"
+    gr6_8xlarge = "gr6.8xlarge"
 
 
 class InstanceTypeHypervisor(str):

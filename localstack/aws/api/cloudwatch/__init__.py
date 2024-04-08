@@ -341,6 +341,7 @@ class MetricMathAnomalyDetector(TypedDict, total=False):
 
 
 class SingleMetricAnomalyDetector(TypedDict, total=False):
+    AccountId: Optional[AccountId]
     Namespace: Optional[Namespace]
     MetricName: Optional[MetricName]
     Dimensions: Optional[Dimensions]
