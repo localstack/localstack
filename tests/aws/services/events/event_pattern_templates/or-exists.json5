@@ -1,0 +1,37 @@
+{
+  "Event": {
+    "id": "1",
+    "source": "order",
+    "detail-type": "Test",
+    "account": "123456789012",
+    "region": "us-east-2",
+    "time": "2022-07-13T13:48:01Z",
+    "dynamodb": {
+      "NewImage": {
+        "homemade": {
+          "N": "789"
+        }
+      }
+    }
+  },
+  "EventPattern": {
+    "dynamodb": {
+      "NewImage": {
+        "homemade": {
+          "S": [
+            // Does NOT match this filter because "homemade" is not present
+            {
+              "anything-but": [
+                "roses"
+              ]
+            },
+            // Matches this filter because S does not exist
+            {
+              "exists": false
+            }
+          ]
+        }
+      }
+    }
+  }
+}

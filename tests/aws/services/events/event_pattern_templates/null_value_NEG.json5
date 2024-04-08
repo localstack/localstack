@@ -1,0 +1,23 @@
+// Based on https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-null-values.html
+{
+  "Event": {
+    "version": "0",
+    "id": "3e3c153a-8339-4e30-8c35-687ebef853fe",
+    "detail-type": "EC2 Instance Launch Successful",
+    "source": "aws.autoscaling",
+    "account": "123456789012",
+    "time": "2015-11-11T21:31:47Z",
+    "region": "us-east-1",
+    "resources": [
+    ],
+    "detail": {
+      "eventVersion": "",
+      "responseElements": "null"
+    }
+  },
+  "EventPattern": {
+    "detail": {
+      "responseElements": [null]
+    }
+  }
+}
