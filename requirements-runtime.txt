@@ -163,6 +163,8 @@ jmespath==1.0.1
     #   botocore
 joserfc==0.9.0
     # via moto-ext
+jpype1==1.5.0
+    # via localstack-core
 jschema-to-python==1.2.3
     # via cfn-lint
 json5==0.9.25
@@ -229,6 +231,7 @@ packaging==24.0
     #   apispec
     #   build
     #   docker
+    #   jpype1
 pathable==0.4.3
     # via jsonschema-path
 pbr==6.0.0

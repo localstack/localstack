@@ -93,6 +93,8 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
+jpype1==1.5.0
+    # via localstack-core (pyproject.toml)
 jsonpatch==1.33
     # via localstack-core (pyproject.toml)
 jsonpointer==2.4
@@ -112,6 +114,7 @@ packaging==24.0
     # via
     #   build
     #   docker
+    #   jpype1
 pbr==6.0.0
     # via stevedore
 plux==1.9.0

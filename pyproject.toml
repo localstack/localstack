@@ -67,6 +67,8 @@ base-runtime = [
     "Werkzeug>=3.0.0",
     "xmltodict>=0.13.0",
     "rolo>=0.4",
+    # allow Python programs full access to Java class libraries. Used for opt-in event ruler.
+    "JPype1>=1.5.0",
     # TODO: remove those 2 dependencies
     "flask>=3.0.0",
     "Quart>=0.19.2",

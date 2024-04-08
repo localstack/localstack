@@ -12,7 +12,6 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 LOG = logging.getLogger(__name__)
 
 if config.EVENT_RULE_ENGINE == "java":
-    # TODO: add JPype to pinned dependencies
     import jpype
     import jpype.imports
     from jpype import config as jpype_config
