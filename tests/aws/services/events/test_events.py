@@ -1163,3 +1163,33 @@ class TestEventRule:
         with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as e:
             aws_client.events.describe_rule(Name=rule_name)
         snapshot.match("describe-not-existing-rule", e)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_disable_re_enable_rule(
+        self, create_event_bus, put_rule, aws_client, snapshot, bus_name
+    ):
+        if bus_name == "custom":
+            bus_name = f"bus-{short_uid()}"
+            snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
+            create_event_bus(Name=bus_name)
+
+        rule_name = f"test-rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+        put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            EventBusName=bus_name,
+        )
+
+        response = aws_client.events.disable_rule(Name=rule_name, EventBusName=bus_name)
+        snapshot.match("disable-rule", response)
+
+        response = aws_client.events.describe_rule(Name=rule_name, EventBusName=bus_name)
+        snapshot.match("describe-rule-disabled", response)
+
+        response = aws_client.events.enable_rule(Name=rule_name, EventBusName=bus_name)
+        snapshot.match("enable-rule", response)
+
+        response = aws_client.events.describe_rule(Name=rule_name, EventBusName=bus_name)
+        snapshot.match("describe-rule-enabled", response)

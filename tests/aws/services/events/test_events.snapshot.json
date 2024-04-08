@@ -940,5 +940,135 @@
     "recorded-content": {
       "describe-not-existing-rule": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeRule operation: Rule <rule-name> does not exist on EventBus default.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[custom]": {
+    "recorded-date": "08-04-2024, 17:37:18",
+    "recorded-content": {
+      "disable-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule-disabled": {
+        "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "<bus-name>",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "DISABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "enable-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule-enabled": {
+        "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "<bus-name>",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[default]": {
+    "recorded-date": "08-04-2024, 17:37:19",
+    "recorded-content": {
+      "disable-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule-disabled": {
+        "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "default",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "DISABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "enable-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule-enabled": {
+        "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "default",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
