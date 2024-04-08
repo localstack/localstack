@@ -12,9 +12,9 @@ from localstack.utils.sync import retry
 def create_event_bus(aws_client):
     event_bus_names = []
 
-    def _create_event_bus(bus_name, **kwargs):
-        response = aws_client.events.create_event_bus(Name=bus_name, **kwargs)
-        event_bus_names.append(bus_name)
+    def _create_event_bus(**kwargs):
+        response = aws_client.events.create_event_bus(**kwargs)
+        event_bus_names.append(kwargs["Name"])
         return response
 
     yield _create_event_bus

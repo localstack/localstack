@@ -739,10 +739,10 @@ class TestEventsEventBus:
     @markers.aws.validated
     def test_create_multiple_event_buses_same_name(self, create_event_bus, aws_client, snapshot):
         bus_name = "test-bus"
-        create_event_bus(bus_name)
+        create_event_bus(Name=bus_name)
 
         with pytest.raises(aws_client.events.exceptions.ResourceAlreadyExistsException) as e:
-            create_event_bus(bus_name)
+            create_event_bus(Name=bus_name)
         snapshot.match("create-multiple-event-buses-same-name", e)
 
     @markers.aws.validated
@@ -759,15 +759,13 @@ class TestEventsEventBus:
         snapshot.match("delete-not-existing-event-bus", e)
 
     @markers.aws.validated
-    def test_list_event_buses_with_prefix(self, aws_client, cleanups, snapshot):
+    def test_list_event_buses_with_prefix(self, create_event_bus, aws_client, snapshot):
         events = aws_client.events
         bus_name = "test-bus"
         bus_name_not_match = "no-prefix-match"
 
-        events.create_event_bus(Name=bus_name)
-        cleanups.append(lambda: events.delete_event_bus(Name=bus_name))
-        events.create_event_bus(Name=bus_name_not_match)
-        cleanups.append(lambda: events.delete_event_bus(Name=bus_name_not_match))
+        create_event_bus(Name=bus_name)
+        create_event_bus(Name=bus_name_not_match)
 
         response = events.list_event_buses(NamePrefix=bus_name)
         snapshot.match("list-event-buses-prefix-complete-name", response)
@@ -784,7 +782,7 @@ class TestEventsEventBus:
 
         for i in range(count):
             bus_name = f"{bus_name_prefix}-{i}"
-            create_event_bus(bus_name)
+            create_event_bus(Name=bus_name)
 
         response = events.list_event_buses(Limit=int(count / 2))
         snapshot.match("list-event-buses-limit", response)
