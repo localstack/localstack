@@ -136,7 +136,7 @@ class TestFilterStreamRecords:
         filters = [
             {
                 "Filters": [
-                    {"Pattern": json.dumps({"partitionKey": "2", "data": {"City": ["Seattle"]}})}
+                    {"Pattern": json.dumps({"partitionKey": ["2"], "data": {"City": ["Seattle"]}})}
                 ]
             }
         ]
