@@ -51,6 +51,7 @@ from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_ECHO_ZIP,
     TEST_LAMBDA_PYTHON_VERSION,
+    TEST_LAMBDA_VERSION,
     check_concurrency_quota,
 )
 
@@ -822,6 +823,49 @@ class TestLambdaFunction:
                 Payload=b"{}",
             )
         snapshot.match("invoke_function_name_pattern_exc", e.value.response)
+
+    @markers.aws.validated
+    def test_lambda_concurrent_code_updates(
+        self, aws_client, create_lambda_function_aws, lambda_su_role, snapshot
+    ):
+        function_name = f"test-lambda-{short_uid()}"
+        version_handler = load_file(TEST_LAMBDA_VERSION)
+        zip_file = create_lambda_archive(version_handler % "version0", get_content=True)
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Runtime=Runtime.python3_12,
+            Role=lambda_su_role,
+            Handler="handler.handler",
+            Code={"ZipFile": zip_file},
+        )
+        snapshot.match("create-function-response", create_response)
+        zip_file = create_lambda_archive(version_handler % "version1", get_content=True)
+        aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file)
+        zip_file = create_lambda_archive(version_handler % "version2", get_content=True)
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file)
+        snapshot.match("update-during-in-progress-update-exc", e.value.response)
+
+    @markers.aws.validated
+    def test_lambda_concurrent_config_updates(
+        self, aws_client, create_lambda_function, lambda_su_role, snapshot
+    ):
+        function_name = f"test-lambda-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+        snapshot.match("create-function-response", create_response)
+        aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, Environment={"Variables": {"TEST": "TEST1"}}
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.update_function_configuration(
+                FunctionName=function_name, Environment={"Variables": {"TEST": "TEST2"}}
+            )
+        snapshot.match("update-during-in-progress-update-exc", e.value.response)
 
 
 class TestLambdaImages:
