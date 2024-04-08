@@ -166,7 +166,8 @@ class LambdaService:
             version_manager = self.lambda_starting_versions.get(qualified_arn)
             if version_manager:
                 raise ResourceConflictException(
-                    f"The operation cannot be performed at this time. An update is in progress for resource: {function_version.id.unqualified_arn()}"
+                    f"The operation cannot be performed at this time. An update is in progress for resource: {function_version.id.unqualified_arn()}",
+                    Type="User",
                 )
             state = lambda_stores[function_version.id.account][function_version.id.region]
             fn = state.functions.get(function_version.id.function_name)

@@ -14,6 +14,7 @@ import io
 import json
 import logging
 import re
+import time
 from hashlib import sha256
 from io import BytesIO
 from typing import Callable
@@ -824,10 +825,24 @@ class TestLambdaFunction:
             )
         snapshot.match("invoke_function_name_pattern_exc", e.value.response)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_lambda_concurrent_code_updates(
-        self, aws_client, create_lambda_function_aws, lambda_su_role, snapshot
+        self, aws_client, create_lambda_function_aws, lambda_su_role, snapshot, monkeypatch
     ):
+        from localstack.services.lambda_.invocation import docker_runtime_executor
+        from localstack.services.lambda_.invocation.docker_runtime_executor import (
+            get_runtime_client_path,
+        )
+
+        def _runtime_client_path(*args, **kwargs):
+            time.sleep(1)
+            return get_runtime_client_path(*args, **kwargs)
+
+        monkeypatch.setattr(
+            docker_runtime_executor, "get_runtime_client_path", _runtime_client_path
+        )
+
         function_name = f"test-lambda-{short_uid()}"
         version_handler = load_file(TEST_LAMBDA_VERSION)
         zip_file = create_lambda_archive(version_handler % "version0", get_content=True)
@@ -846,10 +861,24 @@ class TestLambdaFunction:
             aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file)
         snapshot.match("update-during-in-progress-update-exc", e.value.response)
 
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_lambda_concurrent_config_updates(
-        self, aws_client, create_lambda_function, lambda_su_role, snapshot
+        self, aws_client, create_lambda_function, lambda_su_role, snapshot, monkeypatch
     ):
+        from localstack.services.lambda_.invocation import docker_runtime_executor
+        from localstack.services.lambda_.invocation.docker_runtime_executor import (
+            get_runtime_client_path,
+        )
+
+        def _runtime_client_path(*args, **kwargs):
+            time.sleep(1)
+            return get_runtime_client_path(*args, **kwargs)
+
+        monkeypatch.setattr(
+            docker_runtime_executor, "get_runtime_client_path", _runtime_client_path
+        )
+
         function_name = f"test-lambda-{short_uid()}"
         create_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -2555,9 +2584,7 @@ class TestLambdaEventInvokeConfig:
 # New accounts in an organization have by default a quota of 10 or 50.
 class TestLambdaReservedConcurrency:
     @markers.aws.validated
-    def test_function_concurrency_exceptions(
-        self, create_lambda_function, snapshot, aws_client, monkeypatch
-    ):
+    def test_function_concurrency_exceptions(self, create_lambda_function, snapshot, aws_client):
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             aws_client.lambda_.put_function_concurrency(
                 FunctionName="doesnotexist", ReservedConcurrentExecutions=1
