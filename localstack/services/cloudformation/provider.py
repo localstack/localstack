@@ -80,10 +80,7 @@ from localstack.aws.api.cloudformation import (
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import parameters as param_resolver
-from localstack.services.cloudformation.engine import (
-    template_deployer,
-    template_preparer,
-)
+from localstack.services.cloudformation.engine import template_deployer, template_preparer
 from localstack.services.cloudformation.engine.entities import (
     Stack,
     StackChangeSet,
@@ -92,9 +89,7 @@ from localstack.services.cloudformation.engine.entities import (
 )
 from localstack.services.cloudformation.engine.parameters import strip_parameter_type
 from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
-from localstack.services.cloudformation.engine.template_utils import (
-    resolve_stack_conditions,
-)
+from localstack.services.cloudformation.engine.template_utils import resolve_stack_conditions
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
 )
@@ -469,10 +464,7 @@ class CloudformationProvider(CloudformationApi):
     ) -> GetTemplateOutput:
         if change_set_name:
             stack = find_change_set(
-                context.account_id,
-                context.region,
-                stack_name=stack_name,
-                cs_name=change_set_name,
+                context.account_id, context.region, stack_name=stack_name, cs_name=change_set_name
             )
         else:
             stack = find_stack(context.account_id, context.region, stack_name)
@@ -936,11 +928,7 @@ class CloudformationProvider(CloudformationApi):
 
     @handler("ListStackResources")
     def list_stack_resources(
-        self,
-        context: RequestContext,
-        stack_name: StackName,
-        next_token: NextToken = None,
-        **kwargs,
+        self, context: RequestContext, stack_name: StackName, next_token: NextToken = None, **kwargs
     ) -> ListStackResourcesOutput:
         result = self.describe_stack_resources(context, stack_name)
 
