@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_with_limit": {
+    "last_validated_date": "2024-04-08T17:29:40+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[custom]": {
     "last_validated_date": "2024-04-08T16:36:38+00:00"
   },

@@ -798,5 +798,141 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_with_limit": {
+    "recorded-date": "08-04-2024, 17:29:40",
+    "recorded-content": {
+      "list-rules-limit": {
+        "NextToken": "<next_token:1>",
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-0",
+            "EventBusName": "default",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "test-rule-0",
+            "State": "ENABLED"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-1",
+            "EventBusName": "default",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "test-rule-1",
+            "State": "ENABLED"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-2",
+            "EventBusName": "default",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "test-rule-2",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules-limit-next-token": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-3",
+            "EventBusName": "default",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "test-rule-3",
+            "State": "ENABLED"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-4",
+            "EventBusName": "default",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "test-rule-4",
+            "State": "ENABLED"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-5",
+            "EventBusName": "default",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "test-rule-5",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

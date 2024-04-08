@@ -1133,3 +1133,24 @@ class TestEventRule:
 
         response = aws_client.events.list_rules(NamePrefix=rule_name)
         snapshot.match("list-rules", response)
+
+    @markers.aws.validated
+    def test_list_rule_with_limit(self, put_rule, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
+        rule_name_prefix = "test-rule"
+        count = 6
+
+        for i in range(count):
+            rule_name = f"{rule_name_prefix}-{i}"
+            put_rule(
+                Name=rule_name,
+                EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            )
+
+        response = aws_client.events.list_rules(Limit=int(count / 2))
+        snapshot.match("list-rules-limit", response)
+
+        response = aws_client.events.list_rules(
+            Limit=int(count / 2) + 2, NextToken=response["NextToken"]
+        )
+        snapshot.match("list-rules-limit-next-token", response)
