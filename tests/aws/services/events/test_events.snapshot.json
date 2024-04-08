@@ -600,5 +600,157 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[custom]": {
+    "recorded-date": "08-04-2024, 16:36:38",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+            "EventBusName": "<bus-name>",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name>",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule": {
+        "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "<bus-name>",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules-after-delete": {
+        "Rules": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[default]": {
+    "recorded-date": "08-04-2024, 16:36:39",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name>",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-rule": {
+        "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "CreatedBy": "111111111111",
+        "EventBusName": "default",
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "Name": "<rule-name>",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-rule": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules-after-delete": {
+        "Rules": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

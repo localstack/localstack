@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Tuple
 
 import pytest
@@ -6,6 +7,8 @@ import pytest
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+
+LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -20,11 +23,49 @@ def create_event_bus(aws_client):
     yield _create_event_bus
 
     for event_bus_name in event_bus_names:
-        response = aws_client.events.list_rules(EventBusName=event_bus_name)
-        rules = [rule["Name"] for rule in response["Rules"]]
+        try:
+            response = aws_client.events.list_rules(EventBusName=event_bus_name)
+            rules = [rule["Name"] for rule in response["Rules"]]
 
-        # Delete all rules for the current event bus
-        for rule in rules:
+            # Delete all rules for the current event bus
+            for rule in rules:
+                try:
+                    response = aws_client.events.list_targets_by_rule(
+                        Rule=rule, EventBusName=event_bus_name
+                    )
+                    targets = [target["Id"] for target in response["Targets"]]
+
+                    # Remove all targets for the current rule
+                    if targets:
+                        for target in targets:
+                            aws_client.events.remove_targets(
+                                Rule=rule, EventBusName=event_bus_name, Ids=[target]
+                            )
+
+                    aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
+                except Exception as e:
+                    LOG.warning(f"Failed to delete rule {rule}: {e}")
+
+            aws_client.events.delete_event_bus(Name=event_bus_name)
+        except Exception as e:
+            LOG.warning(f"Failed to delete event bus {event_bus_name}: {e}")
+
+
+@pytest.fixture
+def put_rule(aws_client):
+    rules = []
+
+    def _put_rule(**kwargs):
+        if "EventBusName" not in kwargs:
+            kwargs["EventBusName"] = "default"
+        response = aws_client.events.put_rule(**kwargs)
+        rules.append((kwargs["Name"], kwargs["EventBusName"]))
+        return response
+
+    yield _put_rule
+
+    for rule, event_bus_name in rules:
+        try:
             response = aws_client.events.list_targets_by_rule(
                 Rule=rule, EventBusName=event_bus_name
             )
@@ -38,8 +79,8 @@ def create_event_bus(aws_client):
                     )
 
             aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
-
-        aws_client.events.delete_event_bus(Name=event_bus_name)
+        except Exception as e:
+            LOG.warning(f"Failed to delete rule {rule}: {e}")
 
 
 @pytest.fixture

@@ -1080,18 +1080,32 @@ class TestEventsEventBus:
 class TestEventRule:
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
-    def test_put_rule(self, bus_name, create_event_bus, aws_client, snapshot):
+    def test_put_list_with_prefix_describe_delete_rule(
+        self, bus_name, create_event_bus, put_rule, aws_client, snapshot
+    ):
         if bus_name == "custom":
             bus_name = f"bus-{short_uid()}"
             snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
-            create_event_bus(bus_name)
+            create_event_bus(Name=bus_name)
 
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
-        response = aws_client.events.put_rule(
+        response = put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
-            State="ENABLED",
             EventBusName=bus_name,
         )
         snapshot.match("put-rule", response)
+
+        # NamePrefix required for default bus against AWS
+        response = aws_client.events.list_rules(NamePrefix=rule_name, EventBusName=bus_name)
+        snapshot.match("list-rules", response)
+
+        response = aws_client.events.describe_rule(Name=rule_name, EventBusName=bus_name)
+        snapshot.match("describe-rule", response)
+
+        response = aws_client.events.delete_rule(Name=rule_name, EventBusName=bus_name)
+        snapshot.match("delete-rule", response)
+
+        response = aws_client.events.list_rules(NamePrefix=rule_name, EventBusName=bus_name)
+        snapshot.match("list-rules-after-delete", response)
