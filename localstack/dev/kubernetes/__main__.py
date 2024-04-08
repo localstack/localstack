@@ -72,14 +72,20 @@ def generate_k8s_cluster_overrides(
     venv_path = os.path.join(target_path, ".venv", "lib", "python3.11", "site-packages")
     for volume in volumes:
         if volume["name"] == "entry-points":
-            project = "localstack_ext-" if pro else "localstack_core-"
-            version = localstack_version.__version__
-            dist_info = f"{project}{version}0.dist-info"
+            entry_points_path = os.path.join(
+                target_path, "localstack_core.egg-info", "entry_points.txt"
+            )
+            if pro:
+                project = "localstack_ext-"
+                version = localstack_version.__version__
+                dist_info = f"{project}{version}0.dist-info"
+                entry_points_path = os.path.join(venv_path, dist_info, "entry_points.txt")
+
             volume_mounts.append(
                 {
                     "name": volume["name"],
                     "readOnly": True,
-                    "mountPath": os.path.join(venv_path, dist_info, "entry_points.txt"),
+                    "mountPath": entry_points_path,
                 }
             )
             continue
