@@ -765,7 +765,8 @@ INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "9493
 # Determine which implementation to use for the event rule / event filtering engine used by multiple services:
 # EventBridge, EventBridge Pipes, Lambda Event Source Mapping, SNS
 # Options: provider (default) | java
-EVENT_RULE_ENGINE = os.environ.get("EVENT_RULE_ENGINE", "").strip()
+# TODO: switch back default from java to "" before merging!
+EVENT_RULE_ENGINE = os.environ.get("EVENT_RULE_ENGINE", "java").strip()
 
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
