@@ -14,7 +14,7 @@ import io
 import json
 import logging
 import re
-import time
+import threading
 from hashlib import sha256
 from io import BytesIO
 from typing import Callable
@@ -835,8 +835,11 @@ class TestLambdaFunction:
             get_runtime_client_path,
         )
 
+        update_finish_event = threading.Event()
+        update_finish_event.set()
+
         def _runtime_client_path(*args, **kwargs):
-            time.sleep(1)
+            update_finish_event.wait()
             return get_runtime_client_path(*args, **kwargs)
 
         monkeypatch.setattr(
@@ -854,12 +857,20 @@ class TestLambdaFunction:
             Code={"ZipFile": zip_file},
         )
         snapshot.match("create-function-response", create_response)
+
+        # clear flag so the update operation takes as long as we want
+        update_finish_event.clear()
+
         zip_file = create_lambda_archive(version_handler % "version1", get_content=True)
         aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file)
         zip_file = create_lambda_archive(version_handler % "version2", get_content=True)
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file)
         snapshot.match("update-during-in-progress-update-exc", e.value.response)
+
+        # release hold on updates
+        update_finish_event.set()
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
@@ -871,8 +882,11 @@ class TestLambdaFunction:
             get_runtime_client_path,
         )
 
+        update_finish_event = threading.Event()
+        update_finish_event.set()
+
         def _runtime_client_path(*args, **kwargs):
-            time.sleep(1)
+            update_finish_event.wait()
             return get_runtime_client_path(*args, **kwargs)
 
         monkeypatch.setattr(
@@ -887,6 +901,10 @@ class TestLambdaFunction:
             role=lambda_su_role,
         )
         snapshot.match("create-function-response", create_response)
+
+        # clear flag so the update operation takes as long as we want
+        update_finish_event.clear()
+
         aws_client.lambda_.update_function_configuration(
             FunctionName=function_name, Environment={"Variables": {"TEST": "TEST1"}}
         )
@@ -895,6 +913,10 @@ class TestLambdaFunction:
                 FunctionName=function_name, Environment={"Variables": {"TEST": "TEST2"}}
             )
         snapshot.match("update-during-in-progress-update-exc", e.value.response)
+
+        # release hold on updates
+        update_finish_event.set()
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
 
 class TestLambdaImages:
