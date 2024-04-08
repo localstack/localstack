@@ -4,8 +4,10 @@ from typing import Optional, TypedDict
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
     Arn,
+    CreatedBy,
     EventBusName,
     EventPattern,
+    ManagedBy,
     RoleArn,
     RuleDescription,
     RuleName,
@@ -27,12 +29,14 @@ class Rule:
     account_id: str
     schedule_expression: Optional[ScheduleExpression] = None
     event_pattern: Optional[EventPattern] = None
-    state: RuleState = RuleState.ENABLED
+    state: Optional[RuleState] = None
     description: Optional[RuleDescription] = None
     role_arn: Optional[RoleArn] = None
     tags: TagList = field(default_factory=list)
     event_bus_name: EventBusName = "default"
     targets: TagList = field(default_factory=list)
+    managed_by: Optional[ManagedBy] = None  # can only be set by AWS services
+    created_by: CreatedBy = field(init=False)
     arn: Arn = field(init=False)
 
     def __post_init__(self):
@@ -40,6 +44,13 @@ class Rule:
             self.arn = f"arn:aws:events:{self.region}:{self.account_id}:rule/{self.event_bus_name}/{self.name}"
         else:
             self.arn = f"arn:aws:events:{self.region}:{self.account_id}:rule/{self.name}"
+        self.created_by = self.account_id
+        if self.tags is None:
+            self.tags = []
+        if self.targets is None:
+            self.targets = []
+        if self.state is None:
+            self.state = RuleState.ENABLED
 
 
 RuleDict = dict[RuleName, Rule]
@@ -58,6 +69,10 @@ class EventBus:
 
     def __post_init__(self):
         self.arn = f"arn:aws:events:{self.region}:{self.account_id}:event-bus/{self.name}"
+        if self.rules is None:
+            self.rules = {}
+        if self.tags is None:
+            self.tags = []
 
 
 EventBusDict = dict[EventBusName, EventBus]

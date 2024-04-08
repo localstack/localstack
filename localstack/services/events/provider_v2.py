@@ -21,21 +21,35 @@ from localstack.aws.api.events import (
     ListEventBusesResponse,
     ListRuleNamesByTargetResponse,
     ListRulesResponse,
+    ListTargetsByRuleResponse,
     NextToken,
     PutRuleResponse,
+    PutTargetsResponse,
+    RemoveTargetsResponse,
     ResourceAlreadyExistsException,
     ResourceNotFoundException,
     RoleArn,
     RuleDescription,
     RuleName,
+    RuleResponseList,
     RuleState,
     ScheduleExpression,
     TagList,
     TargetArn,
+    TargetIdList,
+    TargetList,
 )
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
+from localstack.aws.api.events import Rule as ApiTypeRule
 from localstack.services.events.event_bus import EventBusWorker, EventBusWorkerDict
-from localstack.services.events.models_v2 import EventBus, EventBusDict, EventsStore, events_store
+from localstack.services.events.models_v2 import (
+    EventBus,
+    EventBusDict,
+    EventsStore,
+    Rule,
+    RuleDict,
+    events_store,
+)
 from localstack.services.events.rule import RuleWorker, RuleWorkerDict
 from localstack.services.plugins import ServiceLifecycleHook
 
@@ -84,9 +98,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 if event_bus_worker := self._event_bus_workers.pop(event_bus.arn):
                     if rules := getattr(event_bus_worker, "rules", None):
                         self._delete_rule_workers(rules)
-                del store.event_buses[name]
-        except ResourceNotFoundException as e:
-            return e
+                store.event_buses.pop(name)
+        except ResourceNotFoundException as error:
+            return error
 
     @handler("ListEventBuses")
     def list_event_buses(
@@ -99,7 +113,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> ListEventBusesResponse:
         store = self.get_store(context)
         event_buses = (
-            self._get_filtered_event_buses(name_prefix, store.event_buses)
+            self._get_filtered_dict(name_prefix, store.event_buses)
             if name_prefix
             else store.event_buses
         )
@@ -153,8 +167,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         store = self.get_store(context)
         event_bus = self.get_event_bus(event_bus_name, store)
-        existing_rule = event_bus.rules.get(name)
-        targets = existing_rule.targets if existing_rule else None
+        existing_rule = getattr(event_bus, "rules", {}).get(name, None)
+        targets = getattr(existing_rule, "targets", None) if existing_rule else None
         # TODO use _get_rule_worker and add logic to auto create rule worker if not exist
         rule_worker = RuleWorker(
             name,
@@ -186,14 +200,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
-        if rule := event_bus.rules.get(name):
-            rule_worker = self._rule_workers[rule.arn]
-            rule_worker.delete()
-            self._rule_workers.pop(name)
-            # self._event_bus_workers[event_bus_name].rules.pop(name)
-            del event_bus.rules[name]
-        else:
-            return
+        try:
+            if rule := event_bus.rules.get(name):
+                self._delete_rule_workers(rule)
+                del event_bus.rules[name]
+        except ResourceNotFoundException as error:
+            return error
 
     @handler("ListRules")
     def list_rules(
@@ -205,7 +217,30 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListRulesResponse:
-        return {"Rules": []}  # TODO implement
+        store = self.get_store(context)
+        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        rules = (
+            self._get_filtered_dict(name_prefix, event_bus.rules)
+            if name_prefix
+            else event_bus.rules
+        )
+        rules_len = len(rules)
+        start_index = self._decode_next_token(next_token) if next_token is not None else 0
+        end_index = start_index + limit if limit is not None else rules_len
+        limited_rules = dict(list(rules.items())[start_index:end_index])
+
+        next_token = (
+            self._encode_next_token(end_index)
+            # return a next_token (encoded integer of next starting index) if not all rules are returned
+            if end_index < rules_len
+            else None
+        )
+
+        response = {"Rules": list(self._rule_dict_to_list(limited_rules))}
+        if next_token is not None:
+            response["NextToken"] = next_token
+        return response
 
     @handler("ListRuleNamesByTarget")
     def list_rule_names_by_target(
@@ -227,7 +262,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         **kwargs,
     ) -> DescribeRuleResponse:
-        raise NotImplementedError  # TODO implement
+        store = self.get_store(context)
+        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        if rule := event_bus.rules.get(name):
+            response = self._rule_dict_to_api_type_rule(rule)
+            if created_by := getattr(rule, "created_by", None):
+                response["CreatedBy"] = created_by
+            return response
+        raise ResourceNotFoundException(f"Rule {name} does not exist on EventBus {event_bus_name}.")
 
     @handler("DisableRule")
     def disable_rule(
@@ -237,7 +280,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         **kwargs,
     ) -> None:
-        raise NotImplementedError  # TODO implement
+        store = self.get_store(context)
+        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        if rule := event_bus.rules.get(name):
+            rule.state = RuleState.DISABLED
+            return
 
     @handler("EnableRule")
     def enable_rule(
@@ -247,7 +295,51 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         **kwargs,
     ) -> None:
-        raise NotImplementedError  # TODO implement
+        store = self.get_store(context)
+        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        if rule := event_bus.rules.get(name):
+            rule.state = RuleState.ENABLED
+            return
+
+    #########
+    # Targets
+    #########
+
+    @handler("PutTargets")
+    def put_targets(
+        self,
+        context: RequestContext,
+        rule: RuleName,
+        targets: TargetList,
+        event_bus_name: EventBusNameOrArn = None,
+        **kwargs,
+    ) -> PutTargetsResponse:
+        raise NotImplementedError
+
+    @handler("RemoveTargets")
+    def remove_targets(
+        self,
+        context: RequestContext,
+        rule: RuleName,
+        ids: TargetIdList,
+        event_bus_name: EventBusNameOrArn = None,
+        force: Boolean = None,
+        **kwargs,
+    ) -> RemoveTargetsResponse:
+        raise NotImplementedError
+
+    @handler("ListTargetsByRule")
+    def list_targets_by_rule(
+        self,
+        context: RequestContext,
+        rule: RuleName,
+        event_bus_name: EventBusNameOrArn = None,
+        next_token: NextToken = None,
+        limit: LimitMax100 = None,
+        **kwargs,
+    ) -> ListTargetsByRuleResponse:
+        return {"Targets": []}  # TODO implement
 
     def get_store(self, context: RequestContext) -> EventsStore:
         region = context.region
@@ -284,14 +376,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._event_bus_workers[event_bus_worker.arn] = event_bus_worker
         return event_bus_worker
 
-    def _get_filtered_event_buses(
-        self, name_prefix: EventBusName, event_buses: EventBusDict
-    ) -> EventBusDict:
-        return {
-            name: event_bus
-            for name, event_bus in event_buses.items()
-            if name.startswith(name_prefix)
-        }
+    def _get_filtered_dict(self, name_prefix: str, input_dict: dict) -> dict:
+        return {name: value for name, value in input_dict.items() if name.startswith(name_prefix)}
 
     def _encode_next_token(self, token: int) -> NextToken:
         return base64.b64encode(token.to_bytes(128, "big")).decode("utf-8")
@@ -327,6 +413,26 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         ]
         return event_bus_list
 
-    def _delete_rule_workers(self, rules: RuleWorkerDict) -> None:
+    def _delete_rule_workers(self, rules: RuleDict | Rule) -> None:
+        if isinstance(rules, Rule):
+            rules = {rules.name: rules}
         for rule in rules.values():
             self._rule_workers.pop(rule.arn)
+
+    def _rule_dict_to_api_type_rule(self, rule: Rule) -> ApiTypeRule:
+        rule = {
+            "Name": rule.name,
+            "Arn": rule.arn,
+            "EventPattern": rule.event_pattern,
+            "State": rule.state,
+            "Description": rule.description,
+            "ScheduleExpression": rule.schedule_expression,
+            "RoleArn": rule.role_arn,
+            "ManagedBy": rule.managed_by,
+            "EventBusName": rule.event_bus_name,
+        }
+        return {k: v for k, v in rule.items() if v is not None and v != {} and v != []}
+
+    def _rule_dict_to_list(self, rules: RuleDict) -> RuleResponseList:
+        rule_list = [self._rule_dict_to_api_type_rule(rule) for rule in rules.values()]
+        return rule_list

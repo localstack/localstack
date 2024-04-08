@@ -5,6 +5,7 @@ from localstack.aws.api.events import (
     Arn,
     EventBusName,
     EventPattern,
+    ManagedBy,
     RoleArn,
     RuleDescription,
     RuleName,
@@ -29,6 +30,7 @@ class RuleWorker:
         tags: Optional[TagList] = None,
         event_bus_name: Optional[EventBusName] = None,
         targets: Optional[TagList] = None,
+        managed_by: Optional[ManagedBy] = None,
     ):
         self._validate_input(event_pattern, schedule_expression, event_bus_name)
         # required to keep data and functionality separate for persistence
@@ -44,6 +46,7 @@ class RuleWorker:
             tags,
             event_bus_name,
             targets,
+            managed_by,
         )
 
     @property
