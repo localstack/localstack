@@ -5400,7 +5400,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestCodeSigningConfig::test_function_code_signing_config": {
-    "recorded-date": "05-04-2024, 08:17:16",
+    "recorded-date": "08-04-2024, 16:32:59",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -5488,6 +5488,20 @@
             },
             "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:2>",
             "CodeSigningConfigId": "<resource:2>",
+            "CodeSigningPolicies": {
+              "UntrustedArtifactOnDeployment": "Enforce"
+            },
+            "Description": "Testing CodeSigning Config",
+            "LastModified": "date"
+          },
+          {
+            "AllowedPublishers": {
+              "SigningProfileVersionArns": [
+                "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+              ]
+            },
+            "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:3>",
+            "CodeSigningConfigId": "<resource:3>",
             "CodeSigningPolicies": {
               "UntrustedArtifactOnDeployment": "Enforce"
             },
