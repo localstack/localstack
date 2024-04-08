@@ -1109,3 +1109,27 @@ class TestEventRule:
 
         response = aws_client.events.list_rules(NamePrefix=rule_name, EventBusName=bus_name)
         snapshot.match("list-rules-after-delete", response)
+
+    @markers.aws.validated
+    def test_put_multiple_rules_with_same_name(self, put_rule, aws_client, snapshot):
+        rule_name = f"test-rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+
+        response = put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        snapshot.match("put-rule", response)
+
+        if is_aws_cloud():
+            time.sleep(10)
+
+        # put_rule updates the rule if it already exists
+        response = put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        snapshot.match("re-put-rule", response)
+
+        response = aws_client.events.list_rules(NamePrefix=rule_name)
+        snapshot.match("list-rules", response)

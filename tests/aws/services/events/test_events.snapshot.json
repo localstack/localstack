@@ -752,5 +752,51 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_put_multiple_rules_with_same_name": {
+    "recorded-date": "08-04-2024, 17:27:57",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "re-put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "EventPattern": {
+              "source": [
+                "core.update-account-command"
+              ],
+              "detail-type": [
+                "core.update-account-command"
+              ],
+              "detail": {
+                "command": [
+                  "update-account"
+                ]
+              }
+            },
+            "Name": "<rule-name>",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
