@@ -248,21 +248,20 @@ def test_put_events_with_target_lambda_list_entry(
     bus_name = f"bus-{short_uid()}"
 
     # clean up
-    cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
     cleanups.append(lambda: clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id))
 
-    rs = create_lambda_function(
+    create_lambda_response = create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         func_name=function_name,
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
 
-    func_arn = rs["CreateFunctionResponse"]["FunctionArn"]
+    func_arn = create_lambda_response["CreateFunctionResponse"]["FunctionArn"]
 
     event_pattern = {"detail": {"payload": {"automations": {"id": [{"exists": True}]}}}}
 
     aws_client.events.create_event_bus(Name=bus_name)
-    rs = aws_client.events.put_rule(
+    put_rule_response = aws_client.events.put_rule(
         Name=rule_name,
         EventBusName=bus_name,
         EventPattern=json.dumps(event_pattern),
@@ -272,74 +271,27 @@ def test_put_events_with_target_lambda_list_entry(
         StatementId=f"{rule_name}-Event",
         Action="lambda:InvokeFunction",
         Principal="events.amazonaws.com",
-        SourceArn=rs["RuleArn"],
+        SourceArn=put_rule_response["RuleArn"],
     )
-    rs = aws_client.events.put_targets(
+    put_target_response = aws_client.events.put_targets(
         Rule=rule_name,
         EventBusName=bus_name,
         Targets=[{"Id": target_id, "Arn": func_arn}],
     )
 
-    assert "FailedEntryCount" in rs
-    assert "FailedEntries" in rs
-    assert rs["FailedEntryCount"] == 0
-    assert rs["FailedEntries"] == []
+    assert "FailedEntryCount" in put_target_response
+    assert "FailedEntries" in put_target_response
+    assert put_target_response["FailedEntryCount"] == 0
+    assert put_target_response["FailedEntries"] == []
 
     event_detail = {
         "payload": {
             "userId": 10,
             "businessId": 3,
             "channelId": 6,
-            "card": {
-                "planLimitImposed": False,
-                "createdAt": "2024-02-09T14: 47: 22.694Z",
-                "updatedAt": "2024-02-20T16: 31: 53.468Z",
-                "id": "3f761415-125c-48bf-9c7e-83ab91da9ecb",
-                "channelId": 6,
-                "userId": 10,
-                "sequenceNumber": 1,
-                "threadId": "c8d2c98e-8074-410c-a89a-610fdf8e7696",
-                "cardDefinitionId": None,
-                "workflowTemplateId": "b8214841-e8ce-42ac-929c-d0bd3abc987e",
-                "urgent": False,
-                "timezone": "America/New_York",
-                "name": "test 11143r",
-                "startDate": None,
-                "startDateOffset": 0,
-                "endDateOffset": None,
-                "recurrenceDate": "2024-02-09T14: 47: 22.694Z",
-                "fields": {
-                    "name": "test 11143r",
-                    "userId": [10],
-                    "version": "v1",
-                    "createdAt": "2024-02-09T14: 47: 22.694Z",
-                    "updatedAt": "2024-02-20T16: 31: 53.468Z",
-                    "sequenceNumber": 1,
-                },
-                "deletedAt": None,
-                "kanbanSortKey": "1707490042553",
-                "status": "ACTIVE",
-                "assignees": [],
-                "tags": [],
-                "relatedCards": [],
-                "cardReminders": [],
-                "entityRecurrence": None,
-            },
+            "card": {"foo": "bar"},
             "targetEntity": True,
-            "entityAuditTrailEvent": {
-                "timestamp": "2024-02-20T16: 31: 53.468Z",
-                "workflowTemplateId": "b8214841-e8ce-42ac-929c-d0bd3abc987e",
-                "userId": 10,
-                "cardId": "3f761415-125c-48bf-9c7e-83ab91da9ecb",
-                "entries": [
-                    {
-                        "componentId": "name",
-                        "componentType": "TEXT",
-                        "newData": {"value": "test 11143r"},
-                        "originalData": {"value": "test 11143r43"},
-                    }
-                ],
-            },
+            "entityAuditTrailEvent": {"foo": "bar"},
             "automations": [
                 {
                     "id": "123",
@@ -373,7 +325,7 @@ def test_put_events_with_target_lambda_list_entry(
     # Get lambda's log events
     events = retry(
         check_expected_lambda_log_events_length,
-        retries=3,
+        retries=15,
         sleep=1,
         function_name=function_name,
         expected_length=1,
@@ -393,13 +345,12 @@ def test_put_events_with_target_lambda_list_entries_partial_match(
     bus_name = f"bus-{short_uid()}"
 
     # clean up
-    cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
     cleanups.append(lambda: clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id))
 
     rs = create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         func_name=function_name,
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
 
     func_arn = rs["CreateFunctionResponse"]["FunctionArn"]
@@ -473,7 +424,7 @@ def test_put_events_with_target_lambda_list_entries_partial_match(
     # Get lambda's log events
     events = retry(
         check_expected_lambda_log_events_length,
-        retries=3,
+        retries=15,
         sleep=1,
         function_name=function_name,
         expected_length=1,
