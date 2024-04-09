@@ -839,6 +839,7 @@ class ContainerClient(metaclass=ABCMeta):
             workdir=container_config.workdir,
             privileged=container_config.privileged,
             platform=container_config.platform,
+            labels=container_config.labels,
         )
 
     @abstractmethod
