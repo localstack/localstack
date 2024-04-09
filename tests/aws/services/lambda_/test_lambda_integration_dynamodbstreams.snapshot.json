@@ -405,8 +405,120 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put10-None-filter0-1]": {
-    "recorded-date": "27-02-2023, 18:37:56",
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[single-string]": {
+    "recorded-date": "27-02-2023, 18:44:12",
+    "recorded-content": {
+      "exception_event_source_creation": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Invalid filter pattern definition."
+        },
+        "Type": "User",
+        "message": "Invalid filter pattern definition.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
+    "recorded-date": "27-02-2023, 18:44:25",
+    "recorded-content": {
+      "exception_event_source_creation": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Invalid filter pattern definition."
+        },
+        "Type": "User",
+        "message": "Invalid filter pattern definition.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_duplicate_event_source_mappings": {
+    "recorded-date": "04-01-2024, 17:25:30",
+    "recorded-content": {
+      "create-table-result": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "my_partition_key",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "my_partition_key",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create": {
+        "BatchSize": 100,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "error": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "The event source arn (\" arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>"
+        },
+        "Type": "User",
+        "message": "The event source arn (\" arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[insert_same_entry_twice]": {
+    "recorded-date": "09-04-2024, 10:21:03",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -420,6 +532,7 @@
             "BillingMode": "PAY_PER_REQUEST"
           },
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -547,8 +660,8 @@
       ]
     }
   },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put11-item_to_put21-filter1-2]": {
-    "recorded-date": "27-02-2023, 18:39:17",
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_or_filter]": {
+    "recorded-date": "09-04-2024, 10:22:58",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -562,6 +675,7 @@
             "BillingMode": "PAY_PER_REQUEST"
           },
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -720,8 +834,8 @@
       ]
     }
   },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put12-item_to_put22-filter2-1]": {
-    "recorded-date": "27-02-2023, 18:40:56",
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_multiple_filters]": {
+    "recorded-date": "09-04-2024, 10:24:36",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -735,6 +849,7 @@
             "BillingMode": "PAY_PER_REQUEST"
           },
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -859,8 +974,8 @@
       ]
     }
   },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put13-item_to_put23-filter3-1]": {
-    "recorded-date": "27-02-2023, 18:42:11",
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_filter]": {
+    "recorded-date": "09-04-2024, 10:25:41",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -874,6 +989,7 @@
             "BillingMode": "PAY_PER_REQUEST"
           },
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -1001,8 +1117,8 @@
       ]
     }
   },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put14-item_to_put24-filter4-0]": {
-    "recorded-date": "27-02-2023, 18:42:34",
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[numeric_filter]": {
+    "recorded-date": "09-04-2024, 10:26:07",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1016,6 +1132,7 @@
             "BillingMode": "PAY_PER_REQUEST"
           },
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -1090,8 +1207,8 @@
       "lambda-multiple-log-events": []
     }
   },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put15-item_to_put25-filter5-0]": {
-    "recorded-date": "27-02-2023, 18:42:58",
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[numeric_filter_multiple]": {
+    "recorded-date": "09-04-2024, 10:26:32",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1105,6 +1222,7 @@
             "BillingMode": "PAY_PER_REQUEST"
           },
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -1181,8 +1299,8 @@
       "lambda-multiple-log-events": []
     }
   },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[item_to_put16-item_to_put26-filter6-1]": {
-    "recorded-date": "27-02-2023, 18:43:59",
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[prefix_filter]": {
+    "recorded-date": "09-04-2024, 10:27:51",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1196,6 +1314,7 @@
             "BillingMode": "PAY_PER_REQUEST"
           },
           "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
           "ItemCount": 0,
           "KeySchema": [
             {
@@ -1331,48 +1450,14 @@
       ]
     }
   },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[single-string]": {
-    "recorded-date": "27-02-2023, 18:44:12",
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[date_time_conversion]": {
+    "recorded-date": "09-04-2024, 12:51:55",
     "recorded-content": {
-      "exception_event_source_creation": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "Invalid filter pattern definition."
-        },
-        "Type": "User",
-        "message": "Invalid filter pattern definition.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
-    "recorded-date": "27-02-2023, 18:44:25",
-    "recorded-content": {
-      "exception_event_source_creation": {
-        "Error": {
-          "Code": "InvalidParameterValueException",
-          "Message": "Invalid filter pattern definition."
-        },
-        "Type": "User",
-        "message": "Invalid filter pattern definition.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_duplicate_event_source_mappings": {
-    "recorded-date": "04-01-2024, 17:25:30",
-    "recorded-content": {
-      "create-table-result": {
+      "table_creation_response": {
         "TableDescription": {
           "AttributeDefinitions": [
             {
-              "AttributeName": "my_partition_key",
+              "AttributeName": "id",
               "AttributeType": "S"
             }
           ],
@@ -1384,7 +1469,7 @@
           "ItemCount": 0,
           "KeySchema": [
             {
-              "AttributeName": "my_partition_key",
+              "AttributeName": "id",
               "KeyType": "HASH"
             }
           ],
@@ -1404,13 +1489,24 @@
           "HTTPStatusCode": 200
         }
       },
-      "create": {
-        "BatchSize": 100,
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
         "BisectBatchOnFunctionError": false,
         "DestinationConfig": {
           "OnFailure": {}
         },
         "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "dynamodb": {
+                  "ApproximateCreationDateTime": "<approximate-creation-datetime>"
+                }
+              }
+            }
+          ]
+        },
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
@@ -1429,18 +1525,94 @@
           "HTTPStatusCode": 202
         }
       },
-      "error": {
-        "Error": {
-          "Code": "ResourceConflictException",
-          "Message": "The event source arn (\" arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>"
-        },
-        "Type": "User",
-        "message": "The event source arn (\" arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 409
+      "lambda-log-events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "test1"
+                  }
+                },
+                "NewImage": {
+                  "id": {
+                    "S": "test1"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 14,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              },
+              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
         }
-      }
+      ],
+      "lambda-multiple-log-events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "test1"
+                  }
+                },
+                "NewImage": {
+                  "id": {
+                    "S": "test1"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 14,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              },
+              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:2>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "test2"
+                  }
+                },
+                "NewImage": {
+                  "id": {
+                    "S": "test2"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:2>",
+                "SizeBytes": 14,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              },
+              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ]
     }
   }
 }

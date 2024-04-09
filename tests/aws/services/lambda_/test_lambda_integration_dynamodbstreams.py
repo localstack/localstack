@@ -411,49 +411,58 @@ class TestDynamoDBEventSourceMapping:
         messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
 
+    # Slow (~2min) against AWS for each test case
     @markers.aws.validated
     @pytest.mark.parametrize(
         "item_to_put1, item_to_put2, filter, calls",
         [
             # Test with filter, and two times same entry
-            (
+            pytest.param(
                 {"id": {"S": "test123"}, "id2": {"S": "test42"}},
+                # None re-uses item_to_put1
                 None,
                 {"eventName": ["INSERT"]},
                 1,
+                id="insert_same_entry_twice",
             ),
             # Test with OR filter
-            (
+            pytest.param(
                 {"id": {"S": "test123"}},
                 {"id": {"S": "test123"}, "id2": {"S": "42test"}},
                 {"eventName": ["INSERT", "MODIFY"]},
                 2,
+                id="content_or_filter",
             ),
             # Test with 2 filters (AND), and two times same entry (second time modified aka MODIFY eventName)
-            (
+            pytest.param(
                 {"id": {"S": "test123"}},
                 {"id": {"S": "test123"}, "id2": {"S": "42test"}},
                 {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]},
                 1,
+                id="content_multiple_filters",
             ),
             # Test exists filter
-            (
+            pytest.param(
                 {"id": {"S": "test123"}},
                 {"id": {"S": "test1234"}, "presentKey": {"S": "test123"}},
                 {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
                 1,
+                id="exists_filter",
             ),
             # numeric filters
             # NOTE: numeric filters seem not to work with DynamoDB as the values are represented as string
             # and it looks like that there is no conversion happening
             # I leave the test here in case this changes in future.
-            (
+            # The following AWS tutorial has a note about numeric filtering, which does not apply to DynamoDB strings:
+            # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial2.html
+            pytest.param(
                 {"id": {"S": "test123"}, "numericFilter": {"N": "123"}},
                 {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
                 {"dynamodb": {"NewImage": {"numericFilter": {"N": [{"numeric": [">", 100]}]}}}},
                 0,
+                id="numeric_filter",
             ),
-            (
+            pytest.param(
                 {"id": {"S": "test123"}, "numericFilter": {"N": "100"}},
                 {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
                 {
@@ -462,13 +471,24 @@ class TestDynamoDBEventSourceMapping:
                     }
                 },
                 0,
+                id="numeric_filter_multiple",
             ),
             # Prefix
-            (
+            pytest.param(
                 {"id": {"S": "test123"}, "prefix": {"S": "us-1-testtest"}},
                 {"id": {"S": "test1234"}, "prefix": {"S": "testtest"}},
                 {"dynamodb": {"NewImage": {"prefix": {"S": [{"prefix": "us-1"}]}}}},
                 1,
+                id="prefix_filter",
+            ),
+            # DynamoDB ApproximateCreationDateTime (datetime) gets converted into a float BEFORE filtering
+            # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-ddb
+            pytest.param(
+                {"id": {"S": "test1"}},
+                {"id": {"S": "test2"}},
+                {"dynamodb": {"ApproximateCreationDateTime": [{"numeric": [">", 0]}]}},
+                2,
+                id="date_time_conversion",
             ),
         ],
     )
@@ -493,7 +513,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         table_creation_response = dynamodb_create_table(table_name=table_name, partition_key="id")
@@ -564,6 +584,12 @@ class TestDynamoDBEventSourceMapping:
         else:
             # lambda wasn't called a second time, so no new records should be found
             events = retry(assert_lambda_called, retries=max_retries)
+
+        for event in events:
+            for record in event["Records"]:
+                if creation_time := record.get("dynamodb", {}).get("ApproximateCreationDateTime"):
+                    # Ensure the timestamp is in the right format (e.g., no unserializable datetime)
+                    assert isinstance(creation_time, float)
         snapshot.match("lambda-multiple-log-events", events)
 
     @markers.aws.validated
