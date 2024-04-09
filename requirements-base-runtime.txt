@@ -52,7 +52,7 @@ dnspython==2.6.1
     # via localstack-core (pyproject.toml)
 docker==6.1.3
     # via localstack-core (pyproject.toml)
-flask==3.0.2
+flask==3.0.3
     # via
     #   localstack-core (pyproject.toml)
     #   quart
@@ -168,7 +168,7 @@ stevedore==5.2.0
     #   plux
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
-typing-extensions==4.10.0
+typing-extensions==4.11.0
     # via
     #   localstack-twisted
     #   readerwriterlock

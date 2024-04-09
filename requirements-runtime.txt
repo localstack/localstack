@@ -27,7 +27,7 @@ attrs==23.2.0
     #   localstack-twisted
     #   referencing
     #   sarif-om
-aws-sam-translator==1.86.0
+aws-sam-translator==1.87.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -73,7 +73,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.86.1
+cfn-lint==0.86.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -117,7 +117,7 @@ docker==6.1.3
     #   moto-ext
 docutils==0.16
     # via awscli
-flask==3.0.2
+flask==3.0.3
     # via
     #   localstack-core
     #   quart
@@ -216,7 +216,7 @@ mpmath==1.3.0
     # via sympy
 multipart==0.2.4
     # via moto-ext
-networkx==3.2.1
+networkx==3.3
     # via cfn-lint
 openapi-schema-validator==0.6.2
     # via openapi-spec-validator
@@ -363,7 +363,7 @@ tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.10.0
+typing-extensions==4.11.0
     # via
     #   aws-sam-translator
     #   localstack-twisted
