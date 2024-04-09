@@ -709,7 +709,6 @@ class TestSecretsManager:
         sm_snapshot.match("describe_secret_res_0", describe_secret_res_0)
 
         description_v1 = "MyDescription"
-        #
         update_secret_res_0 = aws_client.secretsmanager.update_secret(
             SecretId=secret_name, Description=description_v1
         )
@@ -1036,6 +1035,85 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Versions..KmsKeyIds"])
+    @markers.aws.validated
+    def test_deprecated_secret_version_stage(
+        self, secret_name, create_secret, aws_client, sm_snapshot
+    ):
+        response = create_secret(
+            Name=secret_name,
+            SecretString="original",
+            Description="My secret",
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
+        )
+        sm_snapshot.match("create_secret", response)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_name)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
+        sm_snapshot.match("list_secret_version_ids", response)
+
+        response = aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_name, SecretString="update1"
+        )
+        sm_snapshot.match("put_secret_value_1", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
+        sm_snapshot.match("list_secret_version_ids_1", response)
+
+        response = aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_name, SecretString="update2"
+        )
+        sm_snapshot.match("put_secret_value_2", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
+        sm_snapshot.match("list_secret_version_ids_2", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name, IncludeDeprecated=True
+        )
+        sm_snapshot.match("list_secret_version_ids_3", response)
+
+        response = aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_name, SecretString="update3"
+        )
+        sm_snapshot.match("put_secret_value_3", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
+        sm_snapshot.match("list_secret_version_ids_4", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name, IncludeDeprecated=True
+        )
+        sm_snapshot.match("list_secret_version_ids_5", response)
+
+    @markers.aws.only_localstack
+    def test_deprecated_secret_version(self, secret_name, create_secret, aws_client):
+        """
+        This test ensures the version cleanup behavior in a simulated AWS environment.
+        Secrets Manager typically retains a maximum of 100 versions and does not
+        immediately delete versions created within the last 24 hours.
+        However, this test operates under the assumption that version timestamps are not evaluated,
+        and the cleanup process solely depends on reaching a version count threshold.
+        """
+        create_secret(Name=secret_name, SecretString="original", Description="My secret")
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_name)
+
+        for i in range(130):
+            aws_client.secretsmanager.put_secret_value(
+                SecretId=secret_name, SecretString=f"update{i}"
+            )
+        response = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name, IncludeDeprecated=True
+        )
+        # In Secrets Manager, versions of secrets without labels are considered deprecated.
+        # There will be two labeled versions:
+        # - The current version, labeled AWSCURRENT
+        # - The previous version, labeled AWSPREVIOUS
+        # see: https://docs.aws.amazon.com/secretsmanager/latest/userguide/getting-started.html#term_version
+        assert len(response["Versions"]) == 102
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     @markers.aws.validated
