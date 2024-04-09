@@ -14,6 +14,7 @@ import io
 import json
 import logging
 import re
+import threading
 from hashlib import sha256
 from io import BytesIO
 from typing import Callable
@@ -34,6 +35,7 @@ from localstack.services.lambda_.runtimes import (
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
+    is_docker_runtime_executor,
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -51,6 +53,7 @@ from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_ECHO_ZIP,
     TEST_LAMBDA_PYTHON_VERSION,
+    TEST_LAMBDA_VERSION,
     check_concurrency_quota,
 )
 
@@ -822,6 +825,111 @@ class TestLambdaFunction:
                 Payload=b"{}",
             )
         snapshot.match("invoke_function_name_pattern_exc", e.value.response)
+
+    @pytest.mark.skipif(
+        not is_docker_runtime_executor(),
+        reason="Test will fail against other executors as they are not patched to take longer for the update",
+    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
+    @markers.aws.validated
+    def test_lambda_concurrent_code_updates(
+        self, aws_client, create_lambda_function_aws, lambda_su_role, snapshot, monkeypatch
+    ):
+        # patch a function necessary for the lambda update to wait until we release it
+        # to be able to reliably capture the in-progress update state in LocalStack
+        from localstack.services.lambda_.invocation import docker_runtime_executor
+        from localstack.services.lambda_.invocation.docker_runtime_executor import (
+            get_runtime_client_path,
+        )
+
+        update_finish_event = threading.Event()
+        update_finish_event.set()
+
+        def _runtime_client_path(*args, **kwargs):
+            update_finish_event.wait()
+            return get_runtime_client_path(*args, **kwargs)
+
+        monkeypatch.setattr(
+            docker_runtime_executor, "get_runtime_client_path", _runtime_client_path
+        )
+
+        function_name = f"test-lambda-{short_uid()}"
+        version_handler = load_file(TEST_LAMBDA_VERSION)
+        zip_file = create_lambda_archive(version_handler % "version0", get_content=True)
+        create_response = create_lambda_function_aws(
+            FunctionName=function_name,
+            Runtime=Runtime.python3_12,
+            Role=lambda_su_role,
+            Handler="handler.handler",
+            Code={"ZipFile": zip_file},
+        )
+        snapshot.match("create-function-response", create_response)
+
+        # clear flag so the update operation takes as long as we want
+        update_finish_event.clear()
+
+        zip_file_1 = create_lambda_archive(version_handler % "version1", get_content=True)
+        zip_file_2 = create_lambda_archive(version_handler % "version2", get_content=True)
+        aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file_1)
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file_2)
+        snapshot.match("update-during-in-progress-update-exc", e.value.response)
+
+        # release hold on updates
+        update_finish_event.set()
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+    @pytest.mark.skipif(
+        not is_docker_runtime_executor(),
+        reason="Test will fail against other executors as they are not patched to take longer for the update",
+    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
+    @markers.aws.validated
+    def test_lambda_concurrent_config_updates(
+        self, aws_client, create_lambda_function, lambda_su_role, snapshot, monkeypatch
+    ):
+        # patch a function necessary for the lambda update to wait until we release it
+        # to be able to reliably capture the in-progress update state in LocalStack
+        from localstack.services.lambda_.invocation import docker_runtime_executor
+        from localstack.services.lambda_.invocation.docker_runtime_executor import (
+            get_runtime_client_path,
+        )
+
+        update_finish_event = threading.Event()
+        update_finish_event.set()
+
+        def _runtime_client_path(*args, **kwargs):
+            update_finish_event.wait()
+            return get_runtime_client_path(*args, **kwargs)
+
+        monkeypatch.setattr(
+            docker_runtime_executor, "get_runtime_client_path", _runtime_client_path
+        )
+
+        function_name = f"test-lambda-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+        )
+        snapshot.match("create-function-response", create_response)
+
+        # clear flag so the update operation takes as long as we want
+        update_finish_event.clear()
+
+        aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, Environment={"Variables": {"TEST": "TEST1"}}
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.update_function_configuration(
+                FunctionName=function_name, Environment={"Variables": {"TEST": "TEST2"}}
+            )
+        snapshot.match("update-during-in-progress-update-exc", e.value.response)
+
+        # release hold on updates
+        update_finish_event.set()
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
 
 class TestLambdaImages:
@@ -2511,9 +2619,7 @@ class TestLambdaEventInvokeConfig:
 # New accounts in an organization have by default a quota of 10 or 50.
 class TestLambdaReservedConcurrency:
     @markers.aws.validated
-    def test_function_concurrency_exceptions(
-        self, create_lambda_function, snapshot, aws_client, monkeypatch
-    ):
+    def test_function_concurrency_exceptions(self, create_lambda_function, snapshot, aws_client):
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             aws_client.lambda_.put_function_concurrency(
                 FunctionName="doesnotexist", ReservedConcurrentExecutions=1

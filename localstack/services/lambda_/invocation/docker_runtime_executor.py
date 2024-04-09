@@ -462,6 +462,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             # Pull image for a given platform upon function creation such that invocations do not time out.
             if (image_name, platform) not in PULLED_IMAGES:
                 try:
+                    # FIXME multiple concurrent pulls could take place, which will slow them all down
                     CONTAINER_CLIENT.pull_image(image_name, platform)
                     PULLED_IMAGES.add((image_name, platform))
                 except NoSuchImage as e:
