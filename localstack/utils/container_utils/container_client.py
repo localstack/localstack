@@ -463,6 +463,7 @@ class ContainerConfiguration:
     workdir: Optional[str] = None
     platform: Optional[str] = None
     ulimits: Optional[List[Ulimit]] = None
+    labels: Optional[Dict[str, str]] = None
 
 
 class ContainerConfigurator(Protocol):
@@ -898,6 +899,7 @@ class ContainerClient(metaclass=ABCMeta):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
