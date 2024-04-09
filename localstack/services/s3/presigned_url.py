@@ -789,24 +789,20 @@ def validate_post_policy(
 def _verify_condition(
     condition: list | dict, form: ImmutableMultiDict, additional_policy_metadata: dict
 ) -> bool:
+    if isinstance(condition, dict) and len(condition) > 1:
+        raise CommonServiceException(
+            code="InvalidPolicyDocument",
+            message="Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
+        )
+
     match condition:
         case ["eq", "$bucket", value]:
             return additional_policy_metadata.get("bucket") == value
 
-        case {"bucket": value, **kwargs}:
-            if kwargs:
-                raise CommonServiceException(
-                    code="InvalidPolicyDocument",
-                    message="Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
-                )
+        case {"bucket": value}:
             return additional_policy_metadata.get("bucket") == value
 
         case {**kwargs}:
-            if len(kwargs) != 1:
-                raise CommonServiceException(
-                    code="InvalidPolicyDocument",
-                    message="Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
-                )
             return all(form.get(key) == val for key, val in kwargs.items())
 
         case ["eq", key, value]:
