@@ -1193,3 +1193,58 @@ class TestEventRule:
 
         response = aws_client.events.describe_rule(Name=rule_name, EventBusName=bus_name)
         snapshot.match("describe-rule-enabled", response)
+
+
+class TestEventTarget:
+    @markers.aws.validated
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_put_list_remove_target(
+        self,
+        bus_name,
+        create_event_bus,
+        put_rule,
+        sqs_create_queue,
+        sqs_get_queue_arn,
+        aws_client,
+        snapshot,
+    ):
+        kwargs = {}
+        if bus_name == "custom":
+            bus_name = f"bus-{short_uid()}"
+            snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
+            create_event_bus(Name=bus_name)
+            kwargs["EventBusName"] = bus_name  # required for custom event bus, optional for default
+
+        rule_name = f"test-rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+        put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            EventBusName=bus_name,
+        )
+
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+        snapshot.add_transformer(snapshot.transform.regex(queue_arn, "<queue-arn>"))
+        target_id = f"test-target-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
+        response = aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                }
+            ],
+            **kwargs,
+        )
+        snapshot.match("put-target", response)
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name, **kwargs)
+        snapshot.match("list-targets", response)
+
+        response = aws_client.events.remove_targets(Rule=rule_name, Ids=[target_id], **kwargs)
+        snapshot.match("remove-target", response)
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name, **kwargs)
+        snapshot.match("list-targets-after-delete", response)

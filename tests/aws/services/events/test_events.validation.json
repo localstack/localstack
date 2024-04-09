@@ -26,6 +26,12 @@
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_rule[default]": {
     "last_validated_date": "2024-04-04T10:47:21+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[custom]": {
+    "last_validated_date": "2024-04-09T16:21:04+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[default]": {
+    "last_validated_date": "2024-04-09T16:21:05+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEvents::test_create_connection_validations": {
     "last_validated_date": "2024-03-26T14:07:16+00:00"
   },

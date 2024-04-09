@@ -1070,5 +1070,85 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[custom]": {
+    "recorded-date": "09-04-2024, 16:21:04",
+    "recorded-content": {
+      "put-target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-after-delete": {
+        "Targets": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[default]": {
+    "recorded-date": "09-04-2024, 16:21:05",
+    "recorded-content": {
+      "put-target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-target": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-after-delete": {
+        "Targets": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
