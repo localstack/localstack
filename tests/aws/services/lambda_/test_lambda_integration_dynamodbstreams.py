@@ -449,29 +449,18 @@ class TestDynamoDBEventSourceMapping:
                 1,
                 id="exists_filter",
             ),
-            # numeric filters
-            # NOTE: numeric filters seem not to work with DynamoDB as the values are represented as string
-            # and it looks like that there is no conversion happening
-            # I leave the test here in case this changes in future.
+            # numeric filter
+            # NOTE: numeric filters do not work with DynamoDB because all values are represented as string
+            # and not converted to numbers for filtering.
             # The following AWS tutorial has a note about numeric filtering, which does not apply to DynamoDB strings:
             # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial2.html
+            # I leave this negative test here in case this changes in the future.
             pytest.param(
                 {"id": {"S": "test123"}, "numericFilter": {"N": "123"}},
                 {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
                 {"dynamodb": {"NewImage": {"numericFilter": {"N": [{"numeric": [">", 100]}]}}}},
                 0,
                 id="numeric_filter",
-            ),
-            pytest.param(
-                {"id": {"S": "test123"}, "numericFilter": {"N": "100"}},
-                {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
-                {
-                    "dynamodb": {
-                        "NewImage": {"numericFilter": {"N": [{"numeric": [">=", 100, "<", 200]}]}}
-                    }
-                },
-                0,
-                id="numeric_filter_multiple",
             ),
             # Prefix
             pytest.param(

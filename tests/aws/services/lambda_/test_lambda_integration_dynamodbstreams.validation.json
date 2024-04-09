@@ -9,28 +9,25 @@
     "last_validated_date": "2024-01-04T23:38:14+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_multiple_filters]": {
-    "last_validated_date": "2024-04-09T10:24:35+00:00"
+    "last_validated_date": "2024-04-09T13:08:44+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_or_filter]": {
-    "last_validated_date": "2024-04-09T10:22:57+00:00"
+    "last_validated_date": "2024-04-09T13:07:04+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[date_time_conversion]": {
-    "last_validated_date": "2024-04-09T12:51:54+00:00"
+    "last_validated_date": "2024-04-09T13:13:49+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_filter]": {
-    "last_validated_date": "2024-04-09T10:25:40+00:00"
+    "last_validated_date": "2024-04-09T13:09:45+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[insert_same_entry_twice]": {
-    "last_validated_date": "2024-04-09T10:21:02+00:00"
+    "last_validated_date": "2024-04-09T13:04:43+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[numeric_filter]": {
-    "last_validated_date": "2024-04-09T10:26:05+00:00"
-  },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[numeric_filter_multiple]": {
-    "last_validated_date": "2024-04-09T10:26:31+00:00"
+    "last_validated_date": "2024-04-09T13:10:09+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[prefix_filter]": {
-    "last_validated_date": "2024-04-09T10:27:50+00:00"
+    "last_validated_date": "2024-04-09T13:11:51+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping": {
     "last_validated_date": "2023-04-26T08:48:20+00:00"
