@@ -81,7 +81,7 @@ DEPRECATED_RUNTIMES: list[Runtime] = [
 SUPPORTED_RUNTIMES: list[Runtime] = list(set(IMAGE_MAPPING.keys()) - set(DEPRECATED_RUNTIMES))
 
 # A temporary list of missing runtimes not yet supported in LocalStack. Used for modular updates.
-MISSING_RUNTIMES = ["ruby3.3"]
+MISSING_RUNTIMES = [Runtime.ruby3_3]
 
 # An unordered list of all Lambda runtimes supported by LocalStack.
 ALL_RUNTIMES: list[Runtime] = list(IMAGE_MAPPING.keys())
