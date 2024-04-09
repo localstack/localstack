@@ -1150,5 +1150,11 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_add_exceed_fife_targets_per_rule": {
+    "recorded-date": "09-04-2024, 14:43:41",
+    "recorded-content": {
+      "put-targets-client-error": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the PutTargets operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
+    }
   }
 }

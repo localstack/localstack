@@ -1248,3 +1248,24 @@ class TestEventTarget:
 
         response = aws_client.events.list_targets_by_rule(Rule=rule_name, **kwargs)
         snapshot.match("list-targets-after-delete", response)
+
+    @markers.aws.validated
+    def test_add_exceed_fife_targets_per_rule(
+        self, put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+    ):
+        rule_name = f"test-rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+        put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+        snapshot.add_transformer(snapshot.transform.regex(queue_arn, "<queue-arn>"))
+
+        targets = [{"Id": f"test-target-{i}", "Arn": queue_arn} for i in range(7)]
+        snapshot.add_transformer(snapshot.transform.regex("test-target-", "<target-id>"))
+
+        with pytest.raises(aws_client.events.exceptions.LimitExceededException) as error:
+            aws_client.events.put_targets(Rule=rule_name, Targets=targets)
+        snapshot.match("put-targets-client-error", error)
