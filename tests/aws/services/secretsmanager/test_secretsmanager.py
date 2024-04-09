@@ -1108,6 +1108,11 @@ class TestSecretsManager:
         response = aws_client.secretsmanager.list_secret_version_ids(
             SecretId=secret_name, IncludeDeprecated=True
         )
+        # In Secrets Manager, versions of secrets without labels are considered deprecated.
+        # There will be two labeled versions:
+        # - The current version, labeled AWSCURRENT
+        # - The previous version, labeled AWSPREVIOUS
+        # see: https://docs.aws.amazon.com/secretsmanager/latest/userguide/getting-started.html#term_version
         assert len(response["Versions"]) == 102
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])

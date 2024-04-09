@@ -484,7 +484,9 @@ def moto_smb_create_secret(fn, self, name, *args, **kwargs):
 
 
 @patch(SecretsManagerBackend.list_secret_version_ids)
-def moto_smb_list_secret_version_ids(_, self, secret_id, include_deprecated, *args, **kwargs):
+def moto_smb_list_secret_version_ids(
+    _, self, secret_id: str, include_deprecated: bool, *args, **kwargs
+):
     if secret_id not in self.secrets:
         raise SecretNotFoundException()
 
@@ -645,10 +647,10 @@ def fake_secret_reset_default_version(fn, self, secret_version, version_id):
     fn(self, secret_version, version_id)
 
     # Remove versions with no version stages, if max limit of outdated versions is exceeded.
-    versions_no_stages = [
+    versions_no_stages: list[str] = [
         version_id for version_id, version in self.versions.items() if not version["version_stages"]
     ]
-    versions_to_delete = []
+    versions_to_delete: list[str] = []
 
     # Patch: remove outdated versions if the max deprecated versions limit is exceeded.
     if len(versions_no_stages) >= MAX_OUTDATED_SECRET_VERSIONS:
@@ -822,7 +824,7 @@ def moto_secret_not_found_exception_init(fn, self):
 
 @patch(FakeSecret._form_version_ids_to_stages, pass_target=False)
 def _form_version_ids_to_stages_modal(self):
-    version_id_to_stages = {}
+    version_id_to_stages: dict[str, list] = {}
     for key, value in self.versions.items():
         # Patch: include version_stages in the response only if it is not empty.
         if len(value["version_stages"]) > 0:
