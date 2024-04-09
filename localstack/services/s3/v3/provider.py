@@ -3686,7 +3686,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 # is recognized by all form fields.
                 object_key = object_key.replace("${filename}", fileobj.filename)
 
-        # TODO: also add specific headers as specified in the table under:
+        # TODO: see if we need to pass additional metadata not contained in the policy from the table under
         # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html#sigv4-PolicyConditions
         additional_policy_metadata = {
             "bucket": bucket,
