@@ -263,10 +263,11 @@ class TestSecretsManager:
 
     @markers.aws.validated
     def test_list_secrets_filtering(self, aws_client, create_secret):
-        secret_name_1 = "testing1/one"
-        secret_name_2 = "/testing2/two"
-        secret_name_3 = "testing3/three"
-        secret_name_4 = "/testing4/four"
+        unique_id = short_uid()
+        secret_name_1 = f"testing1/one-{unique_id}"
+        secret_name_2 = f"/testing2/two-{unique_id}"
+        secret_name_3 = f"testing3/three-{unique_id}"
+        secret_name_4 = f"/testing4/four-{unique_id}"
 
         create_secret(Name=secret_name_1, SecretString="secret", Description="a secret")
         create_secret(Name=secret_name_2, SecretString="secret", Description="an secret")
