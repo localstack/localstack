@@ -14,12 +14,16 @@ from localstack.aws.api.events import (
     RuleState,
     ScheduleExpression,
     TagList,
+    Target,
+    TargetId,
 )
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
     LocalAttribute,
 )
+
+TargetDict = dict[TargetId, Target]
 
 
 @dataclass
@@ -34,7 +38,7 @@ class Rule:
     role_arn: Optional[RoleArn] = None
     tags: TagList = field(default_factory=list)
     event_bus_name: EventBusName = "default"
-    targets: TagList = field(default_factory=list)
+    targets: TargetDict = field(default_factory=dict)
     managed_by: Optional[ManagedBy] = None  # can only be set by AWS services
     created_by: CreatedBy = field(init=False)
     arn: Arn = field(init=False)
@@ -48,7 +52,7 @@ class Rule:
         if self.tags is None:
             self.tags = []
         if self.targets is None:
-            self.targets = []
+            self.targets = {}
         if self.state is None:
             self.state = RuleState.ENABLED
 

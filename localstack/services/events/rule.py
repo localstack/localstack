@@ -5,15 +5,20 @@ from localstack.aws.api.events import (
     Arn,
     EventBusName,
     EventPattern,
+    LimitExceededException,
     ManagedBy,
+    PutTargetsResultEntryList,
     RoleArn,
     RuleDescription,
     RuleName,
     RuleState,
     ScheduleExpression,
     TagList,
+    Target,
+    TargetIdList,
+    TargetList,
 )
-from localstack.services.events.models_v2 import Rule, ValidationException
+from localstack.services.events.models_v2 import Rule, TargetDict, ValidationException
 
 
 class RuleWorker:
@@ -29,7 +34,7 @@ class RuleWorker:
         role_arn: Optional[RoleArn] = None,
         tags: Optional[TagList] = None,
         event_bus_name: Optional[EventBusName] = None,
-        targets: Optional[TagList] = None,
+        targets: Optional[TargetDict] = None,
         managed_by: Optional[ManagedBy] = None,
     ):
         self._validate_input(event_pattern, schedule_expression, event_bus_name)
@@ -89,6 +94,90 @@ class RuleWorker:
                 )
             if not (cron_regex.match(schedule_expression) or rate_regex.match(schedule_expression)):
                 raise ValidationException("Parameter ScheduleExpression is not valid.")
+
+    def validate_targets_input(self, targets: TargetList) -> PutTargetsResultEntryList:
+        validation_errors = []
+        id_regex = re.compile(r"^[\.\-_A-Za-z0-9]+$")
+        arn_regex = re.compile(r"arn:[\d\w:\-/]*")
+        for index, target in enumerate(targets):
+            id = target.get("Id")
+            arn = target.get("Arn", "")
+            if not id_regex.match(id):
+                validation_errors.append(
+                    {
+                        "TargetId": id,
+                        "ErrorCode": "ValidationException",
+                        "ErrorMessage": f"Value '{id}' at 'targets.{index + 1}.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+",
+                    }
+                )
+
+            if len(id) > 64:
+                validation_errors.append(
+                    {
+                        "TargetId": id,
+                        "ErrorCode": "ValidationException",
+                        "ErrorMessage": f"Value '{id}' at 'targets.{index + 1}.member.id' failed to satisfy constraint: Member must have length less than or equal to 64",
+                    }
+                )
+
+            if not arn_regex.match(arn):
+                validation_errors.append(
+                    {
+                        "TargetId": id,
+                        "ErrorCode": "ValidationException",
+                        "ErrorMessage": f"Parameter {arn} is not valid. Reason: Provided Arn is not in correct format.",
+                    }
+                )
+
+            if ":sqs:" in arn and arn.endswith(".fifo") and not target.get("SqsParameters"):
+                validation_errors.append(
+                    {
+                        "TargetId": id,
+                        "ErrorCode": "ValidationException",
+                        "ErrorMessage": f"Parameter(s) SqsParameters must be specified for target: {id}.",
+                    }
+                )
+
+        return validation_errors
+
+    def add_targets(self, targets: TargetList):
+        for target in targets:
+            target_id = target["Id"]
+            if target_id not in self.rule.targets and self._check_target_limit_reached():
+                raise LimitExceededException(
+                    "The requested resource exceeds the maximum number allowed."
+                )
+            target = Target(**target)
+            self.rule.targets[target_id] = target
+
+    def remove_targets(self, target_ids: TargetIdList, force: bool = False):
+        delete_errors = []
+        for target_id in target_ids:
+            if target_id in self.rule.targets:
+                if self.rule.managed_by and not force:
+                    delete_errors.append(
+                        {
+                            "TargetId": target_id,
+                            "ErrorCode": "ManagedRuleException",
+                            "ErrorMessage": f"Rule '{self.rule.name}' is managed by an AWS service can only be modified if force is True.",
+                        }
+                    )
+                else:
+                    del self.rule.targets[target_id]
+            else:
+                delete_errors.append(
+                    {
+                        "TargetId": target_id,
+                        "ErrorCode": "ResourceNotFoundException",
+                        "ErrorMessage": f"Rule '{self.rule.name}' does not have a target with the Id '{target_id}'.",
+                    }
+                )
+        return delete_errors
+
+    def _check_target_limit_reached(self) -> bool:
+        if len(self.rule.targets) >= 5:
+            return True
+        return False
 
 
 RuleWorkerDict = dict[Arn, RuleWorker]

@@ -35,6 +35,7 @@ from localstack.aws.api.events import (
     RuleState,
     ScheduleExpression,
     TagList,
+    Target,
     TargetArn,
     TargetIdList,
     TargetList,
@@ -201,9 +202,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         try:
-            if rule := event_bus.rules.get(name):
-                self._delete_rule_workers(rule)
-                del event_bus.rules[name]
+            rule = self.get_rule(name, event_bus)
+            self._delete_rule_workers(rule)
+            del event_bus.rules[name]
         except ResourceNotFoundException as error:
             return error
 
@@ -265,12 +266,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
-        if rule := event_bus.rules.get(name):
-            response = self._rule_dict_to_api_type_rule(rule)
-            if created_by := getattr(rule, "created_by", None):
-                response["CreatedBy"] = created_by
-            return response
-        raise ResourceNotFoundException(f"Rule {name} does not exist on EventBus {event_bus_name}.")
+        rule = self.get_rule(name, event_bus)
+        response = self._rule_dict_to_api_type_rule(rule)
+        if created_by := getattr(rule, "created_by", None):
+            response["CreatedBy"] = created_by
+        return response
 
     @handler("DisableRule")
     def disable_rule(
@@ -283,9 +283,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
-        if rule := event_bus.rules.get(name):
-            rule.state = RuleState.DISABLED
-            return
+        rule = self.get_rule(name, event_bus)
+        rule.state = RuleState.DISABLED
 
     @handler("EnableRule")
     def enable_rule(
@@ -298,9 +297,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
-        if rule := event_bus.rules.get(name):
-            rule.state = RuleState.ENABLED
-            return
+        rule = self.get_rule(name, event_bus)
+        rule.state = RuleState.ENABLED
 
     #########
     # Targets
@@ -315,7 +313,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         **kwargs,
     ) -> PutTargetsResponse:
-        raise NotImplementedError
+        rule_worker = self.get_rule_worker(context, rule, event_bus_name)
+        failed_entries = rule_worker.validate_targets_input(targets)
+        rule_worker.add_targets(targets)
+        # TODO get target worker and add
+        return {"FailedEntries": failed_entries, "FailedEntryCount": len(failed_entries)}
 
     @handler("RemoveTargets")
     def remove_targets(
@@ -327,7 +329,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         force: Boolean = None,
         **kwargs,
     ) -> RemoveTargetsResponse:
-        raise NotImplementedError
+        rule_worker = self.get_rule_worker(context, rule, event_bus_name)
+        failed_entries = rule_worker.remove_targets(ids)
+        # TODO remove target worker
+        return {"FailedEntries": failed_entries, "FailedEntryCount": len(failed_entries)}
 
     @handler("ListTargetsByRule")
     def list_targets_by_rule(
@@ -339,7 +344,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListTargetsByRuleResponse:
-        return {"Targets": []}  # TODO implement
+        store = self.get_store(context)
+        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        rule = self.get_rule(rule, event_bus)
+        return {"Targets": list(rule.targets.values())}
 
     def get_store(self, context: RequestContext) -> EventsStore:
         region = context.region
@@ -357,6 +366,24 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if name not in store.event_buses.keys():
             raise ResourceNotFoundException(f"Event bus {name} does not exist.")
         return store.event_buses[name]
+
+    def get_rule(self, name: RuleName, event_bus: EventBus) -> Rule:
+        if rule := event_bus.rules.get(name):
+            return rule
+        raise ResourceNotFoundException(f"Rule {name} does not exist on EventBus {event_bus.name}.")
+
+    def get_target(self, target_arn: TargetArn) -> Target:
+        # TODO implement
+        pass
+
+    def get_rule_worker(
+        self, context: RequestContext, rule: RuleName, event_bus_name: EventBusName
+    ) -> RuleWorker:
+        store = self.get_store(context)
+        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        rule = self.get_rule(rule, event_bus)
+        return self._rule_workers[rule.arn]
 
     def create_event_bus_worker(
         self,
