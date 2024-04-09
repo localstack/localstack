@@ -772,6 +772,11 @@ def validate_post_policy(
     #  1. only support the kind of matching the field supports: `success_action_status` does not support `starts-with`
     #  matching
     #  2. if there are fields that are not defined in the policy, we should reject it
+
+    # Special case for LEGACY_V2: do not validate the conditions. Remove this check once we remove legacy_v2
+    if not additional_policy_metadata:
+        return
+
     conditions = policy_decoded.get("conditions", [])
     for condition in conditions:
         if not _verify_condition(condition, request_form, additional_policy_metadata):
