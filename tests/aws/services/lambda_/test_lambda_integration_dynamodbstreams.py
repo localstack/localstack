@@ -412,6 +412,7 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("destination_queue_messages", messages)
 
     # Slow (~2min) against AWS for each test case
+    # Test assumption: the first event should always pass the filter, otherwise the logic for the second part breaks.
     @markers.aws.validated
     @pytest.mark.parametrize(
         "item_to_put1, item_to_put2, filter, calls",
@@ -454,12 +455,23 @@ class TestDynamoDBEventSourceMapping:
             # and not converted to numbers for filtering.
             # The following AWS tutorial has a note about numeric filtering, which does not apply to DynamoDB strings:
             # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial2.html
-            # I leave this negative test here in case this changes in the future.
+            # To make this negative test more reliable, we cover at least one positive scenario.
+            # Ideally, the order of test1 and test2 should be flipped but the current test design assumes that the
+            # first item always generates an event. See conditional "if calls > 1:"
             pytest.param(
-                {"id": {"S": "test123"}, "numericFilter": {"N": "123"}},
-                {"id": {"S": "test1234"}, "numericFilter": {"N": "12"}},
-                {"dynamodb": {"NewImage": {"numericFilter": {"N": [{"numeric": [">", 100]}]}}}},
-                0,
+                {"id": {"S": "test1"}, "numericFilter": {"N": "42"}},
+                {"id": {"S": "test2"}, "numericFilter": {"N": "101"}},
+                {
+                    "dynamodb": {
+                        "NewImage": {
+                            "numericFilter": {
+                                # Filtering passes if at least one of the filter conditions matches
+                                "N": [{"numeric": [">", 100]}, {"anything-but": "101"}]
+                            }
+                        }
+                    }
+                },
+                1,
                 id="numeric_filter",
             ),
             # Prefix
@@ -543,11 +555,7 @@ class TestDynamoDBEventSourceMapping:
 
         def assert_lambda_called():
             events = get_lambda_log_events(function_name, logs_client=aws_client.logs)
-            if calls > 0:
-                assert len(events) == 1
-            else:
-                # negative test for 'numeric' filter
-                assert len(events) == 0
+            assert len(events) == 1
             return events
 
         events = retry(assert_lambda_called, retries=max_retries)
