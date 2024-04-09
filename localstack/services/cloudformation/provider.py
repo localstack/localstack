@@ -376,6 +376,9 @@ class CloudformationProvider(CloudformationApi):
         stack.set_resolved_stack_conditions(resolved_stack_conditions)
         try:
             deployer.update_stack(new_stack)
+        except NoStackUpdates as e:
+            stack.set_stack_status("UPDATE_COMPLETE")
+            raise ValidationError(str(e))
         except Exception as e:
             stack.set_stack_status("UPDATE_FAILED")
             msg = f'Unable to update stack "{stack_name}": {e}'

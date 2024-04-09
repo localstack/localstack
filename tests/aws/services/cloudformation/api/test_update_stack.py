@@ -411,13 +411,14 @@ def test_update_with_rollback_configuration(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(["$..Stacks..ChangeSetId"])
 def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
     template_1 = textwrap.dedent("""
     Resources:
         SimpleParam:
             Type: AWS::SSM::Parameter
             Properties:
-                Value: test
+                Value: before-stack-update
                 Type: String
     """)
     template_2 = textwrap.dedent("""
@@ -425,26 +426,29 @@ def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
         SimpleParam1:
             Type: AWS::SSM::Parameter
             Properties:
-                Value: test1
+                Value: after-stack-update
                 Type: String
     """)
 
     stack = deploy_cfn_template(
         template=template_1,
     )
+
     aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack.stack_name)
     aws_client.cloudformation.update_stack(
         StackName=stack.stack_name,
         TemplateBody=template_2,
     )
     aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
-    get_template_response_1 = aws_client.cloudformation.get_template(StackName=stack.stack_name)
-    snapshot.match("get-template-response-1", get_template_response_1)
+    get_template_response = aws_client.cloudformation.get_template(StackName=stack.stack_name)
+    snapshot.match("get-template-response", get_template_response)
 
-    with pytest.raises(botocore.exceptions.ClientError):
+    with pytest.raises(botocore.exceptions.ClientError) as exc_info:
         aws_client.cloudformation.update_stack(
             StackName=stack.stack_name,
             TemplateBody=template_2,
         )
-    get_template_response_2 = aws_client.cloudformation.get_template(StackName=stack.stack_name)
-    snapshot.match("get-template-response-2", get_template_response_2)
+    snapshot.match("update-error", exc_info.value.response)
+
+    describe_stack_response = aws_client.cloudformation.describe_stacks(StackName=stack.stack_name)
+    assert describe_stack_response["Stacks"][0]["StackStatus"] == "UPDATE_COMPLETE"
