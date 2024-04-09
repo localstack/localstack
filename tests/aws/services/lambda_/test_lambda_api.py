@@ -35,6 +35,7 @@ from localstack.services.lambda_.runtimes import (
 from localstack.testing.aws.lambda_utils import (
     _await_dynamodb_table_active,
     _await_event_source_mapping_enabled,
+    is_docker_runtime_executor,
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -825,11 +826,17 @@ class TestLambdaFunction:
             )
         snapshot.match("invoke_function_name_pattern_exc", e.value.response)
 
+    @pytest.mark.skipif(
+        not is_docker_runtime_executor(),
+        reason="Test will fail against other executors as they are not patched to take longer for the update",
+    )
     @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_lambda_concurrent_code_updates(
         self, aws_client, create_lambda_function_aws, lambda_su_role, snapshot, monkeypatch
     ):
+        # patch a function necessary for the lambda update to wait until we release it
+        # to be able to reliably capture the in-progress update state in LocalStack
         from localstack.services.lambda_.invocation import docker_runtime_executor
         from localstack.services.lambda_.invocation.docker_runtime_executor import (
             get_runtime_client_path,
@@ -861,22 +868,28 @@ class TestLambdaFunction:
         # clear flag so the update operation takes as long as we want
         update_finish_event.clear()
 
-        zip_file = create_lambda_archive(version_handler % "version1", get_content=True)
-        aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file)
-        zip_file = create_lambda_archive(version_handler % "version2", get_content=True)
+        zip_file_1 = create_lambda_archive(version_handler % "version1", get_content=True)
+        zip_file_2 = create_lambda_archive(version_handler % "version2", get_content=True)
+        aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file_1)
         with pytest.raises(ClientError) as e:
-            aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file)
+            aws_client.lambda_.update_function_code(FunctionName=function_name, ZipFile=zip_file_2)
         snapshot.match("update-during-in-progress-update-exc", e.value.response)
 
         # release hold on updates
         update_finish_event.set()
         aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
+    @pytest.mark.skipif(
+        not is_docker_runtime_executor(),
+        reason="Test will fail against other executors as they are not patched to take longer for the update",
+    )
     @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_lambda_concurrent_config_updates(
         self, aws_client, create_lambda_function, lambda_su_role, snapshot, monkeypatch
     ):
+        # patch a function necessary for the lambda update to wait until we release it
+        # to be able to reliably capture the in-progress update state in LocalStack
         from localstack.services.lambda_.invocation import docker_runtime_executor
         from localstack.services.lambda_.invocation.docker_runtime_executor import (
             get_runtime_client_path,
