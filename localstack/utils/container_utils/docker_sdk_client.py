@@ -745,14 +745,6 @@ class SdkDockerClient(ContainerClient):
         LOG.debug("Running container with image: %s", image_name)
         container = None
         try:
-            kwargs = {}
-            if ulimits:
-                kwargs["ulimits"] = [
-                    docker.types.Ulimit(
-                        name=ulimit.name, soft=ulimit.soft_limit, hard=ulimit.hard_limit
-                    )
-                    for ulimit in ulimits
-                ]
             container = self.create_container(
                 image_name,
                 name=name,
@@ -778,7 +770,7 @@ class SdkDockerClient(ContainerClient):
                 platform=platform,
                 init=init,
                 labels=labels,
-                **kwargs,
+                ulimits=ulimits,
             )
             result = self.start_container(
                 container_name_or_id=container,

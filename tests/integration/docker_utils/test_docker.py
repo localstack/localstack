@@ -25,6 +25,7 @@ from localstack.utils.container_utils.container_client import (
     NoSuchNetwork,
     PortMappings,
     RegistryConnectionError,
+    Ulimit,
     Util,
     VolumeInfo,
 )
@@ -1431,6 +1432,17 @@ class TestRunWithAdditionalArgs:
             inspect_result["NetworkSettings"]["Ports"]["80/tcp"][0]["HostPort"]
         )
         assert automatic_host_port > 0
+
+    def test_run_with_ulimit(self, docker_client: ContainerClient):
+        container_name = f"c-{short_uid()}"
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            name=container_name,
+            remove=True,
+            command=["sh", "-c", "ulimit -n"],
+            ulimits=[Ulimit(name="nofile", soft_limit=1024, hard_limit=1024)],
+        )
+        assert stdout.decode(config.DEFAULT_ENCODING).strip() == "1024"
 
 
 class TestDockerImages:

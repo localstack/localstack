@@ -790,7 +790,7 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--platform", platform]
         if ulimits:
             cmd += list(
-                itertools.chain.from_iterable(["--ulimits", str(ulimit)] for ulimit in ulimits)
+                itertools.chain.from_iterable(["--ulimit", str(ulimit)] for ulimit in ulimits)
             )
         if init:
             cmd += ["--init"]
