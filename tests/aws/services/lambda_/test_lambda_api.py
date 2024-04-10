@@ -961,7 +961,6 @@ class TestLambdaFunction:
         not is_docker_runtime_executor(),
         reason="Test will fail against other executors as they are not patched to take longer for the update",
     )
-    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_lambda_concurrent_code_updates(
         self, aws_client, create_lambda_function_aws, lambda_su_role, snapshot, monkeypatch
@@ -1014,7 +1013,6 @@ class TestLambdaFunction:
         not is_docker_runtime_executor(),
         reason="Test will fail against other executors as they are not patched to take longer for the update",
     )
-    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_lambda_concurrent_config_updates(
         self, aws_client, create_lambda_function, lambda_su_role, snapshot, monkeypatch
