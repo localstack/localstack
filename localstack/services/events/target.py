@@ -13,7 +13,6 @@ from localstack.aws.api.events import (
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
-    extract_service_from_arn,
     firehose_name,
     parse_arn,
     sqs_queue_url_for_arn,
@@ -33,18 +32,28 @@ class TargetWorker(ABC):
         region: str,
         account_id: str,
         target: Target,
+        rule_arn: Arn,
+        service: str,
     ):
         self.region = region
         self.account_id = account_id
         self.target = target
-        self.service = self._extract_service_from_arn(self.arn)
+        self.rule_arn = rule_arn
+        self.service = service
 
         self._validate_input(self.target)
-        self._client: ServiceLevelClientFactory | None = None
+        self._clients: ServiceLevelClientFactory | None = None
 
     @property
     def arn(self):
         return self.target["Arn"]
+
+    @property
+    def clients(self):
+        """Lazy initialization of AWS service clients."""
+        if self._clients is None:
+            self._clients = self._initialize_clients()
+        return self._clients
 
     @abstractmethod
     def send_event(self):
@@ -54,42 +63,29 @@ class TargetWorker(ABC):
     def _validate_input(self, target: Target):
         pass
 
-    def _extract_service_from_arn(self, arn: Arn) -> str:
-        arn = parse_arn(arn)
-        return arn["resource"]
+    @staticmethod
+    def connect_with_role(role_arn: str, region_name: str) -> ServiceLevelClientFactory:
+        """Connects using an assumed role."""
+        service_principal = ServicePrincipal.events
+        try:
+            return connect_to.with_assumed_role(
+                role_arn=role_arn, service_principal=service_principal, region_name=region_name
+            )
+        except ValueError as e:
+            LOG.debug(f"Could not connect with assumed role {role_arn}. Error: {e}")
+            return None
 
     def _initialize_clients(self) -> ServiceLevelClientFactory:
         """Initializes AWS service clients, with or without assuming a role of service source.
-        If a role from a source is provided, the client will be initialized with the assumed role.
-        If no role is provided e.g. calling put_events directly, the client will be initialized with the account ID and region."""
-        if self.role_arn and self.source_arn:
-            try:
-                source_service = self._get_source_service()
-                return connect_to.with_assumed_role(
-                    role_arn=self.role_arn,
-                    service_principal=source_service,
-                    region_name=self.region,
-                )
-            except ValueError:
-                LOG.debug("Could not extract service from source ARN {self.source_arn}")
-                return connect_to(aws_access_key_id=self.account_id, region_name=self.region)
+        If a role from a target is provided, the client will be initialized with the assumed role and events service principal.
+        If no role is provided e.g. calling send_events directly, the client will be initialized with the account ID and region."""
+        if role_arn := self.target.get("role_arn"):
+            clients = TargetWorker.connect_with_role(role_arn, self.region)
+            if not clients:
+                clients = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
         else:
-            return connect_to(aws_access_key_id=self.account_id, region_name=self.region)
-
-    def _get_source_service(self) -> ServicePrincipal:
-        if not self.source_service:
-            source_service_name = extract_service_from_arn(self.source_arn)
-        if service_principal := getattr(ServicePrincipal, source_service_name, None):
-            return service_principal
-        else:
-            raise ValueError(f"Unsupported source service: {source_service_name}")
-
-    @property
-    def clients(self):
-        """Lazy initialization of AWS service clients."""
-        if self._client is None:
-            self._client = self._initialize_clients()
-        return self._client
+            clients = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
+        return clients
 
 
 class LambdaTargetWorker(TargetWorker):
