@@ -1799,6 +1799,23 @@ class TestDockerLabels:
         result_labels = result.get("Config", {}).get("Labels")
         assert result_labels == labels
 
+    def test_run_container_with_labels(self, docker_client):
+        labels = {"foo": "bar", short_uid(): short_uid()}
+        container_name = _random_container_name()
+        try:
+            docker_client.run_container(
+                image_name="alpine",
+                command=["sh", "-c", "while true; do sleep 1; done"],
+                labels=labels,
+                name=container_name,
+                detach=True,
+            )
+            result = docker_client.inspect_container(container_name_or_id=container_name)
+            result_labels = result.get("Config", {}).get("Labels")
+            assert result_labels == labels
+        finally:
+            docker_client.remove_container(container_name=container_name, force=True)
+
 
 def _pull_image_if_not_exists(docker_client: ContainerClient, image_name: str):
     if image_name not in docker_client.get_docker_image_names():
