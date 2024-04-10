@@ -90,13 +90,14 @@ class TargetWorker(ABC):
 
 class LambdaTargetWorker(TargetWorker):
     def send_event(self, event):
+        asynchronous = True
         lambda_client = self.clients.lambda_.request_metadata(
-            service_principal=self.source_service, source_arn=self.source_arn
+            service_principal=self.service, source_arn=self.rule_arn
         )
         lambda_client.invoke(
-            FunctionName=self.target_arn,
+            FunctionName=self.target["Arn"],
             Payload=to_bytes(json.dumps(event)),
-            InvocationType="Event" if self.asynchronous else "RequestResponse",
+            InvocationType="Event" if asynchronous else "RequestResponse",
         )
 
     def _validate_input(self, target: Target):
@@ -107,9 +108,9 @@ class LambdaTargetWorker(TargetWorker):
 class SnsTargetWorker(TargetWorker):
     def send_event(self, event):
         sns_client = self.clients.sns.request_metadata(
-            service_principal=self.source_service, source_arn=self.source_arn
+            service_principal=self.service, source_arn=self.rule_arn
         )
-        sns_client.publish(TopicArn=self.target_arn, Message=json.dumps(event))
+        sns_client.publish(TopicArn=self.target["Arn"], Message=json.dumps(event))
 
     def _validate_input(self, target: Target):
         # TODO add more validation
@@ -119,12 +120,10 @@ class SnsTargetWorker(TargetWorker):
 class SqsTargetWorker(TargetWorker):
     def send_event(self, event):
         sqs_client = self.clients.sqs.request_metadata(
-            service_principal=self.source_service, source_arn=self.source_arn
+            service_principal=self.service, source_arn=self.rule_arn
         )
-        queue_url = sqs_queue_url_for_arn(self.target_arn)
-        msg_group_id = collections.get_safe(
-            self.target_attributes, "$.SqsParameters.MessageGroupId"
-        )
+        queue_url = sqs_queue_url_for_arn(self.target["Arn"])
+        msg_group_id = collections.get_safe(self.target, "$.SqsParameters.MessageGroupId")
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         sqs_client.send_message(
             QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
@@ -140,10 +139,10 @@ class StatesTargetWorker(TargetWorker):
 
     def send_event(self, event):
         stepfunctions_client = self.clients.stepfunctions.request_metadata(
-            service_principal=self.source_service, source_arn=self.source_arn
+            service_principal=self.service, source_arn=self.rule_arn
         )
         stepfunctions_client.start_execution(
-            stateMachineArn=self.target_arn, input=json.dumps(event)
+            stateMachineArn=self.target["Arn"], input=json.dumps(event)
         )
 
     def _validate_input(self, target: Target):
@@ -154,9 +153,9 @@ class StatesTargetWorker(TargetWorker):
 class FirehoseTargetWorker(TargetWorker):
     def send_event(self, event):
         firehose_client = self.clients.firehose.request_metadata(
-            service_principal=self.source_service, source_arn=self.source_arn
+            service_principal=self.service, source_arn=self.rule_arn
         )
-        delivery_stream_name = firehose_name(self.target_arn)
+        delivery_stream_name = firehose_name(self.target["Arn"])
         firehose_client.put_record(
             DeliveryStreamName=delivery_stream_name, Record={"Data": to_bytes(json.dumps(event))}
         )
@@ -169,16 +168,16 @@ class FirehoseTargetWorker(TargetWorker):
 class EventsTargetWorker(TargetWorker):
     def send_event(self, event):
         events_client = self.clients.events.request_metadata(
-            service_principal=self.source_service, source_arn=self.source_arn
+            service_principal=self.service, source_arn=self.rule_arn
         )
-        eventbus_name = self.target_arn.split(":")[-1].split("/")[-1]
+        eventbus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
         detail = event.get("detail") or event
-        resources = event.get("resources") or [self.source_arn] if self.source_arn else []
+        resources = event.get("resources") or [self.rule_arn] if self.rule_arn else []
         events_client.put_events(
             Entries=[
                 {
                     "EventBusName": eventbus_name,
-                    "Source": event.get("source", self.source_service) or "",
+                    "Source": event.get("source", self.service) or "",
                     "DetailType": event.get("detail-type", ""),
                     "Detail": json.dumps(detail),
                     "Resources": resources,
@@ -194,14 +193,14 @@ class EventsTargetWorker(TargetWorker):
 class KinesisTargetWorker(TargetWorker):
     def send_event(self, event):
         kinesis_client = self.clients.kinesis.request_metadata(
-            service_principal=self.source_service, source_arn=self.source_arn
+            service_principal=self.service, source_arn=self.rule_arn
         )
         partition_key_path = collections.get_safe(
-            self.target_attributes,
+            self.target["KinesisParameters"],
             "$.KinesisParameters.PartitionKeyPath",
             default_value="$.id",
         )
-        stream_name = self.target_arn.split("/")[-1]
+        stream_name = self.target["Arn"].split("/")[-1]
         partition_key = collections.get_safe(event, partition_key_path, event["id"])
         kinesis_client.put_record(
             StreamName=stream_name,
@@ -218,9 +217,9 @@ class KinesisTargetWorker(TargetWorker):
 class LogsTargetWorker(TargetWorker):
     def send_event(self, event):
         logs_client = self.clients.logs.request_metadata(
-            service_principal=self.source_service, source_arn=self.source_arn
+            service_principal=self.service, source_arn=self.rule_arn
         )
-        log_group_name = self.target_arn.split(":")[6]
+        log_group_name = self.target["Arn"].split(":")[6]
         log_stream_name = str(uuid.uuid4())  # Unique log stream name
         logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
         logs_client.put_log_events(
