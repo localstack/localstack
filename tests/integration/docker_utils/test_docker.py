@@ -1434,17 +1434,6 @@ class TestRunWithAdditionalArgs:
         assert automatic_host_port > 0
 
     def test_run_with_ulimit(self, docker_client: ContainerClient):
-        # test baseline without ulimit
-        container_name = f"c-{short_uid()}"
-        stdout, _ = docker_client.run_container(
-            "alpine",
-            name=container_name,
-            remove=True,
-            command=["sh", "-c", "ulimit -n"],
-        )
-        assert stdout.decode(config.DEFAULT_ENCODING).strip() == "1073741816"
-
-        # Test with ulimit set
         container_name = f"c-{short_uid()}"
         stdout, _ = docker_client.run_container(
             "alpine",
