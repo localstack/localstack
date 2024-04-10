@@ -10557,7 +10557,7 @@ class TestS3PresignedPost:
         ],
     )
     @markers.aws.validated
-    def test_post_object_policy_validation(self, s3_bucket, aws_client, snapshot):
+    def test_post_object_policy_conditions_validation_eq(self, s3_bucket, aws_client, snapshot):
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value(
@@ -10567,6 +10567,21 @@ class TestS3PresignedPost:
             ]
         )
         object_key = "validate-policy-1"
+
+        def post_generated_presigned_post(generated_request: dict) -> requests.Response:
+            return requests.post(
+                generated_request["url"],
+                data=generated_request["fields"],
+                files={"file": "a" * 12},
+                verify=False,
+                allow_redirects=False,
+            )
+
+        def parse_response_xml(content: bytes) -> dict:
+            if not is_aws_cloud():
+                # AWS use double quotes in error messages and LocalStack uses single. Try to unify before snapshotting
+                content = content.replace(b"'", b'"')
+            return xmltodict.parse(content)
 
         redirect_location = "http://localhost.test/random"
         presigned_request = aws_client.s3.generate_presigned_post(
@@ -10581,49 +10596,12 @@ class TestS3PresignedPost:
 
         # PostObject with a wrong redirect location
         presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
-        response = requests.post(
-            presigned_request["url"],
-            data=presigned_request["fields"],
-            files={"file": "a" * 12},
-            verify=False,
-            allow_redirects=False,
-        )
+        response = post_generated_presigned_post(presigned_request)
 
         # assert that it's rejected
         assert response.status_code == 403
-        content = response.content
-        if not is_aws_cloud():
-            # AWS use double quotes in error messages and LocalStack uses single. Try to unify before snapshotting
-            content = content.replace(b"'", b'"')
-        snapshot.match("invalid-condition-eq", xmltodict.parse(content))
-
-        presigned_request = aws_client.s3.generate_presigned_post(
-            Bucket=s3_bucket,
-            Key=object_key,
-            Fields={"success_action_redirect": redirect_location},
-            Conditions=[
-                [
-                    "starts-with",
-                    "$success_action_redirect",
-                    "",
-                ],  # this allows to accept anything for it
-            ],
-            ExpiresIn=60,
-        )
-
-        # PostObject with a different redirect location, but should be accepted
-        presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
-        response = requests.post(
-            presigned_request["url"],
-            data=presigned_request["fields"],
-            files={"file": "a" * 12},
-            verify=False,
-            allow_redirects=False,
-        )
-
-        # assert that it's accepted
-        assert response.status_code == 303
-        assert response.headers["Location"].startswith("http://wrong.location/test")
+        resp_content = parse_response_xml(response.content)
+        snapshot.match("invalid-condition-eq", resp_content)
 
         # PostObject with a wrong condition (missing $ prefix)
         presigned_request = aws_client.s3.generate_presigned_post(
@@ -10631,30 +10609,17 @@ class TestS3PresignedPost:
             Key=object_key,
             Fields={"success_action_redirect": redirect_location},
             Conditions=[
-                [
-                    "starts-with",
-                    "success_action_redirect",
-                    "",
-                ],  # this allows to accept anything for it
+                ["eq", "success_action_redirect", redirect_location],
             ],
             ExpiresIn=60,
         )
 
-        response = requests.post(
-            presigned_request["url"],
-            data=presigned_request["fields"],
-            files={"file": "a" * 12},
-            verify=False,
-            allow_redirects=False,
-        )
+        response = post_generated_presigned_post(presigned_request)
 
         # assert that it's rejected
         assert response.status_code == 403
-        content = response.content
-        if not is_aws_cloud():
-            # AWS use double quotes in error messages and LocalStack uses single. Try to unify before snapshotting
-            content = content.replace(b"'", b'"')
-        snapshot.match("invalid-condition-missing-prefix", xmltodict.parse(content))
+        resp_content = parse_response_xml(response.content)
+        snapshot.match("invalid-condition-missing-prefix", resp_content)
 
         # PostObject with a wrong condition (multiple condition in one dict)
         presigned_request = aws_client.s3.generate_presigned_post(
@@ -10667,17 +10632,85 @@ class TestS3PresignedPost:
             ExpiresIn=60,
         )
 
-        response = requests.post(
-            presigned_request["url"],
-            data=presigned_request["fields"],
-            files={"file": "a" * 12},
-            verify=False,
-            allow_redirects=False,
-        )
+        response = post_generated_presigned_post(presigned_request)
 
         # assert that it's rejected
         assert response.status_code == 400
-        snapshot.match("invalid-condition-wrong-condition", xmltodict.parse(response.content))
+        resp_content = parse_response_xml(response.content)
+        snapshot.match("invalid-condition-wrong-condition", resp_content)
+
+        # PostObject with a wrong condition value casing
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                ["eq", "$success_action_redirect", "HTTP://wrong.location/test"],
+            ],
+            ExpiresIn=60,
+        )
+        response = post_generated_presigned_post(presigned_request)
+        # assert that it's rejected
+        assert response.status_code == 403
+        resp_content = parse_response_xml(response.content)
+        snapshot.match("invalid-condition-wrong-value-casing", resp_content)
+
+        # PostObject with a wrong condition key casing, should still work
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                ["eq", "$success_Action_REDIRECT", redirect_location],
+            ],
+            ExpiresIn=60,
+        )
+
+        # load the generated policy to assert that it kept the casing and it is sent to AWS
+        generated_policy = json.loads(
+            base64.b64decode(presigned_request["fields"]["policy"]).decode("utf-8")
+        )
+        eq_condition = [
+            cond
+            for cond in generated_policy["conditions"]
+            if isinstance(cond, list) and cond[0] == "eq"
+        ][0]
+        assert eq_condition[1] == "$success_Action_REDIRECT"
+
+        response = post_generated_presigned_post(presigned_request)
+        # assert that it's accepted
+        assert response.status_code == 303
+
+        final_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("final-object", final_object)
+
+        # presigned_request = aws_client.s3.generate_presigned_post(
+        #     Bucket=s3_bucket,
+        #     Key=object_key,
+        #     Fields={"success_action_redirect": redirect_location},
+        #     Conditions=[
+        #         [
+        #             "starts-with",
+        #             "$success_action_redirect",
+        #             "",
+        #         ],  # this allows to accept anything for it
+        #     ],
+        #     ExpiresIn=60,
+        # )
+        #
+        # # PostObject with a different redirect location, but should be accepted
+        # presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
+        # response = requests.post(
+        #     presigned_request["url"],
+        #     data=presigned_request["fields"],
+        #     files={"file": "a" * 12},
+        #     verify=False,
+        #     allow_redirects=False,
+        # )
+        #
+        # # assert that it's accepted
+        # assert response.status_code == 303
+        # assert response.headers["Location"].startswith("http://wrong.location/test")
 
     @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,

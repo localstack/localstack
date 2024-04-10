@@ -799,19 +799,27 @@ def _verify_condition(
         case ["eq", "$bucket", value]:
             return additional_policy_metadata.get("bucket") == value
 
-        case {"bucket": value}:
-            return additional_policy_metadata.get("bucket") == value
-
         case {**kwargs}:
-            return all(form.get(key) == val for key, val in kwargs.items())
+            # this is the most performant to check for a dict with only one key
+            # alternative version is `key, val = next(iter(dict))`
+            for key, val in kwargs.items():
+                k = key.lower()
+                if k == "bucket":
+                    return additional_policy_metadata.get("bucket") == val
+                else:
+                    return form.get(key) == val
 
         case ["eq", key, value]:
-            return key.startswith("$") and form.get(key.lstrip("$")) == value
+            k = key.lower()
+            if k == "$bucket":
+                return additional_policy_metadata.get("bucket") == value
+
+            return k.startswith("$") and form.get(k.lstrip("$")) == value
 
         case ["starts-with", key, value]:
             # You can set the `starts-with` value to an empty string to accept anything
             return key.startswith("$") and (
-                not value or form.get(key.lstrip("$"), "").startswith(value)
+                not value or form.get(key.lstrip("$").lower(), "").startswith(value)
             )
 
         case ["content-length-range", start, end]:
