@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 import uuid
 from datetime import datetime
 from math import isclose
@@ -263,11 +264,11 @@ class TestSecretsManager:
 
     @markers.aws.validated
     def test_list_secrets_filtering(self, aws_client, create_secret):
-        unique_id = short_uid()
-        secret_name_1 = f"testing1/one-{unique_id}"
-        secret_name_2 = f"/testing2/two-{unique_id}"
-        secret_name_3 = f"testing3/three-{unique_id}"
-        secret_name_4 = f"/testing4/four-{unique_id}"
+        suffix = random.randint(10000, 99999)
+        secret_name_1 = f"testing1/one-{suffix}"
+        secret_name_2 = f"/testing2/two-{suffix}"
+        secret_name_3 = f"testing3/three-{suffix}"
+        secret_name_4 = f"/testing4/four-{suffix}"
 
         create_secret(Name=secret_name_1, SecretString="secret", Description="a secret")
         create_secret(Name=secret_name_2, SecretString="secret", Description="an secret")
@@ -279,51 +280,55 @@ class TestSecretsManager:
         self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name_3)
         self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name_4)
 
-        def assert_secret_names(res, include_secrets, exclude_secrets):
-            for secret in res["SecretList"]:
-                assert secret["Name"] in include_secrets
-                assert secret["Name"] not in exclude_secrets
+        def assert_secret_names(res: dict, include_secrets: set[str], exclude_secrets: set[str]):
+            secret_names = {secret["Name"] for secret in res["SecretList"]}
+            assert (
+                include_secrets - secret_names
+            ) == set(), "At least one secret which should be included is not."
+            assert (
+                exclude_secrets - secret_names
+            ) == exclude_secrets, "At least one secret which should not be included is."
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "name", "Values": ["/"]}]
         )
         assert_secret_names(
-            response, [secret_name_2, secret_name_4], [secret_name_1, secret_name_3]
+            response, {secret_name_2, secret_name_4}, {secret_name_1, secret_name_3}
         )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "name", "Values": ["!/"]}]
         )
         assert_secret_names(
-            response, [secret_name_1, secret_name_3], [secret_name_2, secret_name_4]
+            response, {secret_name_1, secret_name_3}, {secret_name_2, secret_name_4}
         )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "name", "Values": ["testing1 one"]}]
         )
         assert_secret_names(
-            response, [], [secret_name_1, secret_name_2, secret_name_3, secret_name_4]
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
         )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "description", "Values": ["a"]}]
         )
         assert_secret_names(
-            response, [secret_name_1, secret_name_2, secret_name_3], [secret_name_4]
+            response, {secret_name_1, secret_name_2, secret_name_3}, {secret_name_4}
         )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "description", "Values": ["!a"]}]
         )
         assert_secret_names(
-            response, [secret_name_4], [secret_name_1, secret_name_2, secret_name_3]
+            response, {secret_name_4}, {secret_name_1, secret_name_2, secret_name_3}
         )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "description", "Values": ["a secret"]}]
         )
         assert_secret_names(
-            response, [secret_name_1, secret_name_2], [secret_name_3, secret_name_4]
+            response, {secret_name_1, secret_name_2}, {secret_name_3, secret_name_4}
         )
 
         response = aws_client.secretsmanager.list_secrets(
@@ -333,7 +338,7 @@ class TestSecretsManager:
             ]
         )
         assert_secret_names(
-            response, [secret_name_1, secret_name_2, secret_name_3, secret_name_4], []
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
         )
 
         response = aws_client.secretsmanager.list_secrets(
@@ -343,7 +348,7 @@ class TestSecretsManager:
             ]
         )
         assert_secret_names(
-            response, [secret_name_1, secret_name_2, secret_name_3, secret_name_4], []
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
         )
 
         response = aws_client.secretsmanager.list_secrets(
@@ -352,7 +357,7 @@ class TestSecretsManager:
             ]
         )
         assert_secret_names(
-            response, [secret_name_1, secret_name_2], [secret_name_3, secret_name_4]
+            response, {secret_name_1, secret_name_2}, {secret_name_3, secret_name_4}
         )
 
         response = aws_client.secretsmanager.list_secrets(
@@ -361,21 +366,21 @@ class TestSecretsManager:
             ]
         )
         assert_secret_names(
-            response, [secret_name_4], [secret_name_1, secret_name_2, secret_name_3]
+            response, {secret_name_4}, {secret_name_1, secret_name_2, secret_name_3}
         )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "description", "Values": ["!c"]}]
         )
         assert_secret_names(
-            response, [secret_name_1, secret_name_2, secret_name_3, secret_name_4], []
+            response, {secret_name_1, secret_name_2, secret_name_3, secret_name_4}, set()
         )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "name", "Values": ["testing1 one"]}]
         )
         assert_secret_names(
-            response, [], [secret_name_1, secret_name_2, secret_name_3, secret_name_4]
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
         )
 
     @markers.aws.validated
