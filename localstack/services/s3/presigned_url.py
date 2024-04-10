@@ -719,8 +719,7 @@ def validate_post_policy(
     SigV4: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-authentication-HTTPPOST.html
 
     :param request_form: the form data contained in the pre-signed POST request
-    :param additional_policy_metadata: additional metadata needed to validate the policy (bucket name, object size,
-    also some specific headers but not yet covered)
+    :param additional_policy_metadata: additional metadata needed to validate the policy (bucket name, object size)
     :raises AccessDenied, SignatureDoesNotMatch
     :return: None
     """
@@ -778,17 +777,16 @@ def validate_post_policy(
         return
 
     conditions = policy_decoded.get("conditions", [])
+    form_dict = {k.lower(): v for k, v in request_form.items()}
     for condition in conditions:
-        if not _verify_condition(condition, request_form, additional_policy_metadata):
+        if not _verify_condition(condition, form_dict, additional_policy_metadata):
             raise AccessDenied(
                 f"Invalid according to Policy: Policy Condition failed: {condition}",
                 HostId=FAKE_HOST_ID,
             )
 
 
-def _verify_condition(
-    condition: list | dict, form: ImmutableMultiDict, additional_policy_metadata: dict
-) -> bool:
+def _verify_condition(condition: list | dict, form: dict, additional_policy_metadata: dict) -> bool:
     if isinstance(condition, dict) and len(condition) > 1:
         raise CommonServiceException(
             code="InvalidPolicyDocument",
@@ -796,9 +794,6 @@ def _verify_condition(
         )
 
     match condition:
-        case ["eq", "$bucket", value]:
-            return additional_policy_metadata.get("bucket") == value
-
         case {**kwargs}:
             # this is the most performant to check for a dict with only one key
             # alternative version is `key, val = next(iter(dict))`

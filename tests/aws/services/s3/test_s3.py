@@ -10660,6 +10660,38 @@ class TestS3PresignedPost:
         resp_content = self.parse_response_xml(response.content)
         snapshot.match("invalid-condition-wrong-value-casing", resp_content)
 
+        object_expires = rfc_1123_datetime(
+            datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(minutes=10)
+        )
+
+        # test casing for x-amz-meta and specific Content-Type/Expires S3 headers
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Fields={
+                "x-amz-meta-test-1": "test-meta-1",
+                "x-amz-meta-TEST-2": "test-meta-2",
+                "Content-Type": "text/plain",
+                "Expires": object_expires,
+            },
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["eq", "$x-amz-meta-test-1", "test-meta-1"],
+                ["eq", "$x-amz-meta-test-2", "test-meta-2"],
+                ["eq", "$content-type", "text/plain"],
+                ["eq", "$Expires", object_expires],
+            ],
+        )
+        # assert that it kept the casing
+        assert "x-amz-meta-TEST-2" in presigned_request["fields"]
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+        # assert that it's accepted
+        assert response.status_code == 204
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-metadata", head_object)
+
         # PostObject with a wrong condition key casing, should still work
         presigned_request = aws_client.s3.generate_presigned_post(
             Bucket=s3_bucket,
@@ -10671,7 +10703,7 @@ class TestS3PresignedPost:
             ExpiresIn=60,
         )
 
-        # load the generated policy to assert that it kept the casing and it is sent to AWS
+        # load the generated policy to assert that it kept the casing, and it is sent to AWS
         generated_policy = json.loads(
             base64.b64decode(presigned_request["fields"]["policy"]).decode("utf-8")
         )
