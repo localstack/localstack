@@ -84,6 +84,9 @@ from localstack.utils.time import today_no_time
 AWSPREVIOUS: Final[str] = "AWSPREVIOUS"
 AWSPENDING: Final[str] = "AWSPENDING"
 AWSCURRENT: Final[str] = "AWSCURRENT"
+# The maximum number of outdated versions that can be stored in the secret.
+# see: https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_PutSecretValue.html
+MAX_OUTDATED_SECRET_VERSIONS: Final[int] = 100
 #
 # Error Messages.
 AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[str] = (
@@ -262,9 +265,10 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         self, context: RequestContext, request: ListSecretVersionIdsRequest
     ) -> ListSecretVersionIdsResponse:
         secret_id = request["SecretId"]
+        include_deprecated = request.get("IncludeDeprecated", False)
         self._raise_if_invalid_secret_id(secret_id)
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
-        secrets = backend.list_secret_version_ids(secret_id)
+        secrets = backend.list_secret_version_ids(secret_id, include_deprecated=include_deprecated)
         return ListSecretVersionIdsResponse(**json.loads(secrets))
 
     @handler("PutResourcePolicy", expand=False)
@@ -480,7 +484,9 @@ def moto_smb_create_secret(fn, self, name, *args, **kwargs):
 
 
 @patch(SecretsManagerBackend.list_secret_version_ids)
-def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
+def moto_smb_list_secret_version_ids(
+    _, self, secret_id: str, include_deprecated: bool, *args, **kwargs
+):
     if secret_id not in self.secrets:
         raise SecretNotFoundException()
 
@@ -496,18 +502,24 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
     versions: list[SecretVersionsListEntry] = list()
     for version_id, version in secret.versions.items():
         version_stages = version["version_stages"]
-        entry = SecretVersionsListEntry(
-            CreatedDate=version["createdate"],
-            VersionId=version_id,
-            VersionStages=version_stages,
-        )
+        # Patch: include deprecated versions if include_deprecated is True.
+        # version_stages is empty if the version is deprecated.
+        # see: https://docs.aws.amazon.com/secretsmanager/latest/userguide/getting-started.html#term_version
+        if len(version_stages) > 0 or include_deprecated:
+            entry = SecretVersionsListEntry(
+                CreatedDate=version["createdate"],
+                VersionId=version_id,
+            )
 
-        # Patch: bind LastAccessedDate if one exists for this version.
-        last_accessed_date = version.get("last_accessed_date")
-        if last_accessed_date:
-            entry["LastAccessedDate"] = last_accessed_date
+            if version_stages:
+                entry["VersionStages"] = version_stages
 
-        versions.append(entry)
+            # Patch: bind LastAccessedDate if one exists for this version.
+            last_accessed_date = version.get("last_accessed_date")
+            if last_accessed_date:
+                entry["LastAccessedDate"] = last_accessed_date
+
+            versions.append(entry)
 
     # Patch: sort versions by date.
     versions.sort(key=lambda v: v["CreatedDate"], reverse=True)
@@ -528,7 +540,7 @@ def fake_secret_to_dict(fn, self):
         del res_dict["RotationEnabled"]
     if self.auto_rotate_after_days is None and "RotationRules" in res_dict:
         del res_dict["RotationRules"]
-    if not self.tags and "Tags" in res_dict:
+    if self.tags is None and "Tags" in res_dict:
         del res_dict["Tags"]
     for null_field in [key for key, value in res_dict.items() if value is None]:
         del res_dict[null_field]
@@ -634,12 +646,20 @@ def backend_update_secret_version_stage(
 def fake_secret_reset_default_version(fn, self, secret_version, version_id):
     fn(self, secret_version, version_id)
 
-    # Remove versions with no version stages.
-    versions_no_stages = [
+    # Remove versions with no version stages, if max limit of outdated versions is exceeded.
+    versions_no_stages: list[str] = [
         version_id for version_id, version in self.versions.items() if not version["version_stages"]
     ]
-    for version_no_stages in versions_no_stages:
-        del self.versions[version_no_stages]
+    versions_to_delete: list[str] = []
+
+    # Patch: remove outdated versions if the max deprecated versions limit is exceeded.
+    if len(versions_no_stages) >= MAX_OUTDATED_SECRET_VERSIONS:
+        versions_to_delete = versions_no_stages[
+            : len(versions_no_stages) - MAX_OUTDATED_SECRET_VERSIONS
+        ]
+
+    for version_to_delete in versions_to_delete:
+        del self.versions[version_to_delete]
 
 
 @patch(FakeSecret.remove_version_stages_from_old_versions)
@@ -800,6 +820,16 @@ def backend_rotate_secret(
 def moto_secret_not_found_exception_init(fn, self):
     fn(self)
     self.code = 400
+
+
+@patch(FakeSecret._form_version_ids_to_stages, pass_target=False)
+def _form_version_ids_to_stages_modal(self):
+    version_id_to_stages: dict[str, list] = {}
+    for key, value in self.versions.items():
+        # Patch: include version_stages in the response only if it is not empty.
+        if len(value["version_stages"]) > 0:
+            version_id_to_stages[key] = value["version_stages"]
+    return version_id_to_stages
 
 
 # patching resource policy in moto

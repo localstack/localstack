@@ -736,6 +736,7 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
@@ -776,6 +777,7 @@ class SdkDockerClient(ContainerClient):
                 privileged=privileged,
                 platform=platform,
                 init=init,
+                labels=labels,
                 **kwargs,
             )
             result = self.start_container(

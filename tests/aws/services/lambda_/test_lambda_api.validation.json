@@ -107,6 +107,12 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
     "last_validated_date": "2024-04-05T07:58:35+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_concurrent_code_updates": {
+    "last_validated_date": "2024-04-09T11:23:28+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_concurrent_config_updates": {
+    "last_validated_date": "2024-04-08T13:14:54+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_list_functions": {
     "last_validated_date": "2024-04-05T07:59:02+00:00"
   },

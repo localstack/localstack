@@ -37,9 +37,9 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.135.0
+aws-cdk-lib==2.136.0
     # via localstack-core
-aws-sam-translator==1.86.0
+aws-sam-translator==1.87.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -92,7 +92,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==0.86.1
+cfn-lint==0.86.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -127,7 +127,7 @@ cython==3.0.10
     # via localstack-core (pyproject.toml)
 decorator==5.1.1
     # via jsonpath-rw
-deepdiff==6.7.1
+deepdiff==7.0.1
     # via
     #   localstack-core
     #   localstack-snapshot
@@ -156,7 +156,7 @@ docutils==0.16
     # via awscli
 filelock==3.13.3
     # via virtualenv
-flask==3.0.2
+flask==3.0.3
     # via
     #   localstack-core
     #   quart
@@ -218,7 +218,7 @@ joserfc==0.9.0
     # via moto-ext
 jschema-to-python==1.2.3
     # via cfn-lint
-jsii==1.96.0
+jsii==1.97.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
@@ -279,7 +279,7 @@ mpmath==1.3.0
     # via sympy
 multipart==0.2.4
     # via moto-ext
-networkx==3.2.1
+networkx==3.3
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -490,7 +490,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-typing-extensions==4.10.0
+typing-extensions==4.11.0
     # via
     #   aws-sam-translator
     #   jsii

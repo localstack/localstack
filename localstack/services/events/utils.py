@@ -70,13 +70,16 @@ def matches_event(event_pattern: dict[str, any], event: dict[str, Any]) -> bool:
                 ):
                     return False
 
-        # 3. recursively call filter_event(..) for dict types
+        # 3. recursively call matches_event(..) for dict types
         elif isinstance(value, (str, dict)):
             try:
                 # TODO: validate whether inner JSON-encoded strings actually get decoded recursively
                 value = json.loads(value) if isinstance(value, str) else value
-                if isinstance(value, dict) and not matches_event(value, event_value):
-                    return False
+                if isinstance(event_value, list):
+                    return any(matches_event(value, ev) for ev in event_value)
+                else:
+                    if isinstance(value, dict) and not matches_event(value, event_value):
+                        return False
             except json.decoder.JSONDecodeError:
                 return False
 

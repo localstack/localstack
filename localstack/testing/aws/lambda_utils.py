@@ -333,3 +333,7 @@ def _get_lambda_invocation_events(logs_client, function_name, expected_num_event
         return events
 
     return retry(get_events, retries=retries, sleep_before=5, sleep=5)
+
+
+def is_docker_runtime_executor():
+    return config.LAMBDA_RUNTIME_EXECUTOR in ["docker", ""]
