@@ -270,9 +270,6 @@ class TestSecretsManager:
         secret_name_3 = f"testing3/three-{suffix}"
         secret_name_4 = f"/testing4/four-{suffix}"
 
-        create_secret(
-            Name=f"MyTestDatabaseSecret-{suffix}", SecretString="secret", Description="a secret"
-        )
         create_secret(Name=secret_name_1, SecretString="secret", Description="a secret")
         create_secret(Name=secret_name_2, SecretString="secret", Description="an secret")
         create_secret(Name=secret_name_3, SecretString="secret", Description="asecret")
