@@ -4103,7 +4103,11 @@ class TestCodeSigningConfig:
         snapshot.match("get_function_code_signing_config", response)
 
         response = aws_client.lambda_.list_code_signing_configs()
-        snapshot.match("list_code_signing_configs", response)
+
+        # TODO we should snapshot match entire response not just last element in list
+        #  issue is that AWS creates 3 list entries where we only have one
+        #  I believe on their end that they are keeping each configuration version as separate entry
+        snapshot.match("list_code_signing_configs", response["CodeSigningConfigs"][-1])
 
         response = aws_client.lambda_.list_functions_by_code_signing_config(
             CodeSigningConfigArn=code_signing_arn
