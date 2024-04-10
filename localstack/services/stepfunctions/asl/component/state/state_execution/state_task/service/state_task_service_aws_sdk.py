@@ -1,4 +1,6 @@
-from botocore.exceptions import ClientError
+import logging
+
+from botocore.exceptions import ClientError, UnknownServiceError
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.aws.protocol.service_router import get_service_catalog
@@ -22,6 +24,8 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 
+LOG = logging.getLogger(__name__)
+
 
 class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     # Defines bindings of lower-cased service names to the StepFunctions service name included in error messages.
@@ -36,10 +40,28 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
     @staticmethod
     def _normalise_service_error_name(service_name: str) -> str:
         # Computes the normalised service error name for the given service.
+
+        # Return the explicit binding if one exists.
         service_name_lower = service_name.lower()
         if service_name_lower in StateTaskServiceAwsSdk._SERVICE_ERROR_NAMES:
             return StateTaskServiceAwsSdk._SERVICE_ERROR_NAMES[service_name_lower]
-        return get_service_catalog().get(service_name).service_id.replace(" ", "")
+
+        # Attempt to retrieve the service name from the catalog.
+        try:
+            service_model = get_service_catalog().get(service_name)
+            if service_model is not None:
+                sfn_normalised_service_name = service_model.service_id.replace(" ", "")
+                return sfn_normalised_service_name
+        except UnknownServiceError:
+            LOG.warning(
+                f"No service for name '{service_name}' when building aws-sdk service error name."
+            )
+
+        # Revert to returning the resource's service name and log the missing binding.
+        LOG.error(
+            f"No normalised service error name for aws-sdk integration was found for service: '{service_name}'"
+        )
+        return service_name
 
     @staticmethod
     def _normalise_exception_name(norm_service_name: str, ex: Exception) -> str:
