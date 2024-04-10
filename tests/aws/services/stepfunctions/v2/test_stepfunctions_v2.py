@@ -831,3 +831,4 @@ def test_run_aws_sdk_secrets_manager(aws_client, account_id):
 
     # clean up
     cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
+    # TODO also clean up other resources (like secrets)
