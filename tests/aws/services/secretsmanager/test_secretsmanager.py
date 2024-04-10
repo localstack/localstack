@@ -348,7 +348,6 @@ class TestSecretsManager:
                 {"Key": "name", "Values": ["an"]},
             ]
         )
-        # TODO this fails
         assert_secret_names(
             response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
         )
@@ -374,7 +373,6 @@ class TestSecretsManager:
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "description", "Values": ["!c"]}]
         )
-        # TODO this fails
         assert_secret_names(
             response, {secret_name_1, secret_name_2, secret_name_3, secret_name_4}, set()
         )
@@ -382,7 +380,6 @@ class TestSecretsManager:
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "name", "Values": ["testing1 one"]}]
         )
-        # TODO this fails
         assert_secret_names(
             response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
         )
