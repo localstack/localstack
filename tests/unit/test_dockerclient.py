@@ -37,7 +37,7 @@ class TestDockerClient:
             "id": mock_container["ID"],
             "image": mock_container["Image"],
             "name": mock_container["Names"],
-            "labels": mock_container["Labels"],
+            "labels": {"authors": "LocalStack Contributors"},
             "status": mock_container["State"],
         }
         run_mock.return_value = json.dumps(mock_container)

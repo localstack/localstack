@@ -1816,6 +1816,18 @@ class TestDockerLabels:
         finally:
             docker_client.remove_container(container_name=container_name, force=True)
 
+    def test_list_containers_with_labels(self, docker_client, create_container):
+        labels = {"foo": "bar", short_uid(): short_uid()}
+        container = create_container(
+            "alpine", command=["sh", "-c", "while true; do sleep 1; done"], labels=labels
+        )
+        docker_client.start_container(container.container_id)
+
+        containers = docker_client.list_containers(filter=f"id={container.container_id}")
+        assert len(containers) == 1
+        container = containers[0]
+        assert container["labels"] == labels
+
 
 def _pull_image_if_not_exists(docker_client: ContainerClient, image_name: str):
     if image_name not in docker_client.get_docker_image_names():
