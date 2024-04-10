@@ -1488,8 +1488,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_success_no_such_token": {
-    "recorded-date": "10-04-2024, 11:39:42",
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_outcome_with_no_such_token[state_machine_template0]": {
+    "recorded-date": "10-04-2024, 18:55:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1578,8 +1578,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_failure_no_such_token": {
-    "recorded-date": "10-04-2024, 11:45:49",
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_outcome_with_no_such_token[state_machine_template1]": {
+    "recorded-date": "10-04-2024, 18:55:40",
     "recorded-content": {
       "get_execution_history": {
         "events": [

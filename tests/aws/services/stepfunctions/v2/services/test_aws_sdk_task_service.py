@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
 from localstack.testing.pytest import markers
@@ -148,43 +149,23 @@ class TestTaskServiceAwsSdk:
             "$..cause"
         ]
     )
-    @markers.aws.validated
-    def test_sfn_send_task_success_no_such_token(
-        self,
-        aws_client,
-        create_iam_role_for_sfn,
-        create_state_machine,
-        sfn_snapshot,
-    ):
-        template = ST.load_sfn_template(ST.AWS_SDK_SFN_SEND_TASK_SUCCESS)
-        definition = json.dumps(template)
-
-        exec_input = json.dumps({"TaskToken": "NoSuchTaskToken"})
-        create_and_record_execution(
-            aws_client.stepfunctions,
-            create_iam_role_for_sfn,
-            create_state_machine,
-            sfn_snapshot,
-            definition,
-            exec_input,
-        )
-
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # TODO: see reasoning for test `test_sfn_send_task_success_no_such_token` in this suite.
-            "$..cause"
-        ]
+    @pytest.mark.parametrize(
+        "state_machine_template",
+        [
+            ST.load_sfn_template(ST.AWS_SDK_SFN_SEND_TASK_SUCCESS),
+            ST.load_sfn_template(ST.AWS_SDK_SFN_SEND_TASK_FAILURE),
+        ],
     )
     @markers.aws.validated
-    def test_sfn_send_task_failure_no_such_token(
+    def test_sfn_send_task_outcome_with_no_such_token(
         self,
         aws_client,
         create_iam_role_for_sfn,
         create_state_machine,
         sfn_snapshot,
+        state_machine_template,
     ):
-        template = ST.load_sfn_template(ST.AWS_SDK_SFN_SEND_TASK_FAILURE)
-        definition = json.dumps(template)
+        definition = json.dumps(state_machine_template)
 
         exec_input = json.dumps({"TaskToken": "NoSuchTaskToken"})
         create_and_record_execution(
