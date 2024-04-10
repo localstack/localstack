@@ -1672,5 +1672,59 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_multi_region_key": {
+    "recorded-date": "10-04-2024, 21:11:51",
+    "recorded-content": {
+      "create_multi_region_key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "<description>",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": true,
+        "MultiRegionConfiguration": {
+          "MultiRegionKeyType": "PRIMARY",
+          "PrimaryKey": {
+            "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+            "Region": "<region>"
+          },
+          "ReplicaKeys": []
+        },
+        "Origin": "AWS_KMS"
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_non_multi_region_keys_should_not_have_multi_region_properties": {
+    "recorded-date": "10-04-2024, 21:13:15",
+    "recorded-content": {
+      "non_multi_region_keys_should_not_have_multi_region_properties": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "<description>",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
+      }
+    }
   }
 }

@@ -34,6 +34,7 @@ from localstack.aws.api.kms import (
     MacAlgorithmSpec,
     MessageType,
     MultiRegionConfiguration,
+    MultiRegionKey,
     MultiRegionKeyType,
     OriginType,
     SigningAlgorithmSpec,
@@ -424,10 +425,6 @@ class KmsKey:
 
         self.metadata["Description"] = create_key_request.get("Description") or ""
         self.metadata["MultiRegion"] = create_key_request.get("MultiRegion") or False
-        if self.metadata["MultiRegion"]:
-            self.metadata["MultiRegionConfiguration"] = MultiRegionConfiguration(
-                MultiRegionKeyType=MultiRegionKeyType.PRIMARY
-            )
         self.metadata["Origin"] = create_key_request.get("Origin") or "AWS_KMS"
         # https://docs.aws.amazon.com/kms/latest/APIReference/API_CreateKey.html#KMS-CreateKey-request-CustomerMasterKeySpec
         # CustomerMasterKeySpec has been deprecated, still used for compatibility. Is replaced by KeySpec.
@@ -473,6 +470,16 @@ class KmsKey:
             self.metadata.get("KeyUsage"), self.metadata.get("KeySpec")
         )
         self._populate_mac_algorithms(self.metadata.get("KeyUsage"), self.metadata.get("KeySpec"))
+
+        if self.metadata["MultiRegion"]:
+            self.metadata["MultiRegionConfiguration"] = MultiRegionConfiguration(
+                MultiRegionKeyType=MultiRegionKeyType.PRIMARY,
+                PrimaryKey=MultiRegionKey(
+                    Arn=self.metadata["Arn"],
+                    Region=region
+                ),
+                ReplicaKeys=[]
+            )
 
     def add_tags(self, tags: List) -> None:
         # Just in case we get None from somewhere.

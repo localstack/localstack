@@ -788,19 +788,18 @@ class TestKMS:
         aws_client.kms.encrypt(KeyId=alias_name, Plaintext="encrypt-me")
 
     @markers.aws.validated
-    def test_create_multi_region_key(self, kms_create_key):
-        expected_multi_region_key_type = "PRIMARY"
+    def test_create_multi_region_key(self, kms_create_key, snapshot):
+        snapshot.add_transformer(snapshot.transform.kms_api())
         key = kms_create_key(MultiRegion=True)
         assert key["KeyId"].startswith("mrk-")
-        assert key["MultiRegion"]
-        assert key["MultiRegionConfiguration"]["MultiRegionKeyType"] == expected_multi_region_key_type
+        snapshot.match("create_multi_region_key", key)
 
     @markers.aws.validated
-    def test_non_multi_region_keys_should_not_have_multi_region_properties(self, kms_create_key):
+    def test_non_multi_region_keys_should_not_have_multi_region_properties(self, kms_create_key, snapshot):
+        snapshot.add_transformer(snapshot.transform.kms_api())
         key = kms_create_key(MultiRegion=False)
         assert not key["KeyId"].startswith("mrk-")
-        assert not key["MultiRegion"]
-        assert "MultiRegionConfiguration" not in key
+        snapshot.match("non_multi_region_keys_should_not_have_multi_region_properties", key)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
