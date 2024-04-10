@@ -10650,7 +10650,7 @@ class TestS3PresignedPost:
             Key=object_key,
             Fields={"success_action_redirect": redirect_location},
             Conditions=[
-                ["eq", "$success_action_redirect", "HTTP://wrong.location/test"],
+                ["eq", "$success_action_redirect", redirect_location.replace("http://", "HTTP://")],
             ],
             ExpiresIn=60,
         )

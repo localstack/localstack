@@ -11495,7 +11495,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
-    "recorded-date": "10-04-2024, 12:29:32",
+    "recorded-date": "10-04-2024, 15:09:48",
     "recorded-content": {
       "invalid-condition-eq": {
         "Error": {
@@ -11525,7 +11525,7 @@
         "Error": {
           "Code": "AccessDenied",
           "HostId": "<host-id>",
-          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"HTTP://wrong.location/test\"]",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"HTTP://localhost.test/random\"]",
           "RequestId": "<request-id:4>"
         }
       },
