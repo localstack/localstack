@@ -338,10 +338,9 @@ class TestSecretsManager:
                 {"Key": "name", "Values": ["secret"]},
             ]
         )
-        # TODO this fails
-        # assert_secret_names(
-        #     response, {secret_name_1, secret_name_2, secret_name_3, secret_name_4}, set()
-        # )
+        assert_secret_names(
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
+        )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[
@@ -350,9 +349,9 @@ class TestSecretsManager:
             ]
         )
         # TODO this fails
-        # assert_secret_names(
-        #     response, {secret_name_1, secret_name_2, secret_name_3, secret_name_4}, set()
-        # )
+        assert_secret_names(
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
+        )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[
@@ -376,17 +375,17 @@ class TestSecretsManager:
             Filters=[{"Key": "description", "Values": ["!c"]}]
         )
         # TODO this fails
-        # assert_secret_names(
-        #     response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
-        # )
+        assert_secret_names(
+            response, {secret_name_1, secret_name_2, secret_name_3, secret_name_4}, set()
+        )
 
         response = aws_client.secretsmanager.list_secrets(
             Filters=[{"Key": "name", "Values": ["testing1 one"]}]
         )
         # TODO this fails
-        # assert_secret_names(
-        #     response, {secret_name_1}, {secret_name_2, secret_name_3, secret_name_4}
-        # )
+        assert_secret_names(
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
+        )
 
     @markers.aws.validated
     def test_create_multi_secrets(self, cleanups, aws_client):
