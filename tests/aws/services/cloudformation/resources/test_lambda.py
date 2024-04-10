@@ -33,7 +33,7 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
             "FunctionName": function_name,
             "TableName": table_name,
             "Filter": '{"eventName": ["MODIFY"]}',
-        },
+        }
     )
 
     aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put)
@@ -48,6 +48,48 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
         assert "MODIFY" in msg and "INSERT" not in msg
 
     retry(_assert_single_lambda_call, retries=30)
+# TODO make a test simular to one above but for updated filtering
+
+
+@markers.aws.validated
+def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformer(snapshot.transform.dynamodb_api())
+    snapshot.add_transformer(snapshot.transform.lambda_api())
+    function_name = f"test-fn-{short_uid()}"
+    table_name = f"ddb-tbl-{short_uid()}"
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/lambda_dynamodb_filtering.yaml"
+        ),
+        parameters={
+            "FunctionName": function_name,
+            "TableName": table_name,
+            "Filter": '{"eventName": ["DELETE"]}',
+        },
+    )
+    source_mappings = aws_client.lambda_.list_event_source_mappings(
+        FunctionName=function_name
+    )
+    snapshot.match("source_mappings", source_mappings)
+
+    deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/lambda_dynamodb_filtering.yaml"
+        ),
+        parameters={
+            "FunctionName": function_name,
+            "TableName": table_name,
+            "Filter": '{"eventName": ["MODIFY"]}',
+        },
+        stack_name=stack.stack_name,
+        is_update=True
+    )
+
+    source_mappings = aws_client.lambda_.list_event_source_mappings(
+        FunctionName=function_name
+    )
+    snapshot.match("updated_source_mappings", source_mappings)
 
 
 @markers.snapshot.skip_snapshot_verify(

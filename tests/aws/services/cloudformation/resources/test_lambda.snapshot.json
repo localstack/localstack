@@ -1411,5 +1411,90 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_w_dynamodb_event_filter_update": {
+    "recorded-date": "10-04-2024, 14:17:32",
+    "recorded-content": {
+      "source_mappings": {
+        "EventSourceMappings": [
+          {
+            "BatchSize": 1,
+            "BisectBatchOnFunctionError": false,
+            "DestinationConfig": {
+              "OnFailure": {}
+            },
+            "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/ddb-tbl-9604b1a1/stream/<resource:1>",
+            "FilterCriteria": {
+              "Filters": [
+                {
+                  "Pattern": {
+                    "eventName": [
+                      "DELETE"
+                    ]
+                  }
+                }
+              ]
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionResponseTypes": [],
+            "LastModified": "datetime",
+            "LastProcessingResult": "No records processed",
+            "MaximumBatchingWindowInSeconds": 0,
+            "MaximumRecordAgeInSeconds": -1,
+            "MaximumRetryAttempts": -1,
+            "ParallelizationFactor": 1,
+            "StartingPosition": "TRIM_HORIZON",
+            "State": "Enabled",
+            "StateTransitionReason": "User action",
+            "TumblingWindowInSeconds": 0,
+            "UUID": "<uuid:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated_source_mappings": {
+        "EventSourceMappings": [
+          {
+            "BatchSize": 1,
+            "BisectBatchOnFunctionError": false,
+            "DestinationConfig": {
+              "OnFailure": {}
+            },
+            "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/ddb-tbl-9604b1a1/stream/<resource:1>",
+            "FilterCriteria": {
+              "Filters": [
+                {
+                  "Pattern": {
+                    "eventName": [
+                      "MODIFY"
+                    ]
+                  }
+                }
+              ]
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionResponseTypes": [],
+            "LastModified": "datetime",
+            "LastProcessingResult": "No records processed",
+            "MaximumBatchingWindowInSeconds": 0,
+            "MaximumRecordAgeInSeconds": -1,
+            "MaximumRetryAttempts": -1,
+            "ParallelizationFactor": 1,
+            "StartingPosition": "TRIM_HORIZON",
+            "State": "Enabled",
+            "StateTransitionReason": "User action",
+            "TumblingWindowInSeconds": 0,
+            "UUID": "<uuid:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
