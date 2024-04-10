@@ -98,5 +98,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_hosted_zone_in_non_existent_vpc": {
+    "recorded-date": "10-04-2024, 15:47:22",
+    "recorded-content": {
+      "failure-response": {
+        "Error": {
+          "Code": "InvalidVPCId",
+          "Message": "The VPC ID is invalid.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

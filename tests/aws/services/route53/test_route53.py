@@ -150,6 +150,16 @@ class TestRoute53:
                 VPC={"VPCRegion": vpc_region, "VPCId": vpc2_id},
             )
 
+    @markers.aws.validated
+    def test_create_hosted_zone_in_non_existent_vpc(
+        self, aws_client, hosted_zone, snapshot, region_name
+    ):
+        vpc = {"VPCId": "non-existent", "VPCRegion": region_name}
+        with pytest.raises(aws_client.route53.exceptions.InvalidVPCId) as exc_info:
+            hosted_zone(Name=f"zone-{short_uid()}.com", VPC=vpc)
+
+        snapshot.match("failure-response", exc_info.value.response)
+
     @markers.aws.unknown
     def test_reusable_delegation_sets(self, aws_client):
         client = aws_client.route53
