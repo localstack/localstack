@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_lifecycle": {
-    "recorded-date": "05-04-2024, 07:57:44",
+    "recorded-date": "10-04-2024, 08:59:22",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -327,7 +327,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_redundant_updates": {
-    "recorded-date": "05-04-2024, 07:57:51",
+    "recorded-date": "10-04-2024, 08:59:29",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -622,7 +622,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[delete_function]": {
-    "recorded-date": "05-04-2024, 07:57:51",
+    "recorded-date": "10-04-2024, 08:59:30",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -651,7 +651,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function]": {
-    "recorded-date": "05-04-2024, 07:57:52",
+    "recorded-date": "10-04-2024, 08:59:30",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -680,7 +680,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_with_arn_qualifier_mismatch[get_function_configuration]": {
-    "recorded-date": "05-04-2024, 07:57:52",
+    "recorded-date": "10-04-2024, 08:59:30",
     "recorded-content": {
       "not_match_exception": {
         "Error": {
@@ -709,7 +709,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function]": {
-    "recorded-date": "05-04-2024, 07:57:55",
+    "recorded-date": "10-04-2024, 08:59:33",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -726,7 +726,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_configuration]": {
-    "recorded-date": "05-04-2024, 07:57:58",
+    "recorded-date": "10-04-2024, 08:59:36",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -743,7 +743,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_version[get_function_event_invoke_config]": {
-    "recorded-date": "05-04-2024, 07:58:01",
+    "recorded-date": "10-04-2024, 08:59:39",
     "recorded-content": {
       "version_not_found_exception": {
         "Error": {
@@ -760,7 +760,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_delete_on_nonexisting_version": {
-    "recorded-date": "05-04-2024, 07:58:05",
+    "recorded-date": "10-04-2024, 08:59:42",
     "recorded-content": {
       "delete_function_response_non_existent": {
         "Error": {
@@ -789,7 +789,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[delete_function]": {
-    "recorded-date": "05-04-2024, 07:58:05",
+    "recorded-date": "10-04-2024, 08:59:43",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -806,7 +806,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function]": {
-    "recorded-date": "05-04-2024, 07:58:05",
+    "recorded-date": "10-04-2024, 08:59:43",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -823,7 +823,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_configuration]": {
-    "recorded-date": "05-04-2024, 07:58:06",
+    "recorded-date": "10-04-2024, 08:59:43",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -840,7 +840,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_url_config]": {
-    "recorded-date": "05-04-2024, 07:58:06",
+    "recorded-date": "10-04-2024, 08:59:44",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -857,7 +857,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_code_signing_config]": {
-    "recorded-date": "05-04-2024, 07:58:07",
+    "recorded-date": "10-04-2024, 08:59:44",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -874,7 +874,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_event_invoke_config]": {
-    "recorded-date": "05-04-2024, 07:58:07",
+    "recorded-date": "10-04-2024, 08:59:44",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -891,7 +891,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_ops_on_nonexisting_fn[get_function_concurrency]": {
-    "recorded-date": "05-04-2024, 07:58:07",
+    "recorded-date": "10-04-2024, 08:59:44",
     "recorded-content": {
       "not_found_exception": {
         "Error": {
@@ -908,7 +908,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function]": {
-    "recorded-date": "05-04-2024, 07:58:10",
+    "recorded-date": "10-04-2024, 08:59:48",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -925,7 +925,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_configuration]": {
-    "recorded-date": "05-04-2024, 07:58:13",
+    "recorded-date": "10-04-2024, 08:59:51",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -942,7 +942,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_url_config]": {
-    "recorded-date": "05-04-2024, 07:58:16",
+    "recorded-date": "10-04-2024, 08:59:54",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -959,7 +959,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_code_signing_config]": {
-    "recorded-date": "05-04-2024, 07:58:19",
+    "recorded-date": "10-04-2024, 08:59:57",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -976,7 +976,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_event_invoke_config]": {
-    "recorded-date": "05-04-2024, 07:58:22",
+    "recorded-date": "10-04-2024, 09:00:00",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -993,7 +993,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[get_function_concurrency]": {
-    "recorded-date": "05-04-2024, 07:58:25",
+    "recorded-date": "10-04-2024, 09:00:03",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -1010,7 +1010,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[delete_function]": {
-    "recorded-date": "05-04-2024, 07:58:27",
+    "recorded-date": "10-04-2024, 09:00:06",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -1027,7 +1027,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_get_function_wrong_region[invoke]": {
-    "recorded-date": "05-04-2024, 07:58:31",
+    "recorded-date": "10-04-2024, 09:00:09",
     "recorded-content": {
       "wrong_region_exception": {
         "Error": {
@@ -1044,7 +1044,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
-    "recorded-date": "05-04-2024, 07:58:35",
+    "recorded-date": "10-04-2024, 09:00:13",
     "recorded-content": {
       "create-response-zip-file": {
         "Architectures": [
@@ -1234,7 +1234,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
-    "recorded-date": "05-04-2024, 07:58:41",
+    "recorded-date": "10-04-2024, 09:00:19",
     "recorded-content": {
       "create_response_s3": {
         "Architectures": [
@@ -1424,7 +1424,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_version_on_create": {
-    "recorded-date": "05-04-2024, 08:09:59",
+    "recorded-date": "10-04-2024, 09:12:04",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -1806,7 +1806,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_version_lifecycle": {
-    "recorded-date": "05-04-2024, 08:10:06",
+    "recorded-date": "10-04-2024, 09:12:12",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2567,7 +2567,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_with_wrong_sha256": {
-    "recorded-date": "05-04-2024, 08:10:09",
+    "recorded-date": "10-04-2024, 09:12:15",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2717,7 +2717,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaVersions::test_publish_with_update": {
-    "recorded-date": "05-04-2024, 08:10:12",
+    "recorded-date": "10-04-2024, 09:12:18",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -2955,7 +2955,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_lifecycle": {
-    "recorded-date": "05-04-2024, 08:10:21",
+    "recorded-date": "10-04-2024, 09:12:28",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3547,7 +3547,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_notfound_and_invalid_routingconfigs": {
-    "recorded-date": "05-04-2024, 08:10:34",
+    "recorded-date": "10-04-2024, 09:12:41",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -3857,7 +3857,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_create_tag_on_fn_create": {
-    "recorded-date": "05-04-2024, 08:10:58",
+    "recorded-date": "10-04-2024, 09:13:05",
     "recorded-content": {
       "get_function_result": {
         "Code": {
@@ -3925,7 +3925,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_lifecycle": {
-    "recorded-date": "05-04-2024, 08:11:04",
+    "recorded-date": "10-04-2024, 09:13:10",
     "recorded-content": {
       "tag_single_response": {
         "ResponseMetadata": {
@@ -4040,7 +4040,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTag::test_tag_nonexisting_resource": {
-    "recorded-date": "05-04-2024, 08:11:07",
+    "recorded-date": "10-04-2024, 09:13:14",
     "recorded-content": {
       "pre_delete_get_function": {
         "Code": {
@@ -4132,7 +4132,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_exceptions": {
-    "recorded-date": "05-04-2024, 08:11:51",
+    "recorded-date": "10-04-2024, 09:13:39",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -4793,7 +4793,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_exceptions": {
-    "recorded-date": "05-04-2024, 08:11:54",
+    "recorded-date": "10-04-2024, 09:13:44",
     "recorded-content": {
       "put_function_concurrency_with_function_name_doesnotexist": {
         "Error": {
@@ -4834,7 +4834,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency": {
-    "recorded-date": "05-04-2024, 08:12:02",
+    "recorded-date": "10-04-2024, 09:13:51",
     "recorded-content": {
       "put_function_concurrency_with_reserved_0": {
         "ReservedConcurrentExecutions": 0,
@@ -4872,7 +4872,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_aws": {
-    "recorded-date": "05-04-2024, 08:14:35",
+    "recorded-date": "10-04-2024, 09:16:23",
     "recorded-content": {
       "create_lambda": {
         "CreateEventSourceMappingResponse": null,
@@ -4973,7 +4973,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_remove_multi_permissions": {
-    "recorded-date": "05-04-2024, 08:14:49",
+    "recorded-date": "10-04-2024, 09:16:38",
     "recorded-content": {
       "add_permission_1": {
         "Statement": {
@@ -5117,7 +5117,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_create_multiple_lambda_permissions": {
-    "recorded-date": "05-04-2024, 08:14:53",
+    "recorded-date": "10-04-2024, 09:16:41",
     "recorded-content": {
       "add_permission_response_1": {
         "Statement": {
@@ -5183,7 +5183,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_lifecycle": {
-    "recorded-date": "05-04-2024, 08:15:11",
+    "recorded-date": "10-04-2024, 09:17:00",
     "recorded-content": {
       "url_creation": {
         "AuthType": "NONE",
@@ -5262,7 +5262,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_lambda": {
-    "recorded-date": "05-04-2024, 08:16:34",
+    "recorded-date": "10-04-2024, 09:18:29",
     "recorded-content": {
       "create_function_large_zip": {
         "Architectures": [
@@ -5310,7 +5310,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_variables_fails": {
-    "recorded-date": "05-04-2024, 08:16:51",
+    "recorded-date": "10-04-2024, 09:18:46",
     "recorded-content": {
       "failed_create_fn_result": {
         "Error": {
@@ -5327,7 +5327,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_large_environment_fails_multiple_keys": {
-    "recorded-date": "05-04-2024, 08:17:09",
+    "recorded-date": "10-04-2024, 09:19:04",
     "recorded-content": {
       "failured_create_fn_result_multi_key": {
         "Error": {
@@ -5344,7 +5344,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_lambda_envvars_near_limit_succeeds": {
-    "recorded-date": "05-04-2024, 08:17:12",
+    "recorded-date": "10-04-2024, 09:19:07",
     "recorded-content": {
       "successful_create_fn_result": {
         "CreateEventSourceMappingResponse": null,
@@ -5400,7 +5400,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestCodeSigningConfig::test_function_code_signing_config": {
-    "recorded-date": "10-04-2024, 08:01:32",
+    "recorded-date": "10-04-2024, 09:19:11",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -5516,7 +5516,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestCodeSigningConfig::test_code_signing_not_found_excs": {
-    "recorded-date": "05-04-2024, 08:17:22",
+    "recorded-date": "10-04-2024, 09:19:16",
     "recorded-content": {
       "create_code_signing_config": {
         "CodeSigningConfig": {
@@ -5695,7 +5695,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings": {
-    "recorded-date": "05-04-2024, 08:17:22",
+    "recorded-date": "10-04-2024, 09:19:17",
     "recorded-content": {
       "acc_settings_modded": {
         "AccountLimit": [
@@ -5717,7 +5717,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_exceptions": {
-    "recorded-date": "05-04-2024, 08:17:41",
+    "recorded-date": "10-04-2024, 09:19:37",
     "recorded-content": {
       "get_unknown_uuid": {
         "Error": {
@@ -5782,7 +5782,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "recorded-date": "05-04-2024, 08:17:56",
+    "recorded-date": "10-04-2024, 09:19:52",
     "recorded-content": {
       "update_table_response": {
         "TableDescription": {
@@ -5911,7 +5911,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_exceptions": {
-    "recorded-date": "05-04-2024, 08:19:47",
+    "recorded-date": "10-04-2024, 09:22:07",
     "recorded-content": {
       "tag_lambda_invalidarn": {
         "Error": {
@@ -5985,7 +5985,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_limits": {
-    "recorded-date": "05-04-2024, 08:19:51",
+    "recorded-date": "10-04-2024, 09:22:11",
     "recorded-content": {
       "tag_lambda_too_many_tags": {
         "Error": {
@@ -6181,7 +6181,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_lifecycle": {
-    "recorded-date": "05-04-2024, 08:20:01",
+    "recorded-date": "10-04-2024, 09:22:20",
     "recorded-content": {
       "list_tags_response_postfncreate": {
         "Tags": {
@@ -6540,7 +6540,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_exceptions": {
-    "recorded-date": "05-04-2024, 08:12:08",
+    "recorded-date": "10-04-2024, 09:13:57",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -6793,7 +6793,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_lambda_provisioned_lifecycle": {
-    "recorded-date": "05-04-2024, 08:14:26",
+    "recorded-date": "10-04-2024, 09:16:15",
     "recorded-content": {
       "publish_version_result": {
         "Architectures": [
@@ -6943,7 +6943,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_request_create_lambda": {
-    "recorded-date": "05-04-2024, 08:15:23",
+    "recorded-date": "10-04-2024, 09:17:14",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -6958,7 +6958,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaTags::test_tag_versions": {
-    "recorded-date": "05-04-2024, 08:19:55",
+    "recorded-date": "10-04-2024, 09:22:14",
     "recorded-content": {
       "tag_resource_exception": {
         "Error": {
@@ -6987,7 +6987,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_list_paging": {
-    "recorded-date": "05-04-2024, 08:15:07",
+    "recorded-date": "10-04-2024, 09:16:55",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -7111,7 +7111,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaUrl::test_url_config_exceptions": {
-    "recorded-date": "05-04-2024, 08:15:02",
+    "recorded-date": "10-04-2024, 09:16:50",
     "recorded-content": {
       "fn_version_result": {
         "Architectures": [
@@ -7549,7 +7549,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_permission_exceptions": {
-    "recorded-date": "05-04-2024, 08:14:30",
+    "recorded-date": "10-04-2024, 09:16:20",
     "recorded-content": {
       "add_permission_invalid_statement_id": {
         "Error": {
@@ -7730,7 +7730,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_unzipped_lambda": {
-    "recorded-date": "05-04-2024, 08:15:59",
+    "recorded-date": "10-04-2024, 09:17:47",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -7747,7 +7747,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "05-04-2024, 07:58:48",
+    "recorded-date": "10-04-2024, 09:00:26",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7819,7 +7819,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_update_lambda_exceptions": {
-    "recorded-date": "05-04-2024, 07:58:51",
+    "recorded-date": "10-04-2024, 09:00:29",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7858,7 +7858,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_list_functions": {
-    "recorded-date": "05-04-2024, 07:59:04",
+    "recorded-date": "10-04-2024, 09:00:42",
     "recorded-content": {
       "create_response_1": {
         "CreateEventSourceMappingResponse": null,
@@ -8159,7 +8159,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "recorded-date": "05-04-2024, 08:20:20",
+    "recorded-date": "10-04-2024, 09:22:40",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8357,7 +8357,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_lifecycle": {
-    "recorded-date": "05-04-2024, 08:21:55",
+    "recorded-date": "10-04-2024, 09:24:17",
     "recorded-content": {
       "get_fn_result": {
         "Code": {
@@ -8781,7 +8781,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_policy_exceptions": {
-    "recorded-date": "05-04-2024, 08:22:08",
+    "recorded-date": "10-04-2024, 09:24:29",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8964,7 +8964,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_policy_lifecycle": {
-    "recorded-date": "05-04-2024, 08:22:11",
+    "recorded-date": "10-04-2024, 09:24:35",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -9092,7 +9092,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_s3_content": {
-    "recorded-date": "05-04-2024, 08:22:02",
+    "recorded-date": "10-04-2024, 09:24:23",
     "recorded-content": {
       "publish_layer_result": {
         "Content": {
@@ -9113,7 +9113,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_function_exceptions": {
-    "recorded-date": "05-04-2024, 08:20:55",
+    "recorded-date": "10-04-2024, 09:23:19",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -9311,7 +9311,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_image_crud": {
-    "recorded-date": "05-04-2024, 08:08:19",
+    "recorded-date": "10-04-2024, 09:10:21",
     "recorded-content": {
       "create-image-response": {
         "Architectures": [
@@ -9597,7 +9597,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_image_and_image_config_crud": {
-    "recorded-date": "05-04-2024, 08:09:10",
+    "recorded-date": "10-04-2024, 09:11:14",
     "recorded-content": {
       "create-image-with-config-response": {
         "Architectures": [
@@ -10069,7 +10069,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_zip_file_to_image": {
-    "recorded-date": "05-04-2024, 08:08:34",
+    "recorded-date": "10-04-2024, 09:10:38",
     "recorded-content": {
       "create-image-response": {
         "Architectures": [
@@ -10309,7 +10309,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size": {
-    "recorded-date": "05-04-2024, 08:17:33",
+    "recorded-date": "10-04-2024, 09:19:29",
     "recorded-content": {
       "total_code_size_diff_create_function": 276,
       "total_code_size_diff_update_function": 276,
@@ -10318,7 +10318,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAccountSettings::test_account_settings_total_code_size_config_update": {
-    "recorded-date": "05-04-2024, 08:17:38",
+    "recorded-date": "10-04-2024, 09:19:35",
     "recorded-content": {
       "is_total_code_size_diff_create_function_more_than_200": true,
       "total_code_size_diff_update_function_configuration": 0,
@@ -10326,7 +10326,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventInvokeConfig::test_lambda_eventinvokeconfig_lifecycle": {
-    "recorded-date": "05-04-2024, 08:11:28",
+    "recorded-date": "10-04-2024, 09:13:21",
     "recorded-content": {
       "put_invokeconfig_retries_0": {
         "DestinationConfig": {
@@ -10693,7 +10693,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_add_lambda_permission_fields": {
-    "recorded-date": "05-04-2024, 08:14:45",
+    "recorded-date": "10-04-2024, 09:16:33",
     "recorded-content": {
       "add_permission_principal_wildcard": {
         "Statement": {
@@ -10812,7 +10812,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaPermissions::test_lambda_permission_fn_versioning": {
-    "recorded-date": "05-04-2024, 08:14:40",
+    "recorded-date": "10-04-2024, 09:16:29",
     "recorded-content": {
       "add_permission": {
         "Statement": {
@@ -11453,7 +11453,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_basic": {
-    "recorded-date": "05-04-2024, 08:10:46",
+    "recorded-date": "10-04-2024, 09:12:53",
     "recorded-content": {
       "create_function_response_rev1": {
         "CreateEventSourceMappingResponse": null,
@@ -11778,7 +11778,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_version_and_alias": {
-    "recorded-date": "05-04-2024, 08:10:51",
+    "recorded-date": "10-04-2024, 09:12:58",
     "recorded-content": {
       "create_function_response_rev1": {
         "CreateEventSourceMappingResponse": null,
@@ -12178,7 +12178,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaRevisions::test_function_revisions_permissions": {
-    "recorded-date": "05-04-2024, 08:10:55",
+    "recorded-date": "10-04-2024, 09:13:02",
     "recorded-content": {
       "add_permission_revision_exception": {
         "Error": {
@@ -12250,7 +12250,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_function_quota_exception": {
-    "recorded-date": "05-04-2024, 08:21:35",
+    "recorded-date": "10-04-2024, 09:23:59",
     "recorded-content": {
       "create_function_with_six_layers": {
         "Error": {
@@ -12267,7 +12267,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_create_event_source_validation": {
-    "recorded-date": "05-04-2024, 08:19:43",
+    "recorded-date": "10-04-2024, 09:22:02",
     "recorded-content": {
       "error": {
         "Error": {
@@ -12284,7 +12284,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_exceptions": {
-    "recorded-date": "05-04-2024, 08:29:03",
+    "recorded-date": "10-04-2024, 09:30:32",
     "recorded-content": {
       "create_function_unsupported_snapstart_runtime": {
         "Error": {
@@ -12311,7 +12311,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaImages::test_lambda_image_versions": {
-    "recorded-date": "05-04-2024, 08:09:46",
+    "recorded-date": "10-04-2024, 09:11:51",
     "recorded-content": {
       "create_image_response": {
         "Architectures": [
@@ -12770,7 +12770,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java11]": {
-    "recorded-date": "05-04-2024, 08:24:07",
+    "recorded-date": "10-04-2024, 09:26:29",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -12926,7 +12926,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java17]": {
-    "recorded-date": "05-04-2024, 08:26:08",
+    "recorded-date": "10-04-2024, 09:28:30",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -13175,7 +13175,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java17]": {
-    "recorded-date": "05-04-2024, 08:29:03",
+    "recorded-date": "10-04-2024, 09:30:32",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -13276,7 +13276,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_vpc_config": {
-    "recorded-date": "05-04-2024, 08:07:23",
+    "recorded-date": "10-04-2024, 09:09:00",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -13670,7 +13670,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "recorded-date": "05-04-2024, 08:20:05",
+    "recorded-date": "10-04-2024, 09:22:25",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13711,7 +13711,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "recorded-date": "05-04-2024, 08:20:09",
+    "recorded-date": "10-04-2024, 09:22:29",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13749,7 +13749,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaProvisionedConcurrency::test_provisioned_concurrency_limits": {
-    "recorded-date": "05-04-2024, 08:12:11",
+    "recorded-date": "10-04-2024, 09:14:00",
     "recorded-content": {
       "put_provisioned_concurrency_account_limit_exceeded": {
         "Error": {
@@ -13776,7 +13776,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaReservedConcurrency::test_function_concurrency_limits": {
-    "recorded-date": "05-04-2024, 08:11:57",
+    "recorded-date": "10-04-2024, 09:13:47",
     "recorded-content": {
       "put_function_concurrency_account_limit_exceeded": {
         "Error": {
@@ -13803,7 +13803,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java21]": {
-    "recorded-date": "05-04-2024, 08:28:23",
+    "recorded-date": "10-04-2024, 09:30:25",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -13959,7 +13959,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSizeLimits::test_oversized_zipped_create_lambda": {
-    "recorded-date": "05-04-2024, 08:15:35",
+    "recorded-date": "10-04-2024, 09:17:26",
     "recorded-content": {
       "invalid_param_exc": {
         "Error": {
@@ -13974,7 +13974,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_arns": {
-    "recorded-date": "05-04-2024, 07:58:47",
+    "recorded-date": "10-04-2024, 09:00:25",
     "recorded-content": {
       "create-function-arn-response": {
         "CreateEventSourceMappingResponse": null,
@@ -14131,7 +14131,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_function_name_variations": {
-    "recorded-date": "05-04-2024, 08:19:27",
+    "recorded-date": "10-04-2024, 09:21:48",
     "recorded-content": {
       "name_only_create_esm": {
         "BatchSize": 10,
@@ -14241,7 +14241,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaAlias::test_alias_naming": {
-    "recorded-date": "05-04-2024, 08:10:38",
+    "recorded-date": "10-04-2024, 09:12:45",
     "recorded-content": {
       "create_response": {
         "Architectures": [
@@ -14373,7 +14373,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_invalid_invoke": {
-    "recorded-date": "05-04-2024, 08:07:24",
+    "recorded-date": "10-04-2024, 09:09:00",
     "recorded-content": {
       "invoke_function_name_pattern_exc": {
         "Error": {
@@ -14636,7 +14636,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_advanced_logging_configuration": {
-    "recorded-date": "05-04-2024, 07:57:37",
+    "recorded-date": "10-04-2024, 08:59:15",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -14882,7 +14882,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_partial_advanced_logging_configuration_update[partial_config0]": {
-    "recorded-date": "05-04-2024, 07:57:16",
+    "recorded-date": "10-04-2024, 08:58:53",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -15128,7 +15128,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_partial_advanced_logging_configuration_update[partial_config1]": {
-    "recorded-date": "05-04-2024, 07:57:21",
+    "recorded-date": "10-04-2024, 08:58:59",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -15374,7 +15374,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_partial_advanced_logging_configuration_update[partial_config2]": {
-    "recorded-date": "05-04-2024, 07:57:26",
+    "recorded-date": "10-04-2024, 08:59:04",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -15620,7 +15620,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_function_partial_advanced_logging_configuration_update[partial_config3]": {
-    "recorded-date": "05-04-2024, 07:57:31",
+    "recorded-date": "10-04-2024, 08:59:10",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -15862,7 +15862,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_advance_logging_configuration_format_switch": {
-    "recorded-date": "05-04-2024, 07:57:10",
+    "recorded-date": "10-04-2024, 08:58:48",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -16200,7 +16200,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java21]": {
-    "recorded-date": "05-04-2024, 08:28:42",
+    "recorded-date": "10-04-2024, 09:30:28",
     "recorded-content": {
       "create_function_response": {
         "CreateEventSourceMappingResponse": null,
@@ -16296,6 +16296,132 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_concurrent_code_updates": {
+    "recorded-date": "10-04-2024, 09:09:04",
+    "recorded-content": {
+      "create-function-response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "handler.handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 128,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+        "Runtime": "python3.12",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 3,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-during-in-progress-update-exc": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "The operation cannot be performed at this time. An update is in progress for resource: arn:aws:lambda:<region>:111111111111:function:<function-name:1>"
+        },
+        "Type": "User",
+        "message": "The operation cannot be performed at this time. An update is in progress for resource: arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_concurrent_config_updates": {
+    "recorded-date": "10-04-2024, 09:09:09",
+    "recorded-content": {
+      "create-function-response": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:1>",
+          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.12",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "update-during-in-progress-update-exc": {
+        "Error": {
+          "Code": "ResourceConflictException",
+          "Message": "The operation cannot be performed at this time. An update is in progress for resource: arn:aws:lambda:<region>:111111111111:function:<function-name:1>"
+        },
+        "Type": "User",
+        "message": "The operation cannot be performed at this time. An update is in progress for resource: arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
         }
       }
     }
