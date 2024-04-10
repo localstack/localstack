@@ -47,7 +47,7 @@
     }
   },
   "tests/aws/services/route53/test_route53.py::TestRoute53::test_create_private_hosted_zone": {
-    "recorded-date": "15-12-2023, 15:20:07",
+    "recorded-date": "10-04-2024, 15:57:46",
     "recorded-content": {
       "create-hosted-zone-response": {
         "ChangeInfo": {
@@ -92,6 +92,22 @@
             "VPCRegion": "<region>"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_hosted_zones_by_vpc": {
+        "HostedZoneSummaries": [
+          {
+            "HostedZoneId": "<zone-id:1>",
+            "Name": "<zone_name:1>",
+            "Owner": {
+              "OwningAccount": "111111111111"
+            }
+          }
+        ],
+        "MaxItems": "100",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

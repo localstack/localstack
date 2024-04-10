@@ -49,7 +49,13 @@ class TestRoute53:
         assert "NoSuchHealthCheck" in str(ctx.value)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..HostedZone.CallerReference"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..HostedZone.CallerReference",
+            # moto does not return MaxItems for list_hosted_zones_by_vpc
+            "$..MaxItems",
+        ]
+    )
     def test_create_private_hosted_zone(
         self, region_name, aws_client, cleanups, snapshot, hosted_zone
     ):
@@ -75,6 +81,9 @@ class TestRoute53:
 
         response = aws_client.route53.get_hosted_zone(Id=zone_id)
         snapshot.match("get_hosted_zone", response)
+
+        response = aws_client.route53.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=region_name)
+        snapshot.match("list_hosted_zones_by_vpc", response)
 
     @markers.aws.unknown
     def test_associate_vpc_with_hosted_zone(
