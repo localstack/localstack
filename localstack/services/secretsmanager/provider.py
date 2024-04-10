@@ -21,7 +21,12 @@ from moto.secretsmanager.exceptions import (
 from moto.secretsmanager.exceptions import (
     SecretHasNoValueException as MotoSecretHasNoValueException,
 )
-from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecretNotFoundException
+from moto.secretsmanager.exceptions import (
+    SecretNotFoundException as MotoSecretNotFoundException,
+)
+from moto.secretsmanager.exceptions import (
+    SecretStageVersionMismatchException as MotoSecretStageVersionMismatchException,
+)
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
 
@@ -213,8 +218,10 @@ class SecretsmanagerProvider(SecretsmanagerApi):
             )
         except MotoInvalidParameterException as e:
             raise InvalidParameterException(str(e))
-        except MotoInvalidRequestException as e:
-            raise InvalidRequestException(str(e))
+        except MotoInvalidRequestException:
+            raise InvalidRequestException(
+                "You tried to perform the operation on a secret that's currently marked deleted."
+            )
         except MotoSecretNotFoundException:
             raise SecretNotFoundException()
         return DeleteSecretResponse(ARN=arn, Name=name, DeletionDate=deletion_date)
@@ -254,9 +261,21 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         self._raise_if_default_kms_key(secret_id, context, backend)
         try:
             response = backend.get_secret_value(secret_id, version_id, version_stage)
+        except MotoSecretNotFoundException:
+            raise ResourceNotFoundException(
+                f"Secrets Manager can't find the specified secret value for staging label: {version_stage}"
+            )
+        except MotoSecretStageVersionMismatchException:
+            raise InvalidRequestException(
+                "You provided a VersionStage that is not associated to the provided VersionId."
+            )
         except MotoSecretHasNoValueException:
             raise ResourceNotFoundException(
                 f"Secrets Manager can't find the specified secret value for staging label: {version_stage}"
+            )
+        except MotoInvalidRequestException:
+            raise InvalidRequestException(
+                "You can't perform this operation on the secret because it was marked for deletion."
             )
         return GetSecretValueResponse(**response)
 

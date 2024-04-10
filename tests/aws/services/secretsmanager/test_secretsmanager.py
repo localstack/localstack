@@ -2337,6 +2337,33 @@ class TestSecretsManager:
         describe_secret_6 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
         sm_snapshot.match("describe_secret_6", describe_secret_6)
 
+    @markers.aws.validated
+    def test_get_secret_value_errors(self, aws_client, create_secret, sm_snapshot):
+        secret_name = short_uid()
+        response = create_secret(
+            Name=secret_name,
+            SecretString="test",
+        )
+        version_id = response["VersionId"]
+
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
+        )
+
+        secret_arn = response["ARN"]
+
+        with pytest.raises(Exception) as ex:
+            aws_client.secretsmanager.get_secret_value(
+                SecretId=secret_arn, VersionStage="AWSPREVIOUS"
+            )
+        sm_snapshot.match("error_get_secret_value_non_existing", ex.value.response)
+
+        with pytest.raises(Exception) as exc:
+            aws_client.secretsmanager.get_secret_value(
+                SecretId=secret_name, VersionId=version_id, VersionStage="AWSPREVIOUS"
+            )
+        sm_snapshot.match("mismatch_version_id_and_stage", exc.value.response)
+
 
 class TestSecretsManagerMultiAccounts:
     @markers.aws.validated
