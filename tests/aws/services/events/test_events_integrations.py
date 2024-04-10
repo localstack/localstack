@@ -20,7 +20,6 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_sqs(put_events_with_filter_to_sqs):
     entries = [
         {

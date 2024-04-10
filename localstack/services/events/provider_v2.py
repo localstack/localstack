@@ -10,6 +10,7 @@ from localstack.aws.api.events import (
     CreateEventBusResponse,
     DescribeEventBusResponse,
     DescribeRuleResponse,
+    EndpointId,
     EventBusList,
     EventBusName,
     EventBusNameOrArn,
@@ -23,6 +24,10 @@ from localstack.aws.api.events import (
     ListRulesResponse,
     ListTargetsByRuleResponse,
     NextToken,
+    PutEventsRequestEntryList,
+    PutEventsResponse,
+    PutPartnerEventsRequestEntryList,
+    PutPartnerEventsResponse,
     PutRuleResponse,
     PutTargetsResponse,
     RemoveTargetsResponse,
@@ -321,8 +326,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule_worker = self.get_rule_worker(context, rule, event_bus_name)
         failed_entries = rule_worker.validate_targets_input(targets)
         rule_worker.add_targets(targets)
+        rule_arn = rule_worker.arn
         for target in targets:
-            target_worker = TargetWorkerFactory(region, account_id, target).get_target_worker()
+            target_worker = TargetWorkerFactory(
+                region, account_id, target, rule_arn
+            ).get_target_worker()
             self._target_workers[target_worker.arn] = target_worker
         return {"FailedEntries": failed_entries, "FailedEntryCount": len(failed_entries)}
 
@@ -372,6 +380,27 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if next_token is not None:
             response["NextToken"] = next_token
         return response
+
+    ########
+    # Events
+    ########
+
+    @handler("PutEvents")
+    def put_events(
+        self,
+        context: RequestContext,
+        entries: PutEventsRequestEntryList,
+        endpoint_id: EndpointId = None,
+        **kwargs,
+    ) -> PutEventsResponse:
+        failed_entries = self._put_entries(context, entries)
+        return {"FailedEntries": failed_entries, "FailedEntryCount": len(failed_entries)}
+
+    @handler("PutPartnerEvents")
+    def put_partner_events(
+        self, context: RequestContext, entries: PutPartnerEventsRequestEntryList, **kwargs
+    ) -> PutPartnerEventsResponse:
+        raise NotImplementedError
 
     def get_store(self, context: RequestContext) -> EventsStore:
         region = context.region
@@ -498,3 +527,26 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     del self._target_workers[target_arn]
                 except KeyError:
                     LOG.error(f"Error deleting target worker {target_arn}.")
+
+    def _put_entries(self, context: RequestContext, entries: PutEventsRequestEntryList) -> list:
+        failed_entries = []
+        for event in entries:
+            event_bus_name = event.get("EventBusName", "default")
+            store = self.get_store(context)
+            event_bus = self.get_event_bus(event_bus_name, store)
+            # TODO add pattern matching
+            matching_rules = [rule for rule in event_bus.rules.values()]
+            for rule in matching_rules:
+                for target in rule.targets.values():
+                    target_worker = self._target_workers[target["Arn"]]
+                    try:
+                        target_worker.send_event(event)
+                    except Exception as error:
+                        failed_entries.append(
+                            {
+                                "Entry": event,
+                                "ErrorCode": "InternalException",
+                                "ErrorMessage": str(error),
+                            }
+                        )
+        return failed_entries
