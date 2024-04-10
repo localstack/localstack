@@ -37,6 +37,7 @@ from localstack.aws.api.events import (
     TagList,
     Target,
     TargetArn,
+    TargetId,
     TargetIdList,
     TargetList,
 )
@@ -52,6 +53,7 @@ from localstack.services.events.models_v2 import (
     events_store,
 )
 from localstack.services.events.rule import RuleWorker, RuleWorkerDict
+from localstack.services.events.target import TargetWorker, TargetWorkerFactory
 from localstack.services.plugins import ServiceLifecycleHook
 
 LOG = logging.getLogger(__name__)
@@ -61,6 +63,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def __init__(self):
         self._event_bus_workers: EventBusWorkerDict = {}
         self._rule_workers: RuleWorkerDict = {}
+        self._target_workers: TargetWorker = {}
 
     ##########
     # EventBus
@@ -313,10 +316,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name: EventBusNameOrArn = None,
         **kwargs,
     ) -> PutTargetsResponse:
+        region = context.region
+        account_id = context.account_id
         rule_worker = self.get_rule_worker(context, rule, event_bus_name)
         failed_entries = rule_worker.validate_targets_input(targets)
         rule_worker.add_targets(targets)
-        # TODO get target worker and add
+        for target in targets:
+            target_worker = TargetWorkerFactory(region, account_id, target).get_target_worker()
+            self._target_workers[target_worker.arn] = target_worker
         return {"FailedEntries": failed_entries, "FailedEntryCount": len(failed_entries)}
 
     @handler("RemoveTargets")
@@ -331,7 +338,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> RemoveTargetsResponse:
         rule_worker = self.get_rule_worker(context, rule, event_bus_name)
         failed_entries = rule_worker.remove_targets(ids)
-        # TODO remove target worker
+        self._delete_target_workers(ids, rule_worker.rule)
         return {"FailedEntries": failed_entries, "FailedEntryCount": len(failed_entries)}
 
     @handler("ListTargetsByRule")
@@ -348,6 +355,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule, event_bus)
+        # TODO add limit and next token
         return {"Targets": list(rule.targets.values())}
 
     def get_store(self, context: RequestContext) -> EventsStore:
@@ -372,9 +380,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             return rule
         raise ResourceNotFoundException(f"Rule {name} does not exist on EventBus {event_bus.name}.")
 
-    def get_target(self, target_arn: TargetArn) -> Target:
-        # TODO implement
-        pass
+    def get_target(self, target_id: TargetId, rule: Rule) -> Target:
+        if target := rule.targets.get(target_id):
+            return target
+        raise ResourceNotFoundException(f"Target {target_id} does not exist on Rule {rule.name}.")
 
     def get_rule_worker(
         self, context: RequestContext, rule: RuleName, event_bus_name: EventBusName
@@ -463,3 +472,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def _rule_dict_to_list(self, rules: RuleDict) -> RuleResponseList:
         rule_list = [self._rule_dict_to_api_type_rule(rule) for rule in rules.values()]
         return rule_list
+
+    def _delete_target_workers(self, ids: TargetIdList | TargetId, rule) -> None:
+        if isinstance(ids, TargetId):
+            ids = [ids]
+        for target_id in ids:
+            if target := rule.targets.get(target_id):
+                target_arn = target["Arn"]
+                try:
+                    del self._target_workers[target_arn]
+                except KeyError:
+                    LOG.error(f"Error deleting target worker {target_arn}.")
