@@ -11495,7 +11495,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
-    "recorded-date": "10-04-2024, 11:55:12",
+    "recorded-date": "10-04-2024, 12:05:22",
     "recorded-content": {
       "invalid-condition-eq": {
         "Error": {
@@ -11504,37 +11504,48 @@
           "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"http://localhost.test/random\"]",
           "RequestId": "<request-id:1>"
         }
-      },
-      "invalid-condition-missing-prefix": {
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_starts_with": {
+    "recorded-date": "10-04-2024, 12:16:01",
+    "recorded-content": {
+      "invalid-condition-starts-with": {
         "Error": {
           "Code": "AccessDenied",
           "HostId": "<host-id>",
-          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"success_action_redirect\", \"http://localhost.test/random\"]",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"starts-with\", \"$success_action_redirect\", \"http://localhost\"]",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "invalid-condition-starts-with-casing": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"starts-with\", \"$success_action_redirect\", \"http://localhost\"]",
           "RequestId": "<request-id:2>"
         }
       },
-      "invalid-condition-wrong-condition": {
-        "Error": {
-          "Code": "InvalidPolicyDocument",
-          "HostId": "<host-id>",
-          "Message": "Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
-          "RequestId": "<request-id:3>"
-        }
-      },
-      "invalid-condition-wrong-value-casing": {
-        "Error": {
-          "Code": "AccessDenied",
-          "HostId": "<host-id>",
-          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"HTTP://wrong.location/test\"]",
-          "RequestId": "<request-id:4>"
-        }
-      },
-      "final-object": {
+      "get-object-1": {
         "AcceptRanges": "bytes",
-        "Body": "aaaaaaaaaaaa",
-        "ContentLength": 12,
+        "Body": "abcdef",
+        "ContentLength": 6,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"45e4812014d83dde5666ebdf5a8ed1ed\"",
+        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-2": {
+        "AcceptRanges": "bytes",
+        "Body": "manual value to change ETag",
+        "ContentLength": 27,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"365cb4550a52593ad95c6b31242d7418\"",
         "LastModified": "datetime",
         "Metadata": {},
         "ServerSideEncryption": "AES256",

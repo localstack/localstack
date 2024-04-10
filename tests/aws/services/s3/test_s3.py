@@ -9969,6 +9969,26 @@ class TestS3BucketReplication:
 
 
 class TestS3PresignedPost:
+    DEFAULT_FILE_VALUE = "abcdef"
+
+    def post_generated_presigned_post_with_default_file(
+        self, generated_request: dict
+    ) -> requests.Response:
+        return requests.post(
+            generated_request["url"],
+            data=generated_request["fields"],
+            files={"file": self.DEFAULT_FILE_VALUE},
+            verify=False,
+            allow_redirects=False,
+        )
+
+    @staticmethod
+    def parse_response_xml(content: bytes) -> dict:
+        if not is_aws_cloud():
+            # AWS use double quotes in error messages and LocalStack uses single. Try to unify before snapshotting
+            content = content.replace(b"'", b'"')
+        return xmltodict.parse(content)
+
     @markers.aws.validated
     @pytest.mark.xfail(
         reason="failing sporadically with new HTTP gateway (only in CI)",
@@ -10568,21 +10588,6 @@ class TestS3PresignedPost:
         )
         object_key = "validate-policy-1"
 
-        def post_generated_presigned_post(generated_request: dict) -> requests.Response:
-            return requests.post(
-                generated_request["url"],
-                data=generated_request["fields"],
-                files={"file": "a" * 12},
-                verify=False,
-                allow_redirects=False,
-            )
-
-        def parse_response_xml(content: bytes) -> dict:
-            if not is_aws_cloud():
-                # AWS use double quotes in error messages and LocalStack uses single. Try to unify before snapshotting
-                content = content.replace(b"'", b'"')
-            return xmltodict.parse(content)
-
         redirect_location = "http://localhost.test/random"
         presigned_request = aws_client.s3.generate_presigned_post(
             Bucket=s3_bucket,
@@ -10596,11 +10601,11 @@ class TestS3PresignedPost:
 
         # PostObject with a wrong redirect location
         presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
-        response = post_generated_presigned_post(presigned_request)
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
 
         # assert that it's rejected
         assert response.status_code == 403
-        resp_content = parse_response_xml(response.content)
+        resp_content = self.parse_response_xml(response.content)
         snapshot.match("invalid-condition-eq", resp_content)
 
         # PostObject with a wrong condition (missing $ prefix)
@@ -10614,11 +10619,11 @@ class TestS3PresignedPost:
             ExpiresIn=60,
         )
 
-        response = post_generated_presigned_post(presigned_request)
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
 
         # assert that it's rejected
         assert response.status_code == 403
-        resp_content = parse_response_xml(response.content)
+        resp_content = self.parse_response_xml(response.content)
         snapshot.match("invalid-condition-missing-prefix", resp_content)
 
         # PostObject with a wrong condition (multiple condition in one dict)
@@ -10632,11 +10637,11 @@ class TestS3PresignedPost:
             ExpiresIn=60,
         )
 
-        response = post_generated_presigned_post(presigned_request)
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
 
         # assert that it's rejected
         assert response.status_code == 400
-        resp_content = parse_response_xml(response.content)
+        resp_content = self.parse_response_xml(response.content)
         snapshot.match("invalid-condition-wrong-condition", resp_content)
 
         # PostObject with a wrong condition value casing
@@ -10649,10 +10654,10 @@ class TestS3PresignedPost:
             ],
             ExpiresIn=60,
         )
-        response = post_generated_presigned_post(presigned_request)
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
         # assert that it's rejected
         assert response.status_code == 403
-        resp_content = parse_response_xml(response.content)
+        resp_content = self.parse_response_xml(response.content)
         snapshot.match("invalid-condition-wrong-value-casing", resp_content)
 
         # PostObject with a wrong condition key casing, should still work
@@ -10677,40 +10682,111 @@ class TestS3PresignedPost:
         ][0]
         assert eq_condition[1] == "$success_Action_REDIRECT"
 
-        response = post_generated_presigned_post(presigned_request)
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
         # assert that it's accepted
         assert response.status_code == 303
 
         final_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("final-object", final_object)
 
-        # presigned_request = aws_client.s3.generate_presigned_post(
-        #     Bucket=s3_bucket,
-        #     Key=object_key,
-        #     Fields={"success_action_redirect": redirect_location},
-        #     Conditions=[
-        #         [
-        #             "starts-with",
-        #             "$success_action_redirect",
-        #             "",
-        #         ],  # this allows to accept anything for it
-        #     ],
-        #     ExpiresIn=60,
-        # )
-        #
-        # # PostObject with a different redirect location, but should be accepted
-        # presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
-        # response = requests.post(
-        #     presigned_request["url"],
-        #     data=presigned_request["fields"],
-        #     files={"file": "a" * 12},
-        #     verify=False,
-        #     allow_redirects=False,
-        # )
-        #
-        # # assert that it's accepted
-        # assert response.status_code == 303
-        # assert response.headers["Location"].startswith("http://wrong.location/test")
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: wrong exception implement, still missing the extra input fields validation
+            "$.invalid-condition-missing-prefix.Error.Message",
+            # TODO: we should add HostId to every serialized exception for S3, and not have them as part as the spec
+            "$.invalid-condition-wrong-condition.Error.HostId",
+        ],
+    )
+    @markers.aws.validated
+    def test_post_object_policy_conditions_validation_starts_with(
+        self, s3_bucket, aws_client, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "HostId", reference_replacement=False, value_replacement="<host-id>"
+                ),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        object_key = "validate-policy-2"
+
+        redirect_location = "http://localhost.test/random"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                ["starts-with", "$success_action_redirect", "http://localhost"],
+            ],
+            ExpiresIn=60,
+        )
+
+        # PostObject with a wrong redirect location start
+        presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+
+        # assert that it's rejected
+        assert response.status_code == 403
+        resp_content = self.parse_response_xml(response.content)
+        snapshot.match("invalid-condition-starts-with", resp_content)
+
+        # PostObject with a right redirect location start but wrong casing
+        presigned_request["fields"]["success_action_redirect"] = "HTTP://localhost.test/random"
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+
+        # assert that it's rejected
+        assert response.status_code == 403
+        resp_content = self.parse_response_xml(response.content)
+        snapshot.match("invalid-condition-starts-with-casing", resp_content)
+
+        # PostObject with a right redirect location start
+        presigned_request["fields"]["success_action_redirect"] = redirect_location
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+
+        # assert that it's accepted
+        assert response.status_code == 303
+        assert response.headers["Location"].startswith(redirect_location)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-1", get_object)
+
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                [
+                    "starts-with",
+                    "$success_action_redirect",
+                    "",
+                ],  # this allows to accept anything for it
+            ],
+            ExpiresIn=60,
+        )
+
+        # PostObject with a different redirect location, but should be accepted
+        # manually generate the pre-signed with a different file value to change ETag, to later validate that the file
+        # has properly been written in S3
+        presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "manual value to change ETag"},
+            verify=False,
+            allow_redirects=False,
+        )
+
+        # assert that it's accepted
+        assert response.status_code == 303
+        assert response.headers["Location"].startswith("http://wrong.location/test")
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-2", get_object)
 
     @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
