@@ -119,7 +119,7 @@ class TestClientFactory:
 
     @patch.object(ExternalAwsClientFactory, "_get_client")
     def test_external_aws_client_credentials_loaded_from_env_if_set_to_none(
-        self, mock, monkeypatch
+        self, mock, region_name, monkeypatch
     ):
         session = boto3.Session()
         connect_to = ExternalAwsClientFactory(use_ssl=True, session=session)
@@ -147,7 +147,7 @@ class TestClientFactory:
         )
         mock.assert_called_once_with(
             service_name="def",
-            region_name="us-east-1",
+            region_name=region_name,
             use_ssl=True,
             verify=True,
             endpoint_url=None,
