@@ -355,8 +355,23 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule, event_bus)
-        # TODO add limit and next token
-        return {"Targets": list(rule.targets.values())}
+        targets = rule.targets
+        targets_len = len(targets)
+        start_index = self._decode_next_token(next_token) if next_token is not None else 0
+        end_index = start_index + limit if limit is not None else targets_len
+        limited_targets = dict(list(targets.items())[start_index:end_index])
+
+        next_token = (
+            self._encode_next_token(end_index)
+            # return a next_token (encoded integer of next starting index) if not all targets are returned
+            if end_index < targets_len
+            else None
+        )
+
+        response = {"Targets": list(limited_targets.values())}
+        if next_token is not None:
+            response["NextToken"] = next_token
+        return response
 
     def get_store(self, context: RequestContext) -> EventsStore:
         region = context.region
