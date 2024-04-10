@@ -373,7 +373,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                     raise TaskTimedOut()
                 else:
                     raise TaskDoesNotExist()
-        raise InvalidToken()
+        raise InvalidToken("Invalid token")
 
     def send_task_failure(
         self,
@@ -396,7 +396,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                     raise TaskTimedOut()
                 else:
                     raise TaskDoesNotExist()
-        raise InvalidToken()
+        raise InvalidToken("Invalid token")
 
     def start_execution(
         self,

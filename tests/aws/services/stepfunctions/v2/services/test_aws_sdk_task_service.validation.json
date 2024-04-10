@@ -11,6 +11,12 @@
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_list_secrets": {
     "last_validated_date": "2023-06-22T11:59:49+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_failure_no_such_token": {
+    "last_validated_date": "2024-04-10T11:45:49+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_success_no_such_token": {
+    "last_validated_date": "2024-04-10T11:39:42+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution_implicit_json_serialisation": {
     "last_validated_date": "2024-02-05T11:29:16+00:00"
   }

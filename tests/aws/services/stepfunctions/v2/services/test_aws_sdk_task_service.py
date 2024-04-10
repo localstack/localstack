@@ -139,6 +139,63 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: aws-sdk SFN integration now appears to be inserting decorated error names into the cause messages.
+            #  Upcoming work should collect more failure snapshot involving other aws-sdk integrations and trace a
+            #  picture of generalisability of this behaviour.
+            #  Hence insert this into the logic of the aws-sdk integration.
+            "$..cause"
+        ]
+    )
+    @markers.aws.validated
+    def test_sfn_send_task_success_no_such_token(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.AWS_SDK_SFN_SEND_TASK_SUCCESS)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"TaskToken": "NoSuchTaskToken"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: see reasoning for test `test_sfn_send_task_success_no_such_token` in this suite.
+            "$..cause"
+        ]
+    )
+    @markers.aws.validated
+    def test_sfn_send_task_failure_no_such_token(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.AWS_SDK_SFN_SEND_TASK_FAILURE)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"TaskToken": "NoSuchTaskToken"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @markers.aws.validated
     def test_sfn_start_execution(
         self,
