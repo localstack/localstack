@@ -29,6 +29,9 @@
   "tests/aws/services/events/test_events.py::TestEventTarget::test_add_exceed_fife_targets_per_rule": {
     "last_validated_date": "2024-04-09T14:43:41+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_list_target_by_rule_limit": {
+    "last_validated_date": "2024-04-10T11:34:18+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[custom]": {
     "last_validated_date": "2024-04-09T16:21:04+00:00"
   },

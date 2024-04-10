@@ -1156,5 +1156,47 @@
     "recorded-content": {
       "put-targets-client-error": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the PutTargets operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventTarget::test_list_target_by_rule_limit": {
+    "recorded-date": "10-04-2024, 11:34:18",
+    "recorded-content": {
+      "list-targets-limit": {
+        "NextToken": "<next_token:1>",
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>0"
+          },
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>1"
+          },
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-limit-next-token": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>3"
+          },
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>4"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

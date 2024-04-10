@@ -1269,3 +1269,30 @@ class TestEventTarget:
         with pytest.raises(aws_client.events.exceptions.LimitExceededException) as error:
             aws_client.events.put_targets(Rule=rule_name, Targets=targets)
         snapshot.match("put-targets-client-error", error)
+
+    @markers.aws.validated
+    def test_list_target_by_rule_limit(
+        self, put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
+        rule_name = f"test-rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+        put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+        snapshot.add_transformer(snapshot.transform.regex(queue_arn, "<queue-arn>"))
+
+        targets = [{"Id": f"test-target-{i}", "Arn": queue_arn} for i in range(5)]
+        snapshot.add_transformer(snapshot.transform.regex("test-target-", "<target-id>"))
+        aws_client.events.put_targets(Rule=rule_name, Targets=targets)
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name, Limit=3)
+        snapshot.match("list-targets-limit", response)
+
+        response = aws_client.events.list_targets_by_rule(
+            Rule=rule_name, NextToken=response["NextToken"]
+        )
+        snapshot.match("list-targets-limit-next-token", response)
