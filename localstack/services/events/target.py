@@ -307,20 +307,26 @@ class TargetWorkerFactory:
         # TODO api gateway & custom endpoints via http target
     }
 
-    def __init__(self, region: str, account_id: str, target: Target):
+    def __init__(self, region: str, account_id: str, target: Target, rule_arn: Arn):
         self.region = region
         self.account_id = account_id
         self.target = target
+        self.rule_arn = rule_arn
+
+    @staticmethod
+    def extract_service_from_arn(arn: Arn) -> str:
+        arn = parse_arn(arn)
+        return arn["service"]
 
     def get_target_worker(self) -> TargetWorker:
-        target_arn = self.target["Arn"]
-        arn = parse_arn(target_arn)
-        service = arn["service"]
+        service = TargetWorkerFactory.extract_service_from_arn(self.target["Arn"])
         if service in self.target_map:
             target_worker_class = self.target_map[service]
         else:
-            raise Exception(f"Unsupported target for Arn: {target_arn}")
-        target_worker = target_worker_class(self.region, self.account_id, self.target)
+            raise Exception(f"Unsupported target for Service: {service}")
+        target_worker = target_worker_class(
+            self.region, self.account_id, self.target, self.rule_arn, service
+        )
         return target_worker
 
 
