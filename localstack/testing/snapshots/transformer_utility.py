@@ -492,7 +492,9 @@ class TransformerUtility:
             TransformerUtility.key_value("Plaintext", reference_replacement=False),
             RegexTransformer(PATTERN_KEY_ARN, replacement="<key-arn>"),
             TransformerUtility.jsonpath(
-                jsonpath="$..Description", value_replacement="<description>", reference_replacement=False
+                jsonpath="$..Description",
+                value_replacement="<description>",
+                reference_replacement=False,
             ),
         ]
 

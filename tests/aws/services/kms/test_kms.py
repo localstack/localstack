@@ -795,7 +795,9 @@ class TestKMS:
         snapshot.match("create_multi_region_key", key)
 
     @markers.aws.validated
-    def test_non_multi_region_keys_should_not_have_multi_region_properties(self, kms_create_key, snapshot):
+    def test_non_multi_region_keys_should_not_have_multi_region_properties(
+        self, kms_create_key, snapshot
+    ):
         snapshot.add_transformer(snapshot.transform.kms_api())
         key = kms_create_key(MultiRegion=False)
         assert not key["KeyId"].startswith("mrk-")

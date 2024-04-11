@@ -474,11 +474,8 @@ class KmsKey:
         if self.metadata["MultiRegion"]:
             self.metadata["MultiRegionConfiguration"] = MultiRegionConfiguration(
                 MultiRegionKeyType=MultiRegionKeyType.PRIMARY,
-                PrimaryKey=MultiRegionKey(
-                    Arn=self.metadata["Arn"],
-                    Region=region
-                ),
-                ReplicaKeys=[]
+                PrimaryKey=MultiRegionKey(Arn=self.metadata["Arn"], Region=region),
+                ReplicaKeys=[],
             )
 
     def add_tags(self, tags: List) -> None:
