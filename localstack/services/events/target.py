@@ -24,9 +24,18 @@ from localstack.utils.time import now_utc
 LOG = logging.getLogger(__name__)
 
 
-class TargetWorker(ABC):
-    """https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html"""
+def connect_with_role(role_arn: str, region_name: str) -> ServiceLevelClientFactory:
+    """Connects using an assumed role."""
+    try:
+        return connect_to.with_assumed_role(
+            role_arn=role_arn, service_principal=ServicePrincipal.events, region_name=region_name
+        )
+    except ValueError as e:
+        LOG.debug(f"Could not connect with assumed role {role_arn}. Error: {e}")
+        return None
 
+
+class TargetWorker(ABC):
     def __init__(
         self,
         target: Target,
@@ -59,28 +68,16 @@ class TargetWorker(ABC):
     def send_event(self):
         pass
 
-    @abstractmethod
     def _validate_input(self, target: Target):
+        """Provide a default implementation that does nothing if no specific validation is needed."""
         pass
-
-    @staticmethod
-    def connect_with_role(role_arn: str, region_name: str) -> ServiceLevelClientFactory:
-        """Connects using an assumed role."""
-        service_principal = ServicePrincipal.events
-        try:
-            return connect_to.with_assumed_role(
-                role_arn=role_arn, service_principal=service_principal, region_name=region_name
-            )
-        except ValueError as e:
-            LOG.debug(f"Could not connect with assumed role {role_arn}. Error: {e}")
-            return None
 
     def _initialize_clients(self) -> ServiceLevelClientFactory:
         """Initializes AWS service clients, with or without assuming a role of service source.
         If a role from a target is provided, the client will be initialized with the assumed role and events service principal.
         If no role is provided e.g. calling send_events directly, the client will be initialized with the account ID and region."""
         if role_arn := self.target.get("role_arn"):
-            clients = TargetWorker.connect_with_role(role_arn, self.region)
+            clients = connect_with_role(role_arn, self.region)
             if not clients:
                 clients = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
         else:
@@ -91,81 +88,35 @@ class TargetWorker(ABC):
 TargetWorkerDict = dict[Arn, TargetWorker]
 
 
-class LambdaTargetWorker(TargetWorker):
+class ApiGatewayTargetWorker(TargetWorker):
     def send_event(self, event):
-        asynchronous = True
-        lambda_client = self.clients.lambda_.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
-        lambda_client.invoke(
-            FunctionName=self.target["Arn"],
-            Payload=to_bytes(json.dumps(event)),
-            InvocationType="Event" if asynchronous else "RequestResponse",
-        )
+        raise NotImplementedError("ApiGateway target is not yet implemented")
+
+
+class AppSyncTargetWorker(TargetWorker):
+    def send_event(self, event):
+        raise NotImplementedError("AppSync target is not yet implemented")
+
+
+class BatchTargetWorker(TargetWorker):
+    def send_event(self, event):
+        raise NotImplementedError("Batch target is not yet implemented")
 
     def _validate_input(self, target: Target):
-        # TODO add more validation
-        pass
+        if not collections.get_safe(target, "$.BatchParameters.JobDefinition"):
+            raise ValueError("BatchParameters.JobDefinition is required for Batch target")
+        if not collections.get_safe(target, "$.BatchParameters.JobName"):
+            raise ValueError("BatchParameters.JobName is required for Batch target")
 
 
-class SnsTargetWorker(TargetWorker):
+class ContainerTargetWorker(TargetWorker):
     def send_event(self, event):
-        sns_client = self.clients.sns.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
-        sns_client.publish(TopicArn=self.target["Arn"], Message=json.dumps(event))
+        raise NotImplementedError("ECS target is not yet implemented")
 
     def _validate_input(self, target: Target):
-        # TODO add more validation
-        pass
-
-
-class SqsTargetWorker(TargetWorker):
-    def send_event(self, event):
-        sqs_client = self.clients.sqs.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
-        queue_url = sqs_queue_url_for_arn(self.target["Arn"])
-        msg_group_id = collections.get_safe(self.target, "$.SqsParameters.MessageGroupId")
-        kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
-        sqs_client.send_message(
-            QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
-        )
-
-    def _validate_input(self, target: Target):
-        # TODO add more validation
-        pass
-
-
-class StatesTargetWorker(TargetWorker):
-    """Step Functions Target Sender"""
-
-    def send_event(self, event):
-        stepfunctions_client = self.clients.stepfunctions.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
-        stepfunctions_client.start_execution(
-            stateMachineArn=self.target["Arn"], input=json.dumps(event)
-        )
-
-    def _validate_input(self, target: Target):
-        # TODO add more validation
-        pass
-
-
-class FirehoseTargetWorker(TargetWorker):
-    def send_event(self, event):
-        firehose_client = self.clients.firehose.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
-        delivery_stream_name = firehose_name(self.target["Arn"])
-        firehose_client.put_record(
-            DeliveryStreamName=delivery_stream_name, Record={"Data": to_bytes(json.dumps(event))}
-        )
-
-    def _validate_input(self, target: Target):
-        # TODO add more validation
-        pass
+        super()._validate_input(target)
+        if not collections.get_safe(target, "$.EcsParameters.TaskDefinitionArn"):
+            raise ValueError("EcsParameters.TaskDefinitionArn is required for ECS target")
 
 
 class EventsTargetWorker(TargetWorker):
@@ -188,9 +139,16 @@ class EventsTargetWorker(TargetWorker):
             ]
         )
 
-    def _validate_input(self, target: Target):
-        # TODO add more validation
-        pass
+
+class FirehoseTargetWorker(TargetWorker):
+    def send_event(self, event):
+        firehose_client = self.clients.firehose.request_metadata(
+            service_principal=self.service, source_arn=self.rule_arn
+        )
+        delivery_stream_name = firehose_name(self.target["Arn"])
+        firehose_client.put_record(
+            DeliveryStreamName=delivery_stream_name, Record={"Data": to_bytes(json.dumps(event))}
+        )
 
 
 class KinesisTargetWorker(TargetWorker):
@@ -199,7 +157,7 @@ class KinesisTargetWorker(TargetWorker):
             service_principal=self.service, source_arn=self.rule_arn
         )
         partition_key_path = collections.get_safe(
-            self.target["KinesisParameters"],
+            self.target,
             "$.KinesisParameters.PartitionKeyPath",
             default_value="$.id",
         )
@@ -211,10 +169,18 @@ class KinesisTargetWorker(TargetWorker):
             PartitionKey=partition_key,
         )
 
-    def _validate_input(self, target: Target):
-        if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):
-            raise ValueError("KinesisParameters.PartitionKeyPath is required for Kinesis target")
-        # TODO add more validation
+
+class LambdaTargetWorker(TargetWorker):
+    def send_event(self, event):
+        asynchronous = True
+        lambda_client = self.clients.lambda_.request_metadata(
+            service_principal=self.service, source_arn=self.rule_arn
+        )
+        lambda_client.invoke(
+            FunctionName=self.target["Arn"],
+            Payload=to_bytes(json.dumps(event)),
+            InvocationType="Event" if asynchronous else "RequestResponse",
+        )
 
 
 class LogsTargetWorker(TargetWorker):
@@ -231,53 +197,15 @@ class LogsTargetWorker(TargetWorker):
             logEvents=[{"timestamp": now_utc(millis=True), "message": json.dumps(event)}],
         )
 
-    def _validate_input(self, target: Target):
-        # TODO add more validation
-        pass
-
-
-class SystemsManagerWorker(TargetWorker):
-    def send_event(self, event):
-        raise NotImplementedError("Systems Manager target is not yet implemented")
-
-    def _validate_input(self, target: Target):
-        if not collections.get_safe(target, "$.RunCommandParameters.RunCommandTargets"):
-            raise ValueError(
-                "RunCommandParameters.RunCommandTargets is required for Systems Manager target"
-            )
-        # TODO add more validation
-
-
-class ContainerTargetWorker(TargetWorker):
-    def send_event(self, event):
-        raise NotImplementedError("ECS target is not yet implemented")
-
-    def _validate_input(self, target: Target):
-        if not collections.get_safe(target, "$.EcsParameters.TaskDefinitionArn"):
-            raise ValueError("EcsParameters.TaskDefinitionArn is required for ECS target")
-        # TODO add more validation
-
-
-class BatchTargetWorker(TargetWorker):
-    def send_event(self, event):
-        raise NotImplementedError("Batch target is not yet implemented")
-
-    def _validate_input(self, target: Target):
-        if not collections.get_safe(target, "$.BatchParameters.JobDefinition"):
-            raise ValueError("BatchParameters.JobDefinition is required for Batch target")
-        if not collections.get_safe(target, "$.BatchParameters.JobName"):
-            raise ValueError("BatchParameters.JobName is required for Batch target")
-        # TODO add more validation
-
 
 class RedshiftTargetWorker(TargetWorker):
     def send_event(self, event):
         raise NotImplementedError("Redshift target is not yet implemented")
 
     def _validate_input(self, target: Target):
+        super()._validate_input(target)
         if not collections.get_safe(target, "$.RedshiftDataParameters.Database"):
             raise ValueError("RedshiftDataParameters.Database is required for Redshift target")
-        # TODO add more validation
 
 
 class SagemakerTargetWorker(TargetWorker):
@@ -285,28 +213,69 @@ class SagemakerTargetWorker(TargetWorker):
         raise NotImplementedError("Sagemaker target is not yet implemented")
 
 
-class AppSyncTargetWorker(TargetWorker):
+class SnsTargetWorker(TargetWorker):
     def send_event(self, event):
-        raise NotImplementedError("AppSync target is not yet implemented")
+        sns_client = self.clients.sns.request_metadata(
+            service_principal=self.service, source_arn=self.rule_arn
+        )
+        sns_client.publish(TopicArn=self.target["Arn"], Message=json.dumps(event))
+
+
+class SqsTargetWorker(TargetWorker):
+    def send_event(self, event):
+        sqs_client = self.clients.sqs.request_metadata(
+            service_principal=self.service, source_arn=self.rule_arn
+        )
+        queue_url = sqs_queue_url_for_arn(self.target["Arn"])
+        msg_group_id = collections.get_safe(self.target, "$.SqsParameters.MessageGroupId")
+        kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
+        sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
+        )
+
+
+class StatesTargetWorker(TargetWorker):
+    """Step Functions Target Sender"""
+
+    def send_event(self, event):
+        stepfunctions_client = self.clients.stepfunctions.request_metadata(
+            service_principal=self.service, source_arn=self.rule_arn
+        )
+        stepfunctions_client.start_execution(
+            stateMachineArn=self.target["Arn"], input=json.dumps(event)
+        )
+
+
+class SystemsManagerWorker(TargetWorker):
+    def send_event(self, event):
+        raise NotImplementedError("Systems Manager target is not yet implemented")
+
+    def _validate_input(self, target: Target):
+        super()._validate_input(target)
+        if not collections.get_safe(target, "$.RunCommandParameters.RunCommandTargets"):
+            raise ValueError(
+                "RunCommandParameters.RunCommandTargets is required for Systems Manager target"
+            )
 
 
 class TargetWorkerFactory:
     # supported targets: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html
     target_map = {
-        "lambda": LambdaTargetWorker,
-        "sqs": SqsTargetWorker,
-        "sns": SnsTargetWorker,
-        "kinesis": KinesisTargetWorker,
-        "firehose": FirehoseTargetWorker,
-        "logs": LogsTargetWorker,
-        "events": EventsTargetWorker,
-        "ssm": SystemsManagerWorker,
-        "ecs": ContainerTargetWorker,
-        "batch": BatchTargetWorker,
-        "redshift": RedshiftTargetWorker,
-        "sagemaker": SagemakerTargetWorker,
+        "apigateway": ApiGatewayTargetWorker,
         "appsync": AppSyncTargetWorker,
-        # TODO api gateway & custom endpoints via http target
+        "batch": BatchTargetWorker,
+        "ecs": ContainerTargetWorker,
+        "events": EventsTargetWorker,
+        "firehose": FirehoseTargetWorker,
+        "kinesis": KinesisTargetWorker,
+        "lambda": LambdaTargetWorker,
+        "logs": LogsTargetWorker,
+        "redshift": RedshiftTargetWorker,
+        "sns": SnsTargetWorker,
+        "sqs": SqsTargetWorker,
+        "sagemaker": SagemakerTargetWorker,
+        "ssm": SystemsManagerWorker,
+        # TODO custom endpoints via http target
     }
 
     def __init__(self, target: Target, region: str, account_id: str, rule_arn: Arn):
