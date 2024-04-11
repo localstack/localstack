@@ -8,6 +8,7 @@ from localstack.aws.api.events import (
     LimitExceededException,
     ManagedBy,
     PutTargetsResultEntryList,
+    RemoveTargetsResultEntryList,
     RoleArn,
     RuleDescription,
     RuleName,
@@ -55,45 +56,56 @@ class RuleWorker:
         )
 
     @property
-    def arn(self):
+    def arn(self) -> Arn:
         return self.rule.arn
 
     @property
-    def state(self):
+    def state(self) -> RuleState:
         return self.rule.state
 
-    def enable(self):
+    def enable(self) -> None:
         self.rule.state = RuleState.ENABLED
 
-    def disable(self):
+    def disable(self) -> None:
         self.rule.state = RuleState.DISABLED
 
-    def delete(self):
-        if len(self.rule.targets) > 0:
-            raise ValidationException("Rule can't be deleted since it has targets.")
-        self.rule.state = RuleState.DISABLED
-
-    def _validate_input(
-        self,
-        event_pattern: Optional[EventPattern],
-        schedule_expression: Optional[ScheduleExpression],
-        event_bus_name: Optional[EventBusName] = "default",
-    ):
-        cron_regex = re.compile(r"^cron\(.*\)")
-        rate_regex = re.compile(r"^rate\(\d*\s(minute|minutes|hour|hours|day|days)\)")
-
-        if not event_pattern and not schedule_expression:
-            raise ValidationException(
-                "Parameter(s) EventPattern or ScheduleExpression must be specified."
-            )
-
-        if schedule_expression:
-            if event_bus_name != "default":
-                raise ValidationException(
-                    "ScheduleExpression is supported only on the default event bus."
+    def add_targets(self, targets: TargetList) -> PutTargetsResultEntryList:
+        failed_entries = self.validate_targets_input(targets)
+        for target in targets:
+            target_id = target["Id"]
+            if target_id not in self.rule.targets and self._check_target_limit_reached():
+                raise LimitExceededException(
+                    "The requested resource exceeds the maximum number allowed."
                 )
-            if not (cron_regex.match(schedule_expression) or rate_regex.match(schedule_expression)):
-                raise ValidationException("Parameter ScheduleExpression is not valid.")
+            target = Target(**target)
+            self.rule.targets[target_id] = target
+        return failed_entries
+
+    def remove_targets(
+        self, target_ids: TargetIdList, force: bool = False
+    ) -> RemoveTargetsResultEntryList:
+        delete_errors = []
+        for target_id in target_ids:
+            if target_id in self.rule.targets:
+                if self.rule.managed_by and not force:
+                    delete_errors.append(
+                        {
+                            "TargetId": target_id,
+                            "ErrorCode": "ManagedRuleException",
+                            "ErrorMessage": f"Rule '{self.rule.name}' is managed by an AWS service can only be modified if force is True.",
+                        }
+                    )
+                else:
+                    del self.rule.targets[target_id]
+            else:
+                delete_errors.append(
+                    {
+                        "TargetId": target_id,
+                        "ErrorCode": "ResourceNotFoundException",
+                        "ErrorMessage": f"Rule '{self.rule.name}' does not have a target with the Id '{target_id}'.",
+                    }
+                )
+        return delete_errors
 
     def validate_targets_input(self, targets: TargetList) -> PutTargetsResultEntryList:
         validation_errors = []
@@ -140,39 +152,27 @@ class RuleWorker:
 
         return validation_errors
 
-    def add_targets(self, targets: TargetList):
-        for target in targets:
-            target_id = target["Id"]
-            if target_id not in self.rule.targets and self._check_target_limit_reached():
-                raise LimitExceededException(
-                    "The requested resource exceeds the maximum number allowed."
-                )
-            target = Target(**target)
-            self.rule.targets[target_id] = target
+    def _validate_input(
+        self,
+        event_pattern: Optional[EventPattern],
+        schedule_expression: Optional[ScheduleExpression],
+        event_bus_name: Optional[EventBusName] = "default",
+    ) -> None:
+        cron_regex = re.compile(r"^cron\(.*\)")
+        rate_regex = re.compile(r"^rate\(\d*\s(minute|minutes|hour|hours|day|days)\)")
 
-    def remove_targets(self, target_ids: TargetIdList, force: bool = False):
-        delete_errors = []
-        for target_id in target_ids:
-            if target_id in self.rule.targets:
-                if self.rule.managed_by and not force:
-                    delete_errors.append(
-                        {
-                            "TargetId": target_id,
-                            "ErrorCode": "ManagedRuleException",
-                            "ErrorMessage": f"Rule '{self.rule.name}' is managed by an AWS service can only be modified if force is True.",
-                        }
-                    )
-                else:
-                    del self.rule.targets[target_id]
-            else:
-                delete_errors.append(
-                    {
-                        "TargetId": target_id,
-                        "ErrorCode": "ResourceNotFoundException",
-                        "ErrorMessage": f"Rule '{self.rule.name}' does not have a target with the Id '{target_id}'.",
-                    }
+        if not event_pattern and not schedule_expression:
+            raise ValidationException(
+                "Parameter(s) EventPattern or ScheduleExpression must be specified."
+            )
+
+        if schedule_expression:
+            if event_bus_name != "default":
+                raise ValidationException(
+                    "ScheduleExpression is supported only on the default event bus."
                 )
-        return delete_errors
+            if not (cron_regex.match(schedule_expression) or rate_regex.match(schedule_expression)):
+                raise ValidationException("Parameter ScheduleExpression is not valid.")
 
     def _check_target_limit_reached(self) -> bool:
         if len(self.rule.targets) >= 5:
