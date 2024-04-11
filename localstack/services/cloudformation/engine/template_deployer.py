@@ -895,7 +895,7 @@ class TemplateDeployer:
             }
             if len(resources) == 0:
                 break
-            for resource_id, resource in resources.items():
+            for i, (resource_id, resource) in enumerate(resources.items()):
                 try:
                     # TODO: cache condition value in resource details on deployment and use cached value here
                     if evaluate_resource_condition(
@@ -907,6 +907,14 @@ class TemplateDeployer:
                             "Remove", logical_resource_id=resource_id
                         )
                         # TODO: check actual return value
+                        LOG.debug(
+                            'Handling "Remove" for resource "%s" (%s/%s) type "%s" in loop iteration %s',
+                            resource_id,
+                            i + 1,
+                            len(resources),
+                            resource["ResourceType"],
+                            iteration_cycle + 1,
+                        )
                         executor.deploy_loop(resource, resource_provider_payload)
                         self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
                 except Exception as e:
