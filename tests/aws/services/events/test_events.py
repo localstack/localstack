@@ -1194,6 +1194,38 @@ class TestEventRule:
         response = aws_client.events.describe_rule(Name=rule_name, EventBusName=bus_name)
         snapshot.match("describe-rule-enabled", response)
 
+    @markers.aws.validated
+    def test_delete_rule_with_targets(
+        self, put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+    ):
+        rule_name = f"test-rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+        put_rule(
+            Name=rule_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+
+        target_id = f"test-target-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
+
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+        snapshot.add_transformer(snapshot.transform.regex(queue_arn, "<queue-arn>"))
+
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                }
+            ],
+        )
+
+        with pytest.raises(aws_client.events.exceptions.ClientError) as e:
+            aws_client.events.delete_rule(Name=rule_name)
+        snapshot.match("delete-rule", e)
+
 
 class TestEventTarget:
     @markers.aws.validated

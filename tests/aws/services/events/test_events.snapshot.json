@@ -1198,5 +1198,11 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_delete_rule_with_targets": {
+    "recorded-date": "11-04-2024, 11:27:59",
+    "recorded-content": {
+      "delete-rule": "<ExceptionInfo ClientError(\"An error occurred (ValidationException) when calling the DeleteRule operation: Rule can't be deleted since it has targets.\") tblen=3>"
+    }
   }
 }
