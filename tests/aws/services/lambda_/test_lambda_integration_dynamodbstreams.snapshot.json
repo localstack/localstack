@@ -518,7 +518,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[insert_same_entry_twice]": {
-    "recorded-date": "09-04-2024, 10:21:03",
+    "recorded-date": "11-04-2024, 20:49:00",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -605,19 +605,19 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "NewImage": {
                   "id2": {
-                    "S": "test42"
+                    "S": "id2_value"
                   },
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 27,
+                "SizeBytes": 32,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -638,19 +638,19 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "NewImage": {
                   "id2": {
-                    "S": "test42"
+                    "S": "id2_value"
                   },
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 27,
+                "SizeBytes": 32,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -661,7 +661,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_or_filter]": {
-    "recorded-date": "09-04-2024, 10:22:58",
+    "recorded-date": "11-04-2024, 20:50:44",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -749,16 +749,16 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "NewImage": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 18,
+                "SizeBytes": 20,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -779,16 +779,16 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "NewImage": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 18,
+                "SizeBytes": 20,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -807,24 +807,24 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "NewImage": {
                   "id2": {
-                    "S": "42test"
+                    "S": "id2_new_value"
                   },
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "OldImage": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "SequenceNumber": "<sequence-number:2>",
-                "SizeBytes": 36,
+                "SizeBytes": 46,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -835,7 +835,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_multiple_filters]": {
-    "recorded-date": "09-04-2024, 10:24:36",
+    "recorded-date": "11-04-2024, 20:52:04",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -925,16 +925,16 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "NewImage": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 18,
+                "SizeBytes": 20,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -955,16 +955,16 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "NewImage": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 18,
+                "SizeBytes": 20,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -974,8 +974,308 @@
       ]
     }
   },
-  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_filter]": {
-    "recorded-date": "09-04-2024, 10:25:41",
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[content_filter_type]": {
+    "recorded-date": "11-04-2024, 20:53:04",
+    "recorded-content": {
+      "table_creation_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "dynamodb": {
+                  "NewImage": {
+                    "presentKey": {
+                      "S": [
+                        "presentValue"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "lambda-log-events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "id_value_1"
+                  }
+                },
+                "NewImage": {
+                  "id": {
+                    "S": "id_value_1"
+                  },
+                  "presentKey": {
+                    "S": "presentValue"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 46,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              },
+              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ],
+      "lambda-multiple-log-events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "id_value_1"
+                  }
+                },
+                "NewImage": {
+                  "id": {
+                    "S": "id_value_1"
+                  },
+                  "presentKey": {
+                    "S": "presentValue"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 46,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              },
+              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_filter_type]": {
+    "recorded-date": "11-04-2024, 20:54:44",
+    "recorded-content": {
+      "table_creation_response": {
+        "TableDescription": {
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            }
+          ],
+          "BillingModeSummary": {
+            "BillingMode": "PAY_PER_REQUEST"
+          },
+          "CreationDateTime": "datetime",
+          "DeletionProtectionEnabled": false,
+          "ItemCount": 0,
+          "KeySchema": [
+            {
+              "AttributeName": "id",
+              "KeyType": "HASH"
+            }
+          ],
+          "ProvisionedThroughput": {
+            "NumberOfDecreasesToday": 0,
+            "ReadCapacityUnits": 0,
+            "WriteCapacityUnits": 0
+          },
+          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableId": "<uuid:1>",
+          "TableName": "<resource:1>",
+          "TableSizeBytes": 0,
+          "TableStatus": "CREATING"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create_event_source_mapping_response": {
+        "BatchSize": 1,
+        "BisectBatchOnFunctionError": false,
+        "DestinationConfig": {
+          "OnFailure": {}
+        },
+        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": {
+                "dynamodb": {
+                  "NewImage": {
+                    "presentKey": {
+                      "S": [
+                        {
+                          "exists": true
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionResponseTypes": [],
+        "LastModified": "datetime",
+        "LastProcessingResult": "No records processed",
+        "MaximumBatchingWindowInSeconds": 1,
+        "MaximumRecordAgeInSeconds": -1,
+        "MaximumRetryAttempts": 1,
+        "ParallelizationFactor": 1,
+        "StartingPosition": "TRIM_HORIZON",
+        "State": "Creating",
+        "StateTransitionReason": "User action",
+        "TumblingWindowInSeconds": 0,
+        "UUID": "<uuid:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "lambda-log-events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "id_value_1"
+                  }
+                },
+                "NewImage": {
+                  "id": {
+                    "S": "id_value_1"
+                  },
+                  "presentKey": {
+                    "S": "presentValue"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 46,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              },
+              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ],
+      "lambda-multiple-log-events": [
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:1>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "id_value_1"
+                  }
+                },
+                "NewImage": {
+                  "id": {
+                    "S": "id_value_1"
+                  },
+                  "presentKey": {
+                    "S": "presentValue"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:1>",
+                "SizeBytes": 46,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              },
+              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[exists_false_filter]": {
+    "recorded-date": "11-04-2024, 20:56:31",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1068,16 +1368,16 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value_1"
                   }
                 },
                 "NewImage": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value_1"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 18,
+                "SizeBytes": 24,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -1098,16 +1398,47 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value_1"
                   }
                 },
                 "NewImage": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value_1"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 18,
+                "SizeBytes": 24,
+                "StreamViewType": "NEW_AND_OLD_IMAGES"
+              },
+              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+            }
+          ]
+        },
+        {
+          "Records": [
+            {
+              "eventID": "<event-i-d:2>",
+              "eventName": "INSERT",
+              "eventVersion": "1.1",
+              "eventSource": "aws:dynamodb",
+              "awsRegion": "<region>",
+              "dynamodb": {
+                "ApproximateCreationDateTime": "<approximate-creation-datetime>",
+                "Keys": {
+                  "id": {
+                    "S": "id_value_2"
+                  }
+                },
+                "NewImage": {
+                  "id": {
+                    "S": "id_value_2"
+                  },
+                  "presentKey": {
+                    "S": "presentValue"
+                  }
+                },
+                "SequenceNumber": "<sequence-number:2>",
+                "SizeBytes": 46,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -1118,7 +1449,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[numeric_filter]": {
-    "recorded-date": "09-04-2024, 13:51:49",
+    "recorded-date": "11-04-2024, 20:57:39",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1219,7 +1550,7 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test1"
+                    "S": "id_value_1"
                   }
                 },
                 "NewImage": {
@@ -1227,11 +1558,11 @@
                     "N": "42"
                   },
                   "id": {
-                    "S": "test1"
+                    "S": "id_value_1"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 29,
+                "SizeBytes": 39,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -1252,7 +1583,7 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test1"
+                    "S": "id_value_1"
                   }
                 },
                 "NewImage": {
@@ -1260,11 +1591,11 @@
                     "N": "42"
                   },
                   "id": {
-                    "S": "test1"
+                    "S": "id_value_1"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 29,
+                "SizeBytes": 39,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -1275,7 +1606,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[prefix_filter]": {
-    "recorded-date": "09-04-2024, 10:27:51",
+    "recorded-date": "11-04-2024, 20:59:06",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1370,19 +1701,19 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value_1"
                   }
                 },
                 "NewImage": {
                   "prefix": {
-                    "S": "us-1-testtest"
+                    "S": "us-1-other-suffix"
                   },
                   "id": {
-                    "S": "test123"
+                    "S": "id_value_1"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 37,
+                "SizeBytes": 47,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -1403,19 +1734,19 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test123"
+                    "S": "id_value_1"
                   }
                 },
                 "NewImage": {
                   "prefix": {
-                    "S": "us-1-testtest"
+                    "S": "us-1-other-suffix"
                   },
                   "id": {
-                    "S": "test123"
+                    "S": "id_value_1"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 37,
+                "SizeBytes": 47,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -1426,7 +1757,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_filter[date_time_conversion]": {
-    "recorded-date": "09-04-2024, 12:51:55",
+    "recorded-date": "11-04-2024, 21:00:11",
     "recorded-content": {
       "table_creation_response": {
         "TableDescription": {
@@ -1513,16 +1844,16 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test1"
+                    "S": "id_value_1"
                   }
                 },
                 "NewImage": {
                   "id": {
-                    "S": "test1"
+                    "S": "id_value_1"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 14,
+                "SizeBytes": 24,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -1543,16 +1874,16 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test1"
+                    "S": "id_value_1"
                   }
                 },
                 "NewImage": {
                   "id": {
-                    "S": "test1"
+                    "S": "id_value_1"
                   }
                 },
                 "SequenceNumber": "<sequence-number:1>",
-                "SizeBytes": 14,
+                "SizeBytes": 24,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
@@ -1571,16 +1902,16 @@
                 "ApproximateCreationDateTime": "<approximate-creation-datetime>",
                 "Keys": {
                   "id": {
-                    "S": "test2"
+                    "S": "id_value_2"
                   }
                 },
                 "NewImage": {
                   "id": {
-                    "S": "test2"
+                    "S": "id_value_2"
                   }
                 },
                 "SequenceNumber": "<sequence-number:2>",
-                "SizeBytes": 14,
+                "SizeBytes": 24,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
               "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"

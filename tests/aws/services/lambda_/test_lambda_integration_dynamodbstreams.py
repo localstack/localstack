@@ -411,56 +411,74 @@ class TestDynamoDBEventSourceMapping:
         messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
 
-    # Slow (~2min) against AWS for each test case
-    # Test assumption: the first event should always pass the filter, otherwise the logic for the second part breaks.
-    @markers.aws.validated
+    # TODO: consider re-designing this test case because it currently does negative testing for the second event,
+    #  which can be unreliable due to undetermined waiting times (i.e., retries). For reliable testing, we need
+    #  a) strict event ordering and b) a final event that passes all filters to reliably determine the end of the test.
+    #  The current behavior leads to hard-to-detect false negatives such as in this CI run:
+    #  https://app.circleci.com/pipelines/github/localstack/localstack/24012/workflows/461664c2-0203-45f9-aec2-394666f48f03/jobs/197705/tests
     @pytest.mark.parametrize(
+        # Calls represents the expected number of Lambda invocations (either 1 or 2).
+        # Negative tests with calls=0 are unreliable due to undetermined waiting times.
         "item_to_put1, item_to_put2, filter, calls",
         [
             # Test with filter, and two times same entry
             pytest.param(
-                {"id": {"S": "test123"}, "id2": {"S": "test42"}},
-                # None re-uses item_to_put1
-                None,
+                {"id": {"S": "id_value"}, "id2": {"S": "id2_value"}},
+                # Inserting the same event (identified by PK) twice triggers a MODIFY event.
+                {"id": {"S": "id_value"}, "id2": {"S": "id2_value"}},
                 {"eventName": ["INSERT"]},
                 1,
                 id="insert_same_entry_twice",
             ),
             # Test with OR filter
             pytest.param(
-                {"id": {"S": "test123"}},
-                {"id": {"S": "test123"}, "id2": {"S": "42test"}},
+                {"id": {"S": "id_value"}},
+                {"id": {"S": "id_value"}, "id2": {"S": "id2_new_value"}},
                 {"eventName": ["INSERT", "MODIFY"]},
                 2,
                 id="content_or_filter",
             ),
             # Test with 2 filters (AND), and two times same entry (second time modified aka MODIFY eventName)
             pytest.param(
-                {"id": {"S": "test123"}},
-                {"id": {"S": "test123"}, "id2": {"S": "42test"}},
+                {"id": {"S": "id_value"}},
+                {"id": {"S": "id_value"}, "id2": {"S": "id2_new_value"}},
                 {"eventName": ["INSERT"], "eventSource": ["aws:dynamodb"]},
                 1,
                 id="content_multiple_filters",
             ),
-            # Test exists filter
+            # Test content filter using the DynamoDB data type "S"
             pytest.param(
-                {"id": {"S": "test123"}},
-                {"id": {"S": "test1234"}, "presentKey": {"S": "test123"}},
-                {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
+                {"id": {"S": "id_value_1"}, "presentKey": {"S": "presentValue"}},
+                {"id": {"S": "id_value_2"}},
+                # Omitting the "S" does NOT match: {"dynamodb": {"NewImage": {"presentKey": ["presentValue"]}}}
+                {"dynamodb": {"NewImage": {"presentKey": {"S": ["presentValue"]}}}},
                 1,
-                id="exists_filter",
+                id="content_filter_type",
+            ),
+            # Test exists filter using the DynamoDB data type "S"
+            pytest.param(
+                {"id": {"S": "id_value_1"}, "presentKey": {"S": "presentValue"}},
+                {"id": {"S": "id_value_2"}},
+                # Omitting the "S" does NOT match: {"dynamodb": {"NewImage": {"presentKey": [{"exists": True}]}}}
+                {"dynamodb": {"NewImage": {"presentKey": {"S": [{"exists": True}]}}}},
+                1,
+                id="exists_filter_type",
+            ),
+            pytest.param(
+                {"id": {"S": "id_value_1"}},
+                {"id": {"S": "id_value_2"}, "presentKey": {"S": "presentValue"}},
+                {"dynamodb": {"NewImage": {"presentKey": [{"exists": False}]}}},
+                2,
+                id="exists_false_filter",
             ),
             # numeric filter
             # NOTE: numeric filters do not work with DynamoDB because all values are represented as string
             # and not converted to numbers for filtering.
             # The following AWS tutorial has a note about numeric filtering, which does not apply to DynamoDB strings:
             # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial2.html
-            # To make this negative test more reliable, we cover at least one positive scenario.
-            # Ideally, the order of test1 and test2 should be flipped but the current test design assumes that the
-            # first item always generates an event. See conditional "if calls > 1:"
             pytest.param(
-                {"id": {"S": "test1"}, "numericFilter": {"N": "42"}},
-                {"id": {"S": "test2"}, "numericFilter": {"N": "101"}},
+                {"id": {"S": "id_value_1"}, "numericFilter": {"N": "42"}},
+                {"id": {"S": "id_value_2"}, "numericFilter": {"N": "101"}},
                 {
                     "dynamodb": {
                         "NewImage": {
@@ -476,23 +494,25 @@ class TestDynamoDBEventSourceMapping:
             ),
             # Prefix
             pytest.param(
-                {"id": {"S": "test123"}, "prefix": {"S": "us-1-testtest"}},
-                {"id": {"S": "test1234"}, "prefix": {"S": "testtest"}},
+                {"id": {"S": "id_value_1"}, "prefix": {"S": "us-1-other-suffix"}},
+                {"id": {"S": "id_value_1"}, "prefix": {"S": "other-suffix"}},
                 {"dynamodb": {"NewImage": {"prefix": {"S": [{"prefix": "us-1"}]}}}},
                 1,
                 id="prefix_filter",
             ),
             # DynamoDB ApproximateCreationDateTime (datetime) gets converted into a float BEFORE filtering
             # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-ddb
+            # Using a numeric operator implicitly checks whether ApproximateCreationDateTime is a numeric type
             pytest.param(
-                {"id": {"S": "test1"}},
-                {"id": {"S": "test2"}},
+                {"id": {"S": "id_value_1"}},
+                {"id": {"S": "id_value_2"}},
                 {"dynamodb": {"ApproximateCreationDateTime": [{"numeric": [">", 0]}]}},
                 2,
                 id="date_time_conversion",
             ),
         ],
     )
+    @markers.aws.validated
     def test_dynamodb_event_filter(
         self,
         create_lambda_function,
@@ -507,6 +527,14 @@ class TestDynamoDBEventSourceMapping:
         snapshot,
         aws_client,
     ):
+        """Test event filtering for DynamoDB streams:
+        https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-ddb
+
+        Slow against AWS taking ~2min per test case.
+
+        Test assumption: The first item MUST always match the filter and the second item CAN match the filter.
+        => This enables two-step testing (i.e., snapshots between inserts) but is unreliable and should be revised.
+        """
         function_name = f"lambda_func-{short_uid()}"
         table_name = f"test-table-{short_uid()}"
         max_retries = 50
@@ -551,6 +579,8 @@ class TestDynamoDBEventSourceMapping:
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
 
         _await_event_source_mapping_enabled(aws_client.lambda_, event_source_uuid)
+
+        # Insert item_to_put1
         aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put1)
 
         def assert_lambda_called():
@@ -561,14 +591,10 @@ class TestDynamoDBEventSourceMapping:
         events = retry(assert_lambda_called, retries=max_retries)
         snapshot.match("lambda-log-events", events)
 
-        # Following lines are relevant if variables are set via parametrize
-        if item_to_put2:
-            # putting a new item (item_to_put2) a second time is a 'INSERT' request
-            aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put2)
-        else:
-            # putting the same item (item_to_put1) a second time is a 'MODIFY' request (at least in Localstack)
-            aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put1)
-        # depending on the parametrize values the filter (and the items to put) the lambda might be called multiple times
+        # Insert item_to_put2
+        aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put2)
+
+        # The Lambda might be called multiple times depending on the items to put and filter.
         if calls > 1:
 
             def assert_events_called_multiple():
@@ -582,6 +608,7 @@ class TestDynamoDBEventSourceMapping:
             # lambda wasn't called a second time, so no new records should be found
             events = retry(assert_lambda_called, retries=max_retries)
 
+        # Validate events containing either one or two records
         for event in events:
             for record in event["Records"]:
                 if creation_time := record.get("dynamodb", {}).get("ApproximateCreationDateTime"):
