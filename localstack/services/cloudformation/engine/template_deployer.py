@@ -1157,6 +1157,7 @@ class TemplateDeployer:
 
         # TODO: ideally the entire template has to be replaced, but tricky at this point
         existing_stack.template["Metadata"] = new_stack.template.get("Metadata")
+        existing_stack.template_body = new_stack.template_body
 
         # start deployment loop
         return self.apply_changes_in_loop(
@@ -1164,7 +1165,11 @@ class TemplateDeployer:
         )
 
     def apply_changes_in_loop(
-        self, changes: list[ChangeConfig], stack, action: Optional[str] = None, new_stack=None
+        self,
+        changes: list[ChangeConfig],
+        stack,
+        action: Optional[str] = None,
+        new_stack=None,
     ):
         def _run(*args):
             status_reason = None

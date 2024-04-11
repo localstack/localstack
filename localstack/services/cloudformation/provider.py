@@ -373,12 +373,17 @@ class CloudformationProvider(CloudformationApi):
 
         deployer = template_deployer.TemplateDeployer(context.account_id, context.region, stack)
         # TODO: there shouldn't be a "new" stack on update
-        new_stack = Stack(context.account_id, context.region, request, template)
+        new_stack = Stack(
+            context.account_id, context.region, request, template, request["TemplateBody"]
+        )
         new_stack.set_resolved_parameters(resolved_parameters)
         stack.set_resolved_parameters(resolved_parameters)
         stack.set_resolved_stack_conditions(resolved_stack_conditions)
         try:
             deployer.update_stack(new_stack)
+        except NoStackUpdates as e:
+            stack.set_stack_status("UPDATE_COMPLETE")
+            raise ValidationError(str(e))
         except Exception as e:
             stack.set_stack_status("UPDATE_FAILED")
             msg = f'Unable to update stack "{stack_name}": {e}'
@@ -683,6 +688,7 @@ class CloudformationProvider(CloudformationApi):
         )
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.set_resolved_parameters(resolved_parameters)
+        change_set.template_body = template_body
 
         # TODO: evaluate conditions
         raw_conditions = transformed_template.get("Conditions", {})
