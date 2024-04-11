@@ -180,4 +180,36 @@ class LambdaEventSourceMappingProvider(ResourceProvider[LambdaEventSourceMapping
           - lambda:UpdateEventSourceMapping
           - lambda:GetEventSourceMapping
         """
-        raise NotImplementedError
+        current_state = request.previous_state
+        model = request.desired_state
+        lambda_client = request.aws_client_factory.lambda_
+
+        params = util.select_attributes(
+            model=model,
+            params=[
+                "FunctionName",
+                "Enabled",
+                "BatchSize",
+                "FilterCriteria",
+                "MaximumBatchingWindowInSeconds",
+                "DestinationConfig",
+                "MaximumRecordAgeInSeconds",
+                "BisectBatchOnFunctionError",
+                "MaximumRetryAttempts",
+                "ParallelizationFactor",
+                "SourceAccessConfigurations",
+                "TumblingWindowInSeconds",
+                "FunctionResponseTypes",
+                "ScalingConfig",
+                "DocumentDBEventSourceConfig",
+            ],
+        )
+        lambda_client.update_event_source_mapping(UUID=current_state["Id"], **params)
+
+        model["Id"] = current_state["Id"]
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
