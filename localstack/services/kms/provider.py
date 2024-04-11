@@ -465,26 +465,36 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def replicate_key(
         self, context: RequestContext, request: ReplicateKeyRequest
     ) -> ReplicateKeyResponse:
-        key = self._get_kms_key(context.account_id, context.region, request.get("KeyId"))
+        account_id = context.account_id
+        key = self._get_kms_key(account_id, context.region, request.get("KeyId"))
         key_id = key.metadata.get("KeyId")
         if not key.metadata.get("MultiRegion"):
             raise UnsupportedOperationException(
                 f"Unable to replicate a non-MultiRegion key {key_id}"
             )
         replica_region = request.get("ReplicaRegion")
-        replicate_to_store = kms_stores[context.account_id][replica_region]
+        replicate_to_store = kms_stores[account_id][replica_region]
         if key_id in replicate_to_store.keys:
             raise AlreadyExistsException(
                 f"Unable to replicate key {key_id} to region {replica_region}, as the key "
                 f"already exist there"
             )
         replica_key = copy.deepcopy(key)
-        replica_key.metadata["Description"] = request.get("Description", "")
-        # Multiregion keys have the same key ID for all replicas, but ARNs differ, as they include actual regions of
-        # replicas.
-        replica_key.calculate_and_set_arn(context.account_id, replica_region)
+        replica_key.replicate_metadata(request, account_id, replica_region)
         replicate_to_store.keys[key_id] = replica_key
+
+        self.update_primary_key_with_replica_keys(account_id, key, key_id, replica_key)
+
         return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key.metadata)
+
+    @staticmethod
+    # Replaces replica keys in a key's multi region configuration metadata and stores the key.
+    def update_primary_key_with_replica_keys(account_id, key, key_id, replica_key):
+        replica_keys = replica_key.get_replica_keys()
+        key.metadata["MultiRegionConfiguration"]["ReplicaKeys"] = replica_keys
+        primary_key_region = key.get_primary_key_region()
+        store = kms_stores[account_id][primary_key_region]
+        store.keys[key_id] = key
 
     @handler("UpdateKeyDescription", expand=False)
     def update_key_description(

@@ -790,7 +790,7 @@ class TestKMS:
     @markers.aws.validated
     def test_create_multi_region_key(self, kms_create_key, snapshot):
         snapshot.add_transformer(snapshot.transform.kms_api())
-        key = kms_create_key(MultiRegion=True)
+        key = kms_create_key(MultiRegion=True, Description="test multi region key")
         assert key["KeyId"].startswith("mrk-")
         snapshot.match("create_multi_region_key", key)
 
@@ -799,7 +799,7 @@ class TestKMS:
         self, kms_create_key, snapshot
     ):
         snapshot.add_transformer(snapshot.transform.kms_api())
-        key = kms_create_key(MultiRegion=False)
+        key = kms_create_key(MultiRegion=False, Description="test non multi region key")
         assert not key["KeyId"].startswith("mrk-")
         snapshot.match("non_multi_region_keys_should_not_have_multi_region_properties", key)
 
@@ -808,10 +808,8 @@ class TestKMS:
         paths=[
             "$..KeyMetadata.Enabled",
             "$..KeyMetadata.KeyState",
-            "$..KeyMetadata.MultiRegionConfiguration",  # not implemented
             "$..ReplicaKeyMetadata.Enabled",
             "$..ReplicaKeyMetadata.KeyState",
-            "$..ReplicaKeyMetadata.MultiRegionConfiguration",  # not implemented
             "$..ReplicaPolicy",  # not implemented
         ],
     )
