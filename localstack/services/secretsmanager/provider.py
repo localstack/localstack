@@ -6,27 +6,10 @@ import re
 import time
 from typing import Final, Optional, Union
 
+import moto.secretsmanager.exceptions as MotoException
 from botocore.utils import InvalidArnException
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import secretsmanager_backends
-from moto.secretsmanager.exceptions import (
-    InvalidParameterException as MotoInvalidParameterException,
-)
-from moto.secretsmanager.exceptions import (
-    InvalidRequestException as MotoInvalidRequestException,
-)
-from moto.secretsmanager.exceptions import (
-    OperationNotPermittedOnReplica as MotoOperationNotPermittedOnReplica,
-)
-from moto.secretsmanager.exceptions import (
-    SecretHasNoValueException as MotoSecretHasNoValueException,
-)
-from moto.secretsmanager.exceptions import (
-    SecretNotFoundException as MotoSecretNotFoundException,
-)
-from moto.secretsmanager.exceptions import (
-    SecretStageVersionMismatchException as MotoSecretStageVersionMismatchException,
-)
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
 
@@ -138,7 +121,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     ):
         try:
             secret = backend.describe_secret(secret_id)
-        except MotoSecretNotFoundException:
+        except MotoException.SecretNotFoundException:
             raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
         if secret.kms_key_id is None and request.account_id != secret.account_id:
             raise InvalidRequestException(
@@ -216,13 +199,13 @@ class SecretsmanagerProvider(SecretsmanagerApi):
                 recovery_window_in_days=recovery_window_in_days,
                 force_delete_without_recovery=force_delete_without_recovery,
             )
-        except MotoInvalidParameterException as e:
+        except MotoException.InvalidParameterException as e:
             raise InvalidParameterException(str(e))
-        except MotoInvalidRequestException:
+        except MotoException.InvalidRequestException:
             raise InvalidRequestException(
                 "You tried to perform the operation on a secret that's currently marked deleted."
             )
-        except MotoSecretNotFoundException:
+        except MotoException.SecretNotFoundException:
             raise SecretNotFoundException()
         return DeleteSecretResponse(ARN=arn, Name=name, DeletionDate=deletion_date)
 
@@ -235,7 +218,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
         try:
             secret = backend.describe_secret(secret_id)
-        except MotoSecretNotFoundException:
+        except MotoException.SecretNotFoundException:
             raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
         return DescribeSecretResponse(**secret.to_dict())
 
@@ -261,19 +244,19 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         self._raise_if_default_kms_key(secret_id, context, backend)
         try:
             response = backend.get_secret_value(secret_id, version_id, version_stage)
-        except MotoSecretNotFoundException:
+        except MotoException.SecretNotFoundException:
             raise ResourceNotFoundException(
                 f"Secrets Manager can't find the specified secret value for staging label: {version_stage}"
             )
-        except MotoSecretStageVersionMismatchException:
+        except MotoException.SecretStageVersionMismatchException:
             raise InvalidRequestException(
                 "You provided a VersionStage that is not associated to the provided VersionId."
             )
-        except MotoSecretHasNoValueException:
+        except MotoException.SecretHasNoValueException:
             raise ResourceNotFoundException(
                 f"Secrets Manager can't find the specified secret value for staging label: {version_stage}"
             )
-        except MotoInvalidRequestException:
+        except MotoException.InvalidRequestException:
             raise InvalidRequestException(
                 "You can't perform this operation on the secret because it was marked for deletion."
             )
@@ -352,7 +335,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
         try:
             arn, name = backend.restore_secret(secret_id)
-        except MotoSecretNotFoundException:
+        except MotoException.SecretNotFoundException:
             raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
         return RestoreSecretResponse(ARN=arn, Name=name)
 
@@ -411,13 +394,13 @@ class SecretsmanagerProvider(SecretsmanagerApi):
                 client_request_token=client_req_token,
                 kms_key_id=kms_key_id,
             )
-        except MotoSecretNotFoundException:
+        except MotoException.SecretNotFoundException:
             raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
-        except MotoOperationNotPermittedOnReplica:
+        except MotoException.OperationNotPermittedOnReplica:
             raise InvalidRequestException(
                 "Operation not permitted on a replica secret. Call must be made in primary secret's region."
             )
-        except MotoInvalidRequestException:
+        except MotoException.InvalidRequestException:
             raise InvalidRequestException(
                 "An error occurred (InvalidRequestException) when calling the UpdateSecret operation: "
                 "You can't perform this operation on the secret because it was marked for deletion."
@@ -835,7 +818,7 @@ def backend_rotate_secret(
     return secret.to_short_dict(version_id=new_version_id)
 
 
-@patch(MotoSecretNotFoundException.__init__)
+@patch(MotoException.SecretNotFoundException.__init__)
 def moto_secret_not_found_exception_init(fn, self):
     fn(self)
     self.code = 400

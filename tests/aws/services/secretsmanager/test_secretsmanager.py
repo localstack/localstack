@@ -9,6 +9,7 @@ from typing import Optional
 import pytest
 import requests
 from botocore.auth import SigV4Auth
+from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
@@ -2352,13 +2353,13 @@ class TestSecretsManager:
 
         secret_arn = response["ARN"]
 
-        with pytest.raises(Exception) as ex:
+        with pytest.raises(ClientError) as ex:
             aws_client.secretsmanager.get_secret_value(
                 SecretId=secret_arn, VersionStage="AWSPREVIOUS"
             )
         sm_snapshot.match("error_get_secret_value_non_existing", ex.value.response)
 
-        with pytest.raises(Exception) as exc:
+        with pytest.raises(ClientError) as exc:
             aws_client.secretsmanager.get_secret_value(
                 SecretId=secret_name, VersionId=version_id, VersionStage="AWSPREVIOUS"
             )
