@@ -33,7 +33,7 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
             "FunctionName": function_name,
             "TableName": table_name,
             "Filter": '{"eventName": ["MODIFY"]}',
-        }
+        },
     )
 
     aws_client.dynamodb.put_item(TableName=table_name, Item=item_to_put)
@@ -48,6 +48,8 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
         assert "MODIFY" in msg and "INSERT" not in msg
 
     retry(_assert_single_lambda_call, retries=30)
+
+
 # TODO make a test simular to one above but for updated filtering
 
 
@@ -68,9 +70,7 @@ def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aw
             "Filter": '{"eventName": ["DELETE"]}',
         },
     )
-    source_mappings = aws_client.lambda_.list_event_source_mappings(
-        FunctionName=function_name
-    )
+    source_mappings = aws_client.lambda_.list_event_source_mappings(FunctionName=function_name)
     snapshot.match("source_mappings", source_mappings)
 
     deploy_cfn_template(
@@ -83,12 +83,10 @@ def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aw
             "Filter": '{"eventName": ["MODIFY"]}',
         },
         stack_name=stack.stack_name,
-        is_update=True
+        is_update=True,
     )
 
-    source_mappings = aws_client.lambda_.list_event_source_mappings(
-        FunctionName=function_name
-    )
+    source_mappings = aws_client.lambda_.list_event_source_mappings(FunctionName=function_name)
     snapshot.match("updated_source_mappings", source_mappings)
 
 
