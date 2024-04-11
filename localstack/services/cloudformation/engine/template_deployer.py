@@ -913,7 +913,7 @@ class TemplateDeployer:
                             i + 1,
                             len(resources),
                             resource["ResourceType"],
-                            iteration_cycle + 1,
+                            iteration_cycle,
                         )
                         executor.deploy_loop(resource, resource_provider_payload)
                         self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
