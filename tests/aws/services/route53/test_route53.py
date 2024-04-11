@@ -85,6 +85,10 @@ class TestRoute53:
         response = aws_client.route53.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=region_name)
         snapshot.match("list_hosted_zones_by_vpc", response)
 
+        response = aws_client.route53.list_hosted_zones()
+        zones = [zone for zone in response["HostedZones"] if name in zone["Name"]]
+        snapshot.match("list_hosted_zones", zones)
+
     @markers.aws.unknown
     def test_associate_vpc_with_hosted_zone(
         self, cleanups, hosted_zone, aws_client, account_id, region_name
