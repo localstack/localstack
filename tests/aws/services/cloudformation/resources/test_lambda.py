@@ -59,6 +59,7 @@ def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aw
     snapshot.add_transformer(snapshot.transform.lambda_api())
     function_name = f"test-fn-{short_uid()}"
     table_name = f"ddb-tbl-{short_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(table_name, "<table_name>"))
 
     stack = deploy_cfn_template(
         template_path=os.path.join(
