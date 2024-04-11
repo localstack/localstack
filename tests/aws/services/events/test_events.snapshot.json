@@ -1204,5 +1204,11 @@
     "recorded-content": {
       "delete-rule": "<ExceptionInfo ClientError(\"An error occurred (ValidationException) when calling the DeleteRule operation: Rule can't be deleted since it has targets.\") tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_delete_default_event_bus": {
+    "recorded-date": "11-04-2024, 12:05:06",
+    "recorded-content": {
+      "delete-default-event-bus": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the DeleteEventBus operation: Cannot delete event bus default.') tblen=3>"
+    }
   }
 }

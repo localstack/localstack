@@ -759,6 +759,14 @@ class TestEventsEventBus:
         snapshot.match("delete-not-existing-event-bus", e)
 
     @markers.aws.validated
+    def test_delete_default_event_bus(self, aws_client, snapshot):
+        events = aws_client.events
+
+        with pytest.raises(aws_client.events.exceptions.ClientError) as e:
+            events.delete_event_bus(Name="default")
+        snapshot.match("delete-default-event-bus", e)
+
+    @markers.aws.validated
     def test_list_event_buses_with_prefix(self, create_event_bus, aws_client, snapshot):
         events = aws_client.events
         bus_name = "test-bus"
