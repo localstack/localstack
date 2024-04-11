@@ -1256,6 +1256,15 @@ class TemplateDeployer:
                         if not should_remove:
                             del changes[j]
                             continue
+                        LOG.debug(
+                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s',
+                            action,
+                            resource_id,
+                            j + 1,
+                            len(changes),
+                            res_change["ResourceType"],
+                            i + 1,
+                        )
                     self.apply_change(change, stack=stack)
                     changes_done.append(change)
                     del changes[j]
