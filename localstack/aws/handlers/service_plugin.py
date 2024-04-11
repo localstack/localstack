@@ -2,7 +2,6 @@
 
 import logging
 import threading
-from typing import Optional
 
 from localstack.http import Response
 from localstack.services.plugins import Service, ServiceManager
@@ -10,8 +9,8 @@ from localstack.utils.sync import SynchronizedDefaultDict
 
 from ...utils.bootstrap import is_api_enabled
 from ..api import RequestContext
-from ..api.core import ServiceOperation
 from ..chain import Handler, HandlerChain
+from ..protocol.service_router import determine_aws_service_model_for_data_plane
 from .service import ServiceRequestRouter
 
 LOG = logging.getLogger(__name__)
@@ -31,6 +30,7 @@ class ServiceLoader(Handler):
         self.service_manager = service_manager
         self.service_request_router = service_request_router
         self.service_locks = SynchronizedDefaultDict(threading.RLock)
+        self.loaded_services = set()
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         return self.require_service(chain, context, response)
@@ -47,20 +47,19 @@ class ServiceLoader(Handler):
                 f"Service '{service_name}' is not enabled. Please check your 'SERVICES' configuration variable."
             )
 
-        service_operation: Optional[ServiceOperation] = context.service_operation
+        if service_name in self.loaded_services:
+            return
+
         request_router = self.service_request_router
 
         # Ensure the Service is loaded and set to ServiceState.RUNNING if not in an erroneous state.
         service_plugin: Service = self.service_manager.require(service_name)
 
-        # Continue adding service skelethon and handlers to the router if these are missing.
-        if service_operation in request_router.handlers:
-            return
-
         with self.service_locks[context.service.service_name]:
             # try again to avoid race conditions
-            if service_operation in request_router.handlers:
+            if service_name in self.loaded_services:
                 return
+            self.loaded_services.add(service_name)
             if isinstance(service_plugin, Service):
                 request_router.add_skeleton(service_plugin.skeleton)
             else:
@@ -68,3 +67,22 @@ class ServiceLoader(Handler):
                     f"found plugin for '{service_name}', "
                     f"but cannot attach service plugin of type '{type(service_plugin)}'",
                 )
+
+
+class ServiceLoaderForDataPlane(Handler):
+    """
+    Specific lightweight service loader that loads services based only on hostname indicators. This allows
+    us to correctly load services when things like lambda function URLs or APIGW REST APIs are called
+    before the services were actually loaded.
+    """
+
+    def __init__(self, service_loader: ServiceLoader):
+        self.service_loader = service_loader
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        if context.service:
+            return
+
+        if service := determine_aws_service_model_for_data_plane(context.request):
+            context.service = service
+            self.service_loader.require_service(chain, context, response)
