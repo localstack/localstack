@@ -37,7 +37,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.136.0
+aws-cdk-lib==2.137.0
     # via localstack-core
 aws-sam-translator==1.87.0
     # via
@@ -84,7 +84,7 @@ cachetools==5.3.3
     #   localstack-core (pyproject.toml)
 cattrs==23.2.3
     # via jsii
-cbor2==5.6.2
+cbor2==5.6.3
     # via localstack-core
 certifi==2024.2.2
     # via
@@ -158,7 +158,7 @@ docopt==0.6.2
     # via coveralls
 docutils==0.16
     # via awscli
-filelock==3.13.3
+filelock==3.13.4
     # via virtualenv
 flask==3.0.3
     # via
@@ -192,7 +192,7 @@ hyperlink==21.0.0
     # via localstack-twisted
 identify==2.5.35
     # via pre-commit
-idna==3.6
+idna==3.7
     # via
     #   anyio
     #   httpx
@@ -244,7 +244,7 @@ jsonpath-ng==1.6.1
     #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core
-jsonpickle==3.0.3
+jsonpickle==3.0.4
     # via jschema-to-python
 jsonpointer==2.4
     # via jsonpatch
@@ -277,7 +277,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.4.post1
+moto-ext==5.0.5.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -397,7 +397,7 @@ mypy-boto3-logs==1.34.66
     # via boto3-stubs
 mypy-boto3-managedblockchain==1.34.0
     # via boto3-stubs
-mypy-boto3-mediaconvert==1.34.33
+mypy-boto3-mediaconvert==1.34.81
     # via boto3-stubs
 mypy-boto3-mediastore==1.34.0
     # via boto3-stubs
@@ -419,7 +419,7 @@ mypy-boto3-qldb==1.34.49
     # via boto3-stubs
 mypy-boto3-qldb-session==1.34.0
     # via boto3-stubs
-mypy-boto3-rds==1.34.65
+mypy-boto3-rds==1.34.81
     # via boto3-stubs
 mypy-boto3-rds-data==1.34.6
     # via boto3-stubs
@@ -540,7 +540,7 @@ publication==0.0.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-py-partiql-parser==0.5.2
+py-partiql-parser==0.5.4
     # via moto-ext
 pyasn1==0.6.0
     # via rsa

@@ -25,7 +25,7 @@ build==1.2.1
     # via localstack-core (pyproject.toml)
 cachetools==5.3.3
     # via localstack-core (pyproject.toml)
-cbor2==5.6.2
+cbor2==5.6.3
     # via localstack-core (pyproject.toml)
 certifi==2024.2.2
     # via requests
@@ -74,7 +74,7 @@ hyperframe==6.0.1
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-idna==3.6
+idna==3.7
     # via
     #   hyperlink
     #   localstack-twisted
