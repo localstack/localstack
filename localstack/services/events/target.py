@@ -29,15 +29,15 @@ class TargetWorker(ABC):
 
     def __init__(
         self,
+        target: Target,
         region: str,
         account_id: str,
-        target: Target,
         rule_arn: Arn,
         service: str,
     ):
+        self.target = target
         self.region = region
         self.account_id = account_id
-        self.target = target
         self.rule_arn = rule_arn
         self.service = service
 
@@ -86,6 +86,9 @@ class TargetWorker(ABC):
         else:
             clients = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
         return clients
+
+
+TargetWorkerDict = dict[Arn, TargetWorker]
 
 
 class LambdaTargetWorker(TargetWorker):
@@ -306,10 +309,10 @@ class TargetWorkerFactory:
         # TODO api gateway & custom endpoints via http target
     }
 
-    def __init__(self, region: str, account_id: str, target: Target, rule_arn: Arn):
+    def __init__(self, target: Target, region: str, account_id: str, rule_arn: Arn):
+        self.target = target
         self.region = region
         self.account_id = account_id
-        self.target = target
         self.rule_arn = rule_arn
 
     @staticmethod
@@ -324,7 +327,7 @@ class TargetWorkerFactory:
         else:
             raise Exception(f"Unsupported target for Service: {service}")
         target_worker = target_worker_class(
-            self.region, self.account_id, self.target, self.rule_arn, service
+            self.target, self.region, self.account_id, self.rule_arn, service
         )
         return target_worker
 

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, TypedDict
+from typing import Optional
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
@@ -82,33 +82,12 @@ class EventBus:
 EventBusDict = dict[EventBusName, EventBus]
 
 
-class Event(TypedDict, total=False):
-    version: str
-    id: str
-    source: str
-    account: str
-    time: str
-    region: str
-    resources: list[str]
-    detail_type: str
-    detail: dict
-    additional_attributes: dict
-
-
-EventList = list[Event]
-
-
 class EventsStore(BaseStore):
     # Map of eventbus names to eventbus objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     event_buses: EventBusDict = LocalAttribute(default=dict)
 
 
 events_store = AccountRegionBundle("events", EventsStore)
-
-
-#######
-# Types
-#######
 
 
 class ValidationException(ServiceException):
