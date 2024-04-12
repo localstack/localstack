@@ -710,15 +710,25 @@ class TestAPIGateway:
             else:
                 assert 204 == result.status_code
 
-    @markers.aws.unknown
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..authType",  # Not added by LS
+            "$..authorizerResultTtlInSeconds",  # Exists in LS but not in AWS
+        ]
+    )
+    @markers.aws.validated
     def test_apigateway_with_custom_authorization_method(
-        self, create_rest_apigw, aws_client, account_id, region_name, integration_lambda
+        self, create_rest_apigw, aws_client, account_id, region_name, integration_lambda, snapshot
     ):
+        snapshot.add_transformer(snapshot.transform.key_value("api_id"))
+        snapshot.add_transformer(snapshot.transform.key_value("authorizerUri"))
+        snapshot.add_transformer(snapshot.transform.key_value("id"))
         # create Lambda function
         lambda_uri = arns.lambda_function_arn(integration_lambda, account_id, region_name)
 
         # create REST API
         api_id, _, _ = create_rest_apigw(name="test-api")
+        snapshot.match("api-id", {"api_id": api_id})
         root_res_id = aws_client.apigateway.get_resources(restApiId=api_id)["items"][0]["id"]
 
         # create authorizer at root resource
@@ -730,6 +740,7 @@ class TestAPIGateway:
                 2015-03-31/functions/{}/invocations".format(lambda_uri),
             identitySource="method.request.header.Auth",
         )
+        snapshot.match("authorizer", authorizer)
 
         # create method with custom authorizer
         is_api_key_required = True
@@ -741,8 +752,7 @@ class TestAPIGateway:
             authorizerId=authorizer["id"],
             apiKeyRequired=is_api_key_required,
         )
-
-        assert authorizer["id"] == method_response["authorizerId"]
+        snapshot.match("put-method-response", method_response)
 
     @markers.aws.unknown
     def test_base_path_mapping(self, create_rest_apigw, aws_client):
