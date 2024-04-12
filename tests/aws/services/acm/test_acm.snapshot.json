@@ -291,5 +291,46 @@
         }
       }
     }
+  },
+  "tests/aws/services/acm/test_acm.py::TestACM::test_domain_validation": {
+    "recorded-date": "12-04-2024, 15:36:37",
+    "recorded-content": {
+      "describe-certificate": {
+        "Certificate": {
+          "CertificateArn": "<certificate-arn:1>",
+          "CreatedAt": "datetime",
+          "DomainName": "<domain-name:1>",
+          "DomainValidationOptions": [
+            {
+              "DomainName": "<domain-name:1>",
+              "ValidationDomain": "<domain-name:1>",
+              "ValidationEmails": [],
+              "ValidationMethod": "<validation-method:1>",
+              "ValidationStatus": "PENDING_VALIDATION"
+            }
+          ],
+          "ExtendedKeyUsages": [],
+          "InUseBy": [],
+          "Issuer": "Amazon",
+          "KeyAlgorithm": "RSA-2048",
+          "KeyUsages": [],
+          "Options": {
+            "CertificateTransparencyLoggingPreference": "ENABLED"
+          },
+          "RenewalEligibility": "INELIGIBLE",
+          "SignatureAlgorithm": "<signature-algorithm:1>",
+          "Status": "PENDING_VALIDATION",
+          "Subject": "CN=<domain-name:1>",
+          "SubjectAlternativeNames": [
+            "<domain-name:1>"
+          ],
+          "Type": "AMAZON_ISSUED"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
