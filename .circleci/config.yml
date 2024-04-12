@@ -507,8 +507,7 @@ jobs:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
             # check if a fork-only env var is set (https://circleci.com/docs/variables/)
-            # TODO revert to -z
-            if [ -n "$CIRCLE_PR_REPONAME" ]; then
+            if [ -z "$CIRCLE_PR_REPONAME" ]; then
               source .venv/bin/activate
               mkdir parity_metrics && mv target/metric_reports/metric-report-raw-data-*amd64*.csv parity_metrics
               METRIC_REPORT_DIR_PATH=parity_metrics \
