@@ -381,7 +381,9 @@ class TestAPIGateway:
             aws_client.apigateway,
         )
 
-    @markers.aws.unknown
+    # This test fails as it tries to create a lambda locally?
+    # It then leaves some resources behind, apigateway and policies
+    @markers.aws.needs_fixing
     def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(
         self, integration_lambda, aws_client, create_iam_role_with_policy
     ):
