@@ -178,8 +178,10 @@ class TestAPIGateway:
         assert response.ok
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
-    @markers.aws.unknown
-    def test_update_rest_api_deployment(self, create_rest_apigw, aws_client):
+    @markers.aws.validated
+    def test_update_rest_api_deployment(self, create_rest_apigw, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("id"))
+
         api_id, _, root = create_rest_apigw(name="test_gateway5")
 
         create_rest_resource_method(
@@ -219,7 +221,7 @@ class TestAPIGateway:
             deploymentId=deployment_id,
             patchOperations=patch_operations,
         )
-        assert deployment["description"] == "new-description"
+        snapshot.match("after-update", deployment)
 
     @markers.aws.validated
     def test_api_gateway_lambda_integration_aws_type(
