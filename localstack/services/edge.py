@@ -15,8 +15,8 @@ from localstack.http.dispatcher import Handler, handler_dispatcher
 from localstack.utils.collections import split_list_by
 from localstack.utils.net import get_free_tcp_port
 from localstack.utils.run import is_root, run
-from localstack.utils.server.proxy_server import start_tcp_proxy
-from localstack.utils.threads import FuncThread, start_thread
+from localstack.utils.server.tcp_proxy import TCPProxy
+from localstack.utils.threads import start_thread
 
 T = TypeVar("T")
 
@@ -74,7 +74,7 @@ def start_component(
 
 def start_proxy(
     listen_str: str, target_address: HostAndPort, asynchronous: bool = False
-) -> FuncThread:
+) -> TCPProxy:
     """
     Starts a TCP proxy to perform a low-level forwarding of incoming requests.
 
@@ -94,15 +94,18 @@ def start_proxy(
 
 def do_start_tcp_proxy(
     listen: HostAndPort, target_address: HostAndPort, asynchronous: bool = False
-) -> FuncThread:
+) -> TCPProxy:
     src = str(listen)
     dst = str(target_address)
 
     LOG.debug("Starting Local TCP Proxy: %s -> %s", src, dst)
-    proxy = start_thread(
-        lambda *args, **kwargs: start_tcp_proxy(src=src, dst=dst, handler=None, **kwargs),
-        name="edge-tcp-proxy",
+    proxy = TCPProxy(
+        target_address=target_address.host,
+        target_port=target_address.port,
+        host=listen.host,
+        port=listen.port,
     )
+    proxy.start()
     if not asynchronous:
         proxy.join()
     return proxy

@@ -9,7 +9,6 @@ from localstack.aws.api.transcribe import BadRequestException, ConflictException
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
 from localstack.utils.files import new_tmp_file
-from localstack.utils.platform import get_arch
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 
@@ -23,10 +22,6 @@ def transcribe_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.transcribe_api())
 
 
-@pytest.mark.skipif(
-    "arm" in get_arch(),
-    reason="Vosk transcription library has issues running on Circle CI arm64 executors.",
-)
 class TestTranscribe:
     @staticmethod
     def _wait_transcription_job(
