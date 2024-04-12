@@ -61,12 +61,22 @@ class TestACM:
 
         snapshot.match("describe-certificate-response", describe_res)
 
-    @markers.aws.unknown
-    def test_domain_validation(self, acm_request_certificate, aws_client):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ResourceRecord",  # Added by LS but not in aws response
+            "$..ValidationEmails",  # Not in LS response
+        ]
+    )
+    @markers.aws.validated
+    def test_domain_validation(self, acm_request_certificate, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("CertificateArn"))
+        snapshot.add_transformer(snapshot.transform.key_value("DomainName"))
+        snapshot.add_transformer(snapshot.transform.key_value("ValidationMethod"))
+        snapshot.add_transformer(snapshot.transform.key_value("SignatureAlgorithm"))
+
         certificate_arn = acm_request_certificate()["CertificateArn"]
         result = aws_client.acm.describe_certificate(CertificateArn=certificate_arn)
-        options = result["Certificate"]["DomainValidationOptions"]
-        assert len(options) == 1
+        snapshot.match("describe-certificate", result)
 
     @markers.aws.unknown
     def test_boto_wait_for_certificate_validation(
