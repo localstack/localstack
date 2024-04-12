@@ -782,6 +782,7 @@ class TestEventsEventBus:
         snapshot.match("list-event-buses-prefix", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(not is_v2_provider(), reason="V1 provider does not support this feature")
     def test_list_event_buses_with_limit(self, create_event_bus, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
         events = aws_client.events
@@ -1164,6 +1165,7 @@ class TestEventRule:
         snapshot.match("list-rules-limit-next-token", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(not is_v2_provider(), reason="V1 provider does not support this feature")
     def test_describe_nonexistent_rule(self, aws_client, snapshot):
         rule_name = f"this-rule-does-not-exist-1234567890-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
@@ -1290,6 +1292,7 @@ class TestEventTarget:
         snapshot.match("list-targets-after-delete", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(not is_v2_provider(), reason="V1 provider does not support this feature")
     def test_add_exceed_fife_targets_per_rule(
         self, put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
     ):
@@ -1311,6 +1314,7 @@ class TestEventTarget:
         snapshot.match("put-targets-client-error", error)
 
     @markers.aws.validated
+    @pytest.mark.skipif(not is_v2_provider(), reason="V1 provider does not support this feature")
     def test_list_target_by_rule_limit(
         self, put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
     ):
