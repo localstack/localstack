@@ -157,8 +157,7 @@ class TestAPIGateway:
         assert "foobar" in e.value.response["Error"]["Message"]
 
     @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
-    @markers.aws.needs_fixing
-    # This is not a possible feature on aws. Is there a reason for us to add that support?
+    @markers.aws.only_localstack
     def test_create_rest_api_with_custom_id(self, create_rest_apigw, url_function, aws_client):
         apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
@@ -539,13 +538,17 @@ class TestAPIGateway:
         assert "/yCqIBE=" == result_content["body"]
         assert ["isBase64Encoded"]
 
-    @markers.aws.unknown
+    # This test fails as it tries to create a lambda locally?
+    # It then leaves some resources behind, apigateway and policies
+    @markers.aws.needs_fixing
     def test_api_gateway_lambda_proxy_integration_any_method(self, integration_lambda):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             integration_lambda, API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD
         )
 
-    @markers.aws.unknown
+    # This test fails as it tries to create a lambda locally?
+    # It then leaves some resources behind, apigateway and policies
+    @markers.aws.needs_fixing
     def test_api_gateway_lambda_proxy_integration_any_method_with_path_param(
         self, integration_lambda
     ):
@@ -637,9 +640,7 @@ class TestAPIGateway:
                 restApiId=get_api_gateway_id, authorizerId=authorizer_id
             )
 
-    # This test fails as it tries to create a lambda locally?
-    # It then leaves some resources behind, apigateway and policies
-    @markers.aws.needs_fixing
+    @markers.aws.unknown
     def test_malformed_response_apigw_invocation(
         self, create_lambda_function, aws_client, region_name
     ):
