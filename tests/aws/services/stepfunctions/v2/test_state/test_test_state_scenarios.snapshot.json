@@ -1,6 +1,6 @@
 {
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:02:32",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:45:35",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -14,8 +14,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_result_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:02:45",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_RESULT_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:45:49",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -29,8 +29,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
-    "recorded-date": "12-04-2024, 14:02:58",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[IO_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:46:03",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -54,8 +54,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_result_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
-    "recorded-date": "12-04-2024, 14:03:11",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[IO_RESULT_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:46:15",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -78,8 +78,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_fail_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:03:24",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_FAIL_STATE]": {
+    "recorded-date": "12-04-2024, 20:46:28",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -92,8 +92,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_succeed_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:03:42",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_SUCCEED_STATE]": {
+    "recorded-date": "12-04-2024, 20:46:41",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -107,8 +107,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_choice_state.json5-{\"type\": \"Private\", \"value\": 22}]": {
-    "recorded-date": "12-04-2024, 14:03:55",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_CHOICE_STATE]": {
+    "recorded-date": "12-04-2024, 20:46:53",
     "recorded-content": {
       "test_case_response": {
         "nextState": "ValueInTwenties",
@@ -124,8 +124,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:05:09",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:47:06",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -156,8 +156,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_result_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:05:28",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_RESULT_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:47:19",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -185,8 +185,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
-    "recorded-date": "12-04-2024, 14:05:40",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[IO_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:47:31",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -246,8 +246,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_result_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
-    "recorded-date": "12-04-2024, 14:05:53",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[IO_RESULT_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:47:44",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -299,8 +299,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_fail_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:06:06",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_FAIL_STATE]": {
+    "recorded-date": "12-04-2024, 20:47:56",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -321,8 +321,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_succeed_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:06:19",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_SUCCEED_STATE]": {
+    "recorded-date": "12-04-2024, 20:48:10",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -344,8 +344,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_choice_state.json5-{\"type\": \"Private\", \"value\": 22}]": {
-    "recorded-date": "12-04-2024, 14:06:31",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_CHOICE_STATE]": {
+    "recorded-date": "12-04-2024, 20:48:24",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -371,8 +371,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:09:57",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:48:37",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -403,8 +403,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_result_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:10:10",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_RESULT_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:48:50",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -432,8 +432,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
-    "recorded-date": "12-04-2024, 14:10:22",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[IO_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:49:03",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -493,8 +493,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_result_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
-    "recorded-date": "12-04-2024, 14:10:36",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[IO_RESULT_PASS_STATE]": {
+    "recorded-date": "12-04-2024, 20:49:22",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -546,8 +546,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_fail_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:10:49",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_FAIL_STATE]": {
+    "recorded-date": "12-04-2024, 20:49:31",
     "recorded-content": {
       "test_case_response": {
         "cause": "This state machines raises a 'SomeFailure' failure.",
@@ -568,8 +568,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_succeed_state.json5-{\"Value\": \"HelloWorld\"}]": {
-    "recorded-date": "12-04-2024, 14:11:03",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_SUCCEED_STATE]": {
+    "recorded-date": "12-04-2024, 20:49:44",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -591,8 +591,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_choice_state.json5-{\"type\": \"Private\", \"value\": 22}]": {
-    "recorded-date": "12-04-2024, 14:11:16",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_CHOICE_STATE]": {
+    "recorded-date": "12-04-2024, 20:49:57",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -610,6 +610,73 @@
           "type": "Private",
           "value": 22
         },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[INFO]": {
+    "recorded-date": "12-04-2024, 20:50:22",
+    "recorded-content": {
+      "test_case_response": {
+        "output": "\"HelloWorld!\"",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[DEBUG]": {
+    "recorded-date": "12-04-2024, 20:50:37",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "inputData": "HelloWorld"
+          },
+          "afterParameters": {
+            "inputData": "HelloWorld"
+          },
+          "afterResultPath": "\"HelloWorld!\"",
+          "afterResultSelector": "\"HelloWorld!\"",
+          "input": {
+            "inputData": "HelloWorld"
+          },
+          "result": "\"HelloWorld!\""
+        },
+        "output": "\"HelloWorld!\"",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[TRACE]": {
+    "recorded-date": "12-04-2024, 20:50:52",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "inputData": "HelloWorld"
+          },
+          "afterParameters": {
+            "inputData": "HelloWorld"
+          },
+          "afterResultPath": "\"HelloWorld!\"",
+          "afterResultSelector": "\"HelloWorld!\"",
+          "input": {
+            "inputData": "HelloWorld"
+          },
+          "result": "\"HelloWorld!\""
+        },
+        "output": "\"HelloWorld!\"",
         "status": "SUCCEEDED",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -619,7 +686,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[INFO]": {
-    "recorded-date": "12-04-2024, 14:29:13",
+    "recorded-date": "12-04-2024, 20:51:07",
     "recorded-content": {
       "test_case_response": {
         "output": {
@@ -674,7 +741,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[DEBUG]": {
-    "recorded-date": "12-04-2024, 14:29:28",
+    "recorded-date": "12-04-2024, 20:51:22",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -872,7 +939,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[TRACE]": {
-    "recorded-date": "12-04-2024, 14:29:43",
+    "recorded-date": "12-04-2024, 20:51:37",
     "recorded-content": {
       "test_case_response": {
         "inspectionData": {
@@ -1061,73 +1128,6 @@
           },
           "StatusCode": 200
         },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[INFO]": {
-    "recorded-date": "12-04-2024, 14:33:24",
-    "recorded-content": {
-      "test_case_response": {
-        "output": "\"HelloWorld!\"",
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[DEBUG]": {
-    "recorded-date": "12-04-2024, 14:33:39",
-    "recorded-content": {
-      "test_case_response": {
-        "inspectionData": {
-          "afterInputPath": {
-            "inputData": "HelloWorld"
-          },
-          "afterParameters": {
-            "inputData": "HelloWorld"
-          },
-          "afterResultPath": "\"HelloWorld!\"",
-          "afterResultSelector": "\"HelloWorld!\"",
-          "input": {
-            "inputData": "HelloWorld"
-          },
-          "result": "\"HelloWorld!\""
-        },
-        "output": "\"HelloWorld!\"",
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[TRACE]": {
-    "recorded-date": "12-04-2024, 14:33:54",
-    "recorded-content": {
-      "test_case_response": {
-        "inspectionData": {
-          "afterInputPath": {
-            "inputData": "HelloWorld"
-          },
-          "afterParameters": {
-            "inputData": "HelloWorld"
-          },
-          "afterResultPath": "\"HelloWorld!\"",
-          "afterResultSelector": "\"HelloWorld!\"",
-          "input": {
-            "inputData": "HelloWorld"
-          },
-          "result": "\"HelloWorld!\""
-        },
-        "output": "\"HelloWorld!\"",
         "status": "SUCCEEDED",
         "ResponseMetadata": {
           "HTTPHeaders": {},

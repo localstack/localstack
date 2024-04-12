@@ -32,6 +32,15 @@ BASE_TEMPLATE_INPUT_BINDINGS: list[tuple[str, str]] = [
     (TCT.BASE_SUCCEED_STATE, HELLO_WORLD_INPUT),
     (TCT.BASE_CHOICE_STATE, BASE_CHOICE_STATE_INPUT),
 ]
+IDS_BASE_TEMPLATE_INPUT_BINDINGS: list[str] = [
+    "BASE_PASS_STATE",
+    "BASE_RESULT_PASS_STATE",
+    "IO_PASS_STATE",
+    "IO_RESULT_PASS_STATE",
+    "BASE_FAIL_STATE",
+    "BASE_SUCCEED_STATE",
+    "BASE_CHOICE_STATE",
+]
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -44,7 +53,11 @@ BASE_TEMPLATE_INPUT_BINDINGS: list[tuple[str, str]] = [
 )
 class TestStateCaseScenarios:
     @markers.aws.validated
-    @pytest.mark.parametrize("tct_template,execution_input", BASE_TEMPLATE_INPUT_BINDINGS)
+    @pytest.mark.parametrize(
+        "tct_template,execution_input",
+        BASE_TEMPLATE_INPUT_BINDINGS,
+        ids=IDS_BASE_TEMPLATE_INPUT_BINDINGS,
+    )
     def test_base_inspection_level_info(
         self,
         stepfunctions_client_test_state,
@@ -79,7 +92,11 @@ class TestStateCaseScenarios:
             "$..inspectionData.afterResultSelector",
         ]
     )
-    @pytest.mark.parametrize("tct_template,execution_input", BASE_TEMPLATE_INPUT_BINDINGS)
+    @pytest.mark.parametrize(
+        "tct_template,execution_input",
+        BASE_TEMPLATE_INPUT_BINDINGS,
+        ids=IDS_BASE_TEMPLATE_INPUT_BINDINGS,
+    )
     def test_base_inspection_level_debug(
         self,
         stepfunctions_client_test_state,
@@ -114,7 +131,11 @@ class TestStateCaseScenarios:
             "$..inspectionData.afterResultSelector",
         ]
     )
-    @pytest.mark.parametrize("tct_template,execution_input", BASE_TEMPLATE_INPUT_BINDINGS)
+    @pytest.mark.parametrize(
+        "tct_template,execution_input",
+        BASE_TEMPLATE_INPUT_BINDINGS,
+        ids=IDS_BASE_TEMPLATE_INPUT_BINDINGS,
+    )
     def test_base_inspection_level_trace(
         self,
         stepfunctions_client_test_state,
