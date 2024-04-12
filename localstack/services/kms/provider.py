@@ -76,6 +76,7 @@ from localstack.aws.api.kms import (
     ListResourceTagsResponse,
     MacAlgorithmSpec,
     MarkerType,
+    MultiRegionKey,
     NotFoundException,
     NullableBooleanType,
     PlaintextType,
@@ -483,18 +484,19 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         replica_key.replicate_metadata(request, account_id, replica_region)
         replicate_to_store.keys[key_id] = replica_key
 
-        self.update_primary_key_with_replica_keys(account_id, key, key_id, replica_key)
+        self.update_primary_key_with_replica_keys(key, replica_key, replica_region)
 
         return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key.metadata)
 
     @staticmethod
-    # Replaces replica keys in a key's multi region configuration metadata and stores the key.
-    def update_primary_key_with_replica_keys(account_id, key, key_id, replica_key):
-        replica_keys = replica_key.get_replica_keys()
-        key.metadata["MultiRegionConfiguration"]["ReplicaKeys"] = replica_keys
-        primary_key_region = key.get_primary_key_region()
-        store = kms_stores[account_id][primary_key_region]
-        store.keys[key_id] = key
+    # Adds new multi region replica key to the primary key's metadata.
+    def update_primary_key_with_replica_keys(key: KmsKey, replica_key: KmsKey, region: str):
+        key.metadata["MultiRegionConfiguration"]["ReplicaKeys"].append(
+            MultiRegionKey(
+                Arn=replica_key.metadata["Arn"],
+                Region=region,
+            )
+        )
 
     @handler("UpdateKeyDescription", expand=False)
     def update_key_description(

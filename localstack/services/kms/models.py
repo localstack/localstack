@@ -35,7 +35,6 @@ from localstack.aws.api.kms import (
     MessageType,
     MultiRegionConfiguration,
     MultiRegionKey,
-    MultiRegionKeyList,
     MultiRegionKeyType,
     OriginType,
     ReplicateKeyRequest,
@@ -357,7 +356,6 @@ class KmsKey:
         # Multi region keys have the same key ID for all replicas, but ARNs differ, as they include actual regions of
         # replicas.
         self.calculate_and_set_arn(account_id, replica_region)
-        self.metadata["MultiRegion"] = True
 
         current_replica_keys = self.metadata.get("MultiRegionConfiguration", {}).get(
             "ReplicaKeys", []
@@ -375,14 +373,6 @@ class KmsKey:
             ),
             ReplicaKeys=current_replica_keys,
         )
-
-    # Returns current replica keys associated to this key.
-    def get_replica_keys(self) -> MultiRegionKeyList:
-        return self.metadata.get("MultiRegionConfiguration", {}).get("ReplicaKeys", [])
-
-    # Returns region of this key through its multi region configuration metadata.
-    def get_primary_key_region(self) -> str:
-        return self.metadata.get("MultiRegionConfiguration", {}).get("PrimaryKey", {}).get("Region")
 
     def _get_hmac_context(self, mac_algorithm: MacAlgorithmSpec) -> hmac.HMAC:
         if mac_algorithm == "HMAC_SHA_224":
