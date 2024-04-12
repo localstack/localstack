@@ -358,7 +358,9 @@ class TestAPIGateway:
             assert response.status_code == 200
             assert "http://test.com" in response.headers["Access-Control-Allow-Origin"]
 
-    @markers.aws.unknown
+    # This test fails as it tries to create a lambda locally?
+    # It then leaves some resources behind, apigateway and policies
+    @markers.aws.needs_fixing
     @pytest.mark.parametrize(
         "api_path", [API_PATH_LAMBDA_PROXY_BACKEND, API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM]
     )
