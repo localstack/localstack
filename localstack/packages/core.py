@@ -10,7 +10,7 @@ import requests
 
 from localstack import config
 
-from ..constants import LOCALSTACK_VENV_FOLDER
+from ..constants import LOCALSTACK_VENV_FOLDER, MAVEN_REPO_URL
 from ..utils.archives import download_and_extract
 from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
 from ..utils.http import download
@@ -295,3 +295,40 @@ class PythonPackageInstaller(PackageInstaller):
     def _setup_existing_installation(self, target: InstallTarget) -> None:
         """If the venv is already present, it just needs to be initialized once."""
         self._prepare_installation(target)
+
+
+class MavenPackageInstaller(DownloadInstaller):
+    """Package installer for Maven dependencies.
+    Follows the Maven naming conventions: https://maven.apache.org/guides/mini/guide-naming-conventions.html
+    """
+
+    # Example: software.amazon.event.ruler
+    group_id: str
+    # Example: event-ruler
+    artifact_id: str
+    # Example version: 1.7.3
+
+    # Optional installation directory to overwrite the default
+    install_dir: str | None
+
+    def __init__(self, package_url: str, install_dir: str | None = None):
+        """ "The packageURL is easy copy/pastable from the Maven central repository
+        Example package_url: pkg:maven/software.amazon.event.ruler/event-ruler@1.7.3
+        """
+        parts = package_url.split("/")
+        self.group_id = parts[1]
+        sub_parts = parts[2].split("@")
+        self.artifact_id = sub_parts[0]
+        version = sub_parts[1]
+        super().__init__(self.artifact_id, version)
+        self.install_dir = install_dir
+
+    def _get_download_url(self) -> str:
+        group_id_path = self.group_id.replace(".", "/")
+        return f"{MAVEN_REPO_URL}/{group_id_path}/{self.artifact_id}/{self.version}/{self.artifact_id}-{self.version}.jar"
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        """Allow to overwrite the default installation directory.
+        This enables bundling transitive dependencies into the same directory.
+        """
+        return self.install_dir or super()._get_install_dir(target)
