@@ -172,7 +172,7 @@ hyperframe==6.0.1
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-idna==3.6
+idna==3.7
     # via
     #   anyio
     #   httpx
