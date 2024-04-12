@@ -669,7 +669,9 @@ class TestAPIGateway:
         assert result.headers.get("Content-Type") == "application/json"
         assert json.loads(result.content)["message"] == "Internal server error"
 
-    @markers.aws.unknown
+    # Missing certificate creation to create a domain
+    # this might end up being a bigger issue to fix until we have a validated certificate we can use
+    @markers.aws.needs_fixing
     def test_api_gateway_handle_domain_name(self, aws_client):
         domain_name = f"{short_uid()}.example.com"
         apigw_client = aws_client.apigateway
