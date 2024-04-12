@@ -276,6 +276,8 @@ def _set_alarm_actions(context, alarm_names, enabled):
 
 
 def _cleanup_describe_output(alarm):
+    if "Metrics" in alarm and len(alarm["Metrics"]) == 0:
+        alarm.pop("Metrics")
     reason_data = alarm.get("StateReasonData")
     if reason_data is not None and reason_data in ("{}", ""):
         alarm.pop("StateReasonData")
