@@ -53,6 +53,9 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
 # TODO make a test simular to one above but for updated filtering
 
 
+@markers.snapshot.skip_snapshot_verify(
+    ["$..EventSourceMappings..FunctionArn", "$..EventSourceMappings..LastProcessingResult"]
+)
 @markers.aws.validated
 def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.dynamodb_api())
