@@ -1,8 +1,8 @@
 {
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass_info": {
-    "recorded-date": "31-01-2024, 15:59:17",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:02:32",
     "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
         "output": {
           "Value": "HelloWorld"
         },
@@ -14,74 +14,10 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass_debug": {
-    "recorded-date": "31-01-2024, 15:59:30",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_result_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:02:45",
     "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "Value": "HelloWorld"
-          },
-          "afterParameters": {
-            "Value": "HelloWorld"
-          },
-          "afterResultPath": {
-            "Value": "HelloWorld"
-          },
-          "afterResultSelector": {
-            "Value": "HelloWorld"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          }
-        },
-        "output": {
-          "Value": "HelloWorld"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_pass_trace": {
-    "recorded-date": "31-01-2024, 15:59:42",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "Value": "HelloWorld"
-          },
-          "afterParameters": {
-            "Value": "HelloWorld"
-          },
-          "afterResultPath": {
-            "Value": "HelloWorld"
-          },
-          "afterResultSelector": {
-            "Value": "HelloWorld"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          }
-        },
-        "output": {
-          "Value": "HelloWorld"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_result_pass_info": {
-    "recorded-date": "31-01-2024, 15:59:55",
-    "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
         "output": {
           "resultKey": "result value"
         },
@@ -93,72 +29,14 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_result_pass_debug": {
-    "recorded-date": "31-01-2024, 16:00:07",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
+    "recorded-date": "12-04-2024, 14:02:58",
     "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterResultPath": {
-            "resultKey": "result value"
-          },
-          "afterResultSelector": {
-            "resultKey": "result value"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          },
-          "result": {
-            "resultKey": "result value"
-          }
-        },
-        "output": {
-          "resultKey": "result value"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_result_pass_trace": {
-    "recorded-date": "31-01-2024, 16:00:14",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterResultPath": {
-            "resultKey": "result value"
-          },
-          "afterResultSelector": {
-            "resultKey": "result value"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          },
-          "result": {
-            "resultKey": "result value"
-          }
-        },
-        "output": {
-          "resultKey": "result value"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_pass_info": {
-    "recorded-date": "31-01-2024, 16:00:27",
-    "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
         "output": {
           "initialData": {
             "fieldFromInput": "value from input",
-            "otherField": "other value"
+            "otherField": "other"
           },
           "unrelatedData": {
             "someOtherField": 1234
@@ -176,14 +54,145 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_pass_debug": {
-    "recorded-date": "31-01-2024, 16:00:39",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_result_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
+    "recorded-date": "12-04-2024, 14:03:11",
     "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
+        "output": {
+          "initialData": {
+            "fieldFromInput": "value from input",
+            "otherField": "other"
+          },
+          "unrelatedData": {
+            "someOtherField": 1234
+          },
+          "modifiedData": {
+            "resultKey": "result value"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_fail_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:03:24",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_succeed_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:03:42",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_choice_state.json5-{\"type\": \"Private\", \"value\": 22}]": {
+    "recorded-date": "12-04-2024, 14:03:55",
+    "recorded-content": {
+      "test_case_response": {
+        "nextState": "ValueInTwenties",
+        "output": {
+          "type": "Private",
+          "value": 22
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:05:09",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "afterParameters": {
+            "Value": "HelloWorld"
+          },
+          "afterResultPath": {
+            "Value": "HelloWorld"
+          },
+          "afterResultSelector": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_result_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:05:28",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterResultPath": {
+            "resultKey": "result value"
+          },
+          "afterResultSelector": {
+            "resultKey": "result value"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "result": {
+            "resultKey": "result value"
+          }
+        },
+        "output": {
+          "resultKey": "result value"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
+    "recorded-date": "12-04-2024, 14:05:40",
+    "recorded-content": {
+      "test_case_response": {
         "inspectionData": {
           "afterInputPath": {
             "fieldFromInput": "value from input",
-            "otherField": "other value"
+            "otherField": "other"
           },
           "afterParameters": {
             "staticValue": "some value",
@@ -192,7 +201,7 @@
           "afterResultPath": {
             "initialData": {
               "fieldFromInput": "value from input",
-              "otherField": "other value"
+              "otherField": "other"
             },
             "unrelatedData": {
               "someOtherField": 1234
@@ -209,7 +218,7 @@
           "input": {
             "initialData": {
               "fieldFromInput": "value from input",
-              "otherField": "other value"
+              "otherField": "other"
             },
             "unrelatedData": {
               "someOtherField": 1234
@@ -219,7 +228,7 @@
         "output": {
           "initialData": {
             "fieldFromInput": "value from input",
-            "otherField": "other value"
+            "otherField": "other"
           },
           "unrelatedData": {
             "someOtherField": 1234
@@ -237,14 +246,200 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_pass_trace": {
-    "recorded-date": "31-01-2024, 16:00:52",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_result_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
+    "recorded-date": "12-04-2024, 14:05:53",
     "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterResultPath": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            },
+            "modifiedData": {
+              "resultKey": "result value"
+            }
+          },
+          "afterResultSelector": {
+            "resultKey": "result value"
+          },
+          "input": {
+            "initialData": {
+              "fieldFromInput": "value from input",
+              "otherField": "other"
+            },
+            "unrelatedData": {
+              "someOtherField": 1234
+            }
+          },
+          "result": {
+            "resultKey": "result value"
+          }
+        },
+        "output": {
+          "initialData": {
+            "fieldFromInput": "value from input",
+            "otherField": "other"
+          },
+          "unrelatedData": {
+            "someOtherField": 1234
+          },
+          "modifiedData": {
+            "resultKey": "result value"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_fail_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:06:06",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_succeed_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:06:19",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_choice_state.json5-{\"type\": \"Private\", \"value\": 22}]": {
+    "recorded-date": "12-04-2024, 14:06:31",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "type": "Private",
+            "value": 22
+          },
+          "input": {
+            "type": "Private",
+            "value": 22
+          }
+        },
+        "nextState": "ValueInTwenties",
+        "output": {
+          "type": "Private",
+          "value": 22
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:09:57",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "afterParameters": {
+            "Value": "HelloWorld"
+          },
+          "afterResultPath": {
+            "Value": "HelloWorld"
+          },
+          "afterResultSelector": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_result_pass_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:10:10",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterResultPath": {
+            "resultKey": "result value"
+          },
+          "afterResultSelector": {
+            "resultKey": "result value"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          },
+          "result": {
+            "resultKey": "result value"
+          }
+        },
+        "output": {
+          "resultKey": "result value"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
+    "recorded-date": "12-04-2024, 14:10:22",
+    "recorded-content": {
+      "test_case_response": {
         "inspectionData": {
           "afterInputPath": {
             "fieldFromInput": "value from input",
-            "otherField": "other value"
+            "otherField": "other"
           },
           "afterParameters": {
             "staticValue": "some value",
@@ -253,7 +448,7 @@
           "afterResultPath": {
             "initialData": {
               "fieldFromInput": "value from input",
-              "otherField": "other value"
+              "otherField": "other"
             },
             "unrelatedData": {
               "someOtherField": 1234
@@ -270,7 +465,7 @@
           "input": {
             "initialData": {
               "fieldFromInput": "value from input",
-              "otherField": "other value"
+              "otherField": "other"
             },
             "unrelatedData": {
               "someOtherField": 1234
@@ -280,7 +475,7 @@
         "output": {
           "initialData": {
             "fieldFromInput": "value from input",
-            "otherField": "other value"
+            "otherField": "other"
           },
           "unrelatedData": {
             "someOtherField": 1234
@@ -298,39 +493,15 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_result_pass_info": {
-    "recorded-date": "31-01-2024, 16:01:05",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/io_result_pass_state.json5-{\"initialData\": {\"fieldFromInput\": \"value from input\", \"otherField\": \"other\"}, \"unrelatedData\": {\"someOtherField\": 1234}}]": {
+    "recorded-date": "12-04-2024, 14:10:36",
     "recorded-content": {
-      "test_case_output": {
-        "output": {
-          "initialData": {
-            "fieldFromInput": "value from input",
-            "otherField": "other value"
-          },
-          "unrelatedData": {
-            "someOtherField": 1234
-          },
-          "modifiedData": {
-            "resultKey": "result value"
-          }
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_result_pass_debug": {
-    "recorded-date": "31-01-2024, 16:01:18",
-    "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
         "inspectionData": {
           "afterResultPath": {
             "initialData": {
               "fieldFromInput": "value from input",
-              "otherField": "other value"
+              "otherField": "other"
             },
             "unrelatedData": {
               "someOtherField": 1234
@@ -345,7 +516,7 @@
           "input": {
             "initialData": {
               "fieldFromInput": "value from input",
-              "otherField": "other value"
+              "otherField": "other"
             },
             "unrelatedData": {
               "someOtherField": 1234
@@ -358,7 +529,7 @@
         "output": {
           "initialData": {
             "fieldFromInput": "value from input",
-            "otherField": "other value"
+            "otherField": "other"
           },
           "unrelatedData": {
             "someOtherField": 1234
@@ -375,50 +546,42 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_io_result_pass_trace": {
-    "recorded-date": "31-01-2024, 16:01:30",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_fail_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:10:49",
     "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
         "inspectionData": {
-          "afterResultPath": {
-            "initialData": {
-              "fieldFromInput": "value from input",
-              "otherField": "other value"
-            },
-            "unrelatedData": {
-              "someOtherField": 1234
-            },
-            "modifiedData": {
-              "resultKey": "result value"
-            }
-          },
-          "afterResultSelector": {
-            "resultKey": "result value"
+          "afterInputPath": {
+            "Value": "HelloWorld"
           },
           "input": {
-            "initialData": {
-              "fieldFromInput": "value from input",
-              "otherField": "other value"
-            },
-            "unrelatedData": {
-              "someOtherField": 1234
-            }
+            "Value": "HelloWorld"
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_succeed_state.json5-{\"Value\": \"HelloWorld\"}]": {
+    "recorded-date": "12-04-2024, 14:11:03",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
           },
-          "result": {
-            "resultKey": "result value"
+          "input": {
+            "Value": "HelloWorld"
           }
         },
         "output": {
-          "initialData": {
-            "fieldFromInput": "value from input",
-            "otherField": "other value"
-          },
-          "unrelatedData": {
-            "someOtherField": 1234
-          },
-          "modifiedData": {
-            "resultKey": "result value"
-          }
+          "Value": "HelloWorld"
         },
         "status": "SUCCEEDED",
         "ResponseMetadata": {
@@ -428,10 +591,488 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_info": {
-    "recorded-date": "31-01-2024, 16:01:55",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[/Users/mep/LocalStack/localstack/tests/aws/services/stepfunctions/templates/test_state/statemachines/base_choice_state.json5-{\"type\": \"Private\", \"value\": 22}]": {
+    "recorded-date": "12-04-2024, 14:11:16",
     "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "type": "Private",
+            "value": 22
+          },
+          "input": {
+            "type": "Private",
+            "value": 22
+          }
+        },
+        "nextState": "ValueInTwenties",
+        "output": {
+          "type": "Private",
+          "value": 22
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[INFO]": {
+    "recorded-date": "12-04-2024, 14:29:13",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "ExecutedVersion": "$LATEST",
+          "Payload": {},
+          "SdkHttpMetadata": {
+            "AllHttpHeaders": {
+              "X-Amz-Executed-Version": [
+                "$LATEST"
+              ],
+              "x-amzn-Remapped-Content-Length": [
+                "0"
+              ],
+              "Connection": [
+                "keep-alive"
+              ],
+              "x-amzn-RequestId": [
+                "<uuid:1>"
+              ],
+              "Content-Length": [
+                "2"
+              ],
+              "Date": "date",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+              "Content-Type": [
+                "application/json"
+              ]
+            },
+            "HttpHeaders": {
+              "Connection": "keep-alive",
+              "Content-Length": "2",
+              "Content-Type": "application/json",
+              "Date": "date",
+              "X-Amz-Executed-Version": "$LATEST",
+              "x-amzn-Remapped-Content-Length": "0",
+              "x-amzn-RequestId": "<uuid:1>",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+            },
+            "HttpStatusCode": 200
+          },
+          "SdkResponseMetadata": {
+            "RequestId": "<uuid:1>"
+          },
+          "StatusCode": 200
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[DEBUG]": {
+    "recorded-date": "12-04-2024, 14:29:28",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "afterParameters": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "afterResultPath": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          },
+          "afterResultSelector": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          },
+          "input": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "result": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          }
+        },
+        "output": {
+          "ExecutedVersion": "$LATEST",
+          "Payload": {},
+          "SdkHttpMetadata": {
+            "AllHttpHeaders": {
+              "X-Amz-Executed-Version": [
+                "$LATEST"
+              ],
+              "x-amzn-Remapped-Content-Length": [
+                "0"
+              ],
+              "Connection": [
+                "keep-alive"
+              ],
+              "x-amzn-RequestId": [
+                "<uuid:1>"
+              ],
+              "Content-Length": [
+                "2"
+              ],
+              "Date": "date",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+              "Content-Type": [
+                "application/json"
+              ]
+            },
+            "HttpHeaders": {
+              "Connection": "keep-alive",
+              "Content-Length": "2",
+              "Content-Type": "application/json",
+              "Date": "date",
+              "X-Amz-Executed-Version": "$LATEST",
+              "x-amzn-Remapped-Content-Length": "0",
+              "x-amzn-RequestId": "<uuid:1>",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+            },
+            "HttpStatusCode": 200
+          },
+          "SdkResponseMetadata": {
+            "RequestId": "<uuid:1>"
+          },
+          "StatusCode": 200
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[TRACE]": {
+    "recorded-date": "12-04-2024, 14:29:43",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "afterParameters": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "afterResultPath": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          },
+          "afterResultSelector": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          },
+          "input": {
+            "FunctionName": "<lambda_function_name>",
+            "Payload": null
+          },
+          "result": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {},
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": [
+                  "<uuid:1>"
+                ],
+                "Content-Length": [
+                  "2"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "2",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "<uuid:1>",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "<uuid:1>"
+            },
+            "StatusCode": 200
+          }
+        },
+        "output": {
+          "ExecutedVersion": "$LATEST",
+          "Payload": {},
+          "SdkHttpMetadata": {
+            "AllHttpHeaders": {
+              "X-Amz-Executed-Version": [
+                "$LATEST"
+              ],
+              "x-amzn-Remapped-Content-Length": [
+                "0"
+              ],
+              "Connection": [
+                "keep-alive"
+              ],
+              "x-amzn-RequestId": [
+                "<uuid:1>"
+              ],
+              "Content-Length": [
+                "2"
+              ],
+              "Date": "date",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+              "Content-Type": [
+                "application/json"
+              ]
+            },
+            "HttpHeaders": {
+              "Connection": "keep-alive",
+              "Content-Length": "2",
+              "Content-Type": "application/json",
+              "Date": "date",
+              "X-Amz-Executed-Version": "$LATEST",
+              "x-amzn-Remapped-Content-Length": "0",
+              "x-amzn-RequestId": "<uuid:1>",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+            },
+            "HttpStatusCode": 200
+          },
+          "SdkResponseMetadata": {
+            "RequestId": "<uuid:1>"
+          },
+          "StatusCode": 200
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[INFO]": {
+    "recorded-date": "12-04-2024, 14:33:24",
+    "recorded-content": {
+      "test_case_response": {
         "output": "\"HelloWorld!\"",
         "status": "SUCCEEDED",
         "ResponseMetadata": {
@@ -441,10 +1082,10 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_debug": {
-    "recorded-date": "31-01-2024, 16:02:10",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[DEBUG]": {
+    "recorded-date": "12-04-2024, 14:33:39",
     "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
         "inspectionData": {
           "afterInputPath": {
             "inputData": "HelloWorld"
@@ -468,10 +1109,10 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state_trace": {
-    "recorded-date": "31-01-2024, 16:02:25",
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[TRACE]": {
+    "recorded-date": "12-04-2024, 14:33:54",
     "recorded-content": {
-      "test_case_output": {
+      "test_case_response": {
         "inspectionData": {
           "afterInputPath": {
             "inputData": "HelloWorld"
@@ -487,708 +1128,6 @@
           "result": "\"HelloWorld!\""
         },
         "output": "\"HelloWorld!\"",
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state_info": {
-    "recorded-date": "31-01-2024, 16:02:40",
-    "recorded-content": {
-      "test_case_output": {
-        "output": {
-          "ExecutedVersion": "$LATEST",
-          "Payload": {},
-          "SdkHttpMetadata": {
-            "AllHttpHeaders": {
-              "X-Amz-Executed-Version": [
-                "$LATEST"
-              ],
-              "x-amzn-Remapped-Content-Length": [
-                "0"
-              ],
-              "Connection": [
-                "keep-alive"
-              ],
-              "x-amzn-RequestId": [
-                "<uuid:1>"
-              ],
-              "Content-Length": [
-                "2"
-              ],
-              "Date": "date",
-              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-              "Content-Type": [
-                "application/json"
-              ]
-            },
-            "HttpHeaders": {
-              "Connection": "keep-alive",
-              "Content-Length": "2",
-              "Content-Type": "application/json",
-              "Date": "date",
-              "X-Amz-Executed-Version": "$LATEST",
-              "x-amzn-Remapped-Content-Length": "0",
-              "x-amzn-RequestId": "<uuid:1>",
-              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-            },
-            "HttpStatusCode": 200
-          },
-          "SdkResponseMetadata": {
-            "RequestId": "<uuid:1>"
-          },
-          "StatusCode": 200
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state_debug": {
-    "recorded-date": "31-01-2024, 16:02:54",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "FunctionName": "<lambda_function_name>",
-            "Payload": null
-          },
-          "afterParameters": {
-            "FunctionName": "<lambda_function_name>",
-            "Payload": null
-          },
-          "afterResultPath": {
-            "ExecutedVersion": "$LATEST",
-            "Payload": {},
-            "SdkHttpMetadata": {
-              "AllHttpHeaders": {
-                "X-Amz-Executed-Version": [
-                  "$LATEST"
-                ],
-                "x-amzn-Remapped-Content-Length": [
-                  "0"
-                ],
-                "Connection": [
-                  "keep-alive"
-                ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
-                "Content-Length": [
-                  "2"
-                ],
-                "Date": "date",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-                "Content-Type": [
-                  "application/json"
-                ]
-              },
-              "HttpHeaders": {
-                "Connection": "keep-alive",
-                "Content-Length": "2",
-                "Content-Type": "application/json",
-                "Date": "date",
-                "X-Amz-Executed-Version": "$LATEST",
-                "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-              },
-              "HttpStatusCode": 200
-            },
-            "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
-            },
-            "StatusCode": 200
-          },
-          "afterResultSelector": {
-            "ExecutedVersion": "$LATEST",
-            "Payload": {},
-            "SdkHttpMetadata": {
-              "AllHttpHeaders": {
-                "X-Amz-Executed-Version": [
-                  "$LATEST"
-                ],
-                "x-amzn-Remapped-Content-Length": [
-                  "0"
-                ],
-                "Connection": [
-                  "keep-alive"
-                ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
-                "Content-Length": [
-                  "2"
-                ],
-                "Date": "date",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-                "Content-Type": [
-                  "application/json"
-                ]
-              },
-              "HttpHeaders": {
-                "Connection": "keep-alive",
-                "Content-Length": "2",
-                "Content-Type": "application/json",
-                "Date": "date",
-                "X-Amz-Executed-Version": "$LATEST",
-                "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-              },
-              "HttpStatusCode": 200
-            },
-            "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
-            },
-            "StatusCode": 200
-          },
-          "input": {
-            "FunctionName": "<lambda_function_name>",
-            "Payload": null
-          },
-          "result": {
-            "ExecutedVersion": "$LATEST",
-            "Payload": {},
-            "SdkHttpMetadata": {
-              "AllHttpHeaders": {
-                "X-Amz-Executed-Version": [
-                  "$LATEST"
-                ],
-                "x-amzn-Remapped-Content-Length": [
-                  "0"
-                ],
-                "Connection": [
-                  "keep-alive"
-                ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
-                "Content-Length": [
-                  "2"
-                ],
-                "Date": "date",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-                "Content-Type": [
-                  "application/json"
-                ]
-              },
-              "HttpHeaders": {
-                "Connection": "keep-alive",
-                "Content-Length": "2",
-                "Content-Type": "application/json",
-                "Date": "date",
-                "X-Amz-Executed-Version": "$LATEST",
-                "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-              },
-              "HttpStatusCode": 200
-            },
-            "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
-            },
-            "StatusCode": 200
-          }
-        },
-        "output": {
-          "ExecutedVersion": "$LATEST",
-          "Payload": {},
-          "SdkHttpMetadata": {
-            "AllHttpHeaders": {
-              "X-Amz-Executed-Version": [
-                "$LATEST"
-              ],
-              "x-amzn-Remapped-Content-Length": [
-                "0"
-              ],
-              "Connection": [
-                "keep-alive"
-              ],
-              "x-amzn-RequestId": [
-                "<uuid:1>"
-              ],
-              "Content-Length": [
-                "2"
-              ],
-              "Date": "date",
-              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-              "Content-Type": [
-                "application/json"
-              ]
-            },
-            "HttpHeaders": {
-              "Connection": "keep-alive",
-              "Content-Length": "2",
-              "Content-Type": "application/json",
-              "Date": "date",
-              "X-Amz-Executed-Version": "$LATEST",
-              "x-amzn-Remapped-Content-Length": "0",
-              "x-amzn-RequestId": "<uuid:1>",
-              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-            },
-            "HttpStatusCode": 200
-          },
-          "SdkResponseMetadata": {
-            "RequestId": "<uuid:1>"
-          },
-          "StatusCode": 200
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state_trace": {
-    "recorded-date": "31-01-2024, 16:03:09",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "FunctionName": "<lambda_function_name>",
-            "Payload": null
-          },
-          "afterParameters": {
-            "FunctionName": "<lambda_function_name>",
-            "Payload": null
-          },
-          "afterResultPath": {
-            "ExecutedVersion": "$LATEST",
-            "Payload": {},
-            "SdkHttpMetadata": {
-              "AllHttpHeaders": {
-                "X-Amz-Executed-Version": [
-                  "$LATEST"
-                ],
-                "x-amzn-Remapped-Content-Length": [
-                  "0"
-                ],
-                "Connection": [
-                  "keep-alive"
-                ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
-                "Content-Length": [
-                  "2"
-                ],
-                "Date": "date",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-                "Content-Type": [
-                  "application/json"
-                ]
-              },
-              "HttpHeaders": {
-                "Connection": "keep-alive",
-                "Content-Length": "2",
-                "Content-Type": "application/json",
-                "Date": "date",
-                "X-Amz-Executed-Version": "$LATEST",
-                "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-              },
-              "HttpStatusCode": 200
-            },
-            "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
-            },
-            "StatusCode": 200
-          },
-          "afterResultSelector": {
-            "ExecutedVersion": "$LATEST",
-            "Payload": {},
-            "SdkHttpMetadata": {
-              "AllHttpHeaders": {
-                "X-Amz-Executed-Version": [
-                  "$LATEST"
-                ],
-                "x-amzn-Remapped-Content-Length": [
-                  "0"
-                ],
-                "Connection": [
-                  "keep-alive"
-                ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
-                "Content-Length": [
-                  "2"
-                ],
-                "Date": "date",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-                "Content-Type": [
-                  "application/json"
-                ]
-              },
-              "HttpHeaders": {
-                "Connection": "keep-alive",
-                "Content-Length": "2",
-                "Content-Type": "application/json",
-                "Date": "date",
-                "X-Amz-Executed-Version": "$LATEST",
-                "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-              },
-              "HttpStatusCode": 200
-            },
-            "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
-            },
-            "StatusCode": 200
-          },
-          "input": {
-            "FunctionName": "<lambda_function_name>",
-            "Payload": null
-          },
-          "result": {
-            "ExecutedVersion": "$LATEST",
-            "Payload": {},
-            "SdkHttpMetadata": {
-              "AllHttpHeaders": {
-                "X-Amz-Executed-Version": [
-                  "$LATEST"
-                ],
-                "x-amzn-Remapped-Content-Length": [
-                  "0"
-                ],
-                "Connection": [
-                  "keep-alive"
-                ],
-                "x-amzn-RequestId": [
-                  "<uuid:1>"
-                ],
-                "Content-Length": [
-                  "2"
-                ],
-                "Date": "date",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-                "Content-Type": [
-                  "application/json"
-                ]
-              },
-              "HttpHeaders": {
-                "Connection": "keep-alive",
-                "Content-Length": "2",
-                "Content-Type": "application/json",
-                "Date": "date",
-                "X-Amz-Executed-Version": "$LATEST",
-                "x-amzn-Remapped-Content-Length": "0",
-                "x-amzn-RequestId": "<uuid:1>",
-                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-              },
-              "HttpStatusCode": 200
-            },
-            "SdkResponseMetadata": {
-              "RequestId": "<uuid:1>"
-            },
-            "StatusCode": 200
-          }
-        },
-        "output": {
-          "ExecutedVersion": "$LATEST",
-          "Payload": {},
-          "SdkHttpMetadata": {
-            "AllHttpHeaders": {
-              "X-Amz-Executed-Version": [
-                "$LATEST"
-              ],
-              "x-amzn-Remapped-Content-Length": [
-                "0"
-              ],
-              "Connection": [
-                "keep-alive"
-              ],
-              "x-amzn-RequestId": [
-                "<uuid:1>"
-              ],
-              "Content-Length": [
-                "2"
-              ],
-              "Date": "date",
-              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-              "Content-Type": [
-                "application/json"
-              ]
-            },
-            "HttpHeaders": {
-              "Connection": "keep-alive",
-              "Content-Length": "2",
-              "Content-Type": "application/json",
-              "Date": "date",
-              "X-Amz-Executed-Version": "$LATEST",
-              "x-amzn-Remapped-Content-Length": "0",
-              "x-amzn-RequestId": "<uuid:1>",
-              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-            },
-            "HttpStatusCode": 200
-          },
-          "SdkResponseMetadata": {
-            "RequestId": "<uuid:1>"
-          },
-          "StatusCode": 200
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_fail_info": {
-    "recorded-date": "31-01-2024, 16:48:03",
-    "recorded-content": {
-      "test_case_output": {
-        "cause": "This state machines raises a 'SomeFailure' failure.",
-        "error": "SomeFailure",
-        "status": "FAILED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_fail_debug": {
-    "recorded-date": "31-01-2024, 16:49:22",
-    "recorded-content": {
-      "test_case_output": {
-        "cause": "This state machines raises a 'SomeFailure' failure.",
-        "error": "SomeFailure",
-        "inspectionData": {
-          "afterInputPath": {
-            "Value": "HelloWorld"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          }
-        },
-        "status": "FAILED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_fail_trace": {
-    "recorded-date": "31-01-2024, 16:49:56",
-    "recorded-content": {
-      "test_case_output": {
-        "cause": "This state machines raises a 'SomeFailure' failure.",
-        "error": "SomeFailure",
-        "inspectionData": {
-          "afterInputPath": {
-            "Value": "HelloWorld"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          }
-        },
-        "status": "FAILED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_succeed_info": {
-    "recorded-date": "31-01-2024, 16:52:15",
-    "recorded-content": {
-      "test_case_output": {
-        "output": {
-          "Value": "HelloWorld"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_succeed_debug": {
-    "recorded-date": "31-01-2024, 16:52:57",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "Value": "HelloWorld"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          }
-        },
-        "output": {
-          "Value": "HelloWorld"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_succeed_trace": {
-    "recorded-date": "31-01-2024, 16:53:18",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "Value": "HelloWorld"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          }
-        },
-        "output": {
-          "Value": "HelloWorld"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_wait_info": {
-    "recorded-date": "31-01-2024, 16:55:48",
-    "recorded-content": {
-      "test_case_output": {
-        "output": {
-          "Value": "HelloWorld"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_wait_debug": {
-    "recorded-date": "31-01-2024, 16:56:24",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "Value": "HelloWorld"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          }
-        },
-        "output": {
-          "Value": "HelloWorld"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_wait_trace": {
-    "recorded-date": "31-01-2024, 16:56:45",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "Value": "HelloWorld"
-          },
-          "input": {
-            "Value": "HelloWorld"
-          }
-        },
-        "output": {
-          "Value": "HelloWorld"
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_choice_info": {
-    "recorded-date": "31-01-2024, 20:51:16",
-    "recorded-content": {
-      "test_case_output": {
-        "nextState": "ValueInTwenties",
-        "output": {
-          "type": "Private",
-          "value": 22
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_choice_debug": {
-    "recorded-date": "31-01-2024, 20:52:22",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "type": "Private",
-            "value": 22
-          },
-          "input": {
-            "type": "Private",
-            "value": 22
-          }
-        },
-        "nextState": "ValueInTwenties",
-        "output": {
-          "type": "Private",
-          "value": 22
-        },
-        "status": "SUCCEEDED",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_choice_trace": {
-    "recorded-date": "31-01-2024, 20:52:58",
-    "recorded-content": {
-      "test_case_output": {
-        "inspectionData": {
-          "afterInputPath": {
-            "type": "Private",
-            "value": 22
-          },
-          "input": {
-            "type": "Private",
-            "value": 22
-          }
-        },
-        "nextState": "ValueInTwenties",
-        "output": {
-          "type": "Private",
-          "value": 22
-        },
         "status": "SUCCEEDED",
         "ResponseMetadata": {
           "HTTPHeaders": {},

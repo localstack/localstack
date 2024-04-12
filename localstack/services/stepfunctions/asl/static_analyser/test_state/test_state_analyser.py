@@ -23,8 +23,8 @@ class TestStateStaticAnalyser(StaticAnalyser):
         StateType.Fail,
     }
 
-    def analyse(self, derivation) -> None:
-        _, parser_rule_context = TestStateAmazonStateLanguageParser.parse(derivation)
+    def analyse(self, definition) -> None:
+        _, parser_rule_context = TestStateAmazonStateLanguageParser.parse(definition)
         self.visit(parser_rule_context)
 
     def visitState_type(self, ctx: ASLParser.State_typeContext) -> None:

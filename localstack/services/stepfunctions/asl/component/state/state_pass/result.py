@@ -1,4 +1,3 @@
-import copy
 import json
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
@@ -12,4 +11,4 @@ class Result(EvalComponent):
         self.result_obj = result_obj
 
     def _eval_body(self, env: Environment) -> None:
-        env.stack.append(copy.deepcopy(self.result_obj))
+        env.stack.append(self.result_obj)

@@ -21,14 +21,16 @@ from localstack.services.stepfunctions.asl.eval.event.event_history import Event
 from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.activity import Activity
-from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
+from localstack.services.stepfunctions.backend.execution_worker_comm import (
+    ExecutionWorkerCommunication,
+)
 
 
 class ExecutionWorker:
     env: Optional[Environment]
     _definition: Definition
     _input_data: Optional[dict]
-    _exec_comm: Final[ExecutionWorkerComm]
+    _exec_comm: Final[ExecutionWorkerCommunication]
     _context_object_init: Final[ContextObjectInitData]
     _aws_execution_details: Final[AWSExecutionDetails]
     _activity_store: dict[Arn, Activity]
@@ -39,7 +41,7 @@ class ExecutionWorker:
         input_data: Optional[dict],
         context_object_init: ContextObjectInitData,
         aws_execution_details: AWSExecutionDetails,
-        exec_comm: ExecutionWorkerComm,
+        exec_comm: ExecutionWorkerCommunication,
         activity_store: dict[Arn, Activity],
     ):
         self._definition = definition

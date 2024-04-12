@@ -247,10 +247,10 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return None
 
     @staticmethod
-    def _validate_definition(derivation: str, static_analysers: list[StaticAnalyser]) -> None:
+    def _validate_definition(definition: str, static_analysers: list[StaticAnalyser]) -> None:
         try:
             for static_analyser in static_analysers:
-                static_analyser.analyse(derivation)
+                static_analyser.analyse(definition)
         except ASLParserException as asl_parser_exception:
             invalid_definition = InvalidDefinition()
             invalid_definition.message = repr(asl_parser_exception)
@@ -260,7 +260,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             exception_args = list(exception.args)
             invalid_definition = InvalidDefinition()
             invalid_definition.message = (
-                f"Error={exception_name} Args={exception_args} in derivation '{derivation}'."
+                f"Error={exception_name} Args={exception_args} in definition '{definition}'."
             )
             raise invalid_definition
 
@@ -290,7 +290,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         state_machine_definition: str = request["definition"]
         StepFunctionsProvider._validate_definition(
-            derivation=state_machine_definition, static_analysers=[StaticAnalyser()]
+            definition=state_machine_definition, static_analysers=[StaticAnalyser()]
         )
 
         name: Optional[Name] = request["name"]
@@ -663,7 +663,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             )
 
         if definition is not None:
-            self._validate_definition(derivation=definition, static_analysers=[StaticAnalyser()])
+            self._validate_definition(definition=definition, static_analysers=[StaticAnalyser()])
 
         revision_id = state_machine.create_revision(definition=definition, role_arn=role_arn)
 
@@ -827,7 +827,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> TestStateOutput:
         StepFunctionsProvider._validate_definition(
-            derivation=definition, static_analysers=[TestStateStaticAnalyser()]
+            definition=definition, static_analysers=[TestStateStaticAnalyser()]
         )
 
         name: Optional[Name] = f"TestState-{short_uid()}"

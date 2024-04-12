@@ -5,6 +5,6 @@ from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLa
 
 
 class StaticAnalyser(ASLParserVisitor, abc.ABC):
-    def analyse(self, derivation: str) -> None:
-        _, parser_rule_context = AmazonStateLanguageParser.parse(derivation)
+    def analyse(self, definition: str) -> None:
+        _, parser_rule_context = AmazonStateLanguageParser.parse(definition)
         self.visit(parser_rule_context)

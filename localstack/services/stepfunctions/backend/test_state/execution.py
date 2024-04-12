@@ -22,7 +22,10 @@ from localstack.services.stepfunctions.asl.eval.test_state.program_state import 
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.activity import Activity
-from localstack.services.stepfunctions.backend.execution import BaseExecutionWorkerComm, Execution
+from localstack.services.stepfunctions.backend.execution import (
+    BaseExecutionWorkerCommunication,
+    Execution,
+)
 from localstack.services.stepfunctions.backend.state_machine import StateMachineInstance
 from localstack.services.stepfunctions.backend.test_state.execution_worker import (
     TestStateExecutionWorker,
@@ -35,7 +38,7 @@ class TestStateExecution(Execution):
     exec_worker: Optional[TestStateExecutionWorker]
     next_state: Optional[str]
 
-    class TestCaseExecutionWorkerComm(BaseExecutionWorkerComm):
+    class TestCaseExecutionWorkerCommunication(BaseExecutionWorkerCommunication):
         _execution: TestStateExecution
 
         def terminated(self) -> None:
@@ -74,8 +77,8 @@ class TestStateExecution(Execution):
         self._execution_terminated_event = threading.Event()
         self.next_state = None
 
-    def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerComm:
-        return self.TestCaseExecutionWorkerComm(self)
+    def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
+        return self.TestCaseExecutionWorkerCommunication(self)
 
     def _get_start_execution_worker(self) -> TestStateExecutionWorker:
         return TestStateExecutionWorker(

@@ -15,16 +15,17 @@ from localstack.services.stepfunctions.asl.parse.test_state.preprocessor import 
 
 class TestStateAmazonStateLanguageParser(AmazonStateLanguageParser):
     @staticmethod
-    def parse(derivation: str) -> tuple[EvalComponent, ParserRuleContext]:
+    def parse(definition: str) -> tuple[EvalComponent, ParserRuleContext]:
         # Attempt to build the AST and look out for syntax errors.
         syntax_error_listener = SyntaxErrorListener()
 
-        input_stream = InputStream(derivation)
+        input_stream = InputStream(definition)
         lexer = ASLLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = ASLParser(stream)
         parser.removeErrorListeners()
         parser.addErrorListener(syntax_error_listener)
+        # Unlike the main Program parser, TestState parsing occurs at a state declaration level.
         tree = parser.state_decl_body()
 
         errors = syntax_error_listener.errors

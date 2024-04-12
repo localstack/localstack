@@ -48,11 +48,11 @@ class ASLParserException(Exception):
 
 class AmazonStateLanguageParser(abc.ABC):
     @staticmethod
-    def parse(derivation: str) -> tuple[EvalComponent, ParserRuleContext]:
+    def parse(definition: str) -> tuple[EvalComponent, ParserRuleContext]:
         # Attempt to build the AST and look out for syntax errors.
         syntax_error_listener = SyntaxErrorListener()
 
-        input_stream = InputStream(derivation)
+        input_stream = InputStream(definition)
         lexer = ASLLexer(input_stream)
         stream = CommonTokenStream(lexer)
         parser = ASLParser(stream)

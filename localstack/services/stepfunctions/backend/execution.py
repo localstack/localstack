@@ -43,7 +43,9 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.activity import Activity
 from localstack.services.stepfunctions.backend.execution_worker import ExecutionWorker
-from localstack.services.stepfunctions.backend.execution_worker_comm import ExecutionWorkerComm
+from localstack.services.stepfunctions.backend.execution_worker_comm import (
+    ExecutionWorkerCommunication,
+)
 from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
     StateMachineVersion,
@@ -52,7 +54,7 @@ from localstack.services.stepfunctions.backend.state_machine import (
 LOG = logging.getLogger(__name__)
 
 
-class BaseExecutionWorkerComm(ExecutionWorkerComm):
+class BaseExecutionWorkerCommunication(ExecutionWorkerCommunication):
     def __init__(self, execution: Execution):
         self.execution: Execution = execution
 
@@ -117,7 +119,7 @@ class Execution:
         state_machine: StateMachineInstance,
         start_date: Timestamp,
         activity_store: dict[Arn, Activity],
-        input_data: Optional[dict] = None,
+        input_data: Optional[json] = None,
         trace_header: Optional[TraceHeader] = None,
     ):
         self.name = name
@@ -219,8 +221,8 @@ class Execution:
             f'{timestamp.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]}Z'
         )
 
-    def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerComm:
-        return BaseExecutionWorkerComm(self)
+    def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
+        return BaseExecutionWorkerCommunication(self)
 
     def _get_start_context_object_init_data(self) -> ContextObjectInitData:
         return ContextObjectInitData(

@@ -22,10 +22,10 @@ from localstack.utils.threads import TMP_THREADS
 
 LOG = logging.getLogger(__name__)
 
+TEST_CASE_EXECUTION_TIMEOUT_SECONDS: Final[int] = 300  # 5 minutes.
+
 
 class TestStateProgram(EvalComponent):
-    TEST_CASE_EXECUTION_TIMEOUT_SECONDS: Final[int] = 300  # 5 minutes.
-
     test_state: Final[CommonStateField]
 
     def __init__(
@@ -39,7 +39,7 @@ class TestStateProgram(EvalComponent):
         worker_thread = threading.Thread(target=super().eval, args=(env,))
         TMP_THREADS.append(worker_thread)
         worker_thread.start()
-        worker_thread.join(timeout=self.TEST_CASE_EXECUTION_TIMEOUT_SECONDS)
+        worker_thread.join(timeout=TEST_CASE_EXECUTION_TIMEOUT_SECONDS)
         is_timeout = worker_thread.is_alive()
         if is_timeout:
             env.set_timed_out()

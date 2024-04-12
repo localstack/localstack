@@ -3,6 +3,7 @@ import logging
 from typing import Final
 
 import pytest
+from botocore.config import Config
 from jsonpath_ng.ext import parse
 from localstack_snapshot.snapshots.transformer import (
     JsonpathTransformer,
@@ -144,6 +145,11 @@ class SfnNoneRecursiveParallelTransformer:
             self._normalise_events(events_data.value)
 
         return input_data
+
+
+@pytest.fixture
+def stepfunctions_client_test_state(aws_client_factory):
+    return aws_client_factory(config=Config(inject_host_prefix=is_aws_cloud())).stepfunctions
 
 
 @pytest.fixture

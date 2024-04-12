@@ -7,14 +7,14 @@ from localstack.services.stepfunctions.asl.component.common.result_selector impo
 from localstack.services.stepfunctions.asl.component.state.state_pass.result import Result
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 
+EQUAL_SUBTYPES: Final[list[type]] = [InputPath, Parameters, ResultSelector, ResultPath, Result]
+
 
 class TestStateStateProps(StateProps):
-    _EQUAL_SUBTYPES: Final[list[type]] = [InputPath, Parameters, ResultSelector, ResultPath, Result]
-
     def add(self, instance: Any) -> None:
         inst_type = type(instance)
         # Subclasses
-        for typ in self._EQUAL_SUBTYPES:
+        for typ in EQUAL_SUBTYPES:
             if issubclass(inst_type, typ):
                 self._add(typ, instance)
                 return
