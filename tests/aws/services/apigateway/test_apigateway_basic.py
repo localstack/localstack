@@ -157,7 +157,8 @@ class TestAPIGateway:
         assert "foobar" in e.value.response["Error"]["Message"]
 
     @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # This is not a possible feature on aws. Is there a reason for us to add that support?
     def test_create_rest_api_with_custom_id(self, create_rest_apigw, url_function, aws_client):
         apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
