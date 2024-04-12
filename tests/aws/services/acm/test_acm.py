@@ -78,7 +78,7 @@ class TestACM:
         result = aws_client.acm.describe_certificate(CertificateArn=certificate_arn)
         snapshot.match("describe-certificate", result)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_boto_wait_for_certificate_validation(
         self, acm_request_certificate, aws_client, monkeypatch
     ):
