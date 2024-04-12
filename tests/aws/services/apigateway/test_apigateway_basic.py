@@ -637,7 +637,9 @@ class TestAPIGateway:
                 restApiId=get_api_gateway_id, authorizerId=authorizer_id
             )
 
-    @markers.aws.unknown
+    # This test fails as it tries to create a lambda locally?
+    # It then leaves some resources behind, apigateway and policies
+    @markers.aws.needs_fixing
     def test_malformed_response_apigw_invocation(
         self, create_lambda_function, aws_client, region_name
     ):
