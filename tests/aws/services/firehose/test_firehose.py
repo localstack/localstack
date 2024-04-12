@@ -532,3 +532,44 @@ class TestFirehoseIntegration:
             ]
         )
         snapshot.match("kinesis-event-stream-multiple-delivery-streams", s3_data)
+
+    @markers.aws.unknown
+    def test_kinesis_firehose_s3_as_destination_with_file_extension(
+        self,
+        s3_bucket,
+        aws_client,
+        account_id,
+        firehose_create_delivery_stream,
+        list_s3_objects,
+    ):
+        bucket_arn = arns.s3_bucket_arn(s3_bucket)
+        role_arn = f"arn:aws:iam::{account_id}:role/Firehose-Role"
+        delivery_stream_name = f"test-delivery-stream-{short_uid()}"
+        file_extension = ".txt"
+
+        firehose_create_delivery_stream(
+            DeliveryStreamName=delivery_stream_name,
+            DeliveryStreamType="DirectPut",
+            ExtendedS3DestinationConfiguration={
+                "BucketARN": bucket_arn,
+                "RoleARN": role_arn,
+                "FileExtension": file_extension,
+                "ErrorOutputPrefix": "errors",
+            },
+        )
+
+        # prepare sample message
+        data = base64.b64encode(TEST_MESSAGE.encode())
+        record = {"Data": data}
+
+        # put message to delivery stream
+        aws_client.firehose.put_record(
+            DeliveryStreamName=delivery_stream_name,
+            Record=record,
+        )
+
+        s3_objects = list_s3_objects(s3_bucket, timeout=300)
+
+        s3_object = s3_objects[0]
+
+        assert s3_object.endswith(file_extension)
