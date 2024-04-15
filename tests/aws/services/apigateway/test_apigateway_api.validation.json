@@ -27,22 +27,22 @@
     "last_validated_date": "2024-04-15T20:53:16+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_method_lifecycle": {
-    "last_validated_date": "2024-04-15T18:44:02+00:00"
+    "last_validated_date": "2024-04-15T21:22:46+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_method_request_parameters": {
-    "last_validated_date": "2024-04-15T18:44:06+00:00"
+    "last_validated_date": "2024-04-15T21:22:51+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_put_method_model": {
-    "last_validated_date": "2024-04-15T18:44:46+00:00"
+    "last_validated_date": "2024-04-15T21:23:29+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_put_method_validation": {
-    "last_validated_date": "2024-04-15T18:45:12+00:00"
+    "last_validated_date": "2024-04-15T21:23:49+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_update_method": {
-    "last_validated_date": "2024-04-15T18:45:45+00:00"
+    "last_validated_date": "2024-04-15T21:24:42+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_update_method_validation": {
-    "last_validated_date": "2024-04-15T21:11:41+00:00"
+    "last_validated_date": "2024-04-15T21:26:29+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiModels::test_model_lifecycle": {
     "last_validated_date": "2024-04-15T21:02:18+00:00"

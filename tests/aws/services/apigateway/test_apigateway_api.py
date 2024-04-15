@@ -761,8 +761,7 @@ class TestApiGatewayApiMethod:
             name=f"test-api-{short_uid()}", description="testing resource method lifecycle"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         put_base_method_response = aws_client.apigateway.put_method(
             restApiId=api_id,
@@ -798,8 +797,7 @@ class TestApiGatewayApiMethod:
             name=f"test-api-{short_uid()}", description="testing resource method request params"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         put_method_response = aws_client.apigateway.put_method(
             restApiId=api_id,
@@ -846,8 +844,7 @@ class TestApiGatewayApiMethod:
             name=f"test-api-{short_uid()}", description="testing resource method model"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         create_model = aws_client.apigateway.create_model(
             name="MySchema",
@@ -955,8 +952,7 @@ class TestApiGatewayApiMethod:
             name=f"test-api-{short_uid()}", description="testing resource method request params"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         # wrong RestApiId
         with pytest.raises(ClientError) as e:
@@ -1033,8 +1029,7 @@ class TestApiGatewayApiMethod:
             name=f"test-api-{short_uid()}", description="testing update method"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         put_method_response = aws_client.apigateway.put_method(
             restApiId=api_id,
@@ -1124,8 +1119,7 @@ class TestApiGatewayApiMethod:
             name=f"test-api-{short_uid()}", description="testing resource method request params"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.update_method(

@@ -386,6 +386,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(context=context)
         store.rest_apis[request["restApiId"]].rest_api = response
+        # TODO: remove once this is fixed upstream
+        if "rootResourceId" not in response:
+            response["rootResourceId"] = get_moto_rest_api_root_resource(rest_api)
         # TODO: verify this
         response = to_rest_api_response_json(response)
         response.setdefault("tags", {})

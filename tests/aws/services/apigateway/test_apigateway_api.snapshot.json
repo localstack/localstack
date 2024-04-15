@@ -1084,7 +1084,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_method_lifecycle": {
-    "recorded-date": "15-04-2024, 18:44:02",
+    "recorded-date": "15-04-2024, 21:22:46",
     "recorded-content": {
       "put-base-method-response": {
         "apiKeyRequired": false,
@@ -1135,7 +1135,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_method_request_parameters": {
-    "recorded-date": "15-04-2024, 18:44:40",
+    "recorded-date": "15-04-2024, 21:23:23",
     "recorded-content": {
       "put-method-request-params-response": {
         "apiKeyRequired": false,
@@ -1181,7 +1181,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_put_method_model": {
-    "recorded-date": "15-04-2024, 18:45:11",
+    "recorded-date": "15-04-2024, 21:23:48",
     "recorded-content": {
       "create-model": {
         "contentType": "application/json",
@@ -1276,9 +1276,9 @@
       "delete-model-used-by-2-method": {
         "Error": {
           "Code": "ConflictException",
-          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY"
+          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: /test/ANY"
         },
-        "message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY",
+        "message": "Cannot delete model '<name:1>Two', is referenced in method request: /test/ANY",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
@@ -1319,7 +1319,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_put_method_validation": {
-    "recorded-date": "15-04-2024, 18:45:43",
+    "recorded-date": "15-04-2024, 21:24:40",
     "recorded-content": {
       "wrong-api": {
         "Error": {
@@ -1390,7 +1390,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_update_method": {
-    "recorded-date": "15-04-2024, 18:46:01",
+    "recorded-date": "15-04-2024, 21:26:26",
     "recorded-content": {
       "put-method-response": {
         "apiKeyRequired": false,
@@ -1463,7 +1463,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_update_method_validation": {
-    "recorded-date": "15-04-2024, 21:11:41",
+    "recorded-date": "15-04-2024, 21:26:43",
     "recorded-content": {
       "wrong-rest-api": {
         "Error": {
