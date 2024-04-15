@@ -50,7 +50,7 @@ class RuleService:
         targets: Optional[TargetDict] = None,
         managed_by: Optional[ManagedBy] = None,
     ):
-        self._validate_input(event_pattern, schedule_expression, event_bus_name)
+        RuleWorker._validate_input(event_pattern, schedule_expression, event_bus_name)
         # required to keep data and functionality separate for persistence
         self.rule = Rule(
             name,
@@ -83,7 +83,7 @@ class RuleService:
         self.rule.state = RuleState.DISABLED
 
     def add_targets(self, targets: TargetList) -> PutTargetsResultEntryList:
-        failed_entries = self.validate_targets_input(targets)
+        failed_entries = RuleWorker.validate_targets_input(targets)
         for target in targets:
             target_id = target["Id"]
             if target_id not in self.rule.targets and self._check_target_limit_reached():
@@ -120,7 +120,8 @@ class RuleService:
                 )
         return delete_errors
 
-    def validate_targets_input(self, targets: TargetList) -> PutTargetsResultEntryList:
+    @staticmethod
+    def validate_targets_input(targets: TargetList) -> PutTargetsResultEntryList:
         validation_errors = []
         for index, target in enumerate(targets):
             id = target.get("Id")
@@ -198,6 +199,22 @@ class RuleService:
                 or RULE_SCHEDULE_RATE_REGEX.match(schedule_expression)
             ):
                 raise ValidationException("Parameter ScheduleExpression is not valid.")
+
+    @staticmethod
+    def _validate_event_pattern(pattern):
+        """Validates that the event pattern is correctly structured."""
+        for attr, value in pattern.items():
+            if isinstance(value, dict):
+                RuleWorker._validate_event_pattern(value)
+            elif isinstance(value, list):
+                if not value:
+                    raise InvalidEventPatternException("Empty arrays are not allowed")
+                if not all(isinstance(item, (dict, str)) for item in value):
+                    raise InvalidEventPatternException(
+                        f"All items in '{attr}' array must be dictionaries or strings"
+                    )
+            else:
+                raise InvalidEventPatternException(f"'{attr}' must be an object or an array")
 
     def _check_target_limit_reached(self) -> bool:
         if len(self.rule.targets) >= 5:
