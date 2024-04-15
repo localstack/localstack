@@ -345,7 +345,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule_service = self.get_rule_service(context, rule, event_bus_name)
         failed_entries = rule_service.add_targets(targets)
         rule_arn = rule_service.arn
-        for target in targets:
+        for target in targets:  # TODO only add successful targets
             self.create_target_sender(target, region, account_id, rule_arn)
 
         response = PutTargetsResponse(
