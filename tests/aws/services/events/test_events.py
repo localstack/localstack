@@ -806,7 +806,6 @@ class TestEventBus:
     @markers.aws.unknown
     @pytest.mark.skipif(is_aws_cloud(), reason="not validated")
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_into_event_bus(
         self,
         monkeypatch,
