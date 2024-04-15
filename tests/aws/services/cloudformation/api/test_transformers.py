@@ -7,6 +7,7 @@ from localstack.utils.strings import short_uid, to_bytes
 def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("id"))
     snapshot.add_transformer(snapshot.transform.key_value("name"))
+    snapshot.add_transformer(snapshot.transform.key_value("rootResourceId"))
     snapshot.add_transformer(snapshot.transform.key_value("aws:cloudformation:stack-id"))
     snapshot.add_transformer(snapshot.transform.key_value("aws:cloudformation:stack-name"))
 
@@ -52,3 +53,6 @@ def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_clien
     result = aws_client.apigateway.get_rest_api(restApiId=api_id)
     assert result
     snapshot.match("api-details", result)
+
+    resources = aws_client.apigateway.get_resources(restApiId=api_id)
+    snapshot.match("api-resources", resources)

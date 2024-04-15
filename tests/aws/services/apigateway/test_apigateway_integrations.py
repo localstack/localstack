@@ -510,6 +510,7 @@ def test_create_execute_api_vpc_endpoint(
     snapshot.add_transformer(snapshot.transform.key_value("HostedZoneId"))
     snapshot.add_transformer(snapshot.transform.key_value("id"))
     snapshot.add_transformer(snapshot.transform.key_value("name"))
+    snapshot.add_transformer(snapshot.transform.key_value("rootResourceId"))
 
     # create table
     table = dynamodb_create_table()["TableDescription"]
