@@ -84,6 +84,8 @@ class TargetSender(ABC):
 
 TargetSenderDict = dict[Arn, TargetSender]
 
+# Target Senders are ordered alphabetically by service name
+
 
 class ApiGatewayTargetSender(TargetSender):
     def send_event(self, event):
