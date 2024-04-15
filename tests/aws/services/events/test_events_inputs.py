@@ -2,20 +2,16 @@
 
 import json
 
-import pytest
-
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.strings import short_uid
 from tests.aws.services.events.conftest import sqs_collect_messages
-from tests.aws.services.events.helper_functions import is_v2_provider
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
 
 
 class TestEventsInputPath:
     @markers.aws.unknown
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_with_input_path(self, aws_client, clean_up):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
@@ -69,7 +65,6 @@ class TestEventsInputPath:
         clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
 
     @markers.aws.unknown
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_with_input_path_multiple(self, aws_client, clean_up):
         queue_name = "queue-{}".format(short_uid())
         queue_name_1 = "queue-{}".format(short_uid())
@@ -148,7 +143,6 @@ class TestEventsInputPath:
 
 class TestEventsInputTransformers:
     @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_with_input_transformation_to_sqs(
         self, put_events_with_filter_to_sqs, snapshot
     ):
