@@ -156,6 +156,7 @@ class TransformerUtility:
             TransformerUtility.key_value("id"),
             TransformerUtility.key_value("name"),
             TransformerUtility.key_value("parentId"),
+            TransformerUtility.key_value("rootResourceId"),
         ]
 
     @staticmethod

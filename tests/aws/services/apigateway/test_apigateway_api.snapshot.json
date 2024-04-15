@@ -1,6 +1,6 @@
 {
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_list_and_delete_apis": {
-    "recorded-date": "01-02-2023, 20:16:52",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_list_and_delete_apis": {
+    "recorded-date": "15-04-2024, 15:09:48",
     "recorded-content": {
       "create-rest-api-1": {
         "apiKeySource": "HEADER",
@@ -14,6 +14,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -31,6 +32,7 @@
         },
         "id": "<id:2>",
         "name": "<name:2>",
+        "rootResourceId": "<root-resource-id:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -49,7 +51,8 @@
               ]
             },
             "id": "<id:1>",
-            "name": "<name:1>"
+            "name": "<name:1>",
+            "rootResourceId": "<root-resource-id:1>"
           },
           {
             "apiKeySource": "HEADER",
@@ -62,7 +65,8 @@
               ]
             },
             "id": "<id:2>",
-            "name": "<name:2>"
+            "name": "<name:2>",
+            "rootResourceId": "<root-resource-id:2>"
           }
         ],
         "ResponseMetadata": {
@@ -89,7 +93,8 @@
               ]
             },
             "id": "<id:2>",
-            "name": "<name:2>"
+            "name": "<name:2>",
+            "rootResourceId": "<root-resource-id:2>"
           }
         ],
         "ResponseMetadata": {
@@ -99,8 +104,121 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_create_rest_api_with_tags": {
-    "recorded-date": "01-02-2023, 20:11:19",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_get_api_case_insensitive": {
+    "recorded-date": "15-04-2024, 15:10:18",
+    "recorded-content": {
+      "create-rest-api": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "lower case api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-api-upper-case": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:<upper-id>"
+        },
+        "message": "Invalid API identifier specified 111111111111:<upper-id>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_optional_params": {
+    "recorded-date": "15-04-2024, 15:11:50",
+    "recorded-content": {
+      "create-only-name": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-empty-desc": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Description cannot be an empty string"
+        },
+        "message": "Description cannot be an empty string",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-version": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "rootResourceId": "<root-resource-id:2>",
+        "version": "v1",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-empty-binary-media": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:3>",
+        "name": "<name:3>",
+        "rootResourceId": "<root-resource-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "string-compression-size": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid minimum compression size, must be between 0 and 10485760"
+        },
+        "message": "Invalid minimum compression size, must be between 0 and 10485760",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_tags": {
+    "recorded-date": "15-04-2024, 15:12:32",
     "recorded-content": {
       "create-rest-api-w-tags": {
         "apiKeySource": "HEADER",
@@ -114,6 +232,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "tags": {
           "MY_TAG1": "MY_VALUE1"
         },
@@ -134,6 +253,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "tags": {
           "MY_TAG1": "MY_VALUE1"
         },
@@ -156,6 +276,7 @@
             },
             "id": "<id:1>",
             "name": "<name:1>",
+            "rootResourceId": "<root-resource-id:1>",
             "tags": {
               "MY_TAG1": "MY_VALUE1"
             }
@@ -168,8 +289,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_rest_api_operation_add_remove": {
-    "recorded-date": "01-02-2023, 20:11:40",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_operation_add_remove": {
+    "recorded-date": "15-04-2024, 15:12:34",
     "recorded-content": {
       "update-rest-api-add": {
         "apiKeySource": "HEADER",
@@ -187,6 +308,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "tags": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -209,6 +331,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "tags": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -229,6 +352,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "tags": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -237,8 +361,105 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_rest_api_behaviour": {
-    "recorded-date": "01-02-2023, 20:27:17",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_compression": {
+    "recorded-date": "15-04-2024, 15:13:28",
+    "recorded-content": {
+      "enable-compression": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "minimumCompressionSize": 10,
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "disable-compression": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-compression-zero": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "description": "this is my api",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "minimumCompressionSize": 0,
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-negative-compression": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid minimum compression size, must be between 0 and 10485760"
+        },
+        "message": "Invalid minimum compression size, must be between 0 and 10485760",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "set-string-compression": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid minimum compression size, must be between 0 and 10485760"
+        },
+        "message": "Invalid minimum compression size, must be between 0 and 10485760",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "unsupported-operation": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch operation specified. Must be one of: [replace]"
+        },
+        "message": "Invalid patch operation specified. Must be one of: [replace]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_behaviour": {
+    "recorded-date": "15-04-2024, 15:14:15",
     "recorded-content": {
       "update-rest-api-array": {
         "apiKeySource": "HEADER",
@@ -255,6 +476,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "tags": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -296,8 +518,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_rest_api_invalid_api_id": {
-    "recorded-date": "01-02-2023, 22:26:45",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_invalid_api_id": {
+    "recorded-date": "15-04-2024, 15:14:15",
     "recorded-content": {
       "not-found-update-rest-api": {
         "Error": {
@@ -312,84 +534,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_create_rest_api_with_optional_params": {
-    "recorded-date": "04-04-2023, 17:58:40",
-    "recorded-content": {
-      "create-only-name": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:1>",
-        "name": "<name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "create-empty-desc": {
-        "Error": {
-          "Code": "BadRequestException",
-          "Message": "Description cannot be an empty string"
-        },
-        "message": "Description cannot be an empty string",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "create-with-version": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:2>",
-        "name": "<name:2>",
-        "version": "v1",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "create-with-empty-binary-media": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:3>",
-        "name": "<name:3>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "string-compression-size": {
-        "Error": {
-          "Code": "BadRequestException",
-          "Message": "Invalid minimum compression size, must be between 0 and 10485760"
-        },
-        "message": "Invalid minimum compression size, must be between 0 and 10485760",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_resource_lifecycle": {
-    "recorded-date": "23-02-2023, 22:08:31",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_resource_lifecycle": {
+    "recorded-date": "15-04-2024, 17:29:03",
     "recorded-content": {
       "rest-api-root-resource": {
         "items": [
@@ -505,8 +651,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_resource_behaviour": {
-    "recorded-date": "24-02-2023, 17:56:07",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_update_resource_behaviour": {
+    "recorded-date": "15-04-2024, 17:29:39",
     "recorded-content": {
       "nonexistent-resource": {
         "Error": {
@@ -646,8 +792,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_delete_resource": {
-    "recorded-date": "23-02-2023, 20:41:28",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_delete_resource": {
+    "recorded-date": "15-04-2024, 17:30:24",
     "recorded-content": {
       "delete-resource": {
         "ResponseMetadata": {
@@ -680,8 +826,24 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_create_proxy_resource": {
-    "recorded-date": "24-02-2023, 15:56:43",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_create_resource_parent_invalid": {
+    "recorded-date": "15-04-2024, 17:31:16",
+    "recorded-content": {
+      "wrong-resource-parent-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_create_proxy_resource": {
+    "recorded-date": "15-04-2024, 17:31:31",
     "recorded-content": {
       "create-base-proxy-resource": {
         "id": "<id:1>",
@@ -836,8 +998,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_create_proxy_resource_validation": {
-    "recorded-date": "24-02-2023, 16:17:00",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_create_proxy_resource_validation": {
+    "recorded-date": "15-04-2024, 17:32:33",
     "recorded-content": {
       "create-base-proxy-resource": {
         "id": "<id:1>",
@@ -894,24 +1056,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_create_resource_parent_invalid": {
-    "recorded-date": "24-02-2023, 16:39:00",
-    "recorded-content": {
-      "wrong-resource-parent-id": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid Resource identifier specified"
-        },
-        "message": "Invalid Resource identifier specified",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_authorizer_crud_no_api": {
-    "recorded-date": "28-02-2023, 20:06:16",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiAuthorizer::test_authorizer_crud_no_api": {
+    "recorded-date": "15-04-2024, 18:43:45",
     "recorded-content": {
       "wrong-rest-api-id-create-authorizer": {
         "Error": {
@@ -937,95 +1083,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_doc_arts_crud_no_api": {
-    "recorded-date": "28-02-2023, 20:11:32",
-    "recorded-content": {
-      "wrong-rest-api-id-create-doc-part": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
-        },
-        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "wrong-rest-api-id-get-doc-parts": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
-        },
-        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_validators_crud_no_api": {
-    "recorded-date": "28-02-2023, 20:18:59",
-    "recorded-content": {
-      "wrong-rest-api-id-create-validator": {
-        "Error": {
-          "Code": "BadRequestException",
-          "Message": "Invalid REST API identifier specified"
-        },
-        "message": "Invalid REST API identifier specified",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "wrong-rest-api-id-get-validators": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
-        },
-        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_get_api_case_insensitive": {
-    "recorded-date": "01-03-2023, 16:26:45",
-    "recorded-content": {
-      "create-rest-api": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "description": "lower case api",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:1>",
-        "name": "<name:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "get-api-upper-case": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid API identifier specified 111111111111:<upper-id>"
-        },
-        "message": "Invalid API identifier specified 111111111111:<upper-id>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_method_lifecycle": {
-    "recorded-date": "15-03-2023, 12:06:26",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_method_lifecycle": {
+    "recorded-date": "15-04-2024, 18:44:02",
     "recorded-content": {
       "put-base-method-response": {
         "apiKeyRequired": false,
@@ -1075,8 +1134,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_method_request_parameters": {
-    "recorded-date": "24-02-2023, 19:25:22",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_method_request_parameters": {
+    "recorded-date": "15-04-2024, 18:44:40",
     "recorded-content": {
       "put-method-request-params-response": {
         "apiKeyRequired": false,
@@ -1121,8 +1180,146 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_put_method_validation": {
-    "recorded-date": "25-02-2023, 17:49:08",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_put_method_model": {
+    "recorded-date": "15-04-2024, 18:45:11",
+    "recorded-content": {
+      "create-model": {
+        "contentType": "application/json",
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "schema": {
+          "title": "<name:1>",
+          "type": "object"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-model-2": {
+        "contentType": "application/json",
+        "id": "<id:2>",
+        "name": "<name:1>Two",
+        "schema": {
+          "title": "<name:1>Two",
+          "type": "object"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-request-models": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestModels": {
+          "application/json": "<name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete-model-used": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>', is referenced in method request: //ANY"
+        },
+        "message": "Cannot delete model '<name:1>', is referenced in method request: //ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "update-method-model": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestModels": {
+          "application/json": "<name:1>Two"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-model-unused": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "delete-model-used-2": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY"
+        },
+        "message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "put-method-2-request-models": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "requestModels": {
+          "application/json": "<name:1>Two"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "delete-model-used-by-2-method": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY"
+        },
+        "message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "update-method-model-2": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-model-used-by-method-1": {
+        "Error": {
+          "Code": "ConflictException",
+          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY"
+        },
+        "message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 409
+        }
+      },
+      "delete-method-using-model-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-model-unused-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_put_method_validation": {
+    "recorded-date": "15-04-2024, 18:45:43",
     "recorded-content": {
       "wrong-api": {
         "Error": {
@@ -1192,8 +1389,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_method": {
-    "recorded-date": "13-03-2023, 23:31:44",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_update_method": {
+    "recorded-date": "15-04-2024, 18:46:01",
     "recorded-content": {
       "put-method-response": {
         "apiKeyRequired": false,
@@ -1265,8 +1462,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_method_validation": {
-    "recorded-date": "13-03-2023, 23:36:56",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiMethod::test_update_method_validation": {
+    "recorded-date": "15-04-2024, 21:11:41",
     "recorded-content": {
       "wrong-rest-api": {
         "Error": {
@@ -1311,12 +1508,25 @@
         }
       },
       "unsupported-operation": {
-        "apiKeyRequired": true,
-        "authorizationType": "NONE",
-        "httpMethod": "ANY",
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch operation specified. Must be one of: [replace]"
+        },
+        "message": "Invalid patch operation specified. Must be one of: [replace]",
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPStatusCode": 400
+        }
+      },
+      "unsupported-operation-2": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch operation specified. Must be one of: [replace]"
+        },
+        "message": "Invalid patch operation specified. Must be one of: [replace]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       },
       "unsupported-path": {
@@ -1405,8 +1615,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_model_lifecycle": {
-    "recorded-date": "26-05-2023, 04:30:31",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiModels::test_model_lifecycle": {
+    "recorded-date": "15-04-2024, 21:02:34",
     "recorded-content": {
       "create-model": {
         "contentType": "application/json",
@@ -1549,8 +1759,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_model_validation": {
-    "recorded-date": "09-03-2023, 19:13:20",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiModels::test_model_validation": {
+    "recorded-date": "15-04-2024, 20:33:53",
     "recorded-content": {
       "create-model-wrong-id": {
         "Error": {
@@ -1653,8 +1863,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_model": {
-    "recorded-date": "09-03-2023, 19:39:34",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiModels::test_update_model": {
+    "recorded-date": "15-04-2024, 20:34:09",
     "recorded-content": {
       "update-model-wrong-id": {
         "Error": {
@@ -1728,146 +1938,35 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_put_method_model": {
-    "recorded-date": "15-03-2023, 12:12:59",
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_validators_crud_no_api": {
+    "recorded-date": "15-04-2024, 20:44:19",
     "recorded-content": {
-      "create-model": {
-        "contentType": "application/json",
-        "id": "<id:1>",
-        "name": "<name:1>",
-        "schema": {
-          "title": "<name:1>",
-          "type": "object"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "create-model-2": {
-        "contentType": "application/json",
-        "id": "<id:2>",
-        "name": "<name:1>Two",
-        "schema": {
-          "title": "<name:1>Two",
-          "type": "object"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "put-method-request-models": {
-        "apiKeyRequired": false,
-        "authorizationType": "NONE",
-        "httpMethod": "ANY",
-        "requestModels": {
-          "application/json": "<name:1>"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "delete-model-used": {
+      "wrong-rest-api-id-create-validator": {
         "Error": {
-          "Code": "ConflictException",
-          "Message": "Cannot delete model '<name:1>', is referenced in method request: //ANY"
+          "Code": "BadRequestException",
+          "Message": "Invalid REST API identifier specified"
         },
-        "message": "Cannot delete model '<name:1>', is referenced in method request: //ANY",
+        "message": "Invalid REST API identifier specified",
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 409
+          "HTTPStatusCode": 400
         }
       },
-      "update-method-model": {
-        "apiKeyRequired": false,
-        "authorizationType": "NONE",
-        "httpMethod": "ANY",
-        "requestModels": {
-          "application/json": "<name:1>Two"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-model-unused": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        }
-      },
-      "delete-model-used-2": {
+      "wrong-rest-api-id-get-validators": {
         "Error": {
-          "Code": "ConflictException",
-          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY"
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
         },
-        "message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY",
+        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 409
-        }
-      },
-      "put-method-2-request-models": {
-        "apiKeyRequired": false,
-        "authorizationType": "NONE",
-        "httpMethod": "ANY",
-        "requestModels": {
-          "application/json": "<name:1>Two"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "delete-model-used-by-2-method": {
-        "Error": {
-          "Code": "ConflictException",
-          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: /test/ANY"
-        },
-        "message": "Cannot delete model '<name:1>Two', is referenced in method request: /test/ANY",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 409
-        }
-      },
-      "update-method-model-2": {
-        "apiKeyRequired": false,
-        "authorizationType": "NONE",
-        "httpMethod": "ANY",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-model-used-by-method-1": {
-        "Error": {
-          "Code": "ConflictException",
-          "Message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY"
-        },
-        "message": "Cannot delete model '<name:1>Two', is referenced in method request: //ANY",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 409
-        }
-      },
-      "delete-method-using-model-2": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 204
-        }
-      },
-      "delete-model-unused-2": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
+          "HTTPStatusCode": 404
         }
       }
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_request_validator_lifecycle": {
-    "recorded-date": "22-03-2023, 13:07:42",
+    "recorded-date": "15-04-2024, 20:44:21",
     "recorded-content": {
       "create-rest-api": {
         "apiKeySource": "HEADER",
@@ -1881,6 +1980,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -1977,7 +2077,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_get_request_validator": {
-    "recorded-date": "22-03-2023, 13:08:19",
+    "recorded-date": "15-04-2024, 20:44:55",
     "recorded-content": {
       "get-request-validators-invalid-api-id": {
         "Error": {
@@ -2004,7 +2104,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_get_request_validators": {
-    "recorded-date": "22-03-2023, 13:08:19",
+    "recorded-date": "15-04-2024, 20:44:55",
     "recorded-content": {
       "get-invalid-request-validators": {
         "Error": {
@@ -2020,7 +2120,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_delete_request_validator": {
-    "recorded-date": "22-03-2023, 13:08:44",
+    "recorded-date": "15-04-2024, 20:45:24",
     "recorded-content": {
       "delete-request-validator-invalid-api-id": {
         "Error": {
@@ -2047,7 +2147,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_create_request_validator_invalid_api_id": {
-    "recorded-date": "22-03-2023, 13:08:44",
+    "recorded-date": "15-04-2024, 20:45:24",
     "recorded-content": {
       "invalid-create-request-validator": {
         "Error": {
@@ -2063,7 +2163,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_update_request_validator_operations": {
-    "recorded-date": "22-03-2023, 13:08:58",
+    "recorded-date": "15-04-2024, 20:46:01",
     "recorded-content": {
       "create-rest-api": {
         "apiKeySource": "HEADER",
@@ -2077,6 +2177,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -2138,474 +2239,8 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_documentation_part_lifecycle": {
-    "recorded-date": "23-03-2023, 17:50:40",
-    "recorded-content": {
-      "create-documentation-part": {
-        "id": "<id:1>",
-        "location": {
-          "type": "API"
-        },
-        "properties": {
-          "description": "Sample API description"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 201
-        }
-      },
-      "get-documentation-part": {
-        "id": "<id:1>",
-        "location": {
-          "type": "API"
-        },
-        "properties": {
-          "description": "Sample API description"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get-documentation-parts": {
-        "items": [
-          {
-            "id": "<id:1>",
-            "location": {
-              "type": "API"
-            },
-            "properties": {
-              "description": "Sample API description"
-            }
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "update-documentation-part": {
-        "id": "<id:1>",
-        "location": {
-          "type": "API"
-        },
-        "properties": {
-          "description": "Updated Sample API description"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get-documentation-part-after-update": {
-        "id": "<id:1>",
-        "location": {
-          "type": "API"
-        },
-        "properties": {
-          "description": "Updated Sample API description"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete_documentation_part": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_part": {
-    "recorded-date": "23-03-2023, 17:51:12",
-    "recorded-content": {
-      "get-documentation-part-invalid-api-id": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid Documentation part identifier specified"
-        },
-        "message": "Invalid Documentation part identifier specified",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "get-documentation-part-invalid-doc-id": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid Documentation part identifier specified"
-        },
-        "message": "Invalid Documentation part identifier specified",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_parts": {
-    "recorded-date": "23-03-2023, 17:51:12",
-    "recorded-content": {
-      "get-inavlid-documentation-parts": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid API identifier specified 111111111111:api_id"
-        },
-        "message": "Invalid API identifier specified 111111111111:api_id",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_update_documentation_part": {
-    "recorded-date": "23-03-2023, 17:51:42",
-    "recorded-content": {
-      "update-documentation-part-invalid-api-id": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid Documentation part identifier specified"
-        },
-        "message": "Invalid Documentation part identifier specified",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "update-documentation-part-invalid-add-operation": {
-        "Error": {
-          "Code": "BadRequestException",
-          "Message": "Invalid patch path  '/properties' specified for op 'add'. Please choose supported operations"
-        },
-        "message": "Invalid patch path  '/properties' specified for op 'add'. Please choose supported operations",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "update-documentation-part-invalid-path": {
-        "Error": {
-          "Code": "BadRequestException",
-          "Message": "Invalid patch path  '/invalidPath' specified for op 'replace'. Must be one of: [/properties]"
-        },
-        "message": "Invalid patch path  '/invalidPath' specified for op 'replace'. Must be one of: [/properties]",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_create_documentation_part_operations": {
-    "recorded-date": "23-03-2023, 17:52:11",
-    "recorded-content": {
-      "create_documentation_part_invalid_api_id": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid API identifier specified 111111111111:api_id"
-        },
-        "message": "Invalid API identifier specified 111111111111:api_id",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "create_documentation_part_invalid_location_type": {
-        "Error": {
-          "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'INVALID' at 'createDocumentationPartInput.location.type' failed to satisfy constraint: Member must satisfy enum value set: [RESPONSE_BODY, RESPONSE, METHOD, MODEL, AUTHORIZER, RESPONSE_HEADER, RESOURCE, PATH_PARAMETER, REQUEST_BODY, QUERY_PARAMETER, API, REQUEST_HEADER]"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_delete_documentation_part": {
-    "recorded-date": "23-03-2023, 17:52:31",
-    "recorded-content": {
-      "delete_documentation_part_wrong_api_id": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid API identifier specified 111111111111:api_id"
-        },
-        "message": "Invalid API identifier specified 111111111111:api_id",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "delete_documentation_part": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 202
-        }
-      },
-      "delete_already_deleted_documentation_part": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid Documentation part identifier specified"
-        },
-        "message": "Invalid Documentation part identifier specified",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_update_rest_api_compression": {
-    "recorded-date": "04-04-2023, 17:35:05",
-    "recorded-content": {
-      "enable-compression": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "description": "this is my api",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:1>",
-        "minimumCompressionSize": 10,
-        "name": "<name:1>",
-        "tags": {},
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "disable-compression": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "description": "this is my api",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:1>",
-        "name": "<name:1>",
-        "tags": {},
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "set-compression-zero": {
-        "apiKeySource": "HEADER",
-        "createdDate": "datetime",
-        "description": "this is my api",
-        "disableExecuteApiEndpoint": false,
-        "endpointConfiguration": {
-          "types": [
-            "EDGE"
-          ]
-        },
-        "id": "<id:1>",
-        "minimumCompressionSize": 0,
-        "name": "<name:1>",
-        "tags": {},
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "set-negative-compression": {
-        "Error": {
-          "Code": "BadRequestException",
-          "Message": "Invalid minimum compression size, must be between 0 and 10485760"
-        },
-        "message": "Invalid minimum compression size, must be between 0 and 10485760",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "set-string-compression": {
-        "Error": {
-          "Code": "BadRequestException",
-          "Message": "Invalid minimum compression size, must be between 0 and 10485760"
-        },
-        "message": "Invalid minimum compression size, must be between 0 and 10485760",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "unsupported-operation": {
-        "Error": {
-          "Code": "BadRequestException",
-          "Message": "Invalid patch operation specified. Must be 'add'|'remove'|'replace'"
-        },
-        "message": "Invalid patch operation specified. Must be 'add'|'remove'|'replace'",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApi::test_invoke_test_method": {
-    "recorded-date": "01-07-2023, 18:52:50",
-    "recorded-content": {
-      "test-invoke-method-get": {
-        "body": {
-          "petId": "123"
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "latency": "latency",
-        "log": "log",
-        "multiValueHeaders": {
-          "Content-Type": [
-            "application/json"
-          ]
-        },
-        "status": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "test-invoke-method-get-with-qs": {
-        "body": {
-          "petId": "123"
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "latency": "latency",
-        "log": "log",
-        "multiValueHeaders": {
-          "Content-Type": [
-            "application/json"
-          ]
-        },
-        "status": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "test-invoke-method-post-with-body": {
-        "body": {
-          "petId": "123"
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        },
-        "latency": "latency",
-        "log": "log",
-        "multiValueHeaders": {
-          "Content-Type": [
-            "application/json"
-          ]
-        },
-        "status": 200,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "resource-id-not-found": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid Resource identifier specified"
-        },
-        "message": "Invalid Resource identifier specified",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      },
-      "rest-api-not-found": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Invalid Resource identifier specified"
-        },
-        "message": "Invalid Resource identifier specified",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_import_documentation_parts": {
-    "recorded-date": "26-06-2023, 12:01:38",
-    "recorded-content": {
-      "create-import-documentations_parts": [
-        {
-          "id": "<id:1>",
-          "location": {
-            "type": "API"
-          },
-          "properties": {
-            "description": "API description",
-            "info": {
-              "description": "API info description 4",
-              "version": "API info version 3"
-            }
-          }
-        },
-        {
-          "id": "<id:2>",
-          "location": {
-            "type": "METHOD",
-            "path": "/",
-            "method": "GET"
-          },
-          "properties": {
-            "description": "Method description."
-          }
-        },
-        {
-          "id": "<id:3>",
-          "location": {
-            "type": "MODEL",
-            "name": "<name:1>"
-          },
-          "properties": {
-            "title": "<name:1> Schema"
-          }
-        },
-        {
-          "id": "<id:4>",
-          "location": {
-            "type": "RESPONSE",
-            "path": "/",
-            "method": "GET",
-            "statusCode": "200"
-          },
-          "properties": {
-            "description": "200 response"
-          }
-        }
-      ],
-      "import-documentation-parts": {
-        "ids": [
-          "<id:5>",
-          "<id:6>",
-          "<id:7>",
-          "<id:8>"
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_gateway_response_crud": {
-    "recorded-date": "04-09-2023, 20:13:20",
+    "recorded-date": "15-04-2024, 20:46:20",
     "recorded-content": {
       "get-gateway-response-default": {
         "defaultResponse": true,
@@ -2878,7 +2513,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_gateway_response_validation": {
-    "recorded-date": "04-09-2023, 20:32:34",
+    "recorded-date": "15-04-2024, 20:47:08",
     "recorded-content": {
       "get-gateway-responses-no-api": {
         "Error": {
@@ -2978,7 +2613,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_update_gateway_response": {
-    "recorded-date": "05-09-2023, 01:58:33",
+    "recorded-date": "15-04-2024, 20:47:51",
     "recorded-content": {
       "update-gateway-response-not-set": {
         "defaultResponse": false,
@@ -3157,8 +2792,95 @@
       }
     }
   },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayTestInvoke::test_invoke_test_method": {
+    "recorded-date": "15-04-2024, 20:48:35",
+    "recorded-content": {
+      "test-invoke-method-get": {
+        "body": {
+          "petId": "123"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "latency",
+        "log": "log",
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "test-invoke-method-get-with-qs": {
+        "body": {
+          "petId": "123"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "latency",
+        "log": "log",
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "test-invoke-method-post-with-body": {
+        "body": {
+          "petId": "123"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "latency",
+        "log": "log",
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "resource-id-not-found": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "rest-api-not-found": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_put_integration_wrong_type": {
-    "recorded-date": "28-11-2023, 20:15:11",
+    "recorded-date": "15-04-2024, 20:49:25",
     "recorded-content": {
       "put-integration-wrong-type": {
         "Error": {
@@ -3168,6 +2890,318 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_doc_parts_crud_no_api": {
+    "recorded-date": "15-04-2024, 20:52:33",
+    "recorded-content": {
+      "wrong-rest-api-id-create-doc-part": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
+        },
+        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "wrong-rest-api-id-get-doc-parts": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:test-fake-rest-id"
+        },
+        "message": "Invalid API identifier specified 111111111111:test-fake-rest-id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_documentation_part_lifecycle": {
+    "recorded-date": "15-04-2024, 20:52:35",
+    "recorded-content": {
+      "create-documentation-part": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "description": "Sample API description"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-documentation-part": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "description": "Sample API description"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-documentation-parts": {
+        "items": [
+          {
+            "id": "<id:1>",
+            "location": {
+              "type": "API"
+            },
+            "properties": {
+              "description": "Sample API description"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-documentation-part": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "description": "Updated Sample API description"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-documentation-part-after-update": {
+        "id": "<id:1>",
+        "location": {
+          "type": "API"
+        },
+        "properties": {
+          "description": "Updated Sample API description"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_documentation_part": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_part": {
+    "recorded-date": "15-04-2024, 20:53:15",
+    "recorded-content": {
+      "get-documentation-part-invalid-api-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Documentation part identifier specified"
+        },
+        "message": "Invalid Documentation part identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-documentation-part-invalid-doc-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Documentation part identifier specified"
+        },
+        "message": "Invalid Documentation part identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_get_documentation_parts": {
+    "recorded-date": "15-04-2024, 20:53:15",
+    "recorded-content": {
+      "get-inavlid-documentation-parts": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:api_id"
+        },
+        "message": "Invalid API identifier specified 111111111111:api_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_update_documentation_part": {
+    "recorded-date": "15-04-2024, 20:53:47",
+    "recorded-content": {
+      "update-documentation-part-invalid-api-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Documentation part identifier specified"
+        },
+        "message": "Invalid Documentation part identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-documentation-part-invalid-add-operation": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/properties' specified for op 'add'. Please choose supported operations"
+        },
+        "message": "Invalid patch path  '/properties' specified for op 'add'. Please choose supported operations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-documentation-part-invalid-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/invalidPath' specified for op 'replace'. Must be one of: [/properties]"
+        },
+        "message": "Invalid patch path  '/invalidPath' specified for op 'replace'. Must be one of: [/properties]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_create_documentation_part_operations": {
+    "recorded-date": "15-04-2024, 20:54:19",
+    "recorded-content": {
+      "create_documentation_part_invalid_api_id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:api_id"
+        },
+        "message": "Invalid API identifier specified 111111111111:api_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "create_documentation_part_invalid_location_type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'INVALID' at 'createDocumentationPartInput.location.type' failed to satisfy constraint: Member must satisfy enum value set: [RESPONSE_BODY, RESPONSE, METHOD, MODEL, AUTHORIZER, RESPONSE_HEADER, RESOURCE, PATH_PARAMETER, REQUEST_BODY, QUERY_PARAMETER, API, REQUEST_HEADER]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_invalid_delete_documentation_part": {
+    "recorded-date": "15-04-2024, 20:54:32",
+    "recorded-content": {
+      "delete_documentation_part_wrong_api_id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid API identifier specified 111111111111:api_id"
+        },
+        "message": "Invalid API identifier specified 111111111111:api_id",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete_documentation_part": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 202
+        }
+      },
+      "delete_already_deleted_documentation_part": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Documentation part identifier specified"
+        },
+        "message": "Invalid Documentation part identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiDocumentationPart::test_import_documentation_parts": {
+    "recorded-date": "15-04-2024, 20:57:15",
+    "recorded-content": {
+      "create-import-documentations_parts": [
+        {
+          "id": "<id:1>",
+          "location": {
+            "type": "API"
+          },
+          "properties": {
+            "description": "API description",
+            "info": {
+              "description": "API info description 4",
+              "version": "API info version 3"
+            }
+          }
+        },
+        {
+          "id": "<id:2>",
+          "location": {
+            "type": "METHOD",
+            "path": "/",
+            "method": "GET"
+          },
+          "properties": {
+            "description": "Method description."
+          }
+        },
+        {
+          "id": "<id:3>",
+          "location": {
+            "type": "MODEL",
+            "name": "<name:1>"
+          },
+          "properties": {
+            "title": "<name:1> Schema"
+          }
+        },
+        {
+          "id": "<id:4>",
+          "location": {
+            "type": "RESPONSE",
+            "path": "/",
+            "method": "GET",
+            "statusCode": "200"
+          },
+          "properties": {
+            "description": "200 response"
+          }
+        }
+      ],
+      "import-documentation-parts": {
+        "ids": [
+          "<id:5>",
+          "<id:6>",
+          "<id:7>",
+          "<id:8>"
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
