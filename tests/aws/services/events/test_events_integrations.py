@@ -35,7 +35,6 @@ def test_put_events_with_target_sqs(put_events_with_filter_to_sqs):
 
 
 @markers.aws.unknown
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_sqs_new_region(aws_client_factory):
     events_client = aws_client_factory(region_name="eu-west-1").events
     queue_name = "queue-{}".format(short_uid())
@@ -77,7 +76,6 @@ def test_put_events_with_target_sqs_new_region(aws_client_factory):
 
 
 @markers.aws.unknown
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_sqs_event_detail_match(put_events_with_filter_to_sqs):
     entries1 = [
         {
@@ -106,7 +104,6 @@ def test_put_events_with_target_sqs_event_detail_match(put_events_with_filter_to
 
 @markers.aws.unknown
 @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_sns(
     monkeypatch,
     sns_subscription,
@@ -175,7 +172,6 @@ def test_put_events_with_target_sns(
 
 
 @markers.aws.unknown
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_lambda(create_lambda_function, cleanups, aws_client, clean_up):
     rule_name = f"rule-{short_uid()}"
     function_name = f"lambda-func-{short_uid()}"
@@ -237,7 +233,6 @@ def test_put_events_with_target_lambda(create_lambda_function, cleanups, aws_cli
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_lambda_list_entry(
     create_lambda_function, cleanups, aws_client, clean_up, snapshot
 ):
@@ -334,7 +329,6 @@ def test_put_events_with_target_lambda_list_entry(
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_lambda_list_entries_partial_match(
     create_lambda_function, cleanups, aws_client, clean_up, snapshot
 ):
@@ -483,7 +477,6 @@ def test_should_ignore_schedules_for_put_event(create_lambda_function, cleanups,
 
 
 @markers.aws.unknown
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_firehose(aws_client, clean_up):
     s3_bucket = "s3-{}".format(short_uid())
     s3_prefix = "testeventdata"
@@ -552,7 +545,6 @@ def test_put_events_with_target_firehose(aws_client, clean_up):
 
 
 @markers.aws.unknown
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_kinesis(aws_client):
     rule_name = "rule-{}".format(short_uid())
     target_id = "target-{}".format(short_uid())
@@ -626,7 +618,6 @@ def test_put_events_with_target_kinesis(aws_client):
 
 @markers.aws.unknown
 @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_trigger_event_on_ssm_change(monkeypatch, aws_client, clean_up, strategy):
     monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
