@@ -130,6 +130,8 @@ class TargetService(ABC):
 
 TargetServiceDict = dict[Arn, TargetService]
 
+# Target Workers are ordered alphabetically by service name
+
 
 class ApiGatewayTargetService(TargetService):
     def send_event(self, event):
