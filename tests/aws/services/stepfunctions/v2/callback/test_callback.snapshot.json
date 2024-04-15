@@ -1507,5 +1507,1674 @@
         }
       ]
     }
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_multiple_heartbeat_notifications": {
+    "recorded-date": "15-04-2024, 14:08:54",
+    "recorded-content": {
+      "task_token_handler_responses": {
+        "send_task_heartbeat_response_0": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_1": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_2": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_3": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_4": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_5": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_6": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_7": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_8": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_9": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_success_response": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "sqs_message_body": {
+          "Message": "txt",
+          "TaskToken": "<task_token:1>"
+        }
+      },
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 60,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "txt",
+                  "TaskToken": "<task_token:1>"
+                },
+                "QueueUrl": "sqs_queue_url"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs",
+              "timeoutInSeconds": 600
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "77b6f94944d0d189f49858e0c286b1f9",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "<task_token:1>"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "SendMessageWithWait",
+              "output": {
+                "Message": "txt",
+                "TaskToken": "<task_token:1>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "<task_token:1>"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_multiple_executions_and_heartbeat_notifications": {
+    "recorded-date": "15-04-2024, 14:33:57",
+    "recorded-content": {
+      "task_token_inner_handler_3_responses": {
+        "send_task_heartbeat_response_0": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_1": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_2": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_3": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_4": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_5": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_6": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_7": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_8": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_9": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_success_response": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "sqs_message_body": {
+          "Message": "txt",
+          "TaskToken": "a_task_token"
+        }
+      },
+      "task_token_inner_handler_0_responses": {
+        "send_task_heartbeat_response_0": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_1": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_2": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_3": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_4": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_5": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_6": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_7": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_8": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_9": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_success_response": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "sqs_message_body": {
+          "Message": "txt",
+          "TaskToken": "a_task_token"
+        }
+      },
+      "task_token_inner_handler_5_responses": {
+        "send_task_heartbeat_response_0": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_1": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_2": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_3": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_4": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_5": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_6": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_7": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_8": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_9": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_success_response": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "sqs_message_body": {
+          "Message": "txt",
+          "TaskToken": "a_task_token"
+        }
+      },
+      "task_token_inner_handler_2_responses": {
+        "send_task_heartbeat_response_0": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_1": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_2": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_3": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_4": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_5": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_6": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_7": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_8": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_9": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_success_response": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "sqs_message_body": {
+          "Message": "txt",
+          "TaskToken": "a_task_token"
+        }
+      },
+      "task_token_inner_handler_1_responses": {
+        "send_task_heartbeat_response_0": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_1": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_2": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_3": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_4": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_5": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_6": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_7": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_8": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_9": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_success_response": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "sqs_message_body": {
+          "Message": "txt",
+          "TaskToken": "a_task_token"
+        }
+      },
+      "task_token_inner_handler_4_responses": {
+        "send_task_heartbeat_response_0": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_1": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_2": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_3": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_4": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_5": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_6": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_7": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_8": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_heartbeat_response_9": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "send_task_success_response": {
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 200
+          }
+        },
+        "sqs_message_body": {
+          "Message": "txt",
+          "TaskToken": "a_task_token"
+        }
+      },
+      "execution_history_0": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 60,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "txt",
+                  "TaskToken": "a_task_token"
+                },
+                "QueueUrl": "sqs_queue_url"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs",
+              "timeoutInSeconds": 600
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "2a37b01458ae44e1be7ce08933a66ba0",
+                "MessageId": "a_message_id",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:1>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:1>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:1>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "SendMessageWithWait",
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execution_history_1": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 60,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "txt",
+                  "TaskToken": "a_task_token"
+                },
+                "QueueUrl": "sqs_queue_url"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs",
+              "timeoutInSeconds": 600
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "7d699c3f3535e095fcf27bef000993e2",
+                "MessageId": "a_message_id",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "SendMessageWithWait",
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execution_history_2": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 60,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "txt",
+                  "TaskToken": "a_task_token"
+                },
+                "QueueUrl": "sqs_queue_url"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs",
+              "timeoutInSeconds": 600
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "f3037ad29aeabafd8b79df223be239fd",
+                "MessageId": "a_message_id",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:3>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:3>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:3>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "SendMessageWithWait",
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execution_history_3": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 60,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "txt",
+                  "TaskToken": "a_task_token"
+                },
+                "QueueUrl": "sqs_queue_url"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs",
+              "timeoutInSeconds": 600
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "69a90fbd767d4edb092ea76c9a51385d",
+                "MessageId": "a_message_id",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:4>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:4>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:4>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "SendMessageWithWait",
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execution_history_4": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 60,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "txt",
+                  "TaskToken": "a_task_token"
+                },
+                "QueueUrl": "sqs_queue_url"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs",
+              "timeoutInSeconds": 600
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "4ce5a205e4979f283e643167a8f0db86",
+                "MessageId": "a_message_id",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:5>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:5>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:5>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "SendMessageWithWait",
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execution_history_5": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "sqs_queue_url",
+                "Message": "txt",
+                "HeartbeatSecondsPath": 60
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "heartbeatInSeconds": 60,
+              "parameters": {
+                "MessageBody": {
+                  "Message": "txt",
+                  "TaskToken": "a_task_token"
+                },
+                "QueueUrl": "sqs_queue_url"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs",
+              "timeoutInSeconds": 600
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "2aa204c6fc285d679d18029dad3cf3e1",
+                "MessageId": "a_message_id",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:6>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:6>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:6>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "SendMessageWithWait",
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Message": "txt",
+                "TaskToken": "a_task_token"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
