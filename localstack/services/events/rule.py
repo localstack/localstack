@@ -1,3 +1,4 @@
+import json
 import re
 from typing import Optional
 
@@ -19,7 +20,13 @@ from localstack.aws.api.events import (
     TargetIdList,
     TargetList,
 )
-from localstack.services.events.models_v2 import Rule, TargetDict, ValidationException
+from localstack.services.events.models_v2 import (
+    EventPatternDict,
+    InvalidEventPatternException,
+    Rule,
+    TargetDict,
+    ValidationException,
+)
 
 TARGET_ID_REGEX = re.compile(r"^[\.\-_A-Za-z0-9]+$")
 TARGET_ARN_REGEX = re.compile(r"arn:[\d\w:\-/]*")
@@ -59,6 +66,7 @@ class RuleService:
             targets,
             managed_by,
         )
+        self.event_pattern = RuleWorker.load_event_pattern(event_pattern)
 
     @property
     def arn(self) -> Arn:
@@ -155,8 +163,22 @@ class RuleService:
 
         return validation_errors
 
+    @staticmethod
+    def load_event_pattern(raw_pattern: Optional[str]) -> EventPatternDict:
+        """Loads and validates an event pattern from a JSON string."""
+        if raw_pattern is None:
+            return {}
+
+        try:
+            pattern = json.loads(raw_pattern)
+        except json.JSONDecodeError:
+            raise InvalidEventPatternException(reason="Invalid JSON")
+
+        RuleWorker._validate_event_pattern(pattern)
+        return pattern
+
+    @staticmethod
     def _validate_input(
-        self,
         event_pattern: Optional[EventPattern],
         schedule_expression: Optional[ScheduleExpression],
         event_bus_name: Optional[EventBusName] = "default",
