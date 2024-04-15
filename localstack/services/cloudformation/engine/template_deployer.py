@@ -895,7 +895,7 @@ class TemplateDeployer:
             }
             if len(resources) == 0:
                 break
-            for resource_id, resource in resources.items():
+            for i, (resource_id, resource) in enumerate(resources.items()):
                 try:
                     # TODO: cache condition value in resource details on deployment and use cached value here
                     if evaluate_resource_condition(
@@ -907,6 +907,14 @@ class TemplateDeployer:
                             "Remove", logical_resource_id=resource_id
                         )
                         # TODO: check actual return value
+                        LOG.debug(
+                            'Handling "Remove" for resource "%s" (%s/%s) type "%s" in loop iteration %s',
+                            resource_id,
+                            i + 1,
+                            len(resources),
+                            resource["ResourceType"],
+                            iteration_cycle,
+                        )
                         executor.deploy_loop(resource, resource_provider_payload)
                         self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
                 except Exception as e:
@@ -1157,6 +1165,7 @@ class TemplateDeployer:
 
         # TODO: ideally the entire template has to be replaced, but tricky at this point
         existing_stack.template["Metadata"] = new_stack.template.get("Metadata")
+        existing_stack.template_body = new_stack.template_body
 
         # start deployment loop
         return self.apply_changes_in_loop(
@@ -1164,7 +1173,11 @@ class TemplateDeployer:
         )
 
     def apply_changes_in_loop(
-        self, changes: list[ChangeConfig], stack, action: Optional[str] = None, new_stack=None
+        self,
+        changes: list[ChangeConfig],
+        stack,
+        action: Optional[str] = None,
+        new_stack=None,
     ):
         def _run(*args):
             status_reason = None
@@ -1243,6 +1256,15 @@ class TemplateDeployer:
                         if not should_remove:
                             del changes[j]
                             continue
+                        LOG.debug(
+                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s',
+                            action,
+                            resource_id,
+                            j + 1,
+                            len(changes),
+                            res_change["ResourceType"],
+                            i + 1,
+                        )
                     self.apply_change(change, stack=stack)
                     changes_done.append(change)
                     del changes[j]

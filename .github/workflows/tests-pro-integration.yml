@@ -217,8 +217,9 @@ jobs:
       - name: Install OS packages
         run: |
           sudo apt-get update
+          # libvirt-dev is required by the libvirt-python Python package
           # postgresql-14 pin is required to make explicit install of the version from the Ubuntu repos and not PGDG repos
-          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.11-0ubuntu0* postgresql-client postgresql-plpython3
+          sudo apt-get install -y --allow-downgrades libsnappy-dev jq postgresql-14=14.11-0ubuntu0* postgresql-client postgresql-plpython3 libvirt-dev
       - name: Cache Ext Dependencies (venv)
         if: inputs.disableCaching != true
         uses: actions/cache@v4

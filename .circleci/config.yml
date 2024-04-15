@@ -506,12 +506,18 @@ jobs:
       - run:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
-            source .venv/bin/activate
-            mkdir parity_metrics && mv target/metric_reports/metric-report-raw-data-*amd64*.csv parity_metrics
-            METRIC_REPORT_DIR_PATH=parity_metrics \
-            IMPLEMENTATION_COVERAGE_FILE=scripts/implementation_coverage_full.csv \
-            SOURCE_TYPE=community \
-            python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
+            # check if a fork-only env var is set (https://circleci.com/docs/variables/)
+            if [ -z "$CIRCLE_PR_REPONAME" ]; then
+              source .venv/bin/activate
+              mkdir parity_metrics && mv target/metric_reports/metric-report-raw-data-*amd64*.csv parity_metrics
+              METRIC_REPORT_DIR_PATH=parity_metrics \
+              IMPLEMENTATION_COVERAGE_FILE=scripts/implementation_coverage_full.csv \
+              SOURCE_TYPE=community \
+              python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
+            else
+              echo "Skipping parity reporting to tinybird (no credentials, running on fork)..."
+            fi
+
       - run:
           name: Create Coverage Diff (Code Coverage)
           # pycobertura diff will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
