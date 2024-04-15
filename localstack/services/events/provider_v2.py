@@ -1,4 +1,6 @@
 import base64
+import datetime
+import json
 import logging
 from typing import Optional
 
@@ -22,6 +24,7 @@ from localstack.aws.api.events import (
     ListRulesResponse,
     ListTargetsByRuleResponse,
     NextToken,
+    PutEventsRequestEntry,
     PutEventsRequestEntryList,
     PutEventsResponse,
     PutPartnerEventsRequestEntryList,
@@ -43,6 +46,7 @@ from localstack.aws.api.events import (
     TargetId,
     TargetIdList,
     TargetList,
+    TestEventPatternResponse,
 )
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Rule as ApiTypeRule
@@ -59,7 +63,9 @@ from localstack.services.events.models_v2 import (
 )
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.target import TargetService, TargetServiceDict, TargetServiceFactory
+from localstack.services.events.utils import matches_event
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -77,6 +83,37 @@ def encode_next_token(token: int) -> NextToken:
 def get_filtered_dict(name_prefix: str, input_dict: dict) -> dict:
     """Filter dictionary by prefix."""
     return {name: value for name, value in input_dict.items() if name.startswith(name_prefix)}
+
+
+def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> dict:
+    event_time = datetime.datetime.utcnow()  # TODO fix deprecated method
+    if event_timestamp := event.get("Time"):
+        try:
+            # if provided, use the time from event
+            event_time = datetime.datetime.utcfromtimestamp(
+                event_timestamp
+            )  # TODO fix deprecated method
+        except ValueError:
+            # if we can't parse it, pass and keep using `utcnow`
+            LOG.debug(
+                "Could not parse the `Time` parameter, falling back to `utcnow` for the following Event: '%s'",
+                event,
+            )
+
+    # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
+    formatted_event = {
+        "version": "0",
+        "id": str(long_uid()),
+        "detail-type": event.get("DetailType"),
+        "source": event.get("Source"),
+        "account": account_id,
+        "time": event_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "region": region,
+        "resources": event.get("Resources", []),
+        "detail": json.loads(event.get("Detail", "{}")),
+    }
+
+    return formatted_event
 
 
 class EventsProvider(EventsApi, ServiceLifecycleHook):
@@ -384,9 +421,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         endpoint_id: EndpointId = None,
         **kwargs,
     ) -> PutEventsResponse:
-        failed_entries = self._put_entries(context, entries)
+        entries_uuids, failed_entries = self._put_entries(context, entries)
 
-        response = PutEventsResponse(FailedEntryCount=len(failed_entries), Entries=failed_entries)
+        response = PutEventsResponse(
+            Entries=[{"EventId": id} for id in entries_uuids], FailedEntryCount=0
+        )
+        if failed_entries:
+            response["FailedEntryCount"] = len(failed_entries)
+            response["FailedEntries"] = failed_entries
         return response
 
     @handler("PutPartnerEvents")
@@ -582,25 +624,36 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 except KeyError:
                     LOG.error(f"Error deleting target service {target_arn}.")
 
-    def _put_entries(self, context: RequestContext, entries: PutEventsRequestEntryList) -> list:
+    def _put_entries(
+        self, context: RequestContext, entries: PutEventsRequestEntryList
+    ) -> tuple[list, list]:
+        entries_uuids = []
         failed_entries = []
         for event in entries:
+            event = format_event(event, context.region, context.account_id)
+            entries_uuids.append(event["id"])
             event_bus_name = event.get("EventBusName", "default")
             store = self.get_store(context)
-            event_bus = self.get_event_bus(event_bus_name, store)
-            # TODO add pattern matching
+            try:
+                event_bus = self.get_event_bus(event_bus_name, store)
+            except ResourceNotFoundException:
+                # ignore events for non-existing event buses
+                continue
             matching_rules = [rule for rule in event_bus.rules.values()]
             for rule in matching_rules:
-                for target in rule.targets.values():
-                    target_service = self._target_services_store[target["Arn"]]
-                    try:
-                        target_service.send_event(event)
-                    except Exception as error:
-                        failed_entries.append(
-                            {
-                                "Entry": event,
-                                "ErrorCode": "InternalException",
-                                "ErrorMessage": str(error),
-                            }
-                        )
-        return failed_entries
+                rule_service = self.get_rule_service(context, rule.name, event_bus_name)
+                event_pattern = rule_service.event_pattern
+                if matches_event(event_pattern, event):
+                    for target in rule.targets.values():
+                        target_service = self._target_services_store[target["Arn"]]
+                        try:
+                            target_service.process_event(event)
+                        except Exception as error:
+                            failed_entries.append(
+                                {
+                                    "Entry": event,
+                                    "ErrorCode": "InternalException",
+                                    "ErrorMessage": str(error),
+                                }
+                            )
+        return entries_uuids, failed_entries

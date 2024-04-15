@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
@@ -58,6 +58,8 @@ class Rule:
 
 
 RuleDict = dict[RuleName, Rule]
+
+EventPatternDict = dict[str, Any]
 
 
 @dataclass
