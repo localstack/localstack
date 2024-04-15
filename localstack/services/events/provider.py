@@ -119,7 +119,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             try:
                 result = matches_rule(event, event_pattern)
             except InternalInvalidEventPatternException as e:
-                raise InvalidEventPatternException(e.message)
+                raise InvalidEventPatternException(e.message) from e
         else:
             event_pattern_dict = json.loads(event_pattern)
             event_dict = json.loads(event)
