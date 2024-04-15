@@ -7,6 +7,7 @@ from botocore.client import BaseClient
 
 from localstack.aws.api.events import (
     Arn,
+    PutEventsRequestEntry,
     Target,
 )
 from localstack.aws.connect import connect_to
@@ -53,7 +54,7 @@ class TargetSender(ABC):
         return self._client
 
     @abstractmethod
-    def send_event(self):
+    def send_event(self, event: PutEventsRequestEntry):
         pass
 
     def _validate_input(self, target: Target):
