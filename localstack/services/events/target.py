@@ -175,6 +175,7 @@ class KinesisTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
+        # TODO add validated test to check if RoleArn is mandatory
         if not collections.get_safe(target, "$.RoleArn"):
             raise ValueError("RoleArn is required for Kinesis target")
         if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):
