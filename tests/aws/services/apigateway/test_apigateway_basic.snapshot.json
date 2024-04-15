@@ -72,5 +72,49 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_update_rest_api_deployment": {
+    "recorded-date": "12-04-2024, 21:24:49",
+    "recorded-content": {
+      "after-update": {
+        "createdDate": "datetime",
+        "description": "new-description",
+        "id": "<id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigateway_with_custom_authorization_method": {
+    "recorded-date": "12-04-2024, 22:31:50",
+    "recorded-content": {
+      "api-id": {
+        "api_id": "<api_id:1>"
+      },
+      "authorizer": {
+        "authType": "custom",
+        "authorizerUri": "<authorizer-uri:1>",
+        "id": "<id:1>",
+        "identitySource": "method.request.header.Auth",
+        "name": "lambda_authorizer",
+        "type": "TOKEN",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "put-method-response": {
+        "apiKeyRequired": true,
+        "authorizationType": "CUSTOM",
+        "authorizerId": "<id:1>",
+        "httpMethod": "GET",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
   }
 }
