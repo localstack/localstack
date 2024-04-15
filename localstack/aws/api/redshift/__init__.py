@@ -1258,6 +1258,7 @@ class Snapshot(TypedDict, total=False):
     SnapshotRetentionStartTime: Optional[TStamp]
     MasterPasswordSecretArn: Optional[String]
     MasterPasswordSecretKmsKeyId: Optional[String]
+    SnapshotArn: Optional[String]
 
 
 class AuthorizeSnapshotAccessResult(TypedDict, total=False):
