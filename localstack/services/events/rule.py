@@ -50,7 +50,7 @@ class RuleService:
         targets: Optional[TargetDict] = None,
         managed_by: Optional[ManagedBy] = None,
     ):
-        RuleWorker._validate_input(event_pattern, schedule_expression, event_bus_name)
+        RuleService._validate_input(event_pattern, schedule_expression, event_bus_name)
         # required to keep data and functionality separate for persistence
         self.rule = Rule(
             name,
@@ -66,7 +66,7 @@ class RuleService:
             targets,
             managed_by,
         )
-        self.event_pattern = RuleWorker.load_event_pattern(event_pattern)
+        self.event_pattern = RuleService.load_event_pattern(event_pattern)
 
     @property
     def arn(self) -> Arn:
@@ -83,7 +83,7 @@ class RuleService:
         self.rule.state = RuleState.DISABLED
 
     def add_targets(self, targets: TargetList) -> PutTargetsResultEntryList:
-        failed_entries = RuleWorker.validate_targets_input(targets)
+        failed_entries = RuleService.validate_targets_input(targets)
         for target in targets:
             target_id = target["Id"]
             if target_id not in self.rule.targets and self._check_target_limit_reached():
@@ -175,7 +175,7 @@ class RuleService:
         except json.JSONDecodeError:
             raise InvalidEventPatternException(reason="Invalid JSON")
 
-        RuleWorker._validate_event_pattern(pattern)
+        RuleService._validate_event_pattern(pattern)
         return pattern
 
     @staticmethod
@@ -205,7 +205,7 @@ class RuleService:
         """Validates that the event pattern is correctly structured."""
         for attr, value in pattern.items():
             if isinstance(value, dict):
-                RuleWorker._validate_event_pattern(value)
+                RuleService._validate_event_pattern(value)
             elif isinstance(value, list):
                 if not value:
                     raise InvalidEventPatternException("Empty arrays are not allowed")
