@@ -139,7 +139,6 @@ class TestEvents:
         clean_up(rule_name=rule_name)
 
     @markers.aws.unknown
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_with_values_in_array(self, put_events_with_filter_to_sqs):
         pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
         entries1 = [
@@ -171,7 +170,6 @@ class TestEvents:
         )
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_with_nested_event_pattern(self, put_events_with_filter_to_sqs):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
         entries1 = [
@@ -527,7 +525,6 @@ class TestEvents:
         assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
 
     @markers.aws.unknown
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_event_without_source(self, aws_client_factory):
         events_client = aws_client_factory(region_name="eu-west-1").events
 
@@ -535,7 +532,6 @@ class TestEvents:
         assert response.get("Entries")
 
     @markers.aws.unknown
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_event_without_detail(self, aws_client_factory):
         events_client = aws_client_factory(region_name="eu-west-1").events
 
@@ -591,7 +587,7 @@ class TestEvents:
             ],
         )
 
-    @markers.aws.validated
+    @markers.aws.validated  # TODO move to tests_event_patterns
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_event_pattern(self, aws_client, snapshot, account_id, region_name):
         response = aws_client.events.test_event_pattern(
@@ -636,7 +632,6 @@ class TestEvents:
         snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_time(
         self,
         aws_client,
@@ -817,7 +812,6 @@ class TestEventBus:
     @markers.aws.unknown
     @pytest.mark.skipif(is_aws_cloud(), reason="not validated")
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_into_event_bus(
         self,
         monkeypatch,
@@ -885,7 +879,6 @@ class TestEventBus:
         aws_client.sqs.delete_queue(QueueUrl=queue_url)
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     # TODO simplify and use sqs as target
     def test_put_events_to_default_eventbus_for_custom_eventbus(
         self,
@@ -1019,7 +1012,6 @@ class TestEventBus:
         assert_valid_event(received_event)
 
     @markers.aws.validated  # TODO fix condition for this test, only succeeds if run on its own
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_nonexistent_event_bus(
         self,
         aws_client,
