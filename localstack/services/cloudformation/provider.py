@@ -42,6 +42,7 @@ from localstack.aws.api.cloudformation import (
     GetTemplateOutput,
     GetTemplateSummaryInput,
     GetTemplateSummaryOutput,
+    IncludePropertyValues,
     InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
     ListChangeSetsOutput,
@@ -736,8 +737,10 @@ class CloudformationProvider(CloudformationApi):
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
+        include_property_values: IncludePropertyValues = None,
         **kwargs,
     ) -> DescribeChangeSetOutput:
+        # TODO add support for include_property_values
         # only relevant if change_set_name isn't an ARN
         if not ARN_CHANGESET_REGEX.match(change_set_name):
             if not stack_name:
