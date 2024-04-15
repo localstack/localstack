@@ -4,7 +4,7 @@ import re
 from abc import ABC
 from functools import lru_cache
 from sys import version_info
-from typing import Optional
+from typing import Optional, Tuple
 
 import requests
 
@@ -297,31 +297,26 @@ class PythonPackageInstaller(PackageInstaller):
         self._prepare_installation(target)
 
 
-class MavenPackageInstaller(DownloadInstaller):
-    """Package installer for Maven dependencies.
-    Follows the Maven naming conventions: https://maven.apache.org/guides/mini/guide-naming-conventions.html
+class MavenDownloadInstaller(DownloadInstaller):
+    """The packageURL is easy copy/pastable from the Maven central repository and the first package URL
+    defines the package name and version.
+    Example package_url: pkg:maven/software.amazon.event.ruler/event-ruler@1.7.3
+    => name: event-ruler
+    => version: 1.7.3
     """
 
     # Example: software.amazon.event.ruler
     group_id: str
     # Example: event-ruler
     artifact_id: str
-    # Example version: 1.7.3
 
-    # Optional installation directory to overwrite the default
-    install_dir: str | None
+    # Custom installation directory
+    install_dir_suffix: str | None
 
-    def __init__(self, package_url: str, install_dir: str | None = None):
-        """ "The packageURL is easy copy/pastable from the Maven central repository
-        Example package_url: pkg:maven/software.amazon.event.ruler/event-ruler@1.7.3
-        """
-        parts = package_url.split("/")
-        self.group_id = parts[1]
-        sub_parts = parts[2].split("@")
-        self.artifact_id = sub_parts[0]
-        version = sub_parts[1]
+    def __init__(self, package_url: str, install_dir_suffix: str | None = None):
+        self.group_id, self.artifact_id, version = parse_maven_package_url(package_url)
         super().__init__(self.artifact_id, version)
-        self.install_dir = install_dir
+        self.install_dir_suffix = install_dir_suffix
 
     def _get_download_url(self) -> str:
         group_id_path = self.group_id.replace(".", "/")
@@ -329,6 +324,48 @@ class MavenPackageInstaller(DownloadInstaller):
 
     def _get_install_dir(self, target: InstallTarget) -> str:
         """Allow to overwrite the default installation directory.
-        This enables bundling transitive dependencies into the same directory.
+        This enables downloading transitive dependencies into the same directory.
         """
-        return self.install_dir or super()._get_install_dir(target)
+        if self.install_dir_suffix:
+            return os.path.join(target.value, self.install_dir_suffix)
+        else:
+            return super()._get_install_dir(target)
+
+
+class MavenPackageInstaller(MavenDownloadInstaller):
+    """Package installer for downloading Maven JARs, including optional dependencies.
+    The first Maven package is used as main LPM package and other dependencies are installed additionally.
+    Follows the Maven naming conventions: https://maven.apache.org/guides/mini/guide-naming-conventions.html
+    """
+
+    # Installers for Maven dependencies
+    dependencies: list[MavenDownloadInstaller]
+
+    def __init__(self, *package_urls: str):
+        super().__init__(package_urls[0])
+        self.dependencies = []
+
+        # Create installers for dependencies
+        for package_url in package_urls[1:]:
+            install_dir_suffix = os.path.join(self.name, self.version)
+            self.dependencies.append(MavenDownloadInstaller(package_url, install_dir_suffix))
+
+    def _install(self, target: InstallTarget) -> None:
+        # Install all dependencies first
+        for dependency in self.dependencies:
+            dependency._install(target)
+        # Install the main Maven package once all dependencies are installed.
+        # This main package indicates whether all dependencies are installed.
+        super()._install(target)
+
+
+def parse_maven_package_url(package_url: str) -> Tuple[str, str, str]:
+    """Example: parse_maven_package_url("pkg:maven/software.amazon.event.ruler/event-ruler@1.7.3")
+    -> software.amazon.event.ruler, event-ruler, 1.7.3
+    """
+    parts = package_url.split("/")
+    group_id = parts[1]
+    sub_parts = parts[2].split("@")
+    artifact_id = sub_parts[0]
+    version = sub_parts[1]
+    return group_id, artifact_id, version
