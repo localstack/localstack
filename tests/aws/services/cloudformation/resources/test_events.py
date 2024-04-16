@@ -11,6 +11,35 @@ LOG = logging.getLogger(__name__)
 
 
 @markers.aws.validated
+def test_cfn_event_api_destination_resource(deploy_cfn_template, region_name, aws_client):
+    def _assert(expected_len):
+        rs = aws_client.events.list_event_buses()
+        event_buses = [eb for eb in rs["EventBuses"] if eb["Name"] == "my-test-bus"]
+        assert len(event_buses) == expected_len
+        rs = aws_client.events.list_connections()
+        connections = [con for con in rs["Connections"] if con["Name"] == "my-test-conn"]
+        assert len(connections) == expected_len
+        rs = aws_client.events.list_api_destinations()
+        api_destinations = [
+            ad for ad in rs["ApiDestinations"] if ad["Name"] == "my-test-destination"
+        ]
+        assert len(api_destinations) == expected_len
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/events_apidestination.yml"
+        ),
+        parameters={
+            "Region": region_name,
+        },
+    )
+    _assert(1)
+
+    stack.destroy()
+    _assert(0)
+
+
+@markers.aws.validated
 def test_eventbus_policies(deploy_cfn_template, aws_client):
     event_bus_name = f"event-bus-{short_uid()}"
 
