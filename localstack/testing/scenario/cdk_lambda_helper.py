@@ -1,3 +1,4 @@
+import base64
 import os
 import shutil
 import tempfile
@@ -8,6 +9,7 @@ from typing import TYPE_CHECKING
 from botocore.exceptions import ClientError
 
 from localstack.utils.aws.resources import create_s3_bucket
+from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.run import LOG, run
 
 if TYPE_CHECKING:
@@ -142,6 +144,24 @@ def _zip_lambda_resources(
                 file_path = os.path.join(root, file)
                 archive_name = os.path.relpath(file_path, resources_dir)
                 temp_zip.write(file_path, archive_name)
+
+
+def generate_ecr_image_from_dockerfile(ecr_client, repository_name, file_path):
+    repository_uri = ecr_client.create_repository(
+        repositoryName=repository_name,
+    )["repository"]["repositoryUri"]
+
+    auth_response = ecr_client.get_authorization_token()
+    auth_token = auth_response["authorizationData"][0]["authorizationToken"].encode()
+    username, password = base64.b64decode(auth_token).decode().split(":")
+    registry = auth_response["authorizationData"][0]["proxyEndpoint"]
+    DOCKER_CLIENT.login(username, password, registry=registry)
+
+    temp_dir = tempfile.mkdtemp()
+    destination_file = os.path.join(temp_dir, "Dockerfile")
+    shutil.copy2(file_path, destination_file)
+    DOCKER_CLIENT.build_image(dockerfile_path=destination_file, image_name=repository_uri)
+    DOCKER_CLIENT.push_image(repository_uri)
 
 
 def _upload_to_s3(s3_client: "S3Client", bucket_name: str, key_name: str, file: str):
