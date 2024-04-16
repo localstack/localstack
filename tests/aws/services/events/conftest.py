@@ -378,3 +378,75 @@ def sqs_collect_messages(
     retry(collect_events, retries=retries, sleep=0.01)
 
     return events
+
+
+@pytest.fixture
+def create_events_target_sqs(aws_client, sqs_create_queue, sqs_get_queue_arn):
+    def _create_events_target_sqs(**kwargs) -> tuple[str, str]:
+        queue_url = sqs_create_queue(**kwargs)
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        policy = {
+            "Version": "2012-10-17",
+            "Id": f"sqs-eventbridge-{short_uid()}",
+            "Statement": [
+                {
+                    "Sid": f"SendMessage-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sqs:SendMessage",
+                    "Resource": queue_arn,
+                }
+            ],
+        }
+        aws_client.sqs.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
+        )
+        return queue_url, queue_arn
+
+    return _create_events_target_sqs
+
+
+@pytest.fixture
+def create_events_target_events(create_event_bus, create_iam_role_with_policy):
+    def _create_events_target_events(**kwargs) -> tuple[str, str, str]:
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"bus-{short_uid()}"
+        bus_name = kwargs["Name"]
+        bus_arn = create_event_bus(**kwargs)["EventBusArn"]
+
+        # create role and policy for inter event bus communication
+        role_name = f"EventBridgeCrossBusRole{short_uid()}"
+        role_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        policy_name = f"EventBridgeCrossBusPolicy{short_uid()}"
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": "events:PutEvents",
+                    "Resource": [
+                        bus_arn,
+                    ],
+                }
+            ],
+        }
+        role_arn = create_iam_role_with_policy(
+            RoleName=role_name,
+            RoleDefinition=role_policy,
+            PolicyName=policy_name,
+            PolicyDefinition=policy_document,
+        )
+
+        return bus_name, bus_arn, role_arn
+
+    return _create_events_target_events

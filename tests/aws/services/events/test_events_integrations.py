@@ -1,6 +1,7 @@
 """Tests for integrations between AWS EventBridge and other AWS services."""
 
 import json
+import time
 from datetime import datetime
 
 import pytest
@@ -8,6 +9,7 @@ import pytest
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns, resources
 from localstack.utils.strings import short_uid
@@ -369,7 +371,67 @@ class TestTargetEventBridge:
         put_rule,
         aws_client,
     ):
-        pass
+        # create source event bus
+        event_bus_source_name = f"bus-source-{short_uid()}"
+        create_event_bus(Name=event_bus_source_name)
+
+        # create event bus target
+        event_bus_target_name, event_bus_target_arn, role_arn = create_events_target_events()
+
+        # wait for iam propagation
+        if is_aws_cloud():
+            time.sleep(10)
+
+        # create rule and target for source event bus
+        rule_name_events = f"rule-{short_uid()}"
+        put_rule(
+            Name=rule_name_events,
+            EventBusName=event_bus_source_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        target_id_events = f"target-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(target_id_events, "<target-id>"))
+        targets = [{"Id": target_id_events, "Arn": event_bus_target_arn, "RoleArn": role_arn}]
+        aws_client.events.put_targets(
+            Rule=rule_name_events,
+            EventBusName=event_bus_source_name,
+            Targets=targets,
+        )
+
+        # setup target event bus and target sqs
+        queue_url, queue_arn = create_events_target_sqs()
+        snapshot.add_transformer(snapshot.transform.regex(queue_arn, "<queue-arn>"))
+
+        # create rule and target for sqs
+        rule_name_sqs = f"rule-{short_uid()}"
+        put_rule(
+            Name=rule_name_sqs,
+            EventBusName=event_bus_target_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        target_id_sqs = f"target-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(target_id_sqs, "<target-id>"))
+        targets = [{"Id": target_id_sqs, "Arn": queue_arn}]
+        aws_client.events.put_targets(
+            Rule=rule_name_sqs,
+            EventBusName=event_bus_target_name,
+            Targets=targets,
+        )
+
+        # put events to source event bus
+        entries = [
+            {
+                "EventBusName": event_bus_source_name,
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            }
+        ]
+        aws_client.events.put_events(Entries=entries)
+
+        # get events as messages from queue
+        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+        snapshot.match("messages", messages)
 
     # TODO implement
     @markers.aws.validated

@@ -100,5 +100,34 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_integrations.py::TestTargetEventBridge::test_put_events_with_target_event_bridge": {
+    "recorded-date": "16-04-2024, 13:50:37",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "AQEBR73QtB8B1X0BTf6gARd6M85ZpLu5cG8JtuJdmh+UUcmkBvF7UCCO/K68TdWWq2kqaloqWaCt6HF1oE14ZC/UshQ5AyQCNUk1SP9RKA/CzL3uBut40QXGCchen2im6CvShPWA6v6tQGdG4GxI5WrkzD92ejGhjmvNm7pSEDzQi3NdqpA5Auqb8tcnszSlgwvygNfY3/j63tShZlFqNPPsn2mrLTsLVy0BdX0TItGlHAwbYqSSPdQwD95q7DkmKRMVa3f50uqyR0moaV7HD9xU0QuvSF3O1M/zTmNoBD2s2xUdBJbar598Ow4H6xpO+4JNGktquv21juzFAmC8QBnKqpz7aMENvF/yU3bqI6OtMJbwFp/2K+8vhi+M1dLRyFZoVx7CLLpNl6Dn/KcG7wyx4w==",
+          "MD5OfBody": "682dc51e84f01707e44afe350853afe8",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }
