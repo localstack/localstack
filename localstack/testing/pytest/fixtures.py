@@ -1940,7 +1940,15 @@ def create_rest_apigw(aws_client_factory):
 
     def _create_apigateway_function(**kwargs):
         region_name = kwargs.pop("region_name", None)
-        apigateway_client = aws_client_factory(region_name=region_name).apigateway
+        client_config = None
+        if is_aws_cloud():
+            client_config = botocore.config.Config(
+                # Api gateway can throttle requests pretty heavily. Leading to potentially undeleted apis
+                retries={"max_attempts": 10, "mode": "adaptive"}
+            )
+        apigateway_client = aws_client_factory(
+            region_name=region_name, config=client_config
+        ).apigateway
         kwargs.setdefault("name", f"api-{short_uid()}")
 
         response = apigateway_client.create_rest_api(**kwargs)

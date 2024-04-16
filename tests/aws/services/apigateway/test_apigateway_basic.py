@@ -157,7 +157,8 @@ class TestAPIGateway:
         assert "foobar" in e.value.response["Error"]["Message"]
 
     @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
-    @markers.aws.unknown
+    @markers.aws.only_localstack
+    # This is not a possible feature on aws.
     def test_create_rest_api_with_custom_id(self, create_rest_apigw, url_function, aws_client):
         apigw_name = f"gw-{short_uid()}"
         test_id = "testId123"
@@ -177,8 +178,10 @@ class TestAPIGateway:
         assert response.ok
         assert response._content == b'{"echo": "foobar", "response": "mocked"}'
 
-    @markers.aws.unknown
-    def test_update_rest_api_deployment(self, create_rest_apigw, aws_client):
+    @markers.aws.validated
+    def test_update_rest_api_deployment(self, create_rest_apigw, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("id"))
+
         api_id, _, root = create_rest_apigw(name="test_gateway5")
 
         create_rest_resource_method(
@@ -218,7 +221,7 @@ class TestAPIGateway:
             deploymentId=deployment_id,
             patchOperations=patch_operations,
         )
-        assert deployment["description"] == "new-description"
+        snapshot.match("after-update", deployment)
 
     @markers.aws.validated
     def test_api_gateway_lambda_integration_aws_type(
@@ -355,7 +358,9 @@ class TestAPIGateway:
             assert response.status_code == 200
             assert "http://test.com" in response.headers["Access-Control-Allow-Origin"]
 
-    @markers.aws.unknown
+    # This test fails as it tries to create a lambda locally?
+    # It then leaves some resources behind, apigateway and policies
+    @markers.aws.needs_fixing
     @pytest.mark.parametrize(
         "api_path", [API_PATH_LAMBDA_PROXY_BACKEND, API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM]
     )
@@ -376,7 +381,9 @@ class TestAPIGateway:
             aws_client.apigateway,
         )
 
-    @markers.aws.unknown
+    # This test fails as it tries to create a lambda locally?
+    # It then leaves some resources behind, apigateway and policies
+    @markers.aws.needs_fixing
     def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(
         self, integration_lambda, aws_client, create_iam_role_with_policy
     ):
@@ -532,13 +539,17 @@ class TestAPIGateway:
         assert "/yCqIBE=" == result_content["body"]
         assert ["isBase64Encoded"]
 
-    @markers.aws.unknown
+    # This test fails as it tries to create a lambda locally?
+    # It then leaves some resources behind, apigateway and policies
+    @markers.aws.needs_fixing
     def test_api_gateway_lambda_proxy_integration_any_method(self, integration_lambda):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             integration_lambda, API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD
         )
 
-    @markers.aws.unknown
+    # This test fails as it tries to create a lambda locally?
+    # It then leaves some resources behind, apigateway and policies
+    @markers.aws.needs_fixing
     def test_api_gateway_lambda_proxy_integration_any_method_with_path_param(
         self, integration_lambda
     ):
@@ -660,7 +671,9 @@ class TestAPIGateway:
         assert result.headers.get("Content-Type") == "application/json"
         assert json.loads(result.content)["message"] == "Internal server error"
 
-    @markers.aws.unknown
+    # Missing certificate creation to create a domain
+    # this might end up being a bigger issue to fix until we have a validated certificate we can use
+    @markers.aws.needs_fixing
     def test_api_gateway_handle_domain_name(self, aws_client):
         domain_name = f"{short_uid()}.example.com"
         apigw_client = aws_client.apigateway
@@ -699,15 +712,25 @@ class TestAPIGateway:
             else:
                 assert 204 == result.status_code
 
-    @markers.aws.unknown
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..authType",  # Not added by LS
+            "$..authorizerResultTtlInSeconds",  # Exists in LS but not in AWS
+        ]
+    )
+    @markers.aws.validated
     def test_apigateway_with_custom_authorization_method(
-        self, create_rest_apigw, aws_client, account_id, region_name, integration_lambda
+        self, create_rest_apigw, aws_client, account_id, region_name, integration_lambda, snapshot
     ):
+        snapshot.add_transformer(snapshot.transform.key_value("api_id"))
+        snapshot.add_transformer(snapshot.transform.key_value("authorizerUri"))
+        snapshot.add_transformer(snapshot.transform.key_value("id"))
         # create Lambda function
         lambda_uri = arns.lambda_function_arn(integration_lambda, account_id, region_name)
 
         # create REST API
         api_id, _, _ = create_rest_apigw(name="test-api")
+        snapshot.match("api-id", {"api_id": api_id})
         root_res_id = aws_client.apigateway.get_resources(restApiId=api_id)["items"][0]["id"]
 
         # create authorizer at root resource
@@ -719,6 +742,7 @@ class TestAPIGateway:
                 2015-03-31/functions/{}/invocations".format(lambda_uri),
             identitySource="method.request.header.Auth",
         )
+        snapshot.match("authorizer", authorizer)
 
         # create method with custom authorizer
         is_api_key_required = True
@@ -730,8 +754,7 @@ class TestAPIGateway:
             authorizerId=authorizer["id"],
             apiKeyRequired=is_api_key_required,
         )
-
-        assert authorizer["id"] == method_response["authorizerId"]
+        snapshot.match("put-method-response", method_response)
 
     @markers.aws.unknown
     def test_base_path_mapping(self, create_rest_apigw, aws_client):
