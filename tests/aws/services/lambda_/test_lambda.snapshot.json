@@ -3333,7 +3333,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_error": {
-    "recorded-date": "08-04-2024, 16:58:32",
+    "recorded-date": "16-04-2024, 08:08:32",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
@@ -3348,7 +3348,7 @@
             "  File \"<frozen importlib._bootstrap>\", line 1360, in _find_and_load\n",
             "  File \"<frozen importlib._bootstrap>\", line 1331, in _find_and_load_unlocked\n",
             "  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n",
-            "  File \"<frozen importlib._bootstrap_external>\", line 994, in exec_module\n",
+            "  File \"<frozen importlib._bootstrap_external>\", line 995, in exec_module\n",
             "  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n",
             "  File \"/var/task/lambda_runtime_error.py\", line 1, in <module>\n    raise Exception(\"Runtime startup fails\")\n"
           ]
