@@ -127,10 +127,10 @@ def put_metric_alarm(
     threshold_metric_id: Optional[str] = None,
     rule: Optional[str] = None,
     tags: Optional[list[dict[str, str]]] = None,
-):
+) -> FakeAlarm:
     if description:
         description = escape(description)
-    target(
+    return target(
         self,
         name,
         namespace,
