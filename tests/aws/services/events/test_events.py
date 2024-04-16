@@ -1131,9 +1131,6 @@ class TestEventRule:
         )
         snapshot.match("put-rule", response)
 
-        if is_aws_cloud():
-            time.sleep(10)
-
         # put_rule updates the rule if it already exists
         response = put_rule(
             Name=rule_name,
