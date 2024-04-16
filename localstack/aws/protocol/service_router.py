@@ -317,9 +317,9 @@ def determine_aws_service_model_for_data_plane(
     A stripped down version of ``determine_aws_service_model`` which only checks hostname indicators for
     the AWS data plane, such as s3 websites, lambda function URLs, or API gateway routes.
     """
-    services = services or get_service_catalog()
     custom_host_match = custom_host_addressing_rules(request.host)
     if custom_host_match:
+        services = services or get_service_catalog()
         return services.get(*custom_host_match)
 
 
