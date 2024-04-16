@@ -364,7 +364,7 @@ class TestTargetEventBridge:
     @markers.aws.validated
     def test_put_events_with_target_event_bridge(
         self,
-        create_event_bus,
+        events_create_event_bus,
         create_events_target_events,
         create_events_target_sqs,
         snapshot,
@@ -373,7 +373,7 @@ class TestTargetEventBridge:
     ):
         # create source event bus
         event_bus_source_name = f"bus-source-{short_uid()}"
-        create_event_bus(Name=event_bus_source_name)
+        events_create_event_bus(Name=event_bus_source_name)
 
         # create event bus target
         event_bus_target_name, event_bus_target_arn, role_arn = create_events_target_events()

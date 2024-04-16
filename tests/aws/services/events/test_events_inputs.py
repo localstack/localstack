@@ -12,7 +12,7 @@ from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTE
 
 class TestEventsInputPath:
     @markers.aws.unknown
-    def test_put_events_with_input_path(self, aws_client, clean_up):
+    def test_put_events_with_input_path(self, events_create_event_bus, aws_client, clean_up):
         queue_name = f"queue-{short_uid()}"
         rule_name = f"rule-{short_uid()}"
         target_id = f"target-{short_uid()}"
@@ -21,7 +21,7 @@ class TestEventsInputPath:
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 
-        aws_client.events.create_event_bus(Name=bus_name)
+        events_create_event_bus(Name=bus_name)
         aws_client.events.put_rule(
             Name=rule_name,
             EventBusName=bus_name,

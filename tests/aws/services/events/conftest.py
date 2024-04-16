@@ -12,10 +12,12 @@ LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def create_event_bus(aws_client):
+def events_create_event_bus(aws_client):
     event_bus_names = []
 
     def _create_event_bus(**kwargs):
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"event-bus-{short_uid()}"
         response = aws_client.events.create_event_bus(**kwargs)
         event_bus_names.append(kwargs["Name"])
         return response
@@ -110,23 +112,6 @@ def events_allow_event_rule_to_sqs_queue(aws_client):
         )
 
     return _allow_event_rule
-
-
-@pytest.fixture
-def events_create_event_bus(aws_client):
-    event_buses = []
-
-    def _factory(**kwargs):
-        if "Name" not in kwargs:
-            kwargs["Name"] = f"event-bus-{short_uid()}"
-        resp = aws_client.events.create_event_bus(**kwargs)
-        event_buses.append(kwargs["Name"])
-        return resp
-
-    yield _factory
-
-    for event_bus in event_buses:
-        aws_client.events.delete_event_bus(Name=event_bus)
 
 
 @pytest.fixture
@@ -384,12 +369,12 @@ def create_events_target_sqs(aws_client, sqs_create_queue, sqs_get_queue_arn):
 
 
 @pytest.fixture
-def create_events_target_events(create_event_bus, create_iam_role_with_policy):
+def create_events_target_events(events_create_event_bus, create_iam_role_with_policy):
     def _create_events_target_events(**kwargs) -> tuple[str, str, str]:
         if "Name" not in kwargs:
             kwargs["Name"] = f"bus-{short_uid()}"
         bus_name = kwargs["Name"]
-        bus_arn = create_event_bus(**kwargs)["EventBusArn"]
+        bus_arn = events_create_event_bus(**kwargs)["EventBusArn"]
 
         # create role and policy for inter event bus communication
         role_name = f"EventBridgeCrossBusRole{short_uid()}"
