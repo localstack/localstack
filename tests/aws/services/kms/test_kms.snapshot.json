@@ -339,7 +339,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
-    "recorded-date": "13-07-2023, 11:59:29",
+    "recorded-date": "11-04-2024, 15:51:52",
     "recorded-content": {
       "describe-key-from-different-region": {
         "Error": {
@@ -1670,6 +1670,60 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_multi_region_key": {
+    "recorded-date": "11-04-2024, 14:46:26",
+    "recorded-content": {
+      "create_multi_region_key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test multi region key",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": true,
+        "MultiRegionConfiguration": {
+          "MultiRegionKeyType": "PRIMARY",
+          "PrimaryKey": {
+            "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+            "Region": "<region>"
+          },
+          "ReplicaKeys": []
+        },
+        "Origin": "AWS_KMS"
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_non_multi_region_keys_should_not_have_multi_region_properties": {
+    "recorded-date": "11-04-2024, 15:47:59",
+    "recorded-content": {
+      "non_multi_region_keys_should_not_have_multi_region_properties": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test non multi region key",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "AWS_KMS"
       }
     }
   }
