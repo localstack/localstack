@@ -570,7 +570,7 @@ class TestEvents:
                 ],
             )
         snapshot.add_transformer(snapshot.transform.regex(target_id, "invalid-target-id"))
-        snapshot.match("error", e.value.response)
+        snapshot.match("put-targets--invalid-id-error", e.value.response)
 
         target_id = f"{long_uid()}-{long_uid()}-extra"
         with pytest.raises(ClientError) as e:
@@ -581,7 +581,7 @@ class TestEvents:
                 ],
             )
         snapshot.add_transformer(snapshot.transform.regex(target_id, "second-invalid-target-id"))
-        snapshot.match("length_error", e.value.response)
+        snapshot.match("put-targets-length-error", e.value.response)
 
         target_id = f"test-With_valid.Characters-{short_uid()}"
         aws_client.events.put_targets(
@@ -754,7 +754,7 @@ class TestEventsEventBus:
 
         with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as e:
             events.describe_event_bus(Name=bus_name)
-        snapshot.match("describe-not-existing-event-bus", e)
+        snapshot.match("describe-not-existing-event-bus-error", e)
 
         events.delete_event_bus(Name=bus_name)
         snapshot.match("delete-not-existing-event-bus", e)
@@ -765,7 +765,7 @@ class TestEventsEventBus:
 
         with pytest.raises(aws_client.events.exceptions.ClientError) as e:
             events.delete_event_bus(Name="default")
-        snapshot.match("delete-default-event-bus", e)
+        snapshot.match("delete-default-event-bus-error", e)
 
     @markers.aws.validated
     def test_list_event_buses_with_prefix(self, create_event_bus, aws_client, snapshot):
@@ -1084,7 +1084,7 @@ class TestEventsEventBus:
         # try to get the custom EventBus we passed the Event to
         with pytest.raises(ClientError) as e:
             aws_client.events.describe_event_bus(Name=nonexistent_event_bus)
-        snapshot.match("non-existent-bus", e.value.response)
+        snapshot.match("non-existent-bus-error", e.value.response)
 
 
 class TestEventRule:
@@ -1170,7 +1170,7 @@ class TestEventRule:
 
         with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as e:
             aws_client.events.describe_rule(Name=rule_name)
-        snapshot.match("describe-not-existing-rule", e)
+        snapshot.match("describe-not-existing-rule-error", e)
 
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
@@ -1232,7 +1232,7 @@ class TestEventRule:
 
         with pytest.raises(aws_client.events.exceptions.ClientError) as e:
             aws_client.events.delete_rule(Name=rule_name)
-        snapshot.match("delete-rule", e)
+        snapshot.match("delete-rule-with-targets-error", e)
 
 
 class TestEventTarget:
