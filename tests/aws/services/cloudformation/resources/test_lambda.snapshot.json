@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_cfn_function_url": {
-    "recorded-date": "09-04-2024, 07:16:15",
+    "recorded-date": "16-04-2024, 08:16:02",
     "recorded-content": {
       "url_resource": {
         "StackResourceDetail": {

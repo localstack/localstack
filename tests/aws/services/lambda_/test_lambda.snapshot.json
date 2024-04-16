@@ -2811,7 +2811,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_ulimits": {
-    "recorded-date": "08-04-2024, 16:55:48",
+    "recorded-date": "16-04-2024, 08:12:12",
     "recorded-content": {
       "invoke_runtime_ulimits": {
         "ExecutedVersion": "$LATEST",

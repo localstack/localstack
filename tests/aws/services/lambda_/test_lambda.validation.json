@@ -54,7 +54,7 @@
     "last_validated_date": "2024-04-08T16:55:41+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_ulimits": {
-    "last_validated_date": "2024-04-08T16:55:47+00:00"
+    "last_validated_date": "2024-04-16T08:12:11+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_block": {
     "last_validated_date": "2024-04-08T17:02:06+00:00"
