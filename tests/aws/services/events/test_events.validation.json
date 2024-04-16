@@ -78,7 +78,7 @@
     "last_validated_date": "2024-04-03T13:49:10+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_multiple_event_buses_same_name": {
-    "last_validated_date": "2024-04-03T15:30:52+00:00"
+    "last_validated_date": "2024-04-16T14:51:31+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventsEventBus::test_delete_default_event_bus": {
     "last_validated_date": "2024-04-11T12:05:06+00:00"

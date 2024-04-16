@@ -738,7 +738,8 @@ class TestEventsEventBus:
 
     @markers.aws.validated
     def test_create_multiple_event_buses_same_name(self, create_event_bus, aws_client, snapshot):
-        bus_name = "test-bus"
+        bus_name = f"test-bus-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
         create_event_bus(Name=bus_name)
 
         with pytest.raises(aws_client.events.exceptions.ResourceAlreadyExistsException) as e:
