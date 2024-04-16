@@ -3623,25 +3623,17 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_provisioned_concurrency_scheduling": {
-    "recorded-date": "08-04-2024, 17:07:17",
+    "recorded-date": "16-04-2024, 08:03:42",
     "recorded-content": {
       "get_provisioned_postwait": {
         "AllocatedProvisionedConcurrentExecutions": 1,
         "AvailableProvisionedConcurrentExecutions": 1,
-        "LastModified": "2024-04-08T17:04:24+0000",
+        "LastModified": "date",
         "RequestedProvisionedConcurrentExecutions": 1,
         "Status": "READY",
         "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "215",
-            "content-type": "application/json",
-            "date": "Mon, 08 Apr 2024 17:06:32 GMT",
-            "x-amzn-requestid": "af92f503-8dec-40af-8f73-d7d41ef58c61"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "af92f503-8dec-40af-8f73-d7d41ef58c61",
-          "RetryAttempts": 0
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

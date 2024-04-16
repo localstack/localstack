@@ -66,7 +66,7 @@
     "last_validated_date": "2023-03-21T07:47:38+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_provisioned_concurrency_scheduling": {
-    "last_validated_date": "2023-11-28T15:48:42+00:00"
+    "last_validated_date": "2024-04-16T08:03:41+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_provisioned_concurrency": {
     "last_validated_date": "2024-04-08T17:04:20+00:00"
