@@ -47,7 +47,7 @@ aws-xray-sdk==2.13.0
     # via moto-ext
 awscli==1.32.84
     # via localstack-core
-awscrt==0.20.6
+awscrt==0.20.9
     # via localstack-core
 blinker==1.7.0
     # via
@@ -90,7 +90,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.86.2
+cfn-lint==0.86.3
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -209,7 +209,7 @@ jsii==1.97.0
     #   aws-cdk-asset-node-proxy-agent-v6
     #   aws-cdk-lib
     #   constructs
-json5==0.9.24
+json5==0.9.25
     # via localstack-core
 jsondiff==2.0.0
     # via moto-ext
@@ -321,9 +321,9 @@ pyasn1==0.6.0
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.6.4
+pydantic==2.7.0
     # via aws-sam-translator
-pydantic-core==2.16.3
+pydantic-core==2.18.1
     # via pydantic
 pygments==2.17.2
     # via rich
@@ -489,7 +489,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.2
+zope-interface==6.3
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
