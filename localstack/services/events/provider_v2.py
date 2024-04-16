@@ -340,6 +340,19 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         response = PutRuleResponse(RuleArn=rule_service.arn)
         return response
 
+    @handler("TestEventPattern")
+    def test_event_pattern(
+        self, context: RequestContext, event_pattern: EventPattern, event: str, **kwargs
+    ) -> TestEventPatternResponse:
+        """Test event pattern uses EventBridge event pattern matching:
+        https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
+        """
+        event_pattern_dict = json.loads(event_pattern)
+        event_dict = json.loads(event)
+        result = matches_event(event_pattern_dict, event_dict)
+
+        return TestEventPatternResponse(Result=result)
+
     #########
     # Targets
     #########
