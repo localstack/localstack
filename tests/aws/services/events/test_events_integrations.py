@@ -368,7 +368,7 @@ class TestTargetEventBridge:
         create_events_target_events,
         create_events_target_sqs,
         snapshot,
-        put_rule,
+        events_put_rule,
         aws_client,
     ):
         # create source event bus
@@ -384,7 +384,7 @@ class TestTargetEventBridge:
 
         # create rule and target for source event bus
         rule_name_events = f"rule-{short_uid()}"
-        put_rule(
+        events_put_rule(
             Name=rule_name_events,
             EventBusName=event_bus_source_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
@@ -404,7 +404,7 @@ class TestTargetEventBridge:
 
         # create rule and target for sqs
         rule_name_sqs = f"rule-{short_uid()}"
-        put_rule(
+        events_put_rule(
             Name=rule_name_sqs,
             EventBusName=event_bus_target_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),

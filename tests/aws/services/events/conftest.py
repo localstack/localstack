@@ -52,12 +52,14 @@ def create_event_bus(aws_client):
 
 
 @pytest.fixture
-def put_rule(aws_client):
+def events_put_rule(aws_client):
     rules = []
 
     def _put_rule(**kwargs):
         if "EventBusName" not in kwargs:
             kwargs["EventBusName"] = "default"
+        if "Name" not in kwargs:
+            kwargs["Name"] = f"rule-{short_uid()}"
         response = aws_client.events.put_rule(**kwargs)
         rules.append((kwargs["Name"], kwargs["EventBusName"]))
         return response
@@ -108,32 +110,6 @@ def events_allow_event_rule_to_sqs_queue(aws_client):
         )
 
     return _allow_event_rule
-
-
-@pytest.fixture
-def events_put_rule(aws_client):
-    rules = []
-
-    def _factory(**kwargs):
-        if "Name" not in kwargs:
-            kwargs["Name"] = f"rule-{short_uid()}"
-
-        resp = aws_client.events.put_rule(**kwargs)
-        rules.append((kwargs["Name"], kwargs.get("EventBusName", "default")))
-        return resp
-
-    yield _factory
-
-    for rule, event_bus_name in rules:
-        targets_response = aws_client.events.list_targets_by_rule(
-            Rule=rule, EventBusName=event_bus_name
-        )
-        if targets := targets_response["Targets"]:
-            targets_ids = [target["Id"] for target in targets]
-            aws_client.events.remove_targets(
-                Rule=rule, EventBusName=event_bus_name, Ids=targets_ids
-            )
-        aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
 
 
 @pytest.fixture
