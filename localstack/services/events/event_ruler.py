@@ -18,9 +18,11 @@ def start_jvm() -> None:
     import jpype
     from jpype import config as jpype_config
 
-    # Workaround to unblock LocalStack shutdown. By default, JPype wait until all daemon threads are terminated,
-    # which blocks the LocalStack shutdown upon any leaked thread (know LS issue).
-    # See https://github.com/MPh-py/MPh/issues/15#issuecomment-778486669
+    # Workaround to unblock LocalStack shutdown. By default, JPype waits until all daemon threads are terminated,
+    # which blocks the LocalStack shutdown during testing because pytest runs LocalStack in a separate thread and
+    # `jpype.shutdownJVM()` only works from the main Python thread.
+    # Shutting down the JVM: https://jpype.readthedocs.io/en/latest/userguide.html#shutting-down-the-jvm
+    # JPype shutdown discussion: https://github.com/MPh-py/MPh/issues/15#issuecomment-778486669
     jpype_config.destroy_jvm = False
 
     if not jpype.isJVMStarted():
