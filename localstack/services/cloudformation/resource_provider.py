@@ -444,6 +444,9 @@ class ResourceProviderExecutor:
                             time.sleep(0)
                         else:
                             time.sleep(sleep_time)
+                    case OperationStatus.PENDING:
+                        # come back to this resource in another iteration
+                        return event
                     case invalid_status:
                         raise ValueError(
                             f"Invalid OperationStatus ({invalid_status}) returned for resource {raw_payload['requestData']['logicalResourceId']} (type {raw_payload['resourceType']})"
