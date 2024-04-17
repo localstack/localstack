@@ -145,7 +145,7 @@ def custom_host_addressing_rules(host: str) -> Optional[ServiceModelIdentifier]:
 
     # a note on ``.execute-api.`` and why it shouldn't be added as a check here: ``.execute-api.`` was previously
     # mapped distinctly to ``apigateway``, but this assumption is too strong, since the URL can be apigw v1, v2,
-    # or apigw management api. so in short, simply based on the host header, it's not possibly to unambiguously
+    # or apigw management api. so in short, simply based on the host header, it's not possible to unambiguously
     # associate a specific apigw service to the request.
 
     if ".lambda-url." in host:
