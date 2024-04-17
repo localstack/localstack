@@ -138,14 +138,24 @@ class KinesisStreamProvider(ResourceProvider[KinesisStreamProperties]):
           - kinesis:DeleteStream
           - kinesis:RemoveTagsFromStream
         """
-        model = request.desired_state
-        request.aws_client_factory.kinesis.delete_stream(
-            StreamARN=model["Arn"], EnforceConsumerDeletion=True
-        )
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model={},
-        )
+        model = request.previous_state
+        client = request.aws_client_factory.kinesis
+
+        if not request.custom_context.get(REPEATED_INVOCATION):
+            client.delete_stream(StreamARN=model["Arn"], EnforceConsumerDeletion=True)
+            request.custom_context[REPEATED_INVOCATION] = True
+
+        try:
+            client.describe_stream(StreamARN=model["Arn"])
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model={},
+            )
+        except client.exceptions.ResourceNotFoundException:
+            return ProgressEvent(
+                status=OperationStatus.SUCCESS,
+                resource_model={},
+            )
 
     def update(
         self,
