@@ -751,7 +751,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
-    "recorded-date": "17-04-2024, 17:31:45",
+    "recorded-date": "17-04-2024, 17:42:11",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
@@ -805,7 +805,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
-    "recorded-date": "17-04-2024, 17:31:48",
+    "recorded-date": "17-04-2024, 17:42:13",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
@@ -957,32 +957,32 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_multiple_event_buses_same_name": {
-    "recorded-date": "17-04-2024, 17:31:48",
+    "recorded-date": "17-04-2024, 17:42:13",
     "recorded-content": {
       "create-multiple-event-buses-same-name": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateEventBus operation: Event bus <bus-name> already exists.') tblen=4>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_describe_delete_not_existing_event_bus": {
-    "recorded-date": "17-04-2024, 17:31:49",
+    "recorded-date": "17-04-2024, 17:42:15",
     "recorded-content": {
       "describe-not-existing-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>",
       "delete-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_delete_default_event_bus": {
-    "recorded-date": "17-04-2024, 17:31:50",
+    "recorded-date": "17-04-2024, 17:42:15",
     "recorded-content": {
       "delete-default-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the DeleteEventBus operation: Cannot delete event bus default.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_prefix": {
-    "recorded-date": "17-04-2024, 17:31:51",
+    "recorded-date": "17-04-2024, 17:42:16",
     "recorded-content": {
       "list-event-buses-prefix-complete-name": {
         "EventBuses": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-            "Name": "test-bus"
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+            "Name": "<bus-name>"
           }
         ],
         "ResponseMetadata": {
@@ -993,8 +993,8 @@
       "list-event-buses-prefix": {
         "EventBuses": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-            "Name": "test-bus"
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+            "Name": "<bus-name>"
           }
         ],
         "ResponseMetadata": {
@@ -1005,7 +1005,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_limit": {
-    "recorded-date": "17-04-2024, 17:31:52",
+    "recorded-date": "17-04-2024, 17:42:18",
     "recorded-content": {
       "list-event-buses-limit": {
         "EventBuses": [
@@ -1014,12 +1014,12 @@
             "Name": "default"
           },
           {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-0",
-            "Name": "test-bus-0"
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-0",
+            "Name": "<bus-name-prefix>-0"
           },
           {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-1",
-            "Name": "test-bus-1"
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-1",
+            "Name": "<bus-name-prefix>-1"
           }
         ],
         "NextToken": "<next_token:1>",
@@ -1031,20 +1031,20 @@
       "list-event-buses-limit-next-token": {
         "EventBuses": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-2",
-            "Name": "test-bus-2"
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-2",
+            "Name": "<bus-name-prefix>-2"
           },
           {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-3",
-            "Name": "test-bus-3"
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-3",
+            "Name": "<bus-name-prefix>-3"
           },
           {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-4",
-            "Name": "test-bus-4"
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-4",
+            "Name": "<bus-name-prefix>-4"
           },
           {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-5",
-            "Name": "test-bus-5"
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-5",
+            "Name": "<bus-name-prefix>-5"
           }
         ],
         "ResponseMetadata": {
@@ -1055,7 +1055,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
-    "recorded-date": "17-04-2024, 17:32:24",
+    "recorded-date": "17-04-2024, 17:42:46",
     "recorded-content": {
       "create-custom-event-bus": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<resource:1>",
@@ -1134,28 +1134,51 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
-    "recorded-date": "17-04-2024, 17:32:42",
+    "recorded-date": "17-04-2024, 17:50:27",
     "recorded-content": {
       "put-events": {
         "Entries": [
           {
-            "EventId": "b2fc49fa-6cbc-bd51-db5f-a40f011cae5e"
+            "EventId": "<uuid:1>"
           },
           {
-            "EventId": "6c716ae3-582a-7fd1-ff87-d158f35e1c9d"
+            "EventId": "<uuid:2>"
           }
         ],
         "FailedEntryCount": 0,
         "ResponseMetadata": {
-          "HTTPHeaders": {
-            "content-length": "136",
-            "content-type": "application/x-amz-json-1.1",
-            "date": "Wed, 17 Apr 2024 17:32:28 GMT",
-            "x-amzn-requestid": "05af1f7d-17dc-4eca-a13d-7455bc3b315a"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "05af1f7d-17dc-4eca-a13d-7455bc3b315a",
-          "RetryAttempts": 0
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-events": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:1>",
+            "detail-type": "CustomType",
+            "source": "MySource",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "for the default event bus"
+            }
+          }
+        }
+      ],
+      "non-existent-bus-error": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Event bus <custom-event-bus> does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

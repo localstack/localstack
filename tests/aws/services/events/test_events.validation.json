@@ -1,30 +1,30 @@
 {
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
-    "last_validated_date": "2024-04-17T17:31:45+00:00"
+    "last_validated_date": "2024-04-17T17:42:11+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
-    "last_validated_date": "2024-04-17T17:31:48+00:00"
+    "last_validated_date": "2024-04-17T17:42:13+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_multiple_event_buses_same_name": {
-    "last_validated_date": "2024-04-17T17:31:48+00:00"
+    "last_validated_date": "2024-04-17T17:42:13+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_delete_default_event_bus": {
-    "last_validated_date": "2024-04-17T17:31:50+00:00"
+    "last_validated_date": "2024-04-17T17:42:15+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_describe_delete_not_existing_event_bus": {
-    "last_validated_date": "2024-04-17T17:31:49+00:00"
+    "last_validated_date": "2024-04-17T17:42:15+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_limit": {
-    "last_validated_date": "2024-04-17T17:31:52+00:00"
+    "last_validated_date": "2024-04-17T17:42:18+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_prefix": {
-    "last_validated_date": "2024-04-17T17:31:51+00:00"
+    "last_validated_date": "2024-04-17T17:42:16+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
-    "last_validated_date": "2024-04-17T17:25:08+00:00"
+    "last_validated_date": "2024-04-17T17:50:27+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
-    "last_validated_date": "2024-04-17T17:32:24+00:00"
+    "last_validated_date": "2024-04-17T17:42:46+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_delete_rule_with_targets": {
     "last_validated_date": "2024-04-16T15:13:31+00:00"

@@ -712,7 +712,8 @@ class TestEventBus:
     def test_create_list_describe_delete_custom_event_buses(
         self, aws_client_factory, regions, snapshot
     ):
-        bus_name = "test-bus"
+        bus_name = f"test-bus-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
 
         for region in regions:
             events = aws_client_factory(region_name=region).events
@@ -748,30 +749,30 @@ class TestEventBus:
 
     @markers.aws.validated
     def test_describe_delete_not_existing_event_bus(self, aws_client, snapshot):
-        events = aws_client.events
         bus_name = f"this-bus-does-not-exist-1234567890-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
 
         with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as e:
-            events.describe_event_bus(Name=bus_name)
+            aws_client.events.describe_event_bus(Name=bus_name)
         snapshot.match("describe-not-existing-event-bus-error", e)
 
-        events.delete_event_bus(Name=bus_name)
+        aws_client.events.delete_event_bus(Name=bus_name)
         snapshot.match("delete-not-existing-event-bus", e)
 
     @markers.aws.validated
     def test_delete_default_event_bus(self, aws_client, snapshot):
-        events = aws_client.events
-
         with pytest.raises(aws_client.events.exceptions.ClientError) as e:
-            events.delete_event_bus(Name="default")
+            aws_client.events.delete_event_bus(Name="default")
         snapshot.match("delete-default-event-bus-error", e)
 
     @markers.aws.validated
     def test_list_event_buses_with_prefix(self, create_event_bus, aws_client, snapshot):
         events = aws_client.events
-        bus_name = "test-bus"
+        bus_name = f"test-bus-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
+
         bus_name_not_match = "no-prefix-match"
+        snapshot.add_transformer(snapshot.transform.regex(bus_name_not_match, "<bus-name>"))
 
         create_event_bus(Name=bus_name)
         create_event_bus(Name=bus_name_not_match)
@@ -790,7 +791,8 @@ class TestEventBus:
     def test_list_event_buses_with_limit(self, create_event_bus, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
         events = aws_client.events
-        bus_name_prefix = "test-bus"
+        bus_name_prefix = f"test-bus-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(bus_name_prefix, "<bus-name-prefix>"))
         count = 6
 
         for i in range(count):
@@ -806,6 +808,7 @@ class TestEventBus:
         snapshot.match("list-event-buses-limit-next-token", response)
 
     @markers.aws.unknown
+    @pytest.mark.skipif(is_aws_cloud(), reason="not validated")
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_into_event_bus(
