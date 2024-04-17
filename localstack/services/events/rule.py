@@ -22,7 +22,7 @@ from localstack.aws.api.events import (
 from localstack.services.events.models_v2 import Rule, TargetDict, ValidationException
 
 
-class RuleWorker:
+class RuleService:
     def __init__(
         self,
         name: RuleName,
@@ -180,4 +180,4 @@ class RuleWorker:
         return False
 
 
-RuleWorkerDict = dict[Arn, RuleWorker]
+RuleServiceDict = dict[Arn, RuleService]

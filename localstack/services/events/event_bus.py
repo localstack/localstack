@@ -4,7 +4,7 @@ from localstack.aws.api.events import Arn, EventBusName, TagList
 from localstack.services.events.models_v2 import EventBus, RuleDict
 
 
-class EventBusWorker:
+class EventBusService:
     def __init__(
         self,
         name: EventBusName,
@@ -30,4 +30,4 @@ class EventBusWorker:
         return self.event_bus.arn
 
 
-EventBusWorkerDict = dict[Arn, EventBusWorker]
+EventBusServiceDict = dict[Arn, EventBusService]

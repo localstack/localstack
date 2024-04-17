@@ -46,7 +46,7 @@ from localstack.aws.api.events import (
 )
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Rule as ApiTypeRule
-from localstack.services.events.event_bus import EventBusWorker, EventBusWorkerDict
+from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
 from localstack.services.events.models_v2 import (
     EventBus,
     EventBusDict,
@@ -57,8 +57,8 @@ from localstack.services.events.models_v2 import (
     ValidationException,
     events_store,
 )
-from localstack.services.events.rule import RuleWorker, RuleWorkerDict
-from localstack.services.events.target import TargetWorker, TargetWorkerDict, TargetWorkerFactory
+from localstack.services.events.rule import RuleService, RuleServiceDict
+from localstack.services.events.target import TargetService, TargetServiceDict, TargetServiceFactory
 from localstack.services.plugins import ServiceLifecycleHook
 
 LOG = logging.getLogger(__name__)
@@ -78,9 +78,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     # api methods are grouped by resource type and sorted in hierarchical order
     # each group is sorted alphabetically
     def __init__(self):
-        self._event_bus_workers: EventBusWorkerDict = {}
-        self._rule_workers: RuleWorkerDict = {}
-        self._target_workers: TargetWorkerDict = {}
+        self._event_bus_services_store: EventBusServiceDict = {}
+        self._rule_services_store: RuleServiceDict = {}
+        self._target_services_store: TargetServiceDict = {}
 
     ##########
     # EventBus
@@ -100,13 +100,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         if name in store.event_buses.keys():
             raise ResourceAlreadyExistsException(f"Event bus {name} already exists.")
-        event_bus_worker = self.create_event_bus_worker(
+        event_bus_service = self.create_event_bus_service(
             name, region, account_id, event_source_name, tags
         )
-        store.event_buses[event_bus_worker.event_bus.name] = event_bus_worker.event_bus
+        store.event_buses[event_bus_service.event_bus.name] = event_bus_service.event_bus
 
         response = CreateEventBusResponse(
-            EventBusArn=event_bus_worker.arn,
+            EventBusArn=event_bus_service.arn,
         )
         return response
 
@@ -117,9 +117,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         try:
             if event_bus := self.get_event_bus(name, store):
-                if event_bus_worker := self._event_bus_workers.pop(event_bus.arn):
-                    if rules := getattr(event_bus_worker, "rules", None):
-                        self._delete_rule_workers(rules)
+                if event_bus_service := self._event_bus_services_store.pop(event_bus.arn):
+                    if rules := getattr(event_bus_service, "rules", None):
+                        self._delete_rule_services(rules)
                 store.event_buses.pop(name)
         except ResourceNotFoundException as error:
             return error
@@ -194,7 +194,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             rule = self.get_rule(name, event_bus)
             if rule.targets and not force:
                 raise ValidationException("Rule can't be deleted since it has targets.")
-            self._delete_rule_workers(rule)
+            self._delete_rule_services(rule)
             del event_bus.rules[name]
         except ResourceNotFoundException as error:
             return error
@@ -289,7 +289,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus = self.get_event_bus(event_bus_name, store)
         existing_rule = getattr(event_bus, "rules", {}).get(name, None)
         targets = getattr(existing_rule, "targets", None) if existing_rule else None
-        rule_worker = self.create_rule_worker(
+        rule_service = self.create_rule_service(
             name,
             region,
             account_id,
@@ -302,8 +302,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             event_bus_name,
             targets,
         )
-        event_bus.rules[name] = rule_worker.rule
-        response = PutRuleResponse(RuleArn=rule_worker.arn)
+        event_bus.rules[name] = rule_service.rule
+        response = PutRuleResponse(RuleArn=rule_service.arn)
         return response
 
     #########
@@ -345,11 +345,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> PutTargetsResponse:
         region = context.region
         account_id = context.account_id
-        rule_worker = self.get_rule_worker(context, rule, event_bus_name)
-        failed_entries = rule_worker.add_targets(targets)
-        rule_arn = rule_worker.arn
+        rule_service = self.get_rule_service(context, rule, event_bus_name)
+        failed_entries = rule_service.add_targets(targets)
+        rule_arn = rule_service.arn
         for target in targets:
-            self.create_target_worker(target, region, account_id, rule_arn)
+            self.create_target_service(target, region, account_id, rule_arn)
 
         response = PutTargetsResponse(
             FailedEntryCount=len(failed_entries), FailedEntries=failed_entries
@@ -366,9 +366,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         force: Boolean = None,
         **kwargs,
     ) -> RemoveTargetsResponse:
-        rule_worker = self.get_rule_worker(context, rule, event_bus_name)
-        failed_entries = rule_worker.remove_targets(ids)
-        self._delete_target_workers(ids, rule_worker.rule)
+        rule_service = self.get_rule_service(context, rule, event_bus_name)
+        failed_entries = rule_service.remove_targets(ids)
+        self._delete_target_services(ids, rule_service.rule)
 
         response = RemoveTargetsResponse(
             FailedEntryCount=len(failed_entries), FailedEntries=failed_entries
@@ -411,9 +411,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         # create default event bus for account region on first call
         default_event_bus_name = "default"
         if default_event_bus_name not in store.event_buses.keys():
-            event_bus_worker = EventBusWorker(default_event_bus_name, region, account_id)
-            self._event_bus_workers[event_bus_worker.arn] = event_bus_worker
-            store.event_buses[event_bus_worker.event_bus.name] = event_bus_worker.event_bus
+            event_bus_service = EventBusService(default_event_bus_name, region, account_id)
+            self._event_bus_services_store[event_bus_service.arn] = event_bus_service
+            store.event_buses[event_bus_service.event_bus.name] = event_bus_service.event_bus
         return store
 
     def get_event_bus(self, name: EventBusName, store: EventsStore) -> EventBus:
@@ -431,34 +431,34 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             return target
         raise ResourceNotFoundException(f"Target {target_id} does not exist on Rule {rule.name}.")
 
-    def get_rule_worker(
+    def get_rule_service(
         self, context: RequestContext, rule_name: RuleName, event_bus_name: EventBusName
-    ) -> RuleWorker:
+    ) -> RuleService:
         store = self.get_store(context)
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule_name, event_bus)
-        return self._rule_workers[rule.arn]
+        return self._rule_services_store[rule.arn]
 
-    def create_event_bus_worker(
+    def create_event_bus_service(
         self,
         name: EventBusName,
         region: str,
         account_id: str,
         event_source_name: Optional[EventSourceName],
         tags: Optional[TagList],
-    ) -> EventBusWorker:
-        event_bus_worker = EventBusWorker(
+    ) -> EventBusService:
+        event_bus_service = EventBusService(
             name,
             region,
             account_id,
             event_source_name,
             tags,
         )
-        self._event_bus_workers[event_bus_worker.arn] = event_bus_worker
-        return event_bus_worker
+        self._event_bus_services_store[event_bus_service.arn] = event_bus_service
+        return event_bus_service
 
-    def create_rule_worker(
+    def create_rule_service(
         self,
         name: RuleName,
         region: str,
@@ -471,8 +471,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         tags: Optional[TagList],
         event_bus_name: Optional[EventBusName],
         targets: Optional[TargetDict],
-    ) -> RuleWorker:
-        rule_worker = RuleWorker(
+    ) -> RuleService:
+        rule_service = RuleService(
             name,
             region,
             account_id,
@@ -485,17 +485,17 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             event_bus_name,
             targets,
         )
-        self._rule_workers[rule_worker.arn] = rule_worker
-        return rule_worker
+        self._rule_services_store[rule_service.arn] = rule_service
+        return rule_service
 
-    def create_target_worker(
+    def create_target_service(
         self, target: Target, region: str, account_id: str, rule_arn: Arn
-    ) -> TargetWorker:
-        target_worker = TargetWorkerFactory(
+    ) -> TargetService:
+        target_service = TargetServiceFactory(
             target, region, account_id, rule_arn
-        ).get_target_worker()
-        self._target_workers[target_worker.arn] = target_worker
-        return target_worker
+        ).get_target_service()
+        self._target_services_store[target_service.arn] = target_service
+        return target_service
 
     @staticmethod
     def get_filtered_dict(name_prefix: str, input_dict: dict) -> dict:
@@ -550,11 +550,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             }
         return event_bus
 
-    def _delete_rule_workers(self, rules: RuleDict | Rule) -> None:
+    def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
         if isinstance(rules, Rule):
             rules = {rules.name: rules}
         for rule in rules.values():
-            self._rule_workers.pop(rule.arn)
+            self._rule_services_store.pop(rule.arn)
 
     def _rule_dict_to_api_type_list(self, rules: RuleDict) -> RuleResponseList:
         """Return a converted dict of Rule model objects as a list of rules in API type Rule format."""
@@ -575,16 +575,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {k: v for k, v in rule.items() if v is not None and v != {} and v != []}
 
-    def _delete_target_workers(self, ids: TargetIdList | TargetId, rule) -> None:
+    def _delete_target_services(self, ids: TargetIdList | TargetId, rule) -> None:
         if isinstance(ids, TargetId):
             ids = [ids]
         for target_id in ids:
             if target := rule.targets.get(target_id):
                 target_arn = target["Arn"]
                 try:
-                    del self._target_workers[target_arn]
+                    del self._target_services_store[target_arn]
                 except KeyError:
-                    LOG.error(f"Error deleting target worker {target_arn}.")
+                    LOG.error(f"Error deleting target service {target_arn}.")
 
     def _put_entries(self, context: RequestContext, entries: PutEventsRequestEntryList) -> list:
         failed_entries = []
@@ -596,9 +596,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             matching_rules = [rule for rule in event_bus.rules.values()]
             for rule in matching_rules:
                 for target in rule.targets.values():
-                    target_worker = self._target_workers[target["Arn"]]
+                    target_service = self._target_services_store[target["Arn"]]
                     try:
-                        target_worker.send_event(event)
+                        target_service.send_event(event)
                     except Exception as error:
                         failed_entries.append(
                             {
