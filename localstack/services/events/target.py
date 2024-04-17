@@ -173,18 +173,19 @@ class KinesisTargetService(TargetService):
         kinesis_client = self.client.kinesis.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
-        partition_key_path = collections.get_safe(
-            self.target,
-            "$.KinesisParameters.PartitionKeyPath",
-            default_value="$.id",
-        )
+        partition_key_path = self.target["KinesisParameters"]["PartitionKeyPath"]
         stream_name = self.target["Arn"].split("/")[-1]
-        partition_key = collections.get_safe(event, partition_key_path, event["id"])
+        partition_key = event.get(partition_key_path, event["id"])
         kinesis_client.put_record(
             StreamName=stream_name,
             Data=to_bytes(json.dumps(event)),
             PartitionKey=partition_key,
         )
+
+    def _validate_input(self, target: Target):
+        super()._validate_input(target)
+        if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):
+            raise ValueError("KinesisParameters.PartitionKeyPath is required for Kinesis target")
 
 
 class LambdaTargetService(TargetService):
@@ -244,7 +245,7 @@ class SqsTargetService(TargetService):
             service_principal=self.service, source_arn=self.rule_arn
         )
         queue_url = sqs_queue_url_for_arn(self.target["Arn"])
-        msg_group_id = collections.get_safe(self.target, "$.SqsParameters.MessageGroupId")
+        msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         sqs_client.send_message(
             QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
