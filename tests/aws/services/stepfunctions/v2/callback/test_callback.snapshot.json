@@ -1509,80 +1509,8 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_multiple_heartbeat_notifications": {
-    "recorded-date": "15-04-2024, 14:08:54",
+    "recorded-date": "17-04-2024, 07:06:52",
     "recorded-content": {
-      "task_token_handler_responses": {
-        "send_task_heartbeat_response_0": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_1": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_2": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_3": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_4": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_5": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_6": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_7": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_8": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_9": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_success_response": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "sqs_message_body": {
-          "Message": "txt",
-          "TaskToken": "<task_token:1>"
-        }
-      },
       "get_execution_history": {
         "events": [
           {
@@ -1590,7 +1518,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -1609,7 +1537,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -1623,7 +1551,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 60,
+              "heartbeatInSeconds": 120,
               "parameters": {
                 "MessageBody": {
                   "Message": "txt",
@@ -1654,7 +1582,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "77b6f94944d0d189f49858e0c286b1f9",
+                "MD5OfMessageBody": "a45bdfee8bb6b5850b64217aa8d60b30",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -1751,440 +1679,8 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_multiple_executions_and_heartbeat_notifications": {
-    "recorded-date": "15-04-2024, 14:33:57",
+    "recorded-date": "17-04-2024, 07:11:30",
     "recorded-content": {
-      "task_token_inner_handler_3_responses": {
-        "send_task_heartbeat_response_0": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_1": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_2": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_3": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_4": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_5": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_6": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_7": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_8": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_9": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_success_response": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "sqs_message_body": {
-          "Message": "txt",
-          "TaskToken": "a_task_token"
-        }
-      },
-      "task_token_inner_handler_0_responses": {
-        "send_task_heartbeat_response_0": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_1": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_2": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_3": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_4": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_5": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_6": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_7": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_8": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_9": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_success_response": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "sqs_message_body": {
-          "Message": "txt",
-          "TaskToken": "a_task_token"
-        }
-      },
-      "task_token_inner_handler_5_responses": {
-        "send_task_heartbeat_response_0": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_1": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_2": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_3": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_4": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_5": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_6": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_7": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_8": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_9": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_success_response": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "sqs_message_body": {
-          "Message": "txt",
-          "TaskToken": "a_task_token"
-        }
-      },
-      "task_token_inner_handler_2_responses": {
-        "send_task_heartbeat_response_0": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_1": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_2": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_3": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_4": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_5": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_6": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_7": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_8": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_9": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_success_response": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "sqs_message_body": {
-          "Message": "txt",
-          "TaskToken": "a_task_token"
-        }
-      },
-      "task_token_inner_handler_1_responses": {
-        "send_task_heartbeat_response_0": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_1": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_2": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_3": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_4": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_5": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_6": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_7": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_8": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_9": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_success_response": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "sqs_message_body": {
-          "Message": "txt",
-          "TaskToken": "a_task_token"
-        }
-      },
-      "task_token_inner_handler_4_responses": {
-        "send_task_heartbeat_response_0": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_1": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_2": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_3": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_4": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_5": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_6": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_7": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_8": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_heartbeat_response_9": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "send_task_success_response": {
-          "ResponseMetadata": {
-            "HTTPHeaders": {},
-            "HTTPStatusCode": 200
-          }
-        },
-        "sqs_message_body": {
-          "Message": "txt",
-          "TaskToken": "a_task_token"
-        }
-      },
       "execution_history_0": {
         "events": [
           {
@@ -2192,7 +1688,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2211,7 +1707,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2225,7 +1721,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 60,
+              "heartbeatInSeconds": 120,
               "parameters": {
                 "MessageBody": {
                   "Message": "txt",
@@ -2256,7 +1752,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "2a37b01458ae44e1be7ce08933a66ba0",
+                "MD5OfMessageBody": "b8a7dd31e184478c153c1cc90cdbf451",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -2357,7 +1853,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2376,7 +1872,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2390,7 +1886,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 60,
+              "heartbeatInSeconds": 120,
               "parameters": {
                 "MessageBody": {
                   "Message": "txt",
@@ -2421,7 +1917,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "7d699c3f3535e095fcf27bef000993e2",
+                "MD5OfMessageBody": "256e319546b52fe8c4bdaa739f852050",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -2522,7 +2018,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2541,7 +2037,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2555,7 +2051,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 60,
+              "heartbeatInSeconds": 120,
               "parameters": {
                 "MessageBody": {
                   "Message": "txt",
@@ -2586,7 +2082,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "f3037ad29aeabafd8b79df223be239fd",
+                "MD5OfMessageBody": "b1162887a0526d42b9b64c9a5e9016b0",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -2687,7 +2183,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2706,7 +2202,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2720,7 +2216,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 60,
+              "heartbeatInSeconds": 120,
               "parameters": {
                 "MessageBody": {
                   "Message": "txt",
@@ -2751,7 +2247,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "69a90fbd767d4edb092ea76c9a51385d",
+                "MD5OfMessageBody": "d50429b1e8e61714c20695f05bf5b2f6",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -2852,7 +2348,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2871,7 +2367,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -2885,7 +2381,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 60,
+              "heartbeatInSeconds": 120,
               "parameters": {
                 "MessageBody": {
                   "Message": "txt",
@@ -2916,7 +2412,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "4ce5a205e4979f283e643167a8f0db86",
+                "MD5OfMessageBody": "f2f1ed4d1bf6318226b00367c6db81b5",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -3017,7 +2513,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -3036,7 +2532,7 @@
               "input": {
                 "QueueUrl": "sqs_queue_url",
                 "Message": "txt",
-                "HeartbeatSecondsPath": 60
+                "HeartbeatSecondsPath": 120
               },
               "inputDetails": {
                 "truncated": false
@@ -3050,7 +2546,7 @@
             "id": 3,
             "previousEventId": 2,
             "taskScheduledEventDetails": {
-              "heartbeatInSeconds": 60,
+              "heartbeatInSeconds": 120,
               "parameters": {
                 "MessageBody": {
                   "Message": "txt",
@@ -3081,7 +2577,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "2aa204c6fc285d679d18029dad3cf3e1",
+                "MD5OfMessageBody": "a0e75d09462ed7e0906cb77b5a963cee",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {

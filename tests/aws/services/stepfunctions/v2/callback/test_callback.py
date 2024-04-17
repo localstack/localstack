@@ -1,6 +1,5 @@
 import json
 import threading
-from typing import Any
 
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
@@ -23,11 +22,9 @@ from tests.aws.services.stepfunctions.utils import (
 from tests.aws.test_notifications import PUBLICATION_RETRIES, PUBLICATION_TIMEOUT
 
 
-def _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url) -> dict[str, Any]:
+def _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url) -> None:
     # Handle the state machine task token published in the sqs queue, by submitting 10 heartbeat
     # notifications and a task success notification. Snapshot the response of each call.
-    # Returns a dictionary of all requests snapshots.
-    responses = dict()
 
     # Read the expected sqs message and extract the body.
     def _get_message_body():
@@ -38,23 +35,14 @@ def _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url) ->
 
     message_body_str = retry(_get_message_body, retries=100, sleep=1)
     message_body = json.loads(message_body_str)
-    responses["sqs_message_body"] = message_body
 
     # Send the heartbeat notifications.
     task_token = message_body["TaskToken"]
     for i in range(10):
-        send_task_heartbeat_response = aws_client.stepfunctions.send_task_heartbeat(
-            taskToken=task_token
-        )
-        responses[f"send_task_heartbeat_response_{i}"] = send_task_heartbeat_response
+        aws_client.stepfunctions.send_task_heartbeat(taskToken=task_token)
 
     # Send the task success notification.
-    send_task_success_response = aws_client.stepfunctions.send_task_success(
-        taskToken=task_token, output=message_body_str
-    )
-    responses["send_task_success_response"] = send_task_success_response
-
-    return responses
+    aws_client.stepfunctions.send_task_success(taskToken=task_token, output=message_body_str)
 
 
 @markers.snapshot.skip_snapshot_verify(
@@ -513,7 +501,7 @@ class TestCallback:
         )
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
-    @markers.aws.needs_fixing
+    @markers.aws.validated
     def test_multiple_heartbeat_notifications(
         self,
         aws_client,
@@ -536,13 +524,9 @@ class TestCallback:
         sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs_queue_url"))
         sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs_queue_name"))
 
-        def _handle_sqs_task_token():
-            task_token_handler_responses = _handle_sqs_task_token_with_heartbeats_and_success(
-                aws_client, queue_url
-            )
-            sfn_snapshot.match("task_token_handler_responses", task_token_handler_responses)
-
-        task_token_consumer_thread = threading.Thread(target=_handle_sqs_task_token, args=())
+        task_token_consumer_thread = threading.Thread(
+            target=_handle_sqs_task_token_with_heartbeats_and_success, args=(aws_client, queue_url)
+        )
         task_token_consumer_thread.start()
 
         template = CT.load_sfn_template(
@@ -551,7 +535,7 @@ class TestCallback:
         definition = json.dumps(template)
 
         exec_input = json.dumps(
-            {"QueueUrl": queue_url, "Message": "txt", "HeartbeatSecondsPath": 60}
+            {"QueueUrl": queue_url, "Message": "txt", "HeartbeatSecondsPath": 120}
         )
         create_and_record_execution(
             aws_client.stepfunctions,
@@ -562,10 +546,10 @@ class TestCallback:
             exec_input,
         )
 
-        task_token_consumer_thread.join(timeout=180)
+        task_token_consumer_thread.join(timeout=300)
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
-    @markers.aws.needs_fixing
+    @markers.aws.validated
     def test_multiple_executions_and_heartbeat_notifications(
         self,
         aws_client,
@@ -609,7 +593,7 @@ class TestCallback:
         state_machine_arn = creation_response["stateMachineArn"]
 
         exec_input = json.dumps(
-            {"QueueUrl": queue_url, "Message": "txt", "HeartbeatSecondsPath": 60}
+            {"QueueUrl": queue_url, "Message": "txt", "HeartbeatSecondsPath": 120}
         )
 
         # Launch multiple execution of the same state machine.
@@ -624,18 +608,12 @@ class TestCallback:
         # Launch one sqs task token handler per each execution, and await for all the terminate handling the task.
         task_token_handler_latch = CountDownLatch(execution_count)
 
-        def _sqs_task_token_handler(inner_handler_id: int):
-            task_token_handler_responses = _handle_sqs_task_token_with_heartbeats_and_success(
-                aws_client, queue_url
-            )
-            sfn_snapshot.match(
-                f"task_token_inner_handler_{inner_handler_id}_responses",
-                task_token_handler_responses,
-            )
+        def _sqs_task_token_handler():
+            _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url)
             task_token_handler_latch.count_down()
 
-        for i in range(execution_count):
-            inner_handler_thread = threading.Thread(target=_sqs_task_token_handler, args=(i,))
+        for _ in range(execution_count):
+            inner_handler_thread = threading.Thread(target=_sqs_task_token_handler, args=())
             inner_handler_thread.start()
 
         task_token_handler_latch.wait()

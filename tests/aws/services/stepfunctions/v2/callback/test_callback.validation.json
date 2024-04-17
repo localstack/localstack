@@ -1,9 +1,9 @@
 {
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_multiple_executions_and_heartbeat_notifications": {
-    "last_validated_date": "2024-04-15T14:33:57+00:00"
+    "last_validated_date": "2024-04-17T07:11:30+00:00"
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_multiple_heartbeat_notifications": {
-    "last_validated_date": "2024-04-15T14:08:54+00:00"
+    "last_validated_date": "2024-04-17T07:06:52+00:00"
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sns_publish_wait_for_task_token": {
     "last_validated_date": "2024-02-01T20:51:35+00:00"
