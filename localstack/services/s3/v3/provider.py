@@ -3661,22 +3661,38 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         form = context.request.form
-        validate_post_policy(form)
         object_key = context.request.form.get("key")
 
         if "file" in form:
             # in AWS, you can pass the file content as a string in the form field and not as a file object
-            stream = BytesIO(to_bytes(form["file"]))
+            file_data = to_bytes(form["file"])
+            object_content_length = len(file_data)
+            stream = BytesIO(file_data)
         else:
             # this is the default behaviour
             fileobj = context.request.files["file"]
             stream = fileobj.stream
+            # stream is a SpooledTemporaryFile, so we can seek the stream to know its length, necessary for policy
+            # validation
+            original_pos = stream.tell()
+            object_content_length = stream.seek(0, 2)
+            # reset the stream and put it back at its original position
+            stream.seek(original_pos, 0)
+
             if "${filename}" in object_key:
                 # TODO: ${filename} is actually usable in all form fields
                 # See https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/S3/PresignedPost.html
                 # > The string ${filename} is automatically replaced with the name of the file provided by the user and
                 # is recognized by all form fields.
                 object_key = object_key.replace("${filename}", fileobj.filename)
+
+        # TODO: see if we need to pass additional metadata not contained in the policy from the table under
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html#sigv4-PolicyConditions
+        additional_policy_metadata = {
+            "bucket": bucket,
+            "content_length": object_content_length,
+        }
+        validate_post_policy(form, additional_policy_metadata)
 
         if canned_acl := form.get("acl"):
             validate_canned_acl(canned_acl)

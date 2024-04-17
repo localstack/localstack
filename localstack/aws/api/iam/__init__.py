@@ -64,6 +64,7 @@ maxItemsType = int
 maxPasswordAgeType = int
 minimumPasswordLengthType = int
 noSuchEntityMessage = str
+openIdIdpCommunicationErrorExceptionMessage = str
 organizationsEntityPathType = str
 organizationsPolicyIdType = str
 passwordPolicyViolationMessage = str
@@ -372,6 +373,12 @@ class NoSuchEntityException(ServiceException):
     status_code: int = 404
 
 
+class OpenIdIdpCommunicationErrorException(ServiceException):
+    code: str = "OpenIdIdpCommunicationError"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
 class PasswordPolicyViolationException(ServiceException):
     code: str = "PasswordPolicyViolation"
     sender_fault: bool = True
@@ -626,7 +633,7 @@ clientIDListType = List[clientIDType]
 class CreateOpenIDConnectProviderRequest(ServiceRequest):
     Url: OpenIDConnectProviderUrlType
     ClientIDList: Optional[clientIDListType]
-    ThumbprintList: thumbprintListType
+    ThumbprintList: Optional[thumbprintListType]
     Tags: Optional[tagListType]
 
 
@@ -2385,8 +2392,8 @@ class IamApi:
         self,
         context: RequestContext,
         url: OpenIDConnectProviderUrlType,
-        thumbprint_list: thumbprintListType,
         client_id_list: clientIDListType = None,
+        thumbprint_list: thumbprintListType = None,
         tags: tagListType = None,
         **kwargs,
     ) -> CreateOpenIDConnectProviderResponse:

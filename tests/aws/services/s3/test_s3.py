@@ -9969,6 +9969,26 @@ class TestS3BucketReplication:
 
 
 class TestS3PresignedPost:
+    DEFAULT_FILE_VALUE = "abcdef"
+
+    def post_generated_presigned_post_with_default_file(
+        self, generated_request: dict
+    ) -> requests.Response:
+        return requests.post(
+            generated_request["url"],
+            data=generated_request["fields"],
+            files={"file": self.DEFAULT_FILE_VALUE},
+            verify=False,
+            allow_redirects=False,
+        )
+
+    @staticmethod
+    def parse_response_xml(content: bytes) -> dict:
+        if not is_aws_cloud():
+            # AWS use double quotes in error messages and LocalStack uses single. Try to unify before snapshotting
+            content = content.replace(b"'", b'"')
+        return xmltodict.parse(content)
+
     @markers.aws.validated
     @pytest.mark.xfail(
         reason="failing sporadically with new HTTP gateway (only in CI)",
@@ -10543,6 +10563,448 @@ class TestS3PresignedPost:
 
         response = aws_client.s3.list_objects_v2(Bucket=s3_bucket)
         snapshot.match("list-objects", response)
+
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: wrong exception implement, still missing the extra input fields validation
+            "$.invalid-condition-missing-prefix.Error.Message",
+            # TODO: we should add HostId to every serialized exception for S3, and not have them as part as the spec
+            "$.invalid-condition-wrong-condition.Error.HostId",
+        ],
+    )
+    @markers.aws.validated
+    def test_post_object_policy_conditions_validation_eq(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "HostId", reference_replacement=False, value_replacement="<host-id>"
+                ),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        object_key = "validate-policy-1"
+
+        redirect_location = "http://localhost.test/random"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                ["eq", "$success_action_redirect", redirect_location],
+            ],
+            ExpiresIn=60,
+        )
+
+        # PostObject with a wrong redirect location
+        presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+
+        # assert that it's rejected
+        assert response.status_code == 403
+        resp_content = self.parse_response_xml(response.content)
+        snapshot.match("invalid-condition-eq", resp_content)
+
+        # PostObject with a wrong condition (missing $ prefix)
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                ["eq", "success_action_redirect", redirect_location],
+            ],
+            ExpiresIn=60,
+        )
+
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+
+        # assert that it's rejected
+        assert response.status_code == 403
+        resp_content = self.parse_response_xml(response.content)
+        snapshot.match("invalid-condition-missing-prefix", resp_content)
+
+        # PostObject with a wrong condition (multiple condition in one dict)
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                {"bucket": s3_bucket, "success_action_redirect": redirect_location},
+            ],
+            ExpiresIn=60,
+        )
+
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+
+        # assert that it's rejected
+        assert response.status_code == 400
+        resp_content = self.parse_response_xml(response.content)
+        snapshot.match("invalid-condition-wrong-condition", resp_content)
+
+        # PostObject with a wrong condition value casing
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                ["eq", "$success_action_redirect", redirect_location.replace("http://", "HTTP://")],
+            ],
+            ExpiresIn=60,
+        )
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+        # assert that it's rejected
+        assert response.status_code == 403
+        resp_content = self.parse_response_xml(response.content)
+        snapshot.match("invalid-condition-wrong-value-casing", resp_content)
+
+        object_expires = rfc_1123_datetime(
+            datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(minutes=10)
+        )
+
+        # test casing for x-amz-meta and specific Content-Type/Expires S3 headers
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Fields={
+                "x-amz-meta-test-1": "test-meta-1",
+                "x-amz-meta-TEST-2": "test-meta-2",
+                "Content-Type": "text/plain",
+                "Expires": object_expires,
+            },
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["eq", "$x-amz-meta-test-1", "test-meta-1"],
+                ["eq", "$x-amz-meta-test-2", "test-meta-2"],
+                ["eq", "$content-type", "text/plain"],
+                ["eq", "$Expires", object_expires],
+            ],
+        )
+        # assert that it kept the casing
+        assert "x-amz-meta-TEST-2" in presigned_request["fields"]
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+        # assert that it's accepted
+        assert response.status_code == 204
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-metadata", head_object)
+
+        # PostObject with a wrong condition key casing, should still work
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                ["eq", "$success_Action_REDIRECT", redirect_location],
+            ],
+            ExpiresIn=60,
+        )
+
+        # load the generated policy to assert that it kept the casing, and it is sent to AWS
+        generated_policy = json.loads(
+            base64.b64decode(presigned_request["fields"]["policy"]).decode("utf-8")
+        )
+        eq_condition = [
+            cond
+            for cond in generated_policy["conditions"]
+            if isinstance(cond, list) and cond[0] == "eq"
+        ][0]
+        assert eq_condition[1] == "$success_Action_REDIRECT"
+
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+        # assert that it's accepted
+        assert response.status_code == 303
+
+        final_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("final-object", final_object)
+
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: wrong exception implement, still missing the extra input fields validation
+            "$.invalid-condition-missing-prefix.Error.Message",
+            # TODO: we should add HostId to every serialized exception for S3, and not have them as part as the spec
+            "$.invalid-condition-wrong-condition.Error.HostId",
+        ],
+    )
+    @markers.aws.validated
+    def test_post_object_policy_conditions_validation_starts_with(
+        self, s3_bucket, aws_client, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "HostId", reference_replacement=False, value_replacement="<host-id>"
+                ),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        object_key = "validate-policy-2"
+
+        redirect_location = "http://localhost.test/random"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                ["starts-with", "$success_action_redirect", "http://localhost"],
+            ],
+            ExpiresIn=60,
+        )
+
+        # PostObject with a wrong redirect location start
+        presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+
+        # assert that it's rejected
+        assert response.status_code == 403
+        resp_content = self.parse_response_xml(response.content)
+        snapshot.match("invalid-condition-starts-with", resp_content)
+
+        # PostObject with a right redirect location start but wrong casing
+        presigned_request["fields"]["success_action_redirect"] = "HTTP://localhost.test/random"
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+
+        # assert that it's rejected
+        assert response.status_code == 403
+        resp_content = self.parse_response_xml(response.content)
+        snapshot.match("invalid-condition-starts-with-casing", resp_content)
+
+        # PostObject with a right redirect location start
+        presigned_request["fields"]["success_action_redirect"] = redirect_location
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+
+        # assert that it's accepted
+        assert response.status_code == 303
+        assert response.headers["Location"].startswith(redirect_location)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-1", get_object)
+
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Fields={"success_action_redirect": redirect_location},
+            Conditions=[
+                [
+                    "starts-with",
+                    "$success_action_redirect",
+                    "",
+                ],  # this allows to accept anything for it
+            ],
+            ExpiresIn=60,
+        )
+
+        # PostObject with a different redirect location, but should be accepted
+        # manually generate the pre-signed with a different file value to change ETag, to later validate that the file
+        # has properly been written in S3
+        presigned_request["fields"]["success_action_redirect"] = "http://wrong.location/test"
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "manual value to change ETag"},
+            verify=False,
+            allow_redirects=False,
+        )
+
+        # assert that it's accepted
+        assert response.status_code == 303
+        assert response.headers["Location"].startswith("http://wrong.location/test")
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-2", get_object)
+
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="not implemented in moto",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: we should add HostId to every serialized exception for S3, and not have them as part as the spec
+            "$.invalid-content-length-too-small.Error.HostId",
+        ],
+    )
+    @markers.aws.validated
+    def test_post_object_policy_validation_size(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "HostId", reference_replacement=False, value_replacement="<host-id>"
+                ),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        object_key = "validate-policy-content-length"
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["content-length-range", 5, 10],
+            ],
+        )
+        # PostObject with a body length of 12
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 12},
+            verify=False,
+        )
+
+        # assert that it's rejected
+        assert response.status_code == 400
+        snapshot.match("invalid-content-length-too-big", xmltodict.parse(response.content))
+
+        # PostObject with a body length of 1
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 1},
+            verify=False,
+        )
+
+        # assert that it's rejected
+        assert response.status_code == 400
+        snapshot.match("invalid-content-length-too-small", xmltodict.parse(response.content))
+
+        # PostObject with a body length of 5
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 5},
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        # PostObject with a body length of 10
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 10},
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        final_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("final-object", final_object)
+
+    @pytest.mark.skipif(
+        condition=TEST_S3_IMAGE or LEGACY_V2_S3_PROVIDER,
+        reason="STS not enabled in S3 image / moto does not implement this",
+    )
+    @markers.aws.validated
+    def test_presigned_post_with_different_user_credentials(
+        self,
+        aws_client,
+        s3_create_bucket_with_client,
+        create_role_with_policy,
+        account_id,
+        wait_and_assume_role,
+        snapshot,
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value(
+                    "HostId", reference_replacement=False, value_replacement="<host-id>"
+                ),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        bucket_name = f"bucket-{short_uid()}"
+        actions = [
+            "s3:CreateBucket",
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:DeleteBucket",
+            "s3:DeleteObject",
+        ]
+
+        assume_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {"AWS": account_id},
+                    "Effect": "Allow",
+                }
+            ],
+        }
+        assume_policy_doc = json.dumps(assume_policy_doc)
+        role_name, role_arn = create_role_with_policy(
+            effect="Allow",
+            actions=actions,
+            assume_policy_doc=assume_policy_doc,
+            resource="*",
+        )
+
+        credentials = wait_and_assume_role(role_arn=role_arn)
+
+        client = boto3.client(
+            "s3",
+            config=Config(signature_version="s3v4"),
+            endpoint_url=_endpoint_url(),
+            aws_access_key_id=credentials["AccessKeyId"],
+            aws_secret_access_key=credentials["SecretAccessKey"],
+            aws_session_token=credentials["SessionToken"],
+        )
+
+        retry(
+            lambda: s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name),
+            sleep=3 if is_aws_cloud() else 0.5,
+        )
+
+        object_key = "validate-policy-full-credentials"
+        presigned_request = client.generate_presigned_post(
+            Bucket=bucket_name,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": bucket_name},
+            ],
+        )
+        # load the generated policy to assert that it kept the casing, and it is sent to AWS
+        generated_policy = json.loads(
+            base64.b64decode(presigned_request["fields"]["policy"]).decode("utf-8")
+        )
+        policy_conditions_fields = set()
+        token_condition = None
+        for condition in generated_policy["conditions"]:
+            if isinstance(condition, dict):
+                for k, v in condition.items():
+                    policy_conditions_fields.add(k)
+                    if k == "x-amz-security-token":
+                        token_condition = v
+            else:
+                # format is [operator, key, value]
+                policy_conditions_fields.add(condition[1])
+
+        assert policy_conditions_fields == {
+            "bucket",
+            "key",
+            "x-amz-security-token",
+            "x-amz-credential",
+            "x-amz-date",
+            "x-amz-algorithm",
+        }
+        assert token_condition == credentials["SessionToken"]
+
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": self.DEFAULT_FILE_VALUE},
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        get_obj = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
+        snapshot.match("get-obj", get_obj)
 
 
 def _s3_client_pre_signed_client(conf: Config, endpoint_url: str = None):

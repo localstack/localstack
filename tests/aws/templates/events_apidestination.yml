@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  Region:
+    Type: String
+    Default: 'us-east-1'
+
+Resources:
+  LocalEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: my-test-bus
+
+  LocalEventConnection:
+    Type: AWS::Events::Connection
+    Properties:
+      Name: my-test-conn
+      AuthorizationType: API_KEY
+      AuthParameters:
+        ApiKeyAuthParameters:
+          ApiKeyName: apikey123
+          ApiKeyValue: secretapikey123
+      Description: test events connection
+
+  MyLambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaBasicExecution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+
+  MyLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          def handler(event, ctx):
+              return {"statusCode": 200, "body": "hello"}
+      Role: !GetAtt MyLambdaFunctionRole.Arn
+      Handler: index.handler
+      Runtime: python3.8
+      FunctionName: my-test-function
+
+  MyApiGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref MyApiGateway
+      ParentId: !GetAtt MyApiGateway.RootResourceId
+      PathPart: 'myendpoint'
+
+  MyApiGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref MyApiGateway
+      ResourceId: !Ref MyApiGatewayResource
+      HttpMethod: 'POST'
+      AuthorizationType: 'NONE'
+      Integration:
+        IntegrationHttpMethod: 'POST'
+        Type: 'AWS_PROXY'
+        Uri: !Sub 'arn:aws:apigateway:${Region}:lambda:path/2015-03-31/functions/${MyLambdaFunction.Arn}/invocations'
+
+  MyApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: MyApiGateway
+
+  LocalEventApiDestination:
+    Type: AWS::Events::ApiDestination
+    Properties:
+      Name: my-test-destination
+      ConnectionArn: !GetAtt LocalEventConnection.Arn
+      Description: test events api destination
+      HttpMethod: POST
+      InvocationEndpoint:
+        Fn::Sub: 'https://${MyApiGateway}.execute-api.${Region}.amazonaws.com/myendpoint'

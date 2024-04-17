@@ -72,6 +72,7 @@ Namespace = str
 NextToken = str
 OutputFormat = str
 Period = int
+PeriodicSpikes = bool
 ResourceId = str
 ResourceName = str
 ResourceType = str
@@ -348,6 +349,10 @@ class SingleMetricAnomalyDetector(TypedDict, total=False):
     Stat: Optional[AnomalyDetectorMetricStat]
 
 
+class MetricCharacteristics(TypedDict, total=False):
+    PeriodicSpikes: Optional[PeriodicSpikes]
+
+
 class Range(TypedDict, total=False):
     StartTime: Timestamp
     EndTime: Timestamp
@@ -368,6 +373,7 @@ class AnomalyDetector(TypedDict, total=False):
     Stat: Optional[AnomalyDetectorMetricStat]
     Configuration: Optional[AnomalyDetectorConfiguration]
     StateValue: Optional[AnomalyDetectorStateValue]
+    MetricCharacteristics: Optional[MetricCharacteristics]
     SingleMetricAnomalyDetector: Optional[SingleMetricAnomalyDetector]
     MetricMathAnomalyDetector: Optional[MetricMathAnomalyDetector]
 
@@ -958,6 +964,7 @@ class PutAnomalyDetectorInput(ServiceRequest):
     Dimensions: Optional[Dimensions]
     Stat: Optional[AnomalyDetectorMetricStat]
     Configuration: Optional[AnomalyDetectorConfiguration]
+    MetricCharacteristics: Optional[MetricCharacteristics]
     SingleMetricAnomalyDetector: Optional[SingleMetricAnomalyDetector]
     MetricMathAnomalyDetector: Optional[MetricMathAnomalyDetector]
 
@@ -1364,6 +1371,7 @@ class CloudwatchApi:
         dimensions: Dimensions = None,
         stat: AnomalyDetectorMetricStat = None,
         configuration: AnomalyDetectorConfiguration = None,
+        metric_characteristics: MetricCharacteristics = None,
         single_metric_anomaly_detector: SingleMetricAnomalyDetector = None,
         metric_math_anomaly_detector: MetricMathAnomalyDetector = None,
         **kwargs,

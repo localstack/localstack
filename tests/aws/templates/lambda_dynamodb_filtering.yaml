@@ -18,7 +18,7 @@ Resources:
       FunctionName: !Ref FunctionName
       InlineCode: exports.handler = async (event, context) => { console.log(JSON.stringify(event))}
       Handler: index.handler
-      Runtime: nodejs14.x
+      Runtime: nodejs20.x
       MemorySize: 128
       Timeout: 100
       Description: DynamoDB put event trigger.

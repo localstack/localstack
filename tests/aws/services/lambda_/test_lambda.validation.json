@@ -200,6 +200,9 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_invocation_exception": {
     "last_validated_date": "2024-04-08T16:57:22+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_non_existing_url": {
+    "last_validated_date": "2024-04-11T17:16:39+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_lambda_handler_update": {
     "last_validated_date": "2024-04-08T17:10:58+00:00"
   },

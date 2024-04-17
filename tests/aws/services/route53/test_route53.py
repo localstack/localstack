@@ -49,7 +49,13 @@ class TestRoute53:
         assert "NoSuchHealthCheck" in str(ctx.value)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..HostedZone.CallerReference"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..HostedZone.CallerReference",
+            # moto does not return MaxItems for list_hosted_zones_by_vpc
+            "$..MaxItems",
+        ]
+    )
     def test_create_private_hosted_zone(
         self, region_name, aws_client, cleanups, snapshot, hosted_zone
     ):
@@ -75,6 +81,13 @@ class TestRoute53:
 
         response = aws_client.route53.get_hosted_zone(Id=zone_id)
         snapshot.match("get_hosted_zone", response)
+
+        response = aws_client.route53.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=region_name)
+        snapshot.match("list_hosted_zones_by_vpc", response)
+
+        response = aws_client.route53.list_hosted_zones()
+        zones = [zone for zone in response["HostedZones"] if name in zone["Name"]]
+        snapshot.match("list_hosted_zones", zones)
 
     @markers.aws.unknown
     def test_associate_vpc_with_hosted_zone(
@@ -149,6 +162,16 @@ class TestRoute53:
                 HostedZoneId=zone_id,
                 VPC={"VPCRegion": vpc_region, "VPCId": vpc2_id},
             )
+
+    @markers.aws.validated
+    def test_create_hosted_zone_in_non_existent_vpc(
+        self, aws_client, hosted_zone, snapshot, region_name
+    ):
+        vpc = {"VPCId": "non-existent", "VPCRegion": region_name}
+        with pytest.raises(aws_client.route53.exceptions.InvalidVPCId) as exc_info:
+            hosted_zone(Name=f"zone-{short_uid()}.com", VPC=vpc)
+
+        snapshot.match("failure-response", exc_info.value.response)
 
     @markers.aws.unknown
     def test_reusable_delegation_sets(self, aws_client):

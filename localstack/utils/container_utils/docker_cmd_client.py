@@ -237,6 +237,7 @@ class CmdDockerClient(ContainerClient):
                 container_list = [json.loads(line) for line in cmd_result.splitlines()]
         result = []
         for container in container_list:
+            labels = self._transform_container_labels(container["Labels"])
             result.append(
                 {
                     # support both, Docker and podman API response formats (`ID` vs `Id`)
@@ -245,7 +246,7 @@ class CmdDockerClient(ContainerClient):
                     # Docker returns a single string for `Names`, whereas podman returns a list of names
                     "name": ensure_list(container["Names"])[0],
                     "status": container["State"],
-                    "labels": container["Labels"],
+                    "labels": labels,
                 }
             )
         return result
@@ -789,7 +790,7 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--platform", platform]
         if ulimits:
             cmd += list(
-                itertools.chain.from_iterable(["--ulimits", str(ulimit)] for ulimit in ulimits)
+                itertools.chain.from_iterable(["--ulimit", str(ulimit)] for ulimit in ulimits)
             )
         if init:
             cmd += ["--init"]
@@ -831,3 +832,13 @@ class CmdDockerClient(ContainerClient):
         process_stdout_lower = to_str(error.stdout).lower()
         if any(msg.lower() in process_stdout_lower for msg in error_messages):
             raise NoSuchContainer(container_name_or_id, stdout=error.stdout, stderr=error.stderr)
+
+    def _transform_container_labels(self, labels: str) -> Dict[str, str]:
+        """
+        Transforms the container labels returned by the docker command from the key-value pair format to a dict
+        :param labels: Input string, comma separated key value pairs. Example: key1=value1,key2=value2
+        :return: Dict representation of the passed values, example: {"key1": "value1", "key2": "value2"}
+        """
+        labels = labels.split(",")
+        labels = [label.partition("=") for label in labels]
+        return {label[0]: label[2] for label in labels}

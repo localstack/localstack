@@ -415,7 +415,8 @@ def _resolve_refs_recursively(
             selected_map = mappings.get(mapping_id)
             if not selected_map:
                 raise Exception(
-                    f"Cannot find Mapping with ID {mapping_id} for Fn::FindInMap: {value[keys_list[0]]} {list(resources.keys())}"  # TODO: verify
+                    f"Cannot find Mapping with ID {mapping_id} for Fn::FindInMap: {value[keys_list[0]]} {list(resources.keys())}"
+                    # TODO: verify
                 )
 
             first_level_attribute = value[keys_list[0]][1]
@@ -895,7 +896,7 @@ class TemplateDeployer:
             }
             if len(resources) == 0:
                 break
-            for resource_id, resource in resources.items():
+            for i, (resource_id, resource) in enumerate(resources.items()):
                 try:
                     # TODO: cache condition value in resource details on deployment and use cached value here
                     if evaluate_resource_condition(
@@ -907,8 +908,45 @@ class TemplateDeployer:
                             "Remove", logical_resource_id=resource_id
                         )
                         # TODO: check actual return value
-                        executor.deploy_loop(resource, resource_provider_payload)
-                        self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
+                        LOG.debug(
+                            'Handling "Remove" for resource "%s" (%s/%s) type "%s" in loop iteration %s',
+                            resource_id,
+                            i + 1,
+                            len(resources),
+                            resource["ResourceType"],
+                            iteration_cycle,
+                        )
+                        event = executor.deploy_loop(resource, resource_provider_payload)
+                        match event.status:
+                            case OperationStatus.SUCCESS:
+                                self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
+                            case OperationStatus.PENDING:
+                                # the resource is still being deleted, specifically the provider has
+                                # signalled that the deployment loop should skip this resource this
+                                # time and come back to it later, likely due to unmet child
+                                # resources still existing because we don't delete things in the
+                                # correct order yet.
+                                continue
+                            case OperationStatus.FAILED:
+                                if iteration_cycle == max_cycle:
+                                    LOG.exception(
+                                        "Last cycle failed to delete resource with id %s. Reason: %s",
+                                        resource_id,
+                                        event.message or "unknown",
+                                    )
+                                else:
+                                    # the resource failed to delete this time, but we have more
+                                    # iterations left to complete the process
+                                    continue
+                            case OperationStatus.IN_PROGRESS:
+                                # the resource provider executor should not return this state, so
+                                # this state is a programming error
+                                raise Exception(
+                                    "Programming error: ResourceProviderExecutor cannot return IN_PROGRESS"
+                                )
+                            case other_status:
+                                raise Exception(f"Use of unsupported status found: {other_status}")
+
                 except Exception as e:
                     if iteration_cycle == max_cycle:
                         LOG.exception(
@@ -1157,6 +1195,7 @@ class TemplateDeployer:
 
         # TODO: ideally the entire template has to be replaced, but tricky at this point
         existing_stack.template["Metadata"] = new_stack.template.get("Metadata")
+        existing_stack.template_body = new_stack.template_body
 
         # start deployment loop
         return self.apply_changes_in_loop(
@@ -1164,7 +1203,11 @@ class TemplateDeployer:
         )
 
     def apply_changes_in_loop(
-        self, changes: list[ChangeConfig], stack, action: Optional[str] = None, new_stack=None
+        self,
+        changes: list[ChangeConfig],
+        stack,
+        action: Optional[str] = None,
+        new_stack=None,
     ):
         def _run(*args):
             status_reason = None
@@ -1243,6 +1286,15 @@ class TemplateDeployer:
                         if not should_remove:
                             del changes[j]
                             continue
+                        LOG.debug(
+                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s',
+                            action,
+                            resource_id,
+                            j + 1,
+                            len(changes),
+                            res_change["ResourceType"],
+                            i + 1,
+                        )
                     self.apply_change(change, stack=stack)
                     changes_done.append(change)
                     del changes[j]
@@ -1377,9 +1429,9 @@ class TemplateDeployer:
             case OperationStatus.SUCCESS:
                 stack.set_resource_status(resource_id, f"{stack_action}_COMPLETE")
             case OperationStatus.PENDING:
-                # this isn't really a state we use at the moment
-                raise Exception(
-                    f"Usage of currently unsupported operation status detected: {OperationStatus.PENDING}"
+                # signal to the main loop that we should come back to this resource in the future
+                raise DependencyNotYetSatisfied(
+                    resource_ids=[], message="Resource dependencies not yet satisfied"
                 )
             case OperationStatus.IN_PROGRESS:
                 raise Exception("Resource deployment loop should not finish in this state")

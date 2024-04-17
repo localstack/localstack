@@ -138,13 +138,18 @@ def custom_signing_name_rules(signing_name: str, path: str) -> Optional[ServiceM
 
 def custom_host_addressing_rules(host: str) -> Optional[ServiceModelIdentifier]:
     """
-    Rules based on the host header of the request.
+    Rules based on the host header of the request, which is typically the data plane of a service.
+
+    # TODO: ELB, AppSync, CloudFront, ...
     """
     if ".execute-api." in host:
         return ServiceModelIdentifier("apigateway")
 
     if ".lambda-url." in host:
         return ServiceModelIdentifier("lambda")
+
+    if ".s3-website." in host:
+        return ServiceModelIdentifier("s3")
 
 
 def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
@@ -303,6 +308,19 @@ def resolve_conflicts(
             if content_type == "application/x-amz-json-1.0"
             else ServiceModelIdentifier("sqs")
         )
+
+
+def determine_aws_service_model_for_data_plane(
+    request: Request, services: ServiceCatalog = None
+) -> Optional[ServiceModel]:
+    """
+    A stripped down version of ``determine_aws_service_model`` which only checks hostname indicators for
+    the AWS data plane, such as s3 websites, lambda function URLs, or API gateway routes.
+    """
+    custom_host_match = custom_host_addressing_rules(request.host)
+    if custom_host_match:
+        services = services or get_service_catalog()
+        return services.get(*custom_host_match)
 
 
 def determine_aws_service_model(

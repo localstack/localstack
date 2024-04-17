@@ -1125,6 +1125,21 @@ class TestLambdaURL:
             )
         snapshot.match("invoke_function_invalid_invoke_type", e.value.response)
 
+    @markers.aws.validated
+    def test_lambda_url_non_existing_url(self):
+        lambda_url_subdomain = "0123456789abcdefghijklmnopqrstuv.lambda-url.us-east-1"
+
+        if is_aws_cloud():
+            url = f"https://{lambda_url_subdomain}.on.aws"
+        else:
+            url = config.external_service_url(subdomains=lambda_url_subdomain)
+
+        response = requests.get(url)
+        assert response.text == '{"Message":null}'
+        assert response.status_code == 403
+        assert response.headers["Content-Type"] == "application/json"
+        assert response.headers["x-amzn-ErrorType"] == "AccessDeniedException"
+
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
