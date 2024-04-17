@@ -178,7 +178,7 @@ class Environment:
                     previous_event_id=self.event_history_context.source_event_id
                 )
 
-            frame = Environment.as_frame_of(self, event_history_context)
+            frame = self.as_frame_of(self, event_history_context)
             self._frames.append(frame)
             return frame
 

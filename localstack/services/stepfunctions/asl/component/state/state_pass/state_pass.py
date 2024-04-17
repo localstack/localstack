@@ -68,7 +68,7 @@ class StatePass(CommonStateField):
             self.parameters.eval(env=env)
 
         if self.result:
-            env.stack.append(self.result.result_obj)
+            self.result.eval(env=env)
 
         if self.result_path:
             self.result_path.eval(env)
