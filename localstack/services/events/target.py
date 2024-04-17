@@ -127,14 +127,29 @@ class EventsTargetService(TargetService):
             service_principal=self.service, source_arn=self.rule_arn
         )
         eventbus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
-        detail = event.get("detail") or event
-        resources = event.get("resources") or [self.rule_arn] if self.rule_arn else []
+        source = (
+            event.get("source")
+            if event.get("source") is not None
+            else self.service
+            if self.service
+            else ""
+        )
+        detail_type = event.get("detail-type") if event.get("detail-type") is not None else ""
+        # TODO add validation and tests for eventbridge to eventbridge requires Detail, DetailType, and Source
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
+        detail = event.get("detail", event)
+        resources = (
+            event.get("resources")
+            if event.get("resources") is not None
+            else ([self.rule_arn] if self.rule_arn else [])
+        )
+
         events_client.put_events(
             Entries=[
                 {
                     "EventBusName": eventbus_name,
-                    "Source": event.get("source", self.service) or "",
-                    "DetailType": event.get("detail-type", ""),
+                    "Source": source,
+                    "DetailType": detail_type,
                     "Detail": json.dumps(detail),
                     "Resources": resources,
                 }
