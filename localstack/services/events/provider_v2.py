@@ -573,9 +573,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in rule.items() if value is not None}
 
-    def _delete_target_services(self, ids: TargetIdList | TargetId, rule) -> None:
-        if isinstance(ids, TargetId):
-            ids = [ids]
+    def _delete_target_services(self, ids: TargetIdList, rule) -> None:
         for target_id in ids:
             if target := rule.targets.get(target_id):
                 target_arn = target["Arn"]
