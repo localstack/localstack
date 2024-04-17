@@ -13,6 +13,7 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.run import LOG, run
 
 if TYPE_CHECKING:
+    from mypy_boto3_ecr import ECRClient
     from mypy_boto3_s3 import S3Client
 
 
@@ -146,7 +147,17 @@ def _zip_lambda_resources(
                 temp_zip.write(file_path, archive_name)
 
 
-def generate_ecr_image_from_dockerfile(ecr_client, repository_name, file_path):
+def generate_ecr_image_from_dockerfile(
+    ecr_client: "ECRClient", repository_name: str, file_path: str
+):
+    """
+    Helper function to generate an ECR image from a dockerfile.
+
+    :param ecr_client: client for ECR
+    :param repository_name: name for the repository to be created
+    :param file_path: path of the file to be used
+    :return: None
+    """
     repository_uri = ecr_client.create_repository(
         repositoryName=repository_name,
     )["repository"]["repositoryUri"]
