@@ -44,10 +44,10 @@ class Rule:
     arn: Arn = field(init=False)
 
     def __post_init__(self):
-        if self.event_bus_name != "default":
-            self.arn = f"arn:aws:events:{self.region}:{self.account_id}:rule/{self.event_bus_name}/{self.name}"
-        else:
+        if self.event_bus_name == "default":
             self.arn = f"arn:aws:events:{self.region}:{self.account_id}:rule/{self.name}"
+        else:
+            self.arn = f"arn:aws:events:{self.region}:{self.account_id}:rule/{self.event_bus_name}/{self.name}"
         self.created_by = self.account_id
         if self.tags is None:
             self.tags = []
