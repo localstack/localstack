@@ -3,7 +3,7 @@
     "last_validated_date": "2023-11-09T20:04:02+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_exists_filter_policy_attributes_array": {
-    "last_validated_date": "2024-04-02T22:27:17+00:00"
+    "last_validated_date": "2024-04-17T18:10:45+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy": {
     "last_validated_date": "2024-01-25T18:07:57+00:00"
