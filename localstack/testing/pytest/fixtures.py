@@ -955,10 +955,6 @@ class StackDeployError(Exception):
 
 @pytest.fixture
 def deploy_cfn_template(
-    cleanup_stacks,
-    cleanup_changesets,
-    is_change_set_created_and_available,
-    is_change_set_finished,
     aws_client,
 ):
     state = []
