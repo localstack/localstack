@@ -285,8 +285,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         store = self.get_store(context)
         event_bus = self.get_event_bus(event_bus_name, store)
-        existing_rule = getattr(event_bus, "rules", {}).get(name, None)
-        targets = getattr(existing_rule, "targets", None) if existing_rule else None
+        existing_rule = event_bus.rules.get(name)
+        targets = existing_rule.targets if existing_rule else None
         rule_service = self.create_rule_service(
             name,
             region,
