@@ -1050,33 +1050,34 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         if "LoggingConfig" in request:
-            lambda_config = request["LoggingConfig"]
+            logging_config = request["LoggingConfig"]
             LOG.warning(
-                "Advanced Lambda Logging Configuration is mocked at the moment"
-                "It won't actually have an impact on lambda mocking"
+                "Advanced Lambda Logging Configuration is currently mocked "
+                "and will not impact the logging behavior. "
+                "Please create a feature request if needed."
             )
 
             # when switching to JSON, app and system level log is auto set to INFO
-            if lambda_config.get("LogFormat", None) == LogFormat.JSON:
-                lambda_config = {
+            if logging_config.get("LogFormat", None) == LogFormat.JSON:
+                logging_config = {
                     "ApplicationLogLevel": "INFO",
                     "SystemLogLevel": "INFO",
-                } | lambda_config
+                } | logging_config
 
             last_config = latest_version_config.logging_config
 
             # add partial update
-            new_config = last_config | lambda_config
+            new_logging_config = last_config | logging_config
 
             # in case we switched from JSON to Text we need to remove LogLevel keys
             if (
-                new_config.get("LogFormat") == LogFormat.Text
+                new_logging_config.get("LogFormat") == LogFormat.Text
                 and last_config.get("LogFormat") == LogFormat.JSON
             ):
-                new_config.pop("ApplicationLogLevel", None)
-                new_config.pop("SystemLogLevel", None)
+                new_logging_config.pop("ApplicationLogLevel", None)
+                new_logging_config.pop("SystemLogLevel", None)
 
-            replace_kwargs["logging_config"] = new_config
+            replace_kwargs["logging_config"] = new_logging_config
 
         if "TracingConfig" in request:
             new_mode = request.get("TracingConfig", {}).get("Mode")

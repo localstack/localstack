@@ -77,9 +77,50 @@ def environment_length_bytes(e: dict) -> int:
     return string_length_bytes(serialized_environment)
 
 
-class TestLambdaFunction:
+class TestLoggingConfig:
     @markers.aws.validated
-    def test_advance_logging_configuration_format_switch(
+    def test_function_advanced_logging_configuration(
+        self, snapshot, create_lambda_function, lambda_su_role, aws_client
+    ):
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            role=lambda_su_role,
+            MemorySize=256,
+            Timeout=5,
+        )
+
+        snapshot.match("create_response", create_response)
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
+        snapshot.match("get_function_response", get_function_response)
+
+        function_config = aws_client.lambda_.get_function_configuration(FunctionName=function_name)
+        snapshot.match("function_config", function_config)
+
+        advanced_config = {
+            "LogFormat": LogFormat.JSON,
+            "ApplicationLogLevel": "INFO",
+            "SystemLogLevel": "INFO",
+            "LogGroup": "cool_lambda",
+        }
+        updated_config = aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, LoggingConfig=advanced_config
+        )
+        snapshot.match("updated_config", updated_config)
+
+        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+        received_conf = aws_client.lambda_.get_function_configuration(
+            FunctionName=function_name,
+        )
+        snapshot.match("received_config", received_conf)
+
+    @markers.aws.validated
+    def test_advanced_logging_configuration_format_switch(
         self, snapshot, create_lambda_function, lambda_su_role, aws_client
     ):
         function_name = f"fn-{short_uid()}"
@@ -169,50 +210,11 @@ class TestLambdaFunction:
         )
         snapshot.match("received_config", received_conf)
 
-    @markers.aws.validated
-    def test_function_advanced_logging_configuration(
-        self, snapshot, create_lambda_function, lambda_su_role, aws_client
-    ):
-        function_name = f"fn-{short_uid()}"
-        create_response = create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=function_name,
-            runtime=Runtime.python3_12,
-            role=lambda_su_role,
-            MemorySize=256,
-            Timeout=5,
-        )
 
-        snapshot.match("create_response", create_response)
-        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
-
-        get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
-        snapshot.match("get_function_response", get_function_response)
-
-        function_config = aws_client.lambda_.get_function_configuration(FunctionName=function_name)
-        snapshot.match("function_config", function_config)
-
-        advanced_config = {
-            "LogFormat": LogFormat.JSON,
-            "ApplicationLogLevel": "INFO",
-            "SystemLogLevel": "INFO",
-            "LogGroup": "cool_lambda",
-        }
-        updated_config = aws_client.lambda_.update_function_configuration(
-            FunctionName=function_name, LoggingConfig=advanced_config
-        )
-        snapshot.match("updated_config", updated_config)
-
-        aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
-
-        received_conf = aws_client.lambda_.get_function_configuration(
-            FunctionName=function_name,
-        )
-        snapshot.match("received_config", received_conf)
-
+class TestLambdaFunction:
     @markers.snapshot.skip_snapshot_verify(
         # The RuntimeVersionArn is currently a hardcoded id and therefore does not reflect the ARN resource update
-        # from python3.9 to python3.8 in update_func_conf_response.
+        # for different runtime versions"
         paths=["$..RuntimeVersionConfig.RuntimeVersionArn"]
     )
     @markers.aws.validated
