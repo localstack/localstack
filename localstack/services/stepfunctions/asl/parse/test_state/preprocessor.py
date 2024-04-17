@@ -56,12 +56,12 @@ def _decorated_updates_inspection_data(method, inspection_data_key: InspectionDa
 def _decorate_state_field(state_field: CommonStateField) -> None:
     if isinstance(state_field, ExecutionState):
         state_field._eval_execution = _decorated_updates_inspection_data(
-            method=state_field._eval_execution,  # noqa: as part of the decoration we access this protexted member.
+            method=state_field._eval_execution,  # noqa: as part of the decoration we access this protected member.
             inspection_data_key=InspectionDataKey.RESULT,
         )
     elif isinstance(state_field, StateChoice):
         state_field._eval_body = _decorated_updated_choice_inspection_data(
-            method=state_field._eval_body  # noqa: as part of the decoration we access this protexted member.
+            method=state_field._eval_body  # noqa: as part of the decoration we access this protected member.
         )
 
 

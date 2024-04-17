@@ -11,7 +11,7 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
     ServicesTemplates as ST,
 )
 from tests.aws.services.stepfunctions.templates.test_state.test_state_templates import (
-    TestStateTemplate as TCT,
+    TestStateTemplate as TST,
 )
 
 HELLO_WORLD_INPUT = json.dumps({"Value": "HelloWorld"})
@@ -24,13 +24,13 @@ NESTED_DICT_INPUT = json.dumps(
 BASE_CHOICE_STATE_INPUT = json.dumps({"type": "Private", "value": 22})
 
 BASE_TEMPLATE_INPUT_BINDINGS: list[tuple[str, str]] = [
-    (TCT.BASE_PASS_STATE, HELLO_WORLD_INPUT),
-    (TCT.BASE_RESULT_PASS_STATE, HELLO_WORLD_INPUT),
-    (TCT.IO_PASS_STATE, NESTED_DICT_INPUT),
-    (TCT.IO_RESULT_PASS_STATE, NESTED_DICT_INPUT),
-    (TCT.BASE_FAIL_STATE, HELLO_WORLD_INPUT),
-    (TCT.BASE_SUCCEED_STATE, HELLO_WORLD_INPUT),
-    (TCT.BASE_CHOICE_STATE, BASE_CHOICE_STATE_INPUT),
+    (TST.BASE_PASS_STATE, HELLO_WORLD_INPUT),
+    (TST.BASE_RESULT_PASS_STATE, HELLO_WORLD_INPUT),
+    (TST.IO_PASS_STATE, NESTED_DICT_INPUT),
+    (TST.IO_RESULT_PASS_STATE, NESTED_DICT_INPUT),
+    (TST.BASE_FAIL_STATE, HELLO_WORLD_INPUT),
+    (TST.BASE_SUCCEED_STATE, HELLO_WORLD_INPUT),
+    (TST.BASE_CHOICE_STATE, BASE_CHOICE_STATE_INPUT),
 ]
 IDS_BASE_TEMPLATE_INPUT_BINDINGS: list[str] = [
     "BASE_PASS_STATE",
@@ -52,6 +52,9 @@ IDS_BASE_TEMPLATE_INPUT_BINDINGS: list[str] = [
     ]
 )
 class TestStateCaseScenarios:
+    # TODO: consider aggregating all `test_base_inspection_level_*` into a single parametrised function, and evaluate
+    #  solutions for snapshot skips and parametrisation complexity.
+
     @markers.aws.validated
     @pytest.mark.parametrize(
         "tct_template,execution_input",
@@ -69,7 +72,7 @@ class TestStateCaseScenarios:
     ):
         sfn_role_arn = create_iam_role_for_sfn()
 
-        template = TCT.load_sfn_template(tct_template)
+        template = TST.load_sfn_template(tct_template)
         definition = json.dumps(template)
 
         test_case_response = stepfunctions_client_test_state.test_state(
@@ -108,7 +111,7 @@ class TestStateCaseScenarios:
     ):
         sfn_role_arn = create_iam_role_for_sfn()
 
-        template = TCT.load_sfn_template(tct_template)
+        template = TST.load_sfn_template(tct_template)
         definition = json.dumps(template)
 
         test_case_response = stepfunctions_client_test_state.test_state(
@@ -147,7 +150,7 @@ class TestStateCaseScenarios:
     ):
         sfn_role_arn = create_iam_role_for_sfn()
 
-        template = TCT.load_sfn_template(tct_template)
+        template = TST.load_sfn_template(tct_template)
         definition = json.dumps(template)
 
         test_case_response = stepfunctions_client_test_state.test_state(
@@ -189,7 +192,7 @@ class TestStateCaseScenarios:
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
-        template = TCT.load_sfn_template(TCT.BASE_LAMBDA_TASK_STATE)
+        template = TST.load_sfn_template(TST.BASE_LAMBDA_TASK_STATE)
         template["Resource"] = create_1_res["CreateFunctionResponse"]["FunctionArn"]
         definition = json.dumps(template)
         exec_input = json.dumps({"inputData": "HelloWorld"})
@@ -232,7 +235,7 @@ class TestStateCaseScenarios:
         )
         sfn_snapshot.add_transformer(RegexTransformer(function_name, "<lambda_function_name>"))
 
-        template = TCT.load_sfn_template(TCT.BASE_LAMBDA_SERVICE_TASK_STATE)
+        template = TST.load_sfn_template(TST.BASE_LAMBDA_SERVICE_TASK_STATE)
         definition = json.dumps(template)
         exec_input = json.dumps({"FunctionName": function_name, "Payload": None})
 
