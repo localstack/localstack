@@ -24,14 +24,11 @@ LOG = logging.getLogger(__name__)
 
 
 def connect_with_role(role_arn: str, region_name: str) -> ServiceLevelClientFactory:
-    """Connects using an assumed role."""
-    try:
-        return connect_to.with_assumed_role(
-            role_arn=role_arn, service_principal=ServicePrincipal.events, region_name=region_name
-        )
-    except ValueError as e:
-        LOG.debug(f"Could not connect with assumed role {role_arn}. Error: {e}")
-        return None
+    """Connect to an internal botoclient factory using an assumed role."""
+    client = connect_to.with_assumed_role(
+        role_arn=role_arn, service_principal=ServicePrincipal.events, region_name=region_name
+    )
+    return client
 
 
 class TargetService(ABC):
@@ -76,8 +73,14 @@ class TargetService(ABC):
         If a role from a target is provided, the client will be initialized with the assumed role and events service principal.
         If no role is provided e.g. calling send_events directly, the client will be initialized with the account ID and region."""
         if role_arn := self.target.get("role_arn"):
-            clients = connect_with_role(role_arn, self.region)
-            if not clients:
+            try:
+                clients = connect_with_role(role_arn, self.region)
+            except Exception as error:
+                LOG.warn(
+                    "Could not connect to internal botoclient with assumed role %s. Error: %s, trying with account ID.",
+                    role_arn,
+                    error,
+                )
                 clients = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
         else:
             clients = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
