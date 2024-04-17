@@ -966,7 +966,7 @@ def deploy_cfn_template(
         change_set_name: Optional[str] = None,
         template: Optional[str] = None,
         template_path: Optional[str | os.PathLike] = None,
-        template_mapping: Optional[Dict[str, any]] = None,
+        template_mapping: Optional[Dict[str, Any]] = None,
         parameters: Optional[Dict[str, str]] = None,
         role_arn: Optional[str] = None,
         max_wait: Optional[int] = None,
