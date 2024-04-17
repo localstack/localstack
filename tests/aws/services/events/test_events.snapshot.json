@@ -80,503 +80,6 @@
       ]
     }
   },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
-    "recorded-date": "26-03-2024, 14:07:59",
-    "recorded-content": {
-      "create-custom-event-bus": {
-        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<resource:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-rule-1": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<resource:2>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-rule-2": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<resource:1>/<resource:3>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "put-target-1": {
-        "FailedEntries": [],
-        "FailedEntryCount": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "put-target-2": {
-        "FailedEntries": [],
-        "FailedEntryCount": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get-events": {
-        "Messages": [
-          {
-            "Body": {
-              "version": "0",
-              "id": "<uuid:1>",
-              "detail-type": "Object Created",
-              "source": "aws.s3",
-              "account": "111111111111",
-              "time": "date",
-              "region": "<region>",
-              "resources": [
-                "arn:aws:s3:::<bucket-name:1>"
-              ],
-              "detail": {
-                "version": "0",
-                "bucket": {
-                  "name": "<bucket-name:1>"
-                },
-                "object": {
-                  "key": "<key-name:1>",
-                  "size": 4,
-                  "etag": "8d777f385d3dfec8815d20f7496026dc",
-                  "sequencer": "object-sequencer"
-                },
-                "request-id": "request-id",
-                "requester": "<requester>",
-                "source-ip-address": "<ip-address:1>",
-                "reason": "PutObject"
-              }
-            },
-            "MD5OfBody": "<m-d5-of-body:1>",
-            "MessageId": "<uuid:2>",
-            "ReceiptHandle": "<receipt-handle:1>"
-          }
-        ]
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_put_events_nonexistent_event_bus": {
-    "recorded-date": "16-04-2024, 15:10:30",
-    "recorded-content": {
-      "put-events": {
-        "Entries": [
-          {
-            "EventId": "<uuid:1>"
-          },
-          {
-            "EventId": "<uuid:2>"
-          }
-        ],
-        "FailedEntryCount": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get-events": [
-        {
-          "MessageId": "<uuid:3>",
-          "ReceiptHandle": "<receipt-handle:1>",
-          "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": {
-            "version": "0",
-            "id": "<uuid:1>",
-            "detail-type": "CustomType",
-            "source": "MySource",
-            "account": "111111111111",
-            "time": "date",
-            "region": "<region>",
-            "resources": [],
-            "detail": {
-              "message": "for the default event bus"
-            }
-          }
-        }
-      ],
-      "non-existent-bus-error": {
-        "Error": {
-          "Code": "ResourceNotFoundException",
-          "Message": "Event bus <custom-event-bus> does not exist."
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_custom_event_bus": {
-    "recorded-date": "27-03-2024, 09:15:34",
-    "recorded-content": {
-      "create-custom-event-bus": {
-        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_list_describe_delete_custom_event_bus": {
-    "recorded-date": "02-04-2024, 13:04:38",
-    "recorded-content": {
-      "create-custom-event-bus": {
-        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-create": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          },
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-            "Name": "test-bus"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-custom-event-bus": {
-        "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-        "Name": "test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-custom-event-bus": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-delete": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_desribe_delete_not_existing_event_bus": {
-    "recorded-date": "02-04-2024, 13:20:57",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_list_event_buses_with_prefix": {
-    "recorded-date": "03-04-2024, 14:38:19",
-    "recorded-content": {
-      "list-event-buses-prefix-complete-name": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-            "Name": "test-bus"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-prefix": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-            "Name": "test-bus"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_list_event_buses_with_limit": {
-    "recorded-date": "03-04-2024, 14:53:31",
-    "recorded-content": {
-      "list-event-buses-limit": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          },
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-0",
-            "Name": "test-bus-0"
-          },
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-1",
-            "Name": "test-bus-1"
-          }
-        ],
-        "NextToken": "<next_token:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-limit-next-token": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-2",
-            "Name": "test-bus-2"
-          },
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-3",
-            "Name": "test-bus-3"
-          },
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-4",
-            "Name": "test-bus-4"
-          },
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-5",
-            "Name": "test-bus-5"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_describe_delete_not_existing_event_bus": {
-    "recorded-date": "17-04-2024, 07:32:19",
-    "recorded-content": {
-      "describe-not-existing-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>",
-      "delete-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>"
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
-    "recorded-date": "03-04-2024, 13:49:07",
-    "recorded-content": {
-      "create-custom-event-bus-us-east-1": {
-        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-after-create-us-east-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          },
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-            "Name": "test-bus"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-custom-event-bus-us-east-1": {
-        "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-        "Name": "test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-custom-event-bus-us-east-1": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-after-delete-us-east-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
-    "recorded-date": "03-04-2024, 13:49:10",
-    "recorded-content": {
-      "create-custom-event-bus-us-east-1": {
-        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-after-create-us-east-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          },
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-            "Name": "test-bus"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-custom-event-bus-us-east-1": {
-        "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
-        "Name": "test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-custom-event-bus-us-west-1": {
-        "EventBusArn": "arn:aws:events:us-west-1:111111111111:event-bus/test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-after-create-us-west-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/default",
-            "Name": "default"
-          },
-          {
-            "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/test-bus",
-            "Name": "test-bus"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-custom-event-bus-us-west-1": {
-        "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/test-bus",
-        "Name": "test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-custom-event-bus-eu-central-1": {
-        "EventBusArn": "arn:aws:events:eu-central-1:111111111111:event-bus/test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-after-create-eu-central-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/default",
-            "Name": "default"
-          },
-          {
-            "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/test-bus",
-            "Name": "test-bus"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe-custom-event-bus-eu-central-1": {
-        "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/test-bus",
-        "Name": "test-bus",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-custom-event-bus-us-east-1": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-after-delete-us-east-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-custom-event-bus-us-west-1": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-after-delete-us-west-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/default",
-            "Name": "default"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "delete-custom-event-bus-eu-central-1": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-event-buses-after-delete-eu-central-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/default",
-            "Name": "default"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_multiple_event_buses_same_name": {
-    "recorded-date": "16-04-2024, 15:09:51",
-    "recorded-content": {
-      "create-multiple-event-buses-same-name": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateEventBus operation: Event bus <bus-name> already exists.') tblen=4>"
-    }
-  },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_rule[custom]": {
     "recorded-date": "04-04-2024, 10:47:20",
     "recorded-content": {
@@ -1243,6 +746,416 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
+    "recorded-date": "17-04-2024, 17:31:45",
+    "recorded-content": {
+      "create-custom-event-bus-us-east-1": {
+        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
+            "Name": "default"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
+            "Name": "default"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
+    "recorded-date": "17-04-2024, 17:31:48",
+    "recorded-content": {
+      "create-custom-event-bus-us-east-1": {
+        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
+            "Name": "default"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-east-1": {
+        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-us-west-1": {
+        "EventBusArn": "arn:aws:events:us-west-1:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-us-west-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/default",
+            "Name": "default"
+          },
+          {
+            "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/<bus-name>",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-us-west-1": {
+        "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/<bus-name>",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-custom-event-bus-eu-central-1": {
+        "EventBusArn": "arn:aws:events:eu-central-1:111111111111:event-bus/<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-create-eu-central-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/default",
+            "Name": "default"
+          },
+          {
+            "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/<bus-name>",
+            "Name": "<bus-name>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-custom-event-bus-eu-central-1": {
+        "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/<bus-name>",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-east-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-east-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
+            "Name": "default"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-us-west-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-us-west-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/default",
+            "Name": "default"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-custom-event-bus-eu-central-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-after-delete-eu-central-1": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/default",
+            "Name": "default"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_create_multiple_event_buses_same_name": {
+    "recorded-date": "17-04-2024, 17:31:48",
+    "recorded-content": {
+      "create-multiple-event-buses-same-name": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateEventBus operation: Event bus <bus-name> already exists.') tblen=4>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_describe_delete_not_existing_event_bus": {
+    "recorded-date": "17-04-2024, 17:31:49",
+    "recorded-content": {
+      "describe-not-existing-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>",
+      "delete-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_delete_default_event_bus": {
+    "recorded-date": "17-04-2024, 17:31:50",
+    "recorded-content": {
+      "delete-default-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the DeleteEventBus operation: Cannot delete event bus default.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_prefix": {
+    "recorded-date": "17-04-2024, 17:31:51",
+    "recorded-content": {
+      "list-event-buses-prefix-complete-name": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
+            "Name": "test-bus"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-prefix": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus",
+            "Name": "test-bus"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_limit": {
+    "recorded-date": "17-04-2024, 17:31:52",
+    "recorded-content": {
+      "list-event-buses-limit": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
+            "Name": "default"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-0",
+            "Name": "test-bus-0"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-1",
+            "Name": "test-bus-1"
+          }
+        ],
+        "NextToken": "<next_token:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-event-buses-limit-next-token": {
+        "EventBuses": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-2",
+            "Name": "test-bus-2"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-3",
+            "Name": "test-bus-3"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-4",
+            "Name": "test-bus-4"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/test-bus-5",
+            "Name": "test-bus-5"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
+    "recorded-date": "17-04-2024, 17:32:24",
+    "recorded-content": {
+      "create-custom-event-bus": {
+        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-rule-1": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-rule-2": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<resource:1>/<resource:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-target-1": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-target-2": {
+        "FailedEntries": [],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-events": {
+        "Messages": [
+          {
+            "Body": {
+              "version": "0",
+              "id": "<uuid:1>",
+              "detail-type": "Object Created",
+              "source": "aws.s3",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [
+                "arn:aws:s3:::<bucket-name:1>"
+              ],
+              "detail": {
+                "version": "0",
+                "bucket": {
+                  "name": "<bucket-name:1>"
+                },
+                "object": {
+                  "key": "<key-name:1>",
+                  "size": 4,
+                  "etag": "8d777f385d3dfec8815d20f7496026dc",
+                  "sequencer": "object-sequencer"
+                },
+                "request-id": "request-id",
+                "requester": "<requester>",
+                "source-ip-address": "<ip-address:1>",
+                "reason": "PutObject"
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
+    "recorded-date": "17-04-2024, 17:32:42",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "EventId": "b2fc49fa-6cbc-bd51-db5f-a40f011cae5e"
+          },
+          {
+            "EventId": "6c716ae3-582a-7fd1-ff87-d158f35e1c9d"
+          }
+        ],
+        "FailedEntryCount": 0,
+        "ResponseMetadata": {
+          "HTTPHeaders": {
+            "content-length": "136",
+            "content-type": "application/x-amz-json-1.1",
+            "date": "Wed, 17 Apr 2024 17:32:28 GMT",
+            "x-amzn-requestid": "05af1f7d-17dc-4eca-a13d-7455bc3b315a"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "05af1f7d-17dc-4eca-a13d-7455bc3b315a",
+          "RetryAttempts": 0
         }
       }
     }

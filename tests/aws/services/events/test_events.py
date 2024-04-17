@@ -706,7 +706,7 @@ class TestEvents:
         assert message_body["time"] == "2022-01-01T00:00:00Z"
 
 
-class TestEventsEventBus:
+class TestEventBus:
     @markers.aws.validated
     @pytest.mark.parametrize("regions", [["us-east-1"], ["us-east-1", "us-west-1", "eu-central-1"]])
     def test_create_list_describe_delete_custom_event_buses(
@@ -1007,7 +1007,7 @@ class TestEventsEventBus:
 
         assert_valid_event(received_event)
 
-    @markers.aws.validated
+    @markers.aws.validated  # TODO fix condition for this test, only succeeds if run on its own
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_nonexistent_event_bus(
         self,
