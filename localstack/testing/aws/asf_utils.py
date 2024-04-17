@@ -125,7 +125,7 @@ def check_provider_signature(sub_class: type, base_class: type, method_name: str
         base_spec = inspect.getfullargspec(base_function)
         assert sub_spec == base_spec, (
             f"{sub_class.__name__}#{method_name} breaks with {base_class.__name__}#{method_name}. "
-            f"This can also be caused by 'from __future__ import annotations'!"
+            f"This can also be caused by 'from __future__ import annotations in a provider file'!"
         )
     except AttributeError:
         # the function is not defined in the superclass
