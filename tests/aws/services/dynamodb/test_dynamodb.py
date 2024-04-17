@@ -2018,6 +2018,23 @@ class TestDynamoDB:
         )
         snapshot.match("transact-write-response-update", response)
 
+        # use Update to write a new key
+        response = aws_client.dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    "Update": {
+                        "TableName": table_name,
+                        "Key": {"id": {"S": "NonExistentKey"}},
+                        "UpdateExpression": "SET attr1 = :v1",
+                        "ExpressionAttributeValues": {
+                            ":v1": {"S": "value1"},
+                        },
+                    }
+                },
+            ]
+        )
+        snapshot.match("transact-write-update-insert", response)
+
         # delete the key
         response = aws_client.dynamodb.transact_write_items(
             TransactItems=[
@@ -2036,6 +2053,7 @@ class TestDynamoDB:
         # - PutItem
         # - TransactWriteItem on NewKey insert
         # - TransactWriteItem on NewKey update
+        # - TransactWriteItem on NonExistentKey insert
         # - TransactWriteItem on NewKey delete
         # - TransactWriteItem on Fred modify via Put
         # don't send an event when Fred is overwritten with the same value
@@ -2052,7 +2070,7 @@ class TestDynamoDB:
 
             assert len(records) >= record_amount
 
-        retry(lambda: _get_records_amount(5), sleep=1, retries=3)
+        retry(lambda: _get_records_amount(6), sleep=1, retries=3)
         snapshot.match("get-records", {"Records": records})
 
     @markers.aws.validated

@@ -857,7 +857,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming": {
-    "recorded-date": "15-03-2024, 01:54:32",
+    "recorded-date": "17-04-2024, 22:45:49",
     "recorded-content": {
       "create-table": {
         "TableDescription": {
@@ -939,6 +939,12 @@
         }
       },
       "transact-write-response-update": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "transact-write-update-insert": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1038,6 +1044,32 @@
               "ApproximateCreationDateTime": "datetime",
               "Keys": {
                 "id": {
+                  "S": "NonExistentKey"
+                }
+              },
+              "NewImage": {
+                "attr1": {
+                  "S": "value1"
+                },
+                "id": {
+                  "S": "NonExistentKey"
+                }
+              },
+              "SequenceNumber": "<sequence-number:4>",
+              "SizeBytes": 43,
+              "StreamViewType": "NEW_AND_OLD_IMAGES"
+            },
+            "eventID": "<event-i-d:4>",
+            "eventName": "INSERT",
+            "eventSource": "aws:dynamodb",
+            "eventVersion": "1.1"
+          },
+          {
+            "awsRegion": "<region>",
+            "dynamodb": {
+              "ApproximateCreationDateTime": "datetime",
+              "Keys": {
+                "id": {
                   "S": "NewKey"
                 }
               },
@@ -1052,11 +1084,11 @@
                   "S": "NewKey"
                 }
               },
-              "SequenceNumber": "<sequence-number:4>",
+              "SequenceNumber": "<sequence-number:5>",
               "SizeBytes": 38,
               "StreamViewType": "NEW_AND_OLD_IMAGES"
             },
-            "eventID": "<event-i-d:4>",
+            "eventID": "<event-i-d:5>",
             "eventName": "REMOVE",
             "eventSource": "aws:dynamodb",
             "eventVersion": "1.1"
@@ -1083,11 +1115,11 @@
                   "S": "Fred"
                 }
               },
-              "SequenceNumber": "<sequence-number:5>",
+              "SequenceNumber": "<sequence-number:6>",
               "SizeBytes": 26,
               "StreamViewType": "NEW_AND_OLD_IMAGES"
             },
-            "eventID": "<event-i-d:5>",
+            "eventID": "<event-i-d:6>",
             "eventName": "MODIFY",
             "eventSource": "aws:dynamodb",
             "eventVersion": "1.1"
