@@ -67,6 +67,8 @@ base-runtime = [
     "Werkzeug>=3.0.0",
     "xmltodict>=0.13.0",
     "rolo>=0.4",
+    # TODO: Needs a release
+    "git@github.com:localstack/emulator-base-store.git",
     # TODO: remove those 2 dependencies
     "flask>=3.0.0",
     "Quart>=0.19.2",
