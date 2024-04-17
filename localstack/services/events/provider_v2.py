@@ -213,8 +213,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rule = self.get_rule(name, event_bus)
 
         response = self._rule_dict_to_api_type_rule(rule)
-        if created_by := getattr(rule, "created_by", None):
-            response["CreatedBy"] = created_by
         return response
 
     @handler("DisableRule")
@@ -577,6 +575,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "RoleArn": rule.role_arn,
             "ManagedBy": rule.managed_by,
             "EventBusName": rule.event_bus_name,
+            "CreatedBy": rule.created_by,
         }
         return {k: v for k, v in rule.items() if v is not None and v != {} and v != []}
 
