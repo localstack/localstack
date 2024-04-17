@@ -47,18 +47,18 @@ class TargetService(ABC):
         self.service = service
 
         self._validate_input(self.target)
-        self._clients: ServiceLevelClientFactory | None = None
+        self._client: ServiceLevelClientFactory | None = None
 
     @property
     def arn(self):
         return self.target["Arn"]
 
     @property
-    def clients(self):
-        """Lazy initialization of AWS service clients."""
-        if self._clients is None:
-            self._clients = self._initialize_clients()
-        return self._clients
+    def client(self):
+        """Lazy initialization of internal botoclient factory."""
+        if self._client is None:
+            self._client = self._initialize_client()
+        return self._client
 
     @abstractmethod
     def send_event(self):
@@ -68,8 +68,8 @@ class TargetService(ABC):
         """Provide a default implementation that does nothing if no specific validation is needed."""
         pass
 
-    def _initialize_clients(self) -> ServiceLevelClientFactory:
-        """Initializes AWS service clients, with or without assuming a role of service source.
+    def _initialize_client(self) -> ServiceLevelClientFactory:
+        """Initializes internal botoclient factory, with or without assuming a role of service source.
         If a role from a target is provided, the client will be initialized with the assumed role and events service principal.
         If no role is provided e.g. calling send_events directly, the client will be initialized with the account ID and region."""
         if role_arn := self.target.get("role_arn"):
@@ -123,7 +123,7 @@ class ContainerTargetService(TargetService):
 
 class EventsTargetService(TargetService):
     def send_event(self, event):
-        events_client = self.clients.events.request_metadata(
+        events_client = self.client.events.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
         eventbus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
@@ -144,7 +144,7 @@ class EventsTargetService(TargetService):
 
 class FirehoseTargetService(TargetService):
     def send_event(self, event):
-        firehose_client = self.clients.firehose.request_metadata(
+        firehose_client = self.client.firehose.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
         delivery_stream_name = firehose_name(self.target["Arn"])
@@ -155,7 +155,7 @@ class FirehoseTargetService(TargetService):
 
 class KinesisTargetService(TargetService):
     def send_event(self, event):
-        kinesis_client = self.clients.kinesis.request_metadata(
+        kinesis_client = self.client.kinesis.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
         partition_key_path = collections.get_safe(
@@ -175,7 +175,7 @@ class KinesisTargetService(TargetService):
 class LambdaTargetService(TargetService):
     def send_event(self, event):
         asynchronous = True
-        lambda_client = self.clients.lambda_.request_metadata(
+        lambda_client = self.client.lambda_.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
         lambda_client.invoke(
@@ -187,7 +187,7 @@ class LambdaTargetService(TargetService):
 
 class LogsTargetService(TargetService):
     def send_event(self, event):
-        logs_client = self.clients.logs.request_metadata(
+        logs_client = self.client.logs.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
         log_group_name = self.target["Arn"].split(":")[6]
@@ -217,7 +217,7 @@ class SagemakerTargetService(TargetService):
 
 class SnsTargetService(TargetService):
     def send_event(self, event):
-        sns_client = self.clients.sns.request_metadata(
+        sns_client = self.client.sns.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
         sns_client.publish(TopicArn=self.target["Arn"], Message=json.dumps(event))
@@ -225,7 +225,7 @@ class SnsTargetService(TargetService):
 
 class SqsTargetService(TargetService):
     def send_event(self, event):
-        sqs_client = self.clients.sqs.request_metadata(
+        sqs_client = self.client.sqs.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
         queue_url = sqs_queue_url_for_arn(self.target["Arn"])
@@ -240,7 +240,7 @@ class StatesTargetService(TargetService):
     """Step Functions Target Sender"""
 
     def send_event(self, event):
-        stepfunctions_client = self.clients.stepfunctions.request_metadata(
+        stepfunctions_client = self.client.stepfunctions.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
         stepfunctions_client.start_execution(
