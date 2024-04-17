@@ -571,7 +571,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "EventBusName": rule.event_bus_name,
             "CreatedBy": rule.created_by,
         }
-        return {k: v for k, v in rule.items() if v is not None and v != {} and v != []}
+        return {key: value for key, value in rule.items() if value is not None}
 
     def _delete_target_services(self, ids: TargetIdList | TargetId, rule) -> None:
         if isinstance(ids, TargetId):
