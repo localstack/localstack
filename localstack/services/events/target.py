@@ -190,7 +190,7 @@ class KinesisTargetService(TargetService):
 
 class LambdaTargetService(TargetService):
     def send_event(self, event):
-        asynchronous = True
+        asynchronous = True  # TODO clarify default behavior of AWS
         lambda_client = self.client.lambda_.request_metadata(
             service_principal=self.service, source_arn=self.rule_arn
         )
