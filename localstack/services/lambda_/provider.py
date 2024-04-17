@@ -1051,6 +1051,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if "LoggingConfig" in request:
             lambda_config = request["LoggingConfig"]
+            LOG.warning(
+                "Advanced Lambda Logging Configuration is mocked at the moment"
+                "It won't actually have an impact on lambda mocking"
+            )
+
             # when switching to JSON, app and system level log is auto set to INFO
             if lambda_config.get("LogFormat", None) == LogFormat.JSON:
                 lambda_config = {
