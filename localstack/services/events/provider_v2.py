@@ -411,8 +411,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         # create default event bus for account region on first call
         default_event_bus_name = "default"
         if default_event_bus_name not in store.event_buses.keys():
-            event_bus_service = EventBusService(default_event_bus_name, region, account_id)
-            self._event_bus_services_store[event_bus_service.arn] = event_bus_service
+            event_bus_service = self.create_event_bus_service(
+                default_event_bus_name, region, account_id, None, None
+            )
             store.event_buses[event_bus_service.event_bus.name] = event_bus_service.event_bus
         return store
 
