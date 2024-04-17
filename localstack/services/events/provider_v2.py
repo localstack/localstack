@@ -552,6 +552,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return event_bus
 
     def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
+        """
+        Delete all rule services associated to the input from the store.
+        Accepts a single Rule object or a dict of Rule objects as input.
+        """
         if isinstance(rules, Rule):
             rules = {rules.name: rules}
         for rule in rules.values():
