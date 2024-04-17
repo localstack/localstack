@@ -74,6 +74,11 @@ def encode_next_token(token: int) -> NextToken:
     return base64.b64encode(token.to_bytes(128, "big")).decode("utf-8")
 
 
+def get_filtered_dict(name_prefix: str, input_dict: dict) -> dict:
+    """Filter dictionary by prefix."""
+    return {name: value for name, value in input_dict.items() if name.startswith(name_prefix)}
+
+
 class EventsProvider(EventsApi, ServiceLifecycleHook):
     # api methods are grouped by resource type and sorted in hierarchical order
     # each group is sorted alphabetically
@@ -146,9 +151,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> ListEventBusesResponse:
         store = self.get_store(context)
         event_buses = (
-            EventsProvider.get_filtered_dict(name_prefix, store.event_buses)
-            if name_prefix
-            else store.event_buses
+            get_filtered_dict(name_prefix, store.event_buses) if name_prefix else store.event_buses
         )
         limited_event_buses, next_token = self._get_limited_dict_and_next_token(
             event_buses, next_token, limit
@@ -242,11 +245,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
-        rules = (
-            EventsProvider.get_filtered_dict(name_prefix, event_bus.rules)
-            if name_prefix
-            else event_bus.rules
-        )
+        rules = get_filtered_dict(name_prefix, event_bus.rules) if name_prefix else event_bus.rules
         limited_rules, next_token = self._get_limited_dict_and_next_token(rules, next_token, limit)
 
         response = ListRulesResponse(Rules=list(self._rule_dict_to_api_type_list(limited_rules)))
@@ -495,11 +494,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         ).get_target_service()
         self._target_services_store[target_service.arn] = target_service
         return target_service
-
-    @staticmethod
-    def get_filtered_dict(name_prefix: str, input_dict: dict) -> dict:
-        """Filter dictionary by prefix."""
-        return {name: value for name, value in input_dict.items() if name.startswith(name_prefix)}
 
     def _get_limited_dict_and_next_token(
         self, input_dict: dict, next_token: NextToken | None, limit: LimitMax100 | None
