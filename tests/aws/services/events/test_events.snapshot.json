@@ -1210,5 +1210,41 @@
     "recorded-content": {
       "delete-default-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the DeleteEventBus operation: Cannot delete event bus default.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventRule::test_update_rule_with_targets": {
+    "recorded-date": "17-04-2024, 10:42:59",
+    "recorded-content": {
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-targets-after-update": {
+        "Targets": [
+          {
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
