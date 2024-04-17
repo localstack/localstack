@@ -116,9 +116,6 @@ class TestApiGatewayApiRestApi:
         response["items"].sort(key=itemgetter("createdDate"))
         snapshot.match("get-rest-api-before-delete", response)
 
-        if is_aws_cloud():
-            time.sleep(15)
-
         response = aws_client.apigateway.delete_rest_api(restApiId=api_id)
         snapshot.match("delete-rest-api", response)
 

@@ -501,16 +501,18 @@ def test_create_execute_api_vpc_endpoint(
 ):
     poll_sleep = 5 if is_aws_cloud() else 1
     # TODO: create a re-usable ec2_api() transformer
-    snapshot.add_transformer(snapshot.transform.key_value("DnsName"))
-    snapshot.add_transformer(snapshot.transform.key_value("GroupId"))
-    snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
-    snapshot.add_transformer(snapshot.transform.key_value("SubnetIds"))
-    snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
-    snapshot.add_transformer(snapshot.transform.key_value("VpcEndpointId"))
-    snapshot.add_transformer(snapshot.transform.key_value("HostedZoneId"))
-    snapshot.add_transformer(snapshot.transform.key_value("id"))
-    snapshot.add_transformer(snapshot.transform.key_value("name"))
-    snapshot.add_transformer(snapshot.transform.key_value("rootResourceId"))
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("DnsName"),
+            snapshot.transform.key_value("GroupId"),
+            snapshot.transform.key_value("GroupName"),
+            snapshot.transform.key_value("SubnetIds"),
+            snapshot.transform.key_value("VpcId"),
+            snapshot.transform.key_value("VpcEndpointId"),
+            snapshot.transform.key_value("HostedZoneId"),
+            *snapshot.transform.apigateway_api(),
+        ]
+    )
 
     # create table
     table = dynamodb_create_table()["TableDescription"]
