@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/api/test_transformers.py::test_duplicate_resources": {
-    "recorded-date": "21-02-2023, 09:45:29",
+    "recorded-date": "15-04-2024, 22:51:13",
     "recorded-content": {
       "api-details": {
         "apiKeySource": "HEADER",
@@ -13,12 +13,25 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {
           "aws:cloudformation:logical-id": "RestApi",
           "aws:cloudformation:stack-id": "<aws:cloudformation:stack-id:1>",
           "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
         },
         "version": "1.2.3",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "api-resources": {
+        "items": [
+          {
+            "id": "<id:2>",
+            "path": "/"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

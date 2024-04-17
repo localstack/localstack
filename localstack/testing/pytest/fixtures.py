@@ -1954,10 +1954,8 @@ def create_rest_apigw(aws_client_factory):
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")
         rest_apis.append((api_id, region_name))
-        resources = apigateway_client.get_resources(restApiId=api_id)
-        root_id = next(item for item in resources["items"] if item["path"] == "/")["id"]
 
-        return api_id, response.get("name"), root_id
+        return api_id, response.get("name"), response.get("rootResourceId")
 
     yield _create_apigateway_function
 

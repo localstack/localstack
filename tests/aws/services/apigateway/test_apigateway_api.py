@@ -68,197 +68,37 @@ def delete_rest_api_retry(client, rest_api_id: str):
 
 
 @pytest.fixture
-def apigw_create_rest_api(aws_client):
+def apigw_create_rest_api(aws_client, aws_client_factory):
+    if is_aws_cloud():
+        client_config = (
+            Config(
+                # Api gateway can throttle requests pretty heavily. Leading to potentially undeleted apis
+                retries={"max_attempts": 10, "mode": "adaptive"}
+            )
+            if is_aws_cloud()
+            else None
+        )
+
+        apigateway_client = aws_client_factory(config=client_config).apigateway
+    else:
+        apigateway_client = aws_client.apigateway
+
     rest_apis = []
 
     def _factory(*args, **kwargs):
         if "name" not in kwargs:
             kwargs["name"] = f"test-api-{short_uid()}"
-        response = aws_client.apigateway.create_rest_api(*args, **kwargs)
+        response = apigateway_client.create_rest_api(*args, **kwargs)
         rest_apis.append(response["id"])
         return response
 
     yield _factory
 
     for rest_api_id in rest_apis:
-        delete_rest_api_retry(aws_client.apigateway, rest_api_id)
+        delete_rest_api_retry(apigateway_client, rest_api_id)
 
 
-class TestApiGatewayApi:
-    @markers.aws.validated
-    def test_invoke_test_method(self, create_rest_apigw, snapshot, aws_client):
-        snapshot.add_transformer(
-            KeyValueBasedTransformer(
-                lambda k, v: str(v) if k == "latency" else None, "latency", replace_reference=False
-            )
-        )
-        snapshot.add_transformer(
-            snapshot.transform.key_value("log", "log", reference_replacement=False)
-        )
-
-        api_id, _, root = create_rest_apigw(name="aws lambda api")
-
-        # Create the /pets resource
-        root_resource_id, _ = create_rest_resource(
-            aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="pets"
-        )
-        # Create the /pets/{petId} resource
-        resource_id, _ = create_rest_resource(
-            aws_client.apigateway, restApiId=api_id, parentId=root_resource_id, pathPart="{petId}"
-        )
-        # Create the GET method for /pets/{petId}
-        create_rest_resource_method(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="GET",
-            authorizationType="NONE",
-            requestParameters={
-                "method.request.path.petId": True,
-            },
-        )
-        # Create the POST method for /pets/{petId}
-        create_rest_resource_method(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            authorizationType="NONE",
-            requestParameters={
-                "method.request.path.petId": True,
-            },
-        )
-        # Create the response for method GET /pets/{petId}
-        create_rest_api_method_response(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="GET",
-            statusCode="200",
-        )
-        # Create the response for method POST /pets/{petId}
-        create_rest_api_method_response(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            statusCode="200",
-        )
-        # Create the integration to connect GET /pets/{petId} to a backend
-        create_rest_api_integration(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="GET",
-            type="MOCK",
-            integrationHttpMethod="GET",
-            requestParameters={
-                "integration.request.path.id": "method.request.path.petId",
-            },
-            requestTemplates={"application/json": json.dumps({"statusCode": 200})},
-        )
-        # Create the integration to connect POST /pets/{petId} to a backend
-        create_rest_api_integration(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            type="MOCK",
-            integrationHttpMethod="POST",
-            requestParameters={
-                "integration.request.path.id": "method.request.path.petId",
-            },
-            requestTemplates={"application/json": json.dumps({"statusCode": 200})},
-        )
-        # Create the 200 integration response for GET /pets/{petId}
-        create_rest_api_integration_response(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="GET",
-            statusCode="200",
-            responseTemplates={"application/json": json.dumps({"petId": "$input.params('petId')"})},
-        )
-        # Create the 200 integration response for POST /pets/{petId}
-        create_rest_api_integration_response(
-            aws_client.apigateway,
-            restApiId=api_id,
-            resourceId=resource_id,
-            httpMethod="POST",
-            statusCode="200",
-            responseTemplates={"application/json": json.dumps({"petId": "$input.params('petId')"})},
-        )
-
-        def invoke_method(api_id, resource_id, path_with_query_string, method, body=""):
-            res = aws_client.apigateway.test_invoke_method(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=method,
-                pathWithQueryString=path_with_query_string,
-                body=body,
-            )
-            assert 200 == res.get("status")
-            return res
-
-        response = retry(
-            invoke_method,
-            retries=10,
-            sleep=5,
-            api_id=api_id,
-            resource_id=resource_id,
-            path_with_query_string="/pets/123",
-            method="GET",
-        )
-        assert "HTTP Method: GET, Resource Path: /pets/123" in response["log"]
-        snapshot.match("test-invoke-method-get", response)
-
-        response = retry(
-            invoke_method,
-            retries=10,
-            sleep=5,
-            api_id=api_id,
-            resource_id=resource_id,
-            path_with_query_string="/pets/123?foo=bar",
-            method="GET",
-        )
-        snapshot.match("test-invoke-method-get-with-qs", response)
-
-        response = retry(
-            invoke_method,
-            retries=10,
-            sleep=5,
-            api_id=api_id,
-            resource_id=resource_id,
-            path_with_query_string="/pets/123",
-            method="POST",
-            body=json.dumps({"foo": "bar"}),
-        )
-        assert "HTTP Method: POST, Resource Path: /pets/123" in response["log"]
-        snapshot.match("test-invoke-method-post-with-body", response)
-
-        # assert resource and rest api doesn't exist
-        with pytest.raises(ClientError) as ex:
-            aws_client.apigateway.test_invoke_method(
-                restApiId=api_id,
-                resourceId="invalid_res",
-                httpMethod="POST",
-                pathWithQueryString="/pets/123",
-                body=json.dumps({"foo": "bar"}),
-            )
-        snapshot.match("resource-id-not-found", ex.value.response)
-        assert ex.value.response["Error"]["Code"] == "NotFoundException"
-
-        with pytest.raises(ClientError) as ex:
-            aws_client.apigateway.test_invoke_method(
-                restApiId=api_id,
-                resourceId="invalid_res",
-                httpMethod="POST",
-                pathWithQueryString="/pets/123",
-                body=json.dumps({"foo": "bar"}),
-            )
-        snapshot.match("rest-api-not-found", ex.value.response)
-        assert ex.value.response["Error"]["Code"] == "NotFoundException"
-
+class TestApiGatewayApiRestApi:
     @markers.aws.validated
     def test_list_and_delete_apis(self, apigw_create_rest_api, snapshot, aws_client):
         api_name1 = f"test-list-and-delete-apis-{short_uid()}"
@@ -529,6 +369,8 @@ class TestApiGatewayApi:
         snapshot.match("not-found-update-rest-api", ex.value.response)
         assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
+
+class TestApiGatewayApiResource:
     @markers.aws.validated
     def test_resource_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
         snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
@@ -888,6 +730,8 @@ class TestApiGatewayApi:
         )
         snapshot.match("create-greedy-child-resource", greedy_child_response)
 
+
+class TestApiGatewayApiAuthorizer:
     @markers.aws.validated
     def test_authorizer_crud_no_api(self, snapshot, aws_client):
         # maybe move this test to a full lifecycle one
@@ -906,45 +750,15 @@ class TestApiGatewayApi:
             aws_client.apigateway.get_authorizers(restApiId="test-fake-rest-id")
         snapshot.match("wrong-rest-api-id-get-authorizers", e.value.response)
 
-    @markers.aws.validated
-    def test_doc_arts_crud_no_api(self, snapshot, aws_client):
-        # maybe move this test to a full lifecycle one
-        with pytest.raises(ClientError) as e:
-            aws_client.apigateway.create_documentation_part(
-                restApiId="test-fake-rest-id",
-                location={"type": "API"},
-                properties='{\n\t"info": {\n\t\t"description" : "Your first API with Amazon API Gateway."\n\t}\n}',
-            )
-        snapshot.match("wrong-rest-api-id-create-doc-part", e.value.response)
 
-        with pytest.raises(ClientError) as e:
-            aws_client.apigateway.get_documentation_parts(restApiId="test-fake-rest-id")
-        snapshot.match("wrong-rest-api-id-get-doc-parts", e.value.response)
-
-    @markers.aws.validated
-    def test_validators_crud_no_api(self, snapshot, aws_client):
-        # maybe move this test to a full lifecycle one
-        with pytest.raises(ClientError) as e:
-            aws_client.apigateway.create_request_validator(
-                restApiId="test-fake-rest-id",
-                name="test-validator",
-                validateRequestBody=True,
-                validateRequestParameters=False,
-            )
-        snapshot.match("wrong-rest-api-id-create-validator", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.apigateway.get_request_validators(restApiId="test-fake-rest-id")
-        snapshot.match("wrong-rest-api-id-get-validators", e.value.response)
-
+class TestApiGatewayApiMethod:
     @markers.aws.validated
     def test_method_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource method lifecycle"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         put_base_method_response = aws_client.apigateway.put_method(
             restApiId=api_id,
@@ -980,8 +794,7 @@ class TestApiGatewayApi:
             name=f"test-api-{short_uid()}", description="testing resource method request params"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         put_method_response = aws_client.apigateway.put_method(
             restApiId=api_id,
@@ -1028,8 +841,7 @@ class TestApiGatewayApi:
             name=f"test-api-{short_uid()}", description="testing resource method model"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         create_model = aws_client.apigateway.create_model(
             name="MySchema",
@@ -1137,8 +949,7 @@ class TestApiGatewayApi:
             name=f"test-api-{short_uid()}", description="testing resource method request params"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         # wrong RestApiId
         with pytest.raises(ClientError) as e:
@@ -1215,8 +1026,7 @@ class TestApiGatewayApi:
             name=f"test-api-{short_uid()}", description="testing update method"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         put_method_response = aws_client.apigateway.put_method(
             restApiId=api_id,
@@ -1306,8 +1116,7 @@ class TestApiGatewayApi:
             name=f"test-api-{short_uid()}", description="testing resource method request params"
         )
         api_id = response["id"]
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_id = response["rootResourceId"]
 
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.update_method(
@@ -1349,17 +1158,31 @@ class TestApiGatewayApi:
         )
         snapshot.match("put-method-response", put_method_response)
 
-        # unsupported operation ?
+        # unsupported operation
         patch_operations_add = [
             {"op": "add", "path": "/operationName", "value": "operationName"},
         ]
-        unsupported_operation_resp = aws_client.apigateway.update_method(
-            restApiId=api_id,
-            resourceId=root_id,
-            httpMethod="ANY",
-            patchOperations=patch_operations_add,
-        )
-        snapshot.match("unsupported-operation", unsupported_operation_resp)
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add,
+            )
+        snapshot.match("unsupported-operation", e.value.response)
+
+        # unsupported operation
+        patch_operations_add_2 = [
+            {"op": "add", "path": "/requestValidatorId", "value": "wrong-id"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_method(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod="ANY",
+                patchOperations=patch_operations_add_2,
+            )
+        snapshot.match("unsupported-operation-2", e.value.response)
 
         # unsupported path
         with pytest.raises(ClientError) as e:
@@ -1468,9 +1291,10 @@ class TestApiGatewayApi:
             )
         snapshot.match("wrong-req-validator-id", e.value.response)
 
+
+class TestApiGatewayApiModels:
     @markers.aws.validated
     def test_model_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
-        snapshot.add_transformer(SortingTransformer("items", lambda x: x["name"]))
         # taken from https://docs.aws.amazon.com/apigateway/latest/api/API_CreateModel.html#API_CreateModel_Examples
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource model lifecycle"
@@ -1487,6 +1311,7 @@ class TestApiGatewayApi:
         snapshot.match("create-model", create_model_response)
 
         get_models_response = aws_client.apigateway.get_models(restApiId=api_id)
+        get_models_response["items"].sort(key=lambda x: x["name"])
         snapshot.match("get-models", get_models_response)
 
         # manually assert the presence of 2 default models, Error and Empty, as snapshots will replace names
@@ -1671,6 +1496,22 @@ class TestApiGatewayApi:
 
 
 class TestApiGatewayApiRequestValidator:
+    @markers.aws.validated
+    def test_validators_crud_no_api(self, snapshot, aws_client):
+        # maybe move this test to a full lifecycle one
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.create_request_validator(
+                restApiId="test-fake-rest-id",
+                name="test-validator",
+                validateRequestBody=True,
+                validateRequestParameters=False,
+            )
+        snapshot.match("wrong-rest-api-id-create-validator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.get_request_validators(restApiId="test-fake-rest-id")
+        snapshot.match("wrong-rest-api-id-get-validators", e.value.response)
+
     @markers.aws.validated
     def test_request_validator_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
@@ -1858,6 +1699,21 @@ class TestApiGatewayApiRequestValidator:
 
 
 class TestApiGatewayApiDocumentationPart:
+    @markers.aws.validated
+    def test_doc_parts_crud_no_api(self, snapshot, aws_client):
+        # maybe move this test to a full lifecycle one
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.create_documentation_part(
+                restApiId="test-fake-rest-id",
+                location={"type": "API"},
+                properties='{\n\t"info": {\n\t\t"description" : "Your first API with Amazon API Gateway."\n\t}\n}',
+            )
+        snapshot.match("wrong-rest-api-id-create-doc-part", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.get_documentation_parts(restApiId="test-fake-rest-id")
+        snapshot.match("wrong-rest-api-id-get-doc-parts", e.value.response)
+
     @markers.aws.validated
     def test_documentation_part_lifecycle(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
@@ -2362,6 +2218,182 @@ class TestApiGatewayGatewayResponse:
             )
 
 
+class TestApigatewayTestInvoke:
+    @markers.aws.validated
+    def test_invoke_test_method(self, create_rest_apigw, snapshot, aws_client):
+        snapshot.add_transformer(
+            KeyValueBasedTransformer(
+                lambda k, v: str(v) if k == "latency" else None, "latency", replace_reference=False
+            )
+        )
+        snapshot.add_transformer(
+            snapshot.transform.key_value("log", "log", reference_replacement=False)
+        )
+
+        api_id, _, root = create_rest_apigw(name="aws lambda api")
+
+        # Create the /pets resource
+        root_resource_id, _ = create_rest_resource(
+            aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="pets"
+        )
+        # Create the /pets/{petId} resource
+        resource_id, _ = create_rest_resource(
+            aws_client.apigateway, restApiId=api_id, parentId=root_resource_id, pathPart="{petId}"
+        )
+        # Create the GET method for /pets/{petId}
+        create_rest_resource_method(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+            requestParameters={
+                "method.request.path.petId": True,
+            },
+        )
+        # Create the POST method for /pets/{petId}
+        create_rest_resource_method(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            authorizationType="NONE",
+            requestParameters={
+                "method.request.path.petId": True,
+            },
+        )
+        # Create the response for method GET /pets/{petId}
+        create_rest_api_method_response(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+        # Create the response for method POST /pets/{petId}
+        create_rest_api_method_response(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+        )
+        # Create the integration to connect GET /pets/{petId} to a backend
+        create_rest_api_integration(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            integrationHttpMethod="GET",
+            requestParameters={
+                "integration.request.path.id": "method.request.path.petId",
+            },
+            requestTemplates={"application/json": json.dumps({"statusCode": 200})},
+        )
+        # Create the integration to connect POST /pets/{petId} to a backend
+        create_rest_api_integration(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            type="MOCK",
+            integrationHttpMethod="POST",
+            requestParameters={
+                "integration.request.path.id": "method.request.path.petId",
+            },
+            requestTemplates={"application/json": json.dumps({"statusCode": 200})},
+        )
+        # Create the 200 integration response for GET /pets/{petId}
+        create_rest_api_integration_response(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseTemplates={"application/json": json.dumps({"petId": "$input.params('petId')"})},
+        )
+        # Create the 200 integration response for POST /pets/{petId}
+        create_rest_api_integration_response(
+            aws_client.apigateway,
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod="POST",
+            statusCode="200",
+            responseTemplates={"application/json": json.dumps({"petId": "$input.params('petId')"})},
+        )
+
+        def invoke_method(api_id, resource_id, path_with_query_string, method, body=""):
+            res = aws_client.apigateway.test_invoke_method(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=method,
+                pathWithQueryString=path_with_query_string,
+                body=body,
+            )
+            assert 200 == res.get("status")
+            return res
+
+        response = retry(
+            invoke_method,
+            retries=10,
+            sleep=5,
+            api_id=api_id,
+            resource_id=resource_id,
+            path_with_query_string="/pets/123",
+            method="GET",
+        )
+        assert "HTTP Method: GET, Resource Path: /pets/123" in response["log"]
+        snapshot.match("test-invoke-method-get", response)
+
+        response = retry(
+            invoke_method,
+            retries=10,
+            sleep=5,
+            api_id=api_id,
+            resource_id=resource_id,
+            path_with_query_string="/pets/123?foo=bar",
+            method="GET",
+        )
+        snapshot.match("test-invoke-method-get-with-qs", response)
+
+        response = retry(
+            invoke_method,
+            retries=10,
+            sleep=5,
+            api_id=api_id,
+            resource_id=resource_id,
+            path_with_query_string="/pets/123",
+            method="POST",
+            body=json.dumps({"foo": "bar"}),
+        )
+        assert "HTTP Method: POST, Resource Path: /pets/123" in response["log"]
+        snapshot.match("test-invoke-method-post-with-body", response)
+
+        # assert resource and rest api doesn't exist
+        with pytest.raises(ClientError) as ex:
+            aws_client.apigateway.test_invoke_method(
+                restApiId=api_id,
+                resourceId="invalid_res",
+                httpMethod="POST",
+                pathWithQueryString="/pets/123",
+                body=json.dumps({"foo": "bar"}),
+            )
+        snapshot.match("resource-id-not-found", ex.value.response)
+        assert ex.value.response["Error"]["Code"] == "NotFoundException"
+
+        with pytest.raises(ClientError) as ex:
+            aws_client.apigateway.test_invoke_method(
+                restApiId=api_id,
+                resourceId="invalid_res",
+                httpMethod="POST",
+                pathWithQueryString="/pets/123",
+                body=json.dumps({"foo": "bar"}),
+            )
+        snapshot.match("rest-api-not-found", ex.value.response)
+        assert ex.value.response["Error"]["Code"] == "NotFoundException"
+
+
 class TestApigatewayIntegration:
     @markers.aws.validated
     def test_put_integration_wrong_type(
@@ -2373,13 +2405,10 @@ class TestApigatewayIntegration:
             description="APIGW test PutIntegration Types",
         )
         api_id = response["id"]
-
-        root_rest_api_resource = aws_client.apigateway.get_resources(restApiId=api_id)
-
-        root_id = root_rest_api_resource["items"][0]["id"]
+        root_resource_id = response["rootResourceId"]
 
         with pytest.raises(ClientError) as e:
             apigw_client.put_integration(
-                restApiId=api_id, resourceId=root_id, httpMethod="GET", type="HTTPS_PROXY"
+                restApiId=api_id, resourceId=root_resource_id, httpMethod="GET", type="HTTPS_PROXY"
             )
         snapshot.match("put-integration-wrong-type", e.value.response)
