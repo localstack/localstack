@@ -1,6 +1,6 @@
 {
   "tests/aws/scenario/lambda_destination/test_lambda_destination_scenario.py::TestLambdaDestinationScenario::test_infra": {
-    "recorded-date": "04-10-2023, 16:04:47",
+    "recorded-date": "17-04-2024, 07:04:49",
     "recorded-content": {
       "get_fn_1": {
         "Code": {
@@ -22,6 +22,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -71,6 +75,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:2>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
