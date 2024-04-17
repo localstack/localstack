@@ -1807,10 +1807,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
 
                     record["eventID"] = short_uid()
-                    record["eventName"] = "MODIFY" if updated_item else "INSERT"
+                    record["eventName"] = "MODIFY" if existing_item else "INSERT"
                     record["dynamodb"]["Keys"] = keys
 
-                    if stream_type.needs_old_image:
+                    if existing_item and stream_type.needs_old_image:
                         record["dynamodb"]["OldImage"] = existing_item
                     if stream_type.needs_new_image:
                         record["dynamodb"]["NewImage"] = updated_item
