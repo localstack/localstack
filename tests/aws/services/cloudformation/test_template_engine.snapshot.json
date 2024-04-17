@@ -600,8 +600,19 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function": {
-    "recorded-date": "03-04-2024, 07:12:29",
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-west-2]": {
+    "recorded-date": "17-04-2024, 10:25:14",
+    "recorded-content": {
+      "azs": [
+        "<region>a",
+        "<region>b",
+        "<region>c",
+        "<region>d"
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-east-1]": {
+    "recorded-date": "17-04-2024, 10:24:29",
     "recorded-content": {
       "azs": [
         "<region>a",
@@ -610,6 +621,65 @@
         "<region>d",
         "<region>e",
         "<region>f"
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-east-2]": {
+    "recorded-date": "17-04-2024, 10:24:45",
+    "recorded-content": {
+      "azs": [
+        "<region>a",
+        "<region>b",
+        "<region>c"
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-west-1]": {
+    "recorded-date": "17-04-2024, 10:24:59",
+    "recorded-content": {
+      "azs": [
+        "<region>b",
+        "<region>c"
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[ap-southeast-2]": {
+    "recorded-date": "17-04-2024, 10:25:33",
+    "recorded-content": {
+      "azs": [
+        "<region>a",
+        "<region>b",
+        "<region>c"
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[ap-northeast-1]": {
+    "recorded-date": "17-04-2024, 10:25:52",
+    "recorded-content": {
+      "azs": [
+        "<region>a",
+        "<region>c",
+        "<region>d"
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[eu-central-1]": {
+    "recorded-date": "17-04-2024, 10:26:09",
+    "recorded-content": {
+      "azs": [
+        "<region>a",
+        "<region>b",
+        "<region>c"
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[eu-west-1]": {
+    "recorded-date": "17-04-2024, 10:26:24",
+    "recorded-content": {
+      "azs": [
+        "<region>a",
+        "<region>b",
+        "<region>c"
       ]
     }
   }
