@@ -5221,5 +5221,89 @@
         ]
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_of_object_attributes": {
+    "recorded-date": "17-04-2024, 16:25:22",
+    "recorded-content": {
+      "recv-init": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "Records": [
+                {
+                  "eventSource": "aws:s3",
+                  "eventName": "ObjectCreated:Put",
+                  "s3": {
+                    "object": [
+                      [
+                        {
+                          "key": "auto-insurance-2314.xml",
+                          "size": 17
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "eventSource": "aws:s3",
+                  "eventName": "ObjectRemoved:Delete",
+                  "s3": {
+                    "object": {
+                      "key": "home-insurance-2314.xml",
+                      "size": 17
+                    }
+                  }
+                }
+              ]
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          },
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": {
+              "Records": [
+                {
+                  "eventSource": "aws:s3",
+                  "eventTime": "date",
+                  "eventName": "ObjectCreated:Put",
+                  "s3": {
+                    "bucket": {
+                      "name": "<resource:1>",
+                      "arn": "arn:aws:s3:::<resource:1>"
+                    },
+                    "object": {
+                      "key": "auto-insurance-2314.xml",
+                      "size": 17
+                    }
+                  }
+                }
+              ]
+            },
+            "MD5OfBody": "<md5-hash>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ]
+      }
+    }
   }
 }

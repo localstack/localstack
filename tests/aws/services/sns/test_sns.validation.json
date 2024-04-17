@@ -20,6 +20,9 @@
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_attributes": {
     "last_validated_date": "2024-04-02T22:36:24+00:00"
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_of_object_attributes": {
+    "last_validated_date": "2024-04-17T16:25:21+00:00"
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_dot_attribute": {
     "last_validated_date": "2023-11-09T17:50:59+00:00"
   },

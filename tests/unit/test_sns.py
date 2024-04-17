@@ -609,13 +609,33 @@ class TestSns:
                     ({"f1": ["v3", "v4"], "f2": "v5"}, False),
                 ),
             ),
+            (
+                {"f1": {"f2": {"f3": {"f4": ["v1"]}}}},
+                (
+                    ({"f1": {"f2": {"f3": {"f4": "v1"}}}}, True),
+                    ({"f1": [{"f2": {"f3": {"f4": "v1"}}}]}, True),
+                    ({"f1": [{"f2": [{"f3": {"f4": "v1"}}]}]}, True),
+                    ({"f1": [{"f2": [[{"f3": {"f4": "v1"}}]]}]}, True),
+                    ({"f1": [{"f2": [{"f3": {"f4": "v1"}, "f5": {"f6": "v2"}}]}]}, True),
+                    ({"f1": [{"f2": [[{"f3": {"f4": "v2"}}, {"f3": {"f4": "v1"}}]]}]}, True),
+                    ({"f1": [{"f2": {"f3": {"f4": "v2"}}}]}, False),
+                    ({"f1": [{"f2": {"fx": {"f4": "v1"}}}]}, False),
+                    ({"f1": [{"fx": {"f3": {"f4": "v1"}}}]}, False),
+                    ({"fx": [{"f2": {"f3": {"f4": "v1"}}}]}, False),
+                    ({"f1": [{"f2": [{"f3": {"f4": "v2"}, "f5": {"f6": "v3"}}]}]}, False),
+                    ({"f1": [{"f2": [[{"f3": {"f4": "v2"}}, {"f3": {"f4": "v3"}}]]}]}, False),
+                ),
+            ),
         ]
 
         sub_filter = SubscriptionFilter()
         for filter_policy, messages in test_data:
             for message_body, expected in messages:
-                assert expected == sub_filter.check_filter_policy_on_message_body(
-                    filter_policy, message_body=json.dumps(message_body)
+                assert (
+                    sub_filter.check_filter_policy_on_message_body(
+                        filter_policy, message_body=json.dumps(message_body)
+                    )
+                    == expected
                 ), (filter_policy, message_body)
 
     @pytest.mark.parametrize("region", ["us-east-1", "eu-central-1", "us-west-2", "my-region"])
