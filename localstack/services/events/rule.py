@@ -21,6 +21,11 @@ from localstack.aws.api.events import (
 )
 from localstack.services.events.models_v2 import Rule, TargetDict, ValidationException
 
+TARGET_ID_REGEX = re.compile(r"^[\.\-_A-Za-z0-9]+$")
+TARGET_ARN_REGEX = re.compile(r"arn:[\d\w:\-/]*")
+RULE_SCHEDULE_CRON_REGEX = re.compile(r"^cron\(.*\)")
+RULE_SCHEDULE_RATE_REGEX = re.compile(r"^rate\(\d*\s(minute|minutes|hour|hours|day|days)\)")
+
 
 class RuleService:
     def __init__(
@@ -109,12 +114,10 @@ class RuleService:
 
     def validate_targets_input(self, targets: TargetList) -> PutTargetsResultEntryList:
         validation_errors = []
-        id_regex = re.compile(r"^[\.\-_A-Za-z0-9]+$")
-        arn_regex = re.compile(r"arn:[\d\w:\-/]*")
         for index, target in enumerate(targets):
             id = target.get("Id")
             arn = target.get("Arn", "")
-            if not id_regex.match(id):
+            if not TARGET_ID_REGEX.match(id):
                 validation_errors.append(
                     {
                         "TargetId": id,
@@ -132,7 +135,7 @@ class RuleService:
                     }
                 )
 
-            if not arn_regex.match(arn):
+            if not TARGET_ARN_REGEX.match(arn):
                 validation_errors.append(
                     {
                         "TargetId": id,
@@ -158,9 +161,6 @@ class RuleService:
         schedule_expression: Optional[ScheduleExpression],
         event_bus_name: Optional[EventBusName] = "default",
     ) -> None:
-        cron_regex = re.compile(r"^cron\(.*\)")
-        rate_regex = re.compile(r"^rate\(\d*\s(minute|minutes|hour|hours|day|days)\)")
-
         if not event_pattern and not schedule_expression:
             raise ValidationException(
                 "Parameter(s) EventPattern or ScheduleExpression must be specified."
@@ -171,7 +171,10 @@ class RuleService:
                 raise ValidationException(
                     "ScheduleExpression is supported only on the default event bus."
                 )
-            if not (cron_regex.match(schedule_expression) or rate_regex.match(schedule_expression)):
+            if not (
+                RULE_SCHEDULE_CRON_REGEX.match(schedule_expression)
+                or RULE_SCHEDULE_RATE_REGEX.match(schedule_expression)
+            ):
                 raise ValidationException("Parameter ScheduleExpression is not valid.")
 
     def _check_target_limit_reached(self) -> bool:
