@@ -76,6 +76,7 @@ from localstack.aws.api.kms import (
     ListResourceTagsResponse,
     MacAlgorithmSpec,
     MarkerType,
+    MultiRegionKey,
     NotFoundException,
     NullableBooleanType,
     PlaintextType,
@@ -465,26 +466,37 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def replicate_key(
         self, context: RequestContext, request: ReplicateKeyRequest
     ) -> ReplicateKeyResponse:
-        key = self._get_kms_key(context.account_id, context.region, request.get("KeyId"))
+        account_id = context.account_id
+        key = self._get_kms_key(account_id, context.region, request.get("KeyId"))
         key_id = key.metadata.get("KeyId")
         if not key.metadata.get("MultiRegion"):
             raise UnsupportedOperationException(
                 f"Unable to replicate a non-MultiRegion key {key_id}"
             )
         replica_region = request.get("ReplicaRegion")
-        replicate_to_store = kms_stores[context.account_id][replica_region]
+        replicate_to_store = kms_stores[account_id][replica_region]
         if key_id in replicate_to_store.keys:
             raise AlreadyExistsException(
                 f"Unable to replicate key {key_id} to region {replica_region}, as the key "
                 f"already exist there"
             )
         replica_key = copy.deepcopy(key)
-        replica_key.metadata["Description"] = request.get("Description", "")
-        # Multiregion keys have the same key ID for all replicas, but ARNs differ, as they include actual regions of
-        # replicas.
-        replica_key.calculate_and_set_arn(context.account_id, replica_region)
+        replica_key.replicate_metadata(request, account_id, replica_region)
         replicate_to_store.keys[key_id] = replica_key
+
+        self.update_primary_key_with_replica_keys(key, replica_key, replica_region)
+
         return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key.metadata)
+
+    @staticmethod
+    # Adds new multi region replica key to the primary key's metadata.
+    def update_primary_key_with_replica_keys(key: KmsKey, replica_key: KmsKey, region: str):
+        key.metadata["MultiRegionConfiguration"]["ReplicaKeys"].append(
+            MultiRegionKey(
+                Arn=replica_key.metadata["Arn"],
+                Region=region,
+            )
+        )
 
     @handler("UpdateKeyDescription", expand=False)
     def update_key_description(

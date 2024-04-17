@@ -3,7 +3,7 @@ from localstack.aws import handlers
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.metric_handler import MetricHandler
-from localstack.aws.handlers.service_plugin import ServiceLoader
+from localstack.aws.handlers.service_plugin import ServiceLoader, ServiceLoaderForDataPlane
 from localstack.aws.trace import TracingHandlerChain
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceManager, ServicePluginManager
 from localstack.utils.ssl import create_ssl_cert, install_predefined_cert_if_available
@@ -22,6 +22,7 @@ class LocalstackAwsGateway(Gateway):
         self.service_request_router = ServiceRequestRouter()
         # lazy-loads services into the router
         load_service = ServiceLoader(self.service_manager, self.service_request_router)
+        load_service_for_data_plane = ServiceLoaderForDataPlane(load_service)
 
         metric_collector = MetricHandler()
         # the main request handler chain
@@ -31,6 +32,7 @@ class LocalstackAwsGateway(Gateway):
                 handlers.add_internal_request_params,
                 handlers.handle_runtime_shutdown,
                 metric_collector.create_metric_handler_item,
+                load_service_for_data_plane,
                 handlers.preprocess_request,
                 handlers.parse_service_name,  # enforce_cors and content_decoder depend on the service name
                 handlers.enforce_cors,

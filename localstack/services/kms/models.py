@@ -33,7 +33,11 @@ from localstack.aws.api.kms import (
     KMSInvalidSignatureException,
     MacAlgorithmSpec,
     MessageType,
+    MultiRegionConfiguration,
+    MultiRegionKey,
+    MultiRegionKeyType,
     OriginType,
+    ReplicateKeyRequest,
     SigningAlgorithmSpec,
     UnsupportedOperationException,
 )
@@ -342,6 +346,34 @@ class KmsKey:
             # AWS itself raises this exception without any additional message.
             raise KMSInvalidSignatureException()
 
+    # This method gets called when a key is replicated to another region. It's meant to populate the required metadata
+    # fields in a new replica key.
+    def replicate_metadata(
+        self, replicate_key_request: ReplicateKeyRequest, account_id: str, replica_region: str
+    ) -> None:
+        self.metadata["Description"] = replicate_key_request.get("Description") or ""
+        primary_key_arn = self.metadata["Arn"]
+        # Multi region keys have the same key ID for all replicas, but ARNs differ, as they include actual regions of
+        # replicas.
+        self.calculate_and_set_arn(account_id, replica_region)
+
+        current_replica_keys = self.metadata.get("MultiRegionConfiguration", {}).get(
+            "ReplicaKeys", []
+        )
+        current_replica_keys.append(MultiRegionKey(Arn=self.metadata["Arn"], Region=replica_region))
+        primary_key_region = (
+            self.metadata.get("MultiRegionConfiguration", {}).get("PrimaryKey", {}).get("Region")
+        )
+
+        self.metadata["MultiRegionConfiguration"] = MultiRegionConfiguration(
+            MultiRegionKeyType=MultiRegionKeyType.REPLICA,
+            PrimaryKey=MultiRegionKey(
+                Arn=primary_key_arn,
+                Region=primary_key_region,
+            ),
+            ReplicaKeys=current_replica_keys,
+        )
+
     def _get_hmac_context(self, mac_algorithm: MacAlgorithmSpec) -> hmac.HMAC:
         if mac_algorithm == "HMAC_SHA_224":
             h = hmac.HMAC(self.crypto_key.key_material, hashes.SHA224())
@@ -467,6 +499,13 @@ class KmsKey:
             self.metadata.get("KeyUsage"), self.metadata.get("KeySpec")
         )
         self._populate_mac_algorithms(self.metadata.get("KeyUsage"), self.metadata.get("KeySpec"))
+
+        if self.metadata["MultiRegion"]:
+            self.metadata["MultiRegionConfiguration"] = MultiRegionConfiguration(
+                MultiRegionKeyType=MultiRegionKeyType.PRIMARY,
+                PrimaryKey=MultiRegionKey(Arn=self.metadata["Arn"], Region=region),
+                ReplicaKeys=[],
+            )
 
     def add_tags(self, tags: List) -> None:
         # Just in case we get None from somewhere.
