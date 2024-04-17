@@ -1,5 +1,6 @@
 import base64
 import contextlib
+import copy
 import json
 import logging
 import queue
@@ -2801,6 +2802,35 @@ class TestSNSSubscriptionSES:
 
 
 class TestSNSFilter:
+    @pytest.fixture
+    def sns_create_sqs_subscription_with_filter_policy(
+        self, sns_create_sqs_subscription, aws_client
+    ):
+        def _inner(topic_arn: str, queue_url: str, filter_scope: str, filter_policy: dict):
+            subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+            subscription_arn = subscription["SubscriptionArn"]
+
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="FilterPolicyScope",
+                AttributeValue=filter_scope,
+            )
+
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="FilterPolicy",
+                AttributeValue=json.dumps(filter_policy),
+            )
+
+            aws_client.sns.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="RawMessageDelivery",
+                AttributeValue="true",
+            )
+            return subscription_arn
+
+        yield _inner
+
     @markers.aws.validated
     def test_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
@@ -3045,18 +3075,21 @@ class TestSNSFilter:
 
     @markers.aws.validated
     def test_exists_filter_policy_attributes_array(
-        self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription_with_filter_policy,
+        snapshot,
+        aws_client,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url = sqs_create_queue()
-        subscription = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
-        subscription_arn = subscription["SubscriptionArn"]
-
         filter_policy = {"store": ["value1"]}
-        aws_client.sns.set_subscription_attributes(
-            SubscriptionArn=subscription_arn,
-            AttributeName="FilterPolicy",
-            AttributeValue=json.dumps(filter_policy),
+        subscription_arn = sns_create_sqs_subscription_with_filter_policy(
+            topic_arn=topic_arn,
+            queue_url=queue_url,
+            filter_scope="MessageAttributes",
+            filter_policy=filter_policy,
         )
 
         response_attributes = aws_client.sns.get_subscription_attributes(
@@ -3618,51 +3651,31 @@ class TestSNSFilter:
         self,
         sqs_create_queue,
         sns_create_topic,
-        sns_create_sqs_subscription,
+        sns_create_sqs_subscription_with_filter_policy,
         snapshot,
         aws_client,
     ):
         topic_arn = sns_create_topic()["TopicArn"]
         queue_url_1 = sqs_create_queue()
         queue_url_2 = sqs_create_queue()
-        subscription_1 = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url_1)
-        subscription_2 = sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url_2)
-        subscription_arn_1 = subscription_1["SubscriptionArn"]
-        subscription_arn_2 = subscription_2["SubscriptionArn"]
 
         filter_policy_1 = {"headers": {"route-to": ["queue1"]}}
+        sns_create_sqs_subscription_with_filter_policy(
+            topic_arn=topic_arn,
+            queue_url=queue_url_1,
+            filter_scope="MessageBody",
+            filter_policy=filter_policy_1,
+        )
+
         filter_policy_2 = {"headers": {"route-to": ["queue2"]}}
-        for sub_arn, filter_policy in (
-            (subscription_arn_1, filter_policy_1),
-            (subscription_arn_2, filter_policy_2),
-        ):
-            aws_client.sns.set_subscription_attributes(
-                SubscriptionArn=sub_arn,
-                AttributeName="FilterPolicyScope",
-                AttributeValue="MessageBody",
-            )
-
-            aws_client.sns.set_subscription_attributes(
-                SubscriptionArn=sub_arn,
-                AttributeName="FilterPolicy",
-                AttributeValue=json.dumps(filter_policy),
-            )
-
-            aws_client.sns.set_subscription_attributes(
-                SubscriptionArn=sub_arn,
-                AttributeName="RawMessageDelivery",
-                AttributeValue="true",
-            )
+        sns_create_sqs_subscription_with_filter_policy(
+            topic_arn=topic_arn,
+            queue_url=queue_url_2,
+            filter_scope="MessageBody",
+            filter_policy=filter_policy_2,
+        )
 
         queues = [queue_url_1, queue_url_2]
-
-        for i, queue_url in enumerate(queues):
-            response = aws_client.sqs.receive_message(
-                QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
-            )
-            snapshot.match(f"recv-init-{i}", response)
-            # assert there are no messages in the queue
-            assert "Messages" not in response or response["Messages"] == []
 
         # publish messages that satisfies the filter policy, assert that messages are received
         messages = [
@@ -3706,6 +3719,135 @@ class TestSNSFilter:
             # we need to sort the list (the order does not matter as we're not using FIFO)
             recv_messages.sort(key=itemgetter("Body"))
             snapshot.match(f"messages-queue-{i}", {"Messages": recv_messages})
+
+    @markers.aws.validated
+    def test_filter_policy_on_message_body_array_of_object_attributes(
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription_with_filter_policy,
+        snapshot,
+        aws_client,
+    ):
+        # example from https://aws.amazon.com/blogs/compute/introducing-payload-based-message-filtering-for-amazon-sns/
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+        # complex filter policy with different level of nesting
+        filter_policy = {
+            "Records": {
+                "s3": {"object": {"key": [{"prefix": "auto-"}]}},
+                "eventName": [{"prefix": "ObjectCreated:"}],
+            }
+        }
+
+        sns_create_sqs_subscription_with_filter_policy(
+            topic_arn=topic_arn,
+            queue_url=queue_url,
+            filter_scope="MessageBody",
+            filter_policy=filter_policy,
+        )
+
+        # stripped down events
+        s3_event_auto_insurance_created = {
+            "Records": [
+                {
+                    "eventSource": "aws:s3",
+                    "eventTime": "2022-11-21T03:41:29.743Z",
+                    "eventName": "ObjectCreated:Put",
+                    "s3": {
+                        "bucket": {
+                            "name": "insurance-bucket-demo",
+                            "arn": "arn:aws:s3:::insurance-bucket-demo",
+                        },
+                        "object": {
+                            "key": "auto-insurance-2314.xml",
+                            "size": 17,
+                        },
+                    },
+                }
+            ]
+        }
+        # copy the object to modify it
+        s3_event_auto_insurance_removed = copy.deepcopy(s3_event_auto_insurance_created)
+        s3_event_auto_insurance_removed["Records"][0]["eventName"] = "ObjectRemoved:Delete"
+
+        # copy the object to modify it
+        s3_event_home_insurance_created = copy.deepcopy(s3_event_auto_insurance_created)
+        s3_event_home_insurance_created["Records"][0]["s3"]["object"]["key"] = (
+            "home-insurance-2314.xml"
+        )
+
+        # stripped down events
+        s3_event_multiple_records = {
+            "Records": [
+                {
+                    "eventSource": "aws:s3",
+                    "eventName": "ObjectCreated:Put",
+                    "s3": {
+                        # this object is a list of list of dict, and it works in AWS
+                        "object": [
+                            [
+                                {
+                                    "key": "auto-insurance-2314.xml",
+                                    "size": 17,
+                                }
+                            ]
+                        ],
+                    },
+                },
+                {
+                    "eventSource": "aws:s3",
+                    "eventName": "ObjectRemoved:Delete",
+                    "s3": {
+                        "object": {
+                            "key": "home-insurance-2314.xml",
+                            "size": 17,
+                        }
+                    },
+                },
+            ]
+        }
+
+        messages = [
+            s3_event_multiple_records,
+            s3_event_auto_insurance_removed,
+            s3_event_home_insurance_created,
+            s3_event_auto_insurance_created,
+        ]
+        for i, message in enumerate(messages):
+            aws_client.sns.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
+
+        def get_messages(_queue_url: str, _received_messages: list):
+            # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
+            sqs_response = aws_client.sqs.receive_message(
+                QueueUrl=_queue_url,
+                WaitTimeSeconds=1,
+                VisibilityTimeout=0,
+                MessageAttributeNames=["All"],
+                AttributeNames=["All"],
+            )
+            for _message in sqs_response["Messages"]:
+                _received_messages.append(_message)
+                aws_client.sqs.delete_message(
+                    QueueUrl=_queue_url, ReceiptHandle=_message["ReceiptHandle"]
+                )
+
+            assert len(_received_messages) == 2
+
+        received_messages = []
+        retry(
+            get_messages,
+            retries=10,
+            sleep=0.1,
+            _queue_url=queue_url,
+            _received_messages=received_messages,
+        )
+        # we need to sort the list (the order does not matter as we're not using FIFO)
+        received_messages.sort(key=itemgetter("Body"))
+        snapshot.match("messages", {"Messages": received_messages})
 
 
 class TestSNSPlatformEndpoint:
