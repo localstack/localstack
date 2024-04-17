@@ -1,5 +1,6 @@
 import base64
 import contextlib
+import copy
 import json
 import logging
 import queue
@@ -3676,14 +3677,6 @@ class TestSNSFilter:
 
         queues = [queue_url_1, queue_url_2]
 
-        for i, queue_url in enumerate(queues):
-            response = aws_client.sqs.receive_message(
-                QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
-            )
-            snapshot.match(f"recv-init-{i}", response)
-            # assert there are no messages in the queue
-            assert "Messages" not in response or response["Messages"] == []
-
         # publish messages that satisfies the filter policy, assert that messages are received
         messages = [
             {"headers": {"route-to": ["queue3"]}},
@@ -3754,13 +3747,6 @@ class TestSNSFilter:
             filter_policy=filter_policy,
         )
 
-        response = aws_client.sqs.receive_message(
-            QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
-        )
-        snapshot.match("recv-init", response)
-        # assert there are no messages in the queue
-        assert "Messages" not in response or response["Messages"] == []
-
         # stripped down events
         s3_event_auto_insurance_created = {
             "Records": [
@@ -3782,11 +3768,11 @@ class TestSNSFilter:
             ]
         }
         # copy the object to modify it
-        s3_event_auto_insurance_removed = json.loads(json.dumps(s3_event_auto_insurance_created))
+        s3_event_auto_insurance_removed = copy.deepcopy(s3_event_auto_insurance_created)
         s3_event_auto_insurance_removed["Records"][0]["eventName"] = "ObjectRemoved:Delete"
 
         # copy the object to modify it
-        s3_event_home_insurance_created = json.loads(json.dumps(s3_event_auto_insurance_created))
+        s3_event_home_insurance_created = copy.deepcopy(s3_event_auto_insurance_created)
         s3_event_home_insurance_created["Records"][0]["s3"]["object"]["key"] = (
             "home-insurance-2314.xml"
         )
@@ -3834,7 +3820,7 @@ class TestSNSFilter:
                 Message=json.dumps(message),
             )
 
-        def get_messages(_queue_url: str, _recv_messages: list):
+        def get_messages(_queue_url: str, _received_messages: list):
             # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
             sqs_response = aws_client.sqs.receive_message(
                 QueueUrl=_queue_url,
@@ -3844,24 +3830,24 @@ class TestSNSFilter:
                 AttributeNames=["All"],
             )
             for _message in sqs_response["Messages"]:
-                _recv_messages.append(_message)
+                _received_messages.append(_message)
                 aws_client.sqs.delete_message(
                     QueueUrl=_queue_url, ReceiptHandle=_message["ReceiptHandle"]
                 )
 
-            assert len(_recv_messages) == 2
+            assert len(_received_messages) == 2
 
-        recv_messages = []
+        received_messages = []
         retry(
             get_messages,
             retries=10,
             sleep=0.1,
             _queue_url=queue_url,
-            _recv_messages=recv_messages,
+            _received_messages=received_messages,
         )
         # we need to sort the list (the order does not matter as we're not using FIFO)
-        recv_messages.sort(key=itemgetter("Body"))
-        snapshot.match("messages", {"Messages": recv_messages})
+        received_messages.sort(key=itemgetter("Body"))
+        snapshot.match("messages", {"Messages": received_messages})
 
 
 class TestSNSPlatformEndpoint:

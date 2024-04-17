@@ -5092,20 +5092,8 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_attributes": {
-    "recorded-date": "02-04-2024, 22:36:25",
+    "recorded-date": "17-04-2024, 21:33:10",
     "recorded-content": {
-      "recv-init-0": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "recv-init-1": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "messages-queue-0": {
         "Messages": [
           {
@@ -5191,14 +5179,8 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_of_object_attributes": {
-    "recorded-date": "17-04-2024, 16:25:22",
+    "recorded-date": "17-04-2024, 21:32:41",
     "recorded-content": {
-      "recv-init": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "messages": {
         "Messages": [
           {

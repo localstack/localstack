@@ -1247,11 +1247,11 @@ class SubscriptionFilter:
 
         def _traverse(_policy: dict, parent_key=None):
             for key, values in _policy.items():
-                pkey = key if not parent_key else f"{parent_key}.{key}"
+                flattened_parent_key = key if not parent_key else f"{parent_key}.{key}"
                 if not isinstance(values, dict):
-                    flatten[pkey] = values
+                    flatten[flattened_parent_key] = values
                 else:
-                    _traverse(values, parent_key=pkey)
+                    _traverse(values, parent_key=flattened_parent_key)
 
         _traverse(nested_dict)
         return flatten
@@ -1289,8 +1289,8 @@ class SubscriptionFilter:
         def _traverse(_object, parent_key=None):
             if isinstance(_object, dict):
                 for key, values in _object.items():
-                    pkey = key if not parent_key else f"{parent_key}.{key}"
-                    _traverse(values, pkey)
+                    flattened_parent_key = key if not parent_key else f"{parent_key}.{key}"
+                    _traverse(values, flattened_parent_key)
 
             # we don't have to worry about `parent_key` being None for list or any other type, because we have a check
             # that the first object is always a dict, thus setting a parent key on first iteration
