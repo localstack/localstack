@@ -145,7 +145,8 @@ ARG TARGETARCH
 RUN --mount=type=cache,target=/var/cache/apt \
     apt-get update && \
         # Install dependencies to add additional repos
-        apt-get install -y gcc
+        # g++ is a workaround to fix the JPype1 compile error on ARM Linux "gcc: fatal error: cannot execute ‘cc1plus’"
+        apt-get install -y gcc g++
 
 # upgrade python build tools
 RUN --mount=type=cache,target=/root/.cache \

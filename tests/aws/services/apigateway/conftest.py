@@ -1,6 +1,8 @@
 import pytest
+from botocore.config import Config
 
 from localstack.constants import APPLICATION_JSON
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
 from tests.aws.services.apigateway.apigateway_fixtures import (
     create_rest_api_deployment,
@@ -198,18 +200,32 @@ def apigw_redeploy_api(aws_client):
 
 
 @pytest.fixture
-def import_apigw(aws_client):
+def import_apigw(aws_client, aws_client_factory):
     rest_api_ids = []
 
+    if is_aws_cloud():
+        client_config = (
+            Config(
+                # Api gateway can throttle requests pretty heavily. Leading to potentially undeleted apis
+                retries={"max_attempts": 10, "mode": "adaptive"}
+            )
+            if is_aws_cloud()
+            else None
+        )
+
+        apigateway_client = aws_client_factory(config=client_config).apigateway
+    else:
+        apigateway_client = aws_client.apigateway
+
     def _import_apigateway_function(*args, **kwargs):
-        response, root_id = import_rest_api(aws_client.apigateway, **kwargs)
+        response, root_id = import_rest_api(apigateway_client, **kwargs)
         rest_api_ids.append(response.get("id"))
         return response, root_id
 
     yield _import_apigateway_function
 
     for rest_api_id in rest_api_ids:
-        delete_rest_api(aws_client.apigateway, restApiId=rest_api_id)
+        delete_rest_api(apigateway_client, restApiId=rest_api_id)
 
 
 @pytest.fixture

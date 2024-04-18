@@ -272,7 +272,6 @@ class TestApiGatewayImportRestApi:
             "$.resources.items..resourceMethods.GET",  # TODO: this is really weird, after importing, AWS returns them empty?
             "$.resources.items..resourceMethods.OPTIONS",
             "$.resources.items..resourceMethods.POST",
-            "$..rootResourceId",
             "$.get-authorizers.items[1].authorizerResultTtlInSeconds",
         ]
     )
@@ -470,6 +469,7 @@ class TestApiGatewayImportRestApi:
             "$..cacheNamespace",  # TODO: investigate why it's different
             "$.get-resources-oas30-srv-url.items..id",  # TODO: even in overwrite, APIGW keeps the same ID if same path
             "$.get-resources-oas30-srv-url.items..parentId",  # TODO: even in overwrite, APIGW keeps the same ID if same path
+            "$.put-rest-api-oas30-srv-url..rootResourceId",  # TODO: because APIGW keeps the same above, id counting is different
         ]
     )
     def test_import_rest_api_with_base_path_oas30(
@@ -652,7 +652,6 @@ class TestApiGatewayImportRestApi:
         paths=[
             "$.resources.items..resourceMethods.POST",
             # TODO: this is really weird, after importing, AWS returns them empty?
-            "$..rootResourceId",  # TODO: newly added
         ]
     )
     @markers.aws.validated

@@ -398,7 +398,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_sqs_failure_in_wait_for_task_tok": {
-    "recorded-date": "29-05-2023, 11:21:47",
+    "recorded-date": "18-04-2024, 06:27:04",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -467,27 +467,31 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "e4abda1911cb5527bdde8f990de60801",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": [
-                      "Mon, 29 May 2023 09:21:46 GMT"
+                      "Thu, 18 Apr 2024 06:27:01 GMT"
                     ],
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
-                    "Date": "Mon, 29 May 2023 09:21:46 GMT",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "Thu, 18 Apr 2024 06:27:01 GMT",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
                   "HttpStatusCode": 200

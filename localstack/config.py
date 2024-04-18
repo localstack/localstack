@@ -762,6 +762,11 @@ if not DOCKER_BRIDGE_IP:
 # get-function call.
 INTERNAL_RESOURCE_ACCOUNT = os.environ.get("INTERNAL_RESOURCE_ACCOUNT") or "949334387222"
 
+# Determine which implementation to use for the event rule / event filtering engine used by multiple services:
+# EventBridge, EventBridge Pipes, Lambda Event Source Mapping, SNS
+# Options: provider (default) | java
+EVENT_RULE_ENGINE = os.environ.get("EVENT_RULE_ENGINE", "").strip()
+
 # -----
 # SERVICE-SPECIFIC CONFIGS BELOW
 # -----
@@ -1129,6 +1134,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
     "ENABLE_CONFIG_UPDATES",
+    "EVENT_RULE_ENGINE",
     "EXTRA_CORS_ALLOWED_HEADERS",
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "EXTRA_CORS_EXPOSE_HEADERS",

@@ -156,6 +156,7 @@ class TransformerUtility:
             TransformerUtility.key_value("id"),
             TransformerUtility.key_value("name"),
             TransformerUtility.key_value("parentId"),
+            TransformerUtility.key_value("rootResourceId"),
         ]
 
     @staticmethod
@@ -626,6 +627,15 @@ class TransformerUtility:
         return [
             RegexTransformer(arn_parts[0], f"<MapRunArnPart0_{index}idx>"),
             RegexTransformer(arn_parts[1], f"<MapRunArnPart1_{index}idx>"),
+        ]
+
+    @staticmethod
+    def sfn_sqs_integration():
+        return [
+            *TransformerUtility.sqs_api(),
+            # Transform MD5OfMessageBody value bindings as in StepFunctions these are not deterministic
+            # about the input message.
+            TransformerUtility.key_value("MD5OfMessageBody"),
         ]
 
     @staticmethod

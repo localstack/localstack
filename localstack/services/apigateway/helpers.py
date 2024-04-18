@@ -937,9 +937,6 @@ def import_api_from_openapi_spec(
     # rest_api.name = resolved_schema.get("info", {}).get("title")
     rest_api.description = resolved_schema.get("info", {}).get("description")
 
-    # Remove default root, then add paths from API spec
-    # TODO: the default mode is now `merge`, not `overwrite` if using `PutRestApi`
-    rest_api.resources = {}
     # authorizers map to avoid duplication
     authorizers = {}
 
@@ -1355,7 +1352,14 @@ def import_api_from_openapi_spec(
         base_path = base_path.strip("/").partition("/")[-1]
         base_path = f"/{base_path}" if base_path else ""
 
-    for path in resolved_schema.get("paths", {}):
+    api_paths = resolved_schema.get("paths", {})
+    if api_paths:
+        # Remove default root, then add paths from API spec
+        # TODO: the default mode is now `merge`, not `overwrite` if using `PutRestApi`
+        # TODO: quick hack for now, but do not remove the rootResource if the OpenAPI file is empty
+        rest_api.resources = {}
+
+    for path in api_paths:
         get_or_create_path(base_path + path, base_path=base_path)
 
     # binary types

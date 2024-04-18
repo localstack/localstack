@@ -1,0 +1,83 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_CHOICE_STATE]": {
+    "last_validated_date": "2024-04-12T20:48:24+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_FAIL_STATE]": {
+    "last_validated_date": "2024-04-12T20:47:56+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:47:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_RESULT_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:47:19+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[BASE_SUCCEED_STATE]": {
+    "last_validated_date": "2024-04-12T20:48:10+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[IO_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:47:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_debug[IO_RESULT_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:47:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_CHOICE_STATE]": {
+    "last_validated_date": "2024-04-12T20:46:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_FAIL_STATE]": {
+    "last_validated_date": "2024-04-12T20:46:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:45:35+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_RESULT_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:45:49+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[BASE_SUCCEED_STATE]": {
+    "last_validated_date": "2024-04-12T20:46:41+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[IO_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:46:03+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_info[IO_RESULT_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:46:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_CHOICE_STATE]": {
+    "last_validated_date": "2024-04-12T20:49:57+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_FAIL_STATE]": {
+    "last_validated_date": "2024-04-12T20:49:31+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:48:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_RESULT_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:48:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[BASE_SUCCEED_STATE]": {
+    "last_validated_date": "2024-04-12T20:49:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[IO_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:49:03+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_inspection_level_trace[IO_RESULT_PASS_STATE]": {
+    "last_validated_date": "2024-04-12T20:49:22+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[DEBUG]": {
+    "last_validated_date": "2024-04-12T20:51:22+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[INFO]": {
+    "last_validated_date": "2024-04-12T20:51:07+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_service_task_state[TRACE]": {
+    "last_validated_date": "2024-04-12T20:51:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[DEBUG]": {
+    "last_validated_date": "2024-04-12T20:50:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[INFO]": {
+    "last_validated_date": "2024-04-12T20:50:22+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_scenarios.py::TestStateCaseScenarios::test_base_lambda_task_state[TRACE]": {
+    "last_validated_date": "2024-04-12T20:50:52+00:00"
+  }
+}

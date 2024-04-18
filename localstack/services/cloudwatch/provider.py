@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+from typing import Any, Optional
 from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
@@ -103,48 +104,48 @@ def update_state(target, self, reason, reason_data, state_value):
 def put_metric_alarm(
     target,
     self,
-    name,
-    namespace,
-    metric_name,
-    metric_data_queries,
-    comparison_operator,
-    evaluation_periods,
-    datapoints_to_alarm,
-    period,
-    threshold,
-    statistic,
-    extended_statistic,
-    description,
-    dimensions,
-    alarm_actions,
-    ok_actions,
-    insufficient_data_actions,
-    unit,
-    actions_enabled,
-    treat_missing_data,
-    evaluate_low_sample_count_percentile,
-    threshold_metric_id,
-    rule=None,
-    tags=None,
-):
+    name: str,
+    namespace: str,
+    metric_name: str,
+    comparison_operator: str,
+    evaluation_periods: int,
+    period: int,
+    threshold: float,
+    statistic: str,
+    description: str,
+    dimensions: list[dict[str, str]],
+    alarm_actions: list[str],
+    metric_data_queries: Optional[list[Any]] = None,
+    datapoints_to_alarm: Optional[int] = None,
+    extended_statistic: Optional[str] = None,
+    ok_actions: Optional[list[str]] = None,
+    insufficient_data_actions: Optional[list[str]] = None,
+    unit: Optional[str] = None,
+    actions_enabled: bool = True,
+    treat_missing_data: Optional[str] = None,
+    evaluate_low_sample_count_percentile: Optional[str] = None,
+    threshold_metric_id: Optional[str] = None,
+    rule: Optional[str] = None,
+    tags: Optional[list[dict[str, str]]] = None,
+) -> FakeAlarm:
     if description:
         description = escape(description)
-    target(
+    return target(
         self,
         name,
         namespace,
         metric_name,
-        metric_data_queries,
         comparison_operator,
         evaluation_periods,
-        datapoints_to_alarm,
         period,
         threshold,
         statistic,
-        extended_statistic,
         description,
         dimensions,
         alarm_actions,
+        metric_data_queries,
+        datapoints_to_alarm,
+        extended_statistic,
         ok_actions,
         insufficient_data_actions,
         unit,
@@ -276,6 +277,8 @@ def _set_alarm_actions(context, alarm_names, enabled):
 
 
 def _cleanup_describe_output(alarm):
+    if "Metrics" in alarm and len(alarm["Metrics"]) == 0:
+        alarm.pop("Metrics")
     reason_data = alarm.get("StateReasonData")
     if reason_data is not None and reason_data in ("{}", ""):
         alarm.pop("StateReasonData")

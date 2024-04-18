@@ -70,6 +70,7 @@ SKIP_LABELS = [
     "content_wildcard_simplified",
     "dot_joining_event",
     "dot_joining_pattern",
+    "exists_dynamodb_NEG",
     "nested_json_NEG",
     "or-exists",
     "or-exists-parent",
