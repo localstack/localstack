@@ -414,5 +414,21 @@
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[list_within_dict]": {
     "recorded-date": "08-04-2024, 19:33:54",
     "recorded-content": {}
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[exists_false_dynamodb_NEG]": {
+    "recorded-date": "09-04-2024, 16:47:27",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[exists_false_dynamodb]": {
+    "recorded-date": "09-04-2024, 16:21:59",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[exists_dynamodb]": {
+    "recorded-date": "09-04-2024, 16:51:30",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[exists_dynamodb_NEG]": {
+    "recorded-date": "09-04-2024, 16:51:59",
+    "recorded-content": {}
   }
 }

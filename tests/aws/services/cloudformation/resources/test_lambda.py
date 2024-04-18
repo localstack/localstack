@@ -569,6 +569,8 @@ class TestCfnLambdaIntegrations:
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
             aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
+    # TODO: consider moving into the dedicated DynamoDB => Lambda tests
+    #  tests.aws.services.lambda_.test_lambda_integration_dynamodbstreams.TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
     @markers.aws.validated
     def test_lambda_dynamodb_event_filter(
         self, dynamodb_wait_for_table_active, deploy_cfn_template, aws_client

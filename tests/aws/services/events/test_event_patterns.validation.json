@@ -173,6 +173,18 @@
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[dynamodb]": {
     "last_validated_date": "2024-04-08T19:33:59+00:00"
   },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[exists_dynamodb]": {
+    "last_validated_date": "2024-04-09T16:51:30+00:00"
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[exists_dynamodb_NEG]": {
+    "last_validated_date": "2024-04-09T16:51:59+00:00"
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[exists_false_dynamodb]": {
+    "last_validated_date": "2024-04-09T16:21:59+00:00"
+  },
+  "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[exists_false_dynamodb_NEG]": {
+    "last_validated_date": "2024-04-09T16:47:27+00:00"
+  },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[int_nolist_EXC]": {
     "last_validated_date": "2024-04-08T19:33:55+00:00"
   },

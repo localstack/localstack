@@ -50,9 +50,6 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
     def _create_lambda_event_payload(self, stream_arn, records, shard_id=None):
         record_payloads = []
         for record in records:
-            creation_time = record.get("dynamodb", {}).get("ApproximateCreationDateTime", None)
-            if creation_time is not None:
-                record["dynamodb"]["ApproximateCreationDateTime"] = creation_time.timestamp()
             record_payloads.append(
                 {
                     "eventID": record["eventID"],
@@ -76,3 +73,14 @@ class DynamoDBEventSourceListener(StreamEventSourceListener):
             last_record.get("ApproximateArrivalTimestamp", datetime.datetime.utcnow()).isoformat()
             + "Z",
         )
+
+    def _transform_records(self, raw_records: list[dict]) -> list[dict]:
+        """Convert dynamodb.ApproximateCreationDateTime datetime to float"""
+        records_new = []
+        for record in raw_records:
+            record_new = record.copy()
+            if creation_time := record.get("dynamodb", {}).get("ApproximateCreationDateTime"):
+                # convert datetime object to float timestamp
+                record_new["dynamodb"]["ApproximateCreationDateTime"] = creation_time.timestamp()
+            records_new.append(record_new)
+        return records_new
