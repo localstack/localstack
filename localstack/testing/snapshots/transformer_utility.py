@@ -630,6 +630,15 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def sfn_sqs_integration():
+        return [
+            *TransformerUtility.sqs_api(),
+            # Transform MD5OfMessageBody value bindings as in StepFunctions these are not deterministic
+            # about the input message.
+            TransformerUtility.key_value("MD5OfMessageBody"),
+        ]
+
+    @staticmethod
     def stepfunctions_api():
         return [
             JsonpathTransformer(

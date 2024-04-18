@@ -19,7 +19,6 @@ from tests.aws.services.stepfunctions.utils import create_and_record_execution
     ]
 )
 class TestHeartbeats:
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.validated
     def test_heartbeat_timeout(
         self,
@@ -30,7 +29,7 @@ class TestHeartbeats:
         sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -58,7 +57,6 @@ class TestHeartbeats:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.validated
     def test_heartbeat_path_timeout(
         self,
@@ -69,7 +67,7 @@ class TestHeartbeats:
         sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -101,7 +99,6 @@ class TestHeartbeats:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.validated
     def test_heartbeat_no_timeout(
         self,
@@ -112,7 +109,7 @@ class TestHeartbeats:
         sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
