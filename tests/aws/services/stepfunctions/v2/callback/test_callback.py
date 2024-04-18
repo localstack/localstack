@@ -64,7 +64,7 @@ class TestCallback:
         sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -104,7 +104,7 @@ class TestCallback:
         sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -142,7 +142,7 @@ class TestCallback:
         sqs_send_task_failure_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -182,7 +182,7 @@ class TestCallback:
         sqs_send_heartbeat_and_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -232,7 +232,7 @@ class TestCallback:
                 replace_reference=True,
             )
         )
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sns_api())
 
         topic_info = sns_create_topic()
@@ -505,7 +505,7 @@ class TestCallback:
         sqs_create_queue,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -552,7 +552,7 @@ class TestCallback:
         sqs_create_queue,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",

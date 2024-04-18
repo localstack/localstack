@@ -29,7 +29,7 @@ class TestHeartbeats:
         sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -67,7 +67,7 @@ class TestHeartbeats:
         sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -109,7 +109,7 @@ class TestHeartbeats:
         sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",

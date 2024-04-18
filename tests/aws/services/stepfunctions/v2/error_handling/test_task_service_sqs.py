@@ -36,7 +36,7 @@ class TestTaskServiceSqs:
         create_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
 
         queue_name = f"queue-{short_uid()}"
         queue_url = f"http://no-such-queue-{short_uid()}"
@@ -65,7 +65,7 @@ class TestTaskServiceSqs:
         create_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
 
         queue_name = f"queue-{short_uid()}"
         queue_url = f"http://no-such-queue-{short_uid()}"
@@ -98,7 +98,7 @@ class TestTaskServiceSqs:
         sqs_create_queue,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)

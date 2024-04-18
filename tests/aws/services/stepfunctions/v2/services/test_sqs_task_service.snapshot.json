@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message": {
-    "recorded-date": "22-06-2023, 13:41:17",
+    "recorded-date": "18-04-2024, 06:37:09",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -66,24 +66,28 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
-                "MD5OfMessageBody": "3caa9a099bc4e58ae7923f68c5d7d081",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -108,24 +112,28 @@
             "stateExitedEventDetails": {
               "name": "SendSQS",
               "output": {
-                "MD5OfMessageBody": "3caa9a099bc4e58ae7923f68c5d7d081",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -145,24 +153,28 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "MD5OfMessageBody": "3caa9a099bc4e58ae7923f68c5d7d081",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -190,7 +202,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_unsupported_parameters": {
-    "recorded-date": "22-06-2023, 13:41:34",
+    "recorded-date": "18-04-2024, 06:37:24",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -262,24 +274,28 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
-                "MD5OfMessageBody": "098f6bcd4621d373cade4e832627b4f6",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -304,24 +320,28 @@
             "stateExitedEventDetails": {
               "name": "SendSQS",
               "output": {
-                "MD5OfMessageBody": "098f6bcd4621d373cade4e832627b4f6",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -341,24 +361,28 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "MD5OfMessageBody": "098f6bcd4621d373cade4e832627b4f6",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },

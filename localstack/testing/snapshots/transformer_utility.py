@@ -469,7 +469,6 @@ class TransformerUtility:
                 "SenderId"
             ),  # TODO: flaky against AWS (e.g. /Attributes/SenderId '<sender-id:1>' → '<sender-id:2>' ... (expected → actual))
             TransformerUtility.key_value("SequenceNumber"),
-            TransformerUtility.key_value("MD5OfMessageBody"),
             TransformerUtility.jsonpath("$..MessageAttributes.RequestID.StringValue", "request-id"),
             KeyValueBasedTransformer(_resource_name_transformer, "resource"),
         ]
@@ -627,6 +626,15 @@ class TransformerUtility:
         return [
             RegexTransformer(arn_parts[0], f"<MapRunArnPart0_{index}idx>"),
             RegexTransformer(arn_parts[1], f"<MapRunArnPart1_{index}idx>"),
+        ]
+
+    @staticmethod
+    def sfn_sqs_integration():
+        return [
+            *TransformerUtility.sqs_api(),
+            # Transform MD5OfMessageBody value bindings as in StepFunctions these are not deterministic
+            # about the input message.
+            TransformerUtility.key_value("MD5OfMessageBody"),
         ]
 
     @staticmethod
