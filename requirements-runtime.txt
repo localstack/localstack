@@ -164,7 +164,7 @@ jmespath==1.0.1
 joserfc==0.9.0
     # via moto-ext
 jpype1==1.5.0
-    # via localstack-core
+    # via localstack-core (pyproject.toml)
 jschema-to-python==1.2.3
     # via cfn-lint
 json5==0.9.25
