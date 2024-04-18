@@ -1,0 +1,45 @@
+{
+  "Comment": "RUNTIME_ERROR_HANDLING",
+  "StartAt": "ActivityTaskWithRuntimeCatch",
+  "States": {
+   "ActivityTaskWithRuntimeCatch": {
+      "Type": "Task",
+      "Resource": "_tbd_",  // Resource field to be replaced dynamically.
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "CustomErrorName", "States.Runtime"
+          ],
+          "ResultPath": "$.RuntimeError",
+          "Next": "RuntimeErrorHandler"
+        },
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.StatesAllError",
+          "Next": "StatesAllHandler"
+        }
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.Runtime"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 1,
+          "BackoffRate": 1.0,
+        }
+      ],
+      "End": true
+    },
+    "RuntimeErrorHandler": {
+      "Type": "Pass",
+      "End": true
+    },
+    "StatesAllHandler": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

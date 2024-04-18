@@ -60,6 +60,10 @@ class ErrorHandlingTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/aws_service_sqs_send_msg_catch_token_failure.json5"
     )
 
+    RUNTIME_ERROR_HANDLING: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/runtime_error_handling.json5"
+    )
+
     # Lambda Functions.
     LAMBDA_FUNC_LARGE_OUTPUT_STRING: Final[str] = os.path.join(
         _THIS_FOLDER, "lambdafunctions/large_output_string.py"

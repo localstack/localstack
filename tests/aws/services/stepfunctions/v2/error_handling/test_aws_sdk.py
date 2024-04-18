@@ -48,6 +48,38 @@ class TestAwsSdk:
             exec_input,
         )
 
+    @markers.aws.validated
+    def test_runtime_error_handling(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_activity,
+        sfn_snapshot,
+    ):
+        activity_name = f"activity-{short_uid()}"
+        create_activity_output = create_activity(name=activity_name)
+        activity_arn = create_activity_output["activityArn"]
+        sfn_snapshot.add_transformer(RegexTransformer(activity_arn, "activity_arn"))
+        sfn_snapshot.add_transformer(RegexTransformer(activity_name, "activity_name"))
+        sfn_snapshot.match("create_activity_output", create_activity_output)
+
+        aws_client.stepfunctions.delete_activity(activityArn=activity_arn)
+
+        template = EHT.load_sfn_template(EHT.RUNTIME_ERROR_HANDLING)
+        template["States"]["ActivityTaskWithRuntimeCatch"]["Resource"] = activity_arn
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Value1": "HelloWorld"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @pytest.mark.skipif(
         condition=not is_aws_cloud(),
         reason="No parameters validation for dynamodb api calls being returned.",

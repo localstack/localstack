@@ -520,5 +520,66 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/error_handling/test_aws_sdk.py::TestAwsSdk::test_runtime_error_handling": {
+    "recorded-date": "18-04-2024, 09:37:24",
+    "recorded-content": {
+      "create_activity_output": {
+        "activityArn": "activity_arn",
+        "creationDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Value1": "HelloWorld"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ActivityTaskWithRuntimeCatch"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'ActivityTaskWithRuntimeCatch' (entered at the event id #2). The activity activity_arn does not exist.",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
