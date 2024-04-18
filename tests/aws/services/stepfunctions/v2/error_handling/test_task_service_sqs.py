@@ -126,10 +126,10 @@ class TestTaskServiceSqs:
         create_state_machine,
         sqs_create_queue,
         sqs_send_task_failure_state_machine,
-        snapshot,
+        sfn_snapshot,
     ):
-        snapshot.add_transformer(snapshot.transform.sqs_api())
-        snapshot.add_transformer(
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
+        sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
                 replacement="task_token",
@@ -139,8 +139,8 @@ class TestTaskServiceSqs:
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
-        snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
 
         sqs_send_task_failure_state_machine(queue_url)
 
@@ -154,7 +154,7 @@ class TestTaskServiceSqs:
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
             create_state_machine,
-            snapshot,
+            sfn_snapshot,
             definition,
             exec_input,
         )
