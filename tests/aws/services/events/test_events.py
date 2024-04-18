@@ -570,7 +570,7 @@ class TestEvents:
                 ],
             )
         snapshot.add_transformer(snapshot.transform.regex(target_id, "invalid-target-id"))
-        snapshot.match("put-targets--invalid-id-error", e.value.response)
+        snapshot.match("put-targets-invalid-id-error", e.value.response)
 
         target_id = f"{long_uid()}-{long_uid()}-extra"
         with pytest.raises(ClientError) as e:

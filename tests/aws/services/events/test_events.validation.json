@@ -96,7 +96,7 @@
     "last_validated_date": "2024-03-26T14:06:58+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_target_id_validation": {
-    "last_validated_date": "2024-04-16T15:09:28+00:00"
+    "last_validated_date": "2024-04-18T15:47:35+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventsEventBus::test_create_custom_event_bus": {
     "last_validated_date": "2024-03-27T09:15:34+00:00"

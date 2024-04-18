@@ -1,8 +1,8 @@
 {
   "tests/aws/services/events/test_events.py::TestEvents::test_put_target_id_validation": {
-    "recorded-date": "16-04-2024, 15:09:28",
+    "recorded-date": "18-04-2024, 15:47:35",
     "recorded-content": {
-      "put-targets--invalid-id-error": {
+      "put-targets-invalid-id-error": {
         "Error": {
           "Code": "ValidationException",
           "Message": "1 validation error detected: Value '!@#$@!#$' at 'targets.1.member.id' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\.\\-_A-Za-z0-9]+"
