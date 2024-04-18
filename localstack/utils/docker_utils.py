@@ -102,7 +102,7 @@ def get_host_path_for_path_in_docker(path):
     :param path: Path to be replaced (subpath of DEFAULT_VOLUME_DIR)
     :return: Path on the host
     """
-    if config.is_in_docker:
+    if config.is_in_docker and DOCKER_CLIENT.has_docker():
         volume = get_default_volume_dir_mount()
 
         if volume:
