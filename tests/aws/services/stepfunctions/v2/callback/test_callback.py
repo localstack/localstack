@@ -54,7 +54,6 @@ def _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url) ->
     ]
 )
 class TestCallback:
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.needs_fixing
     def test_sqs_wait_for_task_token(
         self,
@@ -95,7 +94,6 @@ class TestCallback:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.needs_fixing
     def test_sqs_wait_for_task_token_timeout(
         self,
@@ -134,7 +132,6 @@ class TestCallback:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.needs_fixing
     def test_sqs_failure_in_wait_for_task_token(
         self,
@@ -175,7 +172,6 @@ class TestCallback:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.needs_fixing
     def test_sqs_wait_for_task_tok_with_heartbeat(
         self,
@@ -500,7 +496,6 @@ class TestCallback:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.validated
     def test_multiple_heartbeat_notifications(
         self,
@@ -548,7 +543,6 @@ class TestCallback:
 
         task_token_consumer_thread.join(timeout=300)
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.validated
     def test_multiple_executions_and_heartbeat_notifications(
         self,

@@ -9,6 +9,6 @@
     "last_validated_date": "2023-06-22T11:31:50+00:00"
   },
   "tests/aws/services/stepfunctions/v2/error_handling/test_task_service_sqs.py::TestTaskServiceSqs::test_sqs_failure_in_wait_for_task_tok": {
-    "last_validated_date": "2023-05-29T09:21:47+00:00"
+    "last_validated_date": "2024-04-18T06:27:04+00:00"
   }
 }

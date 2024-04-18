@@ -19,7 +19,6 @@ from tests.aws.services.stepfunctions.utils import create_and_record_execution
     ]
 )
 class TestHeartbeats:
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.validated
     def test_heartbeat_timeout(
         self,
@@ -58,7 +57,6 @@ class TestHeartbeats:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.validated
     def test_heartbeat_path_timeout(
         self,
@@ -101,7 +99,6 @@ class TestHeartbeats:
             exec_input,
         )
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..MD5OfMessageBody"])
     @markers.aws.validated
     def test_heartbeat_no_timeout(
         self,

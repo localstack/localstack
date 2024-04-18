@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_timeout": {
-    "recorded-date": "10-03-2024, 16:39:54",
+    "recorded-date": "18-04-2024, 06:27:58",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -71,7 +71,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "2e28057614d59d8f7dfcdb8c9ac712f0",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -140,7 +140,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_path_timeout": {
-    "recorded-date": "10-03-2024, 16:40:13",
+    "recorded-date": "18-04-2024, 06:28:23",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -213,7 +213,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "e23368b7448139be32aa2f1fbd962673",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -282,7 +282,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/timeouts/test_heartbeats.py::TestHeartbeats::test_heartbeat_no_timeout": {
-    "recorded-date": "10-03-2024, 16:40:31",
+    "recorded-date": "18-04-2024, 06:29:19",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -352,7 +352,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "54d831cd55f1c29412fd982a3f7cb682",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {

@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token": {
-    "recorded-date": "25-06-2023, 14:30:26",
+    "recorded-date": "18-04-2024, 06:19:31",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -69,24 +69,28 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "c1b8689efa515ca4871a83ed8e2dd5fc",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -153,7 +157,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_timeout": {
-    "recorded-date": "10-03-2024, 16:42:16",
+    "recorded-date": "18-04-2024, 06:20:28",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -223,7 +227,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "1761bdfa678f40d2d350e7bdf487f6f6",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -292,7 +296,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_failure_in_wait_for_task_token": {
-    "recorded-date": "25-06-2023, 14:31:14",
+    "recorded-date": "18-04-2024, 06:24:24",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -361,24 +365,28 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "103af427820fd12011fe1cb454fdcc0a",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -428,7 +436,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_tok_with_heartbeat": {
-    "recorded-date": "25-06-2023, 14:34:21",
+    "recorded-date": "18-04-2024, 06:25:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -499,24 +507,28 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "5c22318ff95a90991fb6e16a19a89dc1",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
                       "<uuid:2>"
                     ],
+                    "connection": [
+                      "keep-alive"
+                    ],
                     "Content-Length": [
-                      "378"
+                      "106"
                     ],
                     "Date": "date",
                     "Content-Type": [
-                      "text/xml"
+                      "application/x-amz-json-1.0"
                     ]
                   },
                   "HttpHeaders": {
-                    "Content-Length": "378",
-                    "Content-Type": "text/xml",
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
                     "x-amzn-RequestId": "<uuid:2>"
                   },
@@ -1509,7 +1521,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_multiple_heartbeat_notifications": {
-    "recorded-date": "17-04-2024, 07:06:52",
+    "recorded-date": "18-04-2024, 06:17:37",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1582,7 +1594,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "a45bdfee8bb6b5850b64217aa8d60b30",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -1679,7 +1691,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_multiple_executions_and_heartbeat_notifications": {
-    "recorded-date": "17-04-2024, 07:11:30",
+    "recorded-date": "18-04-2024, 06:18:29",
     "recorded-content": {
       "execution_history_0": {
         "events": [
@@ -1752,7 +1764,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "b8a7dd31e184478c153c1cc90cdbf451",
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -1917,7 +1929,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "256e319546b52fe8c4bdaa739f852050",
+                "MD5OfMessageBody": "<m-d5-of-message-body:2>",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -2082,7 +2094,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "b1162887a0526d42b9b64c9a5e9016b0",
+                "MD5OfMessageBody": "<m-d5-of-message-body:3>",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -2247,7 +2259,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "d50429b1e8e61714c20695f05bf5b2f6",
+                "MD5OfMessageBody": "<m-d5-of-message-body:4>",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -2412,7 +2424,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "f2f1ed4d1bf6318226b00367c6db81b5",
+                "MD5OfMessageBody": "<m-d5-of-message-body:5>",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
@@ -2577,7 +2589,7 @@
             "previousEventId": 4,
             "taskSubmittedEventDetails": {
               "output": {
-                "MD5OfMessageBody": "a0e75d09462ed7e0906cb77b5a963cee",
+                "MD5OfMessageBody": "<m-d5-of-message-body:6>",
                 "MessageId": "a_message_id",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
