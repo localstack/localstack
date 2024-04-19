@@ -122,10 +122,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         try:
             if event_bus := self.get_event_bus(name, store):
-                if event_bus_service := self._event_bus_services_store.pop(event_bus.arn):
-                    if rules := getattr(event_bus_service, "rules", None):
-                        self._delete_rule_services(rules)
-                store.event_buses.pop(name)
+                del self._event_bus_services_store[event_bus.arn]
+                if rules := event_bus.rules:
+                    self._delete_rule_services(rules)
+                del store.event_buses[name]
         except ResourceNotFoundException as error:
             return error
 
@@ -551,7 +551,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if isinstance(rules, Rule):
             rules = {rules.name: rules}
         for rule in rules.values():
-            self._rule_services_store.pop(rule.arn)
+            del self._rule_services_store[rule.arn]
 
     def _rule_dict_to_api_type_list(self, rules: RuleDict) -> RuleResponseList:
         """Return a converted dict of Rule model objects as a list of rules in API type Rule format."""
