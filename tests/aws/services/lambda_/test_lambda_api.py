@@ -90,6 +90,9 @@ class TestLoggingConfig:
             role=lambda_su_role,
             MemorySize=256,
             Timeout=5,
+            LoggingConfig={
+                "LogFormat": LogFormat.JSON,
+            },
         )
 
         snapshot.match("create_response", create_response)

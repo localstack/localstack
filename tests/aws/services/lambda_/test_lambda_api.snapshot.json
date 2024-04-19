@@ -14615,7 +14615,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLoggingConfig::test_function_advanced_logging_configuration": {
-    "recorded-date": "17-04-2024, 14:16:48",
+    "recorded-date": "19-04-2024, 08:20:18",
     "recorded-content": {
       "create_response": {
         "CreateEventSourceMappingResponse": null,
@@ -14637,8 +14637,10 @@
           "Handler": "handler.handler",
           "LastModified": "date",
           "LoggingConfig": {
-            "LogFormat": "Text",
-            "LogGroup": "/aws/lambda/<function-name:1>"
+            "ApplicationLogLevel": "INFO",
+            "LogFormat": "JSON",
+            "LogGroup": "/aws/lambda/<function-name:1>",
+            "SystemLogLevel": "INFO"
           },
           "MemorySize": 256,
           "PackageType": "Zip",
@@ -14690,8 +14692,10 @@
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
           "LoggingConfig": {
-            "LogFormat": "Text",
-            "LogGroup": "/aws/lambda/<function-name:1>"
+            "ApplicationLogLevel": "INFO",
+            "LogFormat": "JSON",
+            "LogGroup": "/aws/lambda/<function-name:1>",
+            "SystemLogLevel": "INFO"
           },
           "MemorySize": 256,
           "PackageType": "Zip",
@@ -14736,8 +14740,10 @@
         "LastModified": "date",
         "LastUpdateStatus": "Successful",
         "LoggingConfig": {
-          "LogFormat": "Text",
-          "LogGroup": "/aws/lambda/<function-name:1>"
+          "ApplicationLogLevel": "INFO",
+          "LogFormat": "JSON",
+          "LogGroup": "/aws/lambda/<function-name:1>",
+          "SystemLogLevel": "INFO"
         },
         "MemorySize": 256,
         "PackageType": "Zip",

@@ -336,7 +336,7 @@
     "last_validated_date": "2024-04-17T14:16:55+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLoggingConfig::test_function_advanced_logging_configuration": {
-    "last_validated_date": "2024-04-17T14:16:47+00:00"
+    "last_validated_date": "2024-04-19T08:20:18+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLoggingConfig::test_function_partial_advanced_logging_configuration_update[partial_config0]": {
     "last_validated_date": "2024-04-17T14:17:00+00:00"

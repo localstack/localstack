@@ -869,6 +869,33 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 )
                 # Runtime management controls are not available when providing a custom image
                 runtime_version_config = None
+            if "LoggingConfig" in request:
+                logging_config = request["LoggingConfig"]
+                LOG.warning(
+                    "Advanced Lambda Logging Configuration is currently mocked "
+                    "and will not impact the logging behavior. "
+                    "Please create a feature request if needed."
+                )
+
+                # when switching to JSON, app and system level log is auto set to INFO
+                if logging_config.get("LogFormat", None) == LogFormat.JSON:
+                    logging_config = {
+                        "ApplicationLogLevel": "INFO",
+                        "SystemLogLevel": "INFO",
+                        "LogGroup": f"/aws/lambda/{function_name}",
+                    } | logging_config
+                else:
+                    logging_config = (
+                        LoggingConfig(
+                            LogFormat=LogFormat.Text, LogGroup=f"/aws/lambda/{function_name}"
+                        )
+                        | logging_config
+                    )
+
+            else:
+                logging_config = LoggingConfig(
+                    LogFormat=LogFormat.Text, LogGroup=f"/aws/lambda/{function_name}"
+                )
 
             version = FunctionVersion(
                 id=arn,
@@ -908,9 +935,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         code=StateReasonCode.Creating,
                         reason="The function is being created.",
                     ),
-                    logging_config=LoggingConfig(
-                        LogFormat=LogFormat.Text, LogGroup=f"/aws/lambda/{function_name}"
-                    ),
+                    logging_config=logging_config,
                 ),
             )
             fn.versions["$LATEST"] = version
