@@ -708,6 +708,10 @@ class TestEvents:
 
 class TestEventBus:
     @markers.aws.validated
+    @pytest.mark.skipif(
+        not is_v2_provider() and not is_aws_cloud(),
+        reason="V1 provider does not support this feature",
+    )
     @pytest.mark.parametrize("regions", [["us-east-1"], ["us-east-1", "us-west-1", "eu-central-1"]])
     def test_create_list_describe_delete_custom_event_buses(
         self, aws_client_factory, regions, snapshot
