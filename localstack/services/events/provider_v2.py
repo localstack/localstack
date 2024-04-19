@@ -321,7 +321,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_name = self._extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule, event_bus)
-        targets = getattr(rule, "targets", {})
+        targets = rule.targets
         limited_targets, next_token = self._get_limited_dict_and_next_token(
             targets, next_token, limit
         )
