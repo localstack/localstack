@@ -10,8 +10,8 @@ from localstack.aws.api.events import (
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
+    extract_service_from_arn,
     firehose_name,
-    parse_arn,
     sqs_queue_url_for_arn,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -300,13 +300,8 @@ class TargetServiceFactory:
         self.account_id = account_id
         self.rule_arn = rule_arn
 
-    @staticmethod
-    def extract_service_from_arn(arn: Arn) -> str:
-        arn = parse_arn(arn)
-        return arn["service"]
-
     def get_target_service(self) -> TargetService:
-        service = TargetServiceFactory.extract_service_from_arn(self.target["Arn"])
+        service = extract_service_from_arn(self.target["Arn"])
         if service in self.target_map:
             target_service_class = self.target_map[service]
         else:
