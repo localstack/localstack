@@ -106,6 +106,7 @@ def test_lambda_w_dynamodb_event_filter_update(deploy_cfn_template, snapshot, aw
         "$..access-control-expose-headers",
         "$..server",
         "$..content-length",
+        "$..InvokeMode",
     ]
 )
 @markers.aws.validated

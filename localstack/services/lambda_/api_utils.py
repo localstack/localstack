@@ -488,6 +488,7 @@ def map_config_out(
         EphemeralStorage=EphemeralStorage(Size=version.config.ephemeral_storage.size),
         SnapStart=version.config.snap_start,
         RuntimeVersionConfig=version.config.runtime_version_config,
+        LoggingConfig=version.config.logging_config,
         **optional_kwargs,
     )
     return func_conf

@@ -27,6 +27,7 @@ from localstack.aws.api.lambda_ import (
     InvocationType,
     InvokeMode,
     LastUpdateStatus,
+    LoggingConfig,
     PackageType,
     ProvisionedConcurrencyStatusEnum,
     Runtime,
@@ -557,6 +558,8 @@ class VersionFunctionConfiguration:
     # kms_key_arn: str
     # file_system_configs: FileSystemConfig
     vpc_config: Optional[VpcConfig] = None
+
+    logging_config: LoggingConfig = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass(frozen=True)

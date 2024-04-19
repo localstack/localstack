@@ -1,6 +1,6 @@
 {
   "tests/aws/scenario/note_taking/test_note_taking.py::TestNoteTakingScenario::test_validate_infra_setup": {
-    "recorded-date": "28-09-2023, 16:08:28",
+    "recorded-date": "16-04-2024, 08:42:29",
     "recorded-content": {
       "describe_stack_resources": {
         "StackResources": [
@@ -536,6 +536,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -590,6 +594,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:2>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:3>",
@@ -644,6 +652,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:3>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:4>",
@@ -698,6 +710,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:4>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:5>",
@@ -752,6 +768,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:5>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:6>",
