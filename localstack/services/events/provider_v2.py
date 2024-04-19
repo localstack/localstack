@@ -530,18 +530,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return event_bus_list
 
     def _event_bus_dict_to_api_type_event_bus(self, event_bus: EventBus) -> ApiTypeEventBus:
+        event_bus_api_type = {
+            "Name": event_bus.name,
+            "Arn": event_bus.arn,
+        }
         if event_bus.policy:
-            event_bus = {
-                "Name": event_bus.name,
-                "Arn": event_bus.arn,
-                "Policy": event_bus.policy,
-            }
-        else:
-            event_bus = {
-                "Name": event_bus.name,
-                "Arn": event_bus.arn,
-            }
-        return event_bus
+            event_bus_api_type["Policy"] = event_bus.policy
+
+        return event_bus_api_type
 
     def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
         """
