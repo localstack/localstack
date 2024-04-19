@@ -1062,7 +1062,7 @@ def import_api_from_openapi_spec(
             ] or not isinstance(field_schema, dict):
                 LOG.warning("Ignoring unsupported field %s in path %s", field, rel_path)
                 # TODO: check if we should skip parameters, those are global parameters applied to every routes but
-                #  can be overriden at the operation level
+                #  can be overridden at the operation level
                 continue
 
             method_name = field.upper()

@@ -130,7 +130,7 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
                 ]
             },
         )
-        # TODO: not 100% sure this behaves the same betwen alias and non-alias records
+        # TODO: not 100% sure this behaves the same between alias and non-alias records
         model["Id"] = model["Name"]
 
         return ProgressEvent(

@@ -673,8 +673,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             SubscriptionArn=subscription_arn,
             PendingConfirmation="true",
             Owner=context.account_id,
-            RawMessageDelivery="false",  # default value, will be overriden if set
-            FilterPolicyScope="MessageAttributes",  # default value, will be overriden if set
+            RawMessageDelivery="false",  # default value, will be overridden if set
+            FilterPolicyScope="MessageAttributes",  # default value, will be overridden if set
             SubscriptionPrincipal=principal,  # dummy value, could be fetched with a call to STS?
         )
         if attributes:

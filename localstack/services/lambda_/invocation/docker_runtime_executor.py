@@ -330,7 +330,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         if config.LAMBDA_DOCKER_DNS:
             # Don't overwrite DNS container config if it is already set (e.g., using LAMBDA_DOCKER_DNS)
             LOG.warning(
-                "Container DNS overriden to %s, connection to names pointing to LocalStack, like 'localhost.localstack.cloud' will need additional configuration.",
+                "Container DNS overridden to %s, connection to names pointing to LocalStack, like 'localhost.localstack.cloud' will need additional configuration.",
                 config.LAMBDA_DOCKER_DNS,
             )
             container_config.dns = config.LAMBDA_DOCKER_DNS
