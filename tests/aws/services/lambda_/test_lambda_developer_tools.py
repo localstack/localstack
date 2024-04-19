@@ -45,6 +45,9 @@ class TestHotReloading:
         aws_client,
     ):
         """Test hot reloading of lambda code"""
+        # Hot reloading is debounced with 500ms
+        # 0.6 works on Linux, but it takes slightly longer on macOS
+        sleep_time = 0.8
         function_name = f"test-hot-reloading-{short_uid()}"
         hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
         tmp_path = config.dirs.mounted_tmp
@@ -74,7 +77,7 @@ class TestHotReloading:
         with open(os.path.join(hot_reloading_dir_path, handler_filename), mode="wt") as f:
             f.write(function_content.replace("value1", "value2"))
         # we have to sleep here, since the hot reloading is debounced with 500ms
-        time.sleep(0.6)
+        time.sleep(sleep_time)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
@@ -88,7 +91,7 @@ class TestHotReloading:
         test_folder = os.path.join(hot_reloading_dir_path, "test-folder")
         mkdir(test_folder)
         # make sure the creation of the folder triggered reload
-        time.sleep(0.6)
+        time.sleep(sleep_time)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
@@ -96,7 +99,7 @@ class TestHotReloading:
         # now writing something in the new folder to check if it will reload
         with open(os.path.join(test_folder, "test-file"), mode="wt") as f:
             f.write("test-content")
-        time.sleep(0.6)
+        time.sleep(sleep_time)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
