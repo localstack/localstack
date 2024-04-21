@@ -13,15 +13,19 @@ LOG = logging.getLogger(__name__)
 
 
 def push_request_context(_chain: HandlerChain, context: RequestContext, _response: Response):
+    from localstack.aws.context import request_stack
     from localstack.utils.aws import request_context
 
+    request_stack.push(context)
     # TODO remove request_context.THREAD_LOCAL
     request_context.THREAD_LOCAL.request_context = context.request
 
 
 def pop_request_context(_chain: HandlerChain, _context: RequestContext, _response: Response):
+    from localstack.aws.context import request_stack
     from localstack.utils.aws import request_context
 
+    request_stack.pop()
     # TODO remove request_context.THREAD_LOCAL
     request_context.THREAD_LOCAL.request_context = None
 

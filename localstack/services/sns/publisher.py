@@ -7,7 +7,6 @@ import json
 import logging
 import time
 import traceback
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Union
 
@@ -19,6 +18,7 @@ from localstack import config
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.api.sns import MessageAttributeMap
 from localstack.aws.connect import connect_to
+from localstack.aws.context import ContextAwareThreadPoolExecutor
 from localstack.config import external_service_url
 from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.certificate import SNS_SERVER_PRIVATE_KEY
@@ -1340,7 +1340,7 @@ class PublishDispatcher:
     subscription_filter = SubscriptionFilter()
 
     def __init__(self, num_thread: int = 10):
-        self.executor = ThreadPoolExecutor(num_thread, thread_name_prefix="sns_pub")
+        self.executor = ContextAwareThreadPoolExecutor(num_thread, thread_name_prefix="sns_pub")
 
     def shutdown(self):
         self.executor.shutdown(wait=False)

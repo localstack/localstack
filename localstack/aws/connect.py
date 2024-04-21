@@ -19,6 +19,7 @@ from botocore.config import Config
 from botocore.waiter import Waiter
 
 from localstack import config as localstack_config
+from localstack.aws import context as aws_request_context
 from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
@@ -141,6 +142,9 @@ class InternalRequestParameters(TypedDict):
 
     service_principal: str | None
     """Service principal making this call"""
+
+    request_id_trace: list[str] | None
+    """A list of previous request IDs."""
 
 
 def dump_dto(data: InternalRequestParameters) -> str:
@@ -654,6 +658,20 @@ def _handler_create_request_parameters(params: dict[str, Any], context: dict[str
         parameter = f"_{''.join([part.title() for part in member.split('_')])}"
         if parameter in params:
             dto[member] = params.pop(parameter)
+
+    # adding the request context id to the trace
+    try:
+        request_context = aws_request_context.current_request_context()
+        # load the previous trace if one exists
+        if request_context.internal_request_params:
+            trace = list(request_context.internal_request_params.get("request_id_trace", []))
+        else:
+            trace = []
+        # append the current request id to the trace
+        trace.append(request_context.request_id)
+        dto["request_id_trace"] = trace
+    except aws_request_context.NoContextError:
+        pass
 
     context["_localstack"] = dto
 

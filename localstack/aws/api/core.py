@@ -1,12 +1,15 @@
 import functools
-from typing import Any, NamedTuple, Optional, Protocol, Type, TypedDict, Union
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional, Protocol, Type, TypedDict, Union
 
 from botocore.model import OperationModel, ServiceModel
 from rolo.gateway import RequestContext as RoloRequestContext
 
-from localstack.aws.connect import InternalRequestParameters
 from localstack.http import Request, Response
 from localstack.utils.strings import long_uid
+
+if TYPE_CHECKING:
+    # avoid circular imports
+    from localstack.aws.connect import InternalRequestParameters
 
 # FIXME: deprecated, use localstack.http.Request and localstack.http.Response instead
 HttpRequest = Request
@@ -94,7 +97,7 @@ class RequestContext(RoloRequestContext):
     """The response from the AWS emulator backend."""
     service_exception: Optional[ServiceException]
     """The exception the AWS emulator backend may have raised."""
-    internal_request_params: Optional[InternalRequestParameters]
+    internal_request_params: Optional["InternalRequestParameters"]
     """Data sent by client-side LocalStack during internal calls."""
 
     def __init__(self, request=None) -> None:
