@@ -93,7 +93,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
- 💻 LocalStack CLI 3.3.0
+ 💻 LocalStack CLI 3.4.0
  👤 Profile: default
 
 [12:47:13] starting LocalStack in Docker mode 🐳                       localstack.py:494
