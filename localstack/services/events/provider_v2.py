@@ -58,7 +58,7 @@ from localstack.services.events.models_v2 import (
     events_store,
 )
 from localstack.services.events.rule import RuleService, RuleServiceDict
-from localstack.services.events.target import TargetService, TargetServiceDict, TargetServiceFactory
+from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
 from localstack.services.plugins import ServiceLifecycleHook
 
 LOG = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def __init__(self):
         self._event_bus_services_store: EventBusServiceDict = {}
         self._rule_services_store: RuleServiceDict = {}
-        self._target_services_store: TargetServiceDict = {}
+        self._target_sender_store: TargetSenderDict = {}
 
     ##########
     # EventBus
@@ -346,7 +346,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         failed_entries = rule_service.add_targets(targets)
         rule_arn = rule_service.arn
         for target in targets:
-            self.create_target_service(target, region, account_id, rule_arn)
+            self.create_target_sender(target, region, account_id, rule_arn)
 
         response = PutTargetsResponse(
             FailedEntryCount=len(failed_entries), FailedEntries=failed_entries
@@ -365,7 +365,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> RemoveTargetsResponse:
         rule_service = self.get_rule_service(context, rule, event_bus_name)
         failed_entries = rule_service.remove_targets(ids)
-        self._delete_target_services(ids, rule_service.rule)
+        self._delete_target_sender(ids, rule_service.rule)
 
         response = RemoveTargetsResponse(
             FailedEntryCount=len(failed_entries), FailedEntries=failed_entries
@@ -486,14 +486,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._rule_services_store[rule_service.arn] = rule_service
         return rule_service
 
-    def create_target_service(
+    def create_target_sender(
         self, target: Target, region: str, account_id: str, rule_arn: Arn
-    ) -> TargetService:
-        target_service = TargetServiceFactory(
+    ) -> TargetSender:
+        target_sender = TargetSenderFactory(
             target, region, account_id, rule_arn
-        ).get_target_service()
-        self._target_services_store[target_service.arn] = target_service
-        return target_service
+        ).get_target_sender()
+        self._target_sender_store[target_sender.arn] = target_sender
+        return target_sender
 
     def _get_limited_dict_and_next_token(
         self, input_dict: dict, next_token: NextToken | None, limit: LimitMax100 | None
@@ -569,12 +569,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in rule.items() if value is not None}
 
-    def _delete_target_services(self, ids: TargetIdList, rule) -> None:
+    def _delete_target_sender(self, ids: TargetIdList, rule) -> None:
         for target_id in ids:
             if target := rule.targets.get(target_id):
                 target_arn = target["Arn"]
                 try:
-                    del self._target_services_store[target_arn]
+                    del self._target_sender_store[target_arn]
                 except KeyError:
                     LOG.error(f"Error deleting target service {target_arn}.")
 
@@ -588,9 +588,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             matching_rules = [rule for rule in event_bus.rules.values()]
             for rule in matching_rules:
                 for target in rule.targets.values():
-                    target_service = self._target_services_store[target["Arn"]]
+                    target_sender = self._target_sender_store[target["Arn"]]
                     try:
-                        target_service.send_event(event)
+                        target_sender.send_event(event)
                     except Exception as error:
                         failed_entries.append(
                             {

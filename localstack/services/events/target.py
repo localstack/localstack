@@ -23,7 +23,7 @@ from localstack.utils.time import now_utc
 LOG = logging.getLogger(__name__)
 
 
-class TargetService(ABC):
+class TargetSender(ABC):
     def __init__(
         self,
         target: Target,
@@ -68,6 +68,7 @@ class TargetService(ABC):
         In both cases event bridge is requested as service principal"""
         service_principal = ServicePrincipal.events
         if role_arn := self.target.get("role_arn"):
+            # assumed role sessions expires after 6 hours in AWS, currently no expiration in LocalStack
             client_factory = connect_to.with_assumed_role(
                 role_arn=role_arn, service_principal=service_principal, region_name=self.region
             )
@@ -80,10 +81,10 @@ class TargetService(ABC):
         return client
 
 
-TargetServiceDict = dict[Arn, TargetService]
+TargetSenderDict = dict[Arn, TargetSender]
 
 
-class ApiGatewayTargetService(TargetService):
+class ApiGatewayTargetSender(TargetSender):
     def send_event(self, event):
         raise NotImplementedError("ApiGateway target is not yet implemented")
 
@@ -93,12 +94,12 @@ class ApiGatewayTargetService(TargetService):
             raise ValueError("RoleArn is required for ApiGateway target")
 
 
-class AppSyncTargetService(TargetService):
+class AppSyncTargetSender(TargetSender):
     def send_event(self, event):
         raise NotImplementedError("AppSync target is not yet implemented")
 
 
-class BatchTargetService(TargetService):
+class BatchTargetSender(TargetSender):
     def send_event(self, event):
         raise NotImplementedError("Batch target is not yet implemented")
 
@@ -109,7 +110,7 @@ class BatchTargetService(TargetService):
             raise ValueError("BatchParameters.JobName is required for Batch target")
 
 
-class ContainerTargetService(TargetService):
+class ContainerTargetSender(TargetSender):
     def send_event(self, event):
         raise NotImplementedError("ECS target is not yet implemented")
 
@@ -119,7 +120,7 @@ class ContainerTargetService(TargetService):
             raise ValueError("EcsParameters.TaskDefinitionArn is required for ECS target")
 
 
-class EventsTargetService(TargetService):
+class EventsTargetSender(TargetSender):
     def send_event(self, event):
         eventbus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
         source = (
@@ -152,7 +153,7 @@ class EventsTargetService(TargetService):
         )
 
 
-class FirehoseTargetService(TargetService):
+class FirehoseTargetSender(TargetSender):
     def send_event(self, event):
         delivery_stream_name = firehose_name(self.target["Arn"])
         self.client.put_record(
@@ -160,7 +161,7 @@ class FirehoseTargetService(TargetService):
         )
 
 
-class KinesisTargetService(TargetService):
+class KinesisTargetSender(TargetSender):
     def send_event(self, event):
         partition_key_path = self.target["KinesisParameters"]["PartitionKeyPath"]
         stream_name = self.target["Arn"].split("/")[-1]
@@ -179,7 +180,7 @@ class KinesisTargetService(TargetService):
             raise ValueError("KinesisParameters.PartitionKeyPath is required for Kinesis target")
 
 
-class LambdaTargetService(TargetService):
+class LambdaTargetSender(TargetSender):
     def send_event(self, event):
         asynchronous = True  # TODO clarify default behavior of AWS
         self.client.invoke(
@@ -189,7 +190,7 @@ class LambdaTargetService(TargetService):
         )
 
 
-class LogsTargetService(TargetService):
+class LogsTargetSender(TargetSender):
     def send_event(self, event):
         log_group_name = self.target["Arn"].split(":")[6]
         log_stream_name = str(uuid.uuid4())  # Unique log stream name
@@ -201,7 +202,7 @@ class LogsTargetService(TargetService):
         )
 
 
-class RedshiftTargetService(TargetService):
+class RedshiftTargetSender(TargetSender):
     def send_event(self, event):
         raise NotImplementedError("Redshift target is not yet implemented")
 
@@ -211,17 +212,17 @@ class RedshiftTargetService(TargetService):
             raise ValueError("RedshiftDataParameters.Database is required for Redshift target")
 
 
-class SagemakerTargetService(TargetService):
+class SagemakerTargetSender(TargetSender):
     def send_event(self, event):
         raise NotImplementedError("Sagemaker target is not yet implemented")
 
 
-class SnsTargetService(TargetService):
+class SnsTargetSender(TargetSender):
     def send_event(self, event):
         self.client.publish(TopicArn=self.target["Arn"], Message=json.dumps(event))
 
 
-class SqsTargetService(TargetService):
+class SqsTargetSender(TargetSender):
     def send_event(self, event):
         queue_url = sqs_queue_url_for_arn(self.target["Arn"])
         msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
@@ -231,7 +232,7 @@ class SqsTargetService(TargetService):
         )
 
 
-class StatesTargetService(TargetService):
+class StatesTargetSender(TargetSender):
     """Step Functions Target Sender"""
 
     def send_event(self, event):
@@ -243,7 +244,7 @@ class StatesTargetService(TargetService):
             raise ValueError("RoleArn is required for StepFunctions target")
 
 
-class SystemsManagerService(TargetService):
+class SystemsManagerSender(TargetSender):
     """EC2 Run Command Target Sender"""
 
     def send_event(self, event):
@@ -261,23 +262,23 @@ class SystemsManagerService(TargetService):
             )
 
 
-class TargetServiceFactory:
+class TargetSenderFactory:
     # supported targets: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-targets.html
     target_map = {
-        "apigateway": ApiGatewayTargetService,
-        "appsync": AppSyncTargetService,
-        "batch": BatchTargetService,
-        "ecs": ContainerTargetService,
-        "events": EventsTargetService,
-        "firehose": FirehoseTargetService,
-        "kinesis": KinesisTargetService,
-        "lambda": LambdaTargetService,
-        "logs": LogsTargetService,
-        "redshift": RedshiftTargetService,
-        "sns": SnsTargetService,
-        "sqs": SqsTargetService,
-        "sagemaker": SagemakerTargetService,
-        "ssm": SystemsManagerService,
+        "apigateway": ApiGatewayTargetSender,
+        "appsync": AppSyncTargetSender,
+        "batch": BatchTargetSender,
+        "ecs": ContainerTargetSender,
+        "events": EventsTargetSender,
+        "firehose": FirehoseTargetSender,
+        "kinesis": KinesisTargetSender,
+        "lambda": LambdaTargetSender,
+        "logs": LogsTargetSender,
+        "redshift": RedshiftTargetSender,
+        "sns": SnsTargetSender,
+        "sqs": SqsTargetSender,
+        "sagemaker": SagemakerTargetSender,
+        "ssm": SystemsManagerSender,
         # TODO custom endpoints via http target
     }
 
@@ -287,13 +288,13 @@ class TargetServiceFactory:
         self.account_id = account_id
         self.rule_arn = rule_arn
 
-    def get_target_service(self) -> TargetService:
+    def get_target_sender(self) -> TargetSender:
         service = extract_service_from_arn(self.target["Arn"])
         if service in self.target_map:
-            target_service_class = self.target_map[service]
+            target_sender_class = self.target_map[service]
         else:
             raise Exception(f"Unsupported target for Service: {service}")
-        target_service = target_service_class(
+        target_sender = target_sender_class(
             self.target, self.region, self.account_id, self.rule_arn, service
         )
-        return target_service
+        return target_sender
