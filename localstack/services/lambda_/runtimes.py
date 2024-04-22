@@ -57,7 +57,7 @@ IMAGE_MAPPING: dict[Runtime, str] = {
     Runtime.dotnet6: "dotnet:6",
     Runtime.dotnetcore3_1: "dotnet:core3.1",  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
     Runtime.go1_x: "go:1",  # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
-    # "ruby3.3": "ruby:3.3", expected April 2024
+    Runtime.ruby3_3: "ruby:3.3",
     Runtime.ruby3_2: "ruby:3.2",
     Runtime.ruby2_7: "ruby:2.7",  # deprecated Dec 7, 2023 => Jan 9, 2024 => Feb 8, 2024
     Runtime.provided_al2023: "provided:al2023",
@@ -81,7 +81,7 @@ DEPRECATED_RUNTIMES: list[Runtime] = [
 SUPPORTED_RUNTIMES: list[Runtime] = list(set(IMAGE_MAPPING.keys()) - set(DEPRECATED_RUNTIMES))
 
 # A temporary list of missing runtimes not yet supported in LocalStack. Used for modular updates.
-MISSING_RUNTIMES = [Runtime.ruby3_3]
+MISSING_RUNTIMES = []
 
 # An unordered list of all Lambda runtimes supported by LocalStack.
 ALL_RUNTIMES: list[Runtime] = list(IMAGE_MAPPING.keys())
@@ -109,6 +109,7 @@ RUNTIMES_AGGREGATED = {
     ],
     "ruby": [
         Runtime.ruby3_2,
+        Runtime.ruby3_3,
     ],
     "dotnet": [
         Runtime.dotnet6,
