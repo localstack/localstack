@@ -58,7 +58,6 @@ class TargetService(ABC):
 
     def _validate_input(self, target: Target):
         """Provide a default implementation that does nothing if no specific validation is needed."""
-        # TODO add For EC2 instances, Kinesis Data Streams, Step Functions state machines and API Gateway APIs, EventBridge relies on IAM roles that you specify in the RoleARN argument in PutTargets.
         # TODO add For Lambda and Amazon SNS resources, EventBridge relies on resource-based policies.
         pass
 
@@ -87,6 +86,11 @@ TargetServiceDict = dict[Arn, TargetService]
 class ApiGatewayTargetService(TargetService):
     def send_event(self, event):
         raise NotImplementedError("ApiGateway target is not yet implemented")
+
+    def _validate_input(self, target: Target):
+        super()._validate_input(target)
+        if not collections.get_safe(target, "$.RoleArn"):
+            raise ValueError("RoleArn is required for ApiGateway target")
 
 
 class AppSyncTargetService(TargetService):
@@ -169,6 +173,8 @@ class KinesisTargetService(TargetService):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
+        if not collections.get_safe(target, "$.RoleArn"):
+            raise ValueError("RoleArn is required for Kinesis target")
         if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):
             raise ValueError("KinesisParameters.PartitionKeyPath is required for Kinesis target")
 
@@ -231,13 +237,24 @@ class StatesTargetService(TargetService):
     def send_event(self, event):
         self.client.start_execution(stateMachineArn=self.target["Arn"], input=json.dumps(event))
 
+    def _validate_input(self, target: Target):
+        super()._validate_input(target)
+        if not collections.get_safe(target, "$.RoleArn"):
+            raise ValueError("RoleArn is required for StepFunctions target")
+
 
 class SystemsManagerService(TargetService):
+    """EC2 Run Command Target Sender"""
+
     def send_event(self, event):
         raise NotImplementedError("Systems Manager target is not yet implemented")
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
+        if not collections.get_safe(target, "$.RoleArn"):
+            raise ValueError(
+                "RoleArn is required for SystemManager target to invoke a EC2 run command"
+            )
         if not collections.get_safe(target, "$.RunCommandParameters.RunCommandTargets"):
             raise ValueError(
                 "RunCommandParameters.RunCommandTargets is required for Systems Manager target"
