@@ -115,7 +115,7 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
-    @pytest.mark.parametrize("max_concurrency_value", [dict(), "HelloWorld", 0, 1])
+    @pytest.mark.parametrize("max_concurrency_value", [dict(), "NoNumber", 0, 1])
     def test_max_concurrency_path(
         self,
         aws_client,
@@ -124,6 +124,9 @@ class TestBaseScenarios:
         sfn_snapshot,
         max_concurrency_value,
     ):
+        # TODO: Investigate AWS's behaviour with stringified integer values such as "1", as when passed as
+        #  execution inputs these are casted to integers. Future efforts should record more snapshot tests to assert
+        #  the behaviour of such stringification on execution inputs
         template = ST.load_sfn_template(ST.MAX_CONCURRENCY)
         definition = json.dumps(template)
 
