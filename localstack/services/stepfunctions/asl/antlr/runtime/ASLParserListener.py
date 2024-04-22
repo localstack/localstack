@@ -296,6 +296,15 @@ class ASLParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by ASLParser#max_concurrency_path_decl.
+    def enterMax_concurrency_path_decl(self, ctx:ASLParser.Max_concurrency_path_declContext):
+        pass
+
+    # Exit a parse tree produced by ASLParser#max_concurrency_path_decl.
+    def exitMax_concurrency_path_decl(self, ctx:ASLParser.Max_concurrency_path_declContext):
+        pass
+
+
     # Enter a parse tree produced by ASLParser#parameters_decl.
     def enterParameters_decl(self, ctx:ASLParser.Parameters_declContext):
         pass

@@ -115,6 +115,60 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize("max_concurrency_value", [dict(), "HelloWorld", 0, 1])
+    def test_max_concurrency_path(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        max_concurrency_value,
+    ):
+        template = ST.load_sfn_template(ST.MAX_CONCURRENCY)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {"MaxConcurrencyValue": max_concurrency_value, "Values": ["HelloWorld"]}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS consistently appears to stall after startup when a negative MaxConcurrency value is given.
+            #  Instead, the Provider V2 raises a State.Runtime exception and terminates. In the future we should
+            #  reevaluate AWS's behaviour in these circumstances and choose whether too also 'hang'.
+            "$..events"
+        ]
+    )
+    def test_max_concurrency_path_negative(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAX_CONCURRENCY)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"MaxConcurrencyValue": -1, "Values": ["HelloWorld"]})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_parallel_state_order(
         self,
         aws_client,

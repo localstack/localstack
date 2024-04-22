@@ -46,6 +46,7 @@ state_stmt:
     | item_selector_decl
     | item_reader_decl
     | max_concurrency_decl
+    | max_concurrency_path_decl
     | timeout_seconds_decl
     | timeout_seconds_path_decl
     | heartbeat_seconds_decl
@@ -109,6 +110,8 @@ timestamp_path_decl: TIMESTAMPPATH COLON keyword_or_string;
 items_path_decl: ITEMSPATH COLON keyword_or_string;
 
 max_concurrency_decl: MAXCONCURRENCY COLON INT;
+
+max_concurrency_path_decl: MAXCONCURRENCYPATH COLON STRINGPATH;
 
 parameters_decl: PARAMETERS COLON payload_tmpl_decl;
 
@@ -418,6 +421,7 @@ keyword_or_string:
     | ITERATOR
     | ITEMSELECTOR
     | MAXCONCURRENCY
+    | MAXCONCURRENCYPATH
     | RESOURCE
     | INPUTPATH
     | OUTPUTPATH

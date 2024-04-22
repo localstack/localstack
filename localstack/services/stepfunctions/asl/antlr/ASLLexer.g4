@@ -179,6 +179,8 @@ ITERATOR: '"Iterator"';
 
 ITEMSELECTOR: '"ItemSelector"';
 
+MAXCONCURRENCYPATH: '"MaxConcurrencyPath"';
+
 MAXCONCURRENCY: '"MaxConcurrency"';
 
 RESOURCE: '"Resource"';

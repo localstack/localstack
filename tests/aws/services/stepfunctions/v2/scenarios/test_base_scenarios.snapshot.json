@@ -15651,5 +15651,476 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[max_concurrency_value0]": {
+    "recorded-date": "22-04-2024, 12:36:22",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "MaxConcurrencyValue": {},
+                "Values": [
+                  "HelloWorld"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "MaxConcurrencyValue": {},
+                "Values": [
+                  "HelloWorld"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). The MaxConcurrencyPath field refers to value \"{}\" which is not a valid integer: $.MaxConcurrencyValue",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[HelloWorld]": {
+    "recorded-date": "22-04-2024, 12:36:36",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "MaxConcurrencyValue": "HelloWorld",
+                "Values": [
+                  "HelloWorld"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "MaxConcurrencyValue": "HelloWorld",
+                "Values": [
+                  "HelloWorld"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'MapState' (entered at the event id #2). The MaxConcurrencyPath field refers to value \"HelloWorld\" which is not a valid integer: $.MaxConcurrencyValue",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[0]": {
+    "recorded-date": "22-04-2024, 12:36:51",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "MaxConcurrencyValue": 0,
+                "Values": [
+                  "HelloWorld"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "MaxConcurrencyValue": 0,
+                "Values": [
+                  "HelloWorld"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": "\"HelloWorld\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": "\"HelloWorld\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 7,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 9,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[\"HelloWorld\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateEnteredEventDetails": {
+              "input": "[\"HelloWorld\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Final"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "Final",
+              "output": "[\"HelloWorld\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[\"HelloWorld\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path[1]": {
+    "recorded-date": "22-04-2024, 12:37:05",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "MaxConcurrencyValue": 1,
+                "Values": [
+                  "HelloWorld"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "MaxConcurrencyValue": 1,
+                "Values": [
+                  "HelloWorld"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "MapState"
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateEntered"
+          },
+          {
+            "id": 3,
+            "mapStateStartedEventDetails": {
+              "length": 1
+            },
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "MapStateStarted"
+          },
+          {
+            "id": 4,
+            "mapIterationStartedEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "MapIterationStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "stateEnteredEventDetails": {
+              "input": "\"HelloWorld\"",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "HandleItem"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "HandleItem",
+              "output": "\"HelloWorld\"",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "id": 7,
+            "mapIterationSucceededEventDetails": {
+              "index": 0,
+              "name": "MapState"
+            },
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "MapIterationSucceeded"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "timestamp": "timestamp",
+            "type": "MapStateSucceeded"
+          },
+          {
+            "id": 9,
+            "previousEventId": 7,
+            "stateExitedEventDetails": {
+              "name": "MapState",
+              "output": "[\"HelloWorld\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "MapStateExited"
+          },
+          {
+            "id": 10,
+            "previousEventId": 9,
+            "stateEnteredEventDetails": {
+              "input": "[\"HelloWorld\"]",
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "Final"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "Final",
+              "output": "[\"HelloWorld\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": "[\"HelloWorld\"]",
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 12,
+            "previousEventId": 11,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_max_concurrency_path_negative": {
+    "recorded-date": "22-04-2024, 12:40:52",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "MaxConcurrencyValue": -1,
+                "Values": [
+                  "HelloWorld"
+                ]
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
