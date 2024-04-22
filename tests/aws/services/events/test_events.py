@@ -725,7 +725,7 @@ class TestEventBus:
             response = events.create_event_bus(Name=bus_name)
             snapshot.match(f"create-custom-event-bus-{region}", response)
 
-            response = events.list_event_buses()
+            response = events.list_event_buses(NamePrefix=bus_name)
             snapshot.match(f"list-event-buses-after-create-{region}", response)
 
             response = events.describe_event_bus(Name=bus_name)
@@ -738,7 +738,7 @@ class TestEventBus:
             response = events.delete_event_bus(Name=bus_name)
             snapshot.match(f"delete-custom-event-bus-{region}", response)
 
-            response = events.list_event_buses()
+            response = events.list_event_buses(NamePrefix=bus_name)
             snapshot.match(f"list-event-buses-after-delete-{region}", response)
 
     @markers.aws.validated
@@ -772,7 +772,7 @@ class TestEventBus:
     @markers.aws.validated
     def test_list_event_buses_with_prefix(self, create_event_bus, aws_client, snapshot):
         events = aws_client.events
-        bus_name = f"test-bus-{short_uid()}"
+        bus_name = f"unique-prefix-1234567890-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
 
         bus_name_not_match = "no-prefix-match"
@@ -803,11 +803,11 @@ class TestEventBus:
             bus_name = f"{bus_name_prefix}-{i}"
             create_event_bus(Name=bus_name)
 
-        response = events.list_event_buses(Limit=int(count / 2))
+        response = events.list_event_buses(Limit=int(count / 2), NamePrefix=bus_name_prefix)
         snapshot.match("list-event-buses-limit", response)
 
         response = events.list_event_buses(
-            Limit=int(count / 2) + 2, NextToken=response["NextToken"]
+            Limit=int(count / 2) + 2, NextToken=response["NextToken"], NamePrefix=bus_name_prefix
         )
         snapshot.match("list-event-buses-limit-next-token", response)
 
@@ -883,6 +883,7 @@ class TestEventBus:
 
     @markers.aws.validated
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+    # TODO simplify and use sqs as target
     def test_put_events_to_default_eventbus_for_custom_eventbus(
         self,
         events_create_event_bus,
@@ -1035,8 +1036,6 @@ class TestEventBus:
                 snapshot.transform.regex(nonexistent_event_bus, "<custom-event-bus>"),
             ]
         )
-        # create SQS queue + add rules & targets so that we can check the default event bus received the message
-        # even if one entry was wrong
 
         queue_url = sqs_create_queue()
         queue_arn = sqs_get_queue_arn(queue_url)
@@ -1059,8 +1058,6 @@ class TestEventBus:
             Targets=[{"Id": default_bus_target_id, "Arn": queue_arn}],
         )
 
-        # create two entries, one with no EventBus specified (so it will target the default one)
-        # and one with a nonexistent EventBusName, which should be ignored
         entries = [
             {
                 "Source": "MySource",
@@ -1068,7 +1065,7 @@ class TestEventBus:
                 "Detail": json.dumps({"message": "for the default event bus"}),
             },
             {
-                "EventBusName": nonexistent_event_bus,
+                "EventBusName": nonexistent_event_bus,  # nonexistent EventBusName, message should be ignored
                 "Source": "MySource",
                 "DetailType": "CustomType",
                 "Detail": json.dumps({"message": "for the custom event bus"}),
@@ -1077,7 +1074,7 @@ class TestEventBus:
         response = aws_client.events.put_events(Entries=entries)
         snapshot.match("put-events", response)
 
-        def _get_sqs_messages():
+        def _get_sqs_messages():  # TODO cleanup use exiting fixture
             resp = aws_client.sqs.receive_message(
                 QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
             )
@@ -1091,7 +1088,6 @@ class TestEventBus:
         messages = retry(_get_sqs_messages, retries=10, sleep=0.1)
         snapshot.match("get-events", messages)
 
-        # try to get the custom EventBus we passed the Event to
         with pytest.raises(ClientError) as e:
             aws_client.events.describe_event_bus(Name=nonexistent_event_bus)
         snapshot.match("non-existent-bus-error", e.value.response)
@@ -1131,12 +1127,19 @@ class TestEventRule:
         snapshot.match("list-rules-after-delete", response)
 
     @markers.aws.validated
-    def test_put_multiple_rules_with_same_name(self, put_rule, aws_client, snapshot):
+    def test_put_multiple_rules_with_same_name(
+        self, create_event_bus, put_rule, aws_client, snapshot
+    ):
+        event_bus_name = f"bus-{short_uid()}"
+        create_event_bus(Name=event_bus_name)
+        snapshot.add_transformer(snapshot.transform.regex(event_bus_name, "<bus-name>"))
+
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
 
         response = put_rule(
             Name=rule_name,
+            EventBusName=event_bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
         snapshot.match("put-rule", response)
@@ -1144,31 +1147,39 @@ class TestEventRule:
         # put_rule updates the rule if it already exists
         response = put_rule(
             Name=rule_name,
+            EventBusName=event_bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
         snapshot.match("re-put-rule", response)
 
-        response = aws_client.events.list_rules(NamePrefix=rule_name)
+        response = aws_client.events.list_rules(EventBusName=event_bus_name)
         snapshot.match("list-rules", response)
 
     @markers.aws.validated
-    def test_list_rule_with_limit(self, put_rule, aws_client, snapshot):
+    def test_list_rule_with_limit(self, create_event_bus, put_rule, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
-        rule_name_prefix = "test-rule"
+
+        event_bus_name = f"bus-{short_uid()}"
+        create_event_bus(Name=event_bus_name)
+        snapshot.add_transformer(snapshot.transform.regex(event_bus_name, "<bus-name>"))
+
+        rule_name_prefix = f"test-rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name_prefix, "<rule-name-prefix>"))
         count = 6
 
         for i in range(count):
             rule_name = f"{rule_name_prefix}-{i}"
             put_rule(
                 Name=rule_name,
+                EventBusName=event_bus_name,
                 EventPattern=json.dumps(TEST_EVENT_PATTERN),
             )
 
-        response = aws_client.events.list_rules(Limit=int(count / 2))
+        response = aws_client.events.list_rules(Limit=int(count / 2), EventBusName=event_bus_name)
         snapshot.match("list-rules-limit", response)
 
         response = aws_client.events.list_rules(
-            Limit=int(count / 2) + 2, NextToken=response["NextToken"]
+            Limit=int(count / 2) + 2, NextToken=response["NextToken"], EventBusName=event_bus_name
         )
         snapshot.match("list-rules-limit-next-token", response)
 

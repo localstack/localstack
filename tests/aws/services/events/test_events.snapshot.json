@@ -105,7 +105,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[custom]": {
-    "recorded-date": "08-04-2024, 16:36:38",
+    "recorded-date": "22-04-2024, 13:07:35",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
@@ -181,7 +181,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_list_with_prefix_describe_delete_rule[default]": {
-    "recorded-date": "08-04-2024, 16:36:39",
+    "recorded-date": "22-04-2024, 13:07:36",
     "recorded-content": {
       "put-rule": {
         "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
@@ -257,17 +257,17 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_put_multiple_rules_with_same_name": {
-    "recorded-date": "08-04-2024, 17:27:57",
+    "recorded-date": "22-04-2024, 13:07:38",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "re-put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -276,8 +276,8 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
-            "EventBusName": "default",
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name>",
+            "EventBusName": "<bus-name>",
             "EventPattern": {
               "source": [
                 "core.update-account-command"
@@ -303,14 +303,14 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_list_rule_with_limit": {
-    "recorded-date": "08-04-2024, 17:29:40",
+    "recorded-date": "22-04-2024, 13:07:40",
     "recorded-content": {
       "list-rules-limit": {
         "NextToken": "<next_token:1>",
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-0",
-            "EventBusName": "default",
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-0",
+            "EventBusName": "<bus-name>",
             "EventPattern": {
               "source": [
                 "core.update-account-command"
@@ -324,12 +324,12 @@
                 ]
               }
             },
-            "Name": "test-rule-0",
+            "Name": "<rule-name-prefix>-0",
             "State": "ENABLED"
           },
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-1",
-            "EventBusName": "default",
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-1",
+            "EventBusName": "<bus-name>",
             "EventPattern": {
               "source": [
                 "core.update-account-command"
@@ -343,12 +343,12 @@
                 ]
               }
             },
-            "Name": "test-rule-1",
+            "Name": "<rule-name-prefix>-1",
             "State": "ENABLED"
           },
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-2",
-            "EventBusName": "default",
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-2",
+            "EventBusName": "<bus-name>",
             "EventPattern": {
               "source": [
                 "core.update-account-command"
@@ -362,7 +362,7 @@
                 ]
               }
             },
-            "Name": "test-rule-2",
+            "Name": "<rule-name-prefix>-2",
             "State": "ENABLED"
           }
         ],
@@ -374,8 +374,8 @@
       "list-rules-limit-next-token": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-3",
-            "EventBusName": "default",
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-3",
+            "EventBusName": "<bus-name>",
             "EventPattern": {
               "source": [
                 "core.update-account-command"
@@ -389,12 +389,12 @@
                 ]
               }
             },
-            "Name": "test-rule-3",
+            "Name": "<rule-name-prefix>-3",
             "State": "ENABLED"
           },
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-4",
-            "EventBusName": "default",
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-4",
+            "EventBusName": "<bus-name>",
             "EventPattern": {
               "source": [
                 "core.update-account-command"
@@ -408,12 +408,12 @@
                 ]
               }
             },
-            "Name": "test-rule-4",
+            "Name": "<rule-name-prefix>-4",
             "State": "ENABLED"
           },
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/test-rule-5",
-            "EventBusName": "default",
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name-prefix>-5",
+            "EventBusName": "<bus-name>",
             "EventPattern": {
               "source": [
                 "core.update-account-command"
@@ -427,7 +427,7 @@
                 ]
               }
             },
-            "Name": "test-rule-5",
+            "Name": "<rule-name-prefix>-5",
             "State": "ENABLED"
           }
         ],
@@ -439,13 +439,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_describe_nonexistent_rule": {
-    "recorded-date": "16-04-2024, 15:12:50",
+    "recorded-date": "22-04-2024, 13:07:42",
     "recorded-content": {
       "describe-not-existing-rule-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeRule operation: Rule <rule-name> does not exist on EventBus default.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[custom]": {
-    "recorded-date": "08-04-2024, 17:37:18",
+    "recorded-date": "22-04-2024, 13:07:43",
     "recorded-content": {
       "disable-rule": {
         "ResponseMetadata": {
@@ -510,7 +510,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_disable_re_enable_rule[default]": {
-    "recorded-date": "08-04-2024, 17:37:19",
+    "recorded-date": "22-04-2024, 13:07:45",
     "recorded-content": {
       "disable-rule": {
         "ResponseMetadata": {
@@ -575,7 +575,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[custom]": {
-    "recorded-date": "09-04-2024, 16:21:04",
+    "recorded-date": "22-04-2024, 13:07:17",
     "recorded-content": {
       "put-target": {
         "FailedEntries": [],
@@ -615,7 +615,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_put_list_remove_target[default]": {
-    "recorded-date": "09-04-2024, 16:21:05",
+    "recorded-date": "22-04-2024, 13:07:18",
     "recorded-content": {
       "put-target": {
         "FailedEntries": [],
@@ -655,13 +655,13 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_add_exceed_fife_targets_per_rule": {
-    "recorded-date": "16-04-2024, 15:14:29",
+    "recorded-date": "22-04-2024, 13:07:20",
     "recorded-content": {
       "put-targets-client-error": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the PutTargets operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventTarget::test_list_target_by_rule_limit": {
-    "recorded-date": "10-04-2024, 11:34:18",
+    "recorded-date": "22-04-2024, 13:07:22",
     "recorded-content": {
       "list-targets-limit": {
         "NextToken": "<next_token:1>",
@@ -703,7 +703,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_delete_rule_with_targets": {
-    "recorded-date": "16-04-2024, 15:13:31",
+    "recorded-date": "22-04-2024, 13:07:46",
     "recorded-content": {
       "delete-rule-with-targets-error": "<ExceptionInfo ClientError(\"An error occurred (ValidationException) when calling the DeleteRule operation: Rule can't be deleted since it has targets.\") tblen=3>"
     }
@@ -715,7 +715,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventRule::test_update_rule_with_targets": {
-    "recorded-date": "17-04-2024, 10:42:59",
+    "recorded-date": "22-04-2024, 13:07:48",
     "recorded-content": {
       "list-targets": {
         "Targets": [
@@ -751,7 +751,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
-    "recorded-date": "17-04-2024, 17:42:11",
+    "recorded-date": "22-04-2024, 13:11:07",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
@@ -762,10 +762,6 @@
       },
       "list-event-buses-after-create-us-east-1": {
         "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          },
           {
             "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
             "Name": "<bus-name>"
@@ -791,12 +787,7 @@
         }
       },
       "list-event-buses-after-delete-us-east-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          }
-        ],
+        "EventBuses": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -805,7 +796,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
-    "recorded-date": "17-04-2024, 17:42:13",
+    "recorded-date": "22-04-2024, 13:11:10",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
@@ -816,10 +807,6 @@
       },
       "list-event-buses-after-create-us-east-1": {
         "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          },
           {
             "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
             "Name": "<bus-name>"
@@ -848,10 +835,6 @@
       "list-event-buses-after-create-us-west-1": {
         "EventBuses": [
           {
-            "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/default",
-            "Name": "default"
-          },
-          {
             "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/<bus-name>",
             "Name": "<bus-name>"
           }
@@ -879,10 +862,6 @@
       "list-event-buses-after-create-eu-central-1": {
         "EventBuses": [
           {
-            "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/default",
-            "Name": "default"
-          },
-          {
             "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/<bus-name>",
             "Name": "<bus-name>"
           }
@@ -907,12 +886,7 @@
         }
       },
       "list-event-buses-after-delete-us-east-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          }
-        ],
+        "EventBuses": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -925,12 +899,7 @@
         }
       },
       "list-event-buses-after-delete-us-west-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/default",
-            "Name": "default"
-          }
-        ],
+        "EventBuses": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -943,12 +912,7 @@
         }
       },
       "list-event-buses-after-delete-eu-central-1": {
-        "EventBuses": [
-          {
-            "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/default",
-            "Name": "default"
-          }
-        ],
+        "EventBuses": [],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -957,26 +921,26 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_multiple_event_buses_same_name": {
-    "recorded-date": "17-04-2024, 17:42:13",
+    "recorded-date": "22-04-2024, 13:11:10",
     "recorded-content": {
       "create-multiple-event-buses-same-name": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateEventBus operation: Event bus <bus-name> already exists.') tblen=4>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_describe_delete_not_existing_event_bus": {
-    "recorded-date": "17-04-2024, 17:42:15",
+    "recorded-date": "22-04-2024, 13:11:12",
     "recorded-content": {
       "describe-not-existing-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>",
       "delete-not-existing-event-bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeEventBus operation: Event bus <bus-name> does not exist.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_delete_default_event_bus": {
-    "recorded-date": "17-04-2024, 17:42:15",
+    "recorded-date": "22-04-2024, 13:11:12",
     "recorded-content": {
       "delete-default-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the DeleteEventBus operation: Cannot delete event bus default.') tblen=3>"
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_prefix": {
-    "recorded-date": "17-04-2024, 17:42:16",
+    "recorded-date": "22-04-2024, 13:19:19",
     "recorded-content": {
       "list-event-buses-prefix-complete-name": {
         "EventBuses": [
@@ -1005,14 +969,10 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_list_event_buses_with_limit": {
-    "recorded-date": "17-04-2024, 17:42:18",
+    "recorded-date": "22-04-2024, 13:11:15",
     "recorded-content": {
       "list-event-buses-limit": {
         "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "Name": "default"
-          },
           {
             "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-0",
             "Name": "<bus-name-prefix>-0"
@@ -1020,6 +980,10 @@
           {
             "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-1",
             "Name": "<bus-name-prefix>-1"
+          },
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-2",
+            "Name": "<bus-name-prefix>-2"
           }
         ],
         "NextToken": "<next_token:1>",
@@ -1030,10 +994,6 @@
       },
       "list-event-buses-limit-next-token": {
         "EventBuses": [
-          {
-            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-2",
-            "Name": "<bus-name-prefix>-2"
-          },
           {
             "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name-prefix>-3",
             "Name": "<bus-name-prefix>-3"
@@ -1055,7 +1015,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_to_default_eventbus_for_custom_eventbus": {
-    "recorded-date": "17-04-2024, 17:42:46",
+    "recorded-date": "22-04-2024, 13:11:43",
     "recorded-content": {
       "create-custom-event-bus": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<resource:1>",
@@ -1134,7 +1094,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_events_nonexistent_event_bus": {
-    "recorded-date": "17-04-2024, 17:50:27",
+    "recorded-date": "22-04-2024, 13:12:23",
     "recorded-content": {
       "put-events": {
         "Entries": [
