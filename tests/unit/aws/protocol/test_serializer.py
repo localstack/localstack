@@ -1496,7 +1496,7 @@ def test_s3_event_streaming():
 
 
 def test_all_non_existing_key():
-    """Tests the different protocols to allow non-existing keys in strucutres / dicts."""
+    """Tests the different protocols to allow non-existing keys in structures / dicts."""
     # query
     _botocore_serializer_integration_test(
         "cloudformation",

@@ -88,7 +88,7 @@ class CommonStateField(EvalComponent, ABC):
 
     def _set_next(self, env: Environment) -> None:
         if env.next_state_name != self.name:
-            # Next was already overriden.
+            # Next was already overridden.
             return
 
         if isinstance(self.continue_with, ContinueWithNext):
