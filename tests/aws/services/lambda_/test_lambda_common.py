@@ -255,6 +255,7 @@ class TestLambdaRuntimesCommon:
         assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value
 
 
+@markers.lambda_runtime_update
 class TestLambdaCallingLocalstack:
     """=> Keep these tests synchronized with `test_lambda_endpoint_injection.py` in ext!"""
 

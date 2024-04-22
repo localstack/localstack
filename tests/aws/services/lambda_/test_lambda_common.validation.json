@@ -42,7 +42,10 @@
     "last_validated_date": "2024-03-20T21:26:46+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaCallingLocalstack::test_manual_endpoint_injection[ruby3.2]": {
-    "last_validated_date": "2024-03-20T21:26:43+00:00"
+    "last_validated_date": "2024-04-22T10:11:18+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaCallingLocalstack::test_manual_endpoint_injection[ruby3.3]": {
+    "last_validated_date": "2024-04-22T10:11:22+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[dotnet6]": {
     "last_validated_date": "2024-03-20T21:20:34+00:00"
@@ -93,7 +96,10 @@
     "last_validated_date": "2024-03-20T21:19:50+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[ruby3.2]": {
-    "last_validated_date": "2024-03-20T21:20:26+00:00"
+    "last_validated_date": "2024-04-22T10:10:53+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_echo_invoke[ruby3.3]": {
+    "last_validated_date": "2024-04-22T10:10:58+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnet6]": {
     "last_validated_date": "2024-03-20T21:21:47+00:00"
@@ -144,7 +150,10 @@
     "last_validated_date": "2024-03-20T21:21:16+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[ruby3.2]": {
-    "last_validated_date": "2024-03-20T21:21:40+00:00"
+    "last_validated_date": "2024-04-22T10:11:01+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[ruby3.3]": {
+    "last_validated_date": "2024-04-22T10:11:04+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_runtime_wrapper_invoke[dotnet6]": {
     "last_validated_date": "2024-03-20T21:24:38+00:00"
@@ -189,7 +198,10 @@
     "last_validated_date": "2024-03-20T21:24:52+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_runtime_wrapper_invoke[ruby3.2]": {
-    "last_validated_date": "2024-03-20T21:24:49+00:00"
+    "last_validated_date": "2024-04-22T10:11:12+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_runtime_wrapper_invoke[ruby3.3]": {
+    "last_validated_date": "2024-04-22T10:11:14+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[dotnet6]": {
     "last_validated_date": "2024-03-20T21:23:28+00:00"
@@ -240,6 +252,9 @@
     "last_validated_date": "2024-03-20T21:23:00+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[ruby3.2]": {
-    "last_validated_date": "2024-03-20T21:23:22+00:00"
+    "last_validated_date": "2024-04-22T10:11:06+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[ruby3.3]": {
+    "last_validated_date": "2024-04-22T10:11:09+00:00"
   }
 }
