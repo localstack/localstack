@@ -622,7 +622,7 @@ class TestCallback:
             )
             sfn_snapshot.match(f"execution_history_{i}", execution_history)
 
-    @markers.aws.needs_fixing
+    @markers.aws.validated
     def test_sqs_wait_for_task_token_call_chain(
         self,
         aws_client,
@@ -659,6 +659,36 @@ class TestCallback:
         definition = json.dumps(template)
 
         exec_input = json.dumps({"QueueUrl": queue_url, "Message": "HelloWorld"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_sqs_wait_for_task_token_no_token_parameter(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_create_queue,
+        sqs_send_task_success_state_machine,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "sqs_queue_url"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "sqs_queue_name"))
+
+        template = CT.load_sfn_template(CT.SQS_WAIT_FOR_TASK_TOKEN_NO_TOKEN_PARAMETER)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"QueueUrl": queue_url})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

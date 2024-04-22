@@ -60,3 +60,4 @@ class ContextObjectManager:
 class ContextObjectInitData(TypedDict):
     Execution: Execution
     StateMachine: StateMachine
+    Task: Optional[Task]
