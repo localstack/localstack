@@ -632,7 +632,13 @@ class TestCallback:
         sqs_send_task_success_state_machine,
         sfn_snapshot,
     ):
-        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..MessageId",
+                replacement="message_id",
+                replace_reference=True,
+            )
+        )
         sfn_snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..TaskToken",
@@ -640,6 +646,7 @@ class TestCallback:
                 replace_reference=True,
             )
         )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -651,7 +658,7 @@ class TestCallback:
         template = CT.load_sfn_template(CT.SQS_WAIT_FOR_TASK_TOKEN_CALL_CHAIN)
         definition = json.dumps(template)
 
-        exec_input = json.dumps({"QueueUrl": queue_url})
+        exec_input = json.dumps({"QueueUrl": queue_url, "Message": "HelloWorld"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

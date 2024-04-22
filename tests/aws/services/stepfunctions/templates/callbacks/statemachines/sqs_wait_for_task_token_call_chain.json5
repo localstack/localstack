@@ -1,4 +1,5 @@
 {
+  "Comment": "SQS_WAIT_FOR_TASK_TOKEN_CALL_CHAIN",
   "StartAt": "State1",
   "States": {
     "State1": {
@@ -7,11 +8,24 @@
       "Parameters": {
         "QueueUrl.$": "$.QueueUrl",
         "MessageBody": {
-          "Context.$": "$",
-          "Payload": {}
+          "Message.$": "$.Message",
+          "TaskToken.$": "$$.Task.Token"
         }
       },
-      "ResultPath": "$.State1Output",
+      ResultPath: "$.State1Output",
+      "Next": "State2"
+    },
+    "State2": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody": {
+          "Message.$": "$.Message",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      ResultPath: "$.State2Output",
       "End": true
     }
   }
