@@ -3,11 +3,13 @@ import logging
 import uuid
 from abc import ABC, abstractmethod
 
+from botocore.client import BaseClient
+
 from localstack.aws.api.events import (
     Arn,
     Target,
 )
-from localstack.aws.connect import ServiceLevelClientFactory, connect_to
+from localstack.aws.connect import connect_to
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_service_from_arn,
@@ -19,14 +21,6 @@ from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
-
-
-def connect_with_role(role_arn: str, region_name: str) -> ServiceLevelClientFactory:
-    """Connect to an internal botoclient factory using an assumed role."""
-    client = connect_to.with_assumed_role(
-        role_arn=role_arn, service_principal=ServicePrincipal.events, region_name=region_name
-    )
-    return client
 
 
 class TargetService(ABC):
@@ -44,8 +38,8 @@ class TargetService(ABC):
         self.rule_arn = rule_arn
         self.service = service
 
-        self._validate_input(self.target)
-        self._client: ServiceLevelClientFactory | None = None
+        self._validate_input(target)
+        self._client: BaseClient | None = None
 
     @property
     def arn(self):
@@ -64,25 +58,27 @@ class TargetService(ABC):
 
     def _validate_input(self, target: Target):
         """Provide a default implementation that does nothing if no specific validation is needed."""
+        # TODO add For EC2 instances, Kinesis Data Streams, Step Functions state machines and API Gateway APIs, EventBridge relies on IAM roles that you specify in the RoleARN argument in PutTargets.
+        # TODO add For Lambda and Amazon SNS resources, EventBridge relies on resource-based policies.
         pass
 
-    def _initialize_client(self) -> ServiceLevelClientFactory:
-        """Initializes internal botoclient factory, with or without assuming a role of service source.
-        If a role from a target is provided, the client will be initialized with the assumed role and events service principal.
-        If no role is provided e.g. calling send_events directly, the client will be initialized with the account ID and region."""
+    def _initialize_client(self) -> BaseClient:
+        """Initializes internal botocore client.
+        If a role from a target is provided, the client will be initialized with the assumed role.
+        If no role is provided the client will be initialized with the account ID and region.
+        In both cases event bridge is requested as service principal"""
+        service_principal = ServicePrincipal.events
         if role_arn := self.target.get("role_arn"):
-            try:
-                clients = connect_with_role(role_arn, self.region)
-            except Exception as error:
-                LOG.warn(
-                    "Could not connect to internal botoclient with assumed role %s. Error: %s, trying with account ID.",
-                    role_arn,
-                    error,
-                )
-                clients = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
+            client_factory = connect_to.with_assumed_role(
+                role_arn=role_arn, service_principal=service_principal, region_name=self.region
+            )
         else:
-            clients = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
-        return clients
+            client_factory = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
+        client = client_factory.get_client(self.service)
+        client = client.request_metadata(
+            service_principal=service_principal, source_arn=self.rule_arn
+        )
+        return client
 
 
 TargetServiceDict = dict[Arn, TargetService]
@@ -121,9 +117,6 @@ class ContainerTargetService(TargetService):
 
 class EventsTargetService(TargetService):
     def send_event(self, event):
-        events_client = self.client.events.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
         eventbus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
         source = (
             event.get("source")
@@ -142,7 +135,7 @@ class EventsTargetService(TargetService):
             else ([self.rule_arn] if self.rule_arn else [])
         )
 
-        events_client.put_events(
+        self.client.put_events(
             Entries=[
                 {
                     "EventBusName": eventbus_name,
@@ -157,24 +150,18 @@ class EventsTargetService(TargetService):
 
 class FirehoseTargetService(TargetService):
     def send_event(self, event):
-        firehose_client = self.client.firehose.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
         delivery_stream_name = firehose_name(self.target["Arn"])
-        firehose_client.put_record(
+        self.client.put_record(
             DeliveryStreamName=delivery_stream_name, Record={"Data": to_bytes(json.dumps(event))}
         )
 
 
 class KinesisTargetService(TargetService):
     def send_event(self, event):
-        kinesis_client = self.client.kinesis.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
         partition_key_path = self.target["KinesisParameters"]["PartitionKeyPath"]
         stream_name = self.target["Arn"].split("/")[-1]
         partition_key = event.get(partition_key_path, event["id"])
-        kinesis_client.put_record(
+        self.client.put_record(
             StreamName=stream_name,
             Data=to_bytes(json.dumps(event)),
             PartitionKey=partition_key,
@@ -189,10 +176,7 @@ class KinesisTargetService(TargetService):
 class LambdaTargetService(TargetService):
     def send_event(self, event):
         asynchronous = True  # TODO clarify default behavior of AWS
-        lambda_client = self.client.lambda_.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
-        lambda_client.invoke(
+        self.client.invoke(
             FunctionName=self.target["Arn"],
             Payload=to_bytes(json.dumps(event)),
             InvocationType="Event" if asynchronous else "RequestResponse",
@@ -201,13 +185,10 @@ class LambdaTargetService(TargetService):
 
 class LogsTargetService(TargetService):
     def send_event(self, event):
-        logs_client = self.client.logs.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
         log_group_name = self.target["Arn"].split(":")[6]
         log_stream_name = str(uuid.uuid4())  # Unique log stream name
-        logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
-        logs_client.put_log_events(
+        self.client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
+        self.client.put_log_events(
             logGroupName=log_group_name,
             logStreamName=log_stream_name,
             logEvents=[{"timestamp": now_utc(millis=True), "message": json.dumps(event)}],
@@ -231,21 +212,15 @@ class SagemakerTargetService(TargetService):
 
 class SnsTargetService(TargetService):
     def send_event(self, event):
-        sns_client = self.client.sns.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
-        sns_client.publish(TopicArn=self.target["Arn"], Message=json.dumps(event))
+        self.client.publish(TopicArn=self.target["Arn"], Message=json.dumps(event))
 
 
 class SqsTargetService(TargetService):
     def send_event(self, event):
-        sqs_client = self.client.sqs.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
         queue_url = sqs_queue_url_for_arn(self.target["Arn"])
         msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
-        sqs_client.send_message(
+        self.client.send_message(
             QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
         )
 
@@ -254,12 +229,7 @@ class StatesTargetService(TargetService):
     """Step Functions Target Sender"""
 
     def send_event(self, event):
-        stepfunctions_client = self.client.stepfunctions.request_metadata(
-            service_principal=self.service, source_arn=self.rule_arn
-        )
-        stepfunctions_client.start_execution(
-            stateMachineArn=self.target["Arn"], input=json.dumps(event)
-        )
+        self.client.start_execution(stateMachineArn=self.target["Arn"], input=json.dumps(event))
 
 
 class SystemsManagerService(TargetService):
