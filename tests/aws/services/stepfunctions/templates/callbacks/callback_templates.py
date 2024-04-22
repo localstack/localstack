@@ -25,6 +25,9 @@ class CallbackTemplates(TemplateLoader):
     SQS_WAIT_FOR_TASK_TOKEN: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sqs_wait_for_task_token.json5"
     )
+    SQS_WAIT_FOR_TASK_TOKEN_CALL_CHAIN: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/sqs_wait_for_task_token_call_chain.json5"
+    )
     SQS_WAIT_FOR_TASK_TOKEN_WITH_TIMEOUT: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/sqs_wait_for_task_token_with_timeout.json5"
     )

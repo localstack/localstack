@@ -1,0 +1,18 @@
+{
+  "StartAt": "State1",
+  "States": {
+    "State1": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody": {
+          "Context.$": "$",
+          "Payload": {}
+        }
+      },
+      "ResultPath": "$.State1Output",
+      "End": true
+    }
+  }
+}

@@ -2684,5 +2684,9 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_call_chain": {
+    "recorded-date": "19-04-2024, 10:22:26",
+    "recorded-content": {}
   }
 }
