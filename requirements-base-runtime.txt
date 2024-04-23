@@ -15,14 +15,11 @@ blinker==1.7.0
     #   flask
     #   quart
 boto3==1.34.84
-    # via
-    #   localstack-core (pyproject.toml)
-    #   moto-ext
+    # via localstack-core (pyproject.toml)
 botocore==1.34.84
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
-    #   moto-ext
     #   s3transfer
 build==1.2.1
     # via localstack-core (pyproject.toml)
@@ -46,7 +43,6 @@ constantly==23.10.4
 cryptography==42.0.5
     # via
     #   localstack-core (pyproject.toml)
-    #   moto-ext
     #   pyopenssl
 dill==0.3.6
     # via localstack-core (pyproject.toml)
@@ -85,14 +81,13 @@ idna==3.7
     #   requests
 incremental==22.10.0
     # via localstack-twisted
-itsdangerous==2.1.2
+itsdangerous==2.2.0
     # via
     #   flask
     #   quart
 jinja2==3.1.3
     # via
     #   flask
-    #   moto-ext
     #   quart
 jmespath==1.0.1
     # via
@@ -113,7 +108,6 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.5.post1
 packaging==24.0
     # via
     #   build
@@ -139,15 +133,11 @@ pyopenssl==24.1.0
 pyproject-hooks==1.0.0
     # via build
 python-dateutil==2.9.0.post0
-    # via
-    #   botocore
-    #   moto-ext
+    # via botocore
 python-dotenv==1.0.1
     # via localstack-core (pyproject.toml)
 pyyaml==6.0.1
-    # via
-    #   localstack-core (pyproject.toml)
-    #   responses
+    # via localstack-core (pyproject.toml)
 quart==0.19.5
     # via localstack-core (pyproject.toml)
 readerwriterlock==1.0.9
@@ -156,17 +146,13 @@ requests==2.31.0
     # via
     #   docker
     #   localstack-core (pyproject.toml)
-    #   moto-ext
     #   requests-aws4auth
-    #   responses
     #   rolo
 requests-aws4auth==1.2.3
     # via localstack-core (pyproject.toml)
-responses==0.25.0
-    # via moto-ext
 rich==13.7.1
     # via localstack-core (pyproject.toml)
-rolo==0.4.0
+rolo==0.5.0
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.1
     # via boto3
@@ -192,22 +178,18 @@ urllib3==2.2.1
     #   docker
     #   localstack-core (pyproject.toml)
     #   requests
-    #   responses
 websocket-client==1.7.0
     # via docker
 werkzeug==3.0.2
     # via
     #   flask
     #   localstack-core (pyproject.toml)
-    #   moto-ext
     #   quart
     #   rolo
 wsproto==1.2.0
     # via hypercorn
 xmltodict==0.13.0
-    # via
-    #   localstack-core (pyproject.toml)
-    #   moto-ext
+    # via localstack-core (pyproject.toml)
 zope-interface==6.3
     # via localstack-twisted
 

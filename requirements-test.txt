@@ -18,7 +18,7 @@ antlr4-python3-runtime==4.13.1
     #   moto-ext
 anyio==4.3.0
     # via httpx
-apispec==6.6.0
+apispec==6.6.1
     # via localstack-core
 argparse==1.4.0
     # via amazon-kclpy
@@ -37,7 +37,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.137.0
+aws-cdk-lib==2.138.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.87.0
     # via
@@ -90,7 +90,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.86.3
+cfn-lint==0.86.4
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -185,7 +185,7 @@ incremental==22.10.0
     # via localstack-twisted
 iniconfig==2.0.0
     # via pytest
-itsdangerous==2.1.2
+itsdangerous==2.2.0
     # via
     #   flask
     #   quart
@@ -290,7 +290,7 @@ pbr==6.0.0
     #   jschema-to-python
     #   sarif-om
     #   stevedore
-pluggy==1.4.0
+pluggy==1.5.0
     # via
     #   localstack-core (pyproject.toml)
     #   pytest
@@ -382,7 +382,7 @@ referencing==0.31.1
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2023.12.25
+regex==2024.4.16
     # via cfn-lint
 requests==2.31.0
     # via
@@ -406,7 +406,7 @@ rich==13.7.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-rolo==0.4.0
+rolo==0.5.0
     # via localstack-core
 rpds-py==0.18.0
     # via
