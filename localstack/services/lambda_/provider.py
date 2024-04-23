@@ -8,6 +8,8 @@ import threading
 import time
 from typing import IO, Optional, Tuple
 
+from werkzeug.routing import Rule
+
 from localstack import config
 from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.api.lambda_ import (
@@ -144,6 +146,7 @@ from localstack.services.lambda_.api_utils import (
     STATEMENT_ID_REGEX,
     function_locators_from_arn,
 )
+from localstack.services.lambda_.custom_endpoints import LambdaCustomEndpoints
 from localstack.services.lambda_.event_source_listeners.event_source_listener import (
     EventSourceListener,
 )
@@ -219,6 +222,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     create_fn_lock: threading.RLock
     create_layer_lock: threading.RLock
     router: FunctionUrlRouter
+    custom_router_rules: list[Rule]
     layer_fetcher: LayerFetcher | None
 
     def __init__(self) -> None:
@@ -226,6 +230,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.create_fn_lock = threading.RLock()
         self.create_layer_lock = threading.RLock()
         self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
+        self.custom_router_rules = []
         self.layer_fetcher = None
         lambda_hooks.inject_layer_fetcher.run(self)
 
@@ -308,7 +313,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.router.register_routes()
         get_runtime_executor().validate_environment()
 
+    def on_before_start(self):
+        self.custom_router_rules = ROUTER.add(LambdaCustomEndpoints())
+
     def on_before_stop(self) -> None:
+        ROUTER.remove(self.custom_router_rules)
         # TODO: should probably unregister routes?
         self.lambda_service.stop()
 

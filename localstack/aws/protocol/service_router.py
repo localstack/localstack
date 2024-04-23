@@ -325,6 +325,11 @@ def determine_aws_service_model_for_data_plane(
         services = services or get_service_catalog()
         return services.get(*custom_host_match)
 
+    # Custom service-specific endpoints that should be available before the service is loaded
+    if request.path.startswith("/_aws/lambda/"):
+        services = services or get_service_catalog()
+        return services.get("lambda")
+
 
 def determine_aws_service_model(
     request: Request, services: ServiceCatalog = None
