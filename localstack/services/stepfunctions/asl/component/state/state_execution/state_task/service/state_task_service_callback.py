@@ -140,6 +140,19 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
             return self._get_callback_outcome_failure_event(env=env, ex=ex)
         return super()._from_error(env=env, ex=ex)
 
+    def _eval_body(self, env: Environment) -> None:
+        # Generate a TaskToken uuid within the context object, if this task resources has a waitForTaskToken condition.
+        # This logic provisions a TaskToken callback uuid to support waitForTaskToken workflows as described in :
+        # https://docs.aws.amazon.com/step-functions/latest/dg/connect-to-resource.html#connect-wait-token
+        if self._is_condition() and self.resource.condition == ResourceCondition.WaitForTaskToken:
+            task_token = env.context_object_manager.update_task_token()
+            env.callback_pool_manager.add(task_token)
+
+        super()._eval_body(env=env)
+
+        # Ensure the TaskToken field is reset, as this is only available during waitForTaskToken task evaluations.
+        env.context_object_manager.context_object.pop("Task", None)
+
     def _after_eval_execution(
         self,
         env: Environment,

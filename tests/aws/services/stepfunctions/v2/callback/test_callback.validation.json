@@ -17,6 +17,12 @@
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token": {
     "last_validated_date": "2024-04-18T06:19:31+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_call_chain": {
+    "last_validated_date": "2024-04-22T14:04:58+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_no_token_parameter": {
+    "last_validated_date": "2024-04-22T17:15:14+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_wait_for_task_token_timeout": {
     "last_validated_date": "2024-04-18T06:20:28+00:00"
   },
