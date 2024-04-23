@@ -154,6 +154,9 @@ def custom_host_addressing_rules(host: str) -> Optional[ServiceModelIdentifier]:
     if ".s3-website." in host:
         return ServiceModelIdentifier("s3")
 
+    if ".iot." in host:
+        return ServiceModelIdentifier("iot-data")
+
 
 def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
     """
@@ -289,7 +292,7 @@ def resolve_conflicts(
 ) -> ServiceModelIdentifier:
     """
     Some service definitions are overlapping to a point where they are _not_ distinguishable at all
-    (f.e. ``DescribeEndpints`` in timestream-query and timestream-write).
+    (f.e. ``DescribeEndpoints`` in timestream-query and timestream-write).
     These conflicts need to be resolved manually.
     """
     service_name_candidates = {service.name for service in candidates}
