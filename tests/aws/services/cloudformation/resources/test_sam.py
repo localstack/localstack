@@ -4,6 +4,7 @@ import os.path
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 
 
 @markers.aws.validated
@@ -35,3 +36,29 @@ def test_sam_template(deploy_cfn_template, aws_client):
     result = aws_client.lambda_.invoke(FunctionName=func_name)
     result = json.load(result["Payload"])
     assert result == {"hello": "world"}
+
+
+@markers.aws.validated
+def test_sam_sqs_event(deploy_cfn_template, aws_client):
+    result_key = f"event-{short_uid()}"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sam_sqs_template.yml"
+        ),
+        parameters={"ResultKey": result_key},
+    )
+
+    queue_url = stack.outputs["QueueUrl"]
+    bucket_name = stack.outputs["BucketName"]
+
+    message_body = "test"
+    aws_client.sqs.send_message(QueueUrl=queue_url, MessageBody=message_body)
+
+    def get_object():
+        return json.loads(
+            aws_client.s3.get_object(Bucket=bucket_name, Key=result_key)["Body"].read().decode()
+        )["Records"][0]["body"]
+
+    body = retry(get_object, retries=10, sleep=5.0)
+
+    assert body == message_body

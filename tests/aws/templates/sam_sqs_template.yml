@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Description: |
+  Example of SAM EventSourceMapping failure
+
+Globals:
+  Function:
+    Timeout: 10
+
+Parameters:
+  ResultKey:
+    Type: String
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+
+  Lambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      AutoPublishAlias: live
+      InlineCode: |
+        import boto3
+        import json
+        import os
+        def handler(event, context):
+            client = boto3.client("s3")
+            body = json.dumps(event)
+            client.put_object(Bucket=os.environ["BUCKET_NAME"], Key=os.environ["RESULT_KEY"], Body=body)
+            return {"event": event}
+      Handler: index.handler
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref Bucket
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref Bucket
+          RESULT_KEY: !Ref ResultKey
+      Runtime: python3.11
+      Events:
+        SourceSQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SQSQueue.Arn
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 10
+
+  SQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 3600
+      VisibilityTimeout: 60
+
+
+Outputs:
+  QueueUrl:
+    Value: !GetAtt SQSQueue.QueueUrl
+  BucketName:
+    Value: !Ref Bucket
