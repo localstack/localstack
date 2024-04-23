@@ -17,6 +17,8 @@ from docker.errors import APIError, ContainerError, DockerException, ImageNotFou
 from docker.models.containers import Container
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
+from localstack.config import LS_LOG
+from localstack.constants import TRACE_LOG_LEVELS
 from localstack.utils.collections import ensure_list
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
@@ -75,7 +77,9 @@ class SdkDockerClient(ContainerClient):
             try:
                 return docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
             except DockerException as e:
-                LOG.debug("Creating Docker SDK client failed: %s", e, exc_info=e)
+                LOG.debug(
+                    "Creating Docker SDK client failed: %s", e, exc_info=LS_LOG in TRACE_LOG_LEVELS
+                )
                 if attempt < DOCKER_SDK_DEFAULT_RETRIES:
                     # wait for a second before retrying
                     sleep(1)
