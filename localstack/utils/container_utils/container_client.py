@@ -840,6 +840,7 @@ class ContainerClient(metaclass=ABCMeta):
             privileged=container_config.privileged,
             platform=container_config.platform,
             labels=container_config.labels,
+            ulimits=container_config.ulimits,
         )
 
     @abstractmethod
@@ -869,6 +870,8 @@ class ContainerClient(metaclass=ABCMeta):
         privileged: Optional[bool] = None,
         labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
+        ulimits: Optional[List[Ulimit]] = None,
+        init: Optional[bool] = None,
     ) -> str:
         """Creates a container with the given image
 
