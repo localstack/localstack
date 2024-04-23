@@ -720,6 +720,9 @@ class TestEventBus:
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus-name>"))
 
         for region in regions:
+            # overwriting randomized region https://docs.localstack.cloud/contributing/multi-account-region-testing/
+            # requires manually adding region replacement for snapshot
+            snapshot.add_transformer(snapshot.transform.regex(region, "<region>"))
             events = aws_client_factory(region_name=region).events
 
             response = events.create_event_bus(Name=bus_name)

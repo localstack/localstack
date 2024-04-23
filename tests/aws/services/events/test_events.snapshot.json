@@ -751,7 +751,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions0]": {
-    "recorded-date": "22-04-2024, 13:11:07",
+    "recorded-date": "23-04-2024, 06:11:32",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
@@ -796,7 +796,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_create_list_describe_delete_custom_event_buses[regions1]": {
-    "recorded-date": "22-04-2024, 13:11:10",
+    "recorded-date": "23-04-2024, 06:11:34",
     "recorded-content": {
       "create-custom-event-bus-us-east-1": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
@@ -826,7 +826,7 @@
         }
       },
       "create-custom-event-bus-us-west-1": {
-        "EventBusArn": "arn:aws:events:us-west-1:111111111111:event-bus/<bus-name>",
+        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -835,7 +835,7 @@
       "list-event-buses-after-create-us-west-1": {
         "EventBuses": [
           {
-            "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/<bus-name>",
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
             "Name": "<bus-name>"
           }
         ],
@@ -845,7 +845,7 @@
         }
       },
       "describe-custom-event-bus-us-west-1": {
-        "Arn": "arn:aws:events:us-west-1:111111111111:event-bus/<bus-name>",
+        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
         "Name": "<bus-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -853,7 +853,7 @@
         }
       },
       "create-custom-event-bus-eu-central-1": {
-        "EventBusArn": "arn:aws:events:eu-central-1:111111111111:event-bus/<bus-name>",
+        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -862,7 +862,7 @@
       "list-event-buses-after-create-eu-central-1": {
         "EventBuses": [
           {
-            "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/<bus-name>",
+            "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
             "Name": "<bus-name>"
           }
         ],
@@ -872,7 +872,7 @@
         }
       },
       "describe-custom-event-bus-eu-central-1": {
-        "Arn": "arn:aws:events:eu-central-1:111111111111:event-bus/<bus-name>",
+        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
         "Name": "<bus-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
