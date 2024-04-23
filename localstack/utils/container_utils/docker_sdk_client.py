@@ -78,7 +78,10 @@ class SdkDockerClient(ContainerClient):
                 return docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
             except DockerException as e:
                 LOG.debug(
-                    "Creating Docker SDK client failed: %s", e, exc_info=LS_LOG in TRACE_LOG_LEVELS
+                    "Creating Docker SDK client failed: %s. "
+                    "Did you forget to mount the host's Docker socket at `/var/run/docker.sock`?",
+                    e,
+                    exc_info=LS_LOG in TRACE_LOG_LEVELS,
                 )
                 if attempt < DOCKER_SDK_DEFAULT_RETRIES:
                     # wait for a second before retrying
