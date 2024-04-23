@@ -169,6 +169,11 @@ class ASLParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by ASLParser#max_concurrency_path_decl.
+    def visitMax_concurrency_path_decl(self, ctx:ASLParser.Max_concurrency_path_declContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by ASLParser#parameters_decl.
     def visitParameters_decl(self, ctx:ASLParser.Parameters_declContext):
         return self.visitChildren(ctx)

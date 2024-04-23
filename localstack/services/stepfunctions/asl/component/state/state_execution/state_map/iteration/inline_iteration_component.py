@@ -26,7 +26,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     JobPool,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
-    MaxConcurrency,
+    DEFAULT_MAX_CONCURRENCY_VALUE,
 )
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -99,7 +99,9 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
         )
 
         number_of_workers = (
-            len(input_items) if max_concurrency == MaxConcurrency.DEFAULT else max_concurrency
+            len(input_items)
+            if max_concurrency == DEFAULT_MAX_CONCURRENCY_VALUE
+            else max_concurrency
         )
         for _ in range(number_of_workers):
             self._launch_worker(env=env)

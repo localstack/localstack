@@ -54,6 +54,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
+    MaxConcurrencyDecl,
 )
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -66,7 +67,7 @@ class StateMap(ExecutionState):
     item_reader: Optional[ItemReader]
     item_selector: Optional[ItemSelector]
     parameters: Optional[Parameters]
-    max_concurrency: MaxConcurrency
+    max_concurrency_decl: MaxConcurrencyDecl
     result_path: Optional[ResultPath]
     result_selector: ResultSelector
     retry: Optional[RetryDecl]
@@ -84,7 +85,7 @@ class StateMap(ExecutionState):
         self.item_reader = state_props.get(ItemReader)
         self.item_selector = state_props.get(ItemSelector)
         self.parameters = state_props.get(Parameters)
-        self.max_concurrency = state_props.get(MaxConcurrency) or MaxConcurrency()
+        self.max_concurrency_decl = state_props.get(MaxConcurrencyDecl) or MaxConcurrency()
         self.result_path = state_props.get(ResultPath) or ResultPath(
             result_path_src=ResultPath.DEFAULT_PATH
         )
@@ -112,6 +113,8 @@ class StateMap(ExecutionState):
             raise ValueError(f"Unknown value for IteratorDecl '{iteration_decl}'.")
 
     def _eval_execution(self, env: Environment) -> None:
+        max_concurrency_num = env.stack.pop()
+
         self.items_path.eval(env)
         if self.item_reader:
             env.event_history.add_event(
@@ -135,7 +138,7 @@ class StateMap(ExecutionState):
         if isinstance(self.iteration_component, InlineIterator):
             eval_input = InlineIteratorEvalInput(
                 state_name=self.name,
-                max_concurrency=self.max_concurrency.num,
+                max_concurrency=max_concurrency_num,
                 input_items=input_items,
                 parameters=self.parameters,
                 item_selector=self.item_selector,
@@ -143,7 +146,7 @@ class StateMap(ExecutionState):
         elif isinstance(self.iteration_component, DistributedIterator):
             eval_input = DistributedIteratorEvalInput(
                 state_name=self.name,
-                max_concurrency=self.max_concurrency.num,
+                max_concurrency=max_concurrency_num,
                 input_items=input_items,
                 parameters=self.parameters,
                 item_selector=self.item_selector,
@@ -152,7 +155,7 @@ class StateMap(ExecutionState):
         elif isinstance(self.iteration_component, InlineItemProcessor):
             eval_input = InlineItemProcessorEvalInput(
                 state_name=self.name,
-                max_concurrency=self.max_concurrency.num,
+                max_concurrency=max_concurrency_num,
                 input_items=input_items,
                 item_selector=self.item_selector,
                 parameters=self.parameters,
@@ -160,7 +163,7 @@ class StateMap(ExecutionState):
         elif isinstance(self.iteration_component, DistributedItemProcessor):
             eval_input = DistributedItemProcessorEvalInput(
                 state_name=self.name,
-                max_concurrency=self.max_concurrency.num,
+                max_concurrency=max_concurrency_num,
                 input_items=input_items,
                 item_reader=self.item_reader,
                 item_selector=self.item_selector,
@@ -183,6 +186,9 @@ class StateMap(ExecutionState):
     def _eval_state(self, env: Environment) -> None:
         # Initialise the retry counter for execution states.
         env.context_object_manager.context_object["State"]["RetryCount"] = 0
+
+        # Evaluate state level properties.
+        self.max_concurrency_decl.eval(env=env)
 
         # Attempt to evaluate the state's logic through until it's successful, caught, or retries have run out.
         while True:

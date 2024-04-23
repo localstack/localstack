@@ -175,6 +175,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
+    MaxConcurrencyPath,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.mode import (
     Mode,
@@ -545,6 +546,10 @@ class Preprocessor(ASLParserVisitor):
         self, ctx: ASLParser.Max_concurrency_declContext
     ) -> MaxConcurrency:
         return MaxConcurrency(num=int(ctx.INT().getText()))
+
+    def visitMax_concurrency_path_decl(self, ctx: ASLParser.Max_concurrency_path_declContext):
+        max_concurrency_path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return MaxConcurrencyPath(max_concurrency_path=max_concurrency_path)
 
     def visitMode_decl(self, ctx: ASLParser.Mode_declContext) -> Mode:
         mode_type: int = self.visit(ctx.mode_type())
