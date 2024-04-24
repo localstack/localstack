@@ -6,7 +6,6 @@ import queue
 import re
 import socket
 import threading
-from functools import lru_cache
 from time import sleep
 from typing import Dict, List, Optional, Tuple, Union, cast
 from urllib.parse import quote
@@ -469,7 +468,6 @@ class SdkDockerClient(ContainerClient):
             LOG.info("Container has more than one assigned network. Picking the first one...")
         return networks[network_names[0]]["IPAddress"]
 
-    @lru_cache(maxsize=None)
     def has_docker(self) -> bool:
         try:
             if not self.docker_client:
