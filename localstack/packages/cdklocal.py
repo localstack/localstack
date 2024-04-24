@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from typing import List
 
@@ -26,6 +27,15 @@ class CdkLocalInstaller(NodePackageInstaller):
             package_name=package_name,
             package_spec=[f"{package_name}@{version}", "aws-cdk"],
             version=version,
+        )
+
+    def _get_install_marker_path(self, install_dir: str) -> str:
+        return os.path.join(
+            install_dir,
+            "node_modules",
+            self.package_name,
+            "bin",
+            "cdklocal",
         )
 
 
