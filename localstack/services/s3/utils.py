@@ -102,6 +102,11 @@ def s3_response_handler(chain: HandlerChain, context: RequestContext, response: 
     not allow you to remove headers, only add them.
     This handler can delete headers from the response.
     """
+    # some requests, for example coming frome extensions, are flagged as S3 requests. This check confirms that it is
+    # indeed truly an S3 request by checking if it parsed properly as an S3 operation
+    if not context.service_operation:
+        return
+
     # if AWS returns 204, it will not return a body, Content-Length and Content-Type
     # the web server is already taking care of deleting the body, but it's more explicit to remove it here
     if response.status_code == 204:
