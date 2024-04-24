@@ -134,7 +134,11 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
 )
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError
-from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
+from localstack.aws.handlers import (
+    modify_service_response,
+    preprocess_request,
+    serve_custom_service_request_handlers,
+)
 from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
@@ -161,6 +165,7 @@ from localstack.services.s3.utils import (
     get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
     get_permission_from_header,
+    s3_response_handler,
     serialize_expiration_header,
     validate_kms_key_id,
     verify_checksum,
@@ -230,8 +235,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         preprocess_request.append(self._cors_handler)
         register_website_hosting_routes(router=ROUTER)
         serve_custom_service_request_handlers.append(s3_cors_request_handler)
+        modify_service_response.append(self.service, s3_response_handler)
         # registering of virtual host routes happens with the hook on_infra_ready in virtual_host.py
-        # create a AWS managed KMS key at start and save it in the store for persistence?
 
     def __init__(self) -> None:
         super().__init__()

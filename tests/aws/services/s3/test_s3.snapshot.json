@@ -11612,7 +11612,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_presigned_post_with_different_user_credentials": {
-    "recorded-date": "11-04-2024, 20:50:35",
+    "recorded-date": "24-04-2024, 18:30:08",
     "recorded-content": {
       "get-obj": {
         "AcceptRanges": "bytes",

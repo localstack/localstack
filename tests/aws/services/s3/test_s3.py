@@ -971,7 +971,6 @@ class TestS3:
             ],
         }
         response = aws_client.s3.put_bucket_policy(Bucket=s3_bucket, Policy=json.dumps(policy))
-        # assert response["ResponseMetadata"]["HTTPStatusCode"] == 204
         snapshot.match("put-bucket-policy", response)
 
         # retrieve and check policy config
@@ -4856,6 +4855,7 @@ class TestS3:
         resp_dict = xmltodict.parse(resp.content)
         assert "CopyObjectResult" in resp_dict
         assert resp_dict["CopyObjectResult"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
+        assert resp.status_code == 200
 
         multipart_key = "multipart-key"
         create_multipart = aws_client.s3.create_multipart_upload(
@@ -4866,6 +4866,16 @@ class TestS3:
         upload_part_url = f"{bucket_url}/{multipart_key}?UploadId={upload_id}&PartNumber=1"
         resp = s3_http_client.put(upload_part_url, headers=headers)
         assert not resp.content, resp.content
+        assert resp.status_code == 200
+        assert resp.headers.get("Content-Type") is None
+        assert resp.headers["Content-Length"] == "0"
+
+        # DeleteObjectTagging
+        resp = s3_http_client.delete(get_object_tagging_url, headers=headers)
+        assert not resp.content, resp.content
+        assert resp.status_code == 204
+        assert resp.headers.get("Content-Type") is None
+        assert resp.headers.get("Content-Length") is None
 
     @markers.aws.validated
     def test_s3_timestamp_precision(self, s3_bucket, aws_client, aws_http_client_factory):
@@ -6053,11 +6063,11 @@ class TestS3PresignedUrl:
             response = requests.delete(url, headers=headers, verify=False)
             assert not response.content
             assert response.status_code == 204
-            # AWS does not send a content-length header at all, legacy localstack sends a 0 length header
-            assert response.headers.get("content-length") in [
-                "0",
-                None,
-            ], f"Unexpected content-length in headers {response.headers}"
+            assert response.headers.get("x-amz-id-2") is not None
+            # AWS does not return a Content-Type when the body is empty and it returns 204
+            assert response.headers.get("content-type") is None
+            # AWS does not send a content-length header at all
+            assert response.headers.get("content-length") is None
 
     @markers.aws.validated
     def test_head_has_correct_content_length_header(self, s3_bucket, aws_client):
@@ -11002,6 +11012,7 @@ class TestS3PresignedPost:
             verify=False,
         )
         assert response.status_code == 204
+        assert response.headers.get("Content-Type") is None
 
         get_obj = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("get-obj", get_obj)

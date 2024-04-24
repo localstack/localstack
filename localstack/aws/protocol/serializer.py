@@ -1501,7 +1501,6 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
                 request_id,
             )
         self._serialize_content_type(response, shape, shape_members, mime_type)
-        self._prepare_additional_traits_in_response(response, operation_model, request_id)
 
     def _serialize_error(
         self,
