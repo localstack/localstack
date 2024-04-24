@@ -36,9 +36,9 @@ from typing import Type
 from localstack import config
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
-from emulator_base_store.base_store import CrossAccountAttribute, CrossRegionAttribute, LocalAttribute  # noqa
-from emulator_base_store.base_store import BaseStore, BaseStoreType  # noqa
-from emulator_base_store.base_store import GenericAccountRegionBundle, GenericRegionBundle
+from localstack_stores.models import CrossAccountAttribute, CrossRegionAttribute, LocalAttribute  # noqa
+from localstack_stores.models import BaseStore, BaseStoreType  # noqa
+from localstack_stores.models import GenericAccountRegionBundle, GenericRegionBundle
 
 
 #
