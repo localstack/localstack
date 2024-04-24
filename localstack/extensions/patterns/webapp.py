@@ -13,7 +13,7 @@ from localstack.aws.api import RequestContext
 from localstack.extensions.api import Extension, http
 
 if t.TYPE_CHECKING:
-    # make sure jinja2 stays optional
+    # although jinja2 is included transitively via moto, let's make sure jinja2 stays optional
     import jinja2
 
 LOG = logging.getLogger(__name__)
@@ -25,7 +25,8 @@ class WebAppExtension(Extension):
     """
     EXPERIMENTAL! This class is experimental and the API may change without notice.
 
-    A webapp extension serves routes, templates, and static files via a submount and a subdomain through localstack.
+    A webapp extension serves routes, templates, and static files via a submount and a subdomain through
+    localstack.
 
     It assumes you have the following directory layout::
 
@@ -59,6 +60,13 @@ class WebAppExtension(Extension):
     * Submount: https://localhost.localstack.cloud:4566/_extension/my-extension
     * Subdomain: https://my-extension.localhost.localstack.cloud:4566/
 
+    Both are created for full flexibility:
+
+    * Subdomains: create a domain namespace that can be helpful for some extensions, especially when
+      running on the local machine
+    * Submounts: for some environments, like in ephemeral instances where subdomains are harder to control,
+      submounts are more convenient
+
     Any routes added by the extension will be served relative to these URLs.
     """
 
@@ -72,17 +80,20 @@ class WebAppExtension(Extension):
         static_url_path: str = None,
     ):
         """
-        Overwrite to customize your extension. For example, you can disable certain behavior by calling ``super(
-        ).__init__(subdomain=None, static_package_path=None)``, which will disable serving through a subdomain,
-        and disable static file serving.
+        Overwrite to customize your extension. For example, you can disable certain behavior by calling
+        ``super( ).__init__(subdomain=None, static_package_path=None)``, which will disable serving through
+        a subdomain, and disable static file serving.
 
-        :param mount: the "mount point" which will be used as default value for the submount and subdirectory, i.e.,
-            ``<mount>.localhost.localstack.cloud`` and ``localhost.localstack.cloud/_extension/<mount>``. Defaults to
-            the extension name.
-        :param submount: the submount path, needs to start with a trailing slash (default ``/_extension/<mount>``)
+        :param mount: the "mount point" which will be used as default value for the submount and
+            subdirectory, i.e., ``<mount>.localhost.localstack.cloud`` and
+            ``localhost.localstack.cloud/_extension/<mount>``. Defaults to the extension name.  Note that,
+            in case the mount name clashes with another extension, extensions may overwrite each other's
+            routes.
+        :param submount: the submount path, needs to start with a trailing slash (default
+            ``/_extension/<mount>``)
         :param subdomain: the subdomain (defaults to the value of ``mount``)
-        :param template_package_path: the path to the templates within the module. defaults to ``templates`` which
-            expands to ``<extension-module>.templates``)
+        :param template_package_path: the path to the templates within the module. defaults to
+            ``templates`` which expands to ``<extension-module>.templates``)
         :param static_package_path: the package serving static files. defaults to ``static``, which expands to
             ``<extension-module>.static``.
         :param static_url_path: the URL path to serve static files from (defaults to `/static`)
@@ -104,8 +115,8 @@ class WebAppExtension(Extension):
 
     def collect_routes(self, routes: list[t.Any]):
         """
-        This method can be overwritten to add more routes to the controller. Everything in ``routes`` will be added
-        to a ``RuleAdapter`` and subsequently mounted into the gateway router.
+        This method can be overwritten to add more routes to the controller. Everything in ``routes`` will
+        be added to a ``RuleAdapter`` and subsequently mounted into the gateway router.
 
         Here are some examples::
 
@@ -147,7 +158,7 @@ class WebAppExtension(Extension):
         * ``localhost.localstack.cloud:4566/_extension/my-extension/hello``
         * ``localhost.localstack.cloud:4566/_extension/my-extension/say-hello``
         * ``localhost.localstack.cloud:4566/_extension/my-extension/empty-dict``
-        * ``localhost.localstack.cloud:4566/_extension/my-extension/static``  <- automatically added static file endpoint
+        * ``localhost.localstack.cloud:4566/_extension/my-extension/static`` <- auto-added static file serving
 
         :param routes: the routes being collected
         """
@@ -156,9 +167,10 @@ class WebAppExtension(Extension):
     @cached_property
     def template_env(self) -> t.Optional["jinja2.Environment"]:
         """
-        Returns the singleton jinja2 template environment. By default, the environment uses a ``PackageLoader`` that
-        loads from ``my_extension.templates`` (where ``my_extension`` is the root module of the extension,
-        and ``templates`` refers to ``self.template_package_path``, which is ``templates`` by default).
+        Returns the singleton jinja2 template environment. By default, the environment uses a
+        ``PackageLoader`` that loads from ``my_extension.templates`` (where ``my_extension`` is the root
+        module of the extension, and ``templates`` refers to ``self.template_package_path``,
+        which is ``templates`` by default).
 
         :return: a template environment
         """
@@ -313,8 +325,8 @@ class WebAppExtension(Extension):
     def get_extension_module_root(cls) -> str:
         """
         Returns the root of the extension module. For instance, if the extension lives in
-        ``my_extension/plugins/extension.py``, then this will return ``my_extension``. Used to set up the logger as
-        well as the template environment and the static file module.
+        ``my_extension/plugins/extension.py``, then this will return ``my_extension``. Used to set up the
+        logger as well as the template environment and the static file module.
 
         :return: the root module the extension lives in
         """
