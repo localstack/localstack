@@ -79,7 +79,7 @@ class SdkDockerClient(ContainerClient):
             except DockerException as e:
                 LOG.debug(
                     "Creating Docker SDK client failed: %s. "
-                    "Did you forget to mount the host's Docker socket at `/var/run/docker.sock`?",
+                    "If you want to use Docker as container runtime, make sure to mount the socket at /var/run/docker.sock",
                     e,
                     exc_info=LS_LOG in TRACE_LOG_LEVELS,
                 )
