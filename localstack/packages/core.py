@@ -4,7 +4,7 @@ import re
 from abc import ABC
 from functools import lru_cache
 from sys import version_info
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import requests
 
@@ -12,6 +12,7 @@ from localstack import config
 
 from ..constants import LOCALSTACK_VENV_FOLDER, MAVEN_REPO_URL
 from ..utils.archives import download_and_extract
+from ..utils.collections import ensure_list
 from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
 from ..utils.http import download
 from ..utils.run import is_root, run
@@ -193,7 +194,7 @@ class NodePackageInstaller(ExecutableInstaller):
         self,
         package_name: str,
         version: str,
-        package_spec: Optional[str] = None,
+        package_spec: Optional[Union[List[str], str]] = None,
         main_module: str = "main.js",
     ):
         """
@@ -207,7 +208,7 @@ class NodePackageInstaller(ExecutableInstaller):
         super().__init__(package_name, version)
         self.package_name = package_name
         # If the package spec is not explicitly set (f.e. to a repo), we build it and pin the version
-        self.package_spec = package_spec or f"{self.package_name}@{version}"
+        self.package_spec = package_spec or [f"{self.package_name}@{version}"]
         self.main_module = main_module
 
     def _get_install_marker_path(self, install_dir: str) -> str:
@@ -215,6 +216,7 @@ class NodePackageInstaller(ExecutableInstaller):
 
     def _install(self, target: InstallTarget) -> None:
         target_dir = self._get_install_dir(target)
+        package_spec = ensure_list(self.package_spec)
 
         run(
             [
@@ -222,8 +224,8 @@ class NodePackageInstaller(ExecutableInstaller):
                 "install",
                 "--prefix",
                 target_dir,
-                self.package_spec,
             ]
+            + package_spec,
         )
         # npm 9+ does _not_ set the ownership of files anymore if run as root
         # - https://github.blog/changelog/2022-10-24-npm-v9-0-0-released/
