@@ -403,7 +403,7 @@ class ResourceProviderExecutor:
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
 
-        max_iterations = ceil(max_timeout/sleep_time)
+        max_iterations = max(ceil(max_timeout / sleep_time), 2)
 
         for current_iteration in range(max_iterations):
             resource_type = get_resource_type(

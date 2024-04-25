@@ -1041,8 +1041,8 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 # Show exceptions for CloudFormation deploy errors
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 
-# Set the timeout for CloudFormation resources
-CFN_PER_RESOURCE_TIMEOUT = int(os.environ.get("CFN_PER_RESOURCE_TIMEOUT") or 150)
+# Set the timeout to deploy each individual CloudFormation resource
+CFN_PER_RESOURCE_TIMEOUT = int(os.environ.get("CFN_PER_RESOURCE_TIMEOUT") or 300)
 
 # How localstack will react to encountering unsupported resource types.
 # By default unsupported resource types will be ignored.
