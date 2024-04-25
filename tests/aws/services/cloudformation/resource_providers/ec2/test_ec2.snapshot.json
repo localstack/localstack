@@ -29,5 +29,110 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_prefix_list": {
+    "recorded-date": "25-04-2024, 20:13:09",
+    "recorded-content": {
+      "prefix-list": {
+        "PrefixLists": [
+          {
+            "AddressFamily": "IPv4",
+            "MaxEntries": 10,
+            "OwnerId": "111111111111",
+            "PrefixListArn": "arn:aws:ec2:<region>:111111111111:prefix-list/pl-0b6a86bf7f7f08b08",
+            "PrefixListId": "pl-0b6a86bf7f7f08b08",
+            "PrefixListName": "vpc-1-servers",
+            "State": "create-complete",
+            "Tags": [
+              {
+                "Key": "Name",
+                "Value": "VPC-1-Servers"
+              }
+            ],
+            "Version": 1
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_vpc_endpoint": {
+    "recorded-date": "25-04-2024, 20:59:26",
+    "recorded-content": {
+      "endpoint": {
+        "VpcEndpoints": [
+          {
+            "CreationTimestamp": "timestamp",
+            "DnsEntries": [
+              {
+                "DnsName": "vpce-01c9b083eb86c3beb-nwziymm0.logs.<region>.vpce.amazonaws.com",
+                "HostedZoneId": "Z7HUB22UULQXV"
+              },
+              {
+                "DnsName": "vpce-01c9b083eb86c3beb-nwziymm0-<region>b.logs.<region>.vpce.amazonaws.com",
+                "HostedZoneId": "Z7HUB22UULQXV"
+              },
+              {
+                "DnsName": "vpce-01c9b083eb86c3beb-nwziymm0-<region>a.logs.<region>.vpce.amazonaws.com",
+                "HostedZoneId": "Z7HUB22UULQXV"
+              },
+              {
+                "DnsName": "logs.<region>.amazonaws.com",
+                "HostedZoneId": "Z05556371UP8QK29QOBHP"
+              },
+              {
+                "DnsName": "logs.<region>.api.aws",
+                "HostedZoneId": "Z007142438I746UUEC2Z6"
+              }
+            ],
+            "DnsOptions": {
+              "DnsRecordIpType": "ipv4"
+            },
+            "Groups": [
+              {
+                "GroupId": "sg-0329dfcc1e09f3129",
+                "GroupName": "stack-ce83136f-mySecurityGroup-A7D3oxfuNTlz"
+              }
+            ],
+            "IpAddressType": "ipv4",
+            "NetworkInterfaceIds": [
+              "eni-0a1516a1f85bd3330",
+              "eni-024c434216d1e7d68"
+            ],
+            "OwnerId": "111111111111",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "*",
+                  "Effect": "Allow",
+                  "Principal": "*",
+                  "Resource": "*"
+                }
+              ]
+            },
+            "PrivateDnsEnabled": true,
+            "RequesterManaged": false,
+            "RouteTableIds": [],
+            "ServiceName": "com.amazonaws.<region>.logs",
+            "State": "available",
+            "SubnetIds": [
+              "subnet-09f974705df234175",
+              "subnet-089ce549422084a3d"
+            ],
+            "Tags": [],
+            "VpcEndpointId": "vpce-01c9b083eb86c3beb",
+            "VpcEndpointType": "Interface",
+            "VpcId": "vpc-0a40393eb24b050c6"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
