@@ -199,7 +199,11 @@ from localstack.aws.api.s3 import (
     VersioningConfiguration,
     WebsiteConfiguration,
 )
-from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
+from localstack.aws.handlers import (
+    modify_service_response,
+    preprocess_request,
+    serve_custom_service_request_handlers,
+)
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
@@ -244,6 +248,7 @@ from localstack.services.s3.utils import (
     parse_post_object_tagging_xml,
     parse_range_header,
     parse_tagging_header,
+    s3_response_handler,
     serialize_expiration_header,
     str_to_rfc_1123_datetime,
     validate_dict_fields,
@@ -306,6 +311,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         preprocess_request.append(self._cors_handler)
         serve_custom_service_request_handlers.append(s3_cors_request_handler)
+        modify_service_response.append(self.service, s3_response_handler)
         register_website_hosting_routes(router=ROUTER)
 
     def accept_state_visitor(self, visitor: StateVisitor):
