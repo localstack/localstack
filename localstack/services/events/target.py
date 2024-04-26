@@ -9,6 +9,7 @@ from localstack.aws.api.events import (
     Arn,
     PutEventsRequestEntry,
     Target,
+    TargetInputPath,
 )
 from localstack.aws.connect import connect_to
 from localstack.utils import collections
@@ -18,10 +19,18 @@ from localstack.utils.aws.arns import (
     sqs_queue_url_for_arn,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
+
+
+def transform_event_with_target_input_path(
+    input_path: TargetInputPath, event: PutEventsRequestEntry
+) -> PutEventsRequestEntry:
+    event = extract_jsonpath(event, input_path)
+    return event
 
 
 class TargetSender(ABC):
@@ -56,6 +65,12 @@ class TargetSender(ABC):
     @abstractmethod
     def send_event(self, event: PutEventsRequestEntry):
         pass
+
+    def process_event(self, event: PutEventsRequestEntry):
+        """Processes the event and send it to the target."""
+        if input_path := self.target.get("InputPath"):
+            event = transform_event_with_target_input_path(input_path, event)
+        self.send_event(event)
 
     def _validate_input(self, target: Target):
         """Provide a default implementation that does nothing if no specific validation is needed."""
