@@ -60,7 +60,7 @@
     }
   },
   "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_vpc_endpoint": {
-    "recorded-date": "26-04-2024, 16:03:39",
+    "recorded-date": "26-04-2024, 18:20:10",
     "recorded-content": {
       "endpoint": {
         "VpcEndpoints": [
@@ -68,24 +68,24 @@
             "CreationTimestamp": "timestamp",
             "DnsEntries": [
               {
-                "DnsName": "<vpc-endpoint-id:1>-03wf4zu5.logs.<region>.vpce.amazonaws.com",
+                "DnsName": "<vpc-endpoint-id:1>-0agt4gq2.logs.<region>.vpce.amazonaws.com",
                 "HostedZoneId": "Z7HUB22UULQXV"
               },
               {
-                "DnsName": "<vpc-endpoint-id:1>-03wf4zu5-<region>a.logs.<region>.vpce.amazonaws.com",
+                "DnsName": "<vpc-endpoint-id:1>-0agt4gq2-<region>a.logs.<region>.vpce.amazonaws.com",
                 "HostedZoneId": "Z7HUB22UULQXV"
               },
               {
-                "DnsName": "<vpc-endpoint-id:1>-03wf4zu5-<region>b.logs.<region>.vpce.amazonaws.com",
+                "DnsName": "<vpc-endpoint-id:1>-0agt4gq2-<region>b.logs.<region>.vpce.amazonaws.com",
                 "HostedZoneId": "Z7HUB22UULQXV"
               },
               {
                 "DnsName": "logs.<region>.amazonaws.com",
-                "HostedZoneId": "Z0307575QJ24PB9QD6XJ"
+                "HostedZoneId": "Z03485622IZMCIVXVE2YM"
               },
               {
                 "DnsName": "logs.<region>.api.aws",
-                "HostedZoneId": "Z0432462IB1POQ4EWMVI"
+                "HostedZoneId": "Z0348565395RV3OFAS1X1"
               }
             ],
             "DnsOptions": {
@@ -93,14 +93,14 @@
             },
             "Groups": [
               {
-                "GroupId": "sg-0e49bfb97b08c067a",
-                "GroupName": "stack-3f0e64b8-mySecurityGroup-1QJh2aOaZ44v"
+                "GroupId": "sg-02bb966a6bd2a6600",
+                "GroupName": "stack-2bf573ff-mySecurityGroup-KbYe60KUXEdZ"
               }
             ],
             "IpAddressType": "ipv4",
             "NetworkInterfaceIds": [
-              "eni-094e3d9997c66c3c5",
-              "eni-093d64bccacbf4dd0"
+              "eni-04026a2250f132a81",
+              "eni-05deb6d585345dc7f"
             ],
             "OwnerId": "111111111111",
             "PolicyDocument": {
@@ -119,8 +119,8 @@
             "ServiceName": "com.amazonaws.<region>.logs",
             "State": "available",
             "SubnetIds": [
-              "subnet-b-id",
-              "subnet-a-id"
+              "subnet-024422fa7eab2b027",
+              "subnet-04b38f8da01b873dc"
             ],
             "Tags": [],
             "VpcEndpointId": "<vpc-endpoint-id:1>",
