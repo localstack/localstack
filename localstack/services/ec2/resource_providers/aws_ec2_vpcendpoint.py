@@ -66,28 +66,27 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
 
         """
         model = request.desired_state
+        create_params = util.select_attributes(
+            model,
+            [
+                "PolidyDocument",
+                "PrivateDnsEnabled",
+                "RouteTablesIds",
+                "SecurityGroupIds",
+                "ServiceName",
+                "SubnetIds",
+                "VpcEndpointType",
+                "VpcId",
+            ],
+        )
 
-        # TODO: validations
+        response = request.aws_client_factory.ec2.create_vpc_endpoint(**create_params)
+        model["Id"] = response["VpcEndpoint"]["VpcEndpointId"]
+        model["DnsEntries"] = response["VpcEndpoint"]["DnsEntries"]
+        model["CreationTimestamp"] = response["VpcEndpoint"]["CreationTimestamp"]
+        model["NetworkInterfaceIds"] = response["VpcEndpoint"]["NetworkInterfaceIds"]
 
-        if not request.custom_context.get(REPEATED_INVOCATION):
-            # this is the first time this callback is invoked
-            # TODO: defaults
-            # TODO: idempotency
-            # TODO: actually create the resource
-            request.custom_context[REPEATED_INVOCATION] = True
-            return ProgressEvent(
-                status=OperationStatus.IN_PROGRESS,
-                resource_model=model,
-                custom_context=request.custom_context,
-            )
-
-        # TODO: check the status of the resource
-        # - if finished, update the model with all fields and return success event:
-        #   return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
-        # - else
-        #   return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
-
-        raise NotImplementedError
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def read(
         self,
@@ -112,7 +111,9 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
           - ec2:DeleteVpcEndpoints
           - ec2:DescribeVpcEndpoints
         """
-        raise NotImplementedError
+        model = request.desired_state
+        request.aws_client_factory.ec2.delete_vpc_endpoints(VpcEndpointIds=[model["Id"]])
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
     def update(
         self,

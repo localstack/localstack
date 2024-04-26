@@ -73,14 +73,19 @@ class EC2PrefixListProvider(ResourceProvider[EC2PrefixListProperties]):
         """
         model = request.desired_state
         create_params = util.select_attributes(
-            model, ["PrefixListName", "Entrie", "MaxEntries", "TagSpecifications", "AddressFamily"]
+            model, ["PrefixListName", "Entrie", "MaxEntries", "AddressFamily", "Tags"]
         )
+
+        if "Tags" in create_params:
+            create_params["TagSpecifications"] = [
+                {"ResourceType": "prefix-list", "Tags": create_params.pop("Tags")}
+            ]
 
         response = request.aws_client_factory.ec2.create_managed_prefix_list(**create_params)
         model["Arn"] = response["PrefixList"]["PrefixListId"]
         model["OwnerId"] = response["PrefixList"]["OwnerId"]
         model["PrefixListId"] = response["PrefixList"]["PrefixListId"]
-        model["Version"] = response["PrefixList"]["ownerId"]
+        model["Version"] = response["PrefixList"]["Version"]
 
         return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 

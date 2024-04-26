@@ -2,6 +2,7 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.testing.pytest import markers
 
@@ -48,9 +49,17 @@ def test_deploy_prefix_list(deploy_cfn_template, aws_client, snapshot):
     prefix_id = stack.outputs["PrefixRef"]
     prefix_list = aws_client.ec2.describe_managed_prefix_lists(PrefixListIds=[prefix_id])
     snapshot.match("prefix-list", prefix_list)
+    snapshot.add_transformer(snapshot.transform.key_value("PrefixListId"))
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..DnsEntries",
+        "$..Groups",
+        "$..NetworkInterfaceIds",
+    ]
+)
 def test_deploy_vpc_endpoint(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
@@ -61,3 +70,9 @@ def test_deploy_vpc_endpoint(deploy_cfn_template, aws_client, snapshot):
     endpoint_id = stack.outputs["EndpointRef"]
     endpoint = aws_client.ec2.describe_vpc_endpoints(VpcEndpointIds=[endpoint_id])
     snapshot.match("endpoint", endpoint)
+
+    snapshot.add_transformer(snapshot.transform.key_value("VpcEndpointId"))
+    snapshot.add_transformer(snapshot.transform.regex(stack.outputs["VpcId"], "vpc-id"))
+    snapshot.add_transformer(snapshot.transform.regex(stack.outputs["SubnetAId"], "subnet-a-id"))
+    snapshot.add_transformer(snapshot.transform.regex(stack.outputs["SubnetBId"], "subnet-b-id"))
+    snapshot.add_transformer(SortingTransformer("SubnetIds", sorting_fn=lambda x: x))

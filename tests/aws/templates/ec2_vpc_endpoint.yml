@@ -50,3 +50,9 @@ Outputs:
     Value:  !GetAtt CWLInterfaceEndpoint.CreationTimestamp
   Id:
     Value:  !GetAtt CWLInterfaceEndpoint.Id
+  VpcId:
+    Value: !Ref myVPC
+  SubnetAId:
+    Value: !Ref subnetA
+  SubnetBId:
+    Value: !Ref subnetB
