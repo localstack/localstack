@@ -20,7 +20,7 @@ from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 
 @markers.aws.validated
-def test_put_events_with_target_sqs(put_events_with_filter_to_sqs):
+def test_put_events_with_target_sqs(put_events_with_filter_to_sqs, snapshot):
     entries = [
         {
             "Source": TEST_EVENT_PATTERN["source"][0],
@@ -28,10 +28,17 @@ def test_put_events_with_target_sqs(put_events_with_filter_to_sqs):
             "Detail": json.dumps(EVENT_DETAIL),
         }
     ]
-    put_events_with_filter_to_sqs(
+    message = put_events_with_filter_to_sqs(
         pattern=TEST_EVENT_PATTERN,
         entries_asserts=[(entries, True)],
     )
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
+            snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+        ],
+    )
+    snapshot.match("message", message)
 
 
 @markers.aws.unknown
