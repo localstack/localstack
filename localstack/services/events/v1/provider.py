@@ -41,12 +41,12 @@ from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.http import route
 from localstack.services.edge import ROUTER
 from localstack.services.events.event_ruler import matches_rule
-from localstack.services.events.models import EventsStore, events_stores
 from localstack.services.events.scheduler import JobScheduler
-from localstack.services.events.utils import (
+from localstack.services.events.v1.models import EventsStore, events_stores
+from localstack.services.events.v1.utils import (
     InvalidEventPatternException as InternalInvalidEventPatternException,
 )
-from localstack.services.events.utils import matches_event
+from localstack.services.events.v1.utils import matches_event
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import event_bus_arn, parse_arn
