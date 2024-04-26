@@ -356,7 +356,7 @@ def events_v1():
 
 @aws_provider(api="events", name="v2")
 def events_v2():
-    from localstack.services.events.provider_v2 import EventsProvider
+    from localstack.services.events.provider import EventsProvider
 
     provider = EventsProvider()
     return Service.for_provider(provider)
