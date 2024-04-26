@@ -809,8 +809,14 @@ def add_resolv_entry(file_path: Path | str = Path("/etc/resolv.conf")):
     try:
         with file_path.open("r+") as outfile:
             PREVIOUS_RESOLV_CONF_FILE = outfile.read()
+            previous_resolv_conf_without_nameservers = [
+                line
+                for line in PREVIOUS_RESOLV_CONF_FILE.splitlines()
+                if not line.startswith("nameserver")
+            ]
             outfile.seek(0)
             outfile.write(content)
+            outfile.write("\n".join(previous_resolv_conf_without_nameservers))
             outfile.truncate()
     except Exception:
         LOG.warning(
