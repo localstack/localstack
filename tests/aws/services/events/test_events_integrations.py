@@ -634,9 +634,8 @@ def test_put_events_with_target_kinesis(aws_client):
     assert_valid_event(data)
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing  # TODO: Reason add permission and correct policies
 @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_trigger_event_on_ssm_change(monkeypatch, aws_client, clean_up, strategy):
     monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
