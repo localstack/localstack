@@ -63,7 +63,6 @@ def get_lambda_logs_event(aws_client):
         "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
         "$..TableDescription.StreamSpecification",
         "$..TableDescription.TableStatus",
-        "$..Records..dynamodb.NewImage.binary_key.B",
         "$..Records..dynamodb.SizeBytes",
         "$..Records..eventVersion",
     ],
