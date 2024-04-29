@@ -14,7 +14,7 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 from tests.aws.services.events.conftest import assert_valid_event, sqs_collect_messages
 from tests.aws.services.events.helper_functions import is_v2_provider
-from tests.aws.services.events.test_events import TEST_EVENT_BUS_NAME, TEST_EVENT_PATTERN
+from tests.aws.services.events.test_events import TEST_EVENT_PATTERN
 
 
 @markers.aws.validated
@@ -239,6 +239,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
     queue_name = f"queue-{short_uid()}"
     rule_name = f"rule-{short_uid()}"
     target_id = f"target-{short_uid()}"
+    event_bus_name = f"event-bus-{short_uid()}"
 
     queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
     queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
@@ -272,7 +273,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
     }
 
     event = {
-        "EventBusName": TEST_EVENT_BUS_NAME,
+        "EventBusName": event_bus_name,
         "Source": "core.update-account-command",
         "DetailType": "core.app.backend",
         "Detail": json.dumps(
@@ -299,16 +300,16 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
         ),
     }
 
-    aws_client.events.create_event_bus(Name=TEST_EVENT_BUS_NAME)
+    aws_client.events.create_event_bus(Name=event_bus_name)
     aws_client.events.put_rule(
         Name=rule_name,
-        EventBusName=TEST_EVENT_BUS_NAME,
+        EventBusName=event_bus_name,
         EventPattern=json.dumps(pattern),
     )
 
     aws_client.events.put_targets(
         Rule=rule_name,
-        EventBusName=TEST_EVENT_BUS_NAME,
+        EventBusName=event_bus_name,
         Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
     )
     aws_client.events.put_events(Entries=[event])
@@ -327,7 +328,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
 
     # clean up
     clean_up(
-        bus_name=TEST_EVENT_BUS_NAME,
+        bus_name=event_bus_name,
         rule_name=rule_name,
         target_ids=target_id,
         queue_url=queue_url,
