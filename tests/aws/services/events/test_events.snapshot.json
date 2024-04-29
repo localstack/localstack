@@ -1221,5 +1221,23 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_without_source": {
+    "recorded-date": "29-04-2024, 12:47:09",
+    "recorded-content": {
+      "put-events": {
+        "Entries": [
+          {
+            "ErrorCode": "InvalidArgument",
+            "ErrorMessage": "Parameter Source is not valid. Reason: Source is a required argument."
+          }
+        ],
+        "FailedEntryCount": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -26,14 +26,20 @@ from localstack.utils.sync import poll_condition, retry
 from tests.aws.services.events.conftest import assert_valid_event, sqs_collect_messages
 from tests.aws.services.events.helper_functions import is_v2_provider
 
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-
-TEST_EVENT_BUS_NAME = "command-bus-dev"
-
 EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
 
 TEST_EVENT_PATTERN = {
     "source": ["core.update-account-command"],
+    "detail-type": ["core.update-account-command"],
+    "detail": {"command": ["update-account"]},
+}
+
+TEST_EVENT_PATTERN_NO_DETAIL = {
+    "source": ["core.update-account-command"],
+    "detail-type": ["core.update-account-command"],
+}
+
+TEST_EVENT_PATTERN_NO_SOURCE = {
     "detail-type": ["core.update-account-command"],
     "detail": {"command": ["update-account"]},
 }
@@ -76,6 +82,17 @@ EVENT_BUS_ROLE = {
 
 
 class TestEvents:
+    @markers.aws.validated
+    def test_put_events_without_source(self, snapshot, aws_client):
+        entries = [
+            {
+                "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            },
+        ]
+        response = aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events", response)
+
     @markers.aws.unknown
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
@@ -539,13 +556,6 @@ class TestEvents:
         assert "must satisfy regular expression pattern" in message
         assert "must have length less than or equal to 64" in message
         assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
-
-    @markers.aws.unknown
-    def test_put_event_without_source(self, aws_client_factory):
-        events_client = aws_client_factory(region_name="eu-west-1").events
-
-        response = events_client.put_events(Entries=[{"DetailType": "Test", "Detail": "{}"}])
-        assert response.get("Entries")
 
     @markers.aws.unknown
     def test_put_event_without_detail(self, aws_client_factory):

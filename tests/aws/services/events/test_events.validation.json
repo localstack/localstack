@@ -95,6 +95,9 @@
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_values_in_array": {
     "last_validated_date": "2024-04-29T11:47:10+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_without_source": {
+    "last_validated_date": "2024-04-29T12:47:09+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_target_id_validation": {
     "last_validated_date": "2024-04-18T15:47:35+00:00"
   },
