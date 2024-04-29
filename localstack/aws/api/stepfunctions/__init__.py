@@ -44,6 +44,9 @@ ToleratedFailurePercentage = float
 TraceHeader = str
 URL = str
 UnsignedInteger = int
+ValidateStateMachineDefinitionCode = str
+ValidateStateMachineDefinitionLocation = str
+ValidateStateMachineDefinitionMessage = str
 VersionDescription = str
 VersionWeight = int
 includedDetails = bool
@@ -175,6 +178,15 @@ class TestExecutionStatus(str):
     FAILED = "FAILED"
     RETRIABLE = "RETRIABLE"
     CAUGHT_ERROR = "CAUGHT_ERROR"
+
+
+class ValidateStateMachineDefinitionResultCode(str):
+    OK = "OK"
+    FAIL = "FAIL"
+
+
+class ValidateStateMachineDefinitionSeverity(str):
+    ERROR = "ERROR"
 
 
 class ValidationExceptionReason(str):
@@ -1239,6 +1251,29 @@ class UpdateStateMachineOutput(TypedDict, total=False):
     stateMachineVersionArn: Optional[Arn]
 
 
+class ValidateStateMachineDefinitionDiagnostic(TypedDict, total=False):
+    severity: ValidateStateMachineDefinitionSeverity
+    code: ValidateStateMachineDefinitionCode
+    message: ValidateStateMachineDefinitionMessage
+    location: Optional[ValidateStateMachineDefinitionLocation]
+
+
+ValidateStateMachineDefinitionDiagnosticList = List[ValidateStateMachineDefinitionDiagnostic]
+ValidateStateMachineDefinitionInput = TypedDict(
+    "ValidateStateMachineDefinitionInput",
+    {
+        "definition": Definition,
+        "type": Optional[StateMachineType],
+    },
+    total=False,
+)
+
+
+class ValidateStateMachineDefinitionOutput(TypedDict, total=False):
+    result: ValidateStateMachineDefinitionResultCode
+    diagnostics: ValidateStateMachineDefinitionDiagnosticList
+
+
 class StepfunctionsApi:
     service = "stepfunctions"
     version = "2016-11-23"
@@ -1558,4 +1593,10 @@ class StepfunctionsApi:
         routing_configuration: RoutingConfigurationList = None,
         **kwargs,
     ) -> UpdateStateMachineAliasOutput:
+        raise NotImplementedError
+
+    @handler("ValidateStateMachineDefinition", expand=False)
+    def validate_state_machine_definition(
+        self, context: RequestContext, request: ValidateStateMachineDefinitionInput, **kwargs
+    ) -> ValidateStateMachineDefinitionOutput:
         raise NotImplementedError

@@ -4,8 +4,9 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 
 Boolean = bool
 BoxedInteger = int
-Integer = int
+ExceptionMessage = str
 MessageAttributeName = str
+NullableInteger = int
 String = str
 TagKey = str
 TagValue = str
@@ -54,20 +55,26 @@ class QueueAttributeName(str):
 
 
 class BatchEntryIdsNotDistinct(ServiceException):
-    code: str = "AWS.SimpleQueueService.BatchEntryIdsNotDistinct"
-    sender_fault: bool = True
+    code: str = "BatchEntryIdsNotDistinct"
+    sender_fault: bool = False
     status_code: int = 400
 
 
 class BatchRequestTooLong(ServiceException):
-    code: str = "AWS.SimpleQueueService.BatchRequestTooLong"
-    sender_fault: bool = True
+    code: str = "BatchRequestTooLong"
+    sender_fault: bool = False
     status_code: int = 400
 
 
 class EmptyBatchRequest(ServiceException):
-    code: str = "AWS.SimpleQueueService.EmptyBatchRequest"
-    sender_fault: bool = True
+    code: str = "EmptyBatchRequest"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class InvalidAddress(ServiceException):
+    code: str = "InvalidAddress"
+    sender_fault: bool = False
     status_code: int = 400
 
 
@@ -77,9 +84,15 @@ class InvalidAttributeName(ServiceException):
     status_code: int = 400
 
 
+class InvalidAttributeValue(ServiceException):
+    code: str = "InvalidAttributeValue"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class InvalidBatchEntryId(ServiceException):
-    code: str = "AWS.SimpleQueueService.InvalidBatchEntryId"
-    sender_fault: bool = True
+    code: str = "InvalidBatchEntryId"
+    sender_fault: bool = False
     status_code: int = 400
 
 
@@ -95,39 +108,87 @@ class InvalidMessageContents(ServiceException):
     status_code: int = 400
 
 
+class InvalidSecurity(ServiceException):
+    code: str = "InvalidSecurity"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class KmsAccessDenied(ServiceException):
+    code: str = "KmsAccessDenied"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class KmsDisabled(ServiceException):
+    code: str = "KmsDisabled"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class KmsInvalidKeyUsage(ServiceException):
+    code: str = "KmsInvalidKeyUsage"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class KmsInvalidState(ServiceException):
+    code: str = "KmsInvalidState"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class KmsNotFound(ServiceException):
+    code: str = "KmsNotFound"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class KmsOptInRequired(ServiceException):
+    code: str = "KmsOptInRequired"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class KmsThrottled(ServiceException):
+    code: str = "KmsThrottled"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class MessageNotInflight(ServiceException):
-    code: str = "AWS.SimpleQueueService.MessageNotInflight"
-    sender_fault: bool = True
+    code: str = "MessageNotInflight"
+    sender_fault: bool = False
     status_code: int = 400
 
 
 class OverLimit(ServiceException):
     code: str = "OverLimit"
-    sender_fault: bool = True
-    status_code: int = 403
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class PurgeQueueInProgress(ServiceException):
-    code: str = "AWS.SimpleQueueService.PurgeQueueInProgress"
-    sender_fault: bool = True
-    status_code: int = 403
+    code: str = "PurgeQueueInProgress"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class QueueDeletedRecently(ServiceException):
-    code: str = "AWS.SimpleQueueService.QueueDeletedRecently"
-    sender_fault: bool = True
+    code: str = "QueueDeletedRecently"
+    sender_fault: bool = False
     status_code: int = 400
 
 
 class QueueDoesNotExist(ServiceException):
-    code: str = "AWS.SimpleQueueService.NonExistentQueue"
-    sender_fault: bool = True
+    code: str = "QueueDoesNotExist"
+    sender_fault: bool = False
     status_code: int = 400
 
 
 class QueueNameExists(ServiceException):
-    code: str = "QueueAlreadyExists"
-    sender_fault: bool = True
+    code: str = "QueueNameExists"
+    sender_fault: bool = False
     status_code: int = 400
 
 
@@ -137,21 +198,27 @@ class ReceiptHandleIsInvalid(ServiceException):
     status_code: int = 400
 
 
+class RequestThrottled(ServiceException):
+    code: str = "RequestThrottled"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
-    sender_fault: bool = True
-    status_code: int = 404
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class TooManyEntriesInBatchRequest(ServiceException):
-    code: str = "AWS.SimpleQueueService.TooManyEntriesInBatchRequest"
-    sender_fault: bool = True
+    code: str = "TooManyEntriesInBatchRequest"
+    sender_fault: bool = False
     status_code: int = 400
 
 
 class UnsupportedOperation(ServiceException):
-    code: str = "AWS.SimpleQueueService.UnsupportedOperation"
-    sender_fault: bool = True
+    code: str = "UnsupportedOperation"
+    sender_fault: bool = False
     status_code: int = 400
 
 
@@ -195,7 +262,7 @@ class CancelMessageMoveTaskResult(TypedDict, total=False):
 class ChangeMessageVisibilityBatchRequestEntry(TypedDict, total=False):
     Id: String
     ReceiptHandle: String
-    VisibilityTimeout: Optional[Integer]
+    VisibilityTimeout: Optional[NullableInteger]
 
 
 ChangeMessageVisibilityBatchRequestEntryList = List[ChangeMessageVisibilityBatchRequestEntry]
@@ -221,7 +288,7 @@ class ChangeMessageVisibilityBatchResult(TypedDict, total=False):
 class ChangeMessageVisibilityRequest(ServiceRequest):
     QueueUrl: String
     ReceiptHandle: String
-    VisibilityTimeout: Integer
+    VisibilityTimeout: NullableInteger
 
 
 TagMap = Dict[TagKey, TagValue]
@@ -306,7 +373,10 @@ class ListDeadLetterSourceQueuesResult(TypedDict, total=False):
 
 class ListMessageMoveTasksRequest(ServiceRequest):
     SourceArn: String
-    MaxResults: Optional[Integer]
+    MaxResults: Optional[NullableInteger]
+
+
+NullableLong = int
 
 
 class ListMessageMoveTasksResultEntry(TypedDict, total=False):
@@ -314,9 +384,9 @@ class ListMessageMoveTasksResultEntry(TypedDict, total=False):
     Status: Optional[String]
     SourceArn: Optional[String]
     DestinationArn: Optional[String]
-    MaxNumberOfMessagesPerSecond: Optional[Integer]
+    MaxNumberOfMessagesPerSecond: Optional[NullableInteger]
     ApproximateNumberOfMessagesMoved: Optional[Long]
-    ApproximateNumberOfMessagesToMove: Optional[Long]
+    ApproximateNumberOfMessagesToMove: Optional[NullableLong]
     FailureReason: Optional[String]
     StartedTimestamp: Optional[Long]
 
@@ -397,9 +467,9 @@ class ReceiveMessageRequest(ServiceRequest):
     QueueUrl: String
     AttributeNames: Optional[AttributeNameList]
     MessageAttributeNames: Optional[MessageAttributeNameList]
-    MaxNumberOfMessages: Optional[Integer]
-    VisibilityTimeout: Optional[Integer]
-    WaitTimeSeconds: Optional[Integer]
+    MaxNumberOfMessages: Optional[NullableInteger]
+    VisibilityTimeout: Optional[NullableInteger]
+    WaitTimeSeconds: Optional[NullableInteger]
     ReceiveRequestAttemptId: Optional[String]
 
 
@@ -415,7 +485,7 @@ class RemovePermissionRequest(ServiceRequest):
 class SendMessageBatchRequestEntry(TypedDict, total=False):
     Id: String
     MessageBody: String
-    DelaySeconds: Optional[Integer]
+    DelaySeconds: Optional[NullableInteger]
     MessageAttributes: Optional[MessageBodyAttributeMap]
     MessageSystemAttributes: Optional[MessageBodySystemAttributeMap]
     MessageDeduplicationId: Optional[String]
@@ -450,7 +520,7 @@ class SendMessageBatchResult(TypedDict, total=False):
 class SendMessageRequest(ServiceRequest):
     QueueUrl: String
     MessageBody: String
-    DelaySeconds: Optional[Integer]
+    DelaySeconds: Optional[NullableInteger]
     MessageAttributes: Optional[MessageBodyAttributeMap]
     MessageSystemAttributes: Optional[MessageBodySystemAttributeMap]
     MessageDeduplicationId: Optional[String]
@@ -473,7 +543,7 @@ class SetQueueAttributesRequest(ServiceRequest):
 class StartMessageMoveTaskRequest(ServiceRequest):
     SourceArn: String
     DestinationArn: Optional[String]
-    MaxNumberOfMessagesPerSecond: Optional[Integer]
+    MaxNumberOfMessagesPerSecond: Optional[NullableInteger]
 
 
 class StartMessageMoveTaskResult(TypedDict, total=False):
@@ -521,7 +591,7 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         receipt_handle: String,
-        visibility_timeout: Integer,
+        visibility_timeout: NullableInteger,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -600,7 +670,11 @@ class SqsApi:
 
     @handler("ListMessageMoveTasks")
     def list_message_move_tasks(
-        self, context: RequestContext, source_arn: String, max_results: Integer = None, **kwargs
+        self,
+        context: RequestContext,
+        source_arn: String,
+        max_results: NullableInteger = None,
+        **kwargs,
     ) -> ListMessageMoveTasksResult:
         raise NotImplementedError
 
@@ -632,9 +706,9 @@ class SqsApi:
         queue_url: String,
         attribute_names: AttributeNameList = None,
         message_attribute_names: MessageAttributeNameList = None,
-        max_number_of_messages: Integer = None,
-        visibility_timeout: Integer = None,
-        wait_time_seconds: Integer = None,
+        max_number_of_messages: NullableInteger = None,
+        visibility_timeout: NullableInteger = None,
+        wait_time_seconds: NullableInteger = None,
         receive_request_attempt_id: String = None,
         **kwargs,
     ) -> ReceiveMessageResult:
@@ -652,7 +726,7 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         message_body: String,
-        delay_seconds: Integer = None,
+        delay_seconds: NullableInteger = None,
         message_attributes: MessageBodyAttributeMap = None,
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
@@ -683,7 +757,7 @@ class SqsApi:
         context: RequestContext,
         source_arn: String,
         destination_arn: String = None,
-        max_number_of_messages_per_second: Integer = None,
+        max_number_of_messages_per_second: NullableInteger = None,
         **kwargs,
     ) -> StartMessageMoveTaskResult:
         raise NotImplementedError

@@ -14,6 +14,7 @@ AlarmName = str
 AllowedPattern = str
 ApplyOnlyAtCronInterval = bool
 ApproveAfterDays = int
+Architecture = str
 AssociationExecutionFilterValue = str
 AssociationExecutionId = str
 AssociationExecutionTargetsFilterValue = str
@@ -70,6 +71,7 @@ ComputerName = str
 DefaultBaseline = bool
 DefaultInstanceName = str
 DeliveryTimedOutCount = int
+DescribeInstancePropertiesMaxResults = int
 DescriptionInDocument = str
 DocumentARN = str
 DocumentAuthor = str
@@ -110,9 +112,15 @@ InstanceCount = int
 InstanceId = str
 InstanceInformationFilterValue = str
 InstanceInformationStringFilterKey = str
+InstanceName = str
 InstancePatchStateFilterKey = str
 InstancePatchStateFilterValue = str
+InstancePropertyFilterValue = str
+InstancePropertyStringFilterKey = str
+InstanceRole = str
+InstanceState = str
 InstanceTagName = str
+InstanceType = str
 InstancesCount = int
 Integer = int
 InventoryAggregatorExpression = str
@@ -131,6 +139,7 @@ InventoryResultItemKey = str
 InventoryTypeDisplayName = str
 InvocationTraceOutput = str
 IsSubTypeSchema = bool
+KeyName = str
 LastResourceDataSyncMessage = str
 ListOpsMetadataMaxResults = int
 MaintenanceWindowAllowUnassociatedTargets = bool
@@ -272,6 +281,8 @@ PatchTitle = str
 PatchUnreportedNotApplicableCount = int
 PatchVendor = str
 PatchVersion = str
+PlatformName = str
+PlatformVersion = str
 Policy = str
 PolicyHash = str
 PolicyId = str
@@ -638,6 +649,26 @@ class InstanceInformationFilterKey(str):
 class InstancePatchStateOperatorType(str):
     Equal = "Equal"
     NotEqual = "NotEqual"
+    LessThan = "LessThan"
+    GreaterThan = "GreaterThan"
+
+
+class InstancePropertyFilterKey(str):
+    InstanceIds = "InstanceIds"
+    AgentVersion = "AgentVersion"
+    PingStatus = "PingStatus"
+    PlatformTypes = "PlatformTypes"
+    DocumentName = "DocumentName"
+    ActivationIds = "ActivationIds"
+    IamRole = "IamRole"
+    ResourceType = "ResourceType"
+    AssociationStatus = "AssociationStatus"
+
+
+class InstancePropertyFilterOperator(str):
+    Equal = "Equal"
+    NotEqual = "NotEqual"
+    BeginWith = "BeginWith"
     LessThan = "LessThan"
     GreaterThan = "GreaterThan"
 
@@ -1327,6 +1358,12 @@ class InvalidInstanceId(ServiceException):
 
 class InvalidInstanceInformationFilterValue(ServiceException):
     code: str = "InvalidInstanceInformationFilterValue"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class InvalidInstancePropertyFilterValue(ServiceException):
+    code: str = "InvalidInstancePropertyFilterValue"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -3441,6 +3478,70 @@ PatchComplianceDataList = List[PatchComplianceData]
 
 class DescribeInstancePatchesResult(TypedDict, total=False):
     Patches: Optional[PatchComplianceDataList]
+    NextToken: Optional[NextToken]
+
+
+InstancePropertyFilterValueSet = List[InstancePropertyFilterValue]
+
+
+class InstancePropertyStringFilter(TypedDict, total=False):
+    Key: InstancePropertyStringFilterKey
+    Values: InstancePropertyFilterValueSet
+    Operator: Optional[InstancePropertyFilterOperator]
+
+
+InstancePropertyStringFilterList = List[InstancePropertyStringFilter]
+
+
+class InstancePropertyFilter(TypedDict, total=False):
+    key: InstancePropertyFilterKey
+    valueSet: InstancePropertyFilterValueSet
+
+
+InstancePropertyFilterList = List[InstancePropertyFilter]
+
+
+class DescribeInstancePropertiesRequest(ServiceRequest):
+    InstancePropertyFilterList: Optional[InstancePropertyFilterList]
+    FiltersWithOperator: Optional[InstancePropertyStringFilterList]
+    MaxResults: Optional[DescribeInstancePropertiesMaxResults]
+    NextToken: Optional[NextToken]
+
+
+class InstanceProperty(TypedDict, total=False):
+    Name: Optional[InstanceName]
+    InstanceId: Optional[InstanceId]
+    InstanceType: Optional[InstanceType]
+    InstanceRole: Optional[InstanceRole]
+    KeyName: Optional[KeyName]
+    InstanceState: Optional[InstanceState]
+    Architecture: Optional[Architecture]
+    IPAddress: Optional[IPAddress]
+    LaunchTime: Optional[DateTime]
+    PingStatus: Optional[PingStatus]
+    LastPingDateTime: Optional[DateTime]
+    AgentVersion: Optional[Version]
+    PlatformType: Optional[PlatformType]
+    PlatformName: Optional[PlatformName]
+    PlatformVersion: Optional[PlatformVersion]
+    ActivationId: Optional[ActivationId]
+    IamRole: Optional[IamRole]
+    RegistrationDate: Optional[DateTime]
+    ResourceType: Optional[String]
+    ComputerName: Optional[ComputerName]
+    AssociationStatus: Optional[StatusName]
+    LastAssociationExecutionDate: Optional[DateTime]
+    LastSuccessfulAssociationExecutionDate: Optional[DateTime]
+    AssociationOverview: Optional[InstanceAggregatedAssociationOverview]
+    SourceId: Optional[SourceId]
+    SourceType: Optional[SourceType]
+
+
+InstanceProperties = List[InstanceProperty]
+
+
+class DescribeInstancePropertiesResult(TypedDict, total=False):
+    InstanceProperties: Optional[InstanceProperties]
     NextToken: Optional[NextToken]
 
 
@@ -6045,6 +6146,18 @@ class SsmApi:
         max_results: PatchComplianceMaxResults = None,
         **kwargs,
     ) -> DescribeInstancePatchesResult:
+        raise NotImplementedError
+
+    @handler("DescribeInstanceProperties")
+    def describe_instance_properties(
+        self,
+        context: RequestContext,
+        instance_property_filter_list: InstancePropertyFilterList = None,
+        filters_with_operator: InstancePropertyStringFilterList = None,
+        max_results: DescribeInstancePropertiesMaxResults = None,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> DescribeInstancePropertiesResult:
         raise NotImplementedError
 
     @handler("DescribeInventoryDeletions")
