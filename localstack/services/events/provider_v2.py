@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
+from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.events import (
     Arn,
@@ -18,6 +19,7 @@ from localstack.aws.api.events import (
     EventPattern,
     EventsApi,
     EventSourceName,
+    InvalidEventPatternException,
     LimitMax100,
     ListEventBusesResponse,
     ListRuleNamesByTargetResponse,
@@ -51,10 +53,12 @@ from localstack.aws.api.events import (
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Rule as ApiTypeRule
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
+from localstack.services.events.event_ruler import matches_rule
 from localstack.services.events.models_v2 import (
     EventBus,
     EventBusDict,
     EventsStore,
+    InternalInvalidEventPatternException,
     Rule,
     RuleDict,
     TargetDict,
@@ -349,9 +353,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Test event pattern uses EventBridge event pattern matching:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
         """
-        event_pattern_dict = json.loads(event_pattern)
-        event_dict = json.loads(event)
-        result = matches_event(event_pattern_dict, event_dict)
+        if config.EVENT_RULE_ENGINE == "java":
+            try:
+                result = matches_rule(event, event_pattern)
+            except InternalInvalidEventPatternException as e:
+                raise InvalidEventPatternException(e.message) from e
+        else:
+            event_pattern_dict = json.loads(event_pattern)
+            event_dict = json.loads(event)
+            result = matches_event(event_pattern_dict, event_dict)
 
         return TestEventPatternResponse(Result=result)
 
@@ -654,7 +664,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             for rule in matching_rules:
                 rule_service = self.get_rule_service(context, rule.name, event_bus_name)
                 event_pattern = rule_service.event_pattern
-                if matches_event(event_pattern, event):
+                if config.EVENT_RULE_ENGINE == "java":
+                    event_str = json.dumps(event)
+                    event_pattern_str = json.dumps(event_pattern)
+                    matches_result = matches_rule(event_str, event_pattern_str)
+                else:
+                    matches_result = matches_event(event, event_pattern)
+                if matches_result:
                     for target in rule.targets.values():
                         target_sender = self._target_sender_store[target["Arn"]]
                         try:
