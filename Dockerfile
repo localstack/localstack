@@ -1,5 +1,5 @@
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM eclipse-temurin:11@sha256:8cf7bf0f13cc47e56c7461420e1a80585612afcbb0073602f846748d31cb1aba as java-builder
+FROM eclipse-temurin:11@sha256:abccfc31cefa4f3fad66630fceb51e59c7656a2ebfd1a831423dadaf684397fa as java-builder
 
 # create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.9-slim-bookworm@sha256:dad770592ab3582ab2dabcf0e18a863df9d86bd9d23efcfa614110ce49ac20e4 as base
+FROM python:3.11.9-slim-bookworm@sha256:6d2502238109c929569ae99355e28890c438cb11bc88ef02cd189c173b3db07c as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
