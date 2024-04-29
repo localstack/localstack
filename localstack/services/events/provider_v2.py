@@ -436,10 +436,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         endpoint_id: EndpointId = None,
         **kwargs,
     ) -> PutEventsResponse:
-        entries_uuids, failed_entries = self._put_entries(context, entries)
+        processed_entries_uuids, failed_entries = self._process_entries(context, entries)
 
         response = PutEventsResponse(
-            Entries=[{"EventId": id} for id in entries_uuids], FailedEntryCount=0
+            Entries=[{"EventId": id} for id in processed_entries_uuids], FailedEntryCount=0
         )
         if failed_entries:
             response["FailedEntryCount"] = len(failed_entries)
@@ -635,15 +635,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 except KeyError:
                     LOG.error(f"Error deleting target service {target_arn}.")
 
-    def _put_entries(
+    def _process_entries(
         self, context: RequestContext, entries: PutEventsRequestEntryList
     ) -> tuple[list, list]:
-        entries_uuids = []
+        processed_entries_uuids = []
         failed_entries = []
         for event in entries:
             event_bus_name = event.get("EventBusName", "default")
             event = format_event(event, context.region, context.account_id)
-            entries_uuids.append(event["id"])
+            processed_entries_uuids.append(event["id"])
             store = self.get_store(context)
             try:
                 event_bus = self.get_event_bus(event_bus_name, store)
@@ -667,4 +667,4 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                                     "ErrorMessage": str(error),
                                 }
                             )
-        return entries_uuids, failed_entries
+        return processed_entries_uuids, failed_entries
