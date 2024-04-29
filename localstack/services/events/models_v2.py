@@ -96,9 +96,3 @@ class ValidationException(ServiceException):
     code: str = "ValidationException"
     sender_fault: bool = True
     status_code: int = 400
-
-
-class InvalidEventPatternException(ServiceException):
-    code: str = "InvalidEventPatternException"
-    sender_fault: bool = True
-    status_code: int = 400

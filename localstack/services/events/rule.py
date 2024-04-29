@@ -6,6 +6,7 @@ from localstack.aws.api.events import (
     Arn,
     EventBusName,
     EventPattern,
+    InvalidEventPatternException,
     LimitExceededException,
     ManagedBy,
     PutTargetsResultEntryList,
@@ -22,7 +23,6 @@ from localstack.aws.api.events import (
 )
 from localstack.services.events.models_v2 import (
     EventPatternDict,
-    InvalidEventPatternException,
     Rule,
     TargetDict,
     ValidationException,
