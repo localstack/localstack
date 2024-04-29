@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/events/test_event_patterns.py::test_event_pattern_source": {
+    "last_validated_date": "2024-04-29T14:12:14+00:00"
+  },
   "tests/aws/services/events/test_event_patterns.py::test_test_event_pattern[arrays]": {
     "last_validated_date": "2024-04-08T19:33:55+00:00"
   },
