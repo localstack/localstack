@@ -449,10 +449,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         processed_entries_uuids, failed_entries = self._process_entries(context, entries)
 
         response = PutEventsResponse(
-            Entries=[{"EventId": id} for id in processed_entries_uuids], FailedEntryCount=0
+            Entries=[{"EventId": id} for id in processed_entries_uuids],
+            FailedEntryCount=len(failed_entries),
         )
         if failed_entries:
-            response["FailedEntryCount"] = len(failed_entries)
             response["FailedEntries"] = failed_entries
         return response
 
