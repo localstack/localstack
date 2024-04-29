@@ -1,7 +1,7 @@
-name: ✨ Enhancement request
-description: Request a new enhancement
-title: "enhancement request: <title>"
-labels: ["type: enhancement", "status: triage needed"]
+name: ✨ Feature request
+description: Request a new feature
+title: "feature request: <title>"
+labels: ["type: feature", "status: triage needed"]
 body:
 - type: markdown
   attributes:
@@ -10,20 +10,20 @@ body:
 - type: checkboxes
   attributes:
     label: Is there an existing issue for this?
-    description: Please search to see if an issue already exists for the enhancement you are requesting.
+    description: Please search to see if an issue already exists for the feature you are requesting.
     options:
     - label: I have searched the existing issues
       required: true
 - type: textarea
   attributes:
-    label: Enhancement description
-    description: Please describe the enhancement you would like LocalStack to have
+    label: Feature description
+    description: Please describe the feature you would like LocalStack to have
   validations:
     required: true
 - type: textarea
   attributes:
     label: 🧑‍💻 Implementation
-    description: If you are a developer and have an idea how to implement this enhancement, please sketch it out here.
+    description: If you are a developer and have an idea how to implement this feature, please sketch it out here.
   validations:
     required: false
 - type: textarea
