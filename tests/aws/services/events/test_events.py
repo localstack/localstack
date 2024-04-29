@@ -648,73 +648,50 @@ class TestEvents:
         snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
 
     @markers.aws.validated
-    def test_put_events_time(
-        self,
-        aws_client,
-        sqs_create_queue,
-        sqs_get_queue_arn,
-        events_put_rule,
-        snapshot,
-    ):
-        default_bus_rule_name = f"rule-{short_uid()}"
-        default_bus_target_id = f"test-target-default-b-{short_uid()}"
+    def test_put_events_time(self, put_events_with_filter_to_sqs, snapshot):
+        pattern = {"source": ["MySource"], "detail-type": ["CustomType"]}
+        entries1 = [
+            {
+                "Source": pattern["source"][0],
+                "DetailType": pattern["detail-type"][0],
+                "Detail": json.dumps({"message": "short time"}),
+                "Time": "2022-01-01",
+            },
+        ]
+        entries2 = [
+            {
+                "Source": pattern["source"][0],
+                "DetailType": pattern["detail-type"][0],
+                "Detail": json.dumps({"message": "new time"}),
+                "Time": "01-01-2022T00:00:00Z",
+            },
+        ]
+        entries3 = [
+            {
+                "Source": pattern["source"][0],
+                "DetailType": pattern["detail-type"][0],
+                "Detail": json.dumps({"message": "long time"}),
+                "Time": "2022-01-01 00:00:00Z",
+            },
+        ]
+        entries_asserts = [(entries1, True), (entries2, True), (entries3, True)]
+        messages = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+        )
 
         snapshot.add_transformer(
             [
-                snapshot.transform.key_value("MD5OfBody"),  # the event contains a timestamp
+                snapshot.transform.key_value("MD5OfBody"),
                 snapshot.transform.key_value("ReceiptHandle"),
             ]
         )
+        snapshot.match("messages", messages)
 
-        queue_url = sqs_create_queue()
-        queue_arn = sqs_get_queue_arn(queue_url)
-
-        rule_on_default_bus = events_put_rule(
-            Name=default_bus_rule_name,
-            EventPattern=json.dumps({"detail-type": ["CustomType"], "source": ["MySource"]}),
-            State="ENABLED",
-        )
-
-        allow_event_rule_to_sqs_queue(
-            aws_client=aws_client,
-            event_rule_arn=rule_on_default_bus["RuleArn"],
-            sqs_queue_arn=queue_arn,
-            sqs_queue_url=queue_url,
-        )
-
-        aws_client.events.put_targets(
-            Rule=default_bus_rule_name,
-            Targets=[{"Id": default_bus_target_id, "Arn": queue_arn}],
-        )
-
-        # create an entry with a defined time
-        entries = [
-            {
-                "Source": "MySource",
-                "DetailType": "CustomType",
-                "Detail": json.dumps({"message": "for the default event bus"}),
-                "Time": datetime(year=2022, day=1, month=1),
-            }
-        ]
-        response = aws_client.events.put_events(Entries=entries)
-        snapshot.match("put-events", response)
-
-        def _get_sqs_messages():
-            resp = aws_client.sqs.receive_message(
-                QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
-            )
-            msgs = resp.get("Messages")
-            assert len(msgs) == 1
-            aws_client.sqs.delete_message(
-                QueueUrl=queue_url, ReceiptHandle=msgs[0]["ReceiptHandle"]
-            )
-            return msgs
-
-        messages = retry(_get_sqs_messages, retries=5, sleep=0.1)
-        snapshot.match("get-events", messages)
-
-        message_body = json.loads(messages[0]["Body"])
-        assert message_body["time"] == "2022-01-01T00:00:00Z"
+        # check for correct time strings in the messages
+        for message in messages:
+            message_body = json.loads(message["Body"])
+            assert message_body["time"] == "2022-01-01T00:00:00Z"
 
 
 class TestEventBus:

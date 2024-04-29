@@ -44,28 +44,16 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_time": {
-    "recorded-date": "26-03-2024, 14:09:45",
+    "recorded-date": "29-04-2024, 12:11:50",
     "recorded-content": {
-      "put-events": {
-        "Entries": [
-          {
-            "EventId": "<uuid:1>"
-          }
-        ],
-        "FailedEntryCount": 0,
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get-events": [
+      "messages": [
         {
-          "MessageId": "<uuid:2>",
+          "MessageId": "<uuid:1>",
           "ReceiptHandle": "<receipt-handle:1>",
           "MD5OfBody": "<m-d5-of-body:1>",
           "Body": {
             "version": "0",
-            "id": "<uuid:1>",
+            "id": "<uuid:2>",
             "detail-type": "CustomType",
             "source": "MySource",
             "account": "111111111111",
@@ -73,7 +61,43 @@
             "region": "<region>",
             "resources": [],
             "detail": {
-              "message": "for the default event bus"
+              "message": "short time"
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "CustomType",
+            "source": "MySource",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "new time"
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "<receipt-handle:3>",
+          "MD5OfBody": "<m-d5-of-body:3>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "CustomType",
+            "source": "MySource",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "message": "long time"
             }
           }
         }
