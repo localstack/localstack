@@ -7,7 +7,6 @@ import json
 import os
 import time
 import uuid
-from datetime import datetime
 
 import pytest
 from botocore.exceptions import ClientError
@@ -94,6 +93,62 @@ class TestEvents:
         snapshot.match("put-events", response)
 
     @markers.aws.unknown
+    def test_put_event_without_detail(self, snapshot, aws_client):
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+            },
+        ]
+        response = aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events", response)
+
+    @markers.aws.validated
+    def test_put_events_time(self, put_events_with_filter_to_sqs, snapshot):
+        entries1 = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                "Detail": json.dumps({"message": "short time"}),
+                "Time": "2022-01-01",
+            },
+        ]
+        entries2 = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                "Detail": json.dumps({"message": "new time"}),
+                "Time": "01-01-2022T00:00:00Z",
+            },
+        ]
+        entries3 = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                "Detail": json.dumps({"message": "long time"}),
+                "Time": "2022-01-01 00:00:00Z",
+            },
+        ]
+        entries_asserts = [(entries1, True), (entries2, True), (entries3, True)]
+        messages = put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN_NO_DETAIL,
+            entries_asserts=entries_asserts,
+        )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("messages", messages)
+
+        # check for correct time strings in the messages
+        for message in messages:
+            message_body = json.loads(message["Body"])
+            assert message_body["time"] == "2022-01-01T00:00:00Z"
+
+    @markers.aws.unknown
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
         self, aws_client
@@ -154,84 +209,6 @@ class TestEvents:
 
         # clean up
         clean_up(rule_name=rule_name)
-
-    @markers.aws.validated
-    def test_put_events_with_values_in_array(self, put_events_with_filter_to_sqs, snapshot):
-        pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
-        entries1 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": ["3", "1"]}}}),
-            }
-        ]
-        entries2 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": ["2"]}}}),
-            }
-        ]
-        entries3 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": ["3"]}}}),
-            }
-        ]
-        entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
-        messages = put_events_with_filter_to_sqs(
-            pattern=pattern,
-            entries_asserts=entries_asserts,
-            input_path="$.detail",
-        )
-
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("MD5OfBody"),
-                snapshot.transform.key_value("ReceiptHandle"),
-            ]
-        )
-        snapshot.match("messages", messages)
-
-    @markers.aws.validated
-    def test_put_events_with_nested_event_pattern(self, put_events_with_filter_to_sqs, snapshot):
-        pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
-        entries1 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": "1"}}}),
-            }
-        ]
-        entries2 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": "2"}}}),
-            }
-        ]
-        entries3 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"hello": "world"}),
-            }
-        ]
-        entries_asserts = [(entries1, True), (entries2, False), (entries3, False)]
-        messages = put_events_with_filter_to_sqs(
-            pattern=pattern,
-            entries_asserts=entries_asserts,
-            input_path="$.detail",
-        )
-
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("MD5OfBody"),
-                snapshot.transform.key_value("ReceiptHandle"),
-            ]
-        )
-        snapshot.match("messages", messages)
 
     @markers.aws.unknown
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
@@ -556,152 +533,6 @@ class TestEvents:
         assert "must satisfy regular expression pattern" in message
         assert "must have length less than or equal to 64" in message
         assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
-
-    @markers.aws.unknown
-    def test_put_event_without_detail(self, aws_client_factory):
-        events_client = aws_client_factory(region_name="eu-west-1").events
-
-        response = events_client.put_events(
-            Entries=[
-                {
-                    "DetailType": "Test",
-                }
-            ]
-        )
-        assert response.get("Entries")
-
-    @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_target_id_validation(
-        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
-    ):
-        rule_name = f"rule-{short_uid()}"
-        queue_url = sqs_create_queue()
-        queue_arn = sqs_get_queue_arn(queue_url)
-
-        events_put_rule(
-            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
-        )
-
-        target_id = "!@#$@!#$"
-        with pytest.raises(ClientError) as e:
-            aws_client.events.put_targets(
-                Rule=rule_name,
-                Targets=[
-                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
-                ],
-            )
-        snapshot.add_transformer(snapshot.transform.regex(target_id, "invalid-target-id"))
-        snapshot.match("put-targets-invalid-id-error", e.value.response)
-
-        target_id = f"{long_uid()}-{long_uid()}-extra"
-        with pytest.raises(ClientError) as e:
-            aws_client.events.put_targets(
-                Rule=rule_name,
-                Targets=[
-                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
-                ],
-            )
-        snapshot.add_transformer(snapshot.transform.regex(target_id, "second-invalid-target-id"))
-        snapshot.match("put-targets-length-error", e.value.response)
-
-        target_id = f"test-With_valid.Characters-{short_uid()}"
-        aws_client.events.put_targets(
-            Rule=rule_name,
-            Targets=[
-                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
-            ],
-        )
-
-    @markers.aws.validated  # TODO move to tests_event_patterns
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_event_pattern(self, aws_client, snapshot, account_id, region_name):
-        response = aws_client.events.test_event_pattern(
-            Event=json.dumps(
-                {
-                    "id": "1",
-                    "source": "order",
-                    "detail-type": "Test",
-                    "account": account_id,
-                    "region": region_name,
-                    "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                }
-            ),
-            EventPattern=json.dumps(
-                {
-                    "source": ["order"],
-                    "detail-type": ["Test"],
-                }
-            ),
-        )
-        snapshot.match("eventbridge-test-event-pattern-response", response)
-
-        # negative test, source is not matched
-        response = aws_client.events.test_event_pattern(
-            Event=json.dumps(
-                {
-                    "id": "1",
-                    "source": "order",
-                    "detail-type": "Test",
-                    "account": account_id,
-                    "region": region_name,
-                    "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                }
-            ),
-            EventPattern=json.dumps(
-                {
-                    "source": ["shipment"],
-                    "detail-type": ["Test"],
-                }
-            ),
-        )
-        snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
-
-    @markers.aws.validated
-    def test_put_events_time(self, put_events_with_filter_to_sqs, snapshot):
-        pattern = {"source": ["MySource"], "detail-type": ["CustomType"]}
-        entries1 = [
-            {
-                "Source": pattern["source"][0],
-                "DetailType": pattern["detail-type"][0],
-                "Detail": json.dumps({"message": "short time"}),
-                "Time": "2022-01-01",
-            },
-        ]
-        entries2 = [
-            {
-                "Source": pattern["source"][0],
-                "DetailType": pattern["detail-type"][0],
-                "Detail": json.dumps({"message": "new time"}),
-                "Time": "01-01-2022T00:00:00Z",
-            },
-        ]
-        entries3 = [
-            {
-                "Source": pattern["source"][0],
-                "DetailType": pattern["detail-type"][0],
-                "Detail": json.dumps({"message": "long time"}),
-                "Time": "2022-01-01 00:00:00Z",
-            },
-        ]
-        entries_asserts = [(entries1, True), (entries2, True), (entries3, True)]
-        messages = put_events_with_filter_to_sqs(
-            pattern=pattern,
-            entries_asserts=entries_asserts,
-        )
-
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("MD5OfBody"),
-                snapshot.transform.key_value("ReceiptHandle"),
-            ]
-        )
-        snapshot.match("messages", messages)
-
-        # check for correct time strings in the messages
-        for message in messages:
-            message_body = json.loads(message["Body"])
-            assert message_body["time"] == "2022-01-01T00:00:00Z"
 
 
 class TestEventBus:
@@ -1297,6 +1128,86 @@ class TestEventRule:
         snapshot.match("list-targets-after-update", response)
 
 
+class TestEventPattern:
+    @markers.aws.validated
+    def test_put_events_pattern_with_values_in_array(self, put_events_with_filter_to_sqs, snapshot):
+        pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
+        entries1 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3", "1"]}}}),
+            }
+        ]
+        entries2 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["2"]}}}),
+            }
+        ]
+        entries3 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3"]}}}),
+            }
+        ]
+        entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
+        messages = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("messages", messages)
+
+    @markers.aws.validated
+    def test_put_events_pattern_nested(self, put_events_with_filter_to_sqs, snapshot):
+        pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
+        entries1 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": "1"}}}),
+            }
+        ]
+        entries2 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": "2"}}}),
+            }
+        ]
+        entries3 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"hello": "world"}),
+            }
+        ]
+        entries_asserts = [(entries1, True), (entries2, False), (entries3, False)]
+        messages = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("messages", messages)
+
+
 class TestEventTarget:
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
@@ -1406,3 +1317,46 @@ class TestEventTarget:
             Rule=rule_name, NextToken=response["NextToken"]
         )
         snapshot.match("list-targets-limit-next-token", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+    def test_put_target_id_validation(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        rule_name = f"rule-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id = "!@#$@!#$"
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                Targets=[
+                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+                ],
+            )
+        snapshot.add_transformer(snapshot.transform.regex(target_id, "invalid-target-id"))
+        snapshot.match("put-targets-invalid-id-error", e.value.response)
+
+        target_id = f"{long_uid()}-{long_uid()}-extra"
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                Targets=[
+                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+                ],
+            )
+        snapshot.add_transformer(snapshot.transform.regex(target_id, "second-invalid-target-id"))
+        snapshot.match("put-targets-length-error", e.value.response)
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
+        )
