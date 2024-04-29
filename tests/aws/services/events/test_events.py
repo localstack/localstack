@@ -138,8 +138,8 @@ class TestEvents:
         # clean up
         clean_up(rule_name=rule_name)
 
-    @markers.aws.unknown
-    def test_put_events_with_values_in_array(self, put_events_with_filter_to_sqs):
+    @markers.aws.validated
+    def test_put_events_with_values_in_array(self, put_events_with_filter_to_sqs, snapshot):
         pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
         entries1 = [
             {
@@ -163,14 +163,22 @@ class TestEvents:
             }
         ]
         entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
-        put_events_with_filter_to_sqs(
+        messages = put_events_with_filter_to_sqs(
             pattern=pattern,
             entries_asserts=entries_asserts,
             input_path="$.detail",
         )
 
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("messages", messages)
+
     @markers.aws.validated
-    def test_put_events_with_nested_event_pattern(self, put_events_with_filter_to_sqs):
+    def test_put_events_with_nested_event_pattern(self, put_events_with_filter_to_sqs, snapshot):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
         entries1 = [
             {
@@ -194,11 +202,19 @@ class TestEvents:
             }
         ]
         entries_asserts = [(entries1, True), (entries2, False), (entries3, False)]
-        put_events_with_filter_to_sqs(
+        messages = put_events_with_filter_to_sqs(
             pattern=pattern,
             entries_asserts=entries_asserts,
             input_path="$.detail",
         )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("messages", messages)
 
     @markers.aws.unknown
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")

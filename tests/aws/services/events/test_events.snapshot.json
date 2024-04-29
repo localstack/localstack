@@ -1142,5 +1142,60 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_values_in_array": {
+    "recorded-date": "29-04-2024, 11:47:10",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "event": {
+              "data": {
+                "type": [
+                  "3",
+                  "1"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "event": {
+              "data": {
+                "type": [
+                  "2"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_nested_event_pattern": {
+    "recorded-date": "29-04-2024, 11:48:23",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "event": {
+              "data": {
+                "type": "1"
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }

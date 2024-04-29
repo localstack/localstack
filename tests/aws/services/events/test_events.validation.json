@@ -90,10 +90,10 @@
     "last_validated_date": "2024-03-26T14:09:45+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_nested_event_pattern": {
-    "last_validated_date": "2024-03-26T14:07:10+00:00"
+    "last_validated_date": "2024-04-29T11:48:23+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_events_with_values_in_array": {
-    "last_validated_date": "2024-03-26T14:06:58+00:00"
+    "last_validated_date": "2024-04-29T11:47:10+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEvents::test_put_target_id_validation": {
     "last_validated_date": "2024-04-18T15:47:35+00:00"
