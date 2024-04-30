@@ -3,12 +3,13 @@ from typing import Optional
 
 import pytest
 
-from localstack import constants
+from localstack import config, constants
 from localstack.testing.scenario.provisioning import InfraProvisioner
 
-pytest_plugins = [
-    "localstack.testing.pytest.bootstrap",
-]
+
+@pytest.fixture(scope="session")
+def setup_host_config_dirs():
+    config.dirs.mkdirs()
 
 
 @pytest.fixture(scope="session")
