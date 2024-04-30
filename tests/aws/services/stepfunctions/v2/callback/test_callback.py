@@ -5,6 +5,7 @@ import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.services.stepfunctions.asl.eval.count_down_latch import CountDownLatch
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -716,7 +717,8 @@ class TestCallback:
         request,
     ):
         if (
-            request.node.name
+            not is_aws_cloud()
+            and request.node.name
             == "test_sqs_failure_in_wait_for_task_tok_no_error_field[SQS_PARALLEL_WAIT_FOR_TASK_TOKEN]"
         ):
             # TODO: The conditions in which TaskStateAborted error events are logged requires further investigations.
