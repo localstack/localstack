@@ -76,7 +76,7 @@ def sqs_snapshot_transformer(snapshot):
     snapshot.add_transformer(snapshot.transform.sqs_api())
 
 
-@pytest.fixture(params=["sqs", "sqs_json"])
+@pytest.fixture(params=["sqs", "sqs_query"])
 def aws_sqs_client(aws_client, request: str) -> "SQSClient":
     yield getattr(aws_client, request.param)
 
@@ -3999,13 +3999,6 @@ class TestSqsProvider:
         snapshot.match("error", e.value)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$.illegal_name_1.Messages[0].MessageAttributes",
-            "$.illegal_name_2.Messages[0].MessageAttributes",
-            # AWS does not return the field at all if there's an illegal name, we return empty dict
-        ]
-    )
     def test_receive_message_message_attribute_names_filters(
         self, sqs_create_queue, snapshot, aws_sqs_client
     ):
@@ -4266,20 +4259,20 @@ class TestSqsProvider:
     def test_non_existent_queue(self, aws_client, sqs_create_queue, sqs_queue_exists, snapshot):
         queue_name = f"test-queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        aws_client.sqs_json.delete_queue(QueueUrl=queue_url)
+        aws_client.sqs.delete_queue(QueueUrl=queue_url)
         assert poll_condition(lambda: not sqs_queue_exists(queue_url), timeout=5)
 
         with pytest.raises(ClientError) as e:
-            aws_client.sqs_json.get_queue_attributes(QueueUrl=queue_url)
+            aws_client.sqs.get_queue_attributes(QueueUrl=queue_url)
         snapshot.match("queue-does-not-exist", e.value.response)
 
         # validate both the client exception handling in boto and GetQueueUrl
-        with pytest.raises(aws_client.sqs_json.exceptions.QueueDoesNotExist) as e:
-            aws_client.sqs_json.get_queue_url(QueueName=queue_name)
+        with pytest.raises(aws_client.sqs.exceptions.QueueDoesNotExist) as e:
+            aws_client.sqs.get_queue_url(QueueName=queue_name)
         snapshot.match("queue-does-not-exist-url", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.sqs.get_queue_attributes(QueueUrl=queue_url)
+            aws_client.sqs_query.get_queue_attributes(QueueUrl=queue_url)
         snapshot.match("queue-does-not-exist-query", e.value.response)
 
 
@@ -4624,8 +4617,8 @@ class TestSqsQueryApi:
             assert region2 in queue_region2
             # us-east-1 is the default region, so it's not necessarily part of the queue URL
 
-        client_region1 = aws_http_client_factory("sqs", region1)
-        client_region2 = aws_http_client_factory("sqs", region2)
+        client_region1 = aws_http_client_factory("sqs_query", region1)
+        client_region2 = aws_http_client_factory("sqs_query", region2)
 
         response = client_region1.get(
             queue_region1, params={"Action": "SendMessage", "MessageBody": "foobar"}
@@ -4746,7 +4739,7 @@ class TestSqsQueryApi:
         # protocol should target the root path
         sqs_client = aws_client_factory(
             endpoint_url=queue_url,
-        ).sqs_json
+        ).sqs
 
         response = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
         assert (

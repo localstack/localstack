@@ -254,7 +254,7 @@ class TestSNSPublishCrud:
         sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
 
         client = aws_http_client_factory(
-            "sns",
+            "sns_query",
             signer_factory=SigV4Auth,
             region=region_name,
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
@@ -2124,7 +2124,7 @@ class TestSNSSubscriptionSQSFifo:
 
         aws_client.sns.publish(TopicArn=topic_arn, Message=message, **kwargs)
 
-        response = aws_client.sqs_json.receive_message(
+        response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
             WaitTimeSeconds=10,
             AttributeNames=["All"],
@@ -2136,7 +2136,7 @@ class TestSNSSubscriptionSQSFifo:
         )
         # republish the message, to check deduplication
         aws_client.sns.publish(TopicArn=topic_arn, Message=message, **kwargs)
-        response = aws_client.sqs_json.receive_message(
+        response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
             WaitTimeSeconds=1,
             AttributeNames=["All"],
