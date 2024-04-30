@@ -72,22 +72,45 @@ class EC2PrefixListProvider(ResourceProvider[EC2PrefixListProperties]):
 
         """
         model = request.desired_state
-        create_params = util.select_attributes(
-            model, ["PrefixListName", "Entrie", "MaxEntries", "AddressFamily", "Tags"]
+
+        if not request.custom_context.get(REPEATED_INVOCATION):
+            create_params = util.select_attributes(
+                model, ["PrefixListName", "Entries", "MaxEntries", "AddressFamily", "Tags"]
+            )
+
+            if "Tags" in create_params:
+                create_params["TagSpecifications"] = [
+                    {"ResourceType": "prefix-list", "Tags": create_params.pop("Tags")}
+                ]
+
+            response = request.aws_client_factory.ec2.create_managed_prefix_list(**create_params)
+            model["Arn"] = response["PrefixList"]["PrefixListId"]
+            model["OwnerId"] = response["PrefixList"]["OwnerId"]
+            model["PrefixListId"] = response["PrefixList"]["PrefixListId"]
+            model["Version"] = response["PrefixList"]["Version"]
+            request.custom_context[REPEATED_INVOCATION] = True
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
+
+        response = request.aws_client_factory.ec2.describe_managed_prefix_lists(
+            PrefixListIds=[model["PrefixListId"]]
         )
+        if not response["PrefixLists"]:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                resource_model=model,
+                custom_context=request.custom_context,
+                message="Resource not found after creation",
+            )
 
-        if "Tags" in create_params:
-            create_params["TagSpecifications"] = [
-                {"ResourceType": "prefix-list", "Tags": create_params.pop("Tags")}
-            ]
-
-        response = request.aws_client_factory.ec2.create_managed_prefix_list(**create_params)
-        model["Arn"] = response["PrefixList"]["PrefixListId"]
-        model["OwnerId"] = response["PrefixList"]["OwnerId"]
-        model["PrefixListId"] = response["PrefixList"]["PrefixListId"]
-        model["Version"] = response["PrefixList"]["Version"]
-
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def read(
         self,
@@ -113,10 +136,19 @@ class EC2PrefixListProvider(ResourceProvider[EC2PrefixListProperties]):
           - EC2:DeleteManagedPrefixList
           - EC2:DescribeManagedPrefixLists
         """
-        request.aws_client_factory.ec2.delete_managed_prefix_list(
-            PrefixListId=request.desired_state["PrefixListId"]
+
+        model = request.previous_state
+        response = request.aws_client_factory.ec2.describe_managed_prefix_lists(
+            PrefixListIds=[model["PrefixListId"]]
         )
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=None)
+
+        if not response["PrefixLists"]:
+            return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+
+        request.aws_client_factory.ec2.delete_managed_prefix_list(
+            PrefixListId=request.previous_state["PrefixListId"]
+        )
+        return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
 
     def update(
         self,

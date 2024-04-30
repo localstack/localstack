@@ -80,13 +80,35 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
             ],
         )
 
-        response = request.aws_client_factory.ec2.create_vpc_endpoint(**create_params)
-        model["Id"] = response["VpcEndpoint"]["VpcEndpointId"]
-        model["DnsEntries"] = response["VpcEndpoint"]["DnsEntries"]
-        model["CreationTimestamp"] = response["VpcEndpoint"]["CreationTimestamp"]
-        model["NetworkInterfaceIds"] = response["VpcEndpoint"]["NetworkInterfaceIds"]
+        if not request.custom_context.get(REPEATED_INVOCATION):
+            response = request.aws_client_factory.ec2.create_vpc_endpoint(**create_params)
+            model["Id"] = response["VpcEndpoint"]["VpcEndpointId"]
+            model["DnsEntries"] = response["VpcEndpoint"]["DnsEntries"]
+            model["CreationTimestamp"] = response["VpcEndpoint"]["CreationTimestamp"]
+            model["NetworkInterfaceIds"] = response["VpcEndpoint"]["NetworkInterfaceIds"]
+            request.custom_context[REPEATED_INVOCATION] = True
+            return ProgressEvent(
+                status=OperationStatus.IN_PROGRESS,
+                resource_model=model,
+                custom_context=request.custom_context,
+            )
 
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+        response = request.aws_client_factory.ec2.describe_vpc_endpoints(
+            VpcEndpointIds=[model["Id"]]
+        )
+        if not response["VpcEndpoints"]:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                resource_model=model,
+                custom_context=request.custom_context,
+                message="Resource not found after creation",
+            )
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=model,
+            custom_context=request.custom_context,
+        )
 
     def read(
         self,
@@ -111,9 +133,16 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
           - ec2:DeleteVpcEndpoints
           - ec2:DescribeVpcEndpoints
         """
-        model = request.desired_state
+        model = request.previous_state
+        response = request.aws_client_factory.ec2.describe_vpc_endpoints(
+            VpcEndpointIds=[model["Id"]]
+        )
+
+        if not response["VpcEndpoints"]:
+            return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+
         request.aws_client_factory.ec2.delete_vpc_endpoints(VpcEndpointIds=[model["Id"]])
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+        return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
 
     def update(
         self,
