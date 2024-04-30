@@ -1,7 +1,12 @@
 import logging
 from typing import Optional, TypedDict
 
-from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
+from localstack.aws.api.cloudformation import (
+    Capability,
+    ChangeSetType,
+    CreateStackSetInput,
+    Parameter,
+)
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
     convert_stack_parameters_to_list,
@@ -20,9 +25,8 @@ LOG = logging.getLogger(__name__)
 class StackSet:
     """A stack set contains multiple stack instances."""
 
-    # FIXME: confusing name. metadata is the complete incoming request object
-    def __init__(self, metadata: dict):
-        self.metadata = metadata
+    def __init__(self, request: CreateStackSetInput):
+        self.request = request
         # list of stack instances
         self.stack_instances = []
         # maps operation ID to stack set operation details
@@ -30,7 +34,7 @@ class StackSet:
 
     @property
     def stack_set_name(self):
-        return self.metadata.get("StackSetName")
+        return self.request.get("StackSetName")
 
 
 class StackInstance:
