@@ -750,7 +750,13 @@ class TestCallback:
             task_token = message_body["TaskToken"]
             aws_client.stepfunctions.send_task_failure(taskToken=task_token)
 
-        threading.Thread(target=_empty_send_task_failure_on_sqs_message, args=()).start()
+        thread_send_task_failure = threading.Thread(
+            target=_empty_send_task_failure_on_sqs_message,
+            args=(),
+            name="Thread_empty_send_task_failure_on_sqs_message",
+        )
+        thread_send_task_failure.daemon = True
+        thread_send_task_failure.start()
 
         template = CT.load_sfn_template(template)
         definition = json.dumps(template)
