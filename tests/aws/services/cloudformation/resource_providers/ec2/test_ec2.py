@@ -2,6 +2,7 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.testing.pytest import markers
 
@@ -45,6 +46,10 @@ def test_deploy_prefix_list(deploy_cfn_template, aws_client, snapshot):
         )
     )
 
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    description = aws_client.cloudformation.describe_stack_resources(StackName=stack.stack_name)
+    snapshot.match("resource-description", description)
+
     prefix_id = stack.outputs["PrefixRef"]
     prefix_list = aws_client.ec2.describe_managed_prefix_lists(PrefixListIds=[prefix_id])
     snapshot.match("prefix-list", prefix_list)
@@ -67,9 +72,23 @@ def test_deploy_vpc_endpoint(deploy_cfn_template, aws_client, snapshot):
         )
     )
 
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    snapshot.add_transformer(
+        SortingTransformer("StackResources", lambda sr: sr["LogicalResourceId"]), priority=-1
+    )
+    description = aws_client.cloudformation.describe_stack_resources(StackName=stack.stack_name)
+    snapshot.match("resource-description", description)
+
     endpoint_id = stack.outputs["EndpointRef"]
     endpoint = aws_client.ec2.describe_vpc_endpoints(VpcEndpointIds=[endpoint_id])
     snapshot.match("endpoint", endpoint)
 
     snapshot.add_transformer(snapshot.transform.key_value("VpcEndpointId"))
+    snapshot.add_transformer(snapshot.transform.key_value("DnsName"))
+    snapshot.add_transformer(snapshot.transform.key_value("HostedZoneId"))
+    snapshot.add_transformer(snapshot.transform.key_value("GroupId"))
+    snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
     snapshot.add_transformer(snapshot.transform.regex(stack.outputs["VpcId"], "vpc-id"))
+    snapshot.add_transformer(snapshot.transform.regex(stack.outputs["SubnetBId"], "subnet-b-id"))
+    snapshot.add_transformer(snapshot.transform.regex(stack.outputs["SubnetAId"], "subnet-a-id"))
