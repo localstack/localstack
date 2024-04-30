@@ -129,13 +129,6 @@ def clone_stack_params(stack_params):
         return stack_params
 
 
-def find_stack_instance(stack_set: StackSet, account: str, region: str):
-    for instance in stack_set.stack_instances:
-        if instance.metadata["Account"] == account and instance.metadata["Region"] == region:
-            return instance
-    return None
-
-
 def stack_not_found_error(stack_name: str):
     # FIXME
     raise ValidationError("Stack with id %s does not exist" % stack_name)
@@ -1212,7 +1205,7 @@ class CloudformationProvider(CloudformationApi):
 
         for account in accounts:
             for region in regions:
-                instance = find_stack_instance(stack_set, account, region)
+                instance = stack_set.get_instance(account, region)
                 if instance:
                     stack_set.stack_instances.remove(instance)
 

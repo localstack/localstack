@@ -28,13 +28,19 @@ class StackSet:
     def __init__(self, request: CreateStackSetInput):
         self.request = request
         # list of stack instances
-        self.stack_instances = []
+        self.stack_instances: list[StackInstance] = []
         # maps operation ID to stack set operation details
         self.operations = {}
 
     @property
     def stack_set_name(self):
         return self.request.get("StackSetName")
+
+    def get_instance(self, account: str, region: str) -> "StackInstance" | None:
+        for instance in self.stack_instances:
+            if instance.metadata["Account"] == account and instance.metadata["Region"] == region:
+                return instance
+        return None
 
 
 class StackInstance:
