@@ -9,23 +9,17 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from logging import Logger
 from math import ceil
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Generic, Optional, Type, TypedDict, TypeVar
 
-import botocore
 from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
-    convert_data_types,
-    fix_account_id_in_arns,
-    fix_boto_parameters_based_on_report,
     log_not_available_message,
-    remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
-from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE
 
 PRO_RESOURCE_PROVIDERS = False
 try:
@@ -38,11 +32,7 @@ except ImportError:
     pass
 
 if TYPE_CHECKING:
-    from localstack.services.cloudformation.engine.types import (
-        FuncDetails,
-        FuncDetailsValue,
-        ResourceDefinition,
-    )
+    pass
 
 LOG = logging.getLogger(__name__)
 
@@ -202,163 +192,6 @@ def get_resource_type(resource: dict) -> str:
             resource.get("Type"),
             exc_info=LOG.isEnabledFor(logging.DEBUG),
         )
-
-
-def invoke_function(
-    account_id: str,
-    region_name: str,
-    function: Callable,
-    params: dict,
-    resource_type: str,
-    func_details: FuncDetails,
-    action_name: str,
-    resource: Any,
-) -> Any:
-    try:
-        LOG.debug(
-            'Request for resource type "%s" in account %s region %s: %s %s',
-            resource_type,
-            account_id,
-            region_name,
-            func_details["function"],
-            params,
-        )
-        try:
-            result = function(**params)
-        except botocore.exceptions.ParamValidationError as e:
-            # alternatively we could also use the ParamValidator directly
-            report = e.kwargs.get("report")
-            if not report:
-                raise
-
-            LOG.debug("Converting parameters to allowed types")
-            LOG.debug("Report: %s", report)
-            converted_params = fix_boto_parameters_based_on_report(params, report)
-            LOG.debug("Original parameters:  %s", params)
-            LOG.debug("Converted parameters: %s", converted_params)
-
-            result = function(**converted_params)
-    except Exception as e:
-        if action_name == "Remove" and check_not_found_exception(e, resource_type, resource):
-            return
-        log_method = LOG.warning
-        if config.CFN_VERBOSE_ERRORS:
-            log_method = LOG.exception
-        log_method("Error calling %s with params: %s for resource: %s", function, params, resource)
-        raise e
-
-    return result
-
-
-def get_service_name(resource):
-    res_type = resource["Type"]
-    parts = res_type.split("::")
-    if len(parts) == 1:
-        return None
-    if "Cognito::IdentityPool" in res_type:
-        return "cognito-identity"
-    if res_type.endswith("Cognito::UserPool"):
-        return "cognito-idp"
-    if parts[-2] == "Cognito":
-        return "cognito-idp"
-    if parts[-2] == "Elasticsearch":
-        return "es"
-    if parts[-2] == "OpenSearchService":
-        return "opensearch"
-    if parts[-2] == "KinesisFirehose":
-        return "firehose"
-    if parts[-2] == "ResourceGroups":
-        return "resource-groups"
-    if parts[-2] == "CertificateManager":
-        return "acm"
-    if "ElasticLoadBalancing::" in res_type:
-        return "elb"
-    if "ElasticLoadBalancingV2::" in res_type:
-        return "elbv2"
-    if "ApplicationAutoScaling::" in res_type:
-        return "application-autoscaling"
-    if "MSK::" in res_type:
-        return "kafka"
-    if "Timestream::" in res_type:
-        return "timestream-write"
-    return parts[1].lower()
-
-
-def resolve_resource_parameters(
-    account_id_: str,
-    region_name_: str,
-    stack_name: str,
-    resource_definition: ResourceDefinition,
-    resources: dict[str, ResourceDefinition],
-    resource_id: str,
-    func_details: FuncDetailsValue,
-) -> dict | None:
-    params = func_details.get("parameters") or (
-        lambda account_id, region_name, properties, logical_resource_id, *args, **kwargs: properties
-    )
-    resource_props = resource_definition["Properties"] = resource_definition.get("Properties", {})
-    resource_props = dict(resource_props)
-    resource_state = resource_definition.get(KEY_RESOURCE_STATE, {})
-    last_deployed_state = resource_definition.get("_last_deployed_state", {})
-
-    if callable(params):
-        # resolve parameter map via custom function
-        params = params(
-            account_id_, region_name_, resource_props, resource_id, resource_definition, stack_name
-        )
-    else:
-        # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
-        if isinstance(params, list):
-            _params = {}
-            for param in params:
-                if isinstance(param, dict):
-                    _params.update(param)
-                else:
-                    _params[param] = param
-            params = _params
-
-        params = dict(params)
-        # TODO(srw): mutably mapping params :(
-        for param_key, prop_keys in dict(params).items():
-            params.pop(param_key, None)
-            if not isinstance(prop_keys, list):
-                prop_keys = [prop_keys]
-            for prop_key in prop_keys:
-                if callable(prop_key):
-                    prop_value = prop_key(
-                        account_id_,
-                        region_name_,
-                        resource_props,
-                        resource_id,
-                        resource_definition,
-                        stack_name,
-                    )
-                else:
-                    prop_value = resource_props.get(
-                        prop_key,
-                        resource_definition.get(
-                            prop_key,
-                            resource_state.get(prop_key, last_deployed_state.get(prop_key)),
-                        ),
-                    )
-                if prop_value is not None:
-                    params[param_key] = prop_value
-                    break
-
-    # this is an indicator that we should skip this resource deployment, and return
-    if params is None:
-        return
-
-    # FIXME: move this to a single place after template processing is finished
-    # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
-    params = fix_account_id_in_arns(params, account_id_)
-    # convert data types (e.g., boolean strings to bool)
-    # TODO: this might not be needed anymore
-    params = convert_data_types(func_details.get("types", {}), params)
-    # remove None values, as they usually raise boto3 errors
-    params = remove_none_values(params)
-
-    return params
 
 
 class NoResourceProvider(Exception):
