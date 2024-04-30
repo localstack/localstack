@@ -42,7 +42,7 @@ pycparser==2.22
     # via cffi
 pygments==2.17.2
     # via rich
-pyproject-hooks==1.0.0
+pyproject-hooks==1.1.0
     # via build
 python-dotenv==1.0.1
     # via localstack-core (pyproject.toml)
