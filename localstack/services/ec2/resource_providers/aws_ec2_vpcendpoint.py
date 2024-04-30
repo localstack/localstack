@@ -104,11 +104,22 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
                 message="Resource not found after creation",
             )
 
-        return ProgressEvent(
-            status=OperationStatus.SUCCESS,
-            resource_model=model,
-            custom_context=request.custom_context,
-        )
+        state = response["VpcEndpoints"][0][
+            "State"
+        ].lower()  # API specifies capital but lowercase is returned
+        match state:
+            case "available":
+                return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+            case "pending":
+                return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+            case "pendingacceptance":
+                return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+            case _:
+                return ProgressEvent(
+                    status=OperationStatus.FAILED,
+                    resource_model=model,
+                    message=f"Invalid state '{state}' for resource",
+                )
 
     def read(
         self,
@@ -138,11 +149,22 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
             VpcEndpointIds=[model["Id"]]
         )
 
-        if not response["VpcEndpoints"] or response["VpcEndpoints"][0]["State"] == "deleted":
-            return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+        if not response["VpcEndpoints"]:
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                resource_model=model,
+                message="Resource not found for deletion",
+            )
 
-        request.aws_client_factory.ec2.delete_vpc_endpoints(VpcEndpointIds=[model["Id"]])
-        return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+        state = response["VpcEndpoints"][0]["State"].lower()
+        match state:
+            case "deleted":
+                return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
+            case "deleting":
+                return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
+            case _:
+                request.aws_client_factory.ec2.delete_vpc_endpoints(VpcEndpointIds=[model["Id"]])
+                return ProgressEvent(status=OperationStatus.IN_PROGRESS, resource_model=model)
 
     def update(
         self,
