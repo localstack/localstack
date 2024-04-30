@@ -138,7 +138,7 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
             VpcEndpointIds=[model["Id"]]
         )
 
-        if not response["VpcEndpoints"]:
+        if not response["VpcEndpoints"] or response["VpcEndpoints"][0]["State"] == "deleted":
             return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=model)
 
         request.aws_client_factory.ec2.delete_vpc_endpoints(VpcEndpointIds=[model["Id"]])
