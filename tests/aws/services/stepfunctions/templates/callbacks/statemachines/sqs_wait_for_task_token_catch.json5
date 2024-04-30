@@ -1,0 +1,42 @@
+{
+  "Comment": "SQS_WAIT_FOR_TASK_TOKEN_CATCH",
+  "StartAt": "SendMessageWithWait",
+  "States": {
+    "SendMessageWithWait": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl.$": "$.QueueUrl",
+        "MessageBody": {
+          "Context.$": "$",
+          "TaskToken.$": "$$.Task.Token"
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.Runtime"
+          ],
+          "ResultPath": "$.states_runtime_error",
+          "Next": "CaughtRuntimeError"
+        },
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.states_all_error",
+          "Next": "CaughtStatesALL"
+        }
+      ],
+      "End": true
+    },
+    "CaughtRuntimeError": {
+      "Type": "Pass",
+      "End": true
+    },
+    "CaughtStatesALL": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import json
 import threading
 
+import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.services.stepfunctions.asl.eval.count_down_latch import CountDownLatch
@@ -689,6 +690,72 @@ class TestCallback:
         definition = json.dumps(template)
 
         exec_input = json.dumps({"QueueUrl": queue_url})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "template",
+        [CT.SQS_PARALLEL_WAIT_FOR_TASK_TOKEN, CT.SQS_WAIT_FOR_TASK_TOKEN_CATCH],
+        ids=["SQS_PARALLEL_WAIT_FOR_TASK_TOKEN", "SQS_WAIT_FOR_TASK_TOKEN_CATCH"],
+    )
+    def test_sqs_failure_in_wait_for_task_tok_no_error_field(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sqs_create_queue,
+        sfn_snapshot,
+        template,
+        request,
+    ):
+        if (
+            request.node.name
+            == "test_sqs_failure_in_wait_for_task_tok_no_error_field[SQS_PARALLEL_WAIT_FOR_TASK_TOKEN]"
+        ):
+            # TODO: The conditions in which TaskStateAborted error events are logged requires further investigations.
+            #  These appear to be logged for Task state workers but only within Parallel states. The behaviour with
+            #  other 'Abort' errors should also be investigated.
+            pytest.skip("Investigate occurrence logic of 'TaskStateAborted' errors")
+
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..TaskToken",
+                replacement="task_token",
+                replace_reference=True,
+            )
+        )
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        sfn_snapshot.add_transformer(RegexTransformer(queue_url, "<sqs_queue_url>"))
+        sfn_snapshot.add_transformer(RegexTransformer(queue_name, "<sqs_queue_name>"))
+
+        def _empty_send_task_failure_on_sqs_message():
+            def _get_message_body():
+                receive_message_response = aws_client.sqs.receive_message(
+                    QueueUrl=queue_url, MaxNumberOfMessages=1
+                )
+                return receive_message_response["Messages"][0]["Body"]
+
+            message_body_str = retry(_get_message_body, retries=60, sleep=1)
+            message_body = json.loads(message_body_str)
+            task_token = message_body["TaskToken"]
+            aws_client.stepfunctions.send_task_failure(taskToken=task_token)
+
+        threading.Thread(target=_empty_send_task_failure_on_sqs_message, args=()).start()
+
+        template = CT.load_sfn_template(template)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"QueueUrl": queue_url, "Message": "test_message_txt"})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
