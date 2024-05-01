@@ -3110,5 +3110,459 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_failure_in_wait_for_task_tok_no_error_field[SQS_PARALLEL_WAIT_FOR_TASK_TOKEN]": {
+    "recorded-date": "29-04-2024, 10:07:12",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "ParallelJob"
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ParallelStateStarted"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "MessageBody": {
+                  "Context": {
+                    "QueueUrl": "<sqs_queue_url>",
+                    "Message": "test_message_txt"
+                  },
+                  "TaskToken": "<task_token:1>"
+                },
+                "QueueUrl": "<sqs_queue_url>"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "taskFailedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "TaskStateAborted"
+          },
+          {
+            "id": 10,
+            "previousEventId": 8,
+            "timestamp": "timestamp",
+            "type": "ParallelStateFailed"
+          },
+          {
+            "id": 11,
+            "previousEventId": 10,
+            "stateExitedEventDetails": {
+              "name": "ParallelJob",
+              "output": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "states_all_error": {
+                  "Error": null,
+                  "Cause": null
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "ParallelStateExited"
+          },
+          {
+            "id": 12,
+            "previousEventId": 11,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "states_all_error": {
+                  "Error": null,
+                  "Cause": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CaughtStatesALL"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 13,
+            "previousEventId": 12,
+            "stateExitedEventDetails": {
+              "name": "CaughtStatesALL",
+              "output": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "states_all_error": {
+                  "Error": null,
+                  "Cause": null
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "states_all_error": {
+                  "Error": null,
+                  "Cause": null
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 14,
+            "previousEventId": 13,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/callback/test_callback.py::TestCallback::test_sqs_failure_in_wait_for_task_tok_no_error_field[SQS_WAIT_FOR_TASK_TOKEN_CATCH]": {
+    "recorded-date": "29-04-2024, 10:07:27",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "arn:aws:iam::111111111111:role/<resource:1>"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "SendMessageWithWait"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "MessageBody": {
+                  "Context": {
+                    "QueueUrl": "<sqs_queue_url>",
+                    "Message": "test_message_txt"
+                  },
+                  "TaskToken": "<task_token:1>"
+                },
+                "QueueUrl": "<sqs_queue_url>"
+              },
+              "region": "<region>",
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSubmittedEventDetails": {
+              "output": {
+                "MD5OfMessageBody": "<m-d5-of-message-body:1>",
+                "MessageId": "<uuid:1>",
+                "SdkHttpMetadata": {
+                  "AllHttpHeaders": {
+                    "x-amzn-RequestId": [
+                      "<uuid:2>"
+                    ],
+                    "connection": [
+                      "keep-alive"
+                    ],
+                    "Content-Length": [
+                      "106"
+                    ],
+                    "Date": "date",
+                    "Content-Type": [
+                      "application/x-amz-json-1.0"
+                    ]
+                  },
+                  "HttpHeaders": {
+                    "connection": "keep-alive",
+                    "Content-Length": "106",
+                    "Content-Type": "application/x-amz-json-1.0",
+                    "Date": "date",
+                    "x-amzn-RequestId": "<uuid:2>"
+                  },
+                  "HttpStatusCode": 200
+                },
+                "SdkResponseMetadata": {
+                  "RequestId": "<uuid:2>"
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSubmitted"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "taskFailedEventDetails": {
+              "resource": "sendMessage.waitForTaskToken",
+              "resourceType": "sqs"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskFailed"
+          },
+          {
+            "id": 7,
+            "previousEventId": 6,
+            "stateExitedEventDetails": {
+              "name": "SendMessageWithWait",
+              "output": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "states_all_error": {
+                  "Error": null,
+                  "Cause": null
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "id": 8,
+            "previousEventId": 7,
+            "stateEnteredEventDetails": {
+              "input": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "states_all_error": {
+                  "Error": null,
+                  "Cause": null
+                }
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "CaughtStatesALL"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 9,
+            "previousEventId": 8,
+            "stateExitedEventDetails": {
+              "name": "CaughtStatesALL",
+              "output": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "states_all_error": {
+                  "Error": null,
+                  "Cause": null
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "QueueUrl": "<sqs_queue_url>",
+                "Message": "test_message_txt",
+                "states_all_error": {
+                  "Error": null,
+                  "Cause": null
+                }
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 10,
+            "previousEventId": 9,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

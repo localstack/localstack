@@ -26,10 +26,10 @@ class CallbackOutcomeSuccess(CallbackOutcome):
 
 
 class CallbackOutcomeFailure(CallbackOutcome):
-    error: Final[str]
-    cause: Final[str]
+    error: Final[Optional[str]]
+    cause: Final[Optional[str]]
 
-    def __init__(self, callback_id: CallbackId, error: str, cause: str):
+    def __init__(self, callback_id: CallbackId, error: Optional[str], cause: Optional[str]):
         super().__init__(callback_id=callback_id)
         self.error = error
         self.cause = cause
