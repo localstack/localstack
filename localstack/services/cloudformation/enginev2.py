@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import NotRequired, TypeAlias, TypedDict
+from typing import Generator, NotRequired, TypeAlias, TypedDict
 
 jsonpath: TypeAlias = str
 
@@ -54,20 +54,35 @@ def hydrate_template(raw_template: RawTemplate) -> HydratedTemplate:
                 dependencies.append(dependency)
                 continue
 
-    return HydratedTemplate(dependencies=dependencies)
+    return HydratedTemplate(dependencies=dependencies, raw_template=raw_template)
 
 
 @dataclass
 class HydratedTemplate:
+    raw_template: RawTemplate
     dependencies: list[Dependency] = field(default_factory=list)
+
+    def resource_ids(self) -> list[str]:
+        return list(self.raw_template["Resources"].keys())
 
 
 class Engine:
     def __init__(self, hydrated_template: HydratedTemplate):
         self.template = hydrated_template
+        self.resource_ids = self.template.resource_ids()
 
     def deploy(self):
         pass
+
+    def _deployable_resource_ids(self) -> Generator[str, None, None]:
+        for resource_id in self.resource_ids:
+            for dep in self.template.dependencies:
+                if resource_id == dep.source_logical_id:
+                    break
+            else:
+                yield resource_id
+                continue
+            break
 
 
 if __name__ == "__main__":

@@ -43,4 +43,4 @@ def test_hydration():
         ),
     }
     engine = Engine(hydrated_template)
-    engine.deploy()
+    assert list(engine._deployable_resource_ids()) == ["Topic"]
