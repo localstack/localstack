@@ -92,7 +92,7 @@
 /localstack/testing/pytest/container.py @dominikschubert @simonrw
 
 # Test Selection
-/localstack/testing/testselection @dominikschubert @alexrashed 
+/localstack/testing/testselection @dominikschubert @alexrashed @silv-io
 
 ######################
 ### SERVICE OWNERS ###
