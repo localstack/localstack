@@ -18,6 +18,7 @@ from localstack.aws.api.firehose import (
     AmazonOpenSearchServerlessDestinationConfiguration,
     AmazonOpenSearchServerlessDestinationUpdate,
     AmazonopensearchserviceDestinationConfiguration,
+    AmazonopensearchserviceDestinationDescription,
     AmazonopensearchserviceDestinationUpdate,
     BooleanObject,
     CreateDeliveryStreamOutput,
@@ -34,6 +35,7 @@ from localstack.aws.api.firehose import (
     DestinationDescriptionList,
     DestinationId,
     ElasticsearchDestinationConfiguration,
+    ElasticsearchDestinationDescription,
     ElasticsearchDestinationUpdate,
     ElasticsearchS3BackupMode,
     ExtendedS3DestinationConfiguration,
@@ -96,6 +98,7 @@ from localstack.utils.aws.arns import (
     s3_bucket_name,
 )
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.common import (
     TIMESTAMP_FORMAT_MICROS,
     first_char_to_lower,
@@ -193,6 +196,45 @@ def get_search_db_connection(endpoint: str, region_name: str):
             http_auth=awsauth,
         )
     return OpenSearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
+
+
+def _drop_keys_in_destination_descriptions_not_in_output_types(destinations: list) -> list[dict]:
+    """For supported destinations, drops the keys in the description not defined in the respective destination description return type"""
+    for destination in destinations:
+        if amazon_open_search_service_destination_description := destination.get(
+            "AmazonopensearchserviceDestinationDescription"
+        ):
+            destination["AmazonopensearchserviceDestinationDescription"] = select_from_typed_dict(
+                AmazonopensearchserviceDestinationDescription,
+                amazon_open_search_service_destination_description,
+                filter=True,
+            )
+        if elasticsearch_destination_description := destination.get(
+            "ElasticsearchDestinationDescription"
+        ):
+            destination["ElasticsearchDestinationDescription"] = select_from_typed_dict(
+                ElasticsearchDestinationDescription,
+                elasticsearch_destination_description,
+                filter=True,
+            )
+        if http_endpoint_destination_description := destination.get(
+            "HttpEndpointDestinationDescription"
+        ):
+            destination["HttpEndpointDestinationDescription"] = select_from_typed_dict(
+                HttpEndpointDestinationConfiguration,
+                http_endpoint_destination_description,
+                filter=True,
+            )
+        if redshift_destination_description := destination.get("RedshiftDestinationDescription"):
+            destination["RedshiftDestinationDescription"] = select_from_typed_dict(
+                RedshiftDestinationDescription, redshift_destination_description, filter=True
+            )
+        if s3_destination_description := destination.get("S3DestinationDescription"):
+            destination["S3DestinationDescription"] = select_from_typed_dict(
+                S3DestinationDescription, s3_destination_description, filter=True
+            )
+
+    return destinations
 
 
 class FirehoseProvider(FirehoseApi):
@@ -378,6 +420,11 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
         )
+        if destinations := delivery_stream_description.get("Destinations"):
+            delivery_stream_description["Destinations"] = (
+                _drop_keys_in_destination_descriptions_not_in_output_types(destinations)
+            )
+
         return DescribeDeliveryStreamOutput(DeliveryStreamDescription=delivery_stream_description)
 
     def list_delivery_streams(
