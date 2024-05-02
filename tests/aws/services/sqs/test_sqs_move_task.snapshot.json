@@ -1,6 +1,6 @@
 {
   "tests/aws/services/sqs/test_sqs_move_task.py::test_basic_move_task_workflow": {
-    "recorded-date": "03-01-2024, 20:25:54",
+    "recorded-date": "30-04-2024, 10:22:14",
     "recorded-content": {
       "start-message-move-task-response": {
         "TaskHandle": "<task-handle:1>",
@@ -28,13 +28,13 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_source_needs_redrive_policy": {
-    "recorded-date": "05-01-2024, 12:48:02",
+    "recorded-date": "30-04-2024, 10:22:04",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "Source queue must be configured as a Dead Letter Queue.",
+          "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -45,13 +45,13 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_task_handle": {
-    "recorded-date": "05-01-2024, 12:45:27",
+    "recorded-date": "30-04-2024, 10:22:02",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "Value for parameter TaskHandle is invalid.",
+          "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -62,15 +62,16 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_source_arn_in_task_handle": {
-    "recorded-date": "05-01-2024, 12:46:39",
+    "recorded-date": "30-04-2024, 10:22:02",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Detail": null,
           "Message": "The resource that you specified for the SourceArn parameter doesn't exist.",
+          "QueryErrorCode": "ResourceNotFoundException",
           "Type": "Sender"
         },
+        "message": "The resource that you specified for the SourceArn parameter doesn't exist.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
@@ -79,15 +80,16 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_cancel_with_invalid_task_id_in_task_handle": {
-    "recorded-date": "05-01-2024, 12:47:48",
+    "recorded-date": "30-04-2024, 10:22:03",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Detail": null,
           "Message": "Task does not exist.",
+          "QueryErrorCode": "ResourceNotFoundException",
           "Type": "Sender"
         },
+        "message": "Task does not exist.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
@@ -96,7 +98,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_with_throughput_limit": {
-    "recorded-date": "03-01-2024, 20:25:11",
+    "recorded-date": "30-04-2024, 10:22:54",
     "recorded-content": {
       "start-message-move-task-response": {
         "TaskHandle": "<task-handle:1>",
@@ -108,15 +110,16 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_destination_needs_to_exist": {
-    "recorded-date": "05-01-2024, 12:48:32",
+    "recorded-date": "30-04-2024, 10:22:06",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "ResourceNotFoundException",
-          "Detail": null,
           "Message": "The resource that you specified for the DestinationArn parameter doesn't exist.",
+          "QueryErrorCode": "ResourceNotFoundException",
           "Type": "Sender"
         },
+        "message": "The resource that you specified for the DestinationArn parameter doesn't exist.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
@@ -125,12 +128,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_cancel": {
-    "recorded-date": "03-01-2024, 20:34:27",
+    "recorded-date": "30-04-2024, 10:23:25",
     "recorded-content": {
       "list-while": {
         "Results": [
           {
-            "ApproximateNumberOfMessagesMoved": 0,
+            "ApproximateNumberOfMessagesMoved": 2,
             "ApproximateNumberOfMessagesToMove": 10,
             "DestinationArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
             "MaxNumberOfMessagesPerSecond": 1,
@@ -146,7 +149,7 @@
         }
       },
       "cancel": {
-        "ApproximateNumberOfMessagesMoved": 0,
+        "ApproximateNumberOfMessagesMoved": 2,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -155,7 +158,7 @@
       "list-after": {
         "Results": [
           {
-            "ApproximateNumberOfMessagesMoved": 2,
+            "ApproximateNumberOfMessagesMoved": 8,
             "ApproximateNumberOfMessagesToMove": 10,
             "DestinationArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
             "MaxNumberOfMessagesPerSecond": 1,
@@ -172,7 +175,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_delete_destination_queue_while_running": {
-    "recorded-date": "03-01-2024, 20:47:31",
+    "recorded-date": "30-04-2024, 10:24:05",
     "recorded-content": {
       "list": {
         "Results": [
@@ -195,13 +198,13 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_start_multiple_move_tasks": {
-    "recorded-date": "05-01-2024, 12:50:38",
+    "recorded-date": "30-04-2024, 10:24:13",
     "recorded-content": {
       "error": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Detail": null,
           "Message": "There is already a task running. Only one active task is allowed for a source queue arn at a given time.",
+          "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -212,7 +215,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_default_destination": {
-    "recorded-date": "07-03-2024, 19:07:58",
+    "recorded-date": "30-04-2024, 10:22:20",
     "recorded-content": {
       "source-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
       "original-source": "arn:aws:sqs:<region>:111111111111:<resource:2>",
@@ -241,7 +244,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs_move_task.py::test_move_task_workflow_with_multiple_sources_as_default_destination": {
-    "recorded-date": "07-03-2024, 18:42:16",
+    "recorded-date": "30-04-2024, 10:22:29",
     "recorded-content": {
       "source-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
       "original-source-1": "arn:aws:sqs:<region>:111111111111:<resource:2>",

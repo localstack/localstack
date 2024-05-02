@@ -1102,6 +1102,7 @@ class ImageAttributeName(str):
     uefiData = "uefiData"
     lastLaunchedTime = "lastLaunchedTime"
     imdsSupport = "imdsSupport"
+    deregistrationProtection = "deregistrationProtection"
 
 
 class ImageBlockPublicAccessDisabledState(str):
@@ -2432,6 +2433,7 @@ class NetworkInterfaceAttribute(str):
     groupSet = "groupSet"
     sourceDestCheck = "sourceDestCheck"
     attachment = "attachment"
+    associatePublicIpAddress = "associatePublicIpAddress"
 
 
 class NetworkInterfaceCreationType(str):
@@ -10965,6 +10967,8 @@ class Image(TypedDict, total=False):
     DeprecationTime: Optional[String]
     ImdsSupport: Optional[ImdsSupportValues]
     SourceInstanceId: Optional[String]
+    DeregistrationProtection: Optional[String]
+    LastLaunchedTime: Optional[String]
 
 
 ImageList = List[Image]
@@ -12387,6 +12391,7 @@ class DescribeNetworkInterfaceAttributeResult(TypedDict, total=False):
     Groups: Optional[GroupIdentifierList]
     NetworkInterfaceId: Optional[String]
     SourceDestCheck: Optional[AttributeBooleanValue]
+    AssociatePublicIpAddress: Optional[Boolean]
 
 
 NetworkInterfacePermissionIdList = List[NetworkInterfacePermissionId]
@@ -14421,6 +14426,15 @@ class DisableImageDeprecationResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
+class DisableImageDeregistrationProtectionRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Optional[Boolean]
+
+
+class DisableImageDeregistrationProtectionResult(TypedDict, total=False):
+    Return: Optional[String]
+
+
 class DisableImageRequest(ServiceRequest):
     ImageId: ImageId
     DryRun: Optional[Boolean]
@@ -14816,6 +14830,16 @@ class EnableImageDeprecationRequest(ServiceRequest):
 
 class EnableImageDeprecationResult(TypedDict, total=False):
     Return: Optional[Boolean]
+
+
+class EnableImageDeregistrationProtectionRequest(ServiceRequest):
+    ImageId: ImageId
+    WithCooldown: Optional[Boolean]
+    DryRun: Optional[Boolean]
+
+
+class EnableImageDeregistrationProtectionResult(TypedDict, total=False):
+    Return: Optional[String]
 
 
 class EnableImageRequest(ServiceRequest):
@@ -15921,6 +15945,7 @@ class ImageAttribute(TypedDict, total=False):
     UefiData: Optional[AttributeValue]
     LastLaunchedTime: Optional[AttributeValue]
     ImdsSupport: Optional[AttributeValue]
+    DeregistrationProtection: Optional[AttributeValue]
 
 
 class UserBucket(TypedDict, total=False):
@@ -16711,6 +16736,7 @@ class ModifyNetworkInterfaceAttributeRequest(ServiceRequest):
     EnaSrdSpecification: Optional[EnaSrdSpecification]
     EnablePrimaryIpv6: Optional[Boolean]
     ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
+    AssociatePublicIpAddress: Optional[Boolean]
 
 
 class ModifyPrivateDnsNameOptionsRequest(ServiceRequest):
@@ -22964,6 +22990,12 @@ class Ec2Api:
     ) -> DisableImageDeprecationResult:
         raise NotImplementedError
 
+    @handler("DisableImageDeregistrationProtection")
+    def disable_image_deregistration_protection(
+        self, context: RequestContext, image_id: ImageId, dry_run: Boolean = None, **kwargs
+    ) -> DisableImageDeregistrationProtectionResult:
+        raise NotImplementedError
+
     @handler("DisableIpamOrganizationAdminAccount")
     def disable_ipam_organization_admin_account(
         self,
@@ -23246,6 +23278,17 @@ class Ec2Api:
         dry_run: Boolean = None,
         **kwargs,
     ) -> EnableImageDeprecationResult:
+        raise NotImplementedError
+
+    @handler("EnableImageDeregistrationProtection")
+    def enable_image_deregistration_protection(
+        self,
+        context: RequestContext,
+        image_id: ImageId,
+        with_cooldown: Boolean = None,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> EnableImageDeregistrationProtectionResult:
         raise NotImplementedError
 
     @handler("EnableIpamOrganizationAdminAccount")
@@ -24459,6 +24502,7 @@ class Ec2Api:
         ena_srd_specification: EnaSrdSpecification = None,
         enable_primary_ipv6: Boolean = None,
         connection_tracking_specification: ConnectionTrackingSpecificationRequest = None,
+        associate_public_ip_address: Boolean = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError

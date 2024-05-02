@@ -2124,7 +2124,7 @@ class TestSNSSubscriptionSQSFifo:
 
         aws_client.sns.publish(TopicArn=topic_arn, Message=message, **kwargs)
 
-        response = aws_client.sqs_json.receive_message(
+        response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
             WaitTimeSeconds=10,
             AttributeNames=["All"],
@@ -2136,7 +2136,7 @@ class TestSNSSubscriptionSQSFifo:
         )
         # republish the message, to check deduplication
         aws_client.sns.publish(TopicArn=topic_arn, Message=message, **kwargs)
-        response = aws_client.sqs_json.receive_message(
+        response = aws_client.sqs.receive_message(
             QueueUrl=queue_url,
             WaitTimeSeconds=1,
             AttributeNames=["All"],
