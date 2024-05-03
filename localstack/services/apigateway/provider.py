@@ -32,6 +32,7 @@ from localstack.aws.api.apigateway import (
     CreateAuthorizerRequest,
     CreateRestApiRequest,
     CreateStageRequest,
+    Deployment,
     DocumentationPart,
     DocumentationPartIds,
     DocumentationPartLocation,
@@ -1064,6 +1065,29 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not response.get("variables"):
             response.pop("variables", None)
 
+    def update_deployment(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        deployment_id: String,
+        patch_operations: ListOfPatchOperation = None,
+        **kwargs,
+    ) -> Deployment:
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        try:
+            deployment = moto_rest_api.get_deployment(deployment_id)
+        except KeyError:
+            raise NotFoundException("Invalid Deployment identifier specified")
+
+        for patch_operation in patch_operations:
+            # TODO: add validation for unsupported paths
+            # see https://docs.aws.amazon.com/apigateway/latest/api/patch-operations.html#UpdateDeployment-Patch
+            if patch_operation["path"] == "description":
+                deployment.description = patch_operation["value"]
+
+        deployment_response: Deployment = deployment.to_json() or {}
+        return deployment_response
+
     # authorizers
 
     @handler("CreateAuthorizer", expand=False)
@@ -1895,6 +1919,36 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         remove_empty_attributes_from_integration(integration=response)
 
         return response
+
+    def update_integration(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        patch_operations: ListOfPatchOperation = None,
+        **kwargs,
+    ) -> Integration:
+        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=rest_api_id)
+        resource = moto_rest_api.resources.get(resource_id)
+        if not resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        method = resource.resource_methods.get(http_method)
+        if not method:
+            raise NotFoundException("Invalid Integration identifier specified")
+
+        integration = method.method_integration
+        _patch_api_gateway_entity(integration, patch_operations)
+
+        # fix data types
+        if integration.timeout_in_millis:
+            integration.timeout_in_millis = int(integration.timeout_in_millis)
+        if skip_verification := (integration.tls_config or {}).get("insecureSkipVerification"):
+            integration.tls_config["insecureSkipVerification"] = str_to_bool(skip_verification)
+
+        integration_dict: Integration = integration.to_json()
+        return integration_dict
 
     def delete_integration(
         self,
