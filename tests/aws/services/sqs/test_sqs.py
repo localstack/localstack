@@ -1335,13 +1335,15 @@ class TestSqsProvider:
         assert re.match(rf".*<QueueUrl>\s*{url}/[^<]+</QueueUrl>.*", content, **kwargs)
 
     @markers.aws.validated
-    def test_marker_serialization_query_protocol(
+    def test_marker_serialization_json_protocol(
         self, sqs_create_queue, aws_client, aws_http_client_factory
     ):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        message_body = {"foo": "bar"}
-        aws_client.sqs.send_message(QueueUrl=queue_name, MessageBody=json.dumps(message_body))
+        # message_body = {"foo": "ba\rr", "foo2": "ba&quot;r&quot;"}
+        # aws_client.sqs.send_message(QueueUrl=queue_name, MessageBody=json.dumps(message_body))
+        message_body = '{"foo": "ba\rr", "foo2": "ba&quot;r&quot;"}'
+        aws_client.sqs.send_message(QueueUrl=queue_name, MessageBody=message_body)
 
         client = aws_http_client_factory("sqs", region="us-east-1")
 
@@ -1352,31 +1354,33 @@ class TestSqsProvider:
 
         response = client.get(
             endpoint_url,
-            params={"Action": "ReceiveMessage", "QueueUrl": queue_url, "Version": "2012-11-05"},
+            params={
+                "Action": "ReceiveMessage",
+                "QueueUrl": queue_url,
+                "Version": "2012-11-05",
+                "VisibilityTimeout": "0",
+            },
             headers={"Accept": "application/json"},
         )
 
         parsed_content = json.loads(response.content.decode("utf-8"))
+
         if is_aws_cloud():
             assert (
-                json.loads(
-                    parsed_content["ReceiveMessageResponse"]["ReceiveMessageResult"]["messages"][0][
-                        "Body"
-                    ]
-                )
+                parsed_content["ReceiveMessageResponse"]["ReceiveMessageResult"]["messages"][0][
+                    "Body"
+                ]
                 == message_body
             )
 
         # TODO: this is an error in LocalStack. Usually it should be messages[0]['Body']
         else:
             assert (
-                json.loads(
-                    parsed_content["ReceiveMessageResponse"]["ReceiveMessageResult"]["Message"][
-                        "Body"
-                    ]
-                )
+                parsed_content["ReceiveMessageResponse"]["ReceiveMessageResult"]["Message"]["Body"]
                 == message_body
             )
+        client_receive_response = aws_client.sqs.receive_message(QueueUrl=queue_url)
+        assert client_receive_response["Messages"][0]["Body"] == message_body
 
     @markers.aws.only_localstack
     def test_external_host_via_header_complete_message_lifecycle(

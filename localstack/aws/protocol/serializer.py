@@ -1642,7 +1642,7 @@ class SqsQueryResponseSerializer(QueryResponseSerializer):
         node.text = (
             str(params)
             .replace('"', '__marker__"__marker__')
-            .replace("\r", "__marker__\r__marker__")
+            .replace("\r", "__marker__-r__marker__")
         )
 
     def _node_to_string(self, root: Optional[ETree.ElementTree], mime_type: str) -> Optional[str]:
@@ -1650,24 +1650,19 @@ class SqsQueryResponseSerializer(QueryResponseSerializer):
         generated_string = super()._node_to_string(root, mime_type)
         if generated_string is None:
             return None
-
         generated_string = to_str(generated_string)
-        # Undo the second escaping of the "
+        # Undo the second escaping of the &
+        # Undo the second escaping of the carriage return (\r)
         if mime_type == APPLICATION_JSON:
-            # At this point in time we already dumped the json and all relevant characters are already escaped
-            generated_string = generated_string.replace(r"__marker__\"__marker__", r"\"")
-        else:
-            generated_string = generated_string.replace('__marker__"__marker__', '"')
-
-        return (
-            to_bytes(
-                generated_string
-                # Undo the second escaping of the carriage return (\r)
-                .replace("__marker__\r__marker__", "&#xD;")
+            generated_string = generated_string.replace(r"__marker__\"__marker__", r"\"").replace(
+                "__marker__-r__marker__", r"\r"
             )
-            if generated_string is not None
-            else None
-        )
+        else:
+            generated_string = generated_string.replace('__marker__"__marker__', '"').replace(
+                "__marker__-r__marker__", "\r"
+            )
+
+        return to_bytes(generated_string)
 
     def _add_error_tags(
         self, error: ServiceException, error_tag: ETree.Element, mime_type: str
