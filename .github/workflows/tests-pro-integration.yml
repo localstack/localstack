@@ -82,6 +82,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Enable colors in tests running outside of docker (not in a tty - https://github.com/pytest-dev/pytest/pull/7462)
+  PY_COLORS: "1"
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
   TINYBIRD_DATASOURCE: community_tests_pro_integration
@@ -316,7 +318,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: "test"
           AWS_ACCESS_KEY_ID: "test"
           AWS_DEFAULT_REGION: "us-east-1"
-          PYTEST_LOGLEVEL: debug
           TEST_PATH: "../localstack/tests/aws/"  # TODO: also include tests/integration/
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}--splits 2 --group ${{ matrix.group }} --durations-path ../localstack/.test_durations --capture=no --reruns 2 --junitxml=pytest-junit-community-${{ matrix.group }}.xml"
         working-directory: localstack-ext
