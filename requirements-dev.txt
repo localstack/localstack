@@ -37,7 +37,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.139.1
+aws-cdk-lib==2.140.0
     # via localstack-core
 aws-sam-translator==1.87.0
     # via
@@ -92,7 +92,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==0.86.4
+cfn-lint==0.87.0
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -102,7 +102,7 @@ click==8.1.7
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   quart
-colorama==0.4.4
+colorama==0.4.6
     # via awscli
 constantly==23.10.4
     # via localstack-twisted
@@ -220,7 +220,7 @@ jpype1==1.5.0
     # via localstack-core
 jschema-to-python==1.2.3
     # via cfn-lint
-jsii==1.97.0
+jsii==1.98.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-kubectl-v20
@@ -246,7 +246,7 @@ jsonpickle==3.0.4
     # via jschema-to-python
 jsonpointer==2.4
     # via jsonpatch
-jsonschema==4.21.1
+jsonschema==4.22.0
     # via
     #   aws-sam-translator
     #   cfn-lint
@@ -275,7 +275,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.5.post1
+moto-ext==5.0.6.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -359,7 +359,7 @@ pydantic-core==2.18.2
     # via pydantic
 pygments==2.17.2
     # via rich
-pymongo==4.7.0
+pymongo==4.7.1
     # via localstack-core
 pyopenssl==24.1.0
     # via
