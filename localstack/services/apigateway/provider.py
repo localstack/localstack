@@ -1082,7 +1082,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         for patch_operation in patch_operations:
             # TODO: add validation for unsupported paths
             # see https://docs.aws.amazon.com/apigateway/latest/api/patch-operations.html#UpdateDeployment-Patch
-            if patch_operation["path"] == "description":
+            if (
+                patch_operation.get("path") == "/description"
+                and patch_operation.get("op") == "replace"
+            ):
                 deployment.description = patch_operation["value"]
 
         deployment_response: Deployment = deployment.to_json() or {}
