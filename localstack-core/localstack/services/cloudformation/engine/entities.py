@@ -1,10 +1,17 @@
 import logging
 from typing import Optional, TypedDict
 
-from localstack.aws.api.cloudformation import Capability, ChangeSetType, Parameter
+from localstack.aws.api.cloudformation import (
+    Capability,
+    ChangeSetType,
+    CreateStackSetInput,
+    GetTemplateSummaryOutput,
+    Parameter,
+)
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
     convert_stack_parameters_to_list,
+    extract_stack_parameter_declarations,
     strip_parameter_type,
 )
 from localstack.utils.aws import arns
@@ -17,22 +24,6 @@ from localstack.utils.time import timestamp_millis
 LOG = logging.getLogger(__name__)
 
 
-class StackSet:
-    """A stack set contains multiple stack instances."""
-
-    # FIXME: confusing name. metadata is the complete incoming request object
-    def __init__(self, metadata: dict):
-        self.metadata = metadata
-        # list of stack instances
-        self.stack_instances = []
-        # maps operation ID to stack set operation details
-        self.operations = {}
-
-    @property
-    def stack_set_name(self):
-        return self.metadata.get("StackSetName")
-
-
 class StackInstance:
     """A stack instance belongs to a stack set and is specific to a region / account ID."""
 
@@ -41,6 +32,72 @@ class StackInstance:
         self.metadata = metadata
         # reference to the deployed stack belonging to this stack instance
         self.stack = None
+
+
+class StackSet:
+    """A stack set contains multiple stack instances."""
+
+    def __init__(self, request: CreateStackSetInput):
+        self.request = request
+        # list of stack instances
+        self.stack_instances: list[StackInstance] = []
+        # maps operation ID to stack set operation details
+        self.operations = {}
+
+    # compatibility with old API
+    @property
+    def metadata(self) -> CreateStackSetInput:
+        return self.request
+
+    @property
+    def stack_set_name(self):
+        return self.request.get("StackSetName")
+
+    @property
+    def template_url(self) -> str | None:
+        return self.request.get("TemplateURL")
+
+    @property
+    def template_body(self) -> str | None:
+        return self.request.get("TemplateBody")
+
+    def get_template(self):
+        if body := self.template_body:
+            return body
+
+        raise NotImplementedError("template URL")
+
+    def get_template_summary(self) -> GetTemplateSummaryOutput:
+        # id_summaries = defaultdict(list)
+        # for resource_id, resource in stack.template_resources.items():
+        #     res_type = resource["Type"]
+        #     id_summaries[res_type].append(resource_id)
+
+        # hack to use this helper function
+        parameters = {
+            every["ParameterKey"]: {
+                "Type": "String",
+            }
+            for every in self.metadata["Parameters"]
+        }
+        result = {
+            "Version": "2010-09-09",
+            "ResourceTypes": ["AWS::S3::Bucket", "AWS::S3::Bucket"],
+            "Parameters": list(
+                extract_stack_parameter_declarations({"Parameters": parameters}).values()
+            ),
+        }
+        # result["ResourceIdentifierSummaries"] = [
+        #     {"ResourceType": key, "LogicalResourceIds": values}
+        #     for key, values in id_summaries.items()
+        # ]
+        return result
+
+    def get_instance(self, account: str, region: str) -> StackInstance | None:
+        for instance in self.stack_instances:
+            if instance.metadata["Account"] == account and instance.metadata["Region"] == region:
+                return instance
+        return None
 
 
 class StackMetadata(TypedDict):

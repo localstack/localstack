@@ -61,6 +61,14 @@ def find_stack(account_id: str, region_name: str, stack_name: str) -> Stack | No
     )[0]
 
 
+def find_stack_set(account_id: str, region_name: str, stack_set_name: str) -> StackSet | None:
+    state = get_cloudformation_store(account_id, region_name)
+    for name, stack_set in state.stack_sets.items():
+        # TODO: stack set id?
+        if stack_set_name in [name, stack_set.stack_set_name]:
+            return stack_set
+
+
 def find_stack_by_id(account_id: str, region_name: str, stack_id: str) -> Stack | None:
     """
     Find the stack by id.

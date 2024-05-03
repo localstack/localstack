@@ -1,9 +1,30 @@
 {
   "tests/aws/services/cloudformation/resources/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
-    "recorded-date": "24-05-2023, 15:32:47",
+    "recorded-date": "01-05-2024, 16:29:26",
     "recorded-content": {
       "create_stack_set": {
         "StackSetId": "<stack-set-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "template-summary": {
+        "Parameters": [
+          {
+            "NoEcho": false,
+            "ParameterConstraints": {
+              "AllowedValues": []
+            },
+            "ParameterKey": "BucketName",
+            "ParameterType": "String"
+          }
+        ],
+        "ResourceTypes": [
+          "AWS::S3::Bucket",
+          "AWS::S3::Bucket"
+        ],
+        "Version": "2010-09-09",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

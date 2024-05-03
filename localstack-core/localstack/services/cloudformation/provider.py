@@ -110,6 +110,7 @@ from localstack.services.cloudformation.stores import (
     find_change_set,
     find_stack,
     find_stack_by_id,
+    find_stack_set,
     get_cloudformation_store,
 )
 from localstack.state import StateVisitor
@@ -530,6 +531,14 @@ class CloudformationProvider(CloudformationApi):
         request: GetTemplateSummaryInput,
     ) -> GetTemplateSummaryOutput:
         stack_name = request.get("StackName")
+        stack_set_name = request.get("StackSetName")
+
+        if stack_set_name:
+            stack_set = find_stack_set(context.account_id, context.region, stack_set_name)
+            if not stack_set:
+                # TODO: different error?
+                return stack_not_found_error(stack_set_name)
+            return stack_set.get_template_summary()
 
         if stack_name:
             stack = find_stack(context.account_id, context.region, stack_name)
