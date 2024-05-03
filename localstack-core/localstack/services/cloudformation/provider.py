@@ -1231,7 +1231,7 @@ class CloudformationProvider(CloudformationApi):
                     sset_meta, ["TemplateURL"]
                 )
                 kwargs["Parameters"] = merge_parameters(
-                    sset_meta["Parameters"], request.get("ParameterOverrides", [])
+                    sset_meta.get("Parameters", []), request.get("ParameterOverrides", [])
                 )
                 # allow overrides from the request
                 stack_name = f"sset-{set_name}-{account}"
