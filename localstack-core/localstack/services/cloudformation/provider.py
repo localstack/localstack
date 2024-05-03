@@ -1,4 +1,5 @@
 import copy
+import itertools
 import json
 import logging
 import re
@@ -1172,6 +1173,45 @@ class CloudformationProvider(CloudformationApi):
         accounts = request["Accounts"]
         regions = request["Regions"]
 
+        # check if any stacks exist already
+        for account, region, instance in itertools.product(
+            accounts, regions, stack_set.stack_instances
+        ):
+            if instance.account == account and instance.region == region:
+                # record an operation
+                operation = {
+                    "OperationId": op_id,
+                    "StackSetId": stack_set.metadata["StackSetId"],
+                    "Action": "CREATE",
+                    "Status": "SUCCEEDED",
+                }
+                stack_set.operations[op_id] = operation
+                return CreateStackInstancesOutput(OperationId=op_id)
+
+        # temp: find a better home for this
+        def merge_parameters(*parameters_lists: list) -> list:
+            """
+            Merge multiple lists of parameters
+
+            >>> ps1 = [{"ParameterKey": "a", "ParameterValue": "b"}]
+            >>> ps2 = [{"ParameterKey": "c", "ParameterValue": "d"}]
+            >>> ps3 = [{"ParameterKey": "a", "ParameterValue": "1"}]
+            >>> ps = merge_parameters(ps1, ps2, ps3)
+            >>> assert ps == [{"ParameterKey": "a", "ParameterValue": "1"},
+            ...   {"ParameterKey": "c", "ParameterValue": "d"}]
+            """
+            from functools import reduce
+
+            def _merge(acc: list, new: list) -> list:
+                acc_d = {every["ParameterKey"]: every["ParameterValue"] for every in acc}
+                new_d = {every["ParameterKey"]: every["ParameterValue"] for every in new}
+                acc_d.update(**new_d)
+                return [
+                    {"ParameterKey": key, "ParameterValue": value} for (key, value) in acc_d.items()
+                ]
+
+            return reduce(_merge, parameters_lists, [])
+
         stacks_to_await = []
         for account in accounts:
             for region in regions:
@@ -1186,6 +1226,10 @@ class CloudformationProvider(CloudformationApi):
                 kwargs = select_attributes(sset_meta, ["TemplateBody"]) or select_attributes(
                     sset_meta, ["TemplateURL"]
                 )
+                kwargs["Parameters"] = merge_parameters(
+                    sset_meta["Parameters"], request.get("ParameterOverrides", [])
+                )
+                # allow overrides from the request
                 stack_name = f"sset-{set_name}-{account}"
 
                 # skip creation of existing stacks

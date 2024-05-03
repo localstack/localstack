@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/resources/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
-    "recorded-date": "01-05-2024, 16:29:26",
+    "recorded-date": "03-05-2024, 16:06:54",
     "recorded-content": {
       "create_stack_set": {
         "StackSetId": "<stack-set-id:1>",
@@ -12,17 +12,17 @@
       "template-summary": {
         "Parameters": [
           {
+            "DefaultValue": "sns-topic-simple",
             "NoEcho": false,
             "ParameterConstraints": {
               "AllowedValues": []
             },
-            "ParameterKey": "BucketName",
+            "ParameterKey": "TopicName",
             "ParameterType": "String"
           }
         ],
         "ResourceTypes": [
-          "AWS::S3::Bucket",
-          "AWS::S3::Bucket"
+          "AWS::SNS::Topic"
         ],
         "Version": "2010-09-09",
         "ResponseMetadata": {
@@ -32,6 +32,13 @@
       },
       "create_stack_instances": {
         "OperationId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "recreate_stack_instances": {
+        "OperationId": "<uuid:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

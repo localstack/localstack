@@ -33,6 +33,14 @@ class StackInstance:
         # reference to the deployed stack belonging to this stack instance
         self.stack = None
 
+    @property
+    def account(self) -> str:
+        return self.metadata["Account"]
+
+    @property
+    def region(self) -> str:
+        return self.metadata["Region"]
+
 
 class StackSet:
     """A stack set contains multiple stack instances."""
@@ -82,7 +90,7 @@ class StackSet:
         }
         result = {
             "Version": "2010-09-09",
-            "ResourceTypes": ["AWS::S3::Bucket", "AWS::S3::Bucket"],
+            "ResourceTypes": ["AWS::SNS::Topic"],
             "Parameters": list(
                 extract_stack_parameter_declarations({"Parameters": parameters}).values()
             ),
