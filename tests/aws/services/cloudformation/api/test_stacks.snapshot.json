@@ -1165,5 +1165,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_update_stack_with_same_template_withoutchange": {
+    "recorded-date": "02-05-2024, 15:55:40",
+    "recorded-content": {
+      "deploy-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "No updates are to be performed.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

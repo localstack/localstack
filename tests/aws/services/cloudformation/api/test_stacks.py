@@ -221,14 +221,18 @@ class TestStacksApi:
         statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"UPDATE_COMPLETE"}
 
-    @markers.aws.needs_fixing
-    def test_update_stack_with_same_template_withoutchange(self, deploy_cfn_template, aws_client):
+    @markers.aws.validated
+    def test_update_stack_with_same_template_withoutchange(
+        self, deploy_cfn_template, aws_client, snapshot
+    ):
         template = load_file(
             os.path.join(os.path.dirname(__file__), "../../../templates/fifo_queue.json")
         )
         stack = deploy_cfn_template(template=template)
 
-        with pytest.raises(Exception) as ctx:  # TODO: capture proper exception
+        with pytest.raises(
+            botocore.exceptions.ClientError
+        ) as ctx:  # TODO: capture proper exception
             aws_client.cloudformation.update_stack(
                 StackName=stack.stack_name, TemplateBody=template
             )
@@ -236,9 +240,7 @@ class TestStacksApi:
                 StackName=stack.stack_name
             )
 
-        error_message = str(ctx.value)
-        assert "UpdateStack" in error_message
-        assert "No updates are to be performed." in error_message
+        snapshot.match("deploy-error", ctx.value.response)
 
     @markers.aws.validated
     def test_update_stack_actual_update(self, deploy_cfn_template, aws_client):
