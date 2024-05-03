@@ -333,7 +333,7 @@ class CloudformationProvider(CloudformationApi):
         if not stack:
             return not_found_error(f'Unable to update non-existing stack "{stack_name}"')
 
-        api_utils.prepare_template_body(request)
+        api_utils.prepare_template_body(request, stack)
         template = template_preparer.parse_template(request["TemplateBody"])
 
         if (
