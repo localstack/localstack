@@ -1654,12 +1654,13 @@ class SqsQueryResponseSerializer(QueryResponseSerializer):
         # Undo the second escaping of the &
         # Undo the second escaping of the carriage return (\r)
         if mime_type == APPLICATION_JSON:
+            # At this point the json was already dumped and escaped, so we replace directly.
             generated_string = generated_string.replace(r"__marker__\"__marker__", r"\"").replace(
                 "__marker__-r__marker__", r"\r"
             )
         else:
-            generated_string = generated_string.replace('__marker__"__marker__', '"').replace(
-                "__marker__-r__marker__", "\r"
+            generated_string = generated_string.replace('__marker__"__marker__', "&quot;").replace(
+                "__marker__-r__marker__", "&#xD;"
             )
 
         return to_bytes(generated_string)

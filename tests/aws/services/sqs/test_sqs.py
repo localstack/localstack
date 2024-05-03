@@ -1334,14 +1334,16 @@ class TestSqsProvider:
         kwargs = {"flags": re.MULTILINE | re.DOTALL}
         assert re.match(rf".*<QueueUrl>\s*{url}/[^<]+</QueueUrl>.*", content, **kwargs)
 
+    @pytest.mark.parametrize(
+        argnames="json_body",
+        argvalues=['{"foo": "ba\rr", "foo2": "ba&quot;r&quot;"}', json.dumps('{"foo": "ba\rr"}')],
+    )
     @markers.aws.validated
     def test_marker_serialization_json_protocol(
-        self, sqs_create_queue, aws_client, aws_http_client_factory
+        self, sqs_create_queue, aws_client, aws_http_client_factory, json_body
     ):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        # message_body = {"foo": "ba\rr", "foo2": "ba&quot;r&quot;"}
-        # aws_client.sqs.send_message(QueueUrl=queue_name, MessageBody=json.dumps(message_body))
         message_body = '{"foo": "ba\rr", "foo2": "ba&quot;r&quot;"}'
         aws_client.sqs.send_message(QueueUrl=queue_name, MessageBody=message_body)
 
