@@ -81,7 +81,7 @@ class CmdDockerClient(ContainerClient):
             *self._docker_cmd(),
             "info",
             "--format",
-            "{{json .}}",
+            "'{{json .}}'",
         ]
         cmd_result = run(cmd)
 
@@ -95,7 +95,7 @@ class CmdDockerClient(ContainerClient):
             "--filter",
             f"name={container_name}",
             "--format",
-            "{{ .Status }} - {{ .Names }}",
+            "'{{ .Status }} - {{ .Names }}'",
         ]
         cmd_result = run(cmd)
 
@@ -222,7 +222,7 @@ class CmdDockerClient(ContainerClient):
             options += [y for filter_item in filter for y in ["--filter", filter_item]]
         cmd += options
         cmd.append("--format")
-        cmd.append("{{json . }}")
+        cmd.append("'{{json . }}'")
         try:
             cmd_result = run(cmd).strip()
         except subprocess.CalledProcessError as e:
@@ -367,7 +367,7 @@ class CmdDockerClient(ContainerClient):
     def get_docker_image_names(
         self, strip_latest=True, include_tags=True, strip_wellknown_repo_prefixes: bool = True
     ):
-        format_string = "{{.Repository}}:{{.Tag}}" if include_tags else "{{.Repository}}"
+        format_string = "'{{.Repository}}:{{.Tag}}'" if include_tags else "'{{.Repository}}'"
         cmd = self._docker_cmd()
         cmd += ["images", "--format", format_string]
         try:
@@ -411,7 +411,7 @@ class CmdDockerClient(ContainerClient):
 
     def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[dict, list, str]]:
         cmd = self._docker_cmd()
-        cmd += ["inspect", "--format", "{{json .}}", object_name_or_id]
+        cmd += ["inspect", "--format", "'{{json .}}'", object_name_or_id]
         try:
             cmd_result = run(cmd, print_error=False)
         except subprocess.CalledProcessError as e:
@@ -548,7 +548,7 @@ class CmdDockerClient(ContainerClient):
         cmd += [
             "inspect",
             "--format",
-            "{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}",
+            "'{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}'",
             container_name_or_id,
         ]
         try:
