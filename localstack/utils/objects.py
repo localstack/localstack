@@ -94,7 +94,7 @@ class SubtypesInstanceManager:
             # lazily load subtype instance (required if new plugins are dynamically loaded at runtime)
             for clazz in get_all_subclasses(base_type):
                 impl_name = clazz.impl_name()
-                if impl_name not in instances:
+                if impl_name not in instances and subtype_name == impl_name:
                     instances[impl_name] = clazz()
             instance = instances.get(subtype_name)
         if not instance and raise_if_missing:

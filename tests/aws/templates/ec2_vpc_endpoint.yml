@@ -1,0 +1,58 @@
+Resources:
+  CWLInterfaceEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      VpcEndpointType: 'Interface'
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.logs'
+      VpcId: !Ref myVPC
+      PrivateDnsEnabled: true
+      SubnetIds:
+        - !Ref subnetA
+        - !Ref subnetB
+      SecurityGroupIds:
+        - !Ref mySecurityGroup
+  myVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: 'Name'
+          Value: 'myVPC'
+  subnetA:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref myVPC
+      CidrBlock: '10.0.1.0/24'
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+  subnetB:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref myVPC
+      CidrBlock: '10.0.2.0/24'
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+  mySecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Allow HTTPS traffic from the VPC'
+      VpcId: !Ref myVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !GetAtt myVPC.CidrBlock
+
+Outputs:
+  EndpointRef:
+    Value:  !Ref CWLInterfaceEndpoint
+  EndpointCreationTimestamp:
+    Value:  !GetAtt CWLInterfaceEndpoint.CreationTimestamp
+  Id:
+    Value:  !GetAtt CWLInterfaceEndpoint.Id
+  VpcId:
+    Value: !Ref myVPC
+  SubnetAId:
+    Value: !Ref subnetA
+  SubnetBId:
+    Value: !Ref subnetB

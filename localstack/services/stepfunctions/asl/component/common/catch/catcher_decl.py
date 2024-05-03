@@ -74,8 +74,9 @@ class CatcherDecl(EvalComponent):
                 f"Internal Error: invalid event details declaration in FailureEvent: '{failure_event}'."
             )
         spec_event_details: dict = list(failure_event.event_details.values())[0]
-        error = spec_event_details["error"]
-        cause = spec_event_details.get("cause") or ""
+        # If no cause or error fields are given, AWS binds an empty string; otherwise it attaches the value.
+        error = spec_event_details.get("error", "")
+        cause = spec_event_details.get("cause", "")
         # Stepfunctions renames these fields to capital in this scenario.
         return {
             "Error": error,

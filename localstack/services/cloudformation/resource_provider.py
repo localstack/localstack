@@ -8,6 +8,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from logging import Logger
+from math import ceil
 from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
 
 import botocore
@@ -397,10 +398,12 @@ class ResourceProviderExecutor:
         self,
         resource: dict,
         raw_payload: ResourceProviderPayload,
-        max_iterations: int = 30,
+        max_timeout: int = config.CFN_PER_RESOURCE_TIMEOUT,
         sleep_time: float = 5,
     ) -> ProgressEvent[Properties]:
         payload = copy.deepcopy(raw_payload)
+
+        max_iterations = max(ceil(max_timeout / sleep_time), 2)
 
         for current_iteration in range(max_iterations):
             resource_type = get_resource_type(

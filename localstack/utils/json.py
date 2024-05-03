@@ -1,3 +1,4 @@
+import base64
 import decimal
 import json
 import logging
@@ -47,11 +48,11 @@ class CustomEncoder(json.JSONEncoder):
 
 
 class BytesEncoder(json.JSONEncoder):
-    """Helper class that converts JSON documents with bytes"""
+    """Specialized JSON encoder that encode bytes into Base64 strings."""
 
     def default(self, obj):
         if isinstance(obj, bytes):
-            return to_str(obj, errors="replace")
+            return to_str(base64.b64encode(obj))
         return super().default(obj)
 
 

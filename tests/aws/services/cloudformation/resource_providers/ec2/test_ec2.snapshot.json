@@ -29,5 +29,198 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_prefix_list": {
+    "recorded-date": "30-04-2024, 19:32:40",
+    "recorded-content": {
+      "resource-description": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "NewPrefixList",
+            "PhysicalResourceId": "<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::PrefixList",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "prefix-list": {
+        "PrefixLists": [
+          {
+            "AddressFamily": "IPv4",
+            "MaxEntries": 10,
+            "OwnerId": "111111111111",
+            "PrefixListArn": "arn:aws:ec2:<region>:111111111111:prefix-list/<resource:2>",
+            "PrefixListId": "<resource:2>",
+            "PrefixListName": "vpc-1-servers",
+            "State": "create-complete",
+            "Tags": [
+              {
+                "Key": "Name",
+                "Value": "VPC-1-Servers"
+              }
+            ],
+            "Version": 1
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resource_providers/ec2/test_ec2.py::test_deploy_vpc_endpoint": {
+    "recorded-date": "30-04-2024, 20:01:19",
+    "recorded-content": {
+      "resource-description": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "CWLInterfaceEndpoint",
+            "PhysicalResourceId": "<vpc-endpoint-id:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::VPCEndpoint",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "mySecurityGroup",
+            "PhysicalResourceId": "<group-id:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::SecurityGroup",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "myVPC",
+            "PhysicalResourceId": "vpc-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::VPC",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "subnetA",
+            "PhysicalResourceId": "subnet-a-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Subnet",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "subnetB",
+            "PhysicalResourceId": "subnet-b-id",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::EC2::Subnet",
+            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "endpoint": {
+        "VpcEndpoints": [
+          {
+            "CreationTimestamp": "timestamp",
+            "DnsEntries": [
+              {
+                "DnsName": "<vpc-endpoint-id:1>-g5hws96k.logs.<region>.vpce.amazonaws.com",
+                "HostedZoneId": "<hosted-zone-id:1>"
+              },
+              {
+                "DnsName": "<vpc-endpoint-id:1>-g5hws96k-<region>b.logs.<region>.vpce.amazonaws.com",
+                "HostedZoneId": "<hosted-zone-id:1>"
+              },
+              {
+                "DnsName": "<vpc-endpoint-id:1>-g5hws96k-<region>a.logs.<region>.vpce.amazonaws.com",
+                "HostedZoneId": "<hosted-zone-id:1>"
+              },
+              {
+                "DnsName": "<dns-name:4>",
+                "HostedZoneId": "<hosted-zone-id:2>"
+              },
+              {
+                "DnsName": "<dns-name:5>",
+                "HostedZoneId": "<hosted-zone-id:3>"
+              }
+            ],
+            "DnsOptions": {
+              "DnsRecordIpType": "ipv4"
+            },
+            "Groups": [
+              {
+                "GroupId": "<group-id:1>",
+                "GroupName": "<stack-name:1>-mySecurityGroup-RWU3KD7UZFAy"
+              }
+            ],
+            "IpAddressType": "ipv4",
+            "NetworkInterfaceIds": [
+              "eni-0b89833f2bf9a89c0",
+              "eni-05151d42b885fbd35"
+            ],
+            "OwnerId": "111111111111",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "*",
+                  "Effect": "Allow",
+                  "Principal": "*",
+                  "Resource": "*"
+                }
+              ]
+            },
+            "PrivateDnsEnabled": true,
+            "RequesterManaged": false,
+            "RouteTableIds": [],
+            "ServiceName": "com.amazonaws.<region>.logs",
+            "State": "available",
+            "SubnetIds": [
+              "subnet-a-id",
+              "subnet-b-id"
+            ],
+            "Tags": [],
+            "VpcEndpointId": "<vpc-endpoint-id:1>",
+            "VpcEndpointType": "Interface",
+            "VpcId": "vpc-id"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -11,7 +11,7 @@ import re
 import uuid
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List, Optional
 
 
 def generate_default_name(stack_name: str, logical_resource_id: str):
@@ -137,6 +137,38 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
             new_value = cast_class(old_value)
         set_nested(params, param_name, new_value)
     return params
+
+
+def convert_values_to_numbers(input_dict: dict, keys_to_skip: Optional[List[str]] = None):
+    """
+    Recursively converts all string values that represent valid integers
+    in a dictionary (including nested dictionaries and lists) to integers.
+
+    Example:
+    original_dict = {'Gid': '1322', 'SecondaryGids': ['1344', '1452'], 'Uid': '13234'}
+    output_dict = {'Gid': 1322, 'SecondaryGids': [1344, 1452], 'Uid': 13234}
+
+    :param input_dict input dict with values to convert
+    :param keys_to_skip keys to which values are not meant to be converted
+    :return output_dict
+    """
+
+    keys_to_skip = keys_to_skip or []
+
+    def recursive_convert(obj):
+        if isinstance(obj, dict):
+            return {
+                key: recursive_convert(value) if key not in keys_to_skip else value
+                for key, value in obj.items()
+            }
+        elif isinstance(obj, list):
+            return [recursive_convert(item) for item in obj]
+        elif isinstance(obj, str) and obj.isdigit():
+            return int(obj)
+        else:
+            return obj
+
+    return recursive_convert(input_dict)
 
 
 #  LocalStack specific utilities

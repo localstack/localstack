@@ -71,13 +71,13 @@ def test_patching_loaders():
 
 
 def test_loading_own_specs():
-    """Ensure that the internalized specifications (f.e. the sqs-json spec) can be handled by the CustomLoader."""
+    """Ensure that the internalized specifications (f.e. the sqs-query spec) can be handled by the CustomLoader."""
     loader = CustomLoader({})
     # first test that specs remain intact
     sqs_query_description = loader.load_service_model("sqs", "service-2")
-    assert sqs_query_description["metadata"]["protocol"] == "query"
-    sqs_json_description = loader.load_service_model("sqs-json", "service-2")
-    assert sqs_json_description["metadata"]["protocol"] == "json"
+    assert sqs_query_description["metadata"]["protocol"] == "json"
+    sqs_json_description = loader.load_service_model("sqs-query", "service-2")
+    assert sqs_json_description["metadata"]["protocol"] == "query"
 
 
 @pytest.mark.parametrize(
@@ -90,9 +90,9 @@ def test_loading_own_specs():
         # tests with a default and a specific protocol (SQS)
         ("sqs", "query", "sqs", "query"),
         ("sqs", "json", "sqs", "json"),
-        ("sqs", None, "sqs", "query"),
-        ("sqs-json", None, "sqs", "json"),
-        ("sqs-json", "json", "sqs", "json"),
+        ("sqs", None, "sqs", "json"),
+        ("sqs-query", None, "sqs", "query"),
+        ("sqs-query", "query", "sqs", "query"),
     ],
 )
 def test_protocol_specific_loading(
@@ -117,7 +117,7 @@ def test_protocol_specific_loading(
         # unknown protocol raises error
         ("sqs", "nonexistingprotocol", UnknownServiceProtocolError),
         # non-matching protocol in service naming convention and explicitly defined protocol
-        ("sqs-json", "query", UnknownServiceProtocolError),
+        ("sqs-query", "json", UnknownServiceProtocolError),
     ],
 )
 def test_invalid_service_loading(

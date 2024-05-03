@@ -33,7 +33,7 @@ class TestExceptions:
         assert e.value.required_name == "TagList"
 
     def test_missing_required_field_query(self):
-        parser = create_parser(load_service("sqs"))
+        parser = create_parser(load_service("sqs-query"))
 
         op, params = parser.parse(
             HttpRequest(

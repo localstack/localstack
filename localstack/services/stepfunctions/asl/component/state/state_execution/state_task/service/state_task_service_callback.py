@@ -1,6 +1,7 @@
 import abc
 import json
 import time
+from typing import Optional
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
@@ -120,10 +121,10 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
         self, env: Environment, ex: CallbackOutcomeFailureError
     ) -> FailureEvent:
         callback_outcome_failure: CallbackOutcomeFailure = ex.callback_outcome_failure
-        error: str = callback_outcome_failure.error
+        error: Optional[str] = callback_outcome_failure.error
         return FailureEvent(
             env=env,
-            error_name=CustomErrorName(error_name=callback_outcome_failure.error),
+            error_name=CustomErrorName(error_name=error),
             event_type=HistoryEventType.TaskFailed,
             event_details=EventDetails(
                 taskFailedEventDetails=TaskFailedEventDetails(

@@ -1922,6 +1922,12 @@ def pytest_collection_modifyitems(config: Config, items: list[Item]):
         for mark in item.iter_markers():
             if mark.name.endswith("only_localstack"):
                 item.add_marker(only_localstack)
+        if hasattr(item, "fixturenames") and "snapshot" in item.fixturenames:
+            # add a marker that indicates that this test is snapshot validated
+            # if it uses the snapshot fixture -> allows selecting only snapshot
+            # validated tests in order to capture new snapshots for a whole
+            # test file with "-m snapshot_validated"
+            item.add_marker("snapshot_validated")
 
 
 @pytest.fixture
