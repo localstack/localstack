@@ -1170,7 +1170,7 @@ class TemplateDeployer:
         contains_changes = False
         for change in changes:
             res_action = change["ResourceChange"]["Action"]
-            resource = new_resources.get(change["ResourceChange"]["LogicalResourceId"])
+            resource = new_resources[change["ResourceChange"]["LogicalResourceId"]]
             #  FIXME: we need to resolve refs before diffing to detect if for example a parameter causes the change or not
             #   unfortunately this would currently cause issues because we might not be able to resolve everything yet
             # resource = resolve_refs_recursively(
