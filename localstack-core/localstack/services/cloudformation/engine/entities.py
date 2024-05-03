@@ -1,21 +1,15 @@
-import copy
 import logging
-from collections import defaultdict
 from typing import Optional, TypedDict
 
 from localstack.aws.api.cloudformation import (
     Capability,
     ChangeSetType,
     CreateStackSetInput,
-    GetTemplateSummaryOutput,
     Parameter,
 )
-from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
-from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine.parameters import (
     StackParameter,
     convert_stack_parameters_to_list,
-    extract_stack_parameter_declarations,
     strip_parameter_type,
 )
 from localstack.utils.aws import arns
@@ -78,29 +72,6 @@ class StackSet:
             return body
 
         raise NotImplementedError("template URL")
-
-    def get_template_summary(self) -> GetTemplateSummaryOutput:
-        # TEMP: prevent circular imports
-        from localstack.services.cloudformation.engine import template_preparer
-
-        request = copy.deepcopy(self.metadata)
-        api_utils.prepare_template_body(request)
-        template = template_preparer.parse_template(request["TemplateBody"])
-        request["StackName"] = "tmp-stack"
-        stack = Stack(DEFAULT_AWS_ACCOUNT_ID, AWS_REGION_US_EAST_1, request, template)
-
-        id_summaries = defaultdict(list)
-        for resource_id, resource in stack.template_resources.items():
-            res_type = resource["Type"]
-            id_summaries[res_type].append(resource_id)
-
-        # hack to use this helper function
-        result = {
-            "Version": "2010-09-09",
-            "ResourceTypes": list(id_summaries.keys()),
-            "Parameters": list(extract_stack_parameter_declarations(template).values()),
-        }
-        return result
 
     def get_instance(self, account: str, region: str) -> StackInstance | None:
         for instance in self.stack_instances:

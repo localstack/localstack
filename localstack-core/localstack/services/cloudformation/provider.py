@@ -539,9 +539,11 @@ class CloudformationProvider(CloudformationApi):
             if not stack_set:
                 # TODO: different error?
                 return stack_not_found_error(stack_set_name)
-            return stack_set.get_template_summary()
 
-        if stack_name:
+            template = template_preparer.parse_template(stack_set.template_body)
+            request["StackName"] = "tmp-stack"
+            stack = Stack(context.account_id, context.region, request, template)
+        elif stack_name:
             stack = find_stack(context.account_id, context.region, stack_name)
             if not stack:
                 return stack_not_found_error(stack_name)
@@ -565,10 +567,12 @@ class CloudformationProvider(CloudformationApi):
             id_summaries[res_type].append(resource_id)
 
         result["ResourceTypes"] = list(id_summaries.keys())
-        result["ResourceIdentifierSummaries"] = [
-            {"ResourceType": key, "LogicalResourceIds": values}
-            for key, values in id_summaries.items()
-        ]
+        if not stack_set_name:
+            # this property is only available for stacks, not stack sets
+            result["ResourceIdentifierSummaries"] = [
+                {"ResourceType": key, "LogicalResourceIds": values}
+                for key, values in id_summaries.items()
+            ]
         result["Metadata"] = stack.template.get("Metadata")
         result["Version"] = stack.template.get("AWSTemplateFormatVersion", "2010-09-09")
         # these do not appear in the output
