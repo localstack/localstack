@@ -1,12 +1,7 @@
-Parameters:
-  BucketName:
-    Type: String
-
 Resources:
   LocalBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Ref BucketName
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders:
