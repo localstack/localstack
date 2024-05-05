@@ -25,6 +25,7 @@ from localstack.utils.container_utils.container_client import (
     NoSuchNetwork,
     PortMappings,
     RegistryConnectionError,
+    Ulimit,
     Util,
     VolumeInfo,
 )
@@ -1432,6 +1433,17 @@ class TestRunWithAdditionalArgs:
         )
         assert automatic_host_port > 0
 
+    def test_run_with_ulimit(self, docker_client: ContainerClient):
+        container_name = f"c-{short_uid()}"
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            name=container_name,
+            remove=True,
+            command=["sh", "-c", "ulimit -n"],
+            ulimits=[Ulimit(name="nofile", soft_limit=1024, hard_limit=1024)],
+        )
+        assert stdout.decode(config.DEFAULT_ENCODING).strip() == "1024"
+
 
 class TestDockerImages:
     def test_commit_creates_image_from_running_container(self, docker_client: ContainerClient):
@@ -1798,6 +1810,35 @@ class TestDockerLabels:
         result = docker_client.inspect_container(container.container_id)
         result_labels = result.get("Config", {}).get("Labels")
         assert result_labels == labels
+
+    def test_run_container_with_labels(self, docker_client):
+        labels = {"foo": "bar", short_uid(): short_uid()}
+        container_name = _random_container_name()
+        try:
+            docker_client.run_container(
+                image_name="alpine",
+                command=["sh", "-c", "while true; do sleep 1; done"],
+                labels=labels,
+                name=container_name,
+                detach=True,
+            )
+            result = docker_client.inspect_container(container_name_or_id=container_name)
+            result_labels = result.get("Config", {}).get("Labels")
+            assert result_labels == labels
+        finally:
+            docker_client.remove_container(container_name=container_name, force=True)
+
+    def test_list_containers_with_labels(self, docker_client, create_container):
+        labels = {"foo": "bar", short_uid(): short_uid()}
+        container = create_container(
+            "alpine", command=["sh", "-c", "while true; do sleep 1; done"], labels=labels
+        )
+        docker_client.start_container(container.container_id)
+
+        containers = docker_client.list_containers(filter=f"id={container.container_id}")
+        assert len(containers) == 1
+        container = containers[0]
+        assert container["labels"] == labels
 
 
 def _pull_image_if_not_exists(docker_client: ContainerClient, image_name: str):

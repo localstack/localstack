@@ -1,4 +1,5 @@
 """Diagnostic tool for a localstack instance running in a container."""
+
 import inspect
 import os
 import socket

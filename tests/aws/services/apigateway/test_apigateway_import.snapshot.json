@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api": {
-    "recorded-date": "03-06-2023, 13:16:32",
+    "recorded-date": "15-04-2024, 21:30:21",
     "recorded-content": {
       "import_rest_api": {
         "apiKeySource": "HEADER",
@@ -16,6 +16,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
         "version": "1.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -25,7 +26,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
-    "recorded-date": "06-07-2023, 22:05:59",
+    "recorded-date": "15-04-2024, 21:31:02",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -39,6 +40,7 @@
         },
         "id": "<rest-id:1>",
         "name": "PetStore",
+        "rootResourceId": "<resource-id:1>",
         "version": "1.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -319,7 +321,7 @@
           },
           "timeoutInMillis": 29000,
           "type": "HTTP",
-          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets"
+          "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets"
         },
         "methodResponses": {
           "200": {
@@ -374,7 +376,7 @@
         },
         "timeoutInMillis": 29000,
         "type": "HTTP",
-        "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+        "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -507,7 +509,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "HTTP",
-          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets"
+          "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets"
         },
         "methodResponses": {
           "200": {
@@ -558,7 +560,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "HTTP",
-        "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets",
+        "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -597,7 +599,7 @@
           },
           "timeoutInMillis": 29000,
           "type": "HTTP",
-          "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets/{petId}"
+          "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets/{petId}"
         },
         "methodResponses": {
           "200": {
@@ -651,7 +653,7 @@
         },
         "timeoutInMillis": 29000,
         "type": "HTTP",
-        "uri": "http://petstore.execute-api.eu-west-1.amazonaws.com/petstore/pets/{petId}",
+        "uri": "http://petstore.execute-api.<region>.amazonaws.com/petstore/pets/{petId}",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -770,7 +772,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_and_validate_rest_api[openapi.spec.tf.json]": {
-    "recorded-date": "03-06-2023, 13:29:17",
+    "recorded-date": "15-04-2024, 21:31:22",
     "recorded-content": {
       "import_tf_rest_api": {
         "apiKeySource": "HEADER",
@@ -783,6 +785,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:3>",
         "version": "1",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1005,7 +1008,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_and_validate_rest_api[swagger-mock-cors.json]": {
-    "recorded-date": "03-06-2023, 13:29:35",
+    "recorded-date": "15-04-2024, 21:31:41",
     "recorded-content": {
       "import_tf_rest_api": {
         "apiKeySource": "HEADER",
@@ -1018,6 +1021,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "version": "1.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1378,7 +1382,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[ignore]": {
-    "recorded-date": "03-06-2023, 14:10:55",
+    "recorded-date": "15-04-2024, 21:33:04",
     "recorded-content": {
       "put-rest-api-swagger-json": {
         "apiKeySource": "HEADER",
@@ -1391,6 +1395,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2",
         "ResponseMetadata": {
@@ -1760,7 +1765,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[prepend]": {
-    "recorded-date": "03-06-2023, 14:12:12",
+    "recorded-date": "15-04-2024, 21:34:01",
     "recorded-content": {
       "put-rest-api-swagger-json": {
         "apiKeySource": "HEADER",
@@ -1773,6 +1778,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2",
         "ResponseMetadata": {
@@ -2148,7 +2154,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[split]": {
-    "recorded-date": "03-06-2023, 14:14:07",
+    "recorded-date": "15-04-2024, 21:34:50",
     "recorded-content": {
       "put-rest-api-swagger-json": {
         "apiKeySource": "HEADER",
@@ -2161,6 +2167,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2",
         "ResponseMetadata": {
@@ -2530,7 +2537,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[prepend]": {
-    "recorded-date": "04-06-2023, 00:45:31",
+    "recorded-date": "15-04-2024, 21:36:04",
     "recorded-content": {
       "put-rest-api-oas30-srv-var": {
         "apiKeySource": "HEADER",
@@ -2543,6 +2550,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2.0",
         "ResponseMetadata": {
@@ -2779,6 +2787,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2.0",
         "ResponseMetadata": {
@@ -3013,7 +3022,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[split]": {
-    "recorded-date": "04-06-2023, 00:46:41",
+    "recorded-date": "15-04-2024, 21:36:26",
     "recorded-content": {
       "put-rest-api-oas30-srv-var": {
         "apiKeySource": "HEADER",
@@ -3026,6 +3035,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2.0",
         "ResponseMetadata": {
@@ -3256,6 +3266,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2.0",
         "ResponseMetadata": {
@@ -3484,7 +3495,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[ignore]": {
-    "recorded-date": "04-06-2023, 00:45:06",
+    "recorded-date": "15-04-2024, 21:35:47",
     "recorded-content": {
       "put-rest-api-oas30-srv-var": {
         "apiKeySource": "HEADER",
@@ -3497,6 +3508,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2.0",
         "ResponseMetadata": {
@@ -3727,6 +3739,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {},
         "version": "2.0",
         "ResponseMetadata": {
@@ -3762,7 +3775,7 @@
         "httpMethod": "GET",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "9zjs21",
+          "cacheNamespace": "<cache-namespace:1>",
           "integrationResponses": {
             "200": {
               "responseParameters": {
@@ -3814,7 +3827,7 @@
       },
       "srv-url-integration-test-get": {
         "cacheKeyParameters": [],
-        "cacheNamespace": "9zjs21",
+        "cacheNamespace": "<cache-namespace:1>",
         "integrationResponses": {
           "200": {
             "responseParameters": {
@@ -3855,7 +3868,7 @@
         "httpMethod": "OPTIONS",
         "methodIntegration": {
           "cacheKeyParameters": [],
-          "cacheNamespace": "9zjs21",
+          "cacheNamespace": "<cache-namespace:1>",
           "integrationResponses": {
             "200": {
               "responseParameters": {
@@ -3910,7 +3923,7 @@
       },
       "srv-url-integration-test-options": {
         "cacheKeyParameters": [],
-        "cacheNamespace": "9zjs21",
+        "cacheNamespace": "<cache-namespace:1>",
         "integrationResponses": {
           "200": {
             "responseParameters": {
@@ -3949,7 +3962,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_global_api_key_authorizer": {
-    "recorded-date": "07-06-2023, 03:16:37",
+    "recorded-date": "15-04-2024, 21:37:12",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "AUTHORIZER",
@@ -3962,6 +3975,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:3>",
         "version": "1.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4181,7 +4195,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models": {
-    "recorded-date": "07-06-2023, 02:26:07",
+    "recorded-date": "15-04-2024, 21:37:35",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -4194,6 +4208,7 @@
         },
         "id": "<rest-id:1>",
         "name": "Circular model reference",
+        "rootResourceId": "<resource-id:1>",
         "version": "1.0",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4377,7 +4392,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models_and_request_validation": {
-    "recorded-date": "09-01-2024, 22:35:27",
+    "recorded-date": "15-04-2024, 21:38:12",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
@@ -4589,7 +4604,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_http_method_integration": {
-    "recorded-date": "05-12-2023, 22:27:16",
+    "recorded-date": "15-04-2024, 21:39:47",
     "recorded-content": {
       "resources": {
         "items": [
@@ -4775,5 +4790,9 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_stage_variables": {
+    "recorded-date": "15-04-2024, 21:38:55",
+    "recorded-content": {}
   }
 }

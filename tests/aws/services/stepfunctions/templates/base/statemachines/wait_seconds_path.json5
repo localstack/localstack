@@ -1,0 +1,11 @@
+{
+  "Comment": "WAIT_SECONDS_PATH",
+  "StartAt": "WaitState",
+  "States": {
+    "WaitState": {
+      "Type": "Wait",
+      "SecondsPath": "$.input.waitSeconds",
+      "End": true
+    }
+  }
+}

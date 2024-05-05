@@ -7,10 +7,14 @@ AcceptTermsAndConditions = bool
 Account = str
 AccountGateStatusReason = str
 AccountsUrl = str
+AfterContext = str
+AfterValue = str
 AllowedValue = str
 Arn = str
 AutoDeploymentNullable = bool
 AutoUpdate = bool
+BeforeContext = str
+BeforeValue = str
 BoxedInteger = int
 BoxedMaxResults = int
 CapabilitiesReason = str
@@ -49,6 +53,7 @@ ImportExistingResources = bool
 InProgressStackInstancesCount = int
 InSyncStackInstancesCount = int
 IncludeNestedStacks = bool
+IncludePropertyValues = bool
 IsActivated = bool
 IsDefaultConfiguration = bool
 IsDefaultVersion = bool
@@ -102,6 +107,7 @@ ResourceIdentifierPropertyKey = str
 ResourceIdentifierPropertyValue = str
 ResourceModel = str
 ResourceProperties = str
+ResourcePropertyPath = str
 ResourceScanId = str
 ResourceScanStatusReason = str
 ResourceScannerMaxResults = int
@@ -184,6 +190,12 @@ class AccountGateStatus(str):
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
+
+
+class AttributeChangeType(str):
+    Add = "Add"
+    Remove = "Remove"
+    Modify = "Modify"
 
 
 class CallAs(str):
@@ -390,6 +402,15 @@ class OrganizationStatus(str):
 class PermissionModels(str):
     SERVICE_MANAGED = "SERVICE_MANAGED"
     SELF_MANAGED = "SELF_MANAGED"
+
+
+class PolicyAction(str):
+    Delete = "Delete"
+    Retain = "Retain"
+    Snapshot = "Snapshot"
+    ReplaceAndDelete = "ReplaceAndDelete"
+    ReplaceAndRetain = "ReplaceAndRetain"
+    ReplaceAndSnapshot = "ReplaceAndSnapshot"
 
 
 class ProvisioningType(str):
@@ -909,6 +930,10 @@ class ResourceTargetDefinition(TypedDict, total=False):
     Attribute: Optional[ResourceAttribute]
     Name: Optional[PropertyName]
     RequiresRecreation: Optional[RequiresRecreation]
+    Path: Optional[ResourcePropertyPath]
+    BeforeValue: Optional[BeforeValue]
+    AfterValue: Optional[AfterValue]
+    AttributeChangeType: Optional[AttributeChangeType]
 
 
 class ResourceChangeDetail(TypedDict, total=False):
@@ -923,6 +948,7 @@ Scope = List[ResourceAttribute]
 
 
 class ResourceChange(TypedDict, total=False):
+    PolicyAction: Optional[PolicyAction]
     Action: Optional[ChangeAction]
     LogicalResourceId: Optional[LogicalResourceId]
     PhysicalResourceId: Optional[PhysicalResourceId]
@@ -932,6 +958,8 @@ class ResourceChange(TypedDict, total=False):
     Details: Optional[ResourceChangeDetails]
     ChangeSetId: Optional[ChangeSetId]
     ModuleInfo: Optional[ModuleInfo]
+    BeforeContext: Optional[BeforeContext]
+    AfterContext: Optional[AfterContext]
 
 
 class Change(TypedDict, total=False):
@@ -1293,6 +1321,7 @@ class DescribeChangeSetInput(ServiceRequest):
     ChangeSetName: ChangeSetNameOrId
     StackName: Optional[StackNameOrId]
     NextToken: Optional[NextToken]
+    IncludePropertyValues: Optional[IncludePropertyValues]
 
 
 class DescribeChangeSetOutput(TypedDict, total=False):
@@ -2181,6 +2210,26 @@ class ListStackResourcesOutput(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class ListStackSetAutoDeploymentTargetsInput(ServiceRequest):
+    StackSetName: StackSetNameOrId
+    NextToken: Optional[NextToken]
+    MaxResults: Optional[MaxResults]
+    CallAs: Optional[CallAs]
+
+
+class StackSetAutoDeploymentTargetSummary(TypedDict, total=False):
+    OrganizationalUnitId: Optional[OrganizationalUnitId]
+    Regions: Optional[RegionList]
+
+
+StackSetAutoDeploymentTargetSummaries = List[StackSetAutoDeploymentTargetSummary]
+
+
+class ListStackSetAutoDeploymentTargetsOutput(TypedDict, total=False):
+    Summaries: Optional[StackSetAutoDeploymentTargetSummaries]
+    NextToken: Optional[NextToken]
+
+
 class OperationResultFilter(TypedDict, total=False):
     Name: Optional[OperationResultFilterName]
     Values: Optional[OperationResultFilterValues]
@@ -2860,6 +2909,7 @@ class CloudformationApi:
         change_set_name: ChangeSetNameOrId,
         stack_name: StackNameOrId = None,
         next_token: NextToken = None,
+        include_property_values: IncludePropertyValues = None,
         **kwargs,
     ) -> DescribeChangeSetOutput:
         raise NotImplementedError
@@ -3224,6 +3274,18 @@ class CloudformationApi:
     def list_stack_resources(
         self, context: RequestContext, stack_name: StackName, next_token: NextToken = None, **kwargs
     ) -> ListStackResourcesOutput:
+        raise NotImplementedError
+
+    @handler("ListStackSetAutoDeploymentTargets")
+    def list_stack_set_auto_deployment_targets(
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetNameOrId,
+        next_token: NextToken = None,
+        max_results: MaxResults = None,
+        call_as: CallAs = None,
+        **kwargs,
+    ) -> ListStackSetAutoDeploymentTargetsOutput:
         raise NotImplementedError
 
     @handler("ListStackSetOperationResults")

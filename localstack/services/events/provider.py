@@ -1,11 +1,10 @@
 import datetime
-import ipaddress
 import json
 import logging
 import os
 import re
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from moto.events import events_backends
 from moto.events.responses import EventsHandler as MotoEventsHandler
@@ -25,6 +24,7 @@ from localstack.aws.api.events import (
     EventBusNameOrArn,
     EventPattern,
     EventsApi,
+    InvalidEventPatternException,
     PutRuleResponse,
     PutTargetsResponse,
     RoleArn,
@@ -40,8 +40,13 @@ from localstack.aws.api.events import (
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.http import route
 from localstack.services.edge import ROUTER
+from localstack.services.events.event_ruler import matches_rule
 from localstack.services.events.models import EventsStore, events_stores
 from localstack.services.events.scheduler import JobScheduler
+from localstack.services.events.utils import (
+    InvalidEventPatternException as InternalInvalidEventPatternException,
+)
+from localstack.services.events.utils import matches_event
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import event_bus_arn, parse_arn
@@ -59,7 +64,6 @@ LOG = logging.getLogger(__name__)
 TEST_EVENTS_CACHE = []
 EVENTS_TMP_DIR = "cw_events"
 DEFAULT_EVENT_BUS_NAME = "default"
-CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "exists"]
 CONNECTION_NAME_PATTERN = re.compile("^[\\.\\-_A-Za-z0-9]+$")
 
 
@@ -108,16 +112,48 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def test_event_pattern(
         self, context: RequestContext, event_pattern: EventPattern, event: String, **kwargs
     ) -> TestEventPatternResponse:
-        # https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html
-        # Test event pattern uses event pattern to match against event.
-        # So event pattern keys must be in the event keys and values must match.
-        # If event pattern has a key that event does not have, it is not a match.
-        evt_pattern = json.loads(str(event_pattern))
-        evt = json.loads(str(event))
+        """Test event pattern uses EventBridge event pattern matching:
+        https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
+        """
+        if config.EVENT_RULE_ENGINE == "java":
+            try:
+                result = matches_rule(event, event_pattern)
+            except InternalInvalidEventPatternException as e:
+                raise InvalidEventPatternException(e.message) from e
+        else:
+            event_pattern_dict = json.loads(event_pattern)
+            event_dict = json.loads(event)
+            result = matches_event(event_pattern_dict, event_dict)
 
-        if any(key not in evt or evt[key] not in values for key, values in evt_pattern.items()):
-            return TestEventPatternResponse(Result=False)
-        return TestEventPatternResponse(Result=True)
+        # TODO: unify the different implementations below:
+        # event_pattern_dict = json.loads(event_pattern)
+        # event_dict = json.loads(event)
+
+        # EventBridge:
+        # result = matches_event(event_pattern_dict, event_dict)
+
+        # Lambda EventSourceMapping:
+        # from localstack.services.lambda_.event_source_listeners.utils import does_match_event
+        #
+        # result = does_match_event(event_pattern_dict, event_dict)
+
+        # moto-ext EventBridge:
+        # from moto.events.models import EventPattern as EventPatternMoto
+        #
+        # event_pattern = EventPatternMoto.load(event_pattern)
+        # result = event_pattern.matches_event(event_dict)
+
+        # SNS: The SNS rule engine seems to differ slightly, for example not allowing the wildcard pattern.
+        # from localstack.services.sns.publisher import SubscriptionFilter
+        # subscription_filter = SubscriptionFilter()
+        # result = subscription_filter._evaluate_nested_filter_policy_on_dict(event_pattern_dict, event_dict)
+
+        # moto-ext SNS:
+        # from moto.sns.utils import FilterPolicyMatcher
+        # filter_policy_matcher = FilterPolicyMatcher(event_pattern_dict, "MessageBody")
+        # result = filter_policy_matcher._body_based_match(event_dict)
+
+        return TestEventPatternResponse(Result=result)
 
     @staticmethod
     def get_scheduled_rule_func(
@@ -382,204 +418,9 @@ def _dump_events_to_files(events_with_added_uuid):
         LOG.info("Unable to dump events to tmp dir %s: %s", _get_events_tmp_dir(), e)
 
 
-def handle_numeric_conditions(conditions: list[Any], value: float):
-    for i in range(0, len(conditions), 2):
-        if conditions[i] == "<" and not (value < conditions[i + 1]):
-            return False
-        if conditions[i] == ">" and not (value > conditions[i + 1]):
-            return False
-        if conditions[i] == "<=" and not (value <= conditions[i + 1]):
-            return False
-        if conditions[i] == ">=" and not (value >= conditions[i + 1]):
-            return False
-    return True
-
-
-def check_valid_numeric_content_base_rule(list_of_operators):
-    if len(list_of_operators) > 4:
-        return False
-
-    if "=" in list_of_operators:
-        return False
-
-    if len(list_of_operators) > 2:
-        upper_limit = None
-        lower_limit = None
-        for index in range(len(list_of_operators)):
-            if not isinstance(list_of_operators[index], int) and "<" in list_of_operators[index]:
-                upper_limit = list_of_operators[index + 1]
-            if not isinstance(list_of_operators[index], int) and ">" in list_of_operators[index]:
-                lower_limit = list_of_operators[index + 1]
-            if upper_limit and lower_limit and upper_limit < lower_limit:
-                return False
-            index = index + 1
-    return True
-
-
-def filter_event_with_content_base_parameter(pattern_value: list, event_value: str | int):
-    for element in pattern_value:
-        if (isinstance(element, (str, int))) and (event_value == element or element in event_value):
-            return True
-        elif isinstance(element, dict):
-            element_key = list(element.keys())[0]
-            element_value = element.get(element_key)
-            if element_key.lower() == "prefix":
-                if isinstance(event_value, str) and event_value.startswith(element_value):
-                    return True
-            elif element_key.lower() == "exists":
-                if element_value and event_value:
-                    return True
-                elif not element_value and isinstance(event_value, object):
-                    return True
-            elif element_key.lower() == "cidr":
-                ips = [str(ip) for ip in ipaddress.IPv4Network(element_value)]
-                if event_value in ips:
-                    return True
-            elif element_key.lower() == "numeric":
-                if check_valid_numeric_content_base_rule(element_value):
-                    for index in range(len(element_value)):
-                        if isinstance(element_value[index], int):
-                            continue
-                        if (
-                            element_value[index] == ">"
-                            and isinstance(element_value[index + 1], int)
-                            and event_value <= element_value[index + 1]
-                        ):
-                            break
-                        elif (
-                            element_value[index] == ">="
-                            and isinstance(element_value[index + 1], int)
-                            and event_value < element_value[index + 1]
-                        ):
-                            break
-                        elif (
-                            element_value[index] == "<"
-                            and isinstance(element_value[index + 1], int)
-                            and event_value >= element_value[index + 1]
-                        ):
-                            break
-                        elif (
-                            element_value[index] == "<="
-                            and isinstance(element_value[index + 1], int)
-                            and event_value > element_value[index + 1]
-                        ):
-                            break
-                    else:
-                        return True
-
-            elif element_key.lower() == "anything-but":
-                if isinstance(element_value, list) and event_value not in element_value:
-                    return True
-                elif (isinstance(element_value, (str, int))) and event_value != element_value:
-                    return True
-                elif isinstance(element_value, dict):
-                    nested_key = list(element_value)[0]
-                    if nested_key == "prefix" and not re.match(
-                        r"^{}".format(element_value.get(nested_key)), event_value
-                    ):
-                        return True
-    return False
-
-
-# TODO: unclear shared responsibility for filtering with filter_event_with_content_base_parameter
-def handle_prefix_filtering(event_pattern, value):
-    for element in event_pattern:
-        if isinstance(element, (int, str)):
-            if str(element) == str(value):
-                return True
-            if element in value:
-                return True
-        elif isinstance(element, dict) and "prefix" in element:
-            if value.startswith(element.get("prefix")):
-                return True
-        elif isinstance(element, dict) and "anything-but" in element:
-            if element.get("anything-but") != value:
-                return True
-        elif isinstance(element, dict) and "exists" in element:
-            if element.get("exists") and value:
-                return True
-        elif "numeric" in element:
-            return handle_numeric_conditions(element.get("numeric"), value)
-        elif isinstance(element, list):
-            if value in list:
-                return True
-    return False
-
-
-def identify_content_base_parameter_in_pattern(parameters) -> bool:
-    return any(
-        list(param.keys())[0] in CONTENT_BASE_FILTER_KEYWORDS
-        for param in parameters
-        if isinstance(param, dict)
-    )
-
-
-def get_two_lists_intersection(lst1: List, lst2: List) -> List:
-    lst3 = [value for value in lst1 if value in lst2]
-    return lst3
-
-
-def event_pattern_prefix_bool_filter(event_pattern_filter_value_list: list[dict[str, Any]]) -> bool:
-    for event_pattern_filter_value in event_pattern_filter_value_list:
-        if "exists" in event_pattern_filter_value:
-            return event_pattern_filter_value.get("exists")
-        else:
-            return True
-
-
-# TODO: refactor/simplify!
 def filter_event_based_on_event_format(
     self, rule_name: str, event_bus_name: str, event: dict[str, Any]
 ):
-    def filter_event(event_pattern_filter: dict[str, Any], event: dict[str, Any]):
-        for key, value in event_pattern_filter.items():
-            fallback = object()
-            event_value = event.get(key.lower(), event.get(key, fallback))
-            if event_value is fallback and event_pattern_prefix_bool_filter(value):
-                return False
-
-            # 1. check if certain values in the event do not match the expected pattern
-            if event_value and isinstance(event_value, dict):
-                for key_a, value_a in event_value.items():
-                    if key_a == "ip":
-                        # TODO add IP-Address check here
-                        continue
-                    if isinstance(value.get(key_a), (int, str)):
-                        if value_a != value.get(key_a):
-                            return False
-                    if isinstance(value.get(key_a), list) and value_a not in value.get(key_a):
-                        if not handle_prefix_filtering(value.get(key_a), value_a):
-                            return False
-
-            # 2. check if the pattern is a list and event values are not contained in it
-            if isinstance(value, list):
-                if identify_content_base_parameter_in_pattern(value):
-                    if not filter_event_with_content_base_parameter(value, event_value):
-                        return False
-                else:
-                    if (
-                        isinstance(event_value, list)
-                        and get_two_lists_intersection(value, event_value) == []
-                    ):
-                        return False
-                    if (
-                        not isinstance(event_value, list)
-                        and isinstance(event_value, (str, int))
-                        and event_value not in value
-                    ):
-                        return False
-
-            # 3. recursively call filter_event(..) for dict types
-            elif isinstance(value, (str, dict)):
-                try:
-                    value = json.loads(value) if isinstance(value, str) else value
-                    if isinstance(value, dict) and not filter_event(value, event_value):
-                        return False
-                except json.decoder.JSONDecodeError:
-                    return False
-
-        return True
-
     rule_information = self.events_backend.describe_rule(
         rule_name, event_bus_arn(event_bus_name, self.current_account, self.region)
     )
@@ -589,7 +430,13 @@ def filter_event_based_on_event_format(
         return False
     if rule_information.event_pattern._pattern:
         event_pattern = rule_information.event_pattern._pattern
-        if not filter_event(event_pattern, event):
+        if config.EVENT_RULE_ENGINE == "java":
+            event_str = json.dumps(event)
+            event_pattern_str = json.dumps(event_pattern)
+            match_result = matches_rule(event_str, event_pattern_str)
+        else:
+            match_result = matches_event(event_pattern, event)
+        if not match_result:
             return False
     return True
 

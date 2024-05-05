@@ -101,6 +101,7 @@ from localstack.aws.api.s3 import (
     InvalidArgument,
     InvalidBucketName,
     InvalidDigest,
+    InvalidLocationConstraint,
     InvalidObjectState,
     InvalidPartNumber,
     InvalidPartOrder,
@@ -198,7 +199,11 @@ from localstack.aws.api.s3 import (
     VersioningConfiguration,
     WebsiteConfiguration,
 )
-from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
+from localstack.aws.handlers import (
+    modify_service_response,
+    preprocess_request,
+    serve_custom_service_request_handlers,
+)
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
@@ -211,7 +216,6 @@ from localstack.services.s3.constants import (
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
     InvalidBucketState,
-    InvalidLocationConstraint,
     InvalidRequest,
     MalformedPolicy,
     MalformedXML,
@@ -244,6 +248,7 @@ from localstack.services.s3.utils import (
     parse_post_object_tagging_xml,
     parse_range_header,
     parse_tagging_header,
+    s3_response_handler,
     serialize_expiration_header,
     str_to_rfc_1123_datetime,
     validate_dict_fields,
@@ -306,6 +311,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
     def on_after_init(self):
         preprocess_request.append(self._cors_handler)
         serve_custom_service_request_handlers.append(s3_cors_request_handler)
+        modify_service_response.append(self.service, s3_response_handler)
         register_website_hosting_routes(router=ROUTER)
 
     def accept_state_visitor(self, visitor: StateVisitor):
@@ -421,12 +427,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if not is_bucket_name_valid(bucket_name):
             raise InvalidBucketName("The specified bucket is not valid.", BucketName=bucket_name)
-        if create_bucket_configuration := request.get("CreateBucketConfiguration"):
+
+        # the XML parser returns an empty dict if the body contains the following:
+        # <CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/" />
+        # but it also returns an empty dict if the body is fully empty. We need to differentiate the 2 cases by checking
+        # if the body is empty or not
+        if context.request.data and (
+            (create_bucket_configuration := request.get("CreateBucketConfiguration")) is not None
+        ):
             if not (bucket_region := create_bucket_configuration.get("LocationConstraint")):
                 raise MalformedXML()
 
             if bucket_region == "us-east-1":
-                raise InvalidLocationConstraint("The specified location-constraint is not valid")
+                raise InvalidLocationConstraint(
+                    "The specified location-constraint is not valid",
+                    LocationConstraint=bucket_region,
+                )
         else:
             bucket_region = "us-east-1"
             if context.region != bucket_region:
@@ -1281,9 +1297,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             LastModified=s3_object.last_modified,
         )
         if s3_object.checksum_algorithm:
-            copy_object_result[
-                f"Checksum{s3_object.checksum_algorithm.upper()}"
-            ] = s3_object.checksum_value
+            copy_object_result[f"Checksum{s3_object.checksum_algorithm.upper()}"] = (
+                s3_object.checksum_value
+            )
 
         response = CopyObjectOutput(
             CopyObjectResult=copy_object_result,
@@ -3452,13 +3468,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         source_bucket_region = s3_bucket.bucket_region
         if target_s3_bucket.bucket_region != source_bucket_region:
-            raise CrossLocationLoggingProhibitted(
-                "Cross S3 location logging not allowed. ",
-                TargetBucketLocation=target_s3_bucket.bucket_region,
-            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
-                "Cross S3 location logging not allowed. ",
-                SourceBucketLocation=source_bucket_region,
-                TargetBucketLocation=target_s3_bucket.bucket_region,
+            raise (
+                CrossLocationLoggingProhibitted(
+                    "Cross S3 location logging not allowed. ",
+                    TargetBucketLocation=target_s3_bucket.bucket_region,
+                )
+                if source_bucket_region == AWS_REGION_US_EAST_1
+                else CrossLocationLoggingProhibitted(
+                    "Cross S3 location logging not allowed. ",
+                    SourceBucketLocation=source_bucket_region,
+                    TargetBucketLocation=target_s3_bucket.bucket_region,
+                )
             )
 
         s3_bucket.logging = logging_config
@@ -3647,22 +3667,38 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         form = context.request.form
-        validate_post_policy(form)
         object_key = context.request.form.get("key")
 
         if "file" in form:
             # in AWS, you can pass the file content as a string in the form field and not as a file object
-            stream = BytesIO(to_bytes(form["file"]))
+            file_data = to_bytes(form["file"])
+            object_content_length = len(file_data)
+            stream = BytesIO(file_data)
         else:
             # this is the default behaviour
             fileobj = context.request.files["file"]
             stream = fileobj.stream
+            # stream is a SpooledTemporaryFile, so we can seek the stream to know its length, necessary for policy
+            # validation
+            original_pos = stream.tell()
+            object_content_length = stream.seek(0, 2)
+            # reset the stream and put it back at its original position
+            stream.seek(original_pos, 0)
+
             if "${filename}" in object_key:
                 # TODO: ${filename} is actually usable in all form fields
                 # See https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/S3/PresignedPost.html
                 # > The string ${filename} is automatically replaced with the name of the file provided by the user and
                 # is recognized by all form fields.
                 object_key = object_key.replace("${filename}", fileobj.filename)
+
+        # TODO: see if we need to pass additional metadata not contained in the policy from the table under
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-HTTPPOSTConstructPolicy.html#sigv4-PolicyConditions
+        additional_policy_metadata = {
+            "bucket": bucket,
+            "content_length": object_content_length,
+        }
+        validate_post_policy(form, additional_policy_metadata)
 
         if canned_acl := form.get("acl"):
             validate_canned_acl(canned_acl)
@@ -3932,7 +3968,7 @@ def get_acl_headers_from_request(
         CreateBucketRequest,
         PutBucketAclRequest,
         PutObjectAclRequest,
-    ]
+    ],
 ) -> list[tuple[str, str]]:
     permission_keys = [
         "GrantFullControl",

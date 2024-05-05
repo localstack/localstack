@@ -7,6 +7,7 @@ Runtime can either be directly one of the supported runtimes (e.g. in case of ve
 or one of the keys in RUNTIMES_AGGREGATED. To selectively execute runtimes, use the runtimes parameter of multiruntime.
 Example: runtimes=[Runtime.go1_x]
 """
+
 import json
 import logging
 import time
@@ -32,9 +33,9 @@ def snapshot_transformers(snapshot):
             snapshot.transform.key_value("AWS_SECRET_ACCESS_KEY", "aws-secret-access-key"),
             snapshot.transform.key_value("AWS_SESSION_TOKEN", "aws-session-token"),
             snapshot.transform.key_value("_X_AMZN_TRACE_ID", "x-amzn-trace-id"),
-            # go lambdas only
+            # Works in LocalStack locally but the hash changes in CI and every time at AWS (except for Java runtimes)
             snapshot.transform.key_value(
-                "_LAMBDA_SERVER_PORT", "<lambda-server-port>", reference_replacement=False
+                "CodeSha256", value_replacement="<code-sha256>", reference_replacement=False
             ),
             # workaround for integer values
             KeyValueBasedTransformer(
@@ -131,12 +132,16 @@ class TestLambdaRuntimesCommon:
             "$..environment.AWS_EXECUTION_ENV",  # Only rust runtime
             "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
-            "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
             "$..environment.LC_CTYPE",  # Only python3.11 (part of a broken image rollout, likely rolled back)
             # Newer Nodejs images explicitly disable a temporary performance workaround for Nodejs 20 on certain hosts:
             # https://nodejs.org/api/cli.html#uv_use_io_uringvalue
             # https://techfindings.net/archives/6469
             "$..environment.UV_USE_IO_URING",  # Only Nodejs runtimes
+            # Only Dotnet8
+            "$..environment.DOTNET_CLI_TELEMETRY_OPTOUT",
+            "$..environment.DOTNET_NOLOGO",
+            "$..environment.DOTNET_RUNNING_IN_CONTAINER",
+            "$..environment.DOTNET_VERSION",
         ]
     )
     @markers.aws.validated
@@ -174,7 +179,6 @@ class TestLambdaRuntimesCommon:
         paths=[
             # TODO: implement logging config
             "$..LoggingConfig",
-            "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
     @markers.aws.validated
@@ -204,7 +208,6 @@ class TestLambdaRuntimesCommon:
         paths=[
             # TODO: implement logging config
             "$..LoggingConfig",
-            "$..CodeSha256",  # works locally but unfortunately still produces a different hash in CI
         ]
     )
     @markers.aws.validated
@@ -252,6 +255,7 @@ class TestLambdaRuntimesCommon:
         assert invocation_result_payload["environment"]["WRAPPER_VAR"] == test_value
 
 
+@markers.lambda_runtime_update
 class TestLambdaCallingLocalstack:
     """=> Keep these tests synchronized with `test_lambda_endpoint_injection.py` in ext!"""
 

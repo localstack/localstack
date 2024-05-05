@@ -925,6 +925,22 @@ class KeyTooLongError(ServiceException):
     Size: Optional[KeyLength]
 
 
+class InvalidLocationConstraint(ServiceException):
+    code: str = "InvalidLocationConstraint"
+    sender_fault: bool = False
+    status_code: int = 400
+    LocationConstraint: Optional[BucketRegion]
+
+
+class EntityTooLarge(ServiceException):
+    code: str = "EntityTooLarge"
+    sender_fault: bool = False
+    status_code: int = 400
+    MaxSizeAllowed: Optional[KeyLength]
+    HostId: Optional[HostId]
+    ProposedSize: Optional[ProposedSize]
+
+
 AbortDate = datetime
 
 

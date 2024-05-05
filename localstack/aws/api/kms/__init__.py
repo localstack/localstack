@@ -28,6 +28,7 @@ PolicyNameType = str
 PolicyType = str
 PrincipalIdType = str
 RegionType = str
+RotationPeriodInDaysType = int
 TagKeyType = str
 TagValueType = str
 TrustAnchorCertificateType = str
@@ -212,6 +213,11 @@ class OriginType(str):
     EXTERNAL_KEY_STORE = "EXTERNAL_KEY_STORE"
 
 
+class RotationType(str):
+    AUTOMATIC = "AUTOMATIC"
+    ON_DEMAND = "ON_DEMAND"
+
+
 class SigningAlgorithmSpec(str):
     RSASSA_PSS_SHA_256 = "RSASSA_PSS_SHA_256"
     RSASSA_PSS_SHA_384 = "RSASSA_PSS_SHA_384"
@@ -268,6 +274,12 @@ class CloudHsmClusterNotFoundException(ServiceException):
 
 class CloudHsmClusterNotRelatedException(ServiceException):
     code: str = "CloudHsmClusterNotRelatedException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class ConflictException(ServiceException):
+    code: str = "ConflictException"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -793,6 +805,7 @@ class EnableKeyRequest(ServiceRequest):
 
 class EnableKeyRotationRequest(ServiceRequest):
     KeyId: KeyIdType
+    RotationPeriodInDays: Optional[RotationPeriodInDaysType]
 
 
 class EncryptRequest(ServiceRequest):
@@ -904,11 +917,12 @@ class GenerateRandomResponse(TypedDict, total=False):
 
 class GetKeyPolicyRequest(ServiceRequest):
     KeyId: KeyIdType
-    PolicyName: PolicyNameType
+    PolicyName: Optional[PolicyNameType]
 
 
 class GetKeyPolicyResponse(TypedDict, total=False):
     Policy: Optional[PolicyType]
+    PolicyName: Optional[PolicyNameType]
 
 
 class GetKeyRotationStatusRequest(ServiceRequest):
@@ -917,6 +931,10 @@ class GetKeyRotationStatusRequest(ServiceRequest):
 
 class GetKeyRotationStatusResponse(TypedDict, total=False):
     KeyRotationEnabled: Optional[BooleanType]
+    KeyId: Optional[KeyIdType]
+    RotationPeriodInDays: Optional[RotationPeriodInDaysType]
+    NextRotationDate: Optional[DateType]
+    OnDemandRotationStartDate: Optional[DateType]
 
 
 class GetParametersForImportRequest(ServiceRequest):
@@ -1023,6 +1041,27 @@ class ListKeyPoliciesResponse(TypedDict, total=False):
     Truncated: Optional[BooleanType]
 
 
+class ListKeyRotationsRequest(ServiceRequest):
+    KeyId: KeyIdType
+    Limit: Optional[LimitType]
+    Marker: Optional[MarkerType]
+
+
+class RotationsListEntry(TypedDict, total=False):
+    KeyId: Optional[KeyIdType]
+    RotationDate: Optional[DateType]
+    RotationType: Optional[RotationType]
+
+
+RotationsList = List[RotationsListEntry]
+
+
+class ListKeyRotationsResponse(TypedDict, total=False):
+    Rotations: Optional[RotationsList]
+    NextMarker: Optional[MarkerType]
+    Truncated: Optional[BooleanType]
+
+
 class ListKeysRequest(ServiceRequest):
     Limit: Optional[LimitType]
     Marker: Optional[MarkerType]
@@ -1054,7 +1093,7 @@ class ListRetirableGrantsRequest(ServiceRequest):
 
 class PutKeyPolicyRequest(ServiceRequest):
     KeyId: KeyIdType
-    PolicyName: PolicyNameType
+    PolicyName: Optional[PolicyNameType]
     Policy: PolicyType
     BypassPolicyLockoutSafetyCheck: Optional[BooleanType]
 
@@ -1105,6 +1144,14 @@ class RevokeGrantRequest(ServiceRequest):
     KeyId: KeyIdType
     GrantId: GrantIdType
     DryRun: Optional[NullableBooleanType]
+
+
+class RotateKeyOnDemandRequest(ServiceRequest):
+    KeyId: KeyIdType
+
+
+class RotateKeyOnDemandResponse(TypedDict, total=False):
+    KeyId: Optional[KeyIdType]
 
 
 class ScheduleKeyDeletionRequest(ServiceRequest):
@@ -1356,7 +1403,13 @@ class KmsApi:
         raise NotImplementedError
 
     @handler("EnableKeyRotation")
-    def enable_key_rotation(self, context: RequestContext, key_id: KeyIdType, **kwargs) -> None:
+    def enable_key_rotation(
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        rotation_period_in_days: RotationPeriodInDaysType = None,
+        **kwargs,
+    ) -> None:
         raise NotImplementedError
 
     @handler("Encrypt")
@@ -1455,7 +1508,11 @@ class KmsApi:
 
     @handler("GetKeyPolicy")
     def get_key_policy(
-        self, context: RequestContext, key_id: KeyIdType, policy_name: PolicyNameType, **kwargs
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        policy_name: PolicyNameType = None,
+        **kwargs,
     ) -> GetKeyPolicyResponse:
         raise NotImplementedError
 
@@ -1534,6 +1591,17 @@ class KmsApi:
     ) -> ListKeyPoliciesResponse:
         raise NotImplementedError
 
+    @handler("ListKeyRotations")
+    def list_key_rotations(
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        limit: LimitType = None,
+        marker: MarkerType = None,
+        **kwargs,
+    ) -> ListKeyRotationsResponse:
+        raise NotImplementedError
+
     @handler("ListKeys")
     def list_keys(
         self, context: RequestContext, limit: LimitType = None, marker: MarkerType = None, **kwargs
@@ -1567,8 +1635,8 @@ class KmsApi:
         self,
         context: RequestContext,
         key_id: KeyIdType,
-        policy_name: PolicyNameType,
         policy: PolicyType,
+        policy_name: PolicyNameType = None,
         bypass_policy_lockout_safety_check: BooleanType = None,
         **kwargs,
     ) -> None:
@@ -1626,6 +1694,12 @@ class KmsApi:
         dry_run: NullableBooleanType = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("RotateKeyOnDemand")
+    def rotate_key_on_demand(
+        self, context: RequestContext, key_id: KeyIdType, **kwargs
+    ) -> RotateKeyOnDemandResponse:
         raise NotImplementedError
 
     @handler("ScheduleKeyDeletion")

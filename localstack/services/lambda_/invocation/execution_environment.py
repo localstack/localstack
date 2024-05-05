@@ -151,13 +151,13 @@ class ExecutionEnvironment:
         }
         # Conditionally added environment variables
         if not config.LAMBDA_DISABLE_AWS_ENDPOINT_URL:
-            env_vars[
-                "AWS_ENDPOINT_URL"
-            ] = f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}"
+            env_vars["AWS_ENDPOINT_URL"] = (
+                f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.GATEWAY_LISTEN[0].port}"
+            )
         # config.handler is None for image lambdas and will be populated at runtime (e.g., by RIE)
         if self.function_version.config.handler:
             env_vars["_HANDLER"] = self.function_version.config.handler
-        # Will be overriden by the runtime itself unless it is a provided runtime
+        # Will be overridden by the runtime itself unless it is a provided runtime
         if self.function_version.config.runtime:
             env_vars["AWS_EXECUTION_ENV"] = "AWS_Lambda_rapid"
         if self.function_version.config.environment:

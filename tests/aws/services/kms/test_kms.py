@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import os
 import uuid
 from datetime import datetime
 from random import getrandbits
@@ -8,12 +9,14 @@ from random import getrandbits
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import hashes, hmac, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
+from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
 from localstack.services.kms.utils import get_hash_algorithm
 from localstack.testing.pytest import markers
+from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
 
 
@@ -107,6 +110,65 @@ class TestKMS:
         result = aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"]
         assert result["KeyId"] == key_id
         assert result["Arn"].endswith(f":key/{key_id}")
+
+    @markers.aws.only_localstack
+    def test_create_key_custom_key_material_hmac(self, kms_create_key, aws_client):
+        custom_key_material = b"custom test key material"
+        custom_key_tag_value = base64.b64encode(custom_key_material).decode("utf-8")
+        message = "some important message"
+        key_spec = "HMAC_256"
+        mac_algo = "HMAC_SHA_256"
+
+        # Generate expected MAC
+        h = hmac.HMAC(custom_key_material, hashes.SHA256())
+        h.update(message.encode("utf-8"))
+        expected_mac = h.finalize()
+
+        key_id = kms_create_key(
+            KeySpec=key_spec,
+            KeyUsage="GENERATE_VERIFY_MAC",
+            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_tag_value}],
+        )["KeyId"]
+
+        mac = aws_client.kms.generate_mac(
+            KeyId=key_id,
+            Message=message,
+            MacAlgorithm=mac_algo,
+        )["Mac"]
+        assert mac == expected_mac
+
+        verify_mac_response = aws_client.kms.verify_mac(
+            KeyId=key_id,
+            Message="some important message",
+            MacAlgorithm=mac_algo,
+            Mac=expected_mac,
+        )
+        assert verify_mac_response["MacValid"]
+
+    @markers.aws.only_localstack
+    def test_create_key_custom_key_material_symmetric_decrypt(self, kms_create_key, aws_client):
+        custom_key_material = b"custom test key material"
+        custom_key_tag_value = base64.b64encode(custom_key_material).decode("utf-8")
+        algo = "SYMMETRIC_DEFAULT"
+        message = b"test message 123 !%$@ 1234567890"
+
+        key_id = kms_create_key(
+            Tags=[{"TagKey": "_custom_key_material_", "TagValue": custom_key_tag_value}]
+        )["KeyId"]
+
+        # Generate expected cipher text
+        iv = os.urandom(IV_LEN)
+        ciphertext, tag = encrypt(custom_key_material, message, iv, b"")
+        expected_ciphertext_blob = _serialize_ciphertext_blob(
+            ciphertext=Ciphertext(key_id=key_id, iv=iv, ciphertext=ciphertext, tag=tag)
+        )
+
+        plaintext = aws_client.kms.decrypt(
+            KeyId=key_id,
+            CiphertextBlob=expected_ciphertext_blob,
+            EncryptionAlgorithm=algo,
+        )["Plaintext"]
+        assert plaintext == message
 
     @markers.aws.validated
     def test_get_key_in_different_region(
@@ -726,26 +788,28 @@ class TestKMS:
         aws_client.kms.encrypt(KeyId=alias_name, Plaintext="encrypt-me")
 
     @markers.aws.validated
-    def test_create_multi_region_key(self, kms_create_key):
-        key = kms_create_key(MultiRegion=True)
+    def test_create_multi_region_key(self, kms_create_key, snapshot):
+        snapshot.add_transformer(snapshot.transform.kms_api())
+        key = kms_create_key(MultiRegion=True, Description="test multi region key")
         assert key["KeyId"].startswith("mrk-")
-        assert key["MultiRegion"]
+        snapshot.match("create_multi_region_key", key)
 
     @markers.aws.validated
-    def test_non_multi_region_keys_should_not_have_multi_region_properties(self, kms_create_key):
-        key = kms_create_key(MultiRegion=False)
+    def test_non_multi_region_keys_should_not_have_multi_region_properties(
+        self, kms_create_key, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.kms_api())
+        key = kms_create_key(MultiRegion=False, Description="test non multi region key")
         assert not key["KeyId"].startswith("mrk-")
-        assert not key["MultiRegion"]
+        snapshot.match("non_multi_region_keys_should_not_have_multi_region_properties", key)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..KeyMetadata.Enabled",
             "$..KeyMetadata.KeyState",
-            "$..KeyMetadata.MultiRegionConfiguration",  # not implemented
             "$..ReplicaKeyMetadata.Enabled",
             "$..ReplicaKeyMetadata.KeyState",
-            "$..ReplicaKeyMetadata.MultiRegionConfiguration",  # not implemented
             "$..ReplicaPolicy",  # not implemented
         ],
     )

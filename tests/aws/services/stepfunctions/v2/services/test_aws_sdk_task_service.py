@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 
 from localstack.testing.pytest import markers
@@ -139,6 +140,43 @@ class TestTaskServiceAwsSdk:
             exec_input,
         )
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: aws-sdk SFN integration now appears to be inserting decorated error names into the cause messages.
+            #  Upcoming work should collect more failure snapshot involving other aws-sdk integrations and trace a
+            #  picture of generalisability of this behaviour.
+            #  Hence insert this into the logic of the aws-sdk integration.
+            "$..cause"
+        ]
+    )
+    @pytest.mark.parametrize(
+        "state_machine_template",
+        [
+            ST.load_sfn_template(ST.AWS_SDK_SFN_SEND_TASK_SUCCESS),
+            ST.load_sfn_template(ST.AWS_SDK_SFN_SEND_TASK_FAILURE),
+        ],
+    )
+    @markers.aws.validated
+    def test_sfn_send_task_outcome_with_no_such_token(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        state_machine_template,
+    ):
+        definition = json.dumps(state_machine_template)
+
+        exec_input = json.dumps({"TaskToken": "NoSuchTaskToken"})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @markers.aws.validated
     def test_sfn_start_execution(
         self,
@@ -197,9 +235,9 @@ class TestTaskServiceAwsSdk:
         )
 
         template = ST.load_sfn_template(ST.AWS_SDK_SFN_START_EXECUTION_IMPLICIT_JSON_SERIALISATION)
-        template["States"]["StartTarget"]["Parameters"][
-            "StateMachineArn"
-        ] = state_machine_arn_target
+        template["States"]["StartTarget"]["Parameters"]["StateMachineArn"] = (
+            state_machine_arn_target
+        )
         definition = json.dumps(template)
 
         exec_input = json.dumps({})

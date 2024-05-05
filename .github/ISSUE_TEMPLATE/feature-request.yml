@@ -1,0 +1,36 @@
+name: ✨ Feature request
+description: Request a new feature
+title: "feature request: <title>"
+labels: ["type: feature", "status: triage needed"]
+body:
+- type: markdown
+  attributes:
+    value: |
+      Thanks for taking the time to improve LocalStack!
+- type: checkboxes
+  attributes:
+    label: Is there an existing issue for this?
+    description: Please search to see if an issue already exists for the feature you are requesting.
+    options:
+    - label: I have searched the existing issues
+      required: true
+- type: textarea
+  attributes:
+    label: Feature description
+    description: Please describe the feature you would like LocalStack to have
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: 🧑‍💻 Implementation
+    description: If you are a developer and have an idea how to implement this feature, please sketch it out here.
+  validations:
+    required: false
+- type: textarea
+  attributes:
+    label: Anything else?
+    description: |
+      Links? References? Anything that will give us more context about the issue you are encountering!
+      Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
+  validations:
+    required: false

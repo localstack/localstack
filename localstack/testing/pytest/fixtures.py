@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import textwrap
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -1299,6 +1300,83 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
 
 
 @pytest.fixture
+def create_echo_http_server(aws_client, create_lambda_function):
+    from localstack.aws.api.lambda_ import Runtime
+
+    lambda_client = aws_client.lambda_
+    handler_code = textwrap.dedent("""
+    import json
+    import os
+
+
+    def make_response(body: dict, status_code: int = 200):
+        return {
+            "statusCode": status_code,
+            "headers": {"Content-Type": "application/json"},
+            "body": body,
+        }
+
+
+    def trim_headers(headers):
+        if not int(os.getenv("TRIM_X_HEADERS", 0)):
+            return headers
+        return {
+            key: value for key, value in headers.items()
+            if not (key.startswith("x-amzn") or key.startswith("x-forwarded-"))
+        }
+
+
+    def handler(event, context):
+        print(json.dumps(event))
+        response = {
+            "args": event.get("queryStringParameters", {}),
+            "data": event.get("body", ""),
+            "domain": event["requestContext"].get("domainName", ""),
+            "headers": trim_headers(event.get("headers", {})),
+            "method": event["requestContext"]["http"].get("method", ""),
+            "origin": event["requestContext"]["http"].get("sourceIp", ""),
+            "path": event["requestContext"]["http"].get("path", ""),
+        }
+        return make_response(response)""")
+
+    def _create_echo_http_server(trim_x_headers: bool = False) -> str:
+        """Creates a server that will echo any request. Any request will be returned with the
+        following format. Any unset values will have those defaults.
+        `trim_x_headers` can be set to True to trim some headers that are automatically added by lambda in
+        order to create easier Snapshot testing. Default: `False`
+        {
+          "args": {},
+          "headers": {},
+          "data": "",
+          "method": "",
+          "domain": "",
+          "origin": "",
+          "path": ""
+        }"""
+        zip_file = testutil.create_lambda_archive(handler_code, get_content=True)
+        func_name = f"echo-http-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            zip_file=zip_file,
+            runtime=Runtime.python3_9,
+            envvars={"TRIM_X_HEADERS": "1" if trim_x_headers else "0"},
+        )
+        url_response = lambda_client.create_function_url_config(
+            FunctionName=func_name, AuthType="NONE"
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=func_name,
+            StatementId="urlPermission",
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+        return url_response["FunctionUrl"]
+
+    yield _create_echo_http_server
+
+
+@pytest.fixture
 def create_event_source_mapping(aws_client):
     uuids = []
 
@@ -1844,6 +1922,12 @@ def pytest_collection_modifyitems(config: Config, items: list[Item]):
         for mark in item.iter_markers():
             if mark.name.endswith("only_localstack"):
                 item.add_marker(only_localstack)
+        if hasattr(item, "fixturenames") and "snapshot" in item.fixturenames:
+            # add a marker that indicates that this test is snapshot validated
+            # if it uses the snapshot fixture -> allows selecting only snapshot
+            # validated tests in order to capture new snapshots for a whole
+            # test file with "-m snapshot_validated"
+            item.add_marker("snapshot_validated")
 
 
 @pytest.fixture
@@ -1862,16 +1946,22 @@ def create_rest_apigw(aws_client_factory):
 
     def _create_apigateway_function(**kwargs):
         region_name = kwargs.pop("region_name", None)
-        apigateway_client = aws_client_factory(region_name=region_name).apigateway
+        client_config = None
+        if is_aws_cloud():
+            client_config = botocore.config.Config(
+                # Api gateway can throttle requests pretty heavily. Leading to potentially undeleted apis
+                retries={"max_attempts": 10, "mode": "adaptive"}
+            )
+        apigateway_client = aws_client_factory(
+            region_name=region_name, config=client_config
+        ).apigateway
         kwargs.setdefault("name", f"api-{short_uid()}")
 
         response = apigateway_client.create_rest_api(**kwargs)
         api_id = response.get("id")
         rest_apis.append((api_id, region_name))
-        resources = apigateway_client.get_resources(restApiId=api_id)
-        root_id = next(item for item in resources["items"] if item["path"] == "/")["id"]
 
-        return api_id, response.get("name"), root_id
+        return api_id, response.get("name"), response.get("rootResourceId")
 
     yield _create_apigateway_function
 

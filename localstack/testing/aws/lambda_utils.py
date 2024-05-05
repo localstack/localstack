@@ -33,22 +33,22 @@ if TYPE_CHECKING:
 LOG = logging.getLogger(__name__)
 
 HANDLERS = {
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "handler.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "index.handler"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "handler.handler"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "echo.Handler"),
-    # The handler value does not matter unless the custom runtime reads it in some way but it is a required field.
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "function.handler"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("dotnet"), "dotnet::Dotnet.Function::FunctionHandler"),
+    # The handler value does not matter unless the custom runtime reads it in some way, but it is a required field.
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "function.handler"),
-    "dotnet6": "dotnet6::dotnet6.Function::FunctionHandler",  # TODO lets see if we can accumulate those
 }
 
 PACKAGE_FOR_RUNTIME = {
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "python"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("nodejs"), "nodejs"),
-    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("python"), "python"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("java"), "java"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("ruby"), "ruby"),
+    **dict.fromkeys(RUNTIMES_AGGREGATED.get("dotnet"), "dotnet"),
     **dict.fromkeys(RUNTIMES_AGGREGATED.get("provided"), "provided"),
-    "dotnet6": "dotnet6",
 }
 
 
@@ -198,8 +198,7 @@ class ParametrizedLambda:
         CodeSigningConfigArn: Optional[str] = None,
         Architectures: Optional[Sequence["ArchitectureType"]] = None,
         EphemeralStorage: Optional["EphemeralStorageTypeDef"] = None,
-    ) -> "FunctionConfigurationResponseMetadataTypeDef":
-        ...
+    ) -> "FunctionConfigurationResponseMetadataTypeDef": ...
 
     def create_function(self, **kwargs):
         kwargs.setdefault("FunctionName", f"{self.scenario}-{short_uid()}")
@@ -334,3 +333,7 @@ def _get_lambda_invocation_events(logs_client, function_name, expected_num_event
         return events
 
     return retry(get_events, retries=retries, sleep_before=5, sleep=5)
+
+
+def is_docker_runtime_executor():
+    return config.LAMBDA_RUNTIME_EXECUTOR in ["docker", ""]

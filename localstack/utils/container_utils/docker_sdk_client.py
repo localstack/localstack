@@ -6,6 +6,7 @@ import queue
 import re
 import socket
 import threading
+from functools import lru_cache
 from time import sleep
 from typing import Dict, List, Optional, Tuple, Union, cast
 from urllib.parse import quote
@@ -16,6 +17,8 @@ from docker.errors import APIError, ContainerError, DockerException, ImageNotFou
 from docker.models.containers import Container
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
+from localstack.config import LS_LOG
+from localstack.constants import TRACE_LOG_LEVELS
 from localstack.utils.collections import ensure_list
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
@@ -74,7 +77,12 @@ class SdkDockerClient(ContainerClient):
             try:
                 return docker.from_env(timeout=DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS)
             except DockerException as e:
-                LOG.debug("Creating Docker SDK client failed: %s", e, exc_info=e)
+                LOG.debug(
+                    "Creating Docker SDK client failed: %s. "
+                    "If you want to use Docker as container runtime, make sure to mount the socket at /var/run/docker.sock",
+                    e,
+                    exc_info=LS_LOG in TRACE_LOG_LEVELS,
+                )
                 if attempt < DOCKER_SDK_DEFAULT_RETRIES:
                     # wait for a second before retrying
                     sleep(1)
@@ -468,6 +476,7 @@ class SdkDockerClient(ContainerClient):
             LOG.info("Container has more than one assigned network. Picking the first one...")
         return networks[network_names[0]]["IPAddress"]
 
+    @lru_cache(maxsize=None)
     def has_docker(self) -> bool:
         try:
             if not self.docker_client:
@@ -736,6 +745,7 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
+        labels: Optional[Dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
         ulimits: Optional[List[Ulimit]] = None,
@@ -744,14 +754,6 @@ class SdkDockerClient(ContainerClient):
         LOG.debug("Running container with image: %s", image_name)
         container = None
         try:
-            kwargs = {}
-            if ulimits:
-                kwargs["ulimits"] = [
-                    docker.types.Ulimit(
-                        name=ulimit.name, soft=ulimit.soft_limit, hard=ulimit.hard_limit
-                    )
-                    for ulimit in ulimits
-                ]
             container = self.create_container(
                 image_name,
                 name=name,
@@ -776,7 +778,8 @@ class SdkDockerClient(ContainerClient):
                 privileged=privileged,
                 platform=platform,
                 init=init,
-                **kwargs,
+                labels=labels,
+                ulimits=ulimits,
             )
             result = self.start_container(
                 container_name_or_id=container,

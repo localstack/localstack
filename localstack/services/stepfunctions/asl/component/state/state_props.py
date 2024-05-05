@@ -7,6 +7,9 @@ from localstack.services.stepfunctions.asl.component.common.timeouts.timeout imp
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.max_items_decl import (
     MaxItemsDecl,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
+    MaxConcurrencyDecl,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.resource import (
     Resource,
 )
@@ -17,17 +20,19 @@ from localstack.services.stepfunctions.asl.component.state.state_wait.wait_funct
 )
 from localstack.services.stepfunctions.asl.parse.typed_props import TypedProps
 
+UNIQUE_SUBINSTANCES: Final[set[type]] = {
+    Resource,
+    WaitFunction,
+    Timeout,
+    Heartbeat,
+    MaxItemsDecl,
+    MaxConcurrencyDecl,
+    ErrorDecl,
+    CauseDecl,
+}
+
 
 class StateProps(TypedProps):
-    _UNIQUE_SUBINSTANCES: Final[set[type]] = {
-        Resource,
-        WaitFunction,
-        Timeout,
-        Heartbeat,
-        MaxItemsDecl,
-        ErrorDecl,
-        CauseDecl,
-    }
     name: str
 
     def add(self, instance: Any) -> None:
@@ -40,7 +45,7 @@ class StateProps(TypedProps):
             raise ValueError(f"Next redefines End, from '{self.get(End)}' to '{instance}'.")
 
         # Subclasses
-        for typ in self._UNIQUE_SUBINSTANCES:
+        for typ in UNIQUE_SUBINSTANCES:
             if issubclass(inst_type, typ):
                 super()._add(typ, instance)
                 return

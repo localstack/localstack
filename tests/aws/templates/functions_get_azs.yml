@@ -1,12 +1,24 @@
+Parameters:
+  DeployRegion:
+    Type: String
+    Default: us-east-1
+
+Conditions:
+  DeployInUSEast1:
+    Fn::Equals:
+      - !Ref DeployRegion
+      - us-east-1
+
 Resources:
   SsmParameter:
     Type: AWS::SSM::Parameter
+    Condition: DeployInUSEast1
     Properties:
       Type: String
       Value:
         Fn::Join:
           - ";"
-          - Fn::GetAZs: !Ref "AWS::Region"
+          - Fn::GetAZs: !Ref DeployRegion
 Outputs:
   Zones:
     Value:

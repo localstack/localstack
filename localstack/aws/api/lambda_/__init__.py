@@ -246,6 +246,7 @@ class Runtime(str):
     python3_10 = "python3.10"
     java17 = "java17"
     ruby3_2 = "ruby3.2"
+    ruby3_3 = "ruby3.3"
     python3_11 = "python3.11"
     nodejs20_x = "nodejs20.x"
     provided_al2023 = "provided.al2023"

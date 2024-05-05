@@ -7,7 +7,6 @@ from botocore.model import ServiceModel
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.http import parse_dict_header
 
-import localstack
 from localstack import config
 from localstack.aws.spec import (
     ServiceCatalog,
@@ -15,7 +14,7 @@ from localstack.aws.spec import (
     build_service_index_cache,
     load_service_index_cache,
 )
-from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST
+from localstack.constants import LOCALHOST_HOSTNAME, PATH_USER_REQUEST, VERSION
 from localstack.http import Request
 from localstack.services.s3.utils import uses_host_addressing
 from localstack.services.sqs.utils import is_sqs_queue_url
@@ -139,13 +138,21 @@ def custom_signing_name_rules(signing_name: str, path: str) -> Optional[ServiceM
 
 def custom_host_addressing_rules(host: str) -> Optional[ServiceModelIdentifier]:
     """
-    Rules based on the host header of the request.
+    Rules based on the host header of the request, which is typically the data plane of a service.
+
+    Some services are added through a patch in ext.
     """
-    if ".execute-api." in host:
-        return ServiceModelIdentifier("apigateway")
+
+    # a note on ``.execute-api.`` and why it shouldn't be added as a check here: ``.execute-api.`` was previously
+    # mapped distinctly to ``apigateway``, but this assumption is too strong, since the URL can be apigw v1, v2,
+    # or apigw management api. so in short, simply based on the host header, it's not possible to unambiguously
+    # associate a specific apigw service to the request.
 
     if ".lambda-url." in host:
         return ServiceModelIdentifier("lambda")
+
+    if ".s3-website." in host:
+        return ServiceModelIdentifier("s3")
 
 
 def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
@@ -154,7 +161,7 @@ def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
     """
 
     if is_sqs_queue_url(path):
-        return ServiceModelIdentifier("sqs")
+        return ServiceModelIdentifier("sqs", protocol="query")
 
     if path.startswith("/2015-03-31/functions/"):
         return ServiceModelIdentifier("lambda")
@@ -257,7 +264,7 @@ def get_service_catalog() -> ServiceCatalog:
         return ServiceCatalog()
 
     try:
-        ls_ver = localstack.__version__.replace(".", "_")
+        ls_ver = VERSION.replace(".", "_")
         botocore_ver = botocore.__version__.replace(".", "_")
         cache_file_name = f"service-catalog-{ls_ver}-{botocore_ver}.pickle"
         cache_file = os.path.join(config.dirs.cache, cache_file_name)
@@ -293,17 +300,30 @@ def resolve_conflicts(
     if service_name_candidates == {"sqs"}:
         # SQS now have 2 different specs for `query` and `json` protocol. From our current implementation with the
         # parser and serializer, we need to have 2 different service names for them, but they share one provider
-        # implementation. `sqs-json` represents the `json` protocol spec, and `sqs` the `query` protocol
+        # implementation. `sqs` represents the `json` protocol spec, and `sqs-query` the `query` protocol
         # (default again in botocore starting with 1.32.6).
         # The `application/x-amz-json-1.0` header is mandatory for requests targeting SQS with the `json` protocol. We
-        # can safely route them to the `sqs-json` JSON parser/serializer. If not present, route the request to the
-        # default sqs protocol (`query`).
+        # can safely route them to the `sqs` JSON parser/serializer. If not present, route the request to the
+        # sqs-query protocol.
         content_type = request.headers.get("Content-Type")
         return (
-            ServiceModelIdentifier("sqs", "json")
+            ServiceModelIdentifier("sqs")
             if content_type == "application/x-amz-json-1.0"
-            else ServiceModelIdentifier("sqs")
+            else ServiceModelIdentifier("sqs", "query")
         )
+
+
+def determine_aws_service_model_for_data_plane(
+    request: Request, services: ServiceCatalog = None
+) -> Optional[ServiceModel]:
+    """
+    A stripped down version of ``determine_aws_service_model`` which only checks hostname indicators for
+    the AWS data plane, such as s3 websites, lambda function URLs, or API gateway routes.
+    """
+    custom_host_match = custom_host_addressing_rules(request.host)
+    if custom_host_match:
+        services = services or get_service_catalog()
+        return services.get(*custom_host_match)
 
 
 def determine_aws_service_model(

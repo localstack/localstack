@@ -277,6 +277,7 @@ class TestApiGatewayImportRestApi:
     )
     def test_import_swagger_api(
         self,
+        region_name,
         import_apigw,
         snapshot,
         aws_client,
@@ -301,11 +302,13 @@ class TestApiGatewayImportRestApi:
         )
         spec_file = load_file(PETSTORE_SWAGGER_JSON)
         spec_file = spec_file.replace(
+            "${uri}", f"http://petstore.execute-api.{region_name}.amazonaws.com/petstore/pets"
+        )
+
+        spec_file = spec_file.replace(
             "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:account-id:function:function-name/invocations",
             apigateway_placeholder_authorizer_lambda_invocation_arn,
-        ).replace(
-            "arn:aws:iam::account-id:role", lambda_su_role
-        )  # we just need a placeholder role
+        ).replace("arn:aws:iam::account-id:role", lambda_su_role)  # we just need a placeholder role
 
         response, root_id = import_apigw(body=spec_file, failOnWarnings=True)
 
@@ -466,6 +469,7 @@ class TestApiGatewayImportRestApi:
             "$..cacheNamespace",  # TODO: investigate why it's different
             "$.get-resources-oas30-srv-url.items..id",  # TODO: even in overwrite, APIGW keeps the same ID if same path
             "$.get-resources-oas30-srv-url.items..parentId",  # TODO: even in overwrite, APIGW keeps the same ID if same path
+            "$.put-rest-api-oas30-srv-url..rootResourceId",  # TODO: because APIGW keeps the same above, id counting is different
         ]
     )
     def test_import_rest_api_with_base_path_oas30(
@@ -648,7 +652,6 @@ class TestApiGatewayImportRestApi:
         paths=[
             "$.resources.items..resourceMethods.POST",
             # TODO: this is really weird, after importing, AWS returns them empty?
-            "$..rootResourceId",  # TODO: newly added
         ]
     )
     @markers.aws.validated

@@ -97,8 +97,8 @@ def load_service(
 ) -> ServiceModel:
     """
     Loads a service
-    :param service: to load, f.e. "sqs". For custom, internalized, service protocol specs (f.e. sqs-json) it's also
-                    possible to directly define the protocol in the service name (f.e. use sqs-json)
+    :param service: to load, f.e. "sqs". For custom, internalized, service protocol specs (f.e. sqs-query) it's also
+                    possible to directly define the protocol in the service name (f.e. use sqs-query)
     :param version: of the service to load, f.e. "2012-11-05", by default the latest version will be used
     :param protocol: specific protocol to load for the specific service, f.e. "json" for the "sqs" service
                      if the service cannot be found
@@ -112,7 +112,7 @@ def load_service(
     if protocol is not None and protocol != service_description.get("metadata", {}).get("protocol"):
         # if the protocol is defined, but not the one of the currently loaded service,
         # check if we already loaded the custom spec based on the naming convention (<service>-<protocol>),
-        # f.e. "sqs-json"
+        # f.e. "sqs-query"
         if service.endswith(f"-{protocol}"):
             # if so, we raise an exception
             raise UnknownServiceProtocolError(service_name=service, protocol=protocol)
@@ -124,8 +124,9 @@ def load_service(
             raise UnknownServiceProtocolError(service_name=service, protocol=protocol)
 
     # remove potential protocol names from the service name
-    # FIXME add more protocols here if we have to internalize more than just sqs-json
-    service = service.removesuffix("-json")
+    # FIXME add more protocols here if we have to internalize more than just sqs-query
+    # TODO this should not contain specific internalized serivce names
+    service = {"sqs-query": "sqs"}.get(service, service)
     return ServiceModel(service_description, service)
 
 

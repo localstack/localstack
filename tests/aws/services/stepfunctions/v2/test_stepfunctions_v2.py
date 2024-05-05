@@ -436,9 +436,9 @@ class TestStateMachine:
         lambda_arn_1 = arns.lambda_function_arn(TEST_LAMBDA_NAME_5, account_id, region_name)
         lambda_arn_2 = arns.lambda_function_arn(TEST_LAMBDA_NAME_5, account_id, region_name)
         if isinstance(definition["States"]["state1"].get("Parameters"), dict):
-            definition["States"]["state1"]["Parameters"]["lambda_params"][
-                "FunctionName"
-            ] = lambda_arn_1
+            definition["States"]["state1"]["Parameters"]["lambda_params"]["FunctionName"] = (
+                lambda_arn_1
+            )
             definition["States"]["state3"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
         sm_name = f"intrinsic-{short_uid()}"
@@ -831,3 +831,4 @@ def test_run_aws_sdk_secrets_manager(aws_client, account_id):
 
     # clean up
     cleanup(sm_arn, state_machines_before, aws_client.stepfunctions)
+    # TODO also clean up other resources (like secrets)

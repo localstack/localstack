@@ -1,9 +1,10 @@
 import os
 
-import localstack
+from localstack.version import __version__
 
-# LocalStack version
-VERSION = localstack.__version__
+# temporary fix to avoid issues with missing version package in image
+# FIXME: remove this once all images contain the version package
+VERSION = __version__
 
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = "x-localstack-edge"

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 import uuid
 from datetime import datetime
 from math import isclose
@@ -9,7 +10,7 @@ from typing import Optional
 import pytest
 import requests
 from botocore.auth import SigV4Auth
-from localstack_snapshot.snapshots.transformer import SortingTransformer
+from botocore.exceptions import ClientError
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.secretsmanager import (
@@ -180,6 +181,28 @@ class TestSecretsManager:
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
 
     @markers.aws.validated
+    def test_secret_restore(self, secret_name: str, sm_snapshot, cleanups, aws_client):
+        cleanups.append(
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
+        )
+        create_secret_rs = aws_client.secretsmanager.create_secret(
+            Name=secret_name,
+            SecretString="my_secret",
+            Description="test description",
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(create_secret_rs, 0)
+        )
+
+        delete_secret_res = aws_client.secretsmanager.delete_secret(SecretId=secret_name)
+        sm_snapshot.match("delete_secret_res", delete_secret_res)
+
+        restore_secret_res = aws_client.secretsmanager.restore_secret(SecretId=secret_name)
+        sm_snapshot.match("restore_secret_res", restore_secret_res)
+
+    @markers.aws.validated
     def test_secret_not_found(self, sm_snapshot, aws_client):
         with pytest.raises(Exception) as not_found:
             aws_client.secretsmanager.get_secret_value(SecretId=f"s-{short_uid()}")
@@ -239,6 +262,127 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_1", delete_secret_res_1)
+
+    @markers.aws.validated
+    def test_list_secrets_filtering(self, aws_client, create_secret):
+        suffix = random.randint(10000, 99999)
+        secret_name_1 = f"testing1/one-{suffix}"
+        secret_name_2 = f"/testing2/two-{suffix}"
+        secret_name_3 = f"testing3/three-{suffix}"
+        secret_name_4 = f"/testing4/four-{suffix}"
+
+        create_secret(Name=secret_name_1, SecretString="secret", Description="a secret")
+        create_secret(Name=secret_name_2, SecretString="secret", Description="an secret")
+        create_secret(Name=secret_name_3, SecretString="secret", Description="asecret")
+        create_secret(Name=secret_name_4, SecretString="secret", Description="thesecret")
+
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name_1)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name_2)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name_3)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name_4)
+
+        def assert_secret_names(res: dict, include_secrets: set[str], exclude_secrets: set[str]):
+            secret_names = {secret["Name"] for secret in res["SecretList"]}
+            assert (
+                include_secrets - secret_names
+            ) == set(), "At least one secret which should be included is not."
+            assert (
+                exclude_secrets - secret_names
+            ) == exclude_secrets, "At least one secret which should not be included is."
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[{"Key": "name", "Values": ["/"]}]
+        )
+        assert_secret_names(
+            response, {secret_name_2, secret_name_4}, {secret_name_1, secret_name_3}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[{"Key": "name", "Values": ["!/"]}]
+        )
+        assert_secret_names(
+            response, {secret_name_1, secret_name_3}, {secret_name_2, secret_name_4}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[{"Key": "name", "Values": ["testing1 one"]}]
+        )
+        assert_secret_names(
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[{"Key": "description", "Values": ["a"]}]
+        )
+        assert_secret_names(
+            response, {secret_name_1, secret_name_2, secret_name_3}, {secret_name_4}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[{"Key": "description", "Values": ["!a"]}]
+        )
+        assert_secret_names(
+            response, {secret_name_4}, {secret_name_1, secret_name_2, secret_name_3}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[{"Key": "description", "Values": ["a secret"]}]
+        )
+        assert_secret_names(
+            response, {secret_name_1, secret_name_2}, {secret_name_3, secret_name_4}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[
+                {"Key": "description", "Values": ["a"]},
+                {"Key": "name", "Values": ["secret"]},
+            ]
+        )
+        assert_secret_names(
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[
+                {"Key": "description", "Values": ["a"]},
+                {"Key": "name", "Values": ["an"]},
+            ]
+        )
+        assert_secret_names(
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[
+                {"Key": "description", "Values": ["a secret"]},
+            ]
+        )
+        assert_secret_names(
+            response, {secret_name_1, secret_name_2}, {secret_name_3, secret_name_4}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[
+                {"Key": "description", "Values": ["!a"]},
+            ]
+        )
+        assert_secret_names(
+            response, {secret_name_4}, {secret_name_1, secret_name_2, secret_name_3}
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[{"Key": "description", "Values": ["!c"]}]
+        )
+        assert_secret_names(
+            response, {secret_name_1, secret_name_2, secret_name_3, secret_name_4}, set()
+        )
+
+        response = aws_client.secretsmanager.list_secrets(
+            Filters=[{"Key": "name", "Values": ["testing1 one"]}]
+        )
+        assert_secret_names(
+            response, set(), {secret_name_1, secret_name_2, secret_name_3, secret_name_4}
+        )
 
     @markers.aws.validated
     def test_create_multi_secrets(self, cleanups, aws_client):
@@ -345,7 +489,9 @@ class TestSecretsManager:
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @pytest.mark.parametrize("rotate_immediately", [True, None])
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Versions..KmsKeyIds"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..VersionIdsToStages", "$..Versions", "$..VersionId"]
+    )
     @markers.aws.validated
     def test_rotate_secret_with_lambda_success(
         self,
@@ -366,7 +512,9 @@ class TestSecretsManager:
             Description="testing rotation of secrets",
         )
 
-        sm_snapshot.add_transformer(SortingTransformer("Versions", lambda x: x["CreatedDate"]))
+        sm_snapshot.add_transformer(
+            sm_snapshot.transform.key_value("RotationLambdaARN", "lambda-arn")
+        )
         sm_snapshot.add_transformers_list(
             sm_snapshot.transform.secretsmanager_secret_id_arn(cre_res, 0)
         )
@@ -400,6 +548,9 @@ class TestSecretsManager:
         sm_snapshot.match("rotate_secret_immediately", rot_res)
 
         self._wait_rotation(aws_client.secretsmanager, secret_name, rot_res["VersionId"])
+
+        response = aws_client.secretsmanager.describe_secret(SecretId=secret_name)
+        sm_snapshot.match("describe_secret_rotated", response)
 
         list_secret_versions_1 = aws_client.secretsmanager.list_secret_version_ids(
             SecretId=secret_name
@@ -681,7 +832,6 @@ class TestSecretsManager:
         sm_snapshot.match("describe_secret_res_0", describe_secret_res_0)
 
         description_v1 = "MyDescription"
-        #
         update_secret_res_0 = aws_client.secretsmanager.update_secret(
             SecretId=secret_name, Description=description_v1
         )
@@ -1008,6 +1158,85 @@ class TestSecretsManager:
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
         sm_snapshot.match("delete_secret_res_0", delete_secret_res_0)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Versions..KmsKeyIds"])
+    @markers.aws.validated
+    def test_deprecated_secret_version_stage(
+        self, secret_name, create_secret, aws_client, sm_snapshot
+    ):
+        response = create_secret(
+            Name=secret_name,
+            SecretString="original",
+            Description="My secret",
+        )
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
+        )
+        sm_snapshot.match("create_secret", response)
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_name)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
+        sm_snapshot.match("list_secret_version_ids", response)
+
+        response = aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_name, SecretString="update1"
+        )
+        sm_snapshot.match("put_secret_value_1", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
+        sm_snapshot.match("list_secret_version_ids_1", response)
+
+        response = aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_name, SecretString="update2"
+        )
+        sm_snapshot.match("put_secret_value_2", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
+        sm_snapshot.match("list_secret_version_ids_2", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name, IncludeDeprecated=True
+        )
+        sm_snapshot.match("list_secret_version_ids_3", response)
+
+        response = aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_name, SecretString="update3"
+        )
+        sm_snapshot.match("put_secret_value_3", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(SecretId=secret_name)
+        sm_snapshot.match("list_secret_version_ids_4", response)
+
+        response = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name, IncludeDeprecated=True
+        )
+        sm_snapshot.match("list_secret_version_ids_5", response)
+
+    @markers.aws.only_localstack
+    def test_deprecated_secret_version(self, secret_name, create_secret, aws_client):
+        """
+        This test ensures the version cleanup behavior in a simulated AWS environment.
+        Secrets Manager typically retains a maximum of 100 versions and does not
+        immediately delete versions created within the last 24 hours.
+        However, this test operates under the assumption that version timestamps are not evaluated,
+        and the cleanup process solely depends on reaching a version count threshold.
+        """
+        create_secret(Name=secret_name, SecretString="original", Description="My secret")
+        self._wait_created_is_listed(aws_client.secretsmanager, secret_name)
+
+        for i in range(130):
+            aws_client.secretsmanager.put_secret_value(
+                SecretId=secret_name, SecretString=f"update{i}"
+            )
+        response = aws_client.secretsmanager.list_secret_version_ids(
+            SecretId=secret_name, IncludeDeprecated=True
+        )
+        # In Secrets Manager, versions of secrets without labels are considered deprecated.
+        # There will be two labeled versions:
+        # - The current version, labeled AWSCURRENT
+        # - The previous version, labeled AWSPREVIOUS
+        # see: https://docs.aws.amazon.com/secretsmanager/latest/userguide/getting-started.html#term_version
+        assert len(response["Versions"]) == 102
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..KmsKeyId", "$..KmsKeyIds"])
     @markers.aws.validated
@@ -2052,6 +2281,95 @@ class TestSecretsManager:
         )
         snapshot.match("put-secret-value", response)
 
+    @markers.aws.validated
+    def test_secret_tags(self, aws_client, create_secret, sm_snapshot, cleanups):
+        secret_name = short_uid()
+        response = create_secret(
+            Name=secret_name,
+        )
+
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
+        )
+        sm_snapshot.match("create_secret", response)
+
+        secret_arn = response["ARN"]
+
+        describe_secret = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret", describe_secret)
+
+        tag_resource_1 = aws_client.secretsmanager.tag_resource(
+            SecretId=secret_arn, Tags=[{"Key": "tag1", "Value": "value1"}]
+        )
+        sm_snapshot.match("tag_resource_1", tag_resource_1)
+
+        describe_secret_1 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_1", describe_secret_1)
+
+        tag_resource_2 = aws_client.secretsmanager.tag_resource(
+            SecretId=secret_arn, Tags=[{"Key": "tag2", "Value": "value2"}]
+        )
+        sm_snapshot.match("tag_resource_2", tag_resource_2)
+
+        describe_secret_2 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_2", describe_secret_2)
+
+        untag_resource_1 = aws_client.secretsmanager.untag_resource(
+            SecretId=secret_arn, TagKeys=["tag1"]
+        )
+        sm_snapshot.match("untag_resource_1", untag_resource_1)
+
+        describe_secret_3 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_3", describe_secret_3)
+
+        untag_resource_2 = aws_client.secretsmanager.untag_resource(
+            SecretId=secret_arn, TagKeys=["tag2"]
+        )
+        sm_snapshot.match("untag_resource_2", untag_resource_2)
+
+        describe_secret_4 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_4", describe_secret_4)
+
+        aws_client.secretsmanager.tag_resource(
+            SecretId=secret_arn,
+            Tags=[{"Key": "tag3", "Value": "value3"}, {"Key": "tag4", "Value": "value4"}],
+        )
+
+        describe_secret_5 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_5", describe_secret_5)
+
+        aws_client.secretsmanager.untag_resource(SecretId=secret_arn, TagKeys=["tag3", "tag4"])
+
+        describe_secret_6 = aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
+        sm_snapshot.match("describe_secret_6", describe_secret_6)
+
+    @markers.aws.validated
+    def test_get_secret_value_errors(self, aws_client, create_secret, sm_snapshot):
+        secret_name = short_uid()
+        response = create_secret(
+            Name=secret_name,
+            SecretString="test",
+        )
+        version_id = response["VersionId"]
+
+        sm_snapshot.add_transformers_list(
+            sm_snapshot.transform.secretsmanager_secret_id_arn(response, 0)
+        )
+
+        secret_arn = response["ARN"]
+
+        with pytest.raises(ClientError) as ex:
+            aws_client.secretsmanager.get_secret_value(
+                SecretId=secret_arn, VersionStage="AWSPREVIOUS"
+            )
+        sm_snapshot.match("error_get_secret_value_non_existing", ex.value.response)
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.secretsmanager.get_secret_value(
+                SecretId=secret_name, VersionId=version_id, VersionStage="AWSPREVIOUS"
+            )
+        sm_snapshot.match("mismatch_version_id_and_stage", exc.value.response)
+
 
 class TestSecretsManagerMultiAccounts:
     @markers.aws.validated
@@ -2090,6 +2408,23 @@ class TestSecretsManagerMultiAccounts:
         response = secondary_aws_client.secretsmanager.describe_secret(SecretId=secret_arn)
         assert response["ARN"] == secret_arn
 
+        kms_default_key_error = (
+            "You can't access a secret from a different AWS account if you encrypt the secret "
+            "with the default KMS service key."
+        )
+
+        with pytest.raises(Exception) as ex:
+            secondary_aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
+        assert ex.value.response["Error"]["Code"] == "InvalidRequestException"
+        assert ex.value.response["Error"]["Message"] == kms_default_key_error
+
+        with pytest.raises(Exception) as ex:
+            secondary_aws_client.secretsmanager.put_secret_value(
+                SecretId=secret_arn, SecretString="new-secret"
+            )
+        assert ex.value.response["Error"]["Code"] == "InvalidRequestException"
+        assert ex.value.response["Error"]["Message"] == kms_default_key_error
+
         # try to add resource policy from the secondary account
         policy = resource_policy
         policy["Statement"][0]["Sid"] = "AllowCrossAccount"
@@ -2124,7 +2459,7 @@ class TestSecretsManagerMultiAccounts:
         # get tags from the primary account
         # Note: when removing tags, the response will be empty list in case of AWS,
         # but it will be None in Localstack. To avoid failing the test, we will use the default value as list
-        poll_condition(
+        assert poll_condition(
             lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get("Tags", [])
             == [],
             timeout=5.0,
@@ -2134,8 +2469,119 @@ class TestSecretsManagerMultiAccounts:
         secondary_aws_client.secretsmanager.delete_secret(
             SecretId=secret_arn, ForceDeleteWithoutRecovery=True
         )
-        poll_condition(
-            lambda: secondary_aws_client.secretsmanager.list_secrets()["SecretList"] == [],
+
+    @markers.aws.validated
+    def test_cross_account_access_non_default_key(self, aws_client, secondary_aws_client, cleanups):
+        # GetSecretValue and PutSecretValue can't be used if the default keys are used
+        primary_identity = aws_client.sts.get_caller_identity()
+        primary_principal = primary_identity["Arn"]
+        primary_account_id = primary_identity["Account"]
+        secondary_principal = secondary_aws_client.sts.get_caller_identity()["Arn"]
+
+        resource_policy_secretsmanager = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": secondary_principal},
+                    "Action": ["secretsmanager:*"],
+                    "Resource": "*",
+                }
+            ],
+        }
+
+        kms_policy_document = """{
+        "Version": "2012-10-17",
+        "Id": "key-default-1",
+        "Statement": [
+            {
+                "Sid": "Enable IAM User Permissions",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": "arn:aws:iam::%s:root"
+                },
+                "Action": "kms:*",
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow administration of the key",
+                "Effect": "Allow",
+                "Principal": {"AWS": "%s"},
+                "Action": "kms:*",
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow use of the key",
+                "Effect": "Allow",
+                "Principal": {"AWS": "%s"},
+                "Action": [
+                    "kms:Encrypt",
+                    "kms:Decrypt",
+                    "kms:ReEncrypt*",
+                    "kms:GenerateDataKey*",
+                    "kms:DescribeKey"
+                ],
+                "Resource": "*"
+            }
+        ]
+        }"""
+        secret_name = f"test-secret-{short_uid()}"
+
+        kms_policy = kms_policy_document % (
+            primary_account_id,
+            primary_principal,
+            secondary_principal,
+        )
+        key_arn = aws_client.kms.create_key(
+            Description="test-key",
+            Policy=kms_policy,
+        )["KeyMetadata"]["Arn"]
+        cleanups.append(
+            lambda: aws_client.kms.schedule_key_deletion(KeyId=key_arn, PendingWindowInDays=7)
+        )
+
+        secret_arn = aws_client.secretsmanager.create_secret(
+            Name=secret_name, SecretString="secret", KmsKeyId=key_arn
+        )["ARN"]
+        cleanups.append(
+            lambda: aws_client.secretsmanager.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
+        )
+        aws_client.secretsmanager.put_resource_policy(
+            SecretId=secret_arn, ResourcePolicy=json.dumps(resource_policy_secretsmanager)
+        )
+
+        response = secondary_aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
+        assert response["SecretString"] == "secret"
+
+        secondary_aws_client.secretsmanager.put_secret_value(
+            SecretId=secret_arn, SecretString="new-secret"
+        )
+
+        response = secondary_aws_client.secretsmanager.get_secret_value(SecretId=secret_arn)
+        assert response["SecretString"] == "new-secret"
+
+        secondary_aws_client.secretsmanager.delete_secret(
+            SecretId=secret_arn, ForceDeleteWithoutRecovery=False, RecoveryWindowInDays=7
+        )
+
+        assert poll_condition(
+            lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
+                "DeletedDate"
+            )
+            is not None,
+            timeout=5.0,
+            interval=0.5,
+        )
+
+        secondary_aws_client.secretsmanager.restore_secret(SecretId=secret_arn)
+
+        assert poll_condition(
+            lambda: aws_client.secretsmanager.describe_secret(SecretId=secret_arn).get(
+                "DeletedDate"
+            )
+            is None,
             timeout=5.0,
             interval=0.5,
         )

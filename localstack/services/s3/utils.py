@@ -46,7 +46,9 @@ from localstack.aws.api.s3 import (
     TagSet,
 )
 from localstack.aws.api.s3 import Type as GranteeType
+from localstack.aws.chain import HandlerChain
 from localstack.aws.connect import connect_to
+from localstack.http import Response
 from localstack.services.s3.constants import (
     ALL_USERS_ACL_GRANTEE,
     AUTHENTICATED_USERS_ACL_GRANTEE,
@@ -91,6 +93,34 @@ _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
 
 RFC1123 = "%a, %d %b %Y %H:%M:%S GMT"
 _gmt_zone_info = ZoneInfo("GMT")
+
+
+def s3_response_handler(chain: HandlerChain, context: RequestContext, response: Response):
+    """
+    This response handler is taking care of removing certain headers from S3 responses.
+    We cannot handle this in the serializer, because the serializer handler calls `Response.update_from`, which does
+    not allow you to remove headers, only add them.
+    This handler can delete headers from the response.
+    """
+    # some requests, for example coming frome extensions, are flagged as S3 requests. This check confirms that it is
+    # indeed truly an S3 request by checking if it parsed properly as an S3 operation
+    if not context.service_operation:
+        return
+
+    # if AWS returns 204, it will not return a body, Content-Length and Content-Type
+    # the web server is already taking care of deleting the body, but it's more explicit to remove it here
+    if response.status_code == 204:
+        response.data = b""
+        response.headers.pop("Content-Type", None)
+        response.headers.pop("Content-Length", None)
+
+    elif (
+        response.status_code == 200
+        and context.request.method == "PUT"
+        and response.headers.get("Content-Length") in (0, None)
+    ):
+        # AWS does not return a Content-Type if the Content-Length is 0
+        response.headers.pop("Content-Type", None)
 
 
 def get_owner_for_account_id(account_id: str):
@@ -139,11 +169,9 @@ class ChecksumHash(Protocol):
     S3CRC32Checksum, and botocore CrtCrc32cChecksum).
     """
 
-    def digest(self) -> bytes:
-        ...
+    def digest(self) -> bytes: ...
 
-    def update(self, value: bytes):
-        ...
+    def update(self, value: bytes): ...
 
 
 def get_s3_checksum(algorithm) -> ChecksumHash:

@@ -1,4 +1,5 @@
 """Higher-order functional tools."""
+
 import functools
 import inspect
 import logging

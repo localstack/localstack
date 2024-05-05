@@ -1,4 +1,5 @@
 """Routing for Lambda function URLs: https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html"""
+
 import base64
 import json
 import logging
@@ -55,20 +56,25 @@ class FunctionUrlRouter:
     def handle_lambda_url_invocation(
         self, request: Request, api_id: str, region: str, **url_params: dict[str, str]
     ) -> HttpResponse:
-        response = HttpResponse(headers={"Content-type": "application/json"})
+        response = HttpResponse()
+        response.mimetype = "application/json"
 
         lambda_url_config = None
-        try:
-            for account_id in lambda_stores.keys():
-                store = lambda_stores[account_id][region]
-                for fn in store.functions.values():
-                    for url_config in fn.function_url_configs.values():
-                        if url_config.url_id == api_id:
-                            lambda_url_config = url_config
-        except IndexError as e:
-            LOG.warning(f"Lambda URL ({api_id}) not found: {e}")
-            response.set_json({"Message": None})
-            response.status = "404"
+
+        for account_id in lambda_stores.keys():
+            store = lambda_stores[account_id][region]
+            for fn in store.functions.values():
+                for url_config in fn.function_url_configs.values():
+                    if url_config.url_id == api_id:
+                        lambda_url_config = url_config
+
+        # TODO: check if errors are different when the URL has existed previously
+        if lambda_url_config is None:
+            LOG.info("Lambda URL %s does not exist", request.url)
+            response.data = '{"Message":null}'
+            response.status = 403
+            response.headers["x-amzn-ErrorType"] = "AccessDeniedException"
+            # TODO: x-amzn-requestid
             return response
 
         event = event_for_lambda_url(

@@ -1,48 +1,75 @@
 import json
 import logging
 import re
-from typing import Dict, List, Union
 
+from localstack import config
 from localstack.aws.api.lambda_ import FilterCriteria
+from localstack.services.events.event_ruler import matches_rule
 from localstack.utils.strings import first_char_to_lower
 
 LOG = logging.getLogger(__name__)
 
 
-def filter_stream_records(records, filters: List[FilterCriteria]):
+class InvalidEventPatternException(Exception):
+    reason: str
+
+    def __init__(self, reason=None, message=None) -> None:
+        self.reason = reason
+        self.message = message or f"Event pattern is not valid. Reason: {reason}"
+
+
+def filter_stream_records(records, filters: list[FilterCriteria]):
     filtered_records = []
     for record in records:
         for filter in filters:
             for rule in filter["Filters"]:
-                if filter_stream_record(json.loads(rule["Pattern"]), record):
+                if config.EVENT_RULE_ENGINE == "java":
+                    event_str = json.dumps(record)
+                    event_pattern_str = rule["Pattern"]
+                    match_result = matches_rule(event_str, event_pattern_str)
+                else:
+                    filter_pattern: dict[str, any] = json.loads(rule["Pattern"])
+                    match_result = does_match_event(filter_pattern, record)
+                if match_result:
                     filtered_records.append(record)
                     break
     return filtered_records
 
 
-def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) -> bool:
-    if not filter_rule:
+def does_match_event(event_pattern: dict[str, any], event: dict[str, any]) -> bool:
+    """Decides whether an event pattern matches an event or not.
+    Returns True if the `event_pattern` matches the given `event` and False otherwise.
+
+    Implements "Amazon EventBridge event patterns":
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
+    Used in different places:
+    * EventBridge: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
+    * Lambda ESM: https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html
+    * EventBridge Pipes: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-pipes-event-filtering.html
+    * SNS: https://docs.aws.amazon.com/sns/latest/dg/sns-subscription-filter-policies.html
+
+    Open source AWS rule engine: https://github.com/aws/event-ruler
+    """
+    # TODO: test this conditional: https://coveralls.io/builds/66584026/source?filename=localstack%2Fservices%2Flambda_%2Fevent_source_listeners%2Futils.py#L25
+    if not event_pattern:
         return True
-    # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
-    filter_results = []
-    for key, value in filter_rule.items():
+    does_match_results = []
+    for key, value in event_pattern.items():
         # check if rule exists in event
-        record_value = (
-            record.get(key.lower(), record.get(key)) if isinstance(record, Dict) else None
-        )
-        append_record = False
-        if record_value is not None:
-            # check if filter rule value is a list (leaf of rule tree) or a dict (rescursively call function)
+        event_value = event.get(key) if isinstance(event, dict) else None
+        does_pattern_match = False
+        if event_value is not None:
+            # check if filter rule value is a list (leaf of rule tree) or a dict (recursively call function)
             if isinstance(value, list):
                 if len(value) > 0:
                     if isinstance(value[0], (str, int)):
-                        append_record = record_value in value
+                        does_pattern_match = event_value in value
                     if isinstance(value[0], dict):
-                        append_record = verify_dict_filter(record_value, value[0])
+                        does_pattern_match = verify_dict_filter(event_value, value[0])
                 else:
                     LOG.warning(f"Empty lambda filter: {key}")
             elif isinstance(value, dict):
-                append_record = filter_stream_record(value, record_value)
+                does_pattern_match = does_match_event(value, event_value)
         else:
             # special case 'exists'
             def _filter_rule_value_list(val):
@@ -62,69 +89,84 @@ def filter_stream_record(filter_rule: Dict[str, any], record: Dict[str, any]) ->
                 return True
 
             if isinstance(value, list) and len(value) > 0:
-                append_record = _filter_rule_value_list(value)
+                does_pattern_match = _filter_rule_value_list(value)
             elif isinstance(value, dict):
                 # special case 'exists' for S type, e.g. {"S": [{"exists": false}]}
                 # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial2.html
-                append_record = _filter_rule_value_dict(value)
+                does_pattern_match = _filter_rule_value_dict(value)
 
-        filter_results.append(append_record)
-    return all(filter_results)
+        does_match_results.append(does_pattern_match)
+    return all(does_match_results)
 
 
-def verify_dict_filter(record_value: any, dict_filter: Dict[str, any]) -> bool:
+def verify_dict_filter(record_value: any, dict_filter: dict[str, any]) -> bool:
     # https://docs.aws.amazon.com/lambda/latest/dg/invocation-eventfiltering.html#filtering-syntax
-    fits_filter = False
+    does_match_filter = False
     for key, filter_value in dict_filter.items():
-        if key.lower() == "anything-but":
-            fits_filter = record_value not in filter_value
-        elif key.lower() == "numeric":
-            fits_filter = parse_and_apply_numeric_filter(record_value, filter_value)
-        elif key.lower() == "exists":
-            fits_filter = bool(filter_value)  # exists means that the key exists in the event record
-        elif key.lower() == "prefix":
+        if key == "anything-but":
+            does_match_filter = record_value not in filter_value
+        elif key == "numeric":
+            does_match_filter = handle_numeric_conditions(record_value, filter_value)
+        elif key == "exists":
+            does_match_filter = bool(
+                filter_value
+            )  # exists means that the key exists in the event record
+        elif key == "prefix":
             if not isinstance(record_value, str):
                 LOG.warning(f"Record Value {record_value} does not seem to be a valid string.")
-            fits_filter = isinstance(record_value, str) and record_value.startswith(
+            does_match_filter = isinstance(record_value, str) and record_value.startswith(
                 str(filter_value)
             )
-
-        if fits_filter:
+        if does_match_filter:
             return True
-    return fits_filter
+
+    return does_match_filter
 
 
-def parse_and_apply_numeric_filter(
-    record_value: Dict, numeric_filter: List[Union[str, int]]
+def handle_numeric_conditions(
+    first_operand: int | float, conditions: list[str | int | float]
 ) -> bool:
-    if len(numeric_filter) % 2 > 0:
-        LOG.warning("Invalid numeric lambda filter given")
-        return True
+    """Implements numeric matching for a given list of conditions.
+    Example: { "numeric": [ ">", 0, "<=", 5 ] }
 
-    if not isinstance(record_value, (int, float)):
-        LOG.warning(f"Record {record_value} seem not to be a valid number")
-        return False
+    Numeric matching works with values that are JSON numbers.
+    It is limited to values between -5.0e9 and +5.0e9 inclusive, with 15 digits of precision,
+    or six digits to the right of the decimal point.
+    https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#filtering-numeric-matchinghttps://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#filtering-numeric-matching
+    """
+    # Invalid example for uneven list: { "numeric": [ ">", 0, "<" ] }
+    if len(conditions) % 2 > 0:
+        raise InvalidEventPatternException("Bad numeric range operator")
 
-    for idx in range(0, len(numeric_filter), 2):
+    if not isinstance(first_operand, (int, float)):
+        raise InvalidEventPatternException(
+            f"The value {first_operand} for the numeric comparison {conditions} is not a valid number"
+        )
+
+    for i in range(0, len(conditions), 2):
+        operator = conditions[i]
+        second_operand_str = conditions[i + 1]
         try:
-            if numeric_filter[idx] == ">" and not (record_value > float(numeric_filter[idx + 1])):
-                return False
-            if numeric_filter[idx] == ">=" and not (record_value >= float(numeric_filter[idx + 1])):
-                return False
-            if numeric_filter[idx] == "=" and not (record_value == float(numeric_filter[idx + 1])):
-                return False
-            if numeric_filter[idx] == "<" and not (record_value < float(numeric_filter[idx + 1])):
-                return False
-            if numeric_filter[idx] == "<=" and not (record_value <= float(numeric_filter[idx + 1])):
-                return False
+            second_operand = float(second_operand_str)
         except ValueError:
-            LOG.warning(
-                f"Could not convert filter value {numeric_filter[idx + 1]} to a valid number value for filtering"
-            )
+            raise InvalidEventPatternException(
+                f"Could not convert filter value {second_operand_str} to a valid number"
+            ) from ValueError
+
+        if operator == ">" and not (first_operand > second_operand):
+            return False
+        if operator == ">=" and not (first_operand >= second_operand):
+            return False
+        if operator == "=" and not (first_operand == second_operand):
+            return False
+        if operator == "<" and not (first_operand < second_operand):
+            return False
+        if operator == "<=" and not (first_operand <= second_operand):
+            return False
     return True
 
 
-def contains_list(filter: Dict) -> bool:
+def contains_list(filter: dict) -> bool:
     if isinstance(filter, dict):
         for key, value in filter.items():
             if isinstance(value, list) and len(value) > 0:
@@ -178,7 +220,7 @@ def event_source_arn_matches(mapped: str, searched: str) -> bool:
     return False
 
 
-def has_data_filter_criteria(filters: List[FilterCriteria]) -> bool:
+def has_data_filter_criteria(filters: list[FilterCriteria]) -> bool:
     for filter in filters:
         for rule in filter.get("Filters", []):
             parsed_pattern = json.loads(rule["Pattern"])

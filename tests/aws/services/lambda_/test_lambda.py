@@ -1,5 +1,6 @@
 """Tests for Lambda behavior and implicit functionality.
 Everything related to API operations goes into test_lambda_api.py instead."""
+
 import base64
 import json
 import logging
@@ -48,6 +49,9 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
 TEST_LAMBDA_PYTHON_ECHO_JSON_BODY = os.path.join(THIS_FOLDER, "functions/lambda_echo_json_body.py")
+TEST_LAMBDA_PYTHON_ECHO_STATUS_CODE = os.path.join(
+    THIS_FOLDER, "functions/lambda_echo_status_code.py"
+)
 TEST_LAMBDA_PYTHON_REQUEST_ID = os.path.join(THIS_FOLDER, "functions/lambda_request_id.py")
 TEST_LAMBDA_PYTHON_ECHO_VERSION_ENV = os.path.join(
     THIS_FOLDER, "functions/lambda_echo_version_env.py"
@@ -74,14 +78,8 @@ TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_int
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
 TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
 TEST_LAMBDA_NODEJS_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.js")
-TEST_LAMBDA_HELLO_WORLD = os.path.join(THIS_FOLDER, "functions/lambda_hello_world.py")
 TEST_LAMBDA_NODEJS_APIGW_INTEGRATION = os.path.join(THIS_FOLDER, "functions/apigw_integration.js")
 TEST_LAMBDA_NODEJS_APIGW_502 = os.path.join(THIS_FOLDER, "functions/apigw_502.js")
-TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions/golang/handler.zip")
-TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions/lambda_integration.rb")
-TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "functions/dotnetcore31/dotnetcore31.zip")
-TEST_LAMBDA_DOTNET6 = os.path.join(THIS_FOLDER, "functions/dotnet6/dotnet6.zip")
-TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions/custom-runtime")
 TEST_LAMBDA_HTTP_RUST = os.path.join(THIS_FOLDER, "functions/rust-lambda/function.zip")
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
     THIS_FOLDER, "functions/java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
@@ -116,9 +114,6 @@ TEST_LAMBDA_CUSTOM_RESPONSE_SIZE = os.path.join(THIS_FOLDER, "functions/lambda_r
 TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
     THIS_FOLDER, "functions/lambda_multiple_handlers.py"
 )
-
-TEST_EVENTS_SQS_RECEIVE_MESSAGE = os.path.join(THIS_FOLDER, "events/sqs-receive-message.json")
-TEST_EVENTS_APIGATEWAY_AWS_PROXY = os.path.join(THIS_FOLDER, "events/apigateway-aws-proxy.json")
 
 PYTHON_TEST_RUNTIMES = RUNTIMES_AGGREGATED["python"]
 NODE_TEST_RUNTIMES = RUNTIMES_AGGREGATED["nodejs"]
@@ -190,7 +185,7 @@ class TestLambdaBaseFeatures:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
         large_value = "test123456" * 100 * 1000 * 5
         payload = {"test": large_value}  # 5MB payload
@@ -210,7 +205,7 @@ class TestLambdaBaseFeatures:
         create_lambda_function(
             handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
             func_name=function_name,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
         response_size = 6 * 1024 * 1024  # actually + 100 is the upper limit
         payload = {"bytenum": response_size}  # 6MB response size
@@ -226,7 +221,7 @@ class TestLambdaBaseFeatures:
         create_lambda_function(
             handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
             func_name=function_name,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
         response_size = 7 * 1024 * 1024  # 7MB response size (i.e. over 6MB limit)
         payload = {"bytenum": response_size}
@@ -266,7 +261,7 @@ class TestLambdaBaseFeatures:
         create_lambda_function(
             handler_file=TEST_LAMBDA_CUSTOM_RESPONSE_SIZE,
             func_name=function_name,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
         response_size = 7 * 1024 * 1024  # 7MB response size (i.e. over 6MB limit)
         payload = {"bytenum": response_size}
@@ -285,7 +280,7 @@ class TestLambdaBaseFeatures:
         # create_response is the original create call response, even though the fixture waits until it's not pending
         create_response = create_lambda_function_aws(
             FunctionName=function_name,
-            Runtime=Runtime.python3_10,
+            Runtime=Runtime.python3_12,
             Handler="handler.handler",
             Role=lambda_su_role,
             Code={"ZipFile": zip_file},
@@ -329,7 +324,7 @@ class TestLambdaBaseFeatures:
         create_result = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ROLE,
             func_name=function_name,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
         # Example: arn:aws:iam::111111111111:role/lambda-autogenerated-d5da4d52
         create_role_resource = arns.extract_resource_from_arn(
@@ -366,7 +361,7 @@ class TestLambdaBaseFeatures:
         create_result = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_SLEEP_ENVIRONMENT,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         snapshot.match("create-result", create_result)
@@ -442,7 +437,7 @@ class TestLambdaBehavior:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             timeout=9,
             Architectures=[Architecture.x86_64],
         )
@@ -465,7 +460,7 @@ class TestLambdaBehavior:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             timeout=9,
             Architectures=[Architecture.arm64],
         )
@@ -480,14 +475,14 @@ class TestLambdaBehavior:
         monkeypatch.setattr(
             config,
             "LAMBDA_DOCKER_FLAGS",
-            "--ulimit nofile=1024:1024 --ulimit nproc=1024:1024 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
+            "--ulimit nofile=1024:1024 --ulimit nproc=742:742 --ulimit core=-1:-1 --ulimit stack=8388608:-1 --ulimit memlock=65536:65536",
         )
 
         func_name = f"test_lambda_ulimits_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_ULIMITS,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
@@ -508,7 +503,7 @@ class TestLambdaBehavior:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             Architectures=[non_native_architecture],
         )
 
@@ -519,8 +514,6 @@ class TestLambdaBehavior:
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..LoggingConfig",
-            "$..CreateFunctionResponse.LoggingConfig",
             "$..RuntimeVersionConfig.RuntimeVersionArn",
         ]
     )
@@ -606,7 +599,7 @@ class TestLambdaBehavior:
         create_result = create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_TIMEOUT_PYTHON,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )
@@ -643,7 +636,7 @@ class TestLambdaBehavior:
         create_result = create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_TIMEOUT_PYTHON,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=2,
         )
@@ -691,7 +684,7 @@ class TestLambdaBehavior:
         create_result = create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_TIMEOUT_ENV_PYTHON,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )
@@ -754,7 +747,6 @@ class TestLambdaBehavior:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..CreateFunctionResponse.LoggingConfig",
             # not set directly on init in lambda, but only on runtime processes
             "$..Payload.environment.AWS_ACCESS_KEY_ID",
             "$..Payload.environment.AWS_SECRET_ACCESS_KEY",
@@ -875,7 +867,7 @@ class TestLambdaURL:
         create_lambda_function(
             func_name=function_name,
             handler_file=handler_file,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         url_config = aws_client.lambda_.create_function_url_config(
@@ -932,7 +924,7 @@ class TestLambdaURL:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
-            runtime=Runtime.nodejs16_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_url.handler",
         )
 
@@ -994,7 +986,7 @@ class TestLambdaURL:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_PYTHON_ECHO_JSON_BODY, get_content=True),
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             handler="lambda_echo_json_body.handler",
         )
         url_config = aws_client.lambda_.create_function_url_config(
@@ -1088,7 +1080,7 @@ class TestLambdaURL:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
         get_fn_result = aws_client.lambda_.get_function(FunctionName=function_name)
         snapshot.match("get_fn_result", get_fn_result)
@@ -1133,6 +1125,81 @@ class TestLambdaURL:
             )
         snapshot.match("invoke_function_invalid_invoke_type", e.value.response)
 
+    @markers.aws.validated
+    def test_lambda_url_non_existing_url(self):
+        lambda_url_subdomain = "0123456789abcdefghijklmnopqrstuv.lambda-url.us-east-1"
+
+        if is_aws_cloud():
+            url = f"https://{lambda_url_subdomain}.on.aws"
+        else:
+            url = config.external_service_url(subdomains=lambda_url_subdomain)
+
+        response = requests.get(url)
+        assert response.text == '{"Message":null}'
+        assert response.status_code == 403
+        assert response.headers["Content-Type"] == "application/json"
+        assert response.headers["x-amzn-ErrorType"] == "AccessDeniedException"
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
+            "$..headers.x-forwarded-for",
+            "$..headers.x-amzn-trace-id",
+            "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
+        ]
+    )
+    @markers.aws.validated
+    def test_lambda_url_echo_http_fixture_default(
+        self, create_echo_http_server, snapshot, aws_client
+    ):
+        key_value_transform = [
+            "domain",
+            "origin",
+            "x-amzn-tls-cipher-suite",
+            "x-amzn-tls-version",
+            "x-amzn-trace-id",
+            "x-forwarded-for",
+            "x-forwarded-port",
+            "x-forwarded-proto",
+        ]
+        for key in key_value_transform:
+            snapshot.add_transformer(snapshot.transform.key_value(key))
+        echo_url = create_echo_http_server()
+        response = requests.post(
+            url=echo_url + "/path/1?q=query",
+            headers={
+                "content-type": "application/json",
+                "ExTrA-HeadErs": "With WeiRd CapS",
+                "user-agent": "test/echo",
+            },
+            json={"foo": "bar"},
+        )
+        snapshot.match("url_response", response.json())
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..content.headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
+            "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
+        ]
+    )
+    @markers.aws.validated
+    def test_lambda_url_echo_http_fixture_trim_x_headers(
+        self, create_echo_http_server, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("domain"))
+        snapshot.add_transformer(snapshot.transform.key_value("origin"))
+        echo_url = create_echo_http_server(trim_x_headers=True)
+        response = requests.post(
+            url=echo_url + "/path/1?q=query",
+            headers={
+                "content-type": "application/json",
+                "ExTrA-HeadErs": "With WeiRd CapS",
+                "user-agent": "test/echo",
+            },
+            json={"foo": "bar"},
+        )
+        snapshot.match("url_response", response.json())
+
 
 @pytest.mark.skipif(not is_aws_cloud(), reason="Not yet implemented")
 class TestLambdaPermissions:
@@ -1142,7 +1209,7 @@ class TestLambdaPermissions:
         create_lambda_function(
             func_name=function_name,
             zip_file=testutil.create_zip_file(TEST_LAMBDA_URL, get_content=True),
-            runtime=Runtime.nodejs18_x,
+            runtime=Runtime.nodejs20_x,
             handler="lambda_url.handler",
         )
         url_config = aws_client.lambda_.create_function_url_config(
@@ -1263,7 +1330,7 @@ class TestLambdaFeatures:
         creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
         snapshot.match("creation_response", creation_response)
         invocation_response = aws_client.lambda_.invoke(
@@ -1313,14 +1380,14 @@ class TestLambdaFeatures:
         zip_file = create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
         aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
         response = create_lambda_function_aws(
             FunctionName=function_name,
-            Runtime=Runtime.python3_10,
+            Runtime=Runtime.python3_12,
             Role=lambda_su_role,
             Publish=True,
             Handler="handler.handler",
@@ -1366,14 +1433,14 @@ class TestLambdaFeatures:
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
         aws_client.s3.upload_fileobj(BytesIO(zip_file), s3_bucket, bucket_key)
 
         # create lambda function
         create_response = create_lambda_function_aws(
             FunctionName=function_name,
-            Runtime=Runtime.python3_10,
+            Runtime=Runtime.python3_12,
             Handler="handler.handler",
             Role=lambda_su_role,
             Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
@@ -1399,7 +1466,7 @@ class TestLambdaFeatures:
             func_name=function_name,
             handler_file=TEST_LAMBDA_INTEGRATION_NODEJS,
             handler="lambda_integration.handler",
-            runtime=Runtime.nodejs16_x,
+            runtime=Runtime.nodejs20_x,
         )
         snapshot.match("creation", creation_response)
         ctx = {
@@ -1441,7 +1508,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_RUNTIME_ERROR,
             handler="lambda_runtime_error.handler",
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         result = aws_client.lambda_.invoke(
@@ -1462,7 +1529,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_RUNTIME_EXIT,
             handler="lambda_runtime_exit.handler",
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         result = aws_client.lambda_.invoke(
@@ -1483,7 +1550,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_RUNTIME_EXIT_SEGFAULT,
             handler="lambda_runtime_exit_segfault.handler",
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         result = aws_client.lambda_.invoke(
@@ -1501,7 +1568,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_HANDLER_ERROR,
             handler="lambda_handler_error.handler",
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         result = aws_client.lambda_.invoke(
@@ -1522,7 +1589,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_HANDLER_EXIT,
             handler="lambda_handler_exit.handler",
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         result = aws_client.lambda_.invoke(
@@ -1543,7 +1610,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             handler="lambda_echo.handler",
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             envvars={"AWS_LAMBDA_EXEC_WRAPPER": "/idontexist.sh"},
         )
 
@@ -1569,7 +1636,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             handler="lambda_echo.handler",
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         client_config = Config(
@@ -1599,7 +1666,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             handler="lambda_echo.handler",
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         client_config = Config(
@@ -1643,7 +1710,7 @@ class TestLambdaErrors:
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             handler="lambda_echo.handler",
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         client_config = Config(
@@ -1669,7 +1736,7 @@ class TestLambdaCleanup:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_SLEEP_ENVIRONMENT,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             Timeout=30,
         )
 
@@ -1738,7 +1805,7 @@ class TestLambdaMultiAccounts:
         func_arn = create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )["CreateFunctionResponse"]["FunctionArn"]
 
         layer_name = f"layer-{short_uid()}"
@@ -1858,7 +1925,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         default_concurrency_result = aws_client.lambda_.get_function_concurrency(
@@ -1899,7 +1966,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
         )
 
         # reserved concurrency
@@ -1974,7 +2041,7 @@ class TestLambdaConcurrency:
         create_result = create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=2,
         )
@@ -2105,7 +2172,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
         )
 
@@ -2151,7 +2218,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             timeout=10,
         )
 
@@ -2219,7 +2286,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=20,
         )
@@ -2299,7 +2366,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=20,
         )
@@ -2355,7 +2422,7 @@ class TestLambdaConcurrency:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_INVOCATION_TYPE,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
         )
 
@@ -2437,7 +2504,7 @@ class TestLambdaVersions:
             Code={"ZipFile": zip_file_v1},
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_10,
+            Runtime=Runtime.python3_12,
             Description="No version :(",
         )
         snapshot.match("create_response", create_response)
@@ -2499,7 +2566,6 @@ class TestLambdaVersions:
         )
         snapshot.match("invocation_result_v1_end", invocation_result_v1)
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..LoggingConfig"])
     @markers.aws.validated
     def test_lambda_handler_update(self, aws_client, create_lambda_function, snapshot):
         func_name = f"test_lambda_{short_uid()}"
@@ -2555,7 +2621,7 @@ class TestLambdaAliases:
             Code={"ZipFile": zip_file_v1},
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_10,
+            Runtime=Runtime.python3_12,
             Description="No version :(",
         )
         snapshot.match("create_response", create_response)
@@ -2642,7 +2708,7 @@ class TestLambdaAliases:
             Code={"ZipFile": zip_file_v1},
             PackageType="Zip",
             Role=lambda_su_role,
-            Runtime=Runtime.python3_10,
+            Runtime=Runtime.python3_12,
             Description="First version :)",
             Publish=True,
         )
@@ -2699,7 +2765,7 @@ class TestRequestIdHandling:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_PYTHON_REQUEST_ID,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
         )
 
@@ -2741,7 +2807,7 @@ class TestRequestIdHandling:
         create_lambda_function(
             func_name=fn_name,
             handler_file=handler_file,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
         )
 
@@ -2800,7 +2866,7 @@ class TestRequestIdHandling:
         create_lambda_function(
             func_name=func_name,
             handler_file=TEST_LAMBDA_CONTEXT_REQID,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
         )
 

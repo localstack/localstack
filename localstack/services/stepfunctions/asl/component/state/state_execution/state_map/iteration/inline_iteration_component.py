@@ -22,11 +22,11 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     IterationWorker,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.job import (
-    Job,
+    JobClosed,
     JobPool,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
-    MaxConcurrency,
+    DEFAULT_MAX_CONCURRENCY_VALUE,
 )
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -73,8 +73,7 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
         self._job_pool = None
 
     @abc.abstractmethod
-    def _create_worker(self, env: Environment) -> IterationWorker:
-        ...
+    def _create_worker(self, env: Environment) -> IterationWorker: ...
 
     def _launch_worker(self, env: Environment) -> IterationWorker:
         worker = self._create_worker(env=env)
@@ -100,7 +99,9 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
         )
 
         number_of_workers = (
-            len(input_items) if max_concurrency == MaxConcurrency.DEFAULT else max_concurrency
+            len(input_items)
+            if max_concurrency == DEFAULT_MAX_CONCURRENCY_VALUE
+            else max_concurrency
         )
         for _ in range(number_of_workers):
             self._launch_worker(env=env)
@@ -111,7 +112,7 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
         if worker_exception is not None:
             raise worker_exception
 
-        closed_jobs: list[Job] = self._job_pool.get_closed_jobs()
+        closed_jobs: list[JobClosed] = self._job_pool.get_closed_jobs()
         outputs: list[Any] = [closed_job.job_output for closed_job in closed_jobs]
 
         env.stack.append(outputs)

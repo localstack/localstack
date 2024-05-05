@@ -5,10 +5,13 @@ from localstack.utils.strings import short_uid, to_bytes
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..tags"])
 def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_client):
-    snapshot.add_transformer(snapshot.transform.key_value("id"))
-    snapshot.add_transformer(snapshot.transform.key_value("name"))
-    snapshot.add_transformer(snapshot.transform.key_value("aws:cloudformation:stack-id"))
-    snapshot.add_transformer(snapshot.transform.key_value("aws:cloudformation:stack-name"))
+    snapshot.add_transformers_list(
+        [
+            *snapshot.transform.apigateway_api(),
+            snapshot.transform.key_value("aws:cloudformation:stack-id"),
+            snapshot.transform.key_value("aws:cloudformation:stack-name"),
+        ]
+    )
 
     # put API spec to S3
     api_spec = """
@@ -52,3 +55,6 @@ def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_clien
     result = aws_client.apigateway.get_rest_api(restApiId=api_id)
     assert result
     snapshot.match("api-details", result)
+
+    resources = aws_client.apigateway.get_resources(restApiId=api_id)
+    snapshot.match("api-resources", resources)

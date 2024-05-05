@@ -1,4 +1,5 @@
 """Utils to process AWS requests as a client."""
+
 import io
 import logging
 from datetime import datetime

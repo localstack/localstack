@@ -21,6 +21,15 @@ class Job:
         self.job_input = job_input
         self.job_output = None
 
+
+class JobClosed:
+    job_index: Final[int]
+    job_output: Optional[Any]
+
+    def __init__(self, job_index: int, job_output: Optional[Any]):
+        self.job_index = job_index
+        self.job_output = job_output
+
     def __hash__(self):
         return hash(self.job_index)
 
@@ -32,7 +41,7 @@ class JobPool:
 
     _jobs_number: Final[int]
     _open_jobs: Final[list[Job]]
-    _closed_jobs: Final[set[Job]]
+    _closed_jobs: Final[set[JobClosed]]
 
     def __init__(self, job_program: Program, job_inputs: list[Any]):
         self._mutex = threading.Lock()
@@ -59,14 +68,14 @@ class JobPool:
     def _is_terminated(self) -> bool:
         return len(self._closed_jobs) == self._jobs_number or self._worker_exception is not None
 
-    def _notify_on_termination(self):
+    def _notify_on_termination(self) -> None:
         if self._is_terminated():
             self._termination_event.set()
 
     def get_worker_exception(self) -> Optional[Exception]:
         return self._worker_exception
 
-    def close_job(self, job: Job):
+    def close_job(self, job: Job) -> None:
         with self._mutex:
             if self._is_terminated():
                 return
@@ -79,15 +88,15 @@ class JobPool:
             if isinstance(job.job_output, Exception):
                 self._worker_exception = job.job_output
             else:
-                self._closed_jobs.add(job)
+                self._closed_jobs.add(JobClosed(job_index=job.job_index, job_output=job.job_output))
 
             self._notify_on_termination()
 
-    def get_closed_jobs(self) -> list[Job]:
+    def get_closed_jobs(self) -> list[JobClosed]:
         with self._mutex:
             closed_jobs = copy.deepcopy(self._closed_jobs)
         return sorted(closed_jobs, key=lambda closed_job: closed_job.job_index)
 
-    def await_jobs(self):
+    def await_jobs(self) -> None:
         if not self._is_terminated():
             self._termination_event.wait()

@@ -3,10 +3,10 @@
     "last_validated_date": "2024-02-19T08:55:12+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
-    "last_validated_date": "2023-03-01T22:36:31+00:00"
+    "last_validated_date": "2024-04-15T22:59:53+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
-    "last_validated_date": "2023-06-02T16:26:01+00:00"
+    "last_validated_date": "2024-04-15T22:59:17+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
     "last_validated_date": "2024-02-21T12:54:34+00:00"
@@ -19,5 +19,8 @@
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
     "last_validated_date": "2023-07-06T19:01:08+00:00"
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_usage_plan": {
+    "last_validated_date": "2024-03-20T22:33:14+00:00"
   }
 }

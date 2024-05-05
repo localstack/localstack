@@ -63,7 +63,7 @@ commands:
                   export TEST_AWS_ACCOUNT_ID=$(LC_ALL=C tr -dc '0-9' < /dev/urandom | fold -w 12 | head -n 1)
                   export TEST_AWS_ACCESS_KEY_ID=$TEST_AWS_ACCOUNT_ID
                   # Set TEST_AWS_REGION_NAME to a random AWS region other than us-east-1
-                  export AWS_REGIONS=("me-south-1" "me-central-1" "sa-east-1" "us-east-2" "us-west-1" "us-west-2" "eu-west-1" "eu-west-2" "eu-west-3" "ap-east-1" "ap-south-2" "ap-south-1" "ap-southeast-1" "ap-southeast-2" "ap-northeast-1" "ap-northeast-2" "ap-northeast-3" "sa-east-1" "af-south-1" "ca-central-1" "ca-west-1" "eu-central-1" "eu-south-1" "eu-south-2"	"eu-north-1" "eu-central-2" "il-central-1" )
+                  export AWS_REGIONS=("us-east-2" "us-west-1" "us-west-2" "ap-southeast-2" "ap-northeast-1" "eu-central-1" "eu-west-1")
                   export TEST_AWS_REGION_NAME=${AWS_REGIONS[$RANDOM % ${#AWS_REGIONS[@]}]}
                   echo "export TEST_AWS_REGION_NAME=${TEST_AWS_REGION_NAME}" >> $BASH_ENV
                   echo "export TEST_AWS_ACCESS_KEY_ID=${TEST_AWS_ACCESS_KEY_ID}" >> $BASH_ENV
@@ -260,6 +260,32 @@ jobs:
           command: |
             COVERAGE_FILE="target/coverage/.coverage.cloudwatchV2.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v2.xml -o junit_suite_name='cloudwatch_v2'" \
+            make test-coverage
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-events-v2-provider:
+    executor: ubuntu-machine-amd64
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - prepare-pytest-tinybird
+      - prepare-account-region-randomization
+      - run:
+          name: Test EventBridge v2 provider
+          environment:
+            PROVIDER_OVERRIDE_EVENTS: "v2"
+            TEST_PATH: "tests/aws/services/events/"
+            COVERAGE_ARGS: "-p"
+          command: |
+            COVERAGE_FILE="target/coverage/.coverage.eventsV2.${CIRCLE_NODE_INDEX}" \
+            PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/events_v2.xml -o junit_suite_name='events_v2'" \
             make test-coverage
       - persist_to_workspace:
           root:
@@ -480,12 +506,18 @@ jobs:
       - run:
           name: Upload test metrics and implemented coverage data to tinybird
           command: |
-            source .venv/bin/activate
-            mkdir parity_metrics && mv target/metric_reports/metric-report-raw-data-*amd64*.csv parity_metrics
-            METRIC_REPORT_DIR_PATH=parity_metrics \
-            IMPLEMENTATION_COVERAGE_FILE=scripts/implementation_coverage_full.csv \
-            SOURCE_TYPE=community \
-            python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
+            # check if a fork-only env var is set (https://circleci.com/docs/variables/)
+            if [ -z "$CIRCLE_PR_REPONAME" ]; then
+              source .venv/bin/activate
+              mkdir parity_metrics && mv target/metric_reports/metric-report-raw-data-*amd64*.csv parity_metrics
+              METRIC_REPORT_DIR_PATH=parity_metrics \
+              IMPLEMENTATION_COVERAGE_FILE=scripts/implementation_coverage_full.csv \
+              SOURCE_TYPE=community \
+              python -m scripts.tinybird.upload_raw_test_metrics_and_coverage
+            else
+              echo "Skipping parity reporting to tinybird (no credentials, running on fork)..."
+            fi
+
       - run:
           name: Create Coverage Diff (Code Coverage)
           # pycobertura diff will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
@@ -609,14 +641,14 @@ jobs:
             END_TIME=$(date +%s)
 
             if << pipeline.parameters.randomize-aws-credentials >> ; then
-              echo "export TINYBIRD_WORKFLOW=tests_circleci_ma_mr" >> $BASH_ENV
+              TINYBIRD_WORKFLOW=tests_circleci_ma_mr
             else
-              echo "export TINYBIRD_WORKFLOW=tests_circleci" >> $BASH_ENV
+              TINYBIRD_WORKFLOW=tests_circleci
             fi
 
             # Build the payload
             echo '{"workflow": "'$TINYBIRD_WORKFLOW'", "attempt": 1, "run_id": "'$CIRCLE_WORKFLOW_ID'", "start": '$START_TIME', "end": '$END_TIME', "commit": "'$CIRCLE_SHA1'", "branch": "'$CIRCLE_BRANCH'", "repository": "'$CIRCLE_PROJECT_USERNAME'/'$CIRCLE_PROJECT_REPONAME'", "outcome": "'$OUTCOME'", "workflow_url": "'$CIRCLE_BUILD_URL'"}' > stats.json
-            echo 'Sending: '$(cat stats/stats.json)
+            echo 'Sending: '$(cat stats.json)
 
             # Send the data to Tinybird
             curl -X POST "https://api.tinybird.co/v0/events?name=ci_workflows" -H "Authorization: Bearer $TINYBIRD_CI_TOKEN" -d @stats.json
@@ -650,6 +682,10 @@ workflows:
             - preflight
             - test-selection
       - itest-cloudwatch-v2-provider:
+          requires:
+            - preflight
+            - test-selection
+      - itest-events-v2-provider:
           requires:
             - preflight
             - test-selection
@@ -700,6 +736,7 @@ workflows:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v2-provider
+            - itest-events-v2-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64
@@ -713,6 +750,7 @@ workflows:
             - itest-sfn-legacy-provider
             - itest-s3-v2-legacy-provider
             - itest-cloudwatch-v2-provider
+            - itest-events-v2-provider
             - acceptance-tests
             - docker-test-amd64
             - docker-test-arm64

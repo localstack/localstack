@@ -33,7 +33,11 @@ from localstack.aws.api.kms import (
     KMSInvalidSignatureException,
     MacAlgorithmSpec,
     MessageType,
+    MultiRegionConfiguration,
+    MultiRegionKey,
+    MultiRegionKeyType,
     OriginType,
+    ReplicateKeyRequest,
     SigningAlgorithmSpec,
     UnsupportedOperationException,
 )
@@ -103,6 +107,11 @@ RESERVED_ALIASES = [
 # list of key names that should be skipped when serializing the encryption context
 IGNORED_CONTEXT_KEYS = ["aws-crypto-public-key"]
 
+# special tag name to allow specifying a custom ID for created keys
+TAG_KEY_CUSTOM_ID = "_custom_id_"
+# special tag name to allow specifying a custom key material for created keys
+TAG_KEY_CUSTOM_KEY_MATERIAL = "_custom_key_material_"
+
 
 def _serialize_ciphertext_blob(ciphertext: Ciphertext) -> bytes:
     header = struct.pack(
@@ -161,14 +170,14 @@ class KmsCryptoKey:
     key_material: bytes
     key_spec: str
 
-    def __init__(self, key_spec: str):
+    def __init__(self, key_spec: str, key_material: Optional[bytes] = None):
         self.private_key = None
         self.public_key = None
         # Technically, key_material, being a symmetric encryption key, is only relevant for
         #   key_spec == SYMMETRIC_DEFAULT.
         # But LocalStack uses symmetric encryption with this key_material even for other specs. Asymmetric keys are
         # generated, but are not actually used for encryption. Signing is different.
-        self.key_material = os.urandom(SYMMETRIC_DEFAULT_MATERIAL_LENGTH)
+        self.key_material = key_material or os.urandom(SYMMETRIC_DEFAULT_MATERIAL_LENGTH)
         self.key_spec = key_spec
 
         if key_spec == "SYMMETRIC_DEFAULT":
@@ -189,7 +198,9 @@ class KmsCryptoKey:
                     f"ECC_SECG_P256K1, RSA_4096, SYMMETRIC_DEFAULT, HMAC_256, HMAC_224, HMAC_512]"
                 )
             minimum_length, maximum_length = HMAC_RANGE_KEY_LENGTHS.get(key_spec)
-            self.key_material = os.urandom(random.randint(minimum_length, maximum_length))
+            self.key_material = key_material or os.urandom(
+                random.randint(minimum_length, maximum_length)
+            )
             return
         else:
             # We do not support SM2 - asymmetric keys both suitable for ENCRYPT_DECRYPT and SIGN_VERIFY,
@@ -239,8 +250,7 @@ class KmsKey:
         region: str = None,
     ):
         create_key_request = create_key_request or CreateKeyRequest()
-        self._populate_metadata(create_key_request, account_id, region)
-        self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"))
+
         # Please keep in mind that tags of a key could be present in the request, they are not a part of metadata. At
         # least in the sense of DescribeKey not returning them with the rest of the metadata. Instead, tags are more
         # like aliases:
@@ -254,6 +264,15 @@ class KmsKey:
         # "Automatic key rotation is disabled by default on customer managed keys but authorized users can enable and
         # disable it."
         self.is_key_rotation_enabled = False
+
+        self._populate_metadata(create_key_request, account_id, region)
+        custom_key_material = None
+        if TAG_KEY_CUSTOM_KEY_MATERIAL in self.tags:
+            # check if the _custom_key_material_ tag is specified, to use a custom key material for this key
+            custom_key_material = base64.b64decode(self.tags[TAG_KEY_CUSTOM_KEY_MATERIAL])
+            # remove the _custom_key_material_ tag from the tags to not readily expose the custom key material
+            del self.tags[TAG_KEY_CUSTOM_KEY_MATERIAL]
+        self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"), custom_key_material)
 
     def calculate_and_set_arn(self, account_id, region):
         self.metadata["Arn"] = kms_key_arn(self.metadata.get("KeyId"), account_id, region)
@@ -326,6 +345,34 @@ class KmsKey:
         except InvalidSignature:
             # AWS itself raises this exception without any additional message.
             raise KMSInvalidSignatureException()
+
+    # This method gets called when a key is replicated to another region. It's meant to populate the required metadata
+    # fields in a new replica key.
+    def replicate_metadata(
+        self, replicate_key_request: ReplicateKeyRequest, account_id: str, replica_region: str
+    ) -> None:
+        self.metadata["Description"] = replicate_key_request.get("Description") or ""
+        primary_key_arn = self.metadata["Arn"]
+        # Multi region keys have the same key ID for all replicas, but ARNs differ, as they include actual regions of
+        # replicas.
+        self.calculate_and_set_arn(account_id, replica_region)
+
+        current_replica_keys = self.metadata.get("MultiRegionConfiguration", {}).get(
+            "ReplicaKeys", []
+        )
+        current_replica_keys.append(MultiRegionKey(Arn=self.metadata["Arn"], Region=replica_region))
+        primary_key_region = (
+            self.metadata.get("MultiRegionConfiguration", {}).get("PrimaryKey", {}).get("Region")
+        )
+
+        self.metadata["MultiRegionConfiguration"] = MultiRegionConfiguration(
+            MultiRegionKeyType=MultiRegionKeyType.REPLICA,
+            PrimaryKey=MultiRegionKey(
+                Arn=primary_key_arn,
+                Region=primary_key_region,
+            ),
+            ReplicaKeys=current_replica_keys,
+        )
 
     def _get_hmac_context(self, mac_algorithm: MacAlgorithmSpec) -> hmac.HMAC:
         if mac_algorithm == "HMAC_SHA_224":
@@ -431,11 +478,15 @@ class KmsKey:
             if create_key_request.get("Origin") != OriginType.EXTERNAL
             else KeyState.PendingImport
         )
-        # https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html
-        # "Notice that multi-Region keys have a distinctive key ID that begins with mrk-. You can use the mrk- prefix to
-        # identify MRKs programmatically."
-        # The ID for MultiRegion keys also do not have dashes.
-        if self.metadata.get("MultiRegion"):
+
+        if TAG_KEY_CUSTOM_ID in self.tags:
+            # check if the _custom_id_ tag is specified, to set a user-defined KeyId for this key
+            self.metadata["KeyId"] = self.tags[TAG_KEY_CUSTOM_ID].strip()
+        elif self.metadata.get("MultiRegion"):
+            # https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html
+            # "Notice that multi-Region keys have a distinctive key ID that begins with mrk-. You can use the mrk- prefix to
+            # identify MRKs programmatically."
+            # The ID for MultiRegion keys also do not have dashes.
             self.metadata["KeyId"] = "mrk-" + str(uuid.uuid4().hex)
         else:
             self.metadata["KeyId"] = str(uuid.uuid4())
@@ -448,6 +499,13 @@ class KmsKey:
             self.metadata.get("KeyUsage"), self.metadata.get("KeySpec")
         )
         self._populate_mac_algorithms(self.metadata.get("KeyUsage"), self.metadata.get("KeySpec"))
+
+        if self.metadata["MultiRegion"]:
+            self.metadata["MultiRegionConfiguration"] = MultiRegionConfiguration(
+                MultiRegionKeyType=MultiRegionKeyType.PRIMARY,
+                PrimaryKey=MultiRegionKey(Arn=self.metadata["Arn"], Region=region),
+                ReplicaKeys=[],
+            )
 
     def add_tags(self, tags: List) -> None:
         # Just in case we get None from somewhere.

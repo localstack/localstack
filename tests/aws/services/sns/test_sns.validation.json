@@ -2,6 +2,9 @@
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_exists_filter_policy": {
     "last_validated_date": "2023-11-09T20:04:02+00:00"
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_exists_filter_policy_attributes_array": {
+    "last_validated_date": "2024-04-17T18:10:45+00:00"
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy": {
     "last_validated_date": "2024-01-25T18:07:57+00:00"
   },
@@ -13,6 +16,12 @@
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body[True]": {
     "last_validated_date": "2023-11-09T19:58:29+00:00"
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_attributes": {
+    "last_validated_date": "2024-04-17T21:33:09+00:00"
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_array_of_object_attributes": {
+    "last_validated_date": "2024-04-17T21:32:40+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSFilter::test_filter_policy_on_message_body_dot_attribute": {
     "last_validated_date": "2023-11-09T17:50:59+00:00"
@@ -78,7 +87,7 @@
     "last_validated_date": "2023-08-24T22:20:07+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_create_subscriptions_with_attributes": {
-    "last_validated_date": "2023-08-24T21:27:53+00:00"
+    "last_validated_date": "2024-03-29T19:44:42+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_list_subscriptions": {
     "last_validated_date": "2023-08-25T14:23:53+00:00"
@@ -105,7 +114,7 @@
     "last_validated_date": "2023-10-20T10:52:36+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_validate_set_sub_attributes": {
-    "last_validated_date": "2023-08-24T21:27:58+00:00"
+    "last_validated_date": "2024-03-29T19:30:23+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_subscribe_external_http_endpoint[False]": {
     "last_validated_date": "2023-10-11T22:47:29+00:00"

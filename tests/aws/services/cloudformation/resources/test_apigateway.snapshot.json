@@ -66,7 +66,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
-    "recorded-date": "01-03-2023, 23:36:31",
+    "recorded-date": "15-04-2024, 22:59:53",
     "recorded-content": {
       "rest-api": {
         "apiKeySource": "HEADER",
@@ -93,6 +93,7 @@
           ],
           "Version": "2012-10-17"
         },
+        "rootResourceId": "<root-resource-id:1>",
         "tags": {
           "aws:cloudformation:logical-id": "MyApi",
           "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
@@ -106,7 +107,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
-    "recorded-date": "02-06-2023, 18:26:01",
+    "recorded-date": "15-04-2024, 22:59:18",
     "recorded-content": {
       "rest-api": {
         "apiKeySource": "HEADER",
@@ -119,6 +120,7 @@
         },
         "id": "<id:1>",
         "name": "<name:1>",
+        "rootResourceId": "<id:2>",
         "tags": {
           "aws:cloudformation:logical-id": "ApiGatewayRestApi",
           "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/stack-name/<resource:1>",
@@ -520,6 +522,51 @@
             "statusCode": "200"
           }
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_usage_plan": {
+    "recorded-date": "20-03-2024, 22:33:14",
+    "recorded-content": {
+      "usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "<stage:1>"
+          }
+        ],
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 5000,
+          "offset": 0,
+          "period": "MONTH"
+        },
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-usage-plan": {
+        "apiStages": [
+          {
+            "apiId": "<api-id:1>",
+            "stage": "<stage:1>"
+          }
+        ],
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "quota": {
+          "limit": 7000,
+          "offset": 0,
+          "period": "MONTH"
+        },
+        "tags": {},
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -105,10 +105,10 @@
 /tests/aws/services/acm/ @alexrashed
 
 # apigateway
-/localstack/aws/api/apigateway/ @bentsku
-/localstack/services/apigateway/ @bentsku
-/tests/aws/services/apigateway/ @bentsku
-/tests/unit/test_apigateway.py @bentsku
+/localstack/aws/api/apigateway/ @bentsku @cloutierMat
+/localstack/services/apigateway/ @bentsku @cloutierMat
+/tests/aws/services/apigateway/ @bentsku @cloutierMat
+/tests/unit/test_apigateway.py @bentsku @cloutierMat
 
 # cloudformation
 /localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw @Morijarti
@@ -130,9 +130,9 @@
 /tests/unit/test_dynamodb.py @viren-nadkarni @giograno
 
 # ec2
-/localstack/aws/api/ec2/ @viren-nadkarni
-/localstack/services/ec2/ @viren-nadkarni
-/tests/aws/services/ec2/ @viren-nadkarni
+/localstack/aws/api/ec2/ @viren-nadkarni @macnev2013
+/localstack/services/ec2/ @viren-nadkarni @macnev2013
+/tests/aws/services/ec2/ @viren-nadkarni @macnev2013
 
 # ecr
 /localstack/services/ecr/ @dfangl
@@ -192,21 +192,21 @@
 /tests/aws/services/route53resolver/ @macnev2013 @sannya-singal
 
 # s3
-/localstack/aws/api/s3/ @bentsku @macnev2013
-/localstack/services/s3/ @bentsku @macnev2013
-/tests/aws/services/s3/ @bentsku @macnev2013
-/tests/unit/test_s3.py @bentsku @macnev2013
-/tests/unit/services/s3/ @bentsku @macnev2013
+/localstack/aws/api/s3/ @bentsku
+/localstack/services/s3/ @bentsku
+/tests/aws/services/s3/ @bentsku
+/tests/unit/test_s3.py @bentsku
+/tests/unit/services/s3/ @bentsku
 
 # scheduler
-/localstack/aws/api/scheduler/ @viren-nadkarni
-/localstack/services/scheduler/ @viren-nadkarni
-/tests/aws/services/scheduler/ @viren-nadkarni
+/localstack/aws/api/scheduler/ @joe4dev
+/localstack/services/scheduler/ @joe4dev
+/tests/aws/services/scheduler/ @joe4dev
 
 # secretsmanager
-/localstack/aws/api/secretsmanager/ @dominikschubert @MEPalma
-/localstack/services/secretsmanager/ @dominikschubert @MEPalma
-/tests/aws/services/secretsmanager/ @dominikschubert @MEPalma
+/localstack/aws/api/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
+/localstack/services/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
+/tests/aws/services/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
 
 # ses
 /localstack/aws/api/ses/ @viren-nadkarni

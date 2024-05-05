@@ -4,6 +4,7 @@ from collections import OrderedDict
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
+from localstack.aws.api.lambda_ import Runtime
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -114,6 +115,63 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    @pytest.mark.parametrize("max_concurrency_value", [dict(), "NoNumber", 0, 1])
+    def test_max_concurrency_path(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        max_concurrency_value,
+    ):
+        # TODO: Investigate AWS's behaviour with stringified integer values such as "1", as when passed as
+        #  execution inputs these are casted to integers. Future efforts should record more snapshot tests to assert
+        #  the behaviour of such stringification on execution inputs
+        template = ST.load_sfn_template(ST.MAX_CONCURRENCY)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            {"MaxConcurrencyValue": max_concurrency_value, "Values": ["HelloWorld"]}
+        )
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS consistently appears to stall after startup when a negative MaxConcurrency value is given.
+            #  Instead, the Provider V2 raises a State.Runtime exception and terminates. In the future we should
+            #  reevaluate AWS's behaviour in these circumstances and choose whether too also 'hang'.
+            "$..events"
+        ]
+    )
+    def test_max_concurrency_path_negative(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAX_CONCURRENCY)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"MaxConcurrencyValue": -1, "Values": ["HelloWorld"]})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     def test_parallel_state_order(
         self,
         aws_client,
@@ -147,6 +205,37 @@ class TestBaseScenarios:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS appears to have changed json encoding to include spaces after separators,
+            #  other v2 test suite snapshots need to be re-recorded
+            "$..events..stateEnteredEventDetails.input",
+            "$..events..stateExitedEventDetails.output",
+            "$..events..executionSucceededEventDetails.output",
+        ]
+    )
+    def test_parallel_state_nested(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        sfn_snapshot.add_transformer(SfnNoneRecursiveParallelTransformer())
+        template = ST.load_sfn_template(ST.PARALLEL_NESTED_NESTED)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps([[1, 2, 3], [4, 5, 6]])
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -210,6 +299,39 @@ class TestBaseScenarios:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: AWS appears to have changed json encoding to include spaces after separators,
+            #  other v2 test suite snapshots need to be re-recorded
+            "$..events..stateEnteredEventDetails.input"
+        ]
+    )
+    def test_map_state_nested(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_NESTED)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps(
+            [
+                [1, 2, 3],
+                [4, 5, 6],
+            ]
+        )
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -918,9 +1040,9 @@ class TestBaseScenarios:
         output_norm.sort(key=lambda value: value["Key"])
         output_norm_str = json.dumps(output_norm)
         execution_history["events"][-2]["stateExitedEventDetails"]["output"] = output_norm_str
-        execution_history["events"][-1]["executionSucceededEventDetails"][
-            "output"
-        ] = output_norm_str
+        execution_history["events"][-1]["executionSucceededEventDetails"]["output"] = (
+            output_norm_str
+        )
 
         sfn_snapshot.match("get_execution_history", execution_history)
 
@@ -952,6 +1074,84 @@ class TestBaseScenarios:
         definition = json.dumps(template)
 
         exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "max_items_value",
+        [0, 2, 100_000_000],  # Linter on creation filters for valid input integers (0 - 100000000).
+    )
+    def test_map_item_reader_csv_max_items(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        max_items_value,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.csv"
+        csv_file = (
+            "Col1,Col2\n" "Value1,Value2\n" "Value3,Value4\n" "Value5,Value6\n" "Value7,Value8\n"
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_MAX_ITEMS)
+        template["States"]["MapState"]["ItemReader"]["ReaderConfig"]["MaxItems"] = max_items_value
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "max_items_value", [-1, 0, 1.5, 2, 100_000_000, 100_000_001]
+    )  # The Distributed Map state stops reading items beyond 100_000_000.
+    def test_map_item_reader_csv_max_items_paths(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        max_items_value,
+    ):
+        if max_items_value == 1.5:
+            pytest.skip(
+                "Validation of non integer max items value is performed at a higher depth than that of negative "
+                "values in AWS StepFunctions. The SFN v2 interpreter runs this check at the same depth."
+            )
+
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.csv"
+        csv_file = (
+            "Col1,Col2\n" "Value1,Value2\n" "Value3,Value4\n" "Value5,Value6\n" "Value7,Value8\n"
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=csv_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_CSV_MAX_ITEMS_PATH)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key, "MaxItems": max_items_value})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
@@ -1214,6 +1414,40 @@ class TestBaseScenarios:
             exec_input,
         )
 
+    @markers.aws.validated
+    def test_map_item_reader_base_json_max_items(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        key = "file.json"
+        json_file = json.dumps(
+            [
+                {"verdict": "true", "statement_date": "6/11/2008", "statement_source": "speech"},
+            ]
+            * 3
+        )
+        aws_client.s3.put_object(Bucket=bucket_name, Key=key, Body=json_file)
+
+        template = ST.load_sfn_template(ST.MAP_ITEM_READER_BASE_JSON_MAX_ITEMS)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": key})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @markers.snapshot.skip_snapshot_verify(paths=["$..Cause"])
     @markers.aws.validated
     def test_lambda_empty_retry(
@@ -1425,6 +1659,36 @@ class TestBaseScenarios:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_retry_interval_features_max_attempts_zero(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_name = f"lambda_func_{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=EHT.LAMBDA_FUNC_RAISE_EXCEPTION,
+            runtime=Runtime.python3_12,
+        )
+
+        template = ST.load_sfn_template(ST.RETRY_INTERVAL_FEATURES_MAX_ATTEMPTS_ZERO)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"FunctionName": function_name})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,

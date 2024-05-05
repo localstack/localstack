@@ -19,16 +19,19 @@ TEST_IMPORT_PETS = os.path.join(THIS_FOLDER, "../../files/pets.json")
     [TEST_IMPORT_PETSTORE_SWAGGER, TEST_IMPORT_PETS],
     ids=["TEST_IMPORT_PETSTORE_SWAGGER", "TEST_IMPORT_PETS"],
 )
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..body.host",
-    ]
-)
-def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file):
+@markers.snapshot.skip_snapshot_verify(paths=["$..body.host"])
+def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file, region_name):
     snapshot.add_transformer(
-        snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
+        [
+            snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id"),
+            snapshot.transform.key_value("rootResourceId"),
+        ]
     )
     spec_file = load_file(import_file)
+    spec_file = spec_file.replace(
+        "${uri}", f"http://petstore.execute-api.{region_name}.amazonaws.com/petstore/pets"
+    )
+
     response, _ = import_apigw(body=spec_file, failOnWarnings=True)
     snapshot.match("import-api", response)
     api_id = response["id"]
@@ -55,17 +58,20 @@ def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file)
     [TEST_IMPORT_PETSTORE_SWAGGER, TEST_IMPORT_PETS],
     ids=["TEST_IMPORT_PETSTORE_SWAGGER", "TEST_IMPORT_PETS"],
 )
-@markers.snapshot.skip_snapshot_verify(
-    paths=[
-        "$..body.servers..url",
-    ]
-)
-def test_export_oas30_openapi(aws_client, snapshot, import_apigw, import_file):
+@markers.snapshot.skip_snapshot_verify(paths=["$..body.servers..url"])
+def test_export_oas30_openapi(aws_client, snapshot, import_apigw, region_name, import_file):
     snapshot.add_transformer(
-        snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id")
+        [
+            snapshot.transform.jsonpath("$.import-api.id", value_replacement="api-id"),
+            snapshot.transform.key_value("rootResourceId"),
+        ]
     )
 
     spec_file = load_file(import_file)
+    spec_file = spec_file.replace(
+        "${uri}", f"http://petstore.execute-api.{region_name}.amazonaws.com/petstore/pets"
+    )
+
     response, _ = import_apigw(body=spec_file, failOnWarnings=True)
     snapshot.match("import-api", response)
     api_id = response["id"]

@@ -332,7 +332,7 @@ def create_and_record_events(
     definition,
     execution_input,
 ):
-    sfn_snapshot.add_transformer(sfn_snapshot.transform.sqs_api())
+    sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sqs_integration())
     sfn_snapshot.add_transformers_list(
         [
             JsonpathTransformer(

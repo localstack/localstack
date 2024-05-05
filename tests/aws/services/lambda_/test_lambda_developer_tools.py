@@ -28,10 +28,10 @@ class TestHotReloading:
     @pytest.mark.parametrize(
         "runtime,handler_file,handler_filename",
         [
-            (Runtime.nodejs18_x, HOT_RELOADING_NODEJS_HANDLER, "handler.mjs"),
-            (Runtime.python3_9, HOT_RELOADING_PYTHON_HANDLER, "handler.py"),
+            (Runtime.nodejs20_x, HOT_RELOADING_NODEJS_HANDLER, "handler.mjs"),
+            (Runtime.python3_12, HOT_RELOADING_PYTHON_HANDLER, "handler.py"),
         ],
-        ids=["nodejs18.x", "python3.9"],
+        ids=["nodejs20.x", "python3.12"],
     )
     @markers.aws.only_localstack
     def test_hot_reloading(
@@ -45,6 +45,9 @@ class TestHotReloading:
         aws_client,
     ):
         """Test hot reloading of lambda code"""
+        # Hot reloading is debounced with 500ms
+        # 0.6 works on Linux, but it takes slightly longer on macOS
+        sleep_time = 0.8
         function_name = f"test-hot-reloading-{short_uid()}"
         hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
         tmp_path = config.dirs.mounted_tmp
@@ -74,7 +77,7 @@ class TestHotReloading:
         with open(os.path.join(hot_reloading_dir_path, handler_filename), mode="wt") as f:
             f.write(function_content.replace("value1", "value2"))
         # we have to sleep here, since the hot reloading is debounced with 500ms
-        time.sleep(0.6)
+        time.sleep(sleep_time)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
@@ -88,7 +91,7 @@ class TestHotReloading:
         test_folder = os.path.join(hot_reloading_dir_path, "test-folder")
         mkdir(test_folder)
         # make sure the creation of the folder triggered reload
-        time.sleep(0.6)
+        time.sleep(sleep_time)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
@@ -96,7 +99,7 @@ class TestHotReloading:
         # now writing something in the new folder to check if it will reload
         with open(os.path.join(test_folder, "test-file"), mode="wt") as f:
             f.write("test-content")
-        time.sleep(0.6)
+        time.sleep(sleep_time)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 1
@@ -128,7 +131,7 @@ class TestHotReloading:
             Handler="handler.handler",
             Code={"S3Bucket": hot_reloading_bucket, "S3Key": mount_path},
             Role=lambda_su_role,
-            Runtime=Runtime.nodejs18_x,
+            Runtime=Runtime.nodejs20_x,
         )
         aws_client.lambda_.publish_version(FunctionName=function_name, CodeSha256="zipfilehash")
 
@@ -143,7 +146,7 @@ class TestDockerFlags:
         create_lambda_function(
             handler_file=TEST_LAMBDA_ENV,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
         result = aws_client.lambda_.invoke(FunctionName=function_name, Payload="{}")
@@ -180,13 +183,13 @@ class TestDockerFlags:
         zip_file = create_lambda_archive(
             load_file(LAMBDA_NETWORKS_PYTHON_HANDLER),
             get_content=True,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         aws_client.lambda_.create_function(
             FunctionName=function_name,
             Code={"ZipFile": zip_file},
             Handler="handler.handler",
-            Runtime=Runtime.python3_9,
+            Runtime=Runtime.python3_12,
             Role=lambda_su_role,
         )
         cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
@@ -212,7 +215,7 @@ class TestLambdaDNS:
         create_lambda_function(
             handler_file=LAMBDA_NETWORKS_PYTHON_HANDLER,
             func_name=function_name,
-            runtime=Runtime.python3_11,
+            runtime=Runtime.python3_12,
         )
 
         result = aws_client.lambda_.invoke(

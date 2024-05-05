@@ -66,9 +66,9 @@ class AssignmentService(OtherServiceEndpoint):
                 )
             elif provisioning_type == "on-demand":
                 execution_environment = self.start_environment(version_manager_id, function_version)
-                self.environments[version_manager_id][
-                    execution_environment.id
-                ] = execution_environment
+                self.environments[version_manager_id][execution_environment.id] = (
+                    execution_environment
+                )
                 execution_environment.reserve()
             else:
                 raise ValueError(f"Invalid provisioning type {provisioning_type}")

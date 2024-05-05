@@ -12,8 +12,14 @@ class ScenariosTemplate(TemplateLoader):
         _THIS_FOLDER, "statemachines/catch_states_runtime.json5"
     )
     PARALLEL_STATE: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/parallel_state.json5")
+    MAX_CONCURRENCY: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/max_concurrency_path.json5"
+    )
     PARALLEL_STATE_FAIL: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/parallel_state_fail.json5"
+    )
+    PARALLEL_NESTED_NESTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/parallel_state_nested.json5"
     )
     PARALLEL_STATE_CATCH: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/parallel_state_catch.json5"
@@ -58,6 +64,9 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_CONFIG_INLINE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_inline_item_selector.json5"
     )
+    MAP_STATE_NESTED: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_nested.json5"
+    )
     MAP_STATE_NO_PROCESSOR_CONFIG: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_no_processor_config.json5"
     )
@@ -67,11 +76,20 @@ class ScenariosTemplate(TemplateLoader):
     MAP_ITEM_READER_BASE_CSV_HEADERS_FIRST_LINE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_csv_headers_first_line.json5"
     )
+    MAP_ITEM_READER_BASE_CSV_MAX_ITEMS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_csv_max_items.json5"
+    )
+    MAP_ITEM_READER_BASE_CSV_MAX_ITEMS_PATH: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_csv_max_items_path.json5"
+    )
     MAP_ITEM_READER_BASE_CSV_HEADERS_DECL: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_csv_headers_decl.json5"
     )
     MAP_ITEM_READER_BASE_JSON: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_item_reader_base_json.json5"
+    )
+    MAP_ITEM_READER_BASE_JSON_MAX_ITEMS: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_item_reader_base_json_max_items.json5"
     )
     MAP_STATE_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_item_selector.json5"
@@ -131,6 +149,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     RETRY_INTERVAL_FEATURES_JITTER_NONE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/retry_interval_features_jitter_none.json5"
+    )
+    RETRY_INTERVAL_FEATURES_MAX_ATTEMPTS_ZERO: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/retry_interval_features_max_attempts_zero.json5"
     )
     WAIT_TIMESTAMP: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/wait_timestamp.json5")
     WAIT_TIMESTAMP_PATH: Final[str] = os.path.join(

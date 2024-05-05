@@ -134,7 +134,11 @@ from localstack.aws.api.s3 import (
     WebsiteConfiguration,
 )
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError
-from localstack.aws.handlers import preprocess_request, serve_custom_service_request_handlers
+from localstack.aws.handlers import (
+    modify_service_response,
+    preprocess_request,
+    serve_custom_service_request_handlers,
+)
 from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.edge import ROUTER
 from localstack.services.moto import call_moto
@@ -161,6 +165,7 @@ from localstack.services.s3.utils import (
     get_lifecycle_rule_from_object,
     get_object_checksum_for_algorithm,
     get_permission_from_header,
+    s3_response_handler,
     serialize_expiration_header,
     validate_kms_key_id,
     verify_checksum,
@@ -192,9 +197,9 @@ from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
-os.environ[
-    "MOTO_S3_CUSTOM_ENDPOINTS"
-] = f"s3.{localstack_host().host_and_port()},s3.{localstack_host().host}"
+os.environ["MOTO_S3_CUSTOM_ENDPOINTS"] = (
+    f"s3.{localstack_host().host_and_port()},s3.{localstack_host().host}"
+)
 
 MOTO_CANONICAL_USER_ID = "75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a"
 # max file size for S3 objects kept in memory (500 KB by default)
@@ -230,8 +235,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         preprocess_request.append(self._cors_handler)
         register_website_hosting_routes(router=ROUTER)
         serve_custom_service_request_handlers.append(s3_cors_request_handler)
+        modify_service_response.append(self.service, s3_response_handler)
         # registering of virtual host routes happens with the hook on_infra_ready in virtual_host.py
-        # create a AWS managed KMS key at start and save it in the store for persistence?
 
     def __init__(self) -> None:
         super().__init__()
@@ -669,9 +674,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             dest_key_object.checksum_algorithm = checksum_algorithm
 
-            response["CopyObjectResult"][
-                f"Checksum{checksum_algorithm.upper()}"
-            ] = dest_key_object.checksum_value  # noqa
+            response["CopyObjectResult"][f"Checksum{checksum_algorithm.upper()}"] = (
+                dest_key_object.checksum_value
+            )  # noqa
 
         self._notify(context)
         return response
@@ -1447,7 +1452,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
         # TODO: signature validation is not implemented for pre-signed POST
         # policy validation is not implemented either, except expiration and mandatory fields
-        validate_post_policy(context.request.form)
+        validate_post_policy(context.request.form, additional_policy_metadata={})
 
         # Botocore has trouble parsing responses with status code in the 3XX range, it interprets them as exception
         # it then raises a nonsense one with a wrong code
@@ -1530,9 +1535,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if "ObjectSize" in object_attrs:
             response["ObjectSize"] = key.size
         if "Checksum" in object_attrs and (checksum_algorithm := key.checksum_algorithm):
-            response["Checksum"] = {
-                f"Checksum{checksum_algorithm.upper()}": key.checksum_value
-            }  # noqa
+            response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": key.checksum_value}  # noqa
 
         response["LastModified"] = key.last_modified
 
@@ -1597,9 +1600,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         moto_bucket = get_bucket_from_moto(get_moto_s3_backend(context), bucket)
         store = self.get_store(moto_bucket.account_id, moto_bucket.region_name)
 
-        analytics_configurations: Dict[
-            AnalyticsId, AnalyticsConfiguration
-        ] = store.bucket_analytics_configuration.get(bucket, {})
+        analytics_configurations: Dict[AnalyticsId, AnalyticsConfiguration] = (
+            store.bucket_analytics_configuration.get(bucket, {})
+        )
         analytics_configurations: AnalyticsConfigurationList = sorted(
             analytics_configurations.values(), key=lambda x: x["Id"]
         )
@@ -1722,13 +1725,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         source_bucket_region = moto_bucket.region_name
         if target_bucket.region_name != source_bucket_region:
-            raise CrossLocationLoggingProhibitted(
-                "Cross S3 location logging not allowed. ",
-                TargetBucketLocation=target_bucket.region_name,
-            ) if source_bucket_region == AWS_REGION_US_EAST_1 else CrossLocationLoggingProhibitted(
-                "Cross S3 location logging not allowed. ",
-                SourceBucketLocation=source_bucket_region,
-                TargetBucketLocation=target_bucket.region_name,
+            raise (
+                CrossLocationLoggingProhibitted(
+                    "Cross S3 location logging not allowed. ",
+                    TargetBucketLocation=target_bucket.region_name,
+                )
+                if source_bucket_region == AWS_REGION_US_EAST_1
+                else CrossLocationLoggingProhibitted(
+                    "Cross S3 location logging not allowed. ",
+                    SourceBucketLocation=source_bucket_region,
+                    TargetBucketLocation=target_bucket.region_name,
+                )
             )
 
         moto_bucket.logging = logging_config

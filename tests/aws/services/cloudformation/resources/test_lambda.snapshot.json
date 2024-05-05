@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_cfn_function_url": {
-    "recorded-date": "27-02-2023, 17:27:12",
+    "recorded-date": "16-04-2024, 08:16:02",
     "recorded-content": {
       "url_resource": {
         "StackResourceDetail": {
@@ -26,6 +26,7 @@
         "CreationTime": "date",
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url:1>",
+        "InvokeMode": "BUFFERED",
         "LastModifiedTime": "date",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -49,6 +50,7 @@
         "CreationTime": "date",
         "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url:1>",
+        "InvokeMode": "BUFFERED",
         "LastModifiedTime": "date",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -66,7 +68,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_alias": {
-    "recorded-date": "08-09-2023, 11:43:01",
+    "recorded-date": "09-04-2024, 07:19:19",
     "recorded-content": {
       "stack_resource_descriptions": {
         "StackResources": [
@@ -138,7 +140,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_permissions": {
-    "recorded-date": "27-02-2023, 17:34:08",
+    "recorded-date": "09-04-2024, 07:26:03",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -228,6 +230,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:4>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
@@ -271,7 +277,10 @@
                 "numMinDelayRetries": 0,
                 "backoffFunction": "linear"
               },
-              "disableSubscriptionOverrides": false
+              "disableSubscriptionOverrides": false,
+              "defaultRequestPolicy": {
+                "headerContentType": "text/plain; charset=UTF-8"
+              }
             }
           },
           "Owner": "111111111111",
@@ -344,7 +353,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
-    "recorded-date": "27-02-2023, 17:38:51",
+    "recorded-date": "09-04-2024, 07:29:12",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -459,6 +468,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:3>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -577,7 +590,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_code_signing_config": {
-    "recorded-date": "27-02-2023, 17:28:57",
+    "recorded-date": "09-04-2024, 07:19:51",
     "recorded-content": {
       "stack_resource_descriptions": {
         "StackResources": [
@@ -622,7 +635,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_event_invoke_config": {
-    "recorded-date": "21-11-2023, 11:00:12",
+    "recorded-date": "09-04-2024, 07:20:36",
     "recorded-content": {
       "event_invoke_config": {
         "DestinationConfig": {
@@ -641,7 +654,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_version": {
-    "recorded-date": "27-02-2023, 17:31:32",
+    "recorded-date": "09-04-2024, 07:21:37",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -703,6 +716,10 @@
             "FunctionName": "<resource:3>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<resource:3>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:1>",
@@ -732,6 +749,10 @@
             "FunctionName": "<resource:3>",
             "Handler": "index.handler",
             "LastModified": "date",
+            "LoggingConfig": {
+              "LogFormat": "Text",
+              "LogGroup": "/aws/lambda/<resource:3>"
+            },
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:2>",
@@ -773,6 +794,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:3>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -800,7 +825,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
-    "recorded-date": "19-12-2023, 08:08:47",
+    "recorded-date": "09-04-2024, 07:34:20",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -918,6 +943,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:3>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -1093,7 +1122,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
-    "recorded-date": "27-02-2023, 17:44:31",
+    "recorded-date": "09-04-2024, 07:37:55",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -1215,6 +1244,10 @@
           "Handler": "index.handler",
           "LastModified": "date",
           "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<resource:3>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
@@ -1358,7 +1391,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_multiple_lambda_permissions_for_singlefn": {
-    "recorded-date": "09-03-2023, 22:07:56",
+    "recorded-date": "09-04-2024, 07:25:05",
     "recorded-content": {
       "policy": {
         "Policy": {
@@ -1394,7 +1427,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_cfn_dead_letter_config_async_invocation": {
-    "recorded-date": "04-12-2023, 12:46:52",
+    "recorded-date": "09-04-2024, 07:39:50",
     "recorded-content": {
       "failed-async-lambda": {
         "Messages": [
@@ -1403,6 +1436,91 @@
             "MD5OfBody": "99914b932bd37a50b983c5e7c90ae93b",
             "MessageId": "<uuid:1>",
             "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_w_dynamodb_event_filter_update": {
+    "recorded-date": "11-04-2024, 18:29:12",
+    "recorded-content": {
+      "source_mappings": {
+        "EventSourceMappings": [
+          {
+            "BatchSize": 1,
+            "BisectBatchOnFunctionError": false,
+            "DestinationConfig": {
+              "OnFailure": {}
+            },
+            "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
+            "FilterCriteria": {
+              "Filters": [
+                {
+                  "Pattern": {
+                    "eventName": [
+                      "DELETE"
+                    ]
+                  }
+                }
+              ]
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionResponseTypes": [],
+            "LastModified": "datetime",
+            "LastProcessingResult": "No records processed",
+            "MaximumBatchingWindowInSeconds": 0,
+            "MaximumRecordAgeInSeconds": -1,
+            "MaximumRetryAttempts": -1,
+            "ParallelizationFactor": 1,
+            "StartingPosition": "TRIM_HORIZON",
+            "State": "Enabled",
+            "StateTransitionReason": "User action",
+            "TumblingWindowInSeconds": 0,
+            "UUID": "<uuid:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated_source_mappings": {
+        "EventSourceMappings": [
+          {
+            "BatchSize": 1,
+            "BisectBatchOnFunctionError": false,
+            "DestinationConfig": {
+              "OnFailure": {}
+            },
+            "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
+            "FilterCriteria": {
+              "Filters": [
+                {
+                  "Pattern": {
+                    "eventName": [
+                      "MODIFY"
+                    ]
+                  }
+                }
+              ]
+            },
+            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionResponseTypes": [],
+            "LastModified": "datetime",
+            "LastProcessingResult": "No records processed",
+            "MaximumBatchingWindowInSeconds": 0,
+            "MaximumRecordAgeInSeconds": -1,
+            "MaximumRetryAttempts": -1,
+            "ParallelizationFactor": 1,
+            "StartingPosition": "TRIM_HORIZON",
+            "State": "Enabled",
+            "StateTransitionReason": "User action",
+            "TumblingWindowInSeconds": 0,
+            "UUID": "<uuid:1>"
           }
         ],
         "ResponseMetadata": {

@@ -601,7 +601,7 @@
     }
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function": {
-    "recorded-date": "27-11-2023, 13:14:35",
+    "recorded-date": "03-04-2024, 07:12:29",
     "recorded-content": {
       "azs": [
         "<region>a",

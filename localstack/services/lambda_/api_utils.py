@@ -1,6 +1,7 @@
-""" Utilities related to Lambda API operations such as ARN handling, validations, and output formatting.
+"""Utilities related to Lambda API operations such as ARN handling, validations, and output formatting.
 Everything related to behavior or implicit functionality goes into `lambda_utils.py`.
 """
+
 import datetime
 import random
 import re
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
     )
     from localstack.services.lambda_.invocation.models import LambdaStore
 
+
 # Pattern for a full (both with and without qualifier) lambda function ARN
 FULL_FN_ARN_PATTERN = re.compile(
     r"^arn:aws:lambda:(?P<region_name>[^:]+):(?P<account_id>\d{12}):function:(?P<function_name>[^:]+)(:(?P<qualifier>.*))?$"
@@ -54,6 +56,10 @@ LAYER_VERSION_ARN_PATTERN = re.compile(
 # Pattern for a valid destination arn
 DESTINATION_ARN_PATTERN = re.compile(
     r"^$|arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
+)
+
+AWS_FUNCTION_NAME_REGEX = re.compile(
+    "^(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:)?(\\d{12}:)?(function:)?([a-zA-Z0-9-_.]+)(:(\\$LATEST|[a-zA-Z0-9-_]+))?$"
 )
 
 # Pattern for extracting various attributes from a full or partial ARN or just a function name.
@@ -482,6 +488,7 @@ def map_config_out(
         EphemeralStorage=EphemeralStorage(Size=version.config.ephemeral_storage.size),
         SnapStart=version.config.snap_start,
         RuntimeVersionConfig=version.config.runtime_version_config,
+        LoggingConfig=version.config.logging_config,
         **optional_kwargs,
     )
     return func_conf
@@ -617,3 +624,7 @@ def validate_layer_runtimes_and_architectures(
 
 def is_layer_arn(layer_name: str) -> bool:
     return LAYER_VERSION_ARN_PATTERN.match(layer_name) is not None
+
+
+def validate_function_name(function_name):
+    return AWS_FUNCTION_NAME_REGEX.match(function_name)

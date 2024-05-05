@@ -1,7 +1,7 @@
 import abc
 
 
-class ExecutionWorkerComm(abc.ABC):
+class ExecutionWorkerCommunication(abc.ABC):
     """
     Defines abstract callbacks for Execution's workers to report their progress, such as termination.
     Execution instances define custom callbacks routines to update their state according to the latest
@@ -9,5 +9,4 @@ class ExecutionWorkerComm(abc.ABC):
     """
 
     @abc.abstractmethod
-    def terminated(self) -> None:
-        ...
+    def terminated(self) -> None: ...

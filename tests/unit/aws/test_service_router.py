@@ -158,10 +158,12 @@ def test_service_router_works_for_every_service(
 ):
     caplog.set_level("CRITICAL", "botocore")
 
-    # if we test the routing to the internalized sqs json, we want to use the service name "sqs-json" in order to
-    # instruct botocore to load the internalized spec instead of the default (query)
+    # if we test the routing to the internalized sqs query, we want to use the service name "sqs-query" in order to
+    # instruct botocore to load the internalized spec instead of the default (json)
     service_name = (
-        "sqs-json" if service.service_name == "sqs" and protocol == "json" else service.service_name
+        "sqs-query"
+        if service.service_name == "sqs" and protocol == "query"
+        else service.service_name
     )
 
     # Create a dummy request for the service router

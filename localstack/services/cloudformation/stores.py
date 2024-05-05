@@ -61,6 +61,47 @@ def find_stack(account_id: str, region_name: str, stack_name: str) -> Stack | No
     )[0]
 
 
+def find_stack_by_id(account_id: str, region_name: str, stack_id: str) -> Stack | None:
+    """
+    Find the stack by id.
+
+    :param account_id: account of the stack
+    :param region_name: region of the stack
+    :param stack_id: stack id
+    :return: Stack if it is found, None otherwise
+    """
+    state = get_cloudformation_store(account_id, region_name)
+    for stack in state.stacks.values():
+        # there can only be one stack with an id
+        if stack_id == stack.stack_id:
+            return stack
+    return None
+
+
+def find_active_stack_by_name_or_id(
+    account_id: str, region_name: str, stack_name_or_id: str
+) -> Stack | None:
+    """
+    Find the active stack by name. Some cloudformation operations only allow referencing by slack name if the stack is
+    "active", which we currently interpret as not DELETE_COMPLETE.
+
+    :param account_id: account of the stack
+    :param region_name: region of the stack
+    :param stack_name_or_id: stack name or stack id
+    :return: Stack if it is found, None otherwise
+    """
+    state = get_cloudformation_store(account_id, region_name)
+    for stack in state.stacks.values():
+        # there can only be one stack where this condition is true for each region
+        # as there can only be one active stack with a given name
+        if (
+            stack_name_or_id in [stack.stack_name, stack.stack_id]
+            and stack.status != "DELETE_COMPLETE"
+        ):
+            return stack
+    return None
+
+
 def find_change_set(
     account_id: str, region_name: str, cs_name: str, stack_name: Optional[str] = None
 ) -> Optional[StackChangeSet]:

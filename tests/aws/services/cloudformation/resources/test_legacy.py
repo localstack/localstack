@@ -14,17 +14,14 @@ from localstack.utils.aws import arns
 from localstack.utils.common import load_file, short_uid
 from localstack.utils.testutil import create_zip_file, list_all_resources
 
-TEST_TEMPLATE_3 = (
-    """
+TEST_TEMPLATE_3 = """
 AWSTemplateFormatVersion: "2010-09-09"
 Resources:
   S3Setup:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: test-%s
-"""
-    % short_uid()
-)
+""" % short_uid()
 
 TEST_TEMPLATE_8 = {
     "AWSTemplateFormatVersion": "2010-09-09",

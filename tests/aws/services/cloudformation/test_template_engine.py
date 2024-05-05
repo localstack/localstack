@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
 from localstack.testing.pytest import markers
@@ -250,6 +251,7 @@ class TestIntrinsicFunctions:
             template_path=template_path,
         )
 
+        snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
         snapshot.match("azs", deployed.outputs["Zones"].split(";"))
 
     @markers.aws.validated

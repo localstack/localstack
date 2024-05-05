@@ -3,6 +3,7 @@ During initial rollout of the test selection in PRs this is additionally limited
 
 A test selection will only be effective if all files that would be selected under the testselection also have at least one match in the list below.
 """
+
 import fnmatch
 from typing import Iterable, Optional
 

@@ -1,0 +1,26 @@
+// Motivated by https://github.com/localstack/localstack/pull/10600
+{
+  "Event": {
+    "id": "1",
+    "source": "test-source",
+    "detail-type": "test-detail-type",
+    "account": "123456789012",
+    "region": "us-east-2",
+    "time": "2022-07-13T13:48:01Z",
+    "detail": {
+      "automations": [
+        {"key1": "value1"},
+        // the "exists" operator matches because at least one element of the list matches
+        {"id": "match-does-exist"},
+        {"key2": "value2"}
+      ]
+    }
+  },
+  "EventPattern": {
+    "detail": {
+      "automations": {
+        "id": [{"exists":  true}]
+      }
+    }
+  }
+}

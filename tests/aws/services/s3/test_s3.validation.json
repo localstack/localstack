@@ -63,7 +63,7 @@
     "last_validated_date": "2023-10-22T02:25:14+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "last_validated_date": "2023-08-03T02:16:27+00:00"
+    "last_validated_date": "2024-04-04T17:13:12+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_empty_bucket_fixture": {
     "last_validated_date": "2023-09-08T16:52:15+00:00"
@@ -234,10 +234,10 @@
     "last_validated_date": "2023-08-03T02:14:18+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "last_validated_date": "2023-08-03T02:13:15+00:00"
+    "last_validated_date": "2024-03-21T08:05:13+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure": {
-    "last_validated_date": "2024-01-03T16:46:18+00:00"
+    "last_validated_date": "2024-04-24T18:48:32+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
     "last_validated_date": "2023-08-03T02:25:40+00:00"
@@ -518,6 +518,15 @@
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_exc": {
     "last_validated_date": "2023-08-09T15:58:37+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
+    "last_validated_date": "2024-04-10T15:09:48+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_starts_with": {
+    "last_validated_date": "2024-04-10T12:16:01+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_validation_size": {
+    "last_validated_date": "2024-04-08T17:29:34+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_file_as_string": {
     "last_validated_date": "2024-02-24T01:01:59+00:00"
   },
@@ -562,6 +571,12 @@
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_request_missing_signature[s3v4]": {
     "last_validated_date": "2023-08-04T21:58:54+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_presigned_post_with_different_user_credentials": {
+    "last_validated_date": "2024-04-24T18:30:08+00:00"
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_delete_has_empty_content_length_header": {
+    "last_validated_date": "2024-04-24T18:42:46+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_url_signature_authentication[s3-False]": {
     "last_validated_date": "2023-08-04T22:00:25+00:00"

@@ -18,6 +18,7 @@ ClientToken = str
 CloudWatchLogGroupArn = str
 Code = str
 ConditionExpression = str
+ConfirmRemoveSelfResourceAccess = bool
 ConsistentRead = bool
 ConsumedCapacityUnits = float
 ContributorInsightsRule = str
@@ -56,12 +57,14 @@ NullAttributeValue = bool
 NumberAttributeValue = str
 PartiQLNextToken = str
 PartiQLStatement = str
+PolicyRevisionId = str
 PositiveIntegerObject = int
 ProjectionExpression = str
 RegionName = str
 ReplicaStatusDescription = str
 ReplicaStatusPercentProgress = str
 ResourceArnString = str
+ResourcePolicy = str
 RestoreInProgress = bool
 S3Bucket = str
 S3BucketOwner = str
@@ -483,6 +486,12 @@ class PointInTimeRecoveryUnavailableException(ServiceException):
     status_code: int = 400
 
 
+class PolicyNotFoundException(ServiceException):
+    code: str = "PolicyNotFoundException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class ProvisionedThroughputExceededException(ServiceException):
     code: str = "ProvisionedThroughputExceededException"
     sender_fault: bool = False
@@ -618,7 +627,9 @@ class AutoScalingTargetTrackingScalingPolicyConfigurationUpdate(TypedDict, total
 
 class AutoScalingPolicyUpdate(TypedDict, total=False):
     PolicyName: Optional[AutoScalingPolicyName]
-    TargetTrackingScalingPolicyConfiguration: AutoScalingTargetTrackingScalingPolicyConfigurationUpdate
+    TargetTrackingScalingPolicyConfiguration: (
+        AutoScalingTargetTrackingScalingPolicyConfigurationUpdate
+    )
 
 
 PositiveLongObject = int
@@ -786,7 +797,7 @@ SecondaryIndexesCapacityMap = Dict[IndexName, Capacity]
 
 
 class ConsumedCapacity(TypedDict, total=False):
-    TableName: Optional[TableName]
+    TableName: Optional[TableArn]
     CapacityUnits: Optional[ConsumedCapacityUnits]
     ReadCapacityUnits: Optional[ConsumedCapacityUnits]
     WriteCapacityUnits: Optional[ConsumedCapacityUnits]
@@ -831,7 +842,7 @@ class KeysAndAttributes(TypedDict, total=False):
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
 
 
-BatchGetRequestMap = Dict[TableName, KeysAndAttributes]
+BatchGetRequestMap = Dict[TableArn, KeysAndAttributes]
 
 
 class BatchGetItemInput(ServiceRequest):
@@ -840,7 +851,7 @@ class BatchGetItemInput(ServiceRequest):
 
 
 ItemList = List[AttributeMap]
-BatchGetResponseMap = Dict[TableName, ItemList]
+BatchGetResponseMap = Dict[TableArn, ItemList]
 
 
 class BatchGetItemOutput(TypedDict, total=False):
@@ -866,7 +877,7 @@ class WriteRequest(TypedDict, total=False):
 
 
 WriteRequests = List[WriteRequest]
-BatchWriteItemRequestMap = Dict[TableName, WriteRequests]
+BatchWriteItemRequestMap = Dict[TableArn, WriteRequests]
 
 
 class BatchWriteItemInput(ServiceRequest):
@@ -885,7 +896,7 @@ class ItemCollectionMetrics(TypedDict, total=False):
 
 
 ItemCollectionMetricsMultiple = List[ItemCollectionMetrics]
-ItemCollectionMetricsPerTable = Dict[TableName, ItemCollectionMetricsMultiple]
+ItemCollectionMetricsPerTable = Dict[TableArn, ItemCollectionMetricsMultiple]
 
 
 class BatchWriteItemOutput(TypedDict, total=False):
@@ -912,7 +923,7 @@ ExpressionAttributeValueMap = Dict[ExpressionAttributeValueVariable, AttributeVa
 
 class ConditionCheck(TypedDict, total=False):
     Key: Key
-    TableName: TableName
+    TableName: TableArn
     ConditionExpression: ConditionExpression
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
@@ -943,7 +954,7 @@ ContributorInsightsSummaries = List[ContributorInsightsSummary]
 
 
 class CreateBackupInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     BackupName: BackupName
 
 
@@ -1069,7 +1080,7 @@ LocalSecondaryIndexList = List[LocalSecondaryIndex]
 
 class CreateTableInput(ServiceRequest):
     AttributeDefinitions: AttributeDefinitions
-    TableName: TableName
+    TableName: TableArn
     KeySchema: KeySchema
     LocalSecondaryIndexes: Optional[LocalSecondaryIndexList]
     GlobalSecondaryIndexes: Optional[GlobalSecondaryIndexList]
@@ -1080,6 +1091,7 @@ class CreateTableInput(ServiceRequest):
     Tags: Optional[TagList]
     TableClass: Optional[TableClass]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
+    ResourcePolicy: Optional[ResourcePolicy]
 
 
 class RestoreSummary(TypedDict, total=False):
@@ -1167,7 +1179,7 @@ class CsvOptions(TypedDict, total=False):
 
 class Delete(TypedDict, total=False):
     Key: Key
-    TableName: TableName
+    TableName: TableArn
     ConditionExpression: Optional[ConditionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
@@ -1197,7 +1209,7 @@ ExpectedAttributeMap = Dict[AttributeName, ExpectedAttributeValue]
 
 
 class DeleteItemInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     Key: Key
     Expected: Optional[ExpectedAttributeMap]
     ConditionalOperator: Optional[ConditionalOperator]
@@ -1224,8 +1236,17 @@ class DeleteReplicationGroupMemberAction(TypedDict, total=False):
     RegionName: RegionName
 
 
+class DeleteResourcePolicyInput(ServiceRequest):
+    ResourceArn: ResourceArnString
+    ExpectedRevisionId: Optional[PolicyRevisionId]
+
+
+class DeleteResourcePolicyOutput(TypedDict, total=False):
+    RevisionId: Optional[PolicyRevisionId]
+
+
 class DeleteTableInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
 
 
 class DeleteTableOutput(TypedDict, total=False):
@@ -1241,7 +1262,7 @@ class DescribeBackupOutput(TypedDict, total=False):
 
 
 class DescribeContinuousBackupsInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
 
 
 class DescribeContinuousBackupsOutput(TypedDict, total=False):
@@ -1249,7 +1270,7 @@ class DescribeContinuousBackupsOutput(TypedDict, total=False):
 
 
 class DescribeContributorInsightsInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     IndexName: Optional[IndexName]
 
 
@@ -1444,7 +1465,7 @@ class DescribeImportOutput(TypedDict, total=False):
 
 
 class DescribeKinesisStreamingDestinationInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
 
 
 class KinesisDataStreamDestination(TypedDict, total=False):
@@ -1474,7 +1495,7 @@ class DescribeLimitsOutput(TypedDict, total=False):
 
 
 class DescribeTableInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
 
 
 class DescribeTableOutput(TypedDict, total=False):
@@ -1482,7 +1503,7 @@ class DescribeTableOutput(TypedDict, total=False):
 
 
 class DescribeTableReplicaAutoScalingInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
 
 
 class ReplicaGlobalSecondaryIndexAutoScalingDescription(TypedDict, total=False):
@@ -1519,7 +1540,7 @@ class DescribeTableReplicaAutoScalingOutput(TypedDict, total=False):
 
 
 class DescribeTimeToLiveInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
 
 
 class DescribeTimeToLiveOutput(TypedDict, total=False):
@@ -1606,13 +1627,13 @@ FilterConditionMap = Dict[AttributeName, Condition]
 
 class Get(TypedDict, total=False):
     Key: Key
-    TableName: TableName
+    TableName: TableArn
     ProjectionExpression: Optional[ProjectionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
 
 
 class GetItemInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     Key: Key
     AttributesToGet: Optional[AttributeNameList]
     ConsistentRead: Optional[ConsistentRead]
@@ -1624,6 +1645,15 @@ class GetItemInput(ServiceRequest):
 class GetItemOutput(TypedDict, total=False):
     Item: Optional[AttributeMap]
     ConsumedCapacity: Optional[ConsumedCapacity]
+
+
+class GetResourcePolicyInput(ServiceRequest):
+    ResourceArn: ResourceArnString
+
+
+class GetResourcePolicyOutput(TypedDict, total=False):
+    Policy: Optional[ResourcePolicy]
+    RevisionId: Optional[PolicyRevisionId]
 
 
 class GlobalSecondaryIndexAutoScalingUpdate(TypedDict, total=False):
@@ -1696,7 +1726,7 @@ KeyConditions = Dict[AttributeName, Condition]
 
 
 class KinesisStreamingDestinationInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     StreamArn: StreamArn
     EnableKinesisStreamingConfiguration: Optional[EnableKinesisStreamingConfiguration]
 
@@ -1713,7 +1743,7 @@ TimeRangeLowerBound = datetime
 
 
 class ListBackupsInput(ServiceRequest):
-    TableName: Optional[TableName]
+    TableName: Optional[TableArn]
     Limit: Optional[BackupsInputLimit]
     TimeRangeLowerBound: Optional[TimeRangeLowerBound]
     TimeRangeUpperBound: Optional[TimeRangeUpperBound]
@@ -1727,7 +1757,7 @@ class ListBackupsOutput(TypedDict, total=False):
 
 
 class ListContributorInsightsInput(ServiceRequest):
-    TableName: Optional[TableName]
+    TableName: Optional[TableArn]
     NextToken: Optional[NextTokenString]
     MaxResults: Optional[ListContributorInsightsLimit]
 
@@ -1799,7 +1829,7 @@ class PointInTimeRecoverySpecification(TypedDict, total=False):
 
 class Put(TypedDict, total=False):
     Item: PutItemInputAttributeMap
-    TableName: TableName
+    TableName: TableArn
     ConditionExpression: Optional[ConditionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
@@ -1807,7 +1837,7 @@ class Put(TypedDict, total=False):
 
 
 class PutItemInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     Item: PutItemInputAttributeMap
     Expected: Optional[ExpectedAttributeMap]
     ReturnValues: Optional[ReturnValue]
@@ -1826,8 +1856,19 @@ class PutItemOutput(TypedDict, total=False):
     ItemCollectionMetrics: Optional[ItemCollectionMetrics]
 
 
+class PutResourcePolicyInput(ServiceRequest):
+    ResourceArn: ResourceArnString
+    Policy: ResourcePolicy
+    ExpectedRevisionId: Optional[PolicyRevisionId]
+    ConfirmRemoveSelfResourceAccess: Optional[ConfirmRemoveSelfResourceAccess]
+
+
+class PutResourcePolicyOutput(TypedDict, total=False):
+    RevisionId: Optional[PolicyRevisionId]
+
+
 class QueryInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     IndexName: Optional[IndexName]
     Select: Optional[Select]
     AttributesToGet: Optional[AttributeNameList]
@@ -1952,7 +1993,7 @@ class RestoreTableToPointInTimeOutput(TypedDict, total=False):
 
 
 class ScanInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     IndexName: Optional[IndexName]
     AttributesToGet: Optional[AttributeNameList]
     Limit: Optional[PositiveIntegerObject]
@@ -2011,7 +2052,7 @@ class TransactGetItemsOutput(TypedDict, total=False):
 class Update(TypedDict, total=False):
     Key: Key
     UpdateExpression: UpdateExpression
-    TableName: TableName
+    TableName: TableArn
     ConditionExpression: Optional[ConditionExpression]
     ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
     ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
@@ -2046,7 +2087,7 @@ class UntagResourceInput(ServiceRequest):
 
 
 class UpdateContinuousBackupsInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     PointInTimeRecoverySpecification: PointInTimeRecoverySpecification
 
 
@@ -2055,7 +2096,7 @@ class UpdateContinuousBackupsOutput(TypedDict, total=False):
 
 
 class UpdateContributorInsightsInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     IndexName: Optional[IndexName]
     ContributorInsightsAction: ContributorInsightsAction
 
@@ -2094,7 +2135,7 @@ class UpdateGlobalTableSettingsOutput(TypedDict, total=False):
 
 
 class UpdateItemInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     Key: Key
     AttributeUpdates: Optional[AttributeUpdates]
     Expected: Optional[ExpectedAttributeMap]
@@ -2120,7 +2161,7 @@ class UpdateKinesisStreamingConfiguration(TypedDict, total=False):
 
 
 class UpdateKinesisStreamingDestinationInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     StreamArn: StreamArn
     UpdateKinesisStreamingConfiguration: Optional[UpdateKinesisStreamingConfiguration]
 
@@ -2134,7 +2175,7 @@ class UpdateKinesisStreamingDestinationOutput(TypedDict, total=False):
 
 class UpdateTableInput(ServiceRequest):
     AttributeDefinitions: Optional[AttributeDefinitions]
-    TableName: TableName
+    TableName: TableArn
     BillingMode: Optional[BillingMode]
     ProvisionedThroughput: Optional[ProvisionedThroughput]
     GlobalSecondaryIndexUpdates: Optional[GlobalSecondaryIndexUpdateList]
@@ -2151,7 +2192,7 @@ class UpdateTableOutput(TypedDict, total=False):
 
 class UpdateTableReplicaAutoScalingInput(ServiceRequest):
     GlobalSecondaryIndexUpdates: Optional[GlobalSecondaryIndexAutoScalingUpdateList]
-    TableName: TableName
+    TableName: TableArn
     ProvisionedWriteCapacityAutoScalingUpdate: Optional[AutoScalingSettingsUpdate]
     ReplicaUpdates: Optional[ReplicaAutoScalingUpdateList]
 
@@ -2161,7 +2202,7 @@ class UpdateTableReplicaAutoScalingOutput(TypedDict, total=False):
 
 
 class UpdateTimeToLiveInput(ServiceRequest):
-    TableName: TableName
+    TableName: TableArn
     TimeToLiveSpecification: TimeToLiveSpecification
 
 
@@ -2206,7 +2247,7 @@ class DynamodbApi:
 
     @handler("CreateBackup")
     def create_backup(
-        self, context: RequestContext, table_name: TableName, backup_name: BackupName, **kwargs
+        self, context: RequestContext, table_name: TableArn, backup_name: BackupName, **kwargs
     ) -> CreateBackupOutput:
         raise NotImplementedError
 
@@ -2225,7 +2266,7 @@ class DynamodbApi:
         self,
         context: RequestContext,
         attribute_definitions: AttributeDefinitions,
-        table_name: TableName,
+        table_name: TableArn,
         key_schema: KeySchema,
         local_secondary_indexes: LocalSecondaryIndexList = None,
         global_secondary_indexes: GlobalSecondaryIndexList = None,
@@ -2236,6 +2277,7 @@ class DynamodbApi:
         tags: TagList = None,
         table_class: TableClass = None,
         deletion_protection_enabled: DeletionProtectionEnabled = None,
+        resource_policy: ResourcePolicy = None,
         **kwargs,
     ) -> CreateTableOutput:
         raise NotImplementedError
@@ -2250,7 +2292,7 @@ class DynamodbApi:
     def delete_item(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         key: Key,
         expected: ExpectedAttributeMap = None,
         conditional_operator: ConditionalOperator = None,
@@ -2265,9 +2307,19 @@ class DynamodbApi:
     ) -> DeleteItemOutput:
         raise NotImplementedError
 
+    @handler("DeleteResourcePolicy")
+    def delete_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        expected_revision_id: PolicyRevisionId = None,
+        **kwargs,
+    ) -> DeleteResourcePolicyOutput:
+        raise NotImplementedError
+
     @handler("DeleteTable")
     def delete_table(
-        self, context: RequestContext, table_name: TableName, **kwargs
+        self, context: RequestContext, table_name: TableArn, **kwargs
     ) -> DeleteTableOutput:
         raise NotImplementedError
 
@@ -2279,13 +2331,13 @@ class DynamodbApi:
 
     @handler("DescribeContinuousBackups")
     def describe_continuous_backups(
-        self, context: RequestContext, table_name: TableName, **kwargs
+        self, context: RequestContext, table_name: TableArn, **kwargs
     ) -> DescribeContinuousBackupsOutput:
         raise NotImplementedError
 
     @handler("DescribeContributorInsights")
     def describe_contributor_insights(
-        self, context: RequestContext, table_name: TableName, index_name: IndexName = None, **kwargs
+        self, context: RequestContext, table_name: TableArn, index_name: IndexName = None, **kwargs
     ) -> DescribeContributorInsightsOutput:
         raise NotImplementedError
 
@@ -2319,7 +2371,7 @@ class DynamodbApi:
 
     @handler("DescribeKinesisStreamingDestination")
     def describe_kinesis_streaming_destination(
-        self, context: RequestContext, table_name: TableName, **kwargs
+        self, context: RequestContext, table_name: TableArn, **kwargs
     ) -> DescribeKinesisStreamingDestinationOutput:
         raise NotImplementedError
 
@@ -2329,19 +2381,19 @@ class DynamodbApi:
 
     @handler("DescribeTable")
     def describe_table(
-        self, context: RequestContext, table_name: TableName, **kwargs
+        self, context: RequestContext, table_name: TableArn, **kwargs
     ) -> DescribeTableOutput:
         raise NotImplementedError
 
     @handler("DescribeTableReplicaAutoScaling")
     def describe_table_replica_auto_scaling(
-        self, context: RequestContext, table_name: TableName, **kwargs
+        self, context: RequestContext, table_name: TableArn, **kwargs
     ) -> DescribeTableReplicaAutoScalingOutput:
         raise NotImplementedError
 
     @handler("DescribeTimeToLive")
     def describe_time_to_live(
-        self, context: RequestContext, table_name: TableName, **kwargs
+        self, context: RequestContext, table_name: TableArn, **kwargs
     ) -> DescribeTimeToLiveOutput:
         raise NotImplementedError
 
@@ -2349,7 +2401,7 @@ class DynamodbApi:
     def disable_kinesis_streaming_destination(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         stream_arn: StreamArn,
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
         **kwargs,
@@ -2360,7 +2412,7 @@ class DynamodbApi:
     def enable_kinesis_streaming_destination(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         stream_arn: StreamArn,
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
         **kwargs,
@@ -2416,7 +2468,7 @@ class DynamodbApi:
     def get_item(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         key: Key,
         attributes_to_get: AttributeNameList = None,
         consistent_read: ConsistentRead = None,
@@ -2425,6 +2477,12 @@ class DynamodbApi:
         expression_attribute_names: ExpressionAttributeNameMap = None,
         **kwargs,
     ) -> GetItemOutput:
+        raise NotImplementedError
+
+    @handler("GetResourcePolicy")
+    def get_resource_policy(
+        self, context: RequestContext, resource_arn: ResourceArnString, **kwargs
+    ) -> GetResourcePolicyOutput:
         raise NotImplementedError
 
     @handler("ImportTable")
@@ -2445,7 +2503,7 @@ class DynamodbApi:
     def list_backups(
         self,
         context: RequestContext,
-        table_name: TableName = None,
+        table_name: TableArn = None,
         limit: BackupsInputLimit = None,
         time_range_lower_bound: TimeRangeLowerBound = None,
         time_range_upper_bound: TimeRangeUpperBound = None,
@@ -2459,7 +2517,7 @@ class DynamodbApi:
     def list_contributor_insights(
         self,
         context: RequestContext,
-        table_name: TableName = None,
+        table_name: TableArn = None,
         next_token: NextTokenString = None,
         max_results: ListContributorInsightsLimit = None,
         **kwargs,
@@ -2523,7 +2581,7 @@ class DynamodbApi:
     def put_item(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         item: PutItemInputAttributeMap,
         expected: ExpectedAttributeMap = None,
         return_values: ReturnValue = None,
@@ -2538,11 +2596,23 @@ class DynamodbApi:
     ) -> PutItemOutput:
         raise NotImplementedError
 
+    @handler("PutResourcePolicy")
+    def put_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceArnString,
+        policy: ResourcePolicy,
+        expected_revision_id: PolicyRevisionId = None,
+        confirm_remove_self_resource_access: ConfirmRemoveSelfResourceAccess = None,
+        **kwargs,
+    ) -> PutResourcePolicyOutput:
+        raise NotImplementedError
+
     @handler("Query")
     def query(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         index_name: IndexName = None,
         select: Select = None,
         attributes_to_get: AttributeNameList = None,
@@ -2600,7 +2670,7 @@ class DynamodbApi:
     def scan(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         index_name: IndexName = None,
         attributes_to_get: AttributeNameList = None,
         limit: PositiveIntegerObject = None,
@@ -2662,7 +2732,7 @@ class DynamodbApi:
     def update_continuous_backups(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         point_in_time_recovery_specification: PointInTimeRecoverySpecification,
         **kwargs,
     ) -> UpdateContinuousBackupsOutput:
@@ -2672,7 +2742,7 @@ class DynamodbApi:
     def update_contributor_insights(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         contributor_insights_action: ContributorInsightsAction,
         index_name: IndexName = None,
         **kwargs,
@@ -2707,7 +2777,7 @@ class DynamodbApi:
     def update_item(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         key: Key,
         attribute_updates: AttributeUpdates = None,
         expected: ExpectedAttributeMap = None,
@@ -2728,7 +2798,7 @@ class DynamodbApi:
     def update_kinesis_streaming_destination(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         stream_arn: StreamArn,
         update_kinesis_streaming_configuration: UpdateKinesisStreamingConfiguration = None,
         **kwargs,
@@ -2739,7 +2809,7 @@ class DynamodbApi:
     def update_table(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         attribute_definitions: AttributeDefinitions = None,
         billing_mode: BillingMode = None,
         provisioned_throughput: ProvisionedThroughput = None,
@@ -2757,7 +2827,7 @@ class DynamodbApi:
     def update_table_replica_auto_scaling(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         global_secondary_index_updates: GlobalSecondaryIndexAutoScalingUpdateList = None,
         provisioned_write_capacity_auto_scaling_update: AutoScalingSettingsUpdate = None,
         replica_updates: ReplicaAutoScalingUpdateList = None,
@@ -2769,7 +2839,7 @@ class DynamodbApi:
     def update_time_to_live(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
         time_to_live_specification: TimeToLiveSpecification,
         **kwargs,
     ) -> UpdateTimeToLiveOutput:

@@ -1,6 +1,7 @@
 """Lambda utilities for behavior and implicit functionality.
 Everything related to API operations goes into `api_utils.py`.
 """
+
 import logging
 import os
 

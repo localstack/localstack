@@ -3,6 +3,8 @@ import json
 import logging
 import shutil
 import tempfile
+import threading
+from collections import defaultdict
 from functools import cache
 from pathlib import Path
 from typing import Callable, Dict, Literal, Optional
@@ -60,6 +62,7 @@ COPY code/ /var/task
 """
 
 PULLED_IMAGES: set[(str, DockerPlatform)] = set()
+PULL_LOCKS: dict[(str, DockerPlatform), threading.RLock] = defaultdict(threading.RLock)
 
 HOT_RELOADING_ENV_VARIABLE = "LOCALSTACK_HOT_RELOADING_PATHS"
 
@@ -89,11 +92,35 @@ def get_image_name_for_function(function_version: FunctionVersion) -> str:
     return f"localstack/prebuild-lambda-{function_version.id.qualified_arn().replace(':', '_').replace('$', '_').lower()}"
 
 
-def get_default_image_for_runtime(runtime: str) -> str:
+def get_default_image_for_runtime(runtime: Runtime) -> str:
     postfix = IMAGE_MAPPING.get(runtime)
     if not postfix:
         raise ValueError(f"Unsupported runtime {runtime}!")
     return f"{IMAGE_PREFIX}{postfix}"
+
+
+def _ensure_runtime_image_present(image: str, platform: DockerPlatform) -> None:
+    # Pull image for a given platform upon function creation such that invocations do not time out.
+    if (image, platform) in PULLED_IMAGES:
+        return
+    # use a lock to avoid concurrent pulling of the same image
+    with PULL_LOCKS[(image, platform)]:
+        if (image, platform) in PULLED_IMAGES:
+            return
+        try:
+            CONTAINER_CLIENT.pull_image(image, platform)
+            PULLED_IMAGES.add((image, platform))
+        except NoSuchImage as e:
+            LOG.debug("Unable to pull image %s for runtime executor preparation.", image)
+            raise e
+        except DockerNotAvailable as e:
+            HINT_LOG.error(
+                "Failed to pull Docker image because Docker is not available in the LocalStack container "
+                "but required to run Lambda functions. Please add the Docker volume mount "
+                '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. '
+                "https://docs.localstack.cloud/user-guide/aws/lambda/#docker-not-available"
+            )
+            raise e
 
 
 class RuntimeImageResolver:
@@ -330,7 +357,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
         if config.LAMBDA_DOCKER_DNS:
             # Don't overwrite DNS container config if it is already set (e.g., using LAMBDA_DOCKER_DNS)
             LOG.warning(
-                "Container DNS overriden to %s, connection to names pointing to LocalStack, like 'localhost.localstack.cloud' will need additional configuration.",
+                "Container DNS overridden to %s, connection to names pointing to LocalStack, like 'localhost.localstack.cloud' will need additional configuration.",
                 config.LAMBDA_DOCKER_DNS,
             )
             container_config.dns = config.LAMBDA_DOCKER_DNS
@@ -459,24 +486,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             function_version.config.code.prepare_for_execution()
             image_name = resolver.get_image_for_runtime(function_version.config.runtime)
             platform = docker_platform(function_version.config.architectures[0])
-            # Pull image for a given platform upon function creation such that invocations do not time out.
-            if (image_name, platform) not in PULLED_IMAGES:
-                try:
-                    CONTAINER_CLIENT.pull_image(image_name, platform)
-                    PULLED_IMAGES.add((image_name, platform))
-                except NoSuchImage as e:
-                    LOG.debug(
-                        "Unable to pull image %s for runtime executor preparation.", image_name
-                    )
-                    raise e
-                except DockerNotAvailable as e:
-                    HINT_LOG.error(
-                        "Failed to pull Docker image because Docker is not available in the LocalStack container "
-                        "but required to run Lambda functions. Please add the Docker volume mount "
-                        '"/var/run/docker.sock:/var/run/docker.sock" to your LocalStack startup. '
-                        "https://docs.localstack.cloud/user-guide/aws/lambda/#docker-not-available"
-                    )
-                    raise e
+            _ensure_runtime_image_present(image_name, platform)
             if config.LAMBDA_PREBUILD_IMAGES:
                 prepare_image(function_version, platform)
 

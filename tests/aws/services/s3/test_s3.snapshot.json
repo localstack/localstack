@@ -1,10 +1,10 @@
 {
   "tests/aws/services/s3/test_s3.py::TestS3::test_region_header_exists": {
-    "recorded-date": "06-12-2023, 16:47:40",
+    "recorded-date": "21-03-2024, 08:05:13",
     "recorded-content": {
       "head_bucket": {
         "AccessPointAlias": false,
-        "BucketRegion": "eu-west-1",
+        "BucketRegion": "<region>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1078,7 +1078,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_different_location_constraint": {
-    "recorded-date": "03-08-2023, 04:16:27",
+    "recorded-date": "04-04-2024, 17:13:12",
     "recorded-content": {
       "get_bucket_location_bucket_1": {
         "LocationConstraint": null,
@@ -1087,8 +1087,29 @@
           "HTTPStatusCode": 200
         }
       },
+      "create-bucket-constraint-us-east-1": {
+        "Error": {
+          "Code": "InvalidLocationConstraint",
+          "LocationConstraint": "<location-constraint>",
+          "Message": "The specified location-constraint is not valid"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-bucket-constraint-us-east-1-with-None": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "get_bucket_location_bucket_2": {
-        "LocationConstraint": "us-east-2",
+        "LocationConstraint": "<location-constraint>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1112,7 +1133,7 @@
         }
       },
       "get_bucket_location_bucket_3": {
-        "LocationConstraint": "us-east-2",
+        "LocationConstraint": "<location-constraint>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -11427,6 +11448,181 @@
         "Metadata": {},
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_validation_size": {
+    "recorded-date": "08-04-2024, 17:29:34",
+    "recorded-content": {
+      "invalid-content-length-too-big": {
+        "Error": {
+          "Code": "EntityTooLarge",
+          "HostId": "<host-id>",
+          "MaxSizeAllowed": "10",
+          "Message": "Your proposed upload exceeds the maximum allowed size",
+          "ProposedSize": "12",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "invalid-content-length-too-small": {
+        "Error": {
+          "Code": "EntityTooSmall",
+          "HostId": "<host-id>",
+          "Message": "Your proposed upload is smaller than the minimum allowed size",
+          "MinSizeAllowed": "5",
+          "ProposedSize": "1",
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "final-object": {
+        "AcceptRanges": "bytes",
+        "Body": "aaaaaaaaaa",
+        "ContentLength": 10,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e09c80c42fda55f9d992e59ca6b3307d\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
+    "recorded-date": "10-04-2024, 15:09:48",
+    "recorded-content": {
+      "invalid-condition-eq": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"http://localhost.test/random\"]",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "invalid-condition-missing-prefix": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"success_action_redirect\", \"http://localhost.test/random\"]",
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "invalid-condition-wrong-condition": {
+        "Error": {
+          "Code": "InvalidPolicyDocument",
+          "HostId": "<host-id>",
+          "Message": "Invalid Policy: Invalid Simple-Condition: Simple-Conditions must have exactly one property specified.",
+          "RequestId": "<request-id:3>"
+        }
+      },
+      "invalid-condition-wrong-value-casing": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"eq\", \"$success_action_redirect\", \"HTTP://localhost.test/random\"]",
+          "RequestId": "<request-id:4>"
+        }
+      },
+      "head-object-metadata": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 6,
+        "ContentType": "text/plain",
+        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
+        "Expires": "datetime",
+        "LastModified": "datetime",
+        "Metadata": {
+          "test-1": "test-meta-1",
+          "test-2": "test-meta-2"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "final-object": {
+        "AcceptRanges": "bytes",
+        "Body": "abcdef",
+        "ContentLength": 6,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_starts_with": {
+    "recorded-date": "10-04-2024, 12:16:01",
+    "recorded-content": {
+      "invalid-condition-starts-with": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"starts-with\", \"$success_action_redirect\", \"http://localhost\"]",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "invalid-condition-starts-with-casing": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"starts-with\", \"$success_action_redirect\", \"http://localhost\"]",
+          "RequestId": "<request-id:2>"
+        }
+      },
+      "get-object-1": {
+        "AcceptRanges": "bytes",
+        "Body": "abcdef",
+        "ContentLength": 6,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-2": {
+        "AcceptRanges": "bytes",
+        "Body": "manual value to change ETag",
+        "ContentLength": 27,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"365cb4550a52593ad95c6b31242d7418\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_presigned_post_with_different_user_credentials": {
+    "recorded-date": "24-04-2024, 18:30:08",
+    "recorded-content": {
+      "get-obj": {
+        "AcceptRanges": "bytes",
+        "Body": "abcdef",
+        "ContentLength": 6,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e80b5017098950fc58aad83c8c14978e\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -47,6 +47,39 @@ class TestTaskLambda:
             exec_input,
         )
 
+    @markers.aws.validated
+    def test_invoke_string_payload(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        function_1_name = f"lambda_1_func_{short_uid()}"
+        create_1_res = create_lambda_function(
+            func_name=function_1_name,
+            handler_file=ST.LAMBDA_ID_FUNCTION,
+            runtime="python3.9",
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_1_name, "<lambda_function_1_name>"))
+
+        template = ST.load_sfn_template(ST.LAMBDA_INVOKE_RESOURCE)
+        template["States"]["step1"]["Resource"] = create_1_res["CreateFunctionResponse"][
+            "FunctionArn"
+        ]
+        definition = json.dumps(template)
+
+        exec_input = json.dumps("HelloWorld")
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
     @pytest.mark.parametrize(
         "json_value",
         [

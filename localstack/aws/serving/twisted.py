@@ -1,6 +1,7 @@
 """
 Bindings to serve LocalStack using twisted.
 """
+
 import logging
 import time
 from typing import List

@@ -435,9 +435,9 @@ class BaseNotifier:
                     "lifecycleRestoreStorageClass": ctx.key_storage_class,
                 }
             }
-            record["userIdentity"][
-                "principalId"
-            ] = "AmazonCustomer:A3NL1KOZZKExample"  # TODO: use proper principal?
+            record["userIdentity"]["principalId"] = (
+                "AmazonCustomer:A3NL1KOZZKExample"  # TODO: use proper principal?
+            )
             # a bit hacky, it is to ensure the eventTime is a bit after the `Post` event, as its instant in LS
             # the best would be to delay the publishing of the event
             event_time = parse_timestamp(record["eventTime"]) + datetime.timedelta(milliseconds=500)
@@ -722,9 +722,9 @@ class EventBridgeNotifier(BaseNotifier):
         elif "ObjectRemoved" in ctx.event_type:
             entry["DetailType"] = "Object Deleted"
             event_details["reason"] = "DeleteObject"
-            event_details[
-                "deletion-type"
-            ] = "Permanently Deleted"  # TODO: check with versioned bucket?
+            event_details["deletion-type"] = (
+                "Permanently Deleted"  # TODO: check with versioned bucket?
+            )
             event_details["object"].pop("etag")
             event_details["object"].pop("size")
 

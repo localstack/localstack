@@ -1,4 +1,5 @@
 """Handlers for fallback logic, e.g., populating empty requests or defauling with default exceptions."""
+
 import logging
 
 from rolo.gateway.handlers import EmptyResponseHandler

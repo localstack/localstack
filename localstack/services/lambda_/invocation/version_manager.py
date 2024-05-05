@@ -63,7 +63,6 @@ class LambdaVersionManager:
         function_arn: str,
         function_version: FunctionVersion,
         function: Function,
-        lambda_service: "LambdaService",
         counting_service: CountingService,
         assignment_service: AssignmentService,
     ):
@@ -71,7 +70,6 @@ class LambdaVersionManager:
         self.function_arn = function_arn
         self.function_version = function_version
         self.function = function
-        self.lambda_service = lambda_service
         self.counting_service = counting_service
         self.assignment_service = assignment_service
         self.log_handler = LogHandler(function_version.config.role, function_version.id.region)
@@ -85,8 +83,7 @@ class LambdaVersionManager:
         self.provisioned_state_lock = threading.RLock()
         self.state = None
 
-    def start(self) -> None:
-        new_state = None
+    def start(self) -> VersionState:
         try:
             self.log_handler.start_subscriber()
             time_before = time.perf_counter()
@@ -115,11 +112,7 @@ class LambdaVersionManager:
                 e,
                 exc_info=True,
             )
-        finally:
-            if new_state:
-                self.lambda_service.update_version_state(
-                    function_version=self.function_version, new_state=new_state
-                )
+        return new_state
 
     def stop(self) -> None:
         LOG.debug("Stopping lambda version '%s'", self.function_arn)
@@ -203,7 +196,7 @@ class LambdaVersionManager:
             self.function, self.function_version
         ) as provisioning_type:
             # TODO: potential race condition when changing provisioned concurrency after getting the lease but before
-            #   getting an an environment
+            #   getting an environment
             try:
                 # Blocks and potentially creates a new execution environment for this invocation
                 with self.assignment_service.get_environment(

@@ -313,6 +313,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(
                 "httpMethod": method,
                 "authorizationType": auth_type,
                 "authorizerId": None,
+                "integrationHttpMethod": "POST",
                 "integrations": [integration],
             }
         )
@@ -572,10 +573,12 @@ def get_lambda_log_events(
         raw_message = event["message"]
         if (
             not raw_message
-            or "START" in raw_message
-            or "END" in raw_message
-            or "REPORT" in raw_message
-            # necessary until tail is updated in docker images. See this PR:
+            or raw_message.startswith("INIT_START")
+            or raw_message.startswith("START")
+            or raw_message.startswith("END")
+            or raw_message.startswith(
+                "REPORT"
+            )  # necessary until tail is updated in docker images. See this PR:
             # http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=v8.24-111-g1118f32
             or "tail: unrecognized file system type" in raw_message
             or regex_filter

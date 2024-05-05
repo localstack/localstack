@@ -1142,13 +1142,14 @@ class SubscriptionFilter:
         :return: True if the payload respect the filter policy, otherwise False
         """
         flat_policy = self._flatten_dict(filter_policy)
-        flat_payload = self._flatten_dict(payload)
+        flat_payloads = self._flatten_dict_with_list(payload)
         for key, values in flat_policy.items():
             if not any(
                 self._evaluate_condition(
                     flat_payload.get(key), condition, field_exists=key in flat_payload
                 )
                 for condition in values
+                for flat_payload in flat_payloads
             ):
                 return False
         return True
@@ -1239,20 +1240,80 @@ class SubscriptionFilter:
             "field1.field2.field4": "val1"
         }`
         :param nested_dict: a (nested) dictionary
-        :return: flatten_dict: a dictionary with no nested dict inside, flattened to a single level
+        :return: a list of flattened dictionaries with no nested dict or list inside, flattened to a
+        single level, one list item for every list item encountered
         """
         flatten = {}
 
         def _traverse(_policy: dict, parent_key=None):
             for key, values in _policy.items():
-                pkey = key if not parent_key else f"{parent_key}.{key}"
+                flattened_parent_key = key if not parent_key else f"{parent_key}.{key}"
                 if not isinstance(values, dict):
-                    flatten[pkey] = values
+                    flatten[flattened_parent_key] = values
                 else:
-                    _traverse(values, parent_key=pkey)
+                    _traverse(values, parent_key=flattened_parent_key)
 
         _traverse(nested_dict)
         return flatten
+
+    @staticmethod
+    def _flatten_dict_with_list(nested_dict: dict) -> list[dict]:
+        """
+        Takes a dictionary as input and will output the dictionary on a single level.
+        The dictionary can have lists containing other dictionaries, and one root level entry will be created for every
+        item in a list.
+        Input:
+        `{"field1": {
+            "field2: [
+                {"field3: "val1", "field4": "val2"},
+                {"field3: "val3", "field4": "val4"},
+            }
+        ]}`
+        Output:
+        `[
+            {
+                "field1.field2.field3": "val1",
+                "field1.field2.field4": "val2"
+            },
+            {
+                "field1.field2.field3": "val3",
+                "field1.field2.field4": "val4"
+            },
+        ]`
+        :param nested_dict: a (nested) dictionary
+        :return: flatten_dict: a dictionary with no nested dict inside, flattened to a single level
+        """
+        flattened = []
+        current_object = {}
+
+        def _traverse(_object, parent_key=None):
+            if isinstance(_object, dict):
+                for key, values in _object.items():
+                    flattened_parent_key = key if not parent_key else f"{parent_key}.{key}"
+                    _traverse(values, flattened_parent_key)
+
+            # we don't have to worry about `parent_key` being None for list or any other type, because we have a check
+            # that the first object is always a dict, thus setting a parent key on first iteration
+            elif isinstance(_object, list):
+                for value in _object:
+                    if isinstance(value, (dict, list)):
+                        _traverse(value, parent_key=parent_key)
+                    else:
+                        current_object[parent_key] = value
+
+                    if current_object:
+                        flattened.append({**current_object})
+                        current_object.clear()
+            else:
+                current_object[parent_key] = _object
+
+        _traverse(nested_dict)
+
+        # if the payload did not have any list, we manually append the current object
+        if not flattened:
+            flattened.append(current_object)
+
+        return flattened
 
 
 class PublishDispatcher:

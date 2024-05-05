@@ -23,6 +23,9 @@
   "tests/aws/services/cloudformation/api/test_stacks.py::test_blocked_stack_deletion": {
     "last_validated_date": "2023-09-06T09:01:18+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_describe_stack_events_errors": {
+    "last_validated_date": "2024-03-26T17:54:41+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_events_resource_types": {
     "last_validated_date": "2023-02-15T09:46:53+00:00"
   },
@@ -30,7 +33,7 @@
     "last_validated_date": "2022-11-11T07:10:14+00:00"
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_name_conflicts": {
-    "last_validated_date": "2023-11-16T16:07:37+00:00"
+    "last_validated_date": "2024-03-26T17:59:43+00:00"
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_update_termination_protection": {
     "last_validated_date": "2023-01-04T15:23:22+00:00"

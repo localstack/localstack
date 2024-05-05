@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import abc
 import copy
-from typing import Any, Final, Optional
+import json
+from typing import Any, Final, Optional, Union
 
 from botocore.model import ListShape, OperationModel, StringShape, StructureShape
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
     HistoryEventType,
+    TaskFailedEventDetails,
     TaskScheduledEventDetails,
     TaskStartedEventDetails,
     TaskSucceededEventDetails,
@@ -17,6 +19,7 @@ from localstack.aws.api.stepfunctions import (
 from localstack.aws.spec import load_service
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEvent,
+    FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.common.error_name.states_error_name import (
     StatesErrorName,
@@ -34,6 +37,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.services.stepfunctions.quotas import is_within_size_quota
 from localstack.utils.strings import camel_to_snake_case, snake_to_camel_case
 
 
@@ -95,9 +99,9 @@ class StateTaskService(StateTask, abc.ABC):
         parameters_bind_keys: list[str] = list(parameters.keys())
         for parameter_key in parameters_bind_keys:
             norm_parameter_key = camel_to_snake_case(parameter_key)
-            norm_member_bind: Optional[
-                tuple[str, Optional[StructureShape]]
-            ] = norm_member_binds.get(norm_parameter_key)
+            norm_member_bind: Optional[tuple[str, Optional[StructureShape]]] = (
+                norm_member_binds.get(norm_parameter_key)
+            )
             if norm_member_bind is not None:
                 norm_member_bind_key, norm_member_bind_shape = norm_member_bind
                 parameter_value = parameters.pop(parameter_key)
@@ -172,14 +176,39 @@ class StateTaskService(StateTask, abc.ABC):
         if output_shape is not None:
             self._from_boto_response(response, output_shape)  # noqa
 
+    def _verify_size_quota(self, env: Environment, value: Union[str, json]) -> None:
+        is_within: bool = is_within_size_quota(value)
+        if is_within:
+            return
+        resource_type = self._get_sfn_resource_type()
+        resource = self._get_sfn_resource()
+        cause = (
+            f"The state/task '{resource_type}' returned a result with a size "
+            "exceeding the maximum number of bytes service limit."
+        )
+        raise FailureEventException(
+            failure_event=FailureEvent(
+                env=env,
+                error_name=StatesErrorName(typ=StatesErrorNameType.StatesStatesDataLimitExceeded),
+                event_type=HistoryEventType.TaskFailed,
+                event_details=EventDetails(
+                    taskFailedEventDetails=TaskFailedEventDetails(
+                        error=StatesErrorNameType.StatesStatesDataLimitExceeded.to_name(),
+                        cause=cause,
+                        resourceType=resource_type,
+                        resource=resource,
+                    )
+                ),
+            )
+        )
+
     @abc.abstractmethod
     def _eval_service_task(
         self,
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
-    ):
-        ...
+    ): ...
 
     def _before_eval_execution(
         self, env: Environment, resource_runtime_part: ResourceRuntimePart, raw_parameters: dict
@@ -223,6 +252,7 @@ class StateTaskService(StateTask, abc.ABC):
         normalised_parameters: dict,
     ) -> None:
         output = env.stack[-1]
+        self._verify_size_quota(env=env, value=output)
         env.event_history.add_event(
             context=env.event_history_context,
             hist_type_event=HistoryEventType.TaskSucceeded,

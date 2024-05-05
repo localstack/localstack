@@ -1,6 +1,6 @@
 import abc
 from collections import OrderedDict
-from threading import Event
+from threading import Event, Lock
 from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import ActivityDoesNotExist, Arn
@@ -26,10 +26,10 @@ class CallbackOutcomeSuccess(CallbackOutcome):
 
 
 class CallbackOutcomeFailure(CallbackOutcome):
-    error: Final[str]
-    cause: Final[str]
+    error: Final[Optional[str]]
+    cause: Final[Optional[str]]
 
-    def __init__(self, callback_id: CallbackId, error: str, cause: str):
+    def __init__(self, callback_id: CallbackId, error: Optional[str], cause: Optional[str]):
         super().__init__(callback_id=callback_id)
         self.error = error
         self.cause = cause
@@ -39,8 +39,7 @@ class CallbackTimeoutError(TimeoutError):
     pass
 
 
-class CallbackConsumerError(abc.ABC):
-    ...
+class CallbackConsumerError(abc.ABC): ...
 
 
 class CallbackConsumerTimeout(CallbackConsumerError):
@@ -52,19 +51,25 @@ class CallbackConsumerLeft(CallbackConsumerError):
 
 
 class HeartbeatEndpoint:
+    _mutex: Final[Lock]
     _next_heartbeat_event: Final[Event]
     _heartbeat_seconds: Final[int]
 
     def __init__(self, heartbeat_seconds: int):
+        self._mutex = Lock()
         self._next_heartbeat_event = Event()
         self._heartbeat_seconds = heartbeat_seconds
 
     def clear_and_wait(self) -> bool:
-        self._next_heartbeat_event.clear()
+        with self._mutex:
+            if self._next_heartbeat_event.is_set():
+                self._next_heartbeat_event.clear()
+                return True
         return self._next_heartbeat_event.wait(timeout=self._heartbeat_seconds)
 
     def notify(self):
-        self._next_heartbeat_event.set()
+        with self._mutex:
+            self._next_heartbeat_event.set()
 
 
 class HeartbeatTimeoutError(TimeoutError):

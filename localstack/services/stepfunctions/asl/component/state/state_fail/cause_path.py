@@ -23,8 +23,7 @@ _STRING_RETURN_FUNCTIONS: Final[set[str]] = {
 }
 
 
-class CausePath(CauseDecl):
-    ...
+class CausePath(CauseDecl): ...
 
 
 class CausePathJsonPath(CausePath):

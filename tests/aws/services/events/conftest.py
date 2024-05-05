@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Tuple
 
 import pytest
@@ -6,6 +7,80 @@ import pytest
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+
+LOG = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def create_event_bus(aws_client):
+    event_bus_names = []
+
+    def _create_event_bus(**kwargs):
+        response = aws_client.events.create_event_bus(**kwargs)
+        event_bus_names.append(kwargs["Name"])
+        return response
+
+    yield _create_event_bus
+
+    for event_bus_name in event_bus_names:
+        try:
+            response = aws_client.events.list_rules(EventBusName=event_bus_name)
+            rules = [rule["Name"] for rule in response["Rules"]]
+
+            # Delete all rules for the current event bus
+            for rule in rules:
+                try:
+                    response = aws_client.events.list_targets_by_rule(
+                        Rule=rule, EventBusName=event_bus_name
+                    )
+                    targets = [target["Id"] for target in response["Targets"]]
+
+                    # Remove all targets for the current rule
+                    if targets:
+                        for target in targets:
+                            aws_client.events.remove_targets(
+                                Rule=rule, EventBusName=event_bus_name, Ids=[target]
+                            )
+
+                    aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
+                except Exception as e:
+                    LOG.warning(f"Failed to delete rule {rule}: {e}")
+
+            aws_client.events.delete_event_bus(Name=event_bus_name)
+        except Exception as e:
+            LOG.warning(f"Failed to delete event bus {event_bus_name}: {e}")
+
+
+@pytest.fixture
+def put_rule(aws_client):
+    rules = []
+
+    def _put_rule(**kwargs):
+        if "EventBusName" not in kwargs:
+            kwargs["EventBusName"] = "default"
+        response = aws_client.events.put_rule(**kwargs)
+        rules.append((kwargs["Name"], kwargs["EventBusName"]))
+        return response
+
+    yield _put_rule
+
+    for rule, event_bus_name in rules:
+        try:
+            response = aws_client.events.list_targets_by_rule(
+                Rule=rule, EventBusName=event_bus_name
+            )
+            targets = [target["Id"] for target in response["Targets"]]
+
+            # Remove all targets for the current rule
+            if targets:
+                for target in targets:
+                    aws_client.events.remove_targets(
+                        Rule=rule, EventBusName=event_bus_name, Ids=[target]
+                    )
+
+            aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
+        except Exception as e:
+            LOG.warning(f"Failed to delete rule {rule}: {e}")
 
 
 @pytest.fixture
@@ -268,3 +343,38 @@ def assert_valid_event(event):
     )
     for field in expected_fields:
         assert field in event
+
+
+def sqs_collect_messages(
+    aws_client,
+    queue_url: str,
+    min_events: int,
+    wait_time: int = 1,
+    retries: int = 3,
+) -> list[dict]:
+    """
+    Polls the given queue for the given amount of time and extracts and flattens from the received messages all
+    events (messages that have a "Records" field in their body, and where the records can be json-deserialized).
+
+    :param queue_url: the queue URL to listen from
+    :param min_events: the minimum number of events to receive to wait for
+    :param wait_time: the number of seconds to wait between retries
+    :param retries: the number of retries before raising an assert error
+    :return: a list with the deserialized records from the SQS messages
+    """
+
+    events = []
+
+    def collect_events() -> None:
+        _response = aws_client.sqs.receive_message(QueueUrl=queue_url, WaitTimeSeconds=wait_time)
+        messages = _response.get("Messages", [])
+
+        for m in messages:
+            events.append(m)
+            aws_client.sqs.delete_message(QueueUrl=queue_url, ReceiptHandle=m["ReceiptHandle"])
+
+        assert len(events) >= min_events
+
+    retry(collect_events, retries=retries, sleep=0.01)
+
+    return events

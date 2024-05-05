@@ -1,7 +1,8 @@
 """The SQS Query API allows using Queue URLs as endpoints for operations on that queue. See:
 https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-making-api-requests.html. This is a
 generic implementation that creates from Query API requests the respective AWS requests, and uses an aws_stack client
-to make the request. """
+to make the request."""
+
 import logging
 from typing import Dict, Optional, Tuple
 from urllib.parse import urlencode
@@ -33,7 +34,7 @@ from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
-service = load_service("sqs")
+service = load_service("sqs-query")
 parser = create_parser(service)
 serializer = create_serializer(service)
 
@@ -214,7 +215,7 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
         region_name=region,
         aws_access_key_id=account_id or INTERNAL_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
-    ).sqs
+    ).sqs_query
 
     try:
         # using the layer below boto3.client("sqs").<operation>(...) to make the call

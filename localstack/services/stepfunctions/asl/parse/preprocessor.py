@@ -158,6 +158,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_decl import (
     ReaderConfig,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.reader_config_props import (
+    ReaderConfigProps,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
     ItemSelector,
 )
@@ -172,6 +175,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.max_concurrency import (
     MaxConcurrency,
+    MaxConcurrencyPath,
 )
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.mode import (
     Mode,
@@ -543,6 +547,10 @@ class Preprocessor(ASLParserVisitor):
     ) -> MaxConcurrency:
         return MaxConcurrency(num=int(ctx.INT().getText()))
 
+    def visitMax_concurrency_path_decl(self, ctx: ASLParser.Max_concurrency_path_declContext):
+        max_concurrency_path: str = self._inner_string_of(parse_tree=ctx.STRINGPATH())
+        return MaxConcurrencyPath(max_concurrency_path=max_concurrency_path)
+
     def visitMode_decl(self, ctx: ASLParser.Mode_declContext) -> Mode:
         mode_type: int = self.visit(ctx.mode_type())
         return Mode(mode_type)
@@ -643,7 +651,7 @@ class Preprocessor(ASLParserVisitor):
         )
 
     def visitReader_config_decl(self, ctx: ASLParser.Reader_config_declContext) -> ReaderConfig:
-        props = TypedProps()
+        props = ReaderConfigProps()
         for child in ctx.children:
             cmp = self.visit(child)
             props.add(cmp)
@@ -654,7 +662,7 @@ class Preprocessor(ASLParserVisitor):
                     f"Expected a InputType declaration at '{ctx.getText()}'."
                 ),
             ),
-            max_items=props.get(typ=MaxItemsDecl),
+            max_items_decl=props.get(typ=MaxItemsDecl),
             csv_header_location=props.get(CSVHeaderLocation),
             csv_headers=props.get(CSVHeaders),
         )
@@ -876,3 +884,6 @@ class Preprocessor(ASLParserVisitor):
             version=props.get(typ=Version),
         )
         return program
+
+    def visitState_machine(self, ctx: ASLParser.State_machineContext) -> Program:
+        return self.visit(ctx.program_decl())

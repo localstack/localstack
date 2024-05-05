@@ -101,9 +101,9 @@ class CountingService:
             with self.on_demand_init_lock:
                 on_demand_tracker = self.on_demand_concurrency_trackers.get(scope_tuple)
                 if not on_demand_tracker:
-                    on_demand_tracker = self.on_demand_concurrency_trackers[
-                        scope_tuple
-                    ] = ConcurrencyTracker()
+                    on_demand_tracker = self.on_demand_concurrency_trackers[scope_tuple] = (
+                        ConcurrencyTracker()
+                    )
 
         provisioned_tracker = self.provisioned_concurrency_trackers.get(scope_tuple)
         # Double-checked locking pattern to initialize a provisioned concurrency tracker if it does not exist
@@ -111,9 +111,9 @@ class CountingService:
             with self.provisioned_concurrency_init_lock:
                 provisioned_tracker = self.provisioned_concurrency_trackers.get(scope_tuple)
                 if not provisioned_tracker:
-                    provisioned_tracker = self.provisioned_concurrency_trackers[
-                        scope_tuple
-                    ] = ConcurrencyTracker()
+                    provisioned_tracker = self.provisioned_concurrency_trackers[scope_tuple] = (
+                        ConcurrencyTracker()
+                    )
 
         # TODO: check that we don't give a lease while updating provisioned concurrency
         # Potential challenge if an update happens in between reserving the lease here and actually assigning

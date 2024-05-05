@@ -83,7 +83,3 @@ class StateTask(ExecutionState, abc.ABC):
         if isinstance(ex, TimeoutError):
             return self._get_timed_out_failure_event(env)
         return super()._from_error(env=env, ex=ex)
-
-    def _eval_body(self, env: Environment) -> None:
-        super(StateTask, self)._eval_body(env=env)
-        env.context_object_manager.context_object["Task"] = None

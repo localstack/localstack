@@ -433,9 +433,15 @@ def delete_expired_items() -> int:
                     items_to_delete = result.get("Items", [])
                     no_expired_items += len(items_to_delete)
                     table_description = client.describe_table(TableName=table_name)
-                    partition_key = _get_partition_key(table_description)
+                    partition_key, range_key = _get_hash_and_range_key(table_description)
                     keys_to_delete = [
-                        {partition_key: item.get(partition_key)} for item in items_to_delete
+                        {partition_key: item.get(partition_key)}
+                        if range_key is None
+                        else {
+                            partition_key: item.get(partition_key),
+                            range_key: item.get(range_key),
+                        }
+                        for item in items_to_delete
                     ]
                     delete_requests = [{"DeleteRequest": {"Key": key}} for key in keys_to_delete]
                     for i in range(0, len(delete_requests), 25):
@@ -450,11 +456,15 @@ def delete_expired_items() -> int:
     return no_expired_items
 
 
-def _get_partition_key(table_description: DescribeTableOutput) -> str:
+def _get_hash_and_range_key(table_description: DescribeTableOutput) -> [str, str | None]:
     key_schema = table_description.get("Table", {}).get("KeySchema", [])
+    hash_key, range_key = None, None
     for key in key_schema:
         if key["KeyType"] == "HASH":
-            return key["AttributeName"]
+            hash_key = key["AttributeName"]
+        if key["KeyType"] == "RANGE":
+            range_key = key["AttributeName"]
+    return hash_key, range_key
 
 
 class ExpiredItemsWorker:
@@ -1760,6 +1770,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             record = self.get_record_template(region_name)
             match request:
                 case {"Put": {"TableName": table_name, "Item": new_item}}:
+                    if not (stream_type := tables_stream_type.get(table_name)):
+                        continue
                     keys = SchemaExtractor.extract_keys(
                         item=new_item,
                         table_name=table_name,
@@ -1772,7 +1784,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     if existing_item == new_item:
                         continue
 
-                    stream_type = tables_stream_type[table_name]
                     if stream_type.stream_view_type:
                         record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
 
@@ -1790,6 +1801,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     continue
 
                 case {"Update": {"TableName": table_name, "Key": keys}}:
+                    if not (stream_type := tables_stream_type.get(table_name)):
+                        continue
                     updated_item = find_item_for_keys_values_in_batch(
                         table_name, keys, updated_items
                     )
@@ -1800,15 +1813,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         table_name, keys, existing_items
                     )
 
-                    stream_type = tables_stream_type[table_name]
                     if stream_type.stream_view_type:
                         record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
 
                     record["eventID"] = short_uid()
-                    record["eventName"] = "MODIFY" if updated_item else "INSERT"
+                    record["eventName"] = "MODIFY" if existing_item else "INSERT"
                     record["dynamodb"]["Keys"] = keys
 
-                    if stream_type.needs_old_image:
+                    if existing_item and stream_type.needs_old_image:
                         record["dynamodb"]["OldImage"] = existing_item
                     if stream_type.needs_new_image:
                         record["dynamodb"]["NewImage"] = updated_item
@@ -1818,13 +1830,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     continue
 
                 case {"Delete": {"TableName": table_name, "Key": keys}}:
+                    if not (stream_type := tables_stream_type.get(table_name)):
+                        continue
+
                     existing_item = find_item_for_keys_values_in_batch(
                         table_name, keys, existing_items
                     )
                     if not existing_item:
                         continue
 
-                    stream_type = tables_stream_type[table_name]
                     if stream_type.stream_view_type:
                         record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
 

@@ -147,9 +147,9 @@ def test_apigateway_invoke_localhost(deploy_cfn_template, aws_client):
     api_id = parsed.hostname.split(".")[0]
     state = json.loads(state_def)
     stage = state["States"]["LsCallApi"]["Parameters"]["Stage"]
-    state["States"]["LsCallApi"]["Parameters"][
-        "ApiEndpoint"
-    ] = f"{config.internal_service_url()}/restapis/{api_id}"
+    state["States"]["LsCallApi"]["Parameters"]["ApiEndpoint"] = (
+        f"{config.internal_service_url()}/restapis/{api_id}"
+    )
     state["States"]["LsCallApi"]["Parameters"]["Stage"] = stage
 
     aws_client.stepfunctions.update_state_machine(
@@ -192,9 +192,9 @@ def test_apigateway_invoke_localhost_with_path(deploy_cfn_template, aws_client):
     api_id = parsed.hostname.split(".")[0]
     state = json.loads(state_def)
     stage = state["States"]["LsCallApi"]["Parameters"]["Stage"]
-    state["States"]["LsCallApi"]["Parameters"][
-        "ApiEndpoint"
-    ] = f"{config.internal_service_url()}/restapis/{api_id}"
+    state["States"]["LsCallApi"]["Parameters"]["ApiEndpoint"] = (
+        f"{config.internal_service_url()}/restapis/{api_id}"
+    )
     state["States"]["LsCallApi"]["Parameters"]["Stage"] = stage
 
     aws_client.stepfunctions.update_state_machine(

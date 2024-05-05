@@ -15,6 +15,7 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
     ContextObject,
     ContextObjectInitData,
     ContextObjectManager,
+    Task,
 )
 from localstack.services.stepfunctions.asl.eval.event.event_history import (
     EventHistory,
@@ -70,12 +71,17 @@ class Environment:
         self.aws_execution_details = aws_execution_details
         self.callback_pool_manager = CallbackPoolManager(activity_store=activity_store)
         self.map_run_record_pool_manager = MapRunRecordPoolManager()
+
         self.context_object_manager = ContextObjectManager(
             context_object=ContextObject(
                 Execution=context_object_init["Execution"],
                 StateMachine=context_object_init["StateMachine"],
             )
         )
+        task: Optional[Task] = context_object_init.get("Task")
+        if task is not None:
+            self.context_object_manager.context_object["Task"] = task
+
         self.activity_store = activity_store
 
         self._frames = list()
@@ -90,6 +96,7 @@ class Environment:
         context_object_init = ContextObjectInitData(
             Execution=env.context_object_manager.context_object["Execution"],
             StateMachine=env.context_object_manager.context_object["StateMachine"],
+            Task=env.context_object_manager.context_object.get("Task"),
         )
         frame = cls(
             aws_execution_details=env.aws_execution_details,
@@ -178,7 +185,7 @@ class Environment:
                     previous_event_id=self.event_history_context.source_event_id
                 )
 
-            frame = Environment.as_frame_of(self, event_history_context)
+            frame = self.as_frame_of(self, event_history_context)
             self._frames.append(frame)
             return frame
 

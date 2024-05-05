@@ -584,9 +584,12 @@ class TestExternalServicePortsManager:
     def test_reserve_port_all_reserved(
         self, external_service_ports_manager: ExternalServicePortsManager
     ):
-        external_service_ports_manager.reserve_port()
-        external_service_ports_manager.reserve_port()
+        # the external service ports manager fixture only has 2 ports available,
+        # reserving 3 has to raise an error, but this could also happen earlier
+        # (if one of the ports is blocked by something else, like a previous test)
         with pytest.raises(PortNotAvailableException):
+            external_service_ports_manager.reserve_port()
+            external_service_ports_manager.reserve_port()
             external_service_ports_manager.reserve_port()
 
     def test_reserve_same_port_twice(

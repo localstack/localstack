@@ -76,6 +76,7 @@ from localstack.aws.api.kms import (
     ListResourceTagsResponse,
     MacAlgorithmSpec,
     MarkerType,
+    MultiRegionKey,
     NotFoundException,
     NullableBooleanType,
     PlaintextType,
@@ -142,9 +143,6 @@ VALID_OPERATIONS = [
     "GenerateDataKeyPairWithoutPlaintext",
 ]
 
-# special tag name to allow specifying a custom ID for created keys
-TAG_KEY_CUSTOM_ID = "_custom_id_"
-
 
 class ValidationError(CommonServiceException):
     """General validation error type (defined in the AWS docs, but not part of the botocore spec)"""
@@ -202,14 +200,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     ) -> KmsKey:
         store = kms_stores[account_id][region_name]
         key = KmsKey(request, account_id, region_name)
-
-        # check if the _custom_id_ tag is specified, to set a user-defined KeyId for this key
-        tags_dict = {tag["TagKey"]: tag["TagValue"] for tag in request.get("Tags", [])}
-        custom_id = tags_dict.get(TAG_KEY_CUSTOM_ID)
-        if custom_id and custom_id.strip():
-            key.metadata["KeyId"] = custom_id.strip()
-            key.calculate_and_set_arn(account_id=account_id, region=region_name)
-
         key_id = key.metadata["KeyId"]
         store.keys[key_id] = key
         return key
@@ -476,26 +466,37 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def replicate_key(
         self, context: RequestContext, request: ReplicateKeyRequest
     ) -> ReplicateKeyResponse:
-        key = self._get_kms_key(context.account_id, context.region, request.get("KeyId"))
+        account_id = context.account_id
+        key = self._get_kms_key(account_id, context.region, request.get("KeyId"))
         key_id = key.metadata.get("KeyId")
         if not key.metadata.get("MultiRegion"):
             raise UnsupportedOperationException(
                 f"Unable to replicate a non-MultiRegion key {key_id}"
             )
         replica_region = request.get("ReplicaRegion")
-        replicate_to_store = kms_stores[context.account_id][replica_region]
+        replicate_to_store = kms_stores[account_id][replica_region]
         if key_id in replicate_to_store.keys:
             raise AlreadyExistsException(
                 f"Unable to replicate key {key_id} to region {replica_region}, as the key "
                 f"already exist there"
             )
         replica_key = copy.deepcopy(key)
-        replica_key.metadata["Description"] = request.get("Description", "")
-        # Multiregion keys have the same key ID for all replicas, but ARNs differ, as they include actual regions of
-        # replicas.
-        replica_key.calculate_and_set_arn(context.account_id, replica_region)
+        replica_key.replicate_metadata(request, account_id, replica_region)
         replicate_to_store.keys[key_id] = replica_key
+
+        self.update_primary_key_with_replica_keys(key, replica_key, replica_region)
+
         return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key.metadata)
+
+    @staticmethod
+    # Adds new multi region replica key to the primary key's metadata.
+    def update_primary_key_with_replica_keys(key: KmsKey, replica_key: KmsKey, region: str):
+        key.metadata["MultiRegionConfiguration"]["ReplicaKeys"].append(
+            MultiRegionKey(
+                Arn=replica_key.metadata["Arn"],
+                Region=region,
+            )
+        )
 
     @handler("UpdateKeyDescription", expand=False)
     def update_key_description(
@@ -1093,9 +1094,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         if expiration_model:
             key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
         else:
-            key_to_import_material_to.metadata[
-                "ExpirationModel"
-            ] = ExpirationModelType.KEY_MATERIAL_EXPIRES
+            key_to_import_material_to.metadata["ExpirationModel"] = (
+                ExpirationModelType.KEY_MATERIAL_EXPIRES
+            )
         if (
             key_to_import_material_to.metadata["ExpirationModel"]
             == ExpirationModelType.KEY_MATERIAL_EXPIRES

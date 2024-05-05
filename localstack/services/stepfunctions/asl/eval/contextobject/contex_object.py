@@ -1,4 +1,4 @@
-from typing import Any, Final, Optional, TypedDict
+from typing import Any, Final, NotRequired, Optional, TypedDict
 
 from localstack.utils.strings import long_uid
 
@@ -41,7 +41,7 @@ class ContextObject(TypedDict):
     Execution: Execution
     State: Optional[State]
     StateMachine: StateMachine
-    Task: Optional[Task]  # Null if the Parameters field is outside a task state.
+    Task: NotRequired[Task]  # Null if the Parameters field is outside a task state.
     Map: Optional[Map]  # Only available when processing a Map state.
 
 
@@ -60,3 +60,4 @@ class ContextObjectManager:
 class ContextObjectInitData(TypedDict):
     Execution: Execution
     StateMachine: StateMachine
+    Task: Optional[Task]

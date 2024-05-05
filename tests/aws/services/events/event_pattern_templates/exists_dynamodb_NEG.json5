@@ -1,0 +1,22 @@
+// DynamoDB Stream Tutorial: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial2.html
+{
+  "Event": {
+    "id": "1",
+    "source": "test-source",
+    "detail-type": "test-detail-type",
+    "account": "123456789012",
+    "region": "us-east-2",
+    "time": "2022-07-13T13:48:01Z",
+    "dynamodb": {
+      "id": {"S": "test1234"},
+      "presentKey": {"S": "test123"}
+    }
+  },
+  "EventPattern": {
+    "dynamodb": {
+      // "Exists matching only works on leaf nodes. It does not work on intermediate nodes."
+      // https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-exists-matching
+      "presentKey": [{"exists": true}]
+    }
+  }
+}

@@ -33,7 +33,6 @@ from localstack.aws.api.sqs import (
     EmptyBatchRequest,
     GetQueueAttributesResult,
     GetQueueUrlResult,
-    Integer,
     InvalidAttributeName,
     InvalidBatchEntryId,
     InvalidMessageContents,
@@ -47,6 +46,7 @@ from localstack.aws.api.sqs import (
     MessageBodyAttributeMap,
     MessageBodySystemAttributeMap,
     MessageSystemAttributeName,
+    NullableInteger,
     PurgeQueueInProgress,
     QueueAttributeMap,
     QueueAttributeName,
@@ -620,11 +620,11 @@ class SqsDeveloperEndpoints:
 
     def __init__(self, stores=None):
         self.stores = stores or sqs_stores
-        self.service = load_service("sqs")
+        self.service = load_service("sqs-query")
         self.serializer = create_serializer(self.service)
 
     @route("/_aws/sqs/messages")
-    @aws_response_serializer("sqs", "ReceiveMessage")
+    @aws_response_serializer("sqs-query", "ReceiveMessage")
     def list_messages(self, request: Request) -> ReceiveMessageResult:
         """
         This endpoint expects a ``QueueUrl`` request parameter (either as query arg or form parameter), similar to
@@ -651,7 +651,7 @@ class SqsDeveloperEndpoints:
         return self._get_and_serialize_messages(request, region, account_id, queue_name)
 
     @route("/_aws/sqs/messages/<region>/<account_id>/<queue_name>")
-    @aws_response_serializer("sqs", "ReceiveMessage")
+    @aws_response_serializer("sqs-query", "ReceiveMessage")
     def list_messages_for_queue_url(
         self, request: Request, region: str, account_id: str, queue_name: str
     ) -> ReceiveMessageResult:
@@ -956,7 +956,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         context: RequestContext,
         queue_url: String,
         receipt_handle: String,
-        visibility_timeout: Integer,
+        visibility_timeout: NullableInteger,
         **kwargs,
     ) -> None:
         queue = self._resolve_queue(context, queue_url=queue_url)
@@ -1039,7 +1039,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         context: RequestContext,
         queue_url: String,
         message_body: String,
-        delay_seconds: Integer = None,
+        delay_seconds: NullableInteger = None,
         message_attributes: MessageBodyAttributeMap = None,
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
@@ -1145,7 +1145,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue: SqsQueue,
         context: RequestContext,
         message_body: String,
-        delay_seconds: Integer = None,
+        delay_seconds: NullableInteger = None,
         message_attributes: MessageBodyAttributeMap = None,
         message_system_attributes: MessageBodySystemAttributeMap = None,
         message_deduplication_id: String = None,
@@ -1184,9 +1184,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue_url: String,
         attribute_names: AttributeNameList = None,
         message_attribute_names: MessageAttributeNameList = None,
-        max_number_of_messages: Integer = None,
-        visibility_timeout: Integer = None,
-        wait_time_seconds: Integer = None,
+        max_number_of_messages: NullableInteger = None,
+        visibility_timeout: NullableInteger = None,
+        wait_time_seconds: NullableInteger = None,
         receive_request_attempt_id: String = None,
         **kwargs,
     ) -> ReceiveMessageResult:
@@ -1221,9 +1221,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             # TODO: does this need to be atomic?
             for standard_message in result.dead_letter_messages:
                 message = standard_message.message
-                message["Attributes"][
-                    MessageSystemAttributeName.DeadLetterQueueSourceArn
-                ] = queue.arn
+                message["Attributes"][MessageSystemAttributeName.DeadLetterQueueSourceArn] = (
+                    queue.arn
+                )
                 dl_queue.put(
                     message=message,
                     message_deduplication_id=standard_message.message_deduplication_id,
@@ -1364,7 +1364,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 )
 
     def list_message_move_tasks(
-        self, context: RequestContext, source_arn: String, max_results: Integer = None, **kwargs
+        self,
+        context: RequestContext,
+        source_arn: String,
+        max_results: NullableInteger = None,
+        **kwargs,
     ) -> ListMessageMoveTasksResult:
         try:
             self._require_queue_by_arn(context, source_arn)
@@ -1415,9 +1419,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if entity.max_number_of_messages_per_second is not None:
             entry["MaxNumberOfMessagesPerSecond"] = entity.max_number_of_messages_per_second
         if entity.approximate_number_of_messages_to_move is not None:
-            entry[
-                "ApproximateNumberOfMessagesToMove"
-            ] = entity.approximate_number_of_messages_to_move
+            entry["ApproximateNumberOfMessagesToMove"] = (
+                entity.approximate_number_of_messages_to_move
+            )
         if entity.approximate_number_of_messages_moved is not None:
             entry["ApproximateNumberOfMessagesMoved"] = entity.approximate_number_of_messages_moved
         if entity.failure_reason is not None:
@@ -1430,7 +1434,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         context: RequestContext,
         source_arn: String,
         destination_arn: String = None,
-        max_number_of_messages_per_second: Integer = None,
+        max_number_of_messages_per_second: NullableInteger = None,
         **kwargs,
     ) -> StartMessageMoveTaskResult:
         try:
@@ -1828,5 +1832,7 @@ def message_filter_message_attributes(message: Message, names: Optional[MessageA
             if k.startswith(prefix):
                 matched.append(k)
             break
-
-    message["MessageAttributes"] = {k: attributes[k] for k in matched}
+    if matched:
+        message["MessageAttributes"] = {k: attributes[k] for k in matched}
+    else:
+        message.pop("MessageAttributes")

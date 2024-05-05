@@ -1391,8 +1391,16 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..DashboardArn"], condition=is_old_provider
-    )  # ARN has a typo in moto
+        condition=is_old_provider,
+        paths=[
+            "$..DashboardArn",  # ARN has a typo in moto
+        ],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..DashboardEntries..Size",  # need to be skipped because size changes if the region name length is longer
+        ]
+    )
     def test_dashboard_lifecycle(self, aws_client, region_name, snapshot):
         dashboard_name = f"test-{short_uid()}"
         dashboard_body = {
@@ -2532,9 +2540,7 @@ def _sqs_messages_snapshot(expected_state, sqs_client, sqs_queue, snapshot, iden
             found_msg = message
             receipt_handle = msg["ReceiptHandle"]
             break
-    assert (
-        found_msg
-    ), f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
+    assert found_msg, f"no message found for {expected_state}. Got {len(result['Messages'])} messages.\n{json.dumps(result)}"
     sqs_client.delete_message(QueueUrl=sqs_queue, ReceiptHandle=receipt_handle)
     snapshot.match(f"{identifier}-sqs-msg", found_msg)
 

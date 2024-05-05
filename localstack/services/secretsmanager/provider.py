@@ -6,11 +6,10 @@ import re
 import time
 from typing import Final, Optional, Union
 
+import moto.secretsmanager.exceptions as moto_exception
 from botocore.utils import InvalidArnException
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import secretsmanager_backends
-from moto.secretsmanager import utils as secretsmanager_utils
-from moto.secretsmanager.exceptions import SecretNotFoundException as MotoSecretNotFoundException
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend
 from moto.secretsmanager.responses import SecretsManagerResponse
 
@@ -67,23 +66,22 @@ from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto
 from localstack.utils.aws import arns
 from localstack.utils.patch import patch
-from localstack.utils.strings import short_uid
 from localstack.utils.time import today_no_time
 
 # Constants.
 AWSPREVIOUS: Final[str] = "AWSPREVIOUS"
 AWSPENDING: Final[str] = "AWSPENDING"
 AWSCURRENT: Final[str] = "AWSCURRENT"
+# The maximum number of outdated versions that can be stored in the secret.
+# see: https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_PutSecretValue.html
+MAX_OUTDATED_SECRET_VERSIONS: Final[int] = 100
 #
 # Error Messages.
-AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[
-    str
-] = "You can't create this secret because a secret with this name is already scheduled for deletion."
+AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION: Final[str] = (
+    "You can't create this secret because a secret with this name is already scheduled for deletion."
+)
 
 LOG = logging.getLogger(__name__)
-
-# Maps key names to ARNs.
-SECRET_ARN_STORAGE = {}
 
 
 class ValidationException(CommonServiceException):
@@ -118,6 +116,19 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         return backend
 
     @staticmethod
+    def _raise_if_default_kms_key(
+        secret_id: str, request: RequestContext, backend: SecretsManagerBackend
+    ):
+        try:
+            secret = backend.describe_secret(secret_id)
+        except moto_exception.SecretNotFoundException:
+            raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
+        if secret.kms_key_id is None and request.account_id != secret.account_id:
+            raise InvalidRequestException(
+                "You can't access a secret from a different AWS account if you encrypt the secret with the default KMS service key."
+            )
+
+    @staticmethod
     def _validate_secret_id(secret_id: SecretIdType) -> bool:
         # The secret name can contain ASCII letters, numbers, and the following characters: /_+=.@-
         return bool(re.match(r"^[A-Za-z0-9/_+=.@-]+\Z", secret_id))
@@ -142,7 +153,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
             PutSecretValueRequest,
             RotateSecretRequest,
             UpdateSecretRequest,
-        ]
+        ],
     ):
         if "ClientRequestToken" not in request:
             raise InvalidRequestException(
@@ -178,9 +189,25 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     ) -> DeleteSecretResponse:
         secret_id: str = request["SecretId"]
         self._raise_if_invalid_secret_id(secret_id)
-        res = call_moto(context, request)
-        delete_arn_binding_for(context.region, secret_id)
-        return res
+        recovery_window_in_days: Optional[int] = request.get("RecoveryWindowInDays")
+        force_delete_without_recovery: Optional[bool] = request.get("ForceDeleteWithoutRecovery")
+
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        try:
+            arn, name, deletion_date = backend.delete_secret(
+                secret_id=secret_id,
+                recovery_window_in_days=recovery_window_in_days,
+                force_delete_without_recovery=force_delete_without_recovery,
+            )
+        except moto_exception.InvalidParameterException as e:
+            raise InvalidParameterException(str(e))
+        except moto_exception.InvalidRequestException:
+            raise InvalidRequestException(
+                "You tried to perform the operation on a secret that's currently marked deleted."
+            )
+        except moto_exception.SecretNotFoundException:
+            raise SecretNotFoundException()
+        return DeleteSecretResponse(ARN=arn, Name=name, DeletionDate=deletion_date)
 
     @handler("DescribeSecret", expand=False)
     def describe_secret(
@@ -191,7 +218,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
         try:
             secret = backend.describe_secret(secret_id)
-        except MotoSecretNotFoundException:
+        except moto_exception.SecretNotFoundException:
             raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
         return DescribeSecretResponse(**secret.to_dict())
 
@@ -209,17 +236,41 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def get_secret_value(
         self, context: RequestContext, request: GetSecretValueRequest
     ) -> GetSecretValueResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request.get("SecretId")
+        version_id = request.get("VersionId")
+        version_stage = request.get("VersionStage")
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        self._raise_if_default_kms_key(secret_id, context, backend)
+        try:
+            response = backend.get_secret_value(secret_id, version_id, version_stage)
+        except moto_exception.SecretNotFoundException:
+            raise ResourceNotFoundException(
+                f"Secrets Manager can't find the specified secret value for staging label: {version_stage}"
+            )
+        except moto_exception.SecretStageVersionMismatchException:
+            raise InvalidRequestException(
+                "You provided a VersionStage that is not associated to the provided VersionId."
+            )
+        except moto_exception.SecretHasNoValueException:
+            raise ResourceNotFoundException(
+                f"Secrets Manager can't find the specified secret value for staging label: {version_stage}"
+            )
+        except moto_exception.InvalidRequestException:
+            raise InvalidRequestException(
+                "You can't perform this operation on the secret because it was marked for deletion."
+            )
+        return GetSecretValueResponse(**response)
 
     @handler("ListSecretVersionIds", expand=False)
     def list_secret_version_ids(
         self, context: RequestContext, request: ListSecretVersionIdsRequest
     ) -> ListSecretVersionIdsResponse:
         secret_id = request["SecretId"]
+        include_deprecated = request.get("IncludeDeprecated", False)
         self._raise_if_invalid_secret_id(secret_id)
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
-        secrets = backend.list_secret_version_ids(secret_id)
+        secrets = backend.list_secret_version_ids(secret_id, include_deprecated=include_deprecated)
         return ListSecretVersionIdsResponse(**json.loads(secrets))
 
     @handler("PutResourcePolicy", expand=False)
@@ -236,9 +287,30 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def put_secret_value(
         self, context: RequestContext, request: PutSecretValueRequest
     ) -> PutSecretValueResponse:
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
         self._raise_if_missing_client_req_token(request)
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        client_req_token = request.get("ClientRequestToken")
+        secret_string = request.get("SecretString")
+        secret_binary = request.get("SecretBinary")
+        if not secret_binary and not secret_string:
+            raise InvalidRequestException("You must provide either SecretString or SecretBinary.")
+
+        version_stages = request.get("VersionStages", ["AWSCURRENT"])
+        if not isinstance(version_stages, list):
+            version_stages = [version_stages]
+
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        self._raise_if_default_kms_key(secret_id, context, backend)
+
+        response = backend.put_secret_value(
+            secret_id=secret_id,
+            secret_binary=secret_binary,
+            secret_string=secret_string,
+            version_stages=version_stages,
+            client_request_token=client_req_token,
+        )
+        return PutSecretValueResponse(**json.loads(response))
 
     @handler("RemoveRegionsFromReplication", expand=False)
     def remove_regions_from_replication(
@@ -258,8 +330,14 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     def restore_secret(
         self, context: RequestContext, request: RestoreSecretRequest
     ) -> RestoreSecretResponse:
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        self._raise_if_invalid_secret_id(secret_id)
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        try:
+            arn, name = backend.restore_secret(secret_id)
+        except moto_exception.SecretNotFoundException:
+            raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
+        return RestoreSecretResponse(ARN=arn, Name=name)
 
     @handler("RotateSecret", expand=False)
     def rotate_secret(
@@ -297,10 +375,37 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         self, context: RequestContext, request: UpdateSecretRequest
     ) -> UpdateSecretResponse:
         # if we're modifying the value of the secret, ClientRequestToken is required
-        if any(key for key in request if key in ("SecretBinary", "SecretString")):
-            self._raise_if_missing_client_req_token(request)
-        self._raise_if_invalid_secret_id(request["SecretId"])
-        return call_moto(context, request)
+        secret_id = request["SecretId"]
+        secret_string = request.get("SecretString")
+        secret_binary = request.get("SecretBinary")
+        description = request.get("Description")
+        kms_key_id = request.get("KmsKeyId")
+        client_req_token = request.get("ClientRequestToken")
+        self._raise_if_invalid_secret_id(secret_id)
+        self._raise_if_missing_client_req_token(request)
+
+        backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
+        try:
+            secret = backend.update_secret(
+                secret_id,
+                description=description,
+                secret_string=secret_string,
+                secret_binary=secret_binary,
+                client_request_token=client_req_token,
+                kms_key_id=kms_key_id,
+            )
+        except moto_exception.SecretNotFoundException:
+            raise ResourceNotFoundException("Secrets Manager can't find the specified secret.")
+        except moto_exception.OperationNotPermittedOnReplica:
+            raise InvalidRequestException(
+                "Operation not permitted on a replica secret. Call must be made in primary secret's region."
+            )
+        except moto_exception.InvalidRequestException:
+            raise InvalidRequestException(
+                "An error occurred (InvalidRequestException) when calling the UpdateSecret operation: "
+                "You can't perform this operation on the secret because it was marked for deletion."
+            )
+        return UpdateSecretResponse(**json.loads(secret))
 
     @handler("UpdateSecretVersionStage", expand=False)
     def update_secret_version_stage(
@@ -381,7 +486,9 @@ def moto_smb_create_secret(fn, self, name, *args, **kwargs):
 
 
 @patch(SecretsManagerBackend.list_secret_version_ids)
-def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
+def moto_smb_list_secret_version_ids(
+    _, self, secret_id: str, include_deprecated: bool, *args, **kwargs
+):
     if secret_id not in self.secrets:
         raise SecretNotFoundException()
 
@@ -397,18 +504,24 @@ def moto_smb_list_secret_version_ids(_, self, secret_id, *args, **kwargs):
     versions: list[SecretVersionsListEntry] = list()
     for version_id, version in secret.versions.items():
         version_stages = version["version_stages"]
-        entry = SecretVersionsListEntry(
-            CreatedDate=version["createdate"],
-            VersionId=version_id,
-            VersionStages=version_stages,
-        )
+        # Patch: include deprecated versions if include_deprecated is True.
+        # version_stages is empty if the version is deprecated.
+        # see: https://docs.aws.amazon.com/secretsmanager/latest/userguide/getting-started.html#term_version
+        if len(version_stages) > 0 or include_deprecated:
+            entry = SecretVersionsListEntry(
+                CreatedDate=version["createdate"],
+                VersionId=version_id,
+            )
 
-        # Patch: bind LastAccessedDate if one exists for this version.
-        last_accessed_date = version.get("last_accessed_date")
-        if last_accessed_date:
-            entry["LastAccessedDate"] = last_accessed_date
+            if version_stages:
+                entry["VersionStages"] = version_stages
 
-        versions.append(entry)
+            # Patch: bind LastAccessedDate if one exists for this version.
+            last_accessed_date = version.get("last_accessed_date")
+            if last_accessed_date:
+                entry["LastAccessedDate"] = last_accessed_date
+
+            versions.append(entry)
 
     # Patch: sort versions by date.
     versions.sort(key=lambda v: v["CreatedDate"], reverse=True)
@@ -429,7 +542,7 @@ def fake_secret_to_dict(fn, self):
         del res_dict["RotationEnabled"]
     if self.auto_rotate_after_days is None and "RotationRules" in res_dict:
         del res_dict["RotationRules"]
-    if not self.tags and "Tags" in res_dict:
+    if self.tags is None and "Tags" in res_dict:
         del res_dict["Tags"]
     for null_field in [key for key, value in res_dict.items() if value is None]:
         del res_dict[null_field]
@@ -535,12 +648,20 @@ def backend_update_secret_version_stage(
 def fake_secret_reset_default_version(fn, self, secret_version, version_id):
     fn(self, secret_version, version_id)
 
-    # Remove versions with no version stages.
-    versions_no_stages = [
+    # Remove versions with no version stages, if max limit of outdated versions is exceeded.
+    versions_no_stages: list[str] = [
         version_id for version_id, version in self.versions.items() if not version["version_stages"]
     ]
-    for version_no_stages in versions_no_stages:
-        del self.versions[version_no_stages]
+    versions_to_delete: list[str] = []
+
+    # Patch: remove outdated versions if the max deprecated versions limit is exceeded.
+    if len(versions_no_stages) >= MAX_OUTDATED_SECRET_VERSIONS:
+        versions_to_delete = versions_no_stages[
+            : len(versions_no_stages) - MAX_OUTDATED_SECRET_VERSIONS
+        ]
+
+    for version_to_delete in versions_to_delete:
+        del self.versions[version_to_delete]
 
 
 @patch(FakeSecret.remove_version_stages_from_old_versions)
@@ -693,35 +814,24 @@ def backend_rotate_secret(
                 raise pending_version.pop()
             # Fall through if there is no previously pending version so we'll "stuck" with a new
             # secret version in AWSPENDING state.
-
+    secret.last_rotation_date = int(time.time())
     return secret.to_short_dict(version_id=new_version_id)
 
 
-@patch(MotoSecretNotFoundException.__init__)
+@patch(moto_exception.SecretNotFoundException.__init__)
 def moto_secret_not_found_exception_init(fn, self):
     fn(self)
     self.code = 400
 
 
-def get_arn_binding_key_for(region: str, secret_id: str) -> str:
-    return f"{region}_{secret_id}"
-
-
-def get_arn_binding_for(account_id, region, secret_id):
-    k = get_arn_binding_key_for(region, secret_id)
-    if k not in SECRET_ARN_STORAGE:
-        id_string = short_uid()[:6]
-        arn = arns.secretsmanager_secret_arn(
-            secret_id, account_id=account_id, region_name=region, random_suffix=id_string
-        )
-        SECRET_ARN_STORAGE[k] = arn
-    return SECRET_ARN_STORAGE[k]
-
-
-def delete_arn_binding_for(region: str, secret_id: str) -> None:
-    k = get_arn_binding_key_for(region, secret_id)
-    if k in SECRET_ARN_STORAGE:
-        del SECRET_ARN_STORAGE[k]
+@patch(FakeSecret._form_version_ids_to_stages, pass_target=False)
+def _form_version_ids_to_stages_modal(self):
+    version_id_to_stages: dict[str, list] = {}
+    for key, value in self.versions.items():
+        # Patch: include version_stages in the response only if it is not empty.
+        if len(value["version_stages"]) > 0:
+            version_id_to_stages[key] = value["version_stages"]
+    return version_id_to_stages
 
 
 # patching resource policy in moto
@@ -787,7 +897,6 @@ def put_resource_policy_response(self):
 
 
 def apply_patches():
-    secretsmanager_utils.secret_arn = get_arn_binding_for
     SecretsManagerBackend.get_resource_policy = get_resource_policy_model
     SecretsManagerResponse.get_resource_policy = get_resource_policy_response
 
