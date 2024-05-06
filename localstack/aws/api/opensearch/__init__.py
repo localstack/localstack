@@ -32,6 +32,7 @@ EngineVersion = str
 ErrorMessage = str
 ErrorType = str
 GUID = str
+HostedZoneId = str
 IdentityPoolId = str
 InstanceCount = int
 InstanceRole = str
@@ -1130,6 +1131,7 @@ class DomainStatus(TypedDict, total=False):
     Endpoint: Optional[ServiceUrl]
     EndpointV2: Optional[ServiceUrl]
     Endpoints: Optional[EndpointsMap]
+    DomainEndpointV2HostedZoneId: Optional[HostedZoneId]
     Processing: Optional[Boolean]
     UpgradeProcessing: Optional[Boolean]
     EngineVersion: Optional[VersionString]

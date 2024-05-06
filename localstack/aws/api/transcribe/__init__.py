@@ -52,11 +52,20 @@ class CLMLanguageCode(str):
     ja_JP = "ja-JP"
 
 
+class CallAnalyticsFeature(str):
+    GENERATIVE_SUMMARIZATION = "GENERATIVE_SUMMARIZATION"
+
+
 class CallAnalyticsJobStatus(str):
     QUEUED = "QUEUED"
     IN_PROGRESS = "IN_PROGRESS"
     FAILED = "FAILED"
     COMPLETED = "COMPLETED"
+
+
+class CallAnalyticsSkippedReasonCode(str):
+    INSUFFICIENT_CONVERSATION_CONTENT = "INSUFFICIENT_CONVERSATION_CONTENT"
+    FAILED_SAFETY_GUIDELINES = "FAILED_SAFETY_GUIDELINES"
 
 
 class InputType(str):
@@ -382,9 +391,23 @@ class Media(TypedDict, total=False):
     RedactedMediaFileUri: Optional[Uri]
 
 
+class CallAnalyticsSkippedFeature(TypedDict, total=False):
+    Feature: Optional[CallAnalyticsFeature]
+    ReasonCode: Optional[CallAnalyticsSkippedReasonCode]
+    Message: Optional[String]
+
+
+CallAnalyticsSkippedFeatureList = List[CallAnalyticsSkippedFeature]
+
+
+class CallAnalyticsJobDetails(TypedDict, total=False):
+    Skipped: Optional[CallAnalyticsSkippedFeatureList]
+
+
 class CallAnalyticsJob(TypedDict, total=False):
     CallAnalyticsJobName: Optional[CallAnalyticsJobName]
     CallAnalyticsJobStatus: Optional[CallAnalyticsJobStatus]
+    CallAnalyticsJobDetails: Optional[CallAnalyticsJobDetails]
     LanguageCode: Optional[LanguageCode]
     MediaSampleRateHertz: Optional[MediaSampleRateHertz]
     MediaFormat: Optional[MediaFormat]
@@ -407,6 +430,7 @@ class CallAnalyticsJobSummary(TypedDict, total=False):
     CompletionTime: Optional[DateTime]
     LanguageCode: Optional[LanguageCode]
     CallAnalyticsJobStatus: Optional[CallAnalyticsJobStatus]
+    CallAnalyticsJobDetails: Optional[CallAnalyticsJobDetails]
     FailureReason: Optional[FailureReason]
 
 
