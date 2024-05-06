@@ -42,6 +42,7 @@ def test_put_events_with_target_sqs(put_events_with_filter_to_sqs, snapshot):
 
 
 @markers.aws.unknown
+@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_target_sqs_new_region(aws_client_factory):
     events_client = aws_client_factory(region_name="eu-west-1").events
     queue_name = "queue-{}".format(short_uid())
