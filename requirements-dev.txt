@@ -515,7 +515,7 @@ websocket-client==1.8.0
     # via
     #   docker
     #   localstack-core
-werkzeug==3.0.2
+werkzeug==3.0.3
     # via
     #   flask
     #   localstack-core

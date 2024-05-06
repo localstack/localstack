@@ -180,7 +180,7 @@ urllib3==2.2.1
     #   requests
 websocket-client==1.8.0
     # via docker
-werkzeug==3.0.2
+werkzeug==3.0.3
     # via
     #   flask
     #   localstack-core (pyproject.toml)
