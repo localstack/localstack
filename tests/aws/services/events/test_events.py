@@ -82,6 +82,10 @@ EVENT_BUS_ROLE = {
 
 class TestEvents:
     @markers.aws.validated
+    @pytest.mark.skipif(
+        not is_v2_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_put_events_without_source(self, snapshot, aws_client):
         entries = [
             {
@@ -93,6 +97,10 @@ class TestEvents:
         snapshot.match("put-events", response)
 
     @markers.aws.unknown
+    @pytest.mark.skipif(
+        not is_v2_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_put_event_without_detail(self, snapshot, aws_client):
         entries = [
             {
