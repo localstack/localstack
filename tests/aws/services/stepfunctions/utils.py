@@ -120,7 +120,7 @@ def await_state_machine_version_listed(
         )
 
 
-def _await_on_execution_events(
+def await_on_execution_events(
     stepfunctions_client, execution_arn: str, check_func: Callable[[HistoryEventList], bool]
 ) -> None:
     def _run_check():
@@ -148,7 +148,7 @@ def await_execution_success(stepfunctions_client, execution_arn: str):
             return "executionSucceededEventDetails" in last_event
         return False
 
-    _await_on_execution_events(
+    await_on_execution_events(
         stepfunctions_client=stepfunctions_client,
         execution_arn=execution_arn,
         check_func=_check_last_is_success,
@@ -190,7 +190,7 @@ def await_execution_terminated(stepfunctions_client, execution_arn: str):
             }
         return False
 
-    _await_on_execution_events(
+    await_on_execution_events(
         stepfunctions_client=stepfunctions_client,
         execution_arn=execution_arn,
         check_func=_check_last_is_terminal,
@@ -221,7 +221,7 @@ def await_execution_started(stepfunctions_client, execution_arn: str):
             return "executionStartedEventDetails" in event
         return False
 
-    _await_on_execution_events(
+    await_on_execution_events(
         stepfunctions_client=stepfunctions_client,
         execution_arn=execution_arn,
         check_func=_check_stated_exists,
