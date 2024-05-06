@@ -1,6 +1,17 @@
 name: CLI Tests
 on:
   workflow_dispatch:
+    inputs:
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+        - DEBUG
+        - INFO
+        - WARNING
+        - ERROR
+        - CRITICAL
+        default: WARNING
   pull_request:
     paths:
       - '**'
@@ -49,6 +60,8 @@ concurrency:
 env:
   # Enable colors in tests running outside of docker (not in a tty - https://github.com/pytest-dev/pytest/pull/7462)
   PY_COLORS: "1"
+  # Configure PyTest log level
+  PYTEST_LOGLEVEL: "${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}"
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
   TINYBIRD_DATASOURCE: community_tests_cli
@@ -81,14 +94,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install CLI test dependencies
         run: |
-          python -m pip install --upgrade pip wheel setuptools
+          make venv
+          source .venv/bin/activate
           pip install -e .
           pip install pytest pytest-tinybird
       - name: Run CLI tests
         env:
           PYTEST_ADDOPTS: "${{ env.TINYBIRD_PYTEST_ARGS }}-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:localstack.testing.pytest.validation_tracking -p no:localstack.testing.pytest.path_filter -p no:tests.fixtures -s"
-        run: |
-          python -m pytest tests/cli/
+          TEST_PATH: "tests/cli/"
+        run: make test
 
   push-to-tinybird:
     if: always() && github.ref == 'refs/heads/master'
