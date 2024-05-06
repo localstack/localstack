@@ -1130,6 +1130,7 @@ class TestEventRule:
 
 class TestEventPattern:
     @markers.aws.validated
+    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_pattern_with_values_in_array(self, put_events_with_filter_to_sqs, snapshot):
         pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
         entries1 = [
@@ -1169,6 +1170,7 @@ class TestEventPattern:
         snapshot.match("messages", messages)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_pattern_nested(self, put_events_with_filter_to_sqs, snapshot):
         pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
         entries1 = [

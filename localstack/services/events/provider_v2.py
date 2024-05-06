@@ -4,7 +4,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.events import (
     Arn,
@@ -29,6 +28,8 @@ from localstack.aws.api.events import (
     PutEventsRequestEntry,
     PutEventsRequestEntryList,
     PutEventsResponse,
+    PutEventsResultEntry,
+    PutEventsResultEntryList,
     PutPartnerEventsRequestEntryList,
     PutPartnerEventsResponse,
     PutRuleResponse,
@@ -67,7 +68,6 @@ from localstack.services.events.models_v2 import (
 )
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
-from localstack.services.events.utils import matches_event
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import long_uid
 
@@ -103,6 +103,24 @@ def get_event_time(event: PutEventsRequestEntry) -> str:
             )
     formatted_time_string = event_time.strftime("%Y-%m-%dT%H:%M:%SZ")
     return formatted_time_string
+
+
+def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
+    if not event.get("Source"):
+        return {
+            "ErrorCode": "InvalidArgument",
+            "ErrorMessage": "Parameter Source is not valid. Reason: Source is a required argument.",
+        }
+    elif not event.get("DetailType"):
+        return {
+            "ErrorCode": "InvalidArgument",
+            "ErrorMessage": "Parameter DetailType is not valid. Reason: DetailType is a required argument.",
+        }
+    elif not event.get("Detail"):
+        return {
+            "ErrorCode": "InvalidArgument",
+            "ErrorMessage": "Parameter Detail is not valid. Reason: Detail is a required argument.",
+        }
 
 
 def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> dict:
@@ -441,14 +459,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         endpoint_id: EndpointId = None,
         **kwargs,
     ) -> PutEventsResponse:
-        processed_entries_uuids, failed_entries = self._process_entries(context, entries)
+        entries, failed_entry_count = self._process_entries(context, entries)
 
         response = PutEventsResponse(
-            Entries=[{"EventId": id} for id in processed_entries_uuids],
-            FailedEntryCount=len(failed_entries),
+            Entries=entries,
+            FailedEntryCount=failed_entry_count,
         )
-        if failed_entries:
-            response["FailedEntries"] = failed_entries
         return response
 
     @handler("PutPartnerEvents")
@@ -642,18 +658,22 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def _process_entries(
         self, context: RequestContext, entries: PutEventsRequestEntryList
-    ) -> tuple[list, list]:
-        processed_entries_uuids = []
-        failed_entries = []
+    ) -> tuple[PutEventsResultEntryList, int]:
+        processed_entries = []
+        failed_entry_count = 0
         for event in entries:
             event_bus_name = event.get("EventBusName", "default")
+            if event_failed_validation := validate_event(event):
+                processed_entries.append(event_failed_validation)
+                failed_entry_count += 1
+                continue
             event = format_event(event, context.region, context.account_id)
-            processed_entries_uuids.append(event["id"])
             store = self.get_store(context)
             try:
                 event_bus = self.get_event_bus(event_bus_name, store)
             except ResourceNotFoundException:
-                # ignore events for non-existing event buses
+                # ignore events for non-existing event buses but add processed event
+                processed_entries.append({"EventId": event["id"]})
                 continue
             matching_rules = [rule for rule in event_bus.rules.values()]
             for rule in matching_rules:
@@ -664,12 +684,13 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                         target_sender = self._target_sender_store[target["Arn"]]
                         try:
                             target_sender.send_event(event)
+                            processed_entries.append({"EventId": event["id"]})
                         except Exception as error:
-                            failed_entries.append(
+                            processed_entries.append(
                                 {
-                                    "Entry": event,
                                     "ErrorCode": "InternalException",
                                     "ErrorMessage": str(error),
                                 }
                             )
-        return processed_entries_uuids, failed_entries
+                            failed_entry_count += 1
+        return processed_entries, failed_entry_count
