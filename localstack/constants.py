@@ -121,6 +121,7 @@ OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.11"
 OPENSEARCH_PLUGIN_LIST = [
     "ingest-attachment",
     "analysis-kuromoji",
+    "analysis-phonetic",
 ]
 
 # API endpoint for analytics events
