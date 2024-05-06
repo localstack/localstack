@@ -4,16 +4,22 @@ USAGE: $ python -m localstack.testing.testselection.scripts.generate_test_select
 
 import sys
 from pathlib import Path
+from typing import Iterable
 
 from localstack.testing.testselection.git import find_merge_base, get_changed_files_from_git_diff
+from localstack.testing.testselection.matching import MatchingRule
 from localstack.testing.testselection.opt_in import complies_with_opt_in
 from localstack.testing.testselection.testselection import get_affected_tests_from_changes
 
 
-def main():
+def generate_from_commits(
+    opt_in_rules: Iterable[str] | None = None,
+    matching_rules: list[MatchingRule] | None = None,
+    repo_name: str = "localstack",
+):
     if len(sys.argv) != 5:
         print(
-            "Usage: python -m localstack.testing.testselection.scripts.generate_test_selection_from_commits <repo_root_path> <base-commit-sha> <head-commit-sha> <output_file_path>",
+            f"Usage: python -m {repo_name}.testing.testselection.scripts.generate_test_selection_from_commits <repo_root_path> <base-commit-sha> <head-commit-sha> <output_file_path>",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -32,13 +38,13 @@ def main():
     )
     # opt-in guard, can be removed after initial testing phase
     print("Checking for confirming to opt-in guards")
-    if not complies_with_opt_in(changed_files):
+    if not complies_with_opt_in(changed_files, opt_in_rules=opt_in_rules):
         print(
-            "Change outside of opt-in guards. Extend the list at localstack/testing/testselection/opt_in.py"
+            f"Change outside of opt-in guards. Extend the list at {repo_name}/testing/testselection/opt_in.py"
         )
         test_files = ["SENTINEL_ALL_TESTS"]
     else:
-        test_files = get_affected_tests_from_changes(changed_files)
+        test_files = get_affected_tests_from_changes(changed_files, matching_rules=matching_rules)
 
     print(f"Number of changed files detected: {len(changed_files)}")
     for cf in sorted(changed_files):
@@ -63,4 +69,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    generate_from_commits()

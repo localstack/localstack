@@ -7,11 +7,11 @@ on:
         required: false
         type: boolean
         default: false
-      disableTestSelection:
-        description: 'Disable Test Selection'
+      enableTestSelection:
+        description: 'Enable Test Selection'
         required: false
         type: boolean
-        default: false
+        default: true
       targetRef:
         description: 'LocalStack Pro Ref'
         required: false
@@ -23,11 +23,11 @@ on:
         required: false
         type: boolean
         default: false
-      disableTestSelection:
-        description: 'Disable Test Selection'
+      enableTestSelection:
+        description: 'Enable Test Selection'
         required: false
         type: boolean
-        default: false
+        default: true
       targetRef:
         description: 'LocalStack Pro Ref'
         required: false
@@ -91,7 +91,8 @@ env:
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master
   TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
-  TESTSELECTION_PYTEST_ARGS: "${{ github.event_name == 'pull_request' && inputs.disableTestSelection && '--path-filter=../localstack/target/testselection/test-selection.txt ' || '' }}"
+  # enable test selection if  not running on master and test selection is not explicitly disabled
+  TESTSELECTION_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && inputs.enableTestSelection != false && '--path-filter=../localstack/target/testselection/test-selection.txt ' || '' }}"
 
 jobs:
   test-pro:
