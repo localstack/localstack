@@ -1,11 +1,4 @@
----
-title: "Contributing to LocalStack"
-weight: 3
-description: >
-  Get started with contributing to LocalStack and help us grow the project and the community.
-aliases:
-  - /developer-guide/contributing/
----
+# Contributing to LocalStack
 
 LocalStack is a community driven project that aims to help developers emulate AWS services locally, without connecting to any cloud provider! The community version of LocalStack has grown exceptionally and now supports various AWS services, which is detailed on our  [feature coverage](https://docs.localstack.cloud/aws/feature-coverage/).
 

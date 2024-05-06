@@ -1,11 +1,4 @@
----
-title: "LocalStack Concepts"
-weight: 6
-description: >
-  Get a condensed overview of the most important architectural concepts of LocalStack.
-aliases:
-  - /developer-guide/concepts/
----
+# LocalStack Concepts
 
 When you first start working on LocalStack, you will most likely start working on AWS providers, either fixing bugs or adding features. In that case, you probably care mostly about [Services](#service), and, depending on the service and how it interacts with the [Gateway](#gateway), also **custom request handlers** and edge **routes**.
 

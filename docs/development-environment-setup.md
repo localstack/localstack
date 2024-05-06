@@ -1,11 +1,4 @@
----
-title: "Development Environment Setup"
-weight: 4
-description: >
-  Set up your development environment for developing LocalStack.
-aliases:
-  - /developer-guide/development-environment-setup/
----
+# Development Environment Setup
 
 Before you get started with contributing to LocalStack, make sure you’ve familiarized yourself with LocalStack from the perspective of a user.
 You can follow our [getting started guide](https://docs.localstack.cloud/get-started/).
