@@ -38,5 +38,21 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestEventsInputPath::test_put_events_with_input_path_nested": {
+    "recorded-date": "06-05-2024, 14:40:27",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "acc_id": "0a787ecb-4015",
+            "sf_id": "baz"
+          }
+        }
+      ]
+    }
   }
 }

@@ -38,6 +38,30 @@ class TestEventsInputPath:
         )
         snapshot.match("message", messages)
 
+    @markers.aws.validated
+    def test_put_events_with_input_path_nested(self, put_events_with_filter_to_sqs, snapshot):
+        entries1 = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            }
+        ]
+        entries_asserts = [(entries1, True)]
+        messages = put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=entries_asserts,
+            input_path="$.detail.payload",
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("message", messages)
+
     @markers.aws.unknown
     def test_put_events_with_input_path_multiple(self, aws_client, clean_up):
         queue_name = "queue-{}".format(short_uid())
