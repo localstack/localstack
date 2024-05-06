@@ -14,58 +14,29 @@ from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTE
 
 
 class TestEventsInputPath:
-    @markers.aws.unknown
-    def test_put_events_with_input_path(self, aws_client, clean_up):
-        queue_name = f"queue-{short_uid()}"
-        rule_name = f"rule-{short_uid()}"
-        target_id = f"target-{short_uid()}"
-        bus_name = f"bus-{short_uid()}"
-
-        queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
-
-        aws_client.events.create_event_bus(Name=bus_name)
-        aws_client.events.put_rule(
-            Name=rule_name,
-            EventBusName=bus_name,
-            EventPattern=json.dumps(TEST_EVENT_PATTERN),
-        )
-        aws_client.events.put_targets(
-            Rule=rule_name,
-            EventBusName=bus_name,
-            Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
+    @markers.aws.validated
+    def test_put_events_with_input_path(self, put_events_with_filter_to_sqs, snapshot):
+        entries1 = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            }
+        ]
+        entries_asserts = [(entries1, True)]
+        messages = put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
         )
 
-        aws_client.events.put_events(
-            Entries=[
-                {
-                    "EventBusName": bus_name,
-                    "Source": TEST_EVENT_PATTERN["source"][0],
-                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
-                }
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
             ]
         )
-
-        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
-        assert json.loads(messages[0].get("Body")) == EVENT_DETAIL
-
-        aws_client.events.put_events(
-            Entries=[
-                {
-                    "EventBusName": bus_name,
-                    "Source": "dummySource",
-                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
-                }
-            ]
-        )
-
-        messages = sqs_collect_messages(aws_client, queue_url, min_events=0, retries=1, wait_time=3)
-        assert messages == []
-
-        # clean up
-        clean_up(bus_name=bus_name, rule_name=rule_name, target_ids=target_id, queue_url=queue_url)
+        snapshot.match("message", messages)
 
     @markers.aws.unknown
     def test_put_events_with_input_path_multiple(self, aws_client, clean_up):
