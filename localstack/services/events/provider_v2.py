@@ -353,15 +353,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Test event pattern uses EventBridge event pattern matching:
         https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
         """
-        if config.EVENT_RULE_ENGINE == "java":
-            try:
-                result = matches_rule(event, event_pattern)
-            except InternalInvalidEventPatternException as e:
-                raise InvalidEventPatternException(e.message) from e
-        else:
-            event_pattern_dict = json.loads(event_pattern)
-            event_dict = json.loads(event)
-            result = matches_event(event_pattern_dict, event_dict)
+        try:
+            result = matches_rule(event, event_pattern)
+        except InternalInvalidEventPatternException as e:
+            raise InvalidEventPatternException(e.message) from e
 
         return TestEventPatternResponse(Result=result)
 
@@ -662,15 +657,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 continue
             matching_rules = [rule for rule in event_bus.rules.values()]
             for rule in matching_rules:
-                rule_service = self.get_rule_service(context, rule.name, event_bus_name)
-                event_pattern = rule_service.event_pattern
-                if config.EVENT_RULE_ENGINE == "java":
-                    event_str = json.dumps(event)
-                    event_pattern_str = json.dumps(event_pattern)
-                    matches_result = matches_rule(event_str, event_pattern_str)
-                else:
-                    matches_result = matches_event(event, event_pattern)
-                if matches_result:
+                event_pattern = rule.event_pattern
+                event_str = json.dumps(event)
+                if matches_rule(event_str, event_pattern):
                     for target in rule.targets.values():
                         target_sender = self._target_sender_store[target["Arn"]]
                         try:

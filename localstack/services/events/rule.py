@@ -1,4 +1,3 @@
-import json
 import re
 from typing import Optional
 
@@ -6,7 +5,6 @@ from localstack.aws.api.events import (
     Arn,
     EventBusName,
     EventPattern,
-    InvalidEventPatternException,
     LimitExceededException,
     ManagedBy,
     PutTargetsResultEntryList,
@@ -22,7 +20,6 @@ from localstack.aws.api.events import (
     TargetList,
 )
 from localstack.services.events.models_v2 import (
-    EventPatternDict,
     Rule,
     TargetDict,
     ValidationException,
@@ -66,7 +63,6 @@ class RuleService:
             targets,
             managed_by,
         )
-        self.event_pattern = self.load_event_pattern(event_pattern)
 
     @property
     def arn(self) -> Arn:
@@ -163,19 +159,6 @@ class RuleService:
 
         return validation_errors
 
-    def load_event_pattern(self, raw_pattern: Optional[str]) -> EventPatternDict:
-        """Loads and validates an event pattern from a JSON string."""
-        if raw_pattern is None:
-            return {}
-
-        try:
-            pattern = json.loads(raw_pattern)
-        except json.JSONDecodeError:
-            raise InvalidEventPatternException(reason="Invalid JSON")
-
-        self._validate_event_pattern(pattern)
-        return pattern
-
     def _validate_input(
         self,
         event_pattern: Optional[EventPattern],
@@ -202,21 +185,6 @@ class RuleService:
         if len(self.rule.targets) >= 5:
             return True
         return False
-
-    def _validate_event_pattern(self, pattern):
-        """Validates that the event pattern is correctly structured."""
-        for attr, value in pattern.items():
-            if isinstance(value, dict):
-                self._validate_event_pattern(value)
-            elif isinstance(value, list):
-                if not value:
-                    raise InvalidEventPatternException("Empty arrays are not allowed")
-                if not all(isinstance(item, (dict, str)) for item in value):
-                    raise InvalidEventPatternException(
-                        f"All items in '{attr}' array must be dictionaries or strings"
-                    )
-            else:
-                raise InvalidEventPatternException(f"'{attr}' must be an object or an array")
 
 
 RuleServiceDict = dict[Arn, RuleService]
