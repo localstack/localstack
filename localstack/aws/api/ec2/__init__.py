@@ -114,6 +114,7 @@ DrainSeconds = int
 EfaSupportedFlag = bool
 EgressOnlyInternetGatewayId = str
 EipAllocationPublicIp = str
+EkPubKeyValue = str
 ElasticGpuId = str
 ElasticInferenceAcceleratorCount = int
 ElasticIpAssociationId = str
@@ -870,6 +871,16 @@ class Ec2InstanceConnectEndpointState(str):
     delete_in_progress = "delete-in-progress"
     delete_complete = "delete-complete"
     delete_failed = "delete-failed"
+
+
+class EkPubKeyFormat(str):
+    der = "der"
+    tpmt = "tpmt"
+
+
+class EkPubKeyType(str):
+    rsa_2048 = "rsa-2048"
+    ecc_sec_p384 = "ecc-sec-p384"
 
 
 class ElasticGpuState(str):
@@ -15203,6 +15214,20 @@ class GetInstanceMetadataDefaultsResult(TypedDict, total=False):
     AccountLevel: Optional[InstanceMetadataDefaultsResponse]
 
 
+class GetInstanceTpmEkPubRequest(ServiceRequest):
+    InstanceId: InstanceId
+    KeyType: EkPubKeyType
+    KeyFormat: EkPubKeyFormat
+    DryRun: Optional[Boolean]
+
+
+class GetInstanceTpmEkPubResult(TypedDict, total=False):
+    InstanceId: Optional[InstanceId]
+    KeyType: Optional[EkPubKeyType]
+    KeyFormat: Optional[EkPubKeyFormat]
+    KeyValue: Optional[EkPubKeyValue]
+
+
 VirtualizationTypeSet = List[VirtualizationType]
 
 
@@ -23561,6 +23586,18 @@ class Ec2Api:
     def get_instance_metadata_defaults(
         self, context: RequestContext, dry_run: Boolean = None, **kwargs
     ) -> GetInstanceMetadataDefaultsResult:
+        raise NotImplementedError
+
+    @handler("GetInstanceTpmEkPub")
+    def get_instance_tpm_ek_pub(
+        self,
+        context: RequestContext,
+        instance_id: InstanceId,
+        key_type: EkPubKeyType,
+        key_format: EkPubKeyFormat,
+        dry_run: Boolean = None,
+        **kwargs,
+    ) -> GetInstanceTpmEkPubResult:
         raise NotImplementedError
 
     @handler("GetInstanceTypesFromInstanceRequirements")

@@ -671,6 +671,14 @@ class StreamSpecification(TypedDict, total=False):
     StreamViewType: Optional[StreamViewType]
 
 
+LongObject = int
+
+
+class OnDemandThroughput(TypedDict, total=False):
+    MaxReadRequestUnits: Optional[LongObject]
+    MaxWriteRequestUnits: Optional[LongObject]
+
+
 class ProvisionedThroughput(TypedDict, total=False):
     ReadCapacityUnits: PositiveLongObject
     WriteCapacityUnits: PositiveLongObject
@@ -697,6 +705,7 @@ class GlobalSecondaryIndexInfo(TypedDict, total=False):
     KeySchema: Optional[KeySchema]
     Projection: Optional[Projection]
     ProvisionedThroughput: Optional[ProvisionedThroughput]
+    OnDemandThroughput: Optional[OnDemandThroughput]
 
 
 GlobalSecondaryIndexes = List[GlobalSecondaryIndexInfo]
@@ -721,7 +730,6 @@ class SourceTableFeatureDetails(TypedDict, total=False):
 
 ItemCount = int
 TableCreationDateTime = datetime
-LongObject = int
 
 
 class SourceTableDetails(TypedDict, total=False):
@@ -732,6 +740,7 @@ class SourceTableDetails(TypedDict, total=False):
     KeySchema: KeySchema
     TableCreationDateTime: TableCreationDateTime
     ProvisionedThroughput: ProvisionedThroughput
+    OnDemandThroughput: Optional[OnDemandThroughput]
     ItemCount: Optional[ItemCount]
     BillingMode: Optional[BillingMode]
 
@@ -967,6 +976,7 @@ class CreateGlobalSecondaryIndexAction(TypedDict, total=False):
     KeySchema: KeySchema
     Projection: Projection
     ProvisionedThroughput: Optional[ProvisionedThroughput]
+    OnDemandThroughput: Optional[OnDemandThroughput]
 
 
 class Replica(TypedDict, total=False):
@@ -986,6 +996,10 @@ class TableClassSummary(TypedDict, total=False):
     LastUpdateDateTime: Optional[Date]
 
 
+class OnDemandThroughputOverride(TypedDict, total=False):
+    MaxReadRequestUnits: Optional[LongObject]
+
+
 class ProvisionedThroughputOverride(TypedDict, total=False):
     ReadCapacityUnits: Optional[PositiveLongObject]
 
@@ -993,6 +1007,7 @@ class ProvisionedThroughputOverride(TypedDict, total=False):
 class ReplicaGlobalSecondaryIndexDescription(TypedDict, total=False):
     IndexName: Optional[IndexName]
     ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
+    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
 
 
 ReplicaGlobalSecondaryIndexDescriptionList = List[ReplicaGlobalSecondaryIndexDescription]
@@ -1005,6 +1020,7 @@ class ReplicaDescription(TypedDict, total=False):
     ReplicaStatusPercentProgress: Optional[ReplicaStatusPercentProgress]
     KMSMasterKeyId: Optional[KMSMasterKeyId]
     ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
+    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
     GlobalSecondaryIndexes: Optional[ReplicaGlobalSecondaryIndexDescriptionList]
     ReplicaInaccessibleDateTime: Optional[Date]
     ReplicaTableClassSummary: Optional[TableClassSummary]
@@ -1032,6 +1048,7 @@ class CreateReplicaAction(TypedDict, total=False):
 class ReplicaGlobalSecondaryIndex(TypedDict, total=False):
     IndexName: IndexName
     ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
+    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
 
 
 ReplicaGlobalSecondaryIndexList = List[ReplicaGlobalSecondaryIndex]
@@ -1041,6 +1058,7 @@ class CreateReplicationGroupMemberAction(TypedDict, total=False):
     RegionName: RegionName
     KMSMasterKeyId: Optional[KMSMasterKeyId]
     ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
+    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
     GlobalSecondaryIndexes: Optional[ReplicaGlobalSecondaryIndexList]
     TableClassOverride: Optional[TableClass]
 
@@ -1064,6 +1082,7 @@ class GlobalSecondaryIndex(TypedDict, total=False):
     KeySchema: KeySchema
     Projection: Projection
     ProvisionedThroughput: Optional[ProvisionedThroughput]
+    OnDemandThroughput: Optional[OnDemandThroughput]
 
 
 GlobalSecondaryIndexList = List[GlobalSecondaryIndex]
@@ -1092,6 +1111,7 @@ class CreateTableInput(ServiceRequest):
     TableClass: Optional[TableClass]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
     ResourcePolicy: Optional[ResourcePolicy]
+    OnDemandThroughput: Optional[OnDemandThroughput]
 
 
 class RestoreSummary(TypedDict, total=False):
@@ -1122,6 +1142,7 @@ class GlobalSecondaryIndexDescription(TypedDict, total=False):
     IndexSizeBytes: Optional[LongObject]
     ItemCount: Optional[LongObject]
     IndexArn: Optional[String]
+    OnDemandThroughput: Optional[OnDemandThroughput]
 
 
 GlobalSecondaryIndexDescriptionList = List[GlobalSecondaryIndexDescription]
@@ -1163,6 +1184,7 @@ class TableDescription(TypedDict, total=False):
     ArchivalSummary: Optional[ArchivalSummary]
     TableClassSummary: Optional[TableClassSummary]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
+    OnDemandThroughput: Optional[OnDemandThroughput]
 
 
 class CreateTableOutput(TypedDict, total=False):
@@ -1421,6 +1443,7 @@ class TableCreationParameters(TypedDict, total=False):
     KeySchema: KeySchema
     BillingMode: Optional[BillingMode]
     ProvisionedThroughput: Optional[ProvisionedThroughput]
+    OnDemandThroughput: Optional[OnDemandThroughput]
     SSESpecification: Optional[SSESpecification]
     GlobalSecondaryIndexes: Optional[GlobalSecondaryIndexList]
 
@@ -1666,7 +1689,8 @@ GlobalSecondaryIndexAutoScalingUpdateList = List[GlobalSecondaryIndexAutoScaling
 
 class UpdateGlobalSecondaryIndexAction(TypedDict, total=False):
     IndexName: IndexName
-    ProvisionedThroughput: ProvisionedThroughput
+    ProvisionedThroughput: Optional[ProvisionedThroughput]
+    OnDemandThroughput: Optional[OnDemandThroughput]
 
 
 class GlobalSecondaryIndexUpdate(TypedDict, total=False):
@@ -1948,6 +1972,7 @@ class UpdateReplicationGroupMemberAction(TypedDict, total=False):
     RegionName: RegionName
     KMSMasterKeyId: Optional[KMSMasterKeyId]
     ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
+    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
     GlobalSecondaryIndexes: Optional[ReplicaGlobalSecondaryIndexList]
     TableClassOverride: Optional[TableClass]
 
@@ -1968,6 +1993,7 @@ class RestoreTableFromBackupInput(ServiceRequest):
     GlobalSecondaryIndexOverride: Optional[GlobalSecondaryIndexList]
     LocalSecondaryIndexOverride: Optional[LocalSecondaryIndexList]
     ProvisionedThroughputOverride: Optional[ProvisionedThroughput]
+    OnDemandThroughputOverride: Optional[OnDemandThroughput]
     SSESpecificationOverride: Optional[SSESpecification]
 
 
@@ -1985,6 +2011,7 @@ class RestoreTableToPointInTimeInput(ServiceRequest):
     GlobalSecondaryIndexOverride: Optional[GlobalSecondaryIndexList]
     LocalSecondaryIndexOverride: Optional[LocalSecondaryIndexList]
     ProvisionedThroughputOverride: Optional[ProvisionedThroughput]
+    OnDemandThroughputOverride: Optional[OnDemandThroughput]
     SSESpecificationOverride: Optional[SSESpecification]
 
 
@@ -2184,6 +2211,7 @@ class UpdateTableInput(ServiceRequest):
     ReplicaUpdates: Optional[ReplicationGroupUpdateList]
     TableClass: Optional[TableClass]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
+    OnDemandThroughput: Optional[OnDemandThroughput]
 
 
 class UpdateTableOutput(TypedDict, total=False):
@@ -2278,6 +2306,7 @@ class DynamodbApi:
         table_class: TableClass = None,
         deletion_protection_enabled: DeletionProtectionEnabled = None,
         resource_policy: ResourcePolicy = None,
+        on_demand_throughput: OnDemandThroughput = None,
         **kwargs,
     ) -> CreateTableOutput:
         raise NotImplementedError
@@ -2643,6 +2672,7 @@ class DynamodbApi:
         global_secondary_index_override: GlobalSecondaryIndexList = None,
         local_secondary_index_override: LocalSecondaryIndexList = None,
         provisioned_throughput_override: ProvisionedThroughput = None,
+        on_demand_throughput_override: OnDemandThroughput = None,
         sse_specification_override: SSESpecification = None,
         **kwargs,
     ) -> RestoreTableFromBackupOutput:
@@ -2661,6 +2691,7 @@ class DynamodbApi:
         global_secondary_index_override: GlobalSecondaryIndexList = None,
         local_secondary_index_override: LocalSecondaryIndexList = None,
         provisioned_throughput_override: ProvisionedThroughput = None,
+        on_demand_throughput_override: OnDemandThroughput = None,
         sse_specification_override: SSESpecification = None,
         **kwargs,
     ) -> RestoreTableToPointInTimeOutput:
@@ -2819,6 +2850,7 @@ class DynamodbApi:
         replica_updates: ReplicationGroupUpdateList = None,
         table_class: TableClass = None,
         deletion_protection_enabled: DeletionProtectionEnabled = None,
+        on_demand_throughput: OnDemandThroughput = None,
         **kwargs,
     ) -> UpdateTableOutput:
         raise NotImplementedError

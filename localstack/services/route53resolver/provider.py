@@ -31,6 +31,7 @@ from localstack.aws.api.route53resolver import (
     FirewallDomainList,
     FirewallDomainListMetadata,
     FirewallDomainName,
+    FirewallDomainRedirectionAction,
     FirewallDomains,
     FirewallDomainUpdateOperation,
     FirewallFailOpenStatus,
@@ -314,6 +315,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         block_override_domain: BlockOverrideDomain = None,
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
+        firewall_domain_redirection_action: FirewallDomainRedirectionAction = None,
         qtype: Qtype = None,
         **kwargs,
     ) -> CreateFirewallRuleResponse:
@@ -332,6 +334,8 @@ class Route53ResolverProvider(Route53ResolverApi):
             CreatorRequestId=creator_request_id,
             CreationTime=datetime.now(timezone.utc).isoformat(),
             ModificationTime=datetime.now(timezone.utc).isoformat(),
+            FirewallDomainRedirectionAction=firewall_domain_redirection_action,
+            Qtype=qtype,
         )
         if store.firewall_rules.get(firewall_rule_group_id):
             store.firewall_rules[firewall_rule_group_id][firewall_domain_list_id] = firewall_rule
@@ -393,6 +397,7 @@ class Route53ResolverProvider(Route53ResolverApi):
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
         name: Name = None,
+        firewall_domain_redirection_action: FirewallDomainRedirectionAction = None,
         qtype: Qtype = None,
         **kwargs,
     ) -> UpdateFirewallRuleResponse:
@@ -416,6 +421,10 @@ class Route53ResolverProvider(Route53ResolverApi):
             firewall_rule["BlockOverrideTtl"] = block_override_ttl
         if name:
             firewall_rule["Name"] = name
+        if firewall_domain_redirection_action:
+            firewall_rule["FirewallDomainRedirectionAction"] = firewall_domain_redirection_action
+        if qtype:
+            firewall_rule["Qtype"] = qtype
         return UpdateFirewallRuleResponse(
             FirewallRule=firewall_rule,
         )
