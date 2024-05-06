@@ -93,6 +93,6 @@
     "last_validated_date": "2024-03-14T21:59:25+00:00"
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api.py::TestSnfApi::test_stop_execution": {
-    "last_validated_date": "2023-06-22T11:53:24+00:00"
+    "last_validated_date": "2024-05-06T12:59:34+00:00"
   }
 }
