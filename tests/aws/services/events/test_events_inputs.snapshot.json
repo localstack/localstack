@@ -21,7 +21,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputPath::test_put_events_with_input_path": {
-    "recorded-date": "06-05-2024, 14:55:52",
+    "recorded-date": "06-05-2024, 15:11:50",
     "recorded-content": {
       "message": [
         {
@@ -40,7 +40,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputPath::test_put_events_with_input_path_nested": {
-    "recorded-date": "06-05-2024, 14:40:27",
+    "recorded-date": "06-05-2024, 15:11:52",
     "recorded-content": {
       "message": [
         {
@@ -56,7 +56,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputPath::test_put_events_with_input_path_max_level_depth": {
-    "recorded-date": "06-05-2024, 14:50:25",
+    "recorded-date": "06-05-2024, 15:11:54",
     "recorded-content": {
       "message": [
         {
@@ -64,6 +64,49 @@
           "ReceiptHandle": "<receipt-handle:1>",
           "MD5OfBody": "<m-d5-of-body:1>",
           "Body": "\"baz\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestEventsInputPath::test_put_events_with_input_path_multiple_targets": {
+    "recorded-date": "06-05-2024, 15:22:58",
+    "recorded-content": {
+      "message-queue-1": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ],
+      "message-queue-2": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:3>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
         }
       ]
     }

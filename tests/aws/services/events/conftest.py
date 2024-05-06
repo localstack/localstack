@@ -194,23 +194,12 @@ def clean_up(aws_client):
 
 
 @pytest.fixture
-def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
+def create_sqs_events_target(aws_client, sqs_get_queue_arn):
     queue_urls = []
-    event_bus_names = []
-    rule_names = []
-    target_ids = []
 
-    def _put_events_with_filter_to_sqs(
-        pattern: dict,
-        entries_asserts: list[Tuple[list[dict], bool]],
-        input_path: str = None,
-        input_transformer: dict[dict, str] = None,
-    ):
-        queue_name = f"queue-{short_uid()}"
-        rule_name = f"rule-{short_uid()}"
-        target_id = f"target-{short_uid()}"
-        bus_name = f"bus-{short_uid()}"
-
+    def _create_sqs_events_target(queue_name: str | None = None) -> tuple[str, str]:
+        if not queue_name:
+            queue_name = f"tests-queue-{short_uid()}"
         sqs_client = aws_client.sqs
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_urls.append(queue_url)
@@ -231,6 +220,34 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
         sqs_client.set_queue_attributes(
             QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
         )
+        return queue_url, queue_arn
+
+    yield _create_sqs_events_target
+
+    for queue_url in queue_urls:
+        try:
+            aws_client.sqs.delete_queue(QueueUrl=queue_url)
+        except Exception as e:
+            LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+
+
+@pytest.fixture
+def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up):
+    event_bus_names = []
+    rule_names = []
+    target_ids = []
+
+    def _put_events_with_filter_to_sqs(
+        pattern: dict,
+        entries_asserts: list[Tuple[list[dict], bool]],
+        input_path: str = None,
+        input_transformer: dict[dict, str] = None,
+    ):
+        rule_name = f"test-rule-{short_uid()}"
+        target_id = f"test-target-{short_uid()}"
+        bus_name = f"test-bus-{short_uid()}"
+
+        queue_url, queue_arn = create_sqs_events_target()
 
         events_client = aws_client.events
         events_client.create_event_bus(Name=bus_name)
@@ -262,7 +279,7 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
                 entry["EventBusName"] = bus_name
             message = _put_entries_assert_results_sqs(
                 events_client,
-                sqs_client,
+                aws_client.sqs,
                 queue_url,
                 entries=entries,
                 should_match=entry_asserts[1],
@@ -274,14 +291,11 @@ def put_events_with_filter_to_sqs(aws_client, sqs_get_queue_arn, clean_up):
 
     yield _put_events_with_filter_to_sqs
 
-    for queue_url, event_bus_name, rule_name, target_id in zip(
-        queue_urls, event_bus_names, rule_names, target_ids
-    ):
+    for event_bus_name, rule_name, target_id in zip(event_bus_names, rule_names, target_ids):
         clean_up(
             bus_name=event_bus_name,
             rule_name=rule_name,
             target_ids=target_id,
-            queue_url=queue_url,
         )
 
 
