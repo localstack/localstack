@@ -7,6 +7,9 @@ parameters:
   ubuntu-arm64-machine-image:
     type: string
     default: "ubuntu-2204:2023.02.1"
+  PYTEST_LOGLEVEL:
+    type: string
+    default: "WARNING"
   skip_test_selection:
     type: boolean
     default: false
@@ -166,6 +169,8 @@ jobs:
   acceptance-tests:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -194,6 +199,8 @@ jobs:
   itest-sfn-legacy-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -220,6 +227,8 @@ jobs:
   itest-s3-v2-legacy-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -246,6 +255,8 @@ jobs:
   itest-cloudwatch-v2-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -272,6 +283,8 @@ jobs:
   itest-events-v2-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -347,6 +360,8 @@ jobs:
     resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
     parallelism: 4
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -402,6 +417,8 @@ jobs:
   bootstrap-tests:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
