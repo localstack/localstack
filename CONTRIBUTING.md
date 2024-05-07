@@ -1,5 +1,25 @@
 # Contributing
 
+LocalStack is a community driven project that aims to help developers emulate AWS services locally, without connecting to any cloud provider!
+
+The guides in this section are for developers of LocalStack, to better understand how LocalStack works internally, how to set up local development environments, and how to contribute to the codebase.
+
+  [1]: https://github.com/localstack/localstack/blob/master/.github/CLA.md
+
+## Sections
+
+The guides in this section are for developers of LocalStack, to better understand how LocalStack works internally, how to set up local development environments, and how to contribute to the codebase.
+
+- [Contribution Guidelines](#contributing-guidelines)
+- [Development Environment Setup](docs/development-environment-setup.md)
+- [LocalStack Concepts](docs/Concepts/index.md)
+- [Integration Tests](docs/integration-tests.md)
+- [Parity Testing](docs/parity-testing.md)
+- [Multi-account and Multi-region Testing](docs/multi-account-region-testing.md)
+- [Terraform Tests](docs/terraform-tests.md)
+
+## Contribution Guidelines
+
 We welcome feedback, bug reports, and pull requests!
 
 For pull requests (PRs), please stick to the following guidelines:
