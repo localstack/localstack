@@ -94,11 +94,3 @@ class ValidationException(ServiceException):
     code: str = "ValidationException"
     sender_fault: bool = True
     status_code: int = 400
-
-
-class InternalInvalidEventPatternException(Exception):
-    reason: str
-
-    def __init__(self, reason=None, message=None) -> None:
-        self.reason = reason
-        self.message = message or f"Event pattern is not valid. Reason: {reason}"
