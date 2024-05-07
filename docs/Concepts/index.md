@@ -101,7 +101,7 @@ There are some existing useful utilities and specializations of `Server` which c
 
 Some services create additional user-facing resources. For example, the RDS service starts a PostgreSQL server, and the ElastiCache service starts a Redis server, that users then directly connect to. 
 
-These resources are not hidden behind the service API, and need to be exposed through an available network port. This is what the [external service port range](https://docs.localstack.cloud/localstack/external-ports/) is for. We expose this port range by default in the docker-compose template, or via the CLI.
+These resources are not hidden behind the service API, and need to be exposed through an available network port. This is what the [external service port range](https://docs.localstack.cloud/references/external-ports/) is for. We expose this port range by default in the docker-compose template, or via the CLI.
 
 ### Service plugin
 
