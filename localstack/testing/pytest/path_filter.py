@@ -77,6 +77,7 @@ def pytest_collection_modifyitems(config, items):
 
         # Update list of test items to only those selected
         items[:] = selected
+        print(f"selected: {selected}, \ndeselected: {deselected}")
         config.hook.pytest_deselected(items=deselected)
 
 
