@@ -43,7 +43,7 @@ class ContainerPaths:
     """Important paths in the container"""
 
     project_dir: str = "/opt/code/localstack"
-    site_packages_target_dir: str = "/opt/code/localstack/.venv/lib/python3.11/site-packages"
+    site_packages_target_dir: str = "/opt/code/localstack/.venv/lib/python3.12/site-packages"
     docker_entrypoint: str = "/usr/local/bin/docker-entrypoint.sh"
     localstack_supervisor: str = "/usr/local/bin/localstack-supervisor"
     localstack_source_dir: str

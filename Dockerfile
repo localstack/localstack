@@ -29,7 +29,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java,...)
-FROM python:3.11.9-slim-bookworm@sha256:6d2502238109c929569ae99355e28890c438cb11bc88ef02cd189c173b3db07c as base
+FROM python:3.12.3-slim-bookworm@sha256:2be8daddbb82756f7d1f2c7ece706aadcb284bf6ab6d769ea695cc3ed6016743 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -192,9 +192,9 @@ RUN --mount=type=cache,target=/root/.cache \
     chmod -R 777 /usr/lib/localstack
 
 # link the python package installer virtual environments into the localstack venv
-RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \
+RUN echo /var/lib/localstack/lib/python-packages/lib/python3.12/site-packages > localstack-var-python-packages-venv.pth && \
     mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
-RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
+RUN echo /usr/lib/localstack/python-packages/lib/python3.12/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
 
 # expose edge service, external service ports, and debugpy

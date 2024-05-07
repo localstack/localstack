@@ -19,11 +19,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install jq
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         id: setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Cache LocalStack community dependencies (venv)
         uses: actions/cache@v4

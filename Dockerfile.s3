@@ -1,5 +1,5 @@
 # base: Stage which installs necessary runtime dependencies (OS packages, filesystem...)
-FROM python:3.11.9-slim-bookworm@sha256:6d2502238109c929569ae99355e28890c438cb11bc88ef02cd189c173b3db07c as base
+FROM python:3.12.3-slim-bookworm@sha256:2be8daddbb82756f7d1f2c7ece706aadcb284bf6ab6d769ea695cc3ed6016743 as base
 ARG TARGETARCH
 
 # set workdir
@@ -68,7 +68,7 @@ RUN . .venv/bin/activate && pip3 freeze -l > requirements-runtime.txt
 
 # delete the botocore specs for other services (>80mb)
 # TODO: well now it's compressed and it's much lighter: 20mb maybe not worth it
-RUN find .venv/lib/python3.11/site-packages/botocore/data/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
+RUN find .venv/lib/python3.12/site-packages/botocore/data/ -mindepth 1 -maxdepth 1 -type d -not -name s3 -exec rm -rf '{}' \;
 
 
 # final stage: Builds upon base stage and copies resources from builder stages
@@ -88,9 +88,9 @@ RUN make entrypoints
 
 
 # link the python package installer virtual environments into the localstack venv
-RUN echo /var/lib/localstack/lib/python-packages/lib/python3.11/site-packages > localstack-var-python-packages-venv.pth && \
+RUN echo /var/lib/localstack/lib/python-packages/lib/python3.12/site-packages > localstack-var-python-packages-venv.pth && \
     mv localstack-var-python-packages-venv.pth .venv/lib/python*/site-packages/
-RUN echo /usr/lib/localstack/python-packages/lib/python3.11/site-packages > localstack-static-python-packages-venv.pth && \
+RUN echo /usr/lib/localstack/python-packages/lib/python3.12/site-packages > localstack-static-python-packages-venv.pth && \
     mv localstack-static-python-packages-venv.pth .venv/lib/python*/site-packages/
 
 # expose edge service and debugpy
