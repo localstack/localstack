@@ -40,9 +40,9 @@ We use these specifications to generate server-side API stubs using our scaffold
 
 You can try it using this command in the LocalStack repository:
 
-{{< command >}}
-$ python -m localstack.aws.scaffold generate <service> --save [--doc]
-{{< /command >}}
+```bash
+python -m localstack.aws.scaffold generate <service> --save [--doc]
+```
 
 ### Service providers
 
@@ -175,6 +175,7 @@ The components necessary to run the LocalStack server application are collective
 
 
 ## Packages and installers
+
 Whenever we rely on certain third party software, we install it using our package installation framework, which consists of packages and installers.
 
 A package defines a specific kind of software we need for certain services, for example [dynamodb-local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html).

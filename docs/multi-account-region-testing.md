@@ -1,7 +1,6 @@
 # Multi-account and Multi-region Testing
 
-LocalStack has multi-account and multi-region support (see [Multi-Account Setups]({{< ref "references/multi-account-setups" >}}) and [Cross-Account and Cross-Region Access]({{< ref "references/cross-account-access" >}})). 
-This document contains some tips to make sure that your contributions are compatible with this functionality.
+LocalStack has multi-account and multi-region support. This document contains some tips to make sure that your contributions are compatible with this functionality.
 
 ## Overview
 

@@ -31,21 +31,25 @@ The basic steps include:
    > Depending on your system, some `pip` modules may require additional native libs installed. 
 5. Start localstack in host mode using `make start`
 
-{{< youtube XHLBy6VKuCM >}}
+<div align="left">
+      <a href="https://youtu.be/XHLBy6VKuCM">
+         <img src="https://img.youtube.com/vi/XHLBy6VKuCM/0.jpg" style="width:100%;">
+      </a>
+</div>
 
 ### Building the Docker image for Development
 
 We generally recommend using this command to build the `localstack/localstack` Docker image locally (works on Linux/MacOS):
 
-{{< command >}}
-$ make docker-build
-{{< / command >}}
+```bash
+make docker-build
+```
 
 ### Additional Dependencies for running LocalStack in Host Mode
 
 In host mode, additional dependencies (e.g., Java) are required for developing certain AWS-emulated services (e.g., DynamoDB).
-The required dependencies vary depending on the service, [Configuration]({{< ref "configuration" >}}), operating system, and system architecture (i.e., x86 vs ARM).
-Refer to our official [Dockerfile](https://github.com/localstack/localstack/blob/master/Dockerfile) and our [package installer LPM]({{< ref "contributing/concepts#packages-and-installers" >}}) for more details.
+The required dependencies vary depending on the service, [Configuration](https://docs.localstack.cloud/references/configuration/), operating system, and system architecture (i.e., x86 vs ARM).
+Refer to our official [Dockerfile](https://github.com/localstack/localstack/blob/master/Dockerfile) and our [package installer LPM](Concepts/index.md#packages-and-installers) for more details.
 
 #### Python Dependencies
 
