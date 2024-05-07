@@ -16,7 +16,11 @@ EVENT_DETAIL_DUPLICATED_KEY = {
 }
 
 
-class TestEventsInputPath:
+INPUT_TEMPLATE_PREDEFINE_VARIABLES_STR = '"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>"'
+INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON = '{"originalEvent": <aws.events.event>, "originalEventJson": <aws.events.event.json>}'  # important to not quote the predefined variables
+
+
+class TestEventsInputPath:  # TODO rename
     @markers.aws.validated
     def test_put_events_with_input_path(self, put_events_with_filter_to_sqs, snapshot):
         entries1 = [
@@ -152,7 +156,7 @@ class TestEventsInputPath:
         snapshot.match("message-queue-2", messages_queue_2)
 
 
-class TestEventsInputTransformers:
+class TestEventsInputTransformers:  # TODO rename
     @markers.aws.validated
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_with_input_transformer(self, put_events_with_filter_to_sqs, snapshot):
@@ -206,3 +210,72 @@ class TestEventsInputTransformers:
         )
         snapshot.match("custom-variables-match-all", messages_match_all)
         snapshot.match("custom-variables-not-match-all", messages_not_match_all)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "input_template",
+        [INPUT_TEMPLATE_PREDEFINE_VARIABLES_STR, INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON],
+    )
+    def test_input_transformer_predefined_variables(
+        self,
+        input_template,
+        create_sqs_events_target,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html#eb-transform-input-predefined
+
+        # prepare target queues
+        queue_url, queue_arn = create_sqs_events_target()
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        rule_name = f"test-rule-{short_uid()}"
+        events_put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+
+        # no input path map required for predefined variables
+        input_transformer = {
+            "InputTemplate": input_template,
+        }
+
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputTransformer": input_transformer},
+            ],
+        )
+
+        aws_client.events.put_events(
+            Entries=[
+                {
+                    "EventBusName": bus_name,
+                    "Source": TEST_EVENT_PATTERN["source"][0],
+                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                    "Detail": json.dumps(EVENT_DETAIL),
+                }
+            ]
+        )
+
+        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(bus_name, "<bus-name>"),
+                snapshot.transform.regex(rule_name, "<rule-name>"),
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+                # snapshot.transform.jsonpath(
+                #     "$.messages[*].Body.originalEvent.time", value_replacement="ingestion-time"
+                # ), # TODO fix error for int replacement value
+            ]
+        )
+        snapshot.match("messages", messages)
