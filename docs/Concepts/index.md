@@ -131,7 +131,7 @@ If an exception occurs during the execution of a request handler, no other reque
 
 Here is a figure of the handler chain underlying the `LocalstackAwsGateway`, which every HTTP request to `:4566` goes through.
 
-Some handlers are designed to be extended dynamically at runtime by other services. For example, a service can add HTTP routes to the edge router, which can then process the request differently. OpenSearch, for example, uses this to register HTTP routes to [cluster endpoints](https://docs.localstack.cloud/aws/opensearch/#interact-with-the-cluster), that are proxied through `:4566` to the cluster backend.
+Some handlers are designed to be extended dynamically at runtime by other services. For example, a service can add HTTP routes to the edge router, which can then process the request differently. OpenSearch, for example, uses this to register HTTP routes to [cluster endpoints](https://docs.localstack.cloud/user-guide/aws/opensearch/#interact-with-the-cluster), that are proxied through `:4566` to the cluster backend.
 
 <img src="localstack-handler-chain.png" width="800px" alt="LocalStack Handler chain" />
 
