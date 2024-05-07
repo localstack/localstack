@@ -51,7 +51,7 @@ If you have permissions, this workflow can be manually triggered on CircleCI as 
     1. Set **Value** to `true`
 1. Click the **Trigger Pipeline** button to commence the workflow.
 
-![CircleCI Trigger Pipeline](../randomize-aws-credentials.png)
+![CircleCI Trigger Pipeline](./randomize-aws-credentials.png)
 
 ## Test changes locally with random credentials
 
