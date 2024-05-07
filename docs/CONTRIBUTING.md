@@ -5,12 +5,12 @@ The guides in this section are for developers of LocalStack, to better understan
 ## Sections
 
 - [Contribution Guidelines](#contribution-guidelines)
-- [Development Environment Setup](docs/development-environment-setup.md)
-- [LocalStack Concepts](docs/Concepts/index.md)
-- [Integration Tests](docs/integration-tests.md)
-- [Parity Testing](docs/parity-testing.md)
-- [Multi-account and Multi-region Testing](docs/multi-account-region-testing.md)
-- [Terraform Tests](docs/terraform-tests.md)
+- [Development Environment Setup](development-environment-setup.md)
+- [LocalStack Concepts](Concepts/index.md)
+- [Integration Tests](integration-tests.md)
+- [Parity Testing](parity-testing.md)
+- [Multi-account and Multi-region Testing](multi-account-region-testing.md)
+- [Terraform Tests](terraform-tests.md)
 
 ## Contribution Guidelines
 

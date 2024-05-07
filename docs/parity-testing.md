@@ -162,7 +162,6 @@ def test_basic_invoke(
     snapshot.match("lambda_get_fn_2", get_fn_result_2)
 ```
 
-
 The information that the function-name of the first recording (`lambda_create_fn`) is the same as in the record for `lambda_get_fn` is important.
 
 Using reference replacement, this information is preserved in the `snapshot.json`. The reference replacement automatically adds an ascending number, to ensure that different values can be differentiated.
