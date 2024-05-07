@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import re
@@ -351,6 +352,7 @@ class CloudformationProvider(CloudformationApi):
             stack_name=stack_name,
         )
 
+        raw_new_template = copy.deepcopy(template)
         try:
             template = template_preparer.transform_template(
                 context.account_id,
@@ -362,6 +364,9 @@ class CloudformationProvider(CloudformationApi):
                 resolved_stack_conditions,
                 resolved_parameters,
             )
+            processed_template = copy.deepcopy(
+                template
+            )  # copying it here since it's being mutated somewhere downstream
         except FailedTransformationException as e:
             stack.add_stack_event(
                 stack.stack_name,
@@ -384,6 +389,9 @@ class CloudformationProvider(CloudformationApi):
             deployer.update_stack(new_stack)
         except NoStackUpdates as e:
             stack.set_stack_status("UPDATE_COMPLETE")
+            if raw_new_template != processed_template:
+                # processed templates seem to never return an exception here
+                return UpdateStackOutput(StackId=stack.stack_id)
             raise ValidationError(str(e))
         except Exception as e:
             stack.set_stack_status("UPDATE_FAILED")
