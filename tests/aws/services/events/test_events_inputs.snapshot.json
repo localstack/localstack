@@ -110,7 +110,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputTransformers::test_put_events_with_input_transformer": {
-    "recorded-date": "08-05-2024, 14:37:40",
+    "recorded-date": "08-05-2024, 14:39:12",
     "recorded-content": {
       "custom-variables-match-all": [
         {
@@ -131,7 +131,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputTransformers::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
-    "recorded-date": "08-05-2024, 14:37:43",
+    "recorded-date": "08-05-2024, 14:39:15",
     "recorded-content": {
       "messages": [
         {
@@ -144,7 +144,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputTransformers::test_input_transformer_predefined_variables[{\"originalEvent\": <aws.events.event>, \"originalEventJson\": <aws.events.event.json>}]": {
-    "recorded-date": "08-05-2024, 14:37:46",
+    "recorded-date": "08-05-2024, 14:39:17",
     "recorded-content": {
       "messages": [
         {
@@ -156,7 +156,7 @@
               "id": "<uuid:2>",
               "account": "111111111111",
               "detailType": "core.update-account-command",
-              "time": 1715179065000,
+              "time": 1715179157000,
               "source": "core.update-account-command",
               "region": "<region>",
               "resources": [],
@@ -177,6 +177,116 @@
                   "acc_id": "0a787ecb-4015",
                   "sf_id": "baz"
                 }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path": {
+    "recorded-date": "08-05-2024, 14:38:59",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail0]": {
+    "recorded-date": "08-05-2024, 14:39:01",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "acc_id": "0a787ecb-4015",
+            "sf_id": "baz"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail1]": {
+    "recorded-date": "08-05-2024, 14:39:03",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "acc_id": "0a787ecb-4015",
+            "payload": {
+              "message": "baz",
+              "id": "123"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_max_level_depth": {
+    "recorded-date": "08-05-2024, 14:39:05",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"baz\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_multiple_targets": {
+    "recorded-date": "08-05-2024, 14:39:08",
+    "recorded-content": {
+      "message-queue-1": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "command": "update-account",
+            "payload": {
+              "acc_id": "0a787ecb-4015",
+              "sf_id": "baz"
+            }
+          }
+        }
+      ],
+      "message-queue-2": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:3>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
               }
             }
           }

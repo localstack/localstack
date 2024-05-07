@@ -20,7 +20,7 @@ INPUT_TEMPLATE_PREDEFINE_VARIABLES_STR = '"Message containing all pre defined va
 INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON = '{"originalEvent": <aws.events.event>, "originalEventJson": <aws.events.event.json>}'  # important to not quote the predefined variables
 
 
-class TestEventsInputPath:  # TODO rename
+class TestInputPath:
     @markers.aws.validated
     def test_put_events_with_input_path(self, put_events_with_filter_to_sqs, snapshot):
         entries1 = [

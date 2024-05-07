@@ -15,10 +15,10 @@
     "last_validated_date": "2024-05-08T14:37:32+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputTransformers::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
-    "last_validated_date": "2024-05-08T14:37:43+00:00"
+    "last_validated_date": "2024-05-08T14:39:15+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputTransformers::test_input_transformer_predefined_variables[{\"originalEvent\": <aws.events.event>, \"originalEventJson\": <aws.events.event.json>}]": {
-    "last_validated_date": "2024-05-08T14:37:46+00:00"
+    "last_validated_date": "2024-05-08T14:39:17+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputPath::test_put_events_with_input_path_max_level_depth": {
     "last_validated_date": "2024-05-06T15:11:54+00:00"
@@ -39,6 +39,21 @@
     "last_validated_date": "2024-03-26T15:48:35+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputTransformers::test_put_events_with_input_transformer": {
-    "last_validated_date": "2024-05-08T14:37:40+00:00"
+    "last_validated_date": "2024-05-08T14:39:12+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path": {
+    "last_validated_date": "2024-05-08T14:38:59+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_max_level_depth": {
+    "last_validated_date": "2024-05-08T14:39:05+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_multiple_targets": {
+    "last_validated_date": "2024-05-08T14:39:08+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail0]": {
+    "last_validated_date": "2024-05-08T14:39:01+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail1]": {
+    "last_validated_date": "2024-05-08T14:39:03+00:00"
   }
 }
