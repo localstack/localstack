@@ -156,7 +156,7 @@ class TestInputPath:
         snapshot.match("message-queue-2", messages_queue_2)
 
 
-class TestEventsInputTransformers:  # TODO rename
+class TestInputTransformer:
     @markers.aws.validated
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_with_input_transformer(self, put_events_with_filter_to_sqs, snapshot):

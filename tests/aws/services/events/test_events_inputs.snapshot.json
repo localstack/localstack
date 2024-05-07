@@ -185,7 +185,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path": {
-    "recorded-date": "08-05-2024, 14:38:59",
+    "recorded-date": "08-05-2024, 14:40:07",
     "recorded-content": {
       "message": [
         {
@@ -204,7 +204,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail0]": {
-    "recorded-date": "08-05-2024, 14:39:01",
+    "recorded-date": "08-05-2024, 14:40:09",
     "recorded-content": {
       "message": [
         {
@@ -220,7 +220,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail1]": {
-    "recorded-date": "08-05-2024, 14:39:03",
+    "recorded-date": "08-05-2024, 14:40:11",
     "recorded-content": {
       "message": [
         {
@@ -239,7 +239,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_max_level_depth": {
-    "recorded-date": "08-05-2024, 14:39:05",
+    "recorded-date": "08-05-2024, 14:40:13",
     "recorded-content": {
       "message": [
         {
@@ -252,7 +252,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_multiple_targets": {
-    "recorded-date": "08-05-2024, 14:39:08",
+    "recorded-date": "08-05-2024, 14:40:16",
     "recorded-content": {
       "message-queue-1": [
         {
@@ -287,6 +287,81 @@
               "payload": {
                 "acc_id": "0a787ecb-4015",
                 "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer": {
+    "recorded-date": "08-05-2024, 14:40:20",
+    "recorded-content": {
+      "custom-variables-match-all": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail update-account\""
+        }
+      ],
+      "custom-variables-not-match-all": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail \""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
+    "recorded-date": "08-05-2024, 14:40:23",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"Message containing all pre defined variables arn:aws:events:<region>:111111111111:rule/<bus-name>/<rule-name> <rule-name> date\""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[{\"originalEvent\": <aws.events.event>, \"originalEventJson\": <aws.events.event.json>}]": {
+    "recorded-date": "08-05-2024, 14:40:25",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "originalEvent": {
+              "id": "<uuid:2>",
+              "account": "111111111111",
+              "detailType": "core.update-account-command",
+              "time": 1715179225000,
+              "source": "core.update-account-command",
+              "region": "<region>",
+              "resources": [],
+              "version": "0"
+            },
+            "originalEventJson": {
+              "version": "0",
+              "id": "<uuid:2>",
+              "detail-type": "core.update-account-command",
+              "source": "core.update-account-command",
+              "account": "111111111111",
+              "time": "date",
+              "region": "<region>",
+              "resources": [],
+              "detail": {
+                "command": "update-account",
+                "payload": {
+                  "acc_id": "0a787ecb-4015",
+                  "sf_id": "baz"
+                }
               }
             }
           }
