@@ -18,7 +18,7 @@ AWS is essentially a Remote Procedure Call (RPC) system, and ASF is our server-s
 
 AWS developed a specification language, [Smithy](https://awslabs.github.io/smithy/), which they use internally to define their APIs in a declarative way. They use these specs to generate client SDKs and client documentation. All these specifications are available, among other repositories, in the [botocore repository](https://github.com/boto/botocore/tree/develop/botocore/data). Botocore are the internals of the AWS Python SDK, which allows ASF to interpret and operate on the service specifications. Take a look at an example, [the `Invoke` operation of the `lambda` API](https://github.com/boto/botocore/blob/474e7a23d0fd178790579638cec9123d7e92d10b/botocore/data/lambda/2015-03-31/service-2.json#L564-L573):
 
-```json 
+```bash 
 	"Invoke":{
     "name":"Invoke",
     "http":{
