@@ -505,6 +505,7 @@ def test_query_protocol_error_serialization_plain():
     # - The original response does not define an encoding.
     # - There is no newline after the XML declaration.
     # - The response does not contain a Type nor Detail tag (since they aren't contained in the spec).
+    # - The original response uses double quotes for the xml declaration.
     # Most of these differences should be handled equally by parsing clients, however, we might adopt some of these
     # changes in the future.
     expected_response_body = (
