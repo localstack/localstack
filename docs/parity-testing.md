@@ -16,27 +16,15 @@ This guide assumes you are already familiar with writing [integration tests](int
 In a nutshell, the necessary steps include:
 
 1.  Make sure that the test works against AWS. 
-
     * Check out our [Integration Test Guide](integration-tests.md#running-integration-tests-against-aws) for tips on how run integration tests against AWS.
-
 2.  Add the `snapshot` fixture to your test and identify which responses you want to collect and compare against LocalStack. 
-    
     * Use `snapshot.match(”identifier”, result)` to mark the result of interest. It will be recorded and stored in a file with the name `<testfile-name>.snapshot.json`
-    
     *  The **identifier** can be freely selected, but ideally it gives a hint on what is recorded - so typically the name of the function. The **result** is expected to be a `dict`.
-
     * Run the test against AWS: use the parameter `--snapshot-update` (or the environment variable `SNAPSHOT_UPDATE=1`) and set the environment variable as `TEST_TARGET=AWS_CLOUD`.
-
     * Check the recorded result in `<testfile-name>.snapshot.json` and consider [using transformers](#using-transformers) to make the result comparable.
-    
-
 3.  Run the test against LocalStack. 
-  
     * Hint: Ensure that the `AWS_CLOUD` is not set as a test target and that the parameter `--snapshot-update` is removed. 
-  
     * If you used the environment variable make sure to delete it or reset the value, e.g. `SNAPSHOT_UPDATE=0`
-
-
 
 Here is an example of a parity test:
 
@@ -51,6 +39,7 @@ def test_invocation(self, lambda_client, snapshot):
     # records the 'result' using the identifier 'invoke'
     snapshot.match("invoke", result)
 ```
+
 
 ## The Snapshot
 
