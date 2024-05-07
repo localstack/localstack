@@ -1,16 +1,16 @@
 # Contributing
 
-The guides in this section are for developers of LocalStack, to better understand how LocalStack works internally, how to set up local development environments, and how to contribute to the codebase.
+We welcome contributions to LocalStack! Please refer to the following sections to better understand how LocalStack works internally, how to set up local development environments, and how to contribute to the codebase.
 
 ## Sections
 
 - [Contribution Guidelines](#contribution-guidelines)
-- [Development Environment Setup](development-environment-setup.md)
-- [LocalStack Concepts](Concepts/index.md)
-- [Integration Tests](integration-tests.md)
-- [Parity Testing](parity-testing.md)
-- [Multi-account and Multi-region Testing](multi-account-region-testing.md)
-- [Terraform Tests](terraform-tests.md)
+- [Development Environment Setup](development-environment-setup/index.md)
+- [LocalStack Concepts](localstack-concepts/index.md)
+- [Integration Tests](integration-tests/index.md)
+- [Parity Testing](parity-testing/index.md)
+- [Multi-account and Multi-region Testing](multi-account-region-testing/index.md)
+- [Terraform Tests](terraform-tests/index.md)
 
 ## Contribution Guidelines
 

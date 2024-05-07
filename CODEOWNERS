@@ -6,7 +6,7 @@
 /CODEOWNERS @thrau @dominikschubert @alexrashed
 
 # README / Docs
-/docs/ @HarshCasper
+/docs/ @thrau @HarshCasper
 /README.md @HarshCasper
 /CODE_OF_CONDUCT.md @HarshCasper
 /CONTRIBUTING.md @HarshCasper
