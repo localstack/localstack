@@ -1,6 +1,6 @@
 # Contributing to LocalStack
 
-We welcome contributions to LocalStack, under the [Contributor LicenseAgreement (CLA)][1].
+We welcome contributions to LocalStack, under the [Contributor License Agreement (CLA)][1].
 
 The guides in this section are for developers of LocalStack, to better understand how LocalStack works internally, how to set up local development environments, and how to contribute to the codebase.
 
