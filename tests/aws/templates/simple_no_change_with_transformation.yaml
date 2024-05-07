@@ -1,0 +1,4 @@
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  MyTopic:
+    Type: AWS::SNS::Topic
