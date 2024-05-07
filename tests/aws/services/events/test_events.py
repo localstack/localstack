@@ -7,7 +7,6 @@ import json
 import os
 import time
 import uuid
-from datetime import datetime
 
 import pytest
 from botocore.exceptions import ClientError
@@ -26,14 +25,20 @@ from localstack.utils.sync import poll_condition, retry
 from tests.aws.services.events.conftest import assert_valid_event, sqs_collect_messages
 from tests.aws.services.events.helper_functions import is_v2_provider
 
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-
-TEST_EVENT_BUS_NAME = "command-bus-dev"
-
 EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
 
 TEST_EVENT_PATTERN = {
     "source": ["core.update-account-command"],
+    "detail-type": ["core.update-account-command"],
+    "detail": {"command": ["update-account"]},
+}
+
+TEST_EVENT_PATTERN_NO_DETAIL = {
+    "source": ["core.update-account-command"],
+    "detail-type": ["core.update-account-command"],
+}
+
+TEST_EVENT_PATTERN_NO_SOURCE = {
     "detail-type": ["core.update-account-command"],
     "detail": {"command": ["update-account"]},
 }
@@ -76,6 +81,81 @@ EVENT_BUS_ROLE = {
 
 
 class TestEvents:
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        not is_v2_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_put_events_without_source(self, snapshot, aws_client):
+        entries = [
+            {
+                "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            },
+        ]
+        response = aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events", response)
+
+    @markers.aws.unknown
+    @pytest.mark.skipif(
+        not is_v2_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    def test_put_event_without_detail(self, snapshot, aws_client):
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+            },
+        ]
+        response = aws_client.events.put_events(Entries=entries)
+        snapshot.match("put-events", response)
+
+    @markers.aws.validated
+    def test_put_events_time(self, put_events_with_filter_to_sqs, snapshot):
+        entries1 = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                "Detail": json.dumps({"message": "short time"}),
+                "Time": "2022-01-01",
+            },
+        ]
+        entries2 = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                "Detail": json.dumps({"message": "new time"}),
+                "Time": "01-01-2022T00:00:00Z",
+            },
+        ]
+        entries3 = [
+            {
+                "Source": TEST_EVENT_PATTERN_NO_DETAIL["source"][0],
+                "DetailType": TEST_EVENT_PATTERN_NO_DETAIL["detail-type"][0],
+                "Detail": json.dumps({"message": "long time"}),
+                "Time": "2022-01-01 00:00:00Z",
+            },
+        ]
+        entries_asserts = [(entries1, True), (entries2, True), (entries3, True)]
+        messages = put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN_NO_DETAIL,
+            entries_asserts=entries_asserts,
+        )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("messages", messages)
+
+        # check for correct time strings in the messages
+        for message in messages:
+            message_body = json.loads(message["Body"])
+            assert message_body["time"] == "2022-01-01T00:00:00Z"
+
     @markers.aws.unknown
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(
@@ -137,70 +217,6 @@ class TestEvents:
 
         # clean up
         clean_up(rule_name=rule_name)
-
-    @markers.aws.unknown
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_events_with_values_in_array(self, put_events_with_filter_to_sqs):
-        pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
-        entries1 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": ["3", "1"]}}}),
-            }
-        ]
-        entries2 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": ["2"]}}}),
-            }
-        ]
-        entries3 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": ["3"]}}}),
-            }
-        ]
-        entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
-        put_events_with_filter_to_sqs(
-            pattern=pattern,
-            entries_asserts=entries_asserts,
-            input_path="$.detail",
-        )
-
-    @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_events_with_nested_event_pattern(self, put_events_with_filter_to_sqs):
-        pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
-        entries1 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": "1"}}}),
-            }
-        ]
-        entries2 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"event": {"data": {"type": "2"}}}),
-            }
-        ]
-        entries3 = [
-            {
-                "Source": "test",
-                "DetailType": "test",
-                "Detail": json.dumps({"hello": "world"}),
-            }
-        ]
-        entries_asserts = [(entries1, True), (entries2, False), (entries3, False)]
-        put_events_with_filter_to_sqs(
-            pattern=pattern,
-            entries_asserts=entries_asserts,
-            input_path="$.detail",
-        )
 
     @markers.aws.unknown
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
@@ -526,185 +542,6 @@ class TestEvents:
         assert "must have length less than or equal to 64" in message
         assert "must satisfy enum value set: [BASIC, OAUTH_CLIENT_CREDENTIALS, API_KEY]" in message
 
-    @markers.aws.unknown
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_event_without_source(self, aws_client_factory):
-        events_client = aws_client_factory(region_name="eu-west-1").events
-
-        response = events_client.put_events(Entries=[{"DetailType": "Test", "Detail": "{}"}])
-        assert response.get("Entries")
-
-    @markers.aws.unknown
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_event_without_detail(self, aws_client_factory):
-        events_client = aws_client_factory(region_name="eu-west-1").events
-
-        response = events_client.put_events(
-            Entries=[
-                {
-                    "DetailType": "Test",
-                }
-            ]
-        )
-        assert response.get("Entries")
-
-    @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_target_id_validation(
-        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
-    ):
-        rule_name = f"rule-{short_uid()}"
-        queue_url = sqs_create_queue()
-        queue_arn = sqs_get_queue_arn(queue_url)
-
-        events_put_rule(
-            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
-        )
-
-        target_id = "!@#$@!#$"
-        with pytest.raises(ClientError) as e:
-            aws_client.events.put_targets(
-                Rule=rule_name,
-                Targets=[
-                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
-                ],
-            )
-        snapshot.add_transformer(snapshot.transform.regex(target_id, "invalid-target-id"))
-        snapshot.match("put-targets-invalid-id-error", e.value.response)
-
-        target_id = f"{long_uid()}-{long_uid()}-extra"
-        with pytest.raises(ClientError) as e:
-            aws_client.events.put_targets(
-                Rule=rule_name,
-                Targets=[
-                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
-                ],
-            )
-        snapshot.add_transformer(snapshot.transform.regex(target_id, "second-invalid-target-id"))
-        snapshot.match("put-targets-length-error", e.value.response)
-
-        target_id = f"test-With_valid.Characters-{short_uid()}"
-        aws_client.events.put_targets(
-            Rule=rule_name,
-            Targets=[
-                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
-            ],
-        )
-
-    @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_event_pattern(self, aws_client, snapshot, account_id, region_name):
-        response = aws_client.events.test_event_pattern(
-            Event=json.dumps(
-                {
-                    "id": "1",
-                    "source": "order",
-                    "detail-type": "Test",
-                    "account": account_id,
-                    "region": region_name,
-                    "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                }
-            ),
-            EventPattern=json.dumps(
-                {
-                    "source": ["order"],
-                    "detail-type": ["Test"],
-                }
-            ),
-        )
-        snapshot.match("eventbridge-test-event-pattern-response", response)
-
-        # negative test, source is not matched
-        response = aws_client.events.test_event_pattern(
-            Event=json.dumps(
-                {
-                    "id": "1",
-                    "source": "order",
-                    "detail-type": "Test",
-                    "account": account_id,
-                    "region": region_name,
-                    "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                }
-            ),
-            EventPattern=json.dumps(
-                {
-                    "source": ["shipment"],
-                    "detail-type": ["Test"],
-                }
-            ),
-        )
-        snapshot.match("eventbridge-test-event-pattern-response-no-match", response)
-
-    @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_events_time(
-        self,
-        aws_client,
-        sqs_create_queue,
-        sqs_get_queue_arn,
-        events_put_rule,
-        snapshot,
-    ):
-        default_bus_rule_name = f"rule-{short_uid()}"
-        default_bus_target_id = f"test-target-default-b-{short_uid()}"
-
-        snapshot.add_transformer(
-            [
-                snapshot.transform.key_value("MD5OfBody"),  # the event contains a timestamp
-                snapshot.transform.key_value("ReceiptHandle"),
-            ]
-        )
-
-        queue_url = sqs_create_queue()
-        queue_arn = sqs_get_queue_arn(queue_url)
-
-        rule_on_default_bus = events_put_rule(
-            Name=default_bus_rule_name,
-            EventPattern=json.dumps({"detail-type": ["CustomType"], "source": ["MySource"]}),
-            State="ENABLED",
-        )
-
-        allow_event_rule_to_sqs_queue(
-            aws_client=aws_client,
-            event_rule_arn=rule_on_default_bus["RuleArn"],
-            sqs_queue_arn=queue_arn,
-            sqs_queue_url=queue_url,
-        )
-
-        aws_client.events.put_targets(
-            Rule=default_bus_rule_name,
-            Targets=[{"Id": default_bus_target_id, "Arn": queue_arn}],
-        )
-
-        # create an entry with a defined time
-        entries = [
-            {
-                "Source": "MySource",
-                "DetailType": "CustomType",
-                "Detail": json.dumps({"message": "for the default event bus"}),
-                "Time": datetime(year=2022, day=1, month=1),
-            }
-        ]
-        response = aws_client.events.put_events(Entries=entries)
-        snapshot.match("put-events", response)
-
-        def _get_sqs_messages():
-            resp = aws_client.sqs.receive_message(
-                QueueUrl=queue_url, VisibilityTimeout=0, WaitTimeSeconds=1
-            )
-            msgs = resp.get("Messages")
-            assert len(msgs) == 1
-            aws_client.sqs.delete_message(
-                QueueUrl=queue_url, ReceiptHandle=msgs[0]["ReceiptHandle"]
-            )
-            return msgs
-
-        messages = retry(_get_sqs_messages, retries=5, sleep=0.1)
-        snapshot.match("get-events", messages)
-
-        message_body = json.loads(messages[0]["Body"])
-        assert message_body["time"] == "2022-01-01T00:00:00Z"
-
 
 class TestEventBus:
     @markers.aws.validated
@@ -814,10 +651,9 @@ class TestEventBus:
         )
         snapshot.match("list-event-buses-limit-next-token", response)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing  # TODO use fixture setup_sqs_queue_as_event_target to simplify
     @pytest.mark.skipif(is_aws_cloud(), reason="not validated")
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_into_event_bus(
         self,
         monkeypatch,
@@ -885,7 +721,6 @@ class TestEventBus:
         aws_client.sqs.delete_queue(QueueUrl=queue_url)
 
     @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     # TODO simplify and use sqs as target
     def test_put_events_to_default_eventbus_for_custom_eventbus(
         self,
@@ -1019,7 +854,6 @@ class TestEventBus:
         assert_valid_event(received_event)
 
     @markers.aws.validated  # TODO fix condition for this test, only succeeds if run on its own
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_put_events_nonexistent_event_bus(
         self,
         aws_client,
@@ -1302,6 +1136,88 @@ class TestEventRule:
         snapshot.match("list-targets-after-update", response)
 
 
+class TestEventPattern:
+    @markers.aws.validated
+    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+    def test_put_events_pattern_with_values_in_array(self, put_events_with_filter_to_sqs, snapshot):
+        pattern = {"detail": {"event": {"data": {"type": ["1", "2"]}}}}
+        entries1 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3", "1"]}}}),
+            }
+        ]
+        entries2 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["2"]}}}),
+            }
+        ]
+        entries3 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": ["3"]}}}),
+            }
+        ]
+        entries_asserts = [(entries1, True), (entries2, True), (entries3, False)]
+        messages = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("messages", messages)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+    def test_put_events_pattern_nested(self, put_events_with_filter_to_sqs, snapshot):
+        pattern = {"detail": {"event": {"data": {"type": ["1"]}}}}
+        entries1 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": "1"}}}),
+            }
+        ]
+        entries2 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"event": {"data": {"type": "2"}}}),
+            }
+        ]
+        entries3 = [
+            {
+                "Source": "test",
+                "DetailType": "test",
+                "Detail": json.dumps({"hello": "world"}),
+            }
+        ]
+        entries_asserts = [(entries1, True), (entries2, False), (entries3, False)]
+        messages = put_events_with_filter_to_sqs(
+            pattern=pattern,
+            entries_asserts=entries_asserts,
+            input_path="$.detail",
+        )
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("messages", messages)
+
+
 class TestEventTarget:
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
@@ -1411,3 +1327,46 @@ class TestEventTarget:
             Rule=rule_name, NextToken=response["NextToken"]
         )
         snapshot.match("list-targets-limit-next-token", response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+    def test_put_target_id_validation(
+        self, sqs_create_queue, sqs_get_queue_arn, events_put_rule, snapshot, aws_client
+    ):
+        rule_name = f"rule-{short_uid()}"
+        queue_url = sqs_create_queue()
+        queue_arn = sqs_get_queue_arn(queue_url)
+
+        events_put_rule(
+            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN), State="ENABLED"
+        )
+
+        target_id = "!@#$@!#$"
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                Targets=[
+                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+                ],
+            )
+        snapshot.add_transformer(snapshot.transform.regex(target_id, "invalid-target-id"))
+        snapshot.match("put-targets-invalid-id-error", e.value.response)
+
+        target_id = f"{long_uid()}-{long_uid()}-extra"
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_targets(
+                Rule=rule_name,
+                Targets=[
+                    {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+                ],
+            )
+        snapshot.add_transformer(snapshot.transform.regex(target_id, "second-invalid-target-id"))
+        snapshot.match("put-targets-length-error", e.value.response)
+
+        target_id = f"test-With_valid.Characters-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"},
+            ],
+        )

@@ -14,11 +14,10 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import poll_condition
 from tests.aws.services.events.conftest import assert_valid_event, sqs_collect_messages
 from tests.aws.services.events.helper_functions import is_v2_provider
-from tests.aws.services.events.test_events import TEST_EVENT_BUS_NAME, TEST_EVENT_PATTERN
+from tests.aws.services.events.test_events import TEST_EVENT_PATTERN
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_rule(aws_client, snapshot, clean_up):
     rule_name = f"rule-{short_uid()}"
     snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
@@ -38,7 +37,6 @@ def test_put_rule(aws_client, snapshot, clean_up):
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_rule_disable(aws_client, clean_up):
     rule_name = f"rule-{short_uid()}"
     aws_client.events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minute)")
@@ -54,6 +52,8 @@ def test_rule_disable(aws_client, clean_up):
 
 
 @markers.aws.validated
+# TODO move to test_events_schedules.py
+@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 @pytest.mark.parametrize(
     "expression",
     [
@@ -76,7 +76,6 @@ def test_rule_disable(aws_client, clean_up):
         " rate(10 minutes)",
     ],
 )
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_rule_invalid_rate_schedule_expression(expression, aws_client):
     with pytest.raises(ClientError) as e:
         aws_client.events.put_rule(Name=f"rule-{short_uid()}", ScheduleExpression=expression)
@@ -88,7 +87,6 @@ def test_put_rule_invalid_rate_schedule_expression(expression, aws_client):
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_rule_anything_but_to_sqs(put_events_with_filter_to_sqs, snapshot):
     snapshot.add_transformer(
         [
@@ -142,7 +140,6 @@ def test_put_events_with_rule_anything_but_to_sqs(put_events_with_filter_to_sqs,
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_rule_exists_true_to_sqs(put_events_with_filter_to_sqs, snapshot):
     """
     Exists matching True condition: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-exists-matching
@@ -190,7 +187,6 @@ def test_put_events_with_rule_exists_true_to_sqs(put_events_with_filter_to_sqs, 
 
 
 @markers.aws.validated
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 def test_put_events_with_rule_exists_false_to_sqs(put_events_with_filter_to_sqs, snapshot):
     """
     Exists matching False condition: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns-content-based-filtering.html#eb-filtering-exists-matching
@@ -243,6 +239,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
     queue_name = f"queue-{short_uid()}"
     rule_name = f"rule-{short_uid()}"
     target_id = f"target-{short_uid()}"
+    event_bus_name = f"event-bus-{short_uid()}"
 
     queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
     queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
@@ -276,7 +273,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
     }
 
     event = {
-        "EventBusName": TEST_EVENT_BUS_NAME,
+        "EventBusName": event_bus_name,
         "Source": "core.update-account-command",
         "DetailType": "core.app.backend",
         "Detail": json.dumps(
@@ -303,16 +300,16 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
         ),
     }
 
-    aws_client.events.create_event_bus(Name=TEST_EVENT_BUS_NAME)
+    aws_client.events.create_event_bus(Name=event_bus_name)
     aws_client.events.put_rule(
         Name=rule_name,
-        EventBusName=TEST_EVENT_BUS_NAME,
+        EventBusName=event_bus_name,
         EventPattern=json.dumps(pattern),
     )
 
     aws_client.events.put_targets(
         Rule=rule_name,
-        EventBusName=TEST_EVENT_BUS_NAME,
+        EventBusName=event_bus_name,
         Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
     )
     aws_client.events.put_events(Entries=[event])
@@ -331,7 +328,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
 
     # clean up
     clean_up(
-        bus_name=TEST_EVENT_BUS_NAME,
+        bus_name=event_bus_name,
         rule_name=rule_name,
         target_ids=target_id,
         queue_url=queue_url,
@@ -339,8 +336,9 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
 
 
 @markers.aws.validated
-@pytest.mark.parametrize("schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"])
+# TODO move to test_events_schedules.py
 @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+@pytest.mark.parametrize("schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"])
 def test_create_rule_with_one_unit_in_singular_should_succeed(
     schedule_expression, aws_client, clean_up
 ):
