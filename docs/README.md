@@ -8,8 +8,9 @@ The guides in this section are for developers of LocalStack, to better understan
 
 ## Sections
 
-- [LocalStack Concepts](Concepts/index.md)
+- [Contribution Guidelines](contributing.md)
 - [Development Environment Setup](development-environment-setup.md)
+- [LocalStack Concepts](Concepts/index.md)
 - [Integration Tests](integration-tests.md)
 - [Parity Testing](parity-testing.md)
 - [Multi-account and Multi-region Testing](multi-account-region-testing.md)
