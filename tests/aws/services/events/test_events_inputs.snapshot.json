@@ -1,13 +1,13 @@
 {
-  "tests/aws/services/events/test_events_inputs.py::TestEventsInputTransformers::test_put_events_with_input_transformation_to_sqs": {
-    "recorded-date": "26-03-2024, 15:48:35",
+  "tests/aws/services/events/test_events_inputs.py::TestEventsInputTransformers::test_put_events_with_input_transformer": {
+    "recorded-date": "07-05-2024, 08:44:39",
     "recorded-content": {
       "custom-variables-match-all": [
         {
           "MessageId": "<uuid:1>",
           "ReceiptHandle": "<receipt-handle:1>",
           "MD5OfBody": "<m-d5-of-body:1>",
-          "Body": "\"Event of customerCreated type, at time date, info extracted from detail display-message\""
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail update-account\""
         }
       ],
       "custom-variables-not-match-all": [
@@ -15,7 +15,7 @@
           "MessageId": "<uuid:2>",
           "ReceiptHandle": "<receipt-handle:2>",
           "MD5OfBody": "<m-d5-of-body:2>",
-          "Body": "\"Event of customerCreated type, at time date, info extracted from detail \""
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail \""
         }
       ]
     }

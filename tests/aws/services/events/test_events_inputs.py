@@ -155,16 +155,12 @@ class TestEventsInputPath:
 class TestEventsInputTransformers:
     @markers.aws.validated
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_events_with_input_transformation_to_sqs(
-        self, put_events_with_filter_to_sqs, snapshot
-    ):
-        pattern = {"detail-type": ["customerCreated"]}
-        event_detail = {"command": "display-message", "payload": "baz"}
+    def test_put_events_with_input_transformer(self, put_events_with_filter_to_sqs, snapshot):
         entries = [
             {
-                "Source": "com.mycompany.myapp",
-                "DetailType": "customerCreated",
-                "Detail": json.dumps(event_detail),
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
             }
         ]
         entries_asserts = [(entries, True)]
@@ -181,7 +177,7 @@ class TestEventsInputTransformers:
             "InputTemplate": input_template,
         }
         messages_match_all = put_events_with_filter_to_sqs(
-            pattern=pattern,
+            pattern=TEST_EVENT_PATTERN,
             entries_asserts=entries_asserts,
             input_transformer=input_transformer_match_all,
         )
@@ -197,7 +193,7 @@ class TestEventsInputTransformers:
             "InputTemplate": input_template,
         }
         messages_not_match_all = put_events_with_filter_to_sqs(
-            pattern=pattern,
+            pattern=TEST_EVENT_PATTERN,
             entries_asserts=entries_asserts,
             input_transformer=input_transformer_not_match_all,
         )
