@@ -9,7 +9,7 @@ Once the snapshot is recorded, the test can be executed against LocalStack. Duri
 
 In theory, every integration test can be converted to a parity conform snapshot test.
 
-This guide assumes you are already familiar with writing [integration tests](integration-tests) for LocalStack in general. 
+This guide assumes you are already familiar with writing [integration tests](integration-tests.md) for LocalStack in general. 
 
 ## How to write Parity tests
 
@@ -17,7 +17,7 @@ In a nutshell, the necessary steps include:
 
 1.  Make sure that the test works against AWS. 
 
-    * Check out our [Integration Test Guide](integration-tests#running-integration-tests-against-aws) for tips on how run integration tests against AWS.
+    * Check out our [Integration Test Guide](integration-tests.md#running-integration-tests-against-aws) for tips on how run integration tests against AWS.
 
 2.  Add the `snapshot` fixture to your test and identify which responses you want to collect and compare against LocalStack. 
     
