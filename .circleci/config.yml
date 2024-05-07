@@ -30,6 +30,7 @@ commands:
                 command: |
                   if [[ -n "$CI_PULL_REQUEST" ]] ; then
                     echo "export TESTSELECTION_PYTEST_ARGS='--path-filter=target/testselection/test-selection.txt '" >> $BASH_ENV
+                    cat target/testselection/test-selection.txt
                   fi
       - run:
           name: Setup Environment Variables
