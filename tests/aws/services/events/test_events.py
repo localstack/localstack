@@ -651,7 +651,7 @@ class TestEventBus:
         )
         snapshot.match("list-event-buses-limit-next-token", response)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing  # TODO use fixture setup_sqs_queue_as_event_target to simplify
     @pytest.mark.skipif(is_aws_cloud(), reason="not validated")
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_put_events_into_event_bus(

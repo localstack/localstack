@@ -83,8 +83,9 @@ def test_put_events_with_target_sqs_new_region(aws_client_factory):
     assert "EventId" in response.get("Entries")[0]
 
 
-@markers.aws.unknown
-def test_put_events_with_target_sqs_event_detail_match(put_events_with_filter_to_sqs):
+@markers.aws.validated
+@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
+def test_put_events_with_target_sqs_event_detail_match(put_events_with_filter_to_sqs, snapshot):
     entries1 = [
         {
             "Source": TEST_EVENT_PATTERN["source"][0],
@@ -100,17 +101,25 @@ def test_put_events_with_target_sqs_event_detail_match(put_events_with_filter_to
         }
     ]
     entries_asserts = [(entries1, True), (entries2, False)]
-    put_events_with_filter_to_sqs(
+    messages = put_events_with_filter_to_sqs(
         pattern={"detail": {"EventType": ["0", "1"]}},
         entries_asserts=entries_asserts,
         input_path="$.detail",
     )
 
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
+            snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+        ],
+    )
+    snapshot.match("messages", messages)
+
 
 # TODO: further unify/parameterize the tests for the different target types below
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
 def test_put_events_with_target_sns(
     monkeypatch,
@@ -179,7 +188,7 @@ def test_put_events_with_target_sns(
     )
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_put_events_with_target_lambda(create_lambda_function, cleanups, aws_client, clean_up):
     rule_name = f"rule-{short_uid()}"
     function_name = f"lambda-func-{short_uid()}"
@@ -484,7 +493,7 @@ def test_should_ignore_schedules_for_put_event(create_lambda_function, cleanups,
     retry(check_invocation, sleep=5, retries=15)
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_put_events_with_target_firehose(aws_client, clean_up):
     s3_bucket = "s3-{}".format(short_uid())
     s3_prefix = "testeventdata"

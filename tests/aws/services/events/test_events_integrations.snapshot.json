@@ -129,5 +129,20 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_integrations.py::test_put_events_with_target_sqs_event_detail_match": {
+    "recorded-date": "07-05-2024, 10:40:38",
+    "recorded-content": {
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "EventType": "1"
+          }
+        }
+      ]
+    }
   }
 }
