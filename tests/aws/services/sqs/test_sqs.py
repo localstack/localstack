@@ -4860,3 +4860,5 @@ class TestSQSMultiAccounts:
         client2_http.post(queue2_url, params={"Action": "DeleteQueue"})
         assert response.ok
         assert len(client2.list_queues(QueueNamePrefix=prefix).get("QueueUrls", [])) == 0
+
+    # test comment to trigger test_selection
