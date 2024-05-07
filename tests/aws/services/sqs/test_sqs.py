@@ -1344,7 +1344,7 @@ class TestSqsProvider:
     ):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        message_body = '{"foo": "ba\rr", "foo2": "ba&quot;r&quot;"}'
+        message_body = json_body
         aws_client.sqs.send_message(QueueUrl=queue_name, MessageBody=message_body)
 
         client = aws_http_client_factory("sqs", region="us-east-1")
