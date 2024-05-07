@@ -10,7 +10,7 @@ The guides in this section are for developers of LocalStack, to better understan
 
 The guides in this section are for developers of LocalStack, to better understand how LocalStack works internally, how to set up local development environments, and how to contribute to the codebase.
 
-- [Contribution Guidelines](#contributing-guidelines)
+- [Contribution Guidelines](#contribution-guidelines)
 - [Development Environment Setup](docs/development-environment-setup.md)
 - [LocalStack Concepts](docs/Concepts/index.md)
 - [Integration Tests](docs/integration-tests.md)
