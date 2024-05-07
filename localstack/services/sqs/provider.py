@@ -690,7 +690,9 @@ class SqsDeveloperEndpoints:
             queue, show_invisible=show_invisible, show_delayed=show_delayed
         )
 
-        return ReceiveMessageResult(Messages=messages)
+        return (
+            ReceiveMessageResult(Messages=messages) or None
+        )  # This is a dummy line to trigger the test selection
 
     def _collect_messages(
         self, queue: SqsQueue, show_invisible: bool = False, show_delayed: bool = False
