@@ -512,7 +512,7 @@ def test_query_protocol_error_serialization_plain():
         '<ErrorResponse xmlns="http://queue.amazonaws.com/doc/2012-11-05/">'
         "<Error>"
         "<Code>ReceiptHandleIsInvalid</Code>"
-        '<Message>The input receipt handle "garbage" is not a valid receipt handle.'
+        "<Message>The input receipt handle &quot;garbage&quot; is not a valid receipt handle."
         "</Message>"
         "</Error>"
         "<RequestId>static_request_id</RequestId>"
