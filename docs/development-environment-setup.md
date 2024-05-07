@@ -25,10 +25,12 @@ The basic steps include:
 1. Fork the localstack repository on GitHub [https://github.com/localstack/localstack/](https://github.com/localstack/localstack/)
 2. Clone the forked localstack repository `git clone git@github.com:<GITHUB_USERNAME>/localstack.git`
 3. Ensure you have `python`, `pip`, `node`, and `npm` installed.
-   > You might also need `java` for some emulated services.
+> [!NOTE]
+> You might also need `java` for some emulated services.
 4. Install the Python dependencies using `make install`.
-   > This will install the required pip dependencies in a local Python 3 `venv` directory called `.venv` (your global python packages will remain untouched).
-   > Depending on your system, some `pip` modules may require additional native libs installed. 
+> [!NOTE]
+> This will install the required pip dependencies in a local Python 3 `venv` directory called `.venv` (your global Python packages will remain untouched).
+> Depending on your system, some `pip` modules may require additional native libs installed. 
 5. Start localstack in host mode using `make start`
 
 <div align="left">
