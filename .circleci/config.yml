@@ -23,7 +23,7 @@ executors:
       image: << pipeline.parameters.ubuntu-amd64-machine-image >>
 
 commands:
-  prepare-pytest-tinybird:
+  prepare-testselection:
     steps:
       - unless:
           condition: << pipeline.parameters.skip_test_selection >>
@@ -34,6 +34,9 @@ commands:
                   if [[ -n "$CI_PULL_REQUEST" ]] ; then
                     echo "export TESTSELECTION_PYTEST_ARGS='--path-filter=target/testselection/test-selection.txt '" >> $BASH_ENV
                   fi
+
+  prepare-pytest-tinybird:
+    steps:
       - run:
           name: Setup Environment Variables
           command: |
@@ -204,6 +207,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -232,6 +236,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -260,6 +265,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -288,6 +294,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -384,6 +391,7 @@ jobs:
           key: common-functions-<< parameters.platform >>-{{ checksum "/tmp/common-functions-checksums" }}
           paths:
             - "tests/aws/services/lambda_/functions/common"
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
