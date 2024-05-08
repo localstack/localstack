@@ -27,13 +27,14 @@
       "Type": "Map",
       "MaxConcurrency": 1,
       "ItemsPath": "$.Values",
-      "ItemProcessor": {
+      "ItemProcessor": { // Use ItemProcessor over legacy's Iterator.
         "ProcessorConfig": {
           "Mode": "DISTRIBUTED",
           "ExecutionType": "STANDARD"
         },
         "StartAt": "ProcessValue",
         "States": {
+          // Delegate the input to a task state, allowing the resource to be configured on creation.
           "ProcessValue": {
             "Type": "Task",
             "Resource": "_tbd_",

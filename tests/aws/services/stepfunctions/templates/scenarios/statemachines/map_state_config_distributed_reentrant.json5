@@ -25,7 +25,7 @@
       "Type": "Map",
       "MaxConcurrency": 1,
       "ItemsPath": "$.Values",
-      "ItemProcessor": {
+      "ItemProcessor": { // Use ItemProcessor over legacy's Iterator.
         "ProcessorConfig": {
           "Mode": "DISTRIBUTED",
           "ExecutionType": "STANDARD"
