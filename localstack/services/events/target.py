@@ -12,6 +12,7 @@ from localstack.aws.api.events import (
     TargetInputPath,
 )
 from localstack.aws.connect import connect_to
+from localstack.services.events.models import FormattedEvent
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_service_from_arn,
@@ -27,10 +28,10 @@ LOG = logging.getLogger(__name__)
 
 
 def transform_event_with_target_input_path(
-    input_path: TargetInputPath, event: PutEventsRequestEntry
+    input_path: TargetInputPath, event: FormattedEvent
 ) -> PutEventsRequestEntry:
-    event = extract_jsonpath(event, input_path)
-    return event
+    formated_event = extract_jsonpath(event, input_path)
+    return formated_event
 
 
 class TargetSender(ABC):
@@ -66,7 +67,7 @@ class TargetSender(ABC):
     def send_event(self, event: PutEventsRequestEntry):
         pass
 
-    def process_event(self, event: PutEventsRequestEntry):
+    def process_event(self, event: FormattedEvent):
         """Processes the event and send it to the target."""
         if input_path := self.target.get("InputPath"):
             event = transform_event_with_target_input_path(input_path, event)

@@ -59,6 +59,7 @@ from localstack.services.events.models import (
     EventBus,
     EventBusDict,
     EventsStore,
+    FormattedEvent,
     Rule,
     RuleDict,
     TargetDict,
@@ -125,7 +126,7 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
         }
 
 
-def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> dict:
+def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
     # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
     formatted_event = {
         "version": "0",

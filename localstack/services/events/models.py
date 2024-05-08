@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, TypedDict
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
@@ -7,6 +7,8 @@ from localstack.aws.api.events import (
     CreatedBy,
     EventBusName,
     EventPattern,
+    EventResourceList,
+    EventSourceName,
     ManagedBy,
     RoleArn,
     RuleDescription,
@@ -102,3 +104,15 @@ class InvalidEventPatternException(Exception):
     def __init__(self, reason=None, message=None) -> None:
         self.reason = reason
         self.message = message or f"Event pattern is not valid. Reason: {reason}"
+
+
+class FormattedEvent(TypedDict):
+    version: str
+    id: str
+    detail_type: Optional[str]  # key "detail-type" is automatically interpreted as detail_type
+    source: Optional[EventSourceName]
+    account: str
+    time: str
+    region: str
+    resources: Optional[EventResourceList]
+    detail: dict[str, str | dict]
