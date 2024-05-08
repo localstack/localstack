@@ -39,6 +39,9 @@ OPT_IN = [
     # SSM
     "localstack/services/ssm/**",
     "tests/aws/services/ssm/**",
+    # SQS
+    "localstack/services/sqs/**",
+    "tests/aws/services/sqs/**",
 ]
 
 
