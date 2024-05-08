@@ -368,5 +368,55 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string": {
+    "recorded-date": "08-05-2024, 14:43:04",
+    "recorded-content": {
+      "custom-variables-match-all": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail update-account\""
+        }
+      ],
+      "custom-variables-not-match-all": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": "\"Event of core.update-account-command type, at time date, info extracted from detail \""
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_json": {
+    "recorded-date": "08-05-2024, 14:43:08",
+    "recorded-content": {
+      "custom-variables-match-all": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "detailType": "core.update-account-command",
+            "time": "date",
+            "command": "update-account"
+          }
+        }
+      ],
+      "custom-variables-not-match-all": [
+        {
+          "MessageId": "<uuid:2>",
+          "ReceiptHandle": "<receipt-handle:2>",
+          "MD5OfBody": "<m-d5-of-body:2>",
+          "Body": {
+            "detailType": "core.update-account-command",
+            "time": "date",
+            "command": ""
+          }
+        }
+      ]
+    }
   }
 }

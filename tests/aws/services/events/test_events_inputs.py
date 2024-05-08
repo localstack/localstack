@@ -7,7 +7,6 @@ import pytest
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.aws.services.events.conftest import sqs_collect_messages
-from tests.aws.services.events.helper_functions import is_v2_provider
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
 
 EVENT_DETAIL_DUPLICATED_KEY = {
@@ -158,8 +157,9 @@ class TestInputPath:
 
 class TestInputTransformer:
     @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_put_events_with_input_transformer(self, put_events_with_filter_to_sqs, snapshot):
+    def test_put_events_with_input_transformer_input_template_string(
+        self, put_events_with_filter_to_sqs, snapshot
+    ):
         entries = [
             {
                 "Source": TEST_EVENT_PATTERN["source"][0],
@@ -176,6 +176,61 @@ class TestInputTransformer:
             "command": "$.detail.command",
         }
         input_template = '"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>"'
+        input_transformer_match_all = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+        messages_match_all = put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer_match_all,
+        )
+
+        # input transformer with keys in template missing from message
+        input_path_map_missing_key = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.notinmessage",
+        }
+        input_transformer_not_match_all = {
+            "InputPathsMap": input_path_map_missing_key,
+            "InputTemplate": input_template,
+        }
+        messages_not_match_all = put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=entries_asserts,
+            input_transformer=input_transformer_not_match_all,
+        )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("custom-variables-match-all", messages_match_all)
+        snapshot.match("custom-variables-not-match-all", messages_not_match_all)
+
+    @markers.aws.validated
+    def test_put_events_with_input_transformer_input_template_json(
+        self, put_events_with_filter_to_sqs, snapshot
+    ):
+        entries = [
+            {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            }
+        ]
+        entries_asserts = [(entries, True)]
+
+        # input transformer with all keys in template present in message
+        input_path_map = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.command",
+        }
+        input_template = '{"detailType": <detail-type>,  "time": <timestamp>, "command": <command>}'
         input_transformer_match_all = {
             "InputPathsMap": input_path_map,
             "InputTemplate": input_template,
