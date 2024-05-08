@@ -4,7 +4,7 @@
 ## Motivation
 
 
-<!-- How does LocalStack behave differently now? -->
+<!-- What changes does this PR make? How does LocalStack behave differently now? -->
 ## Changes
 
 <!-- Optional section: How to test these changes? -->
