@@ -3,8 +3,8 @@ import os
 from functools import cache
 from pathlib import Path
 
+from localstack.services.events.models import InvalidEventPatternException
 from localstack.services.events.packages import event_ruler_package
-from localstack.services.events.utils import InvalidEventPatternException
 from localstack.utils.objects import singleton_factory
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))

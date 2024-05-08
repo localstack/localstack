@@ -1,7 +1,7 @@
 from typing import Optional
 
 from localstack.aws.api.events import Arn, EventBusName, TagList
-from localstack.services.events.models_v2 import EventBus, RuleDict
+from localstack.services.events.models import EventBus, RuleDict
 
 
 class EventBusService:

@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from localstack.services.events.provider import TEST_EVENTS_CACHE
+from localstack.services.events.v1.provider import TEST_EVENTS_CACHE
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
