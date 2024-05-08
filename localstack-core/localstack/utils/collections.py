@@ -26,6 +26,7 @@ from typing import (
 )
 
 import cachetools
+import jsonpath_ng
 
 LOG = logging.getLogger(__name__)
 
@@ -533,3 +534,15 @@ def is_comma_delimited_list(string: str, item_regex: Optional[str] = None) -> bo
     if pattern.match(string) is None:
         return False
     return True
+
+
+def convert_in_place_at_jsonpath(params: dict, jsonpath: str, conversion_fn: Callable[[Any], Any]):
+    """
+    Invokes a conversion function on a dictionary nested entry at a specific jsonpath with `conversion_fn`
+    """
+    jp = jsonpath_ng.parse(jsonpath)
+    old_value = jp.find(params)[0].value
+    if not old_value:
+        return
+    new_value = conversion_fn(old_value)
+    jp.update(params, new_value)
