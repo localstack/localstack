@@ -1,5 +1,19 @@
 # Contributing
 
+We welcome contributions to LocalStack! Please refer to the following sections to better understand how LocalStack works internally, how to set up local development environments, and how to contribute to the codebase.
+
+## Sections
+
+- [Contribution Guidelines](#contribution-guidelines)
+- [Development Environment Setup](development-environment-setup/index.md)
+- [LocalStack Concepts](localstack-concepts/index.md)
+- [Integration Tests](integration-tests/index.md)
+- [Parity Testing](parity-testing/index.md)
+- [Multi-account and Multi-region Testing](multi-account-region-testing/index.md)
+- [Terraform Tests](terraform-tests/index.md)
+
+## Contribution Guidelines
+
 We welcome feedback, bug reports, and pull requests!
 
 For pull requests (PRs), please stick to the following guidelines:
