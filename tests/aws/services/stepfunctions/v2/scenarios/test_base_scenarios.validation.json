@@ -119,6 +119,12 @@
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_parameters": {
     "last_validated_date": "2024-02-08T21:44:45+00:00"
   },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_reentrant": {
+    "last_validated_date": "2024-05-03T13:45:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_distributed_reentrant_lambda": {
+    "last_validated_date": "2024-05-03T13:44:53+00:00"
+  },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_config_inline_item_selector": {
     "last_validated_date": "2024-02-08T21:47:17+00:00"
   },
@@ -151,6 +157,9 @@
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_config_inline_parameters": {
     "last_validated_date": "2024-02-08T21:07:39+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_legacy_reentrant": {
+    "last_validated_date": "2024-05-03T13:41:47+00:00"
   },
   "tests/aws/services/stepfunctions/v2/scenarios/test_base_scenarios.py::TestBaseScenarios::test_map_state_nested": {
     "last_validated_date": "2024-03-29T16:26:02+00:00"

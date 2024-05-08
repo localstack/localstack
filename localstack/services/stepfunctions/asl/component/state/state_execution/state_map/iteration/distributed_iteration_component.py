@@ -202,6 +202,8 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             raise ex
         finally:
             env.event_history = execution_event_history
+            self._eval_input = None
+            self._workers.clear()
 
         # TODO: review workflow of program stops and maprunstops
         # program_state = env.program_state()

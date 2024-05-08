@@ -1,0 +1,65 @@
+{
+  "Comment": "MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT_LAMBDA",
+  "StartAt": "StartState",
+  "States": {
+    // Populate memory with two fields: number of iterations left, and input values.
+    "StartState": {
+      "Type": "Pass",
+      "Parameters": {
+        "Iterations": 2,
+        "Values": [
+          "HelloWorld"
+        ]
+      },
+      "Next": "BeforeIteration"
+    },
+    // Prepare the iteration by updating the iterations count.
+    "BeforeIteration": {
+      "Type": "Pass",
+      "Parameters": {
+        "Iterations.$": "States.MathAdd($.Iterations, -1)",
+        "Values.$": "$.Values"
+      },
+      "Next": "IterationBody"
+    },
+    // Run a distributed map state on the values field.
+    "IterationBody": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemsPath": "$.Values",
+      "ItemProcessor": { // Use ItemProcessor over legacy's Iterator.
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "ProcessValue",
+        "States": {
+          // Delegate the input to a task state, allowing the resource to be configured on creation.
+          "ProcessValue": {
+            "Type": "Task",
+            "Resource": "_tbd_",
+            "End": true
+          }
+        }
+      },
+      "ResultPath": "$.Values",
+      "Next": "CheckIteration"
+    },
+    // Check the number of iterations is zero and terminate, otherwise run another iteration.
+    "CheckIteration": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Iterations",
+          "NumericEquals": 0,
+          "Next": "Terminate"
+        }
+      ],
+      "Default": "BeforeIteration"
+    },
+    // Terminate the execution.
+    "Terminate": {
+      "Type": "Succeed"
+    }
+  }
+}
