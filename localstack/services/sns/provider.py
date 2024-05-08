@@ -21,6 +21,8 @@ from localstack.aws.api.sns import (
     GetTopicAttributesResponse,
     InvalidParameterException,
     InvalidParameterValueException,
+    ListSubscriptionsByTopicResponse,
+    ListSubscriptionsResponse,
     ListTagsForResourceResponse,
     MapStringToString,
     MessageAttributeMap,
@@ -34,6 +36,7 @@ from localstack.aws.api.sns import (
     String,
     SubscribeInput,
     SubscribeResponse,
+    Subscription,
     SubscriptionAttributesMap,
     TagKeyList,
     TagList,
@@ -46,6 +49,7 @@ from localstack.aws.api.sns import (
     authenticateOnUnsubscribe,
     boolean,
     messageStructure,
+    nextToken,
     subscriptionARN,
     topicARN,
     topicName,
@@ -69,6 +73,7 @@ from localstack.utils.aws.arns import (
     extract_region_from_arn,
     parse_arn,
 )
+from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid
 
 # set up logger
@@ -451,6 +456,25 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
 
         attributes = {k: v for k, v in sub.items() if k not in removed_attrs}
         return GetSubscriptionAttributesResponse(Attributes=attributes)
+
+    def list_subscriptions(
+        self, context: RequestContext, next_token: nextToken = None, **kwargs
+    ) -> ListSubscriptionsResponse:
+        store = self.get_store(context.account_id, context.region)
+        subscriptions = [
+            select_from_typed_dict(Subscription, sub) for sub in list(store.subscriptions.values())
+        ]
+        return ListSubscriptionsResponse(Subscriptions=subscriptions)
+
+    def list_subscriptions_by_topic(
+        self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
+    ) -> ListSubscriptionsByTopicResponse:
+        self._get_topic(topic_arn, context)
+        parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
+        store = self.get_store(parsed_topic_arn["account"], parsed_topic_arn["region"])
+        sns_subscriptions = store.get_topic_subscriptions(topic_arn)
+        subscriptions = [select_from_typed_dict(Subscription, sub) for sub in sns_subscriptions]
+        return ListSubscriptionsByTopicResponse(Subscriptions=subscriptions)
 
     def publish(
         self,
