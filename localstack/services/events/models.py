@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, TypedDict
+from typing import Optional, TypeAlias, TypedDict
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
@@ -116,3 +116,6 @@ class FormattedEvent(TypedDict):
     region: str
     resources: Optional[EventResourceList]
     detail: dict[str, str | dict]
+
+
+TransformedEvent: TypeAlias = FormattedEvent | dict | str

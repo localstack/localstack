@@ -7,12 +7,11 @@ from botocore.client import BaseClient
 
 from localstack.aws.api.events import (
     Arn,
-    PutEventsRequestEntry,
     Target,
     TargetInputPath,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.events.models import FormattedEvent
+from localstack.services.events.models import FormattedEvent, TransformedEvent
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_service_from_arn,
@@ -29,9 +28,9 @@ LOG = logging.getLogger(__name__)
 
 def transform_event_with_target_input_path(
     input_path: TargetInputPath, event: FormattedEvent
-) -> PutEventsRequestEntry:
-    formated_event = extract_jsonpath(event, input_path)
-    return formated_event
+) -> TransformedEvent:
+    formatted_event = extract_jsonpath(event, input_path)
+    return formatted_event
 
 
 class TargetSender(ABC):
@@ -64,7 +63,7 @@ class TargetSender(ABC):
         return self._client
 
     @abstractmethod
-    def send_event(self, event: PutEventsRequestEntry):
+    def send_event(self, event: FormattedEvent | TransformedEvent):
         pass
 
     def process_event(self, event: FormattedEvent):
