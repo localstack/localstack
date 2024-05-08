@@ -4,6 +4,8 @@ from typing import List, TypedDict
 from rolo import Request, route
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.http import Response
+from localstack.services.lambda_.packages import get_runtime_client_path
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     DEPRECATED_RUNTIMES,
@@ -33,3 +35,15 @@ class LambdaCustomEndpoints:
             runtimes.update(SUPPORTED_RUNTIMES)
 
         return LambdaRuntimesResponse(Runtimes=list(runtimes))
+
+    @route("/_aws/lambda/init")
+    def init(self, request: Request) -> Response:
+        """
+        This internal endpoint exposes the init binary over an http API
+        :param request: The HTTP request object.
+        :return: Response containing the init binary.
+        """
+        runtime_client_path = get_runtime_client_path() / "var" / "rapid" / "init"
+        runtime_init_binary = runtime_client_path.read_bytes()
+
+        return Response(runtime_init_binary, mimetype="application/octet-stream")
