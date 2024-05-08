@@ -65,11 +65,11 @@ from localstack.services.events.models import (
     ValidationException,
     events_store,
 )
-from localstack.services.events.rule import RuleService, RuleServiceDict
-from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
-from localstack.services.events.v1.utils import (
+from localstack.services.events.models import (
     InvalidEventPatternException as InternalInvalidEventPatternException,
 )
+from localstack.services.events.rule import RuleService, RuleServiceDict
+from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import long_uid
 

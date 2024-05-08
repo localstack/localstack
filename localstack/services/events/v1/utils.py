@@ -4,17 +4,11 @@ import logging
 import re
 from typing import Any
 
+from localstack.services.events.models import InvalidEventPatternException
+
 CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "exists"]
 
 LOG = logging.getLogger(__name__)
-
-
-class InvalidEventPatternException(Exception):
-    reason: str
-
-    def __init__(self, reason=None, message=None) -> None:
-        self.reason = reason
-        self.message = message or f"Event pattern is not valid. Reason: {reason}"
 
 
 def matches_event(event_pattern: dict[str, any], event: dict[str, Any]) -> bool:
