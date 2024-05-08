@@ -21,7 +21,7 @@
     }
   },
   "tests/aws/services/events/test_events_inputs.py::TestEventsInputPath::test_put_events_with_input_path": {
-    "recorded-date": "06-05-2024, 15:11:50",
+    "recorded-date": "08-05-2024, 13:54:10",
     "recorded-content": {
       "message": [
         {
@@ -105,6 +105,41 @@
                 "acc_id": "0a787ecb-4015",
                 "sf_id": "baz"
               }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestEventsInputPath::test_put_events_with_input_path_nested[event_detail0]": {
+    "recorded-date": "08-05-2024, 13:54:42",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "acc_id": "0a787ecb-4015",
+            "sf_id": "baz"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestEventsInputPath::test_put_events_with_input_path_nested[event_detail1]": {
+    "recorded-date": "08-05-2024, 13:54:44",
+    "recorded-content": {
+      "message": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "acc_id": "0a787ecb-4015",
+            "payload": {
+              "message": "baz",
+              "id": "123"
             }
           }
         }
