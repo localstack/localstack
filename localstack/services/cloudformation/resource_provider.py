@@ -425,6 +425,11 @@ class ResourceProviderExecutor:
                                 "A ResourceProvider should always have a SCHEMA property defined."
                             )
                         resource_type_schema = resource_provider.SCHEMA
+                        self.validate_model_properties(
+                            logical_resource_id=raw_payload["requestData"]["logicalResourceId"],
+                            schema=resource_type_schema,
+                            model=event.resource_model,
+                        )
                         physical_resource_id = (
                             self.extract_physical_resource_id_from_model_with_schema(
                                 event.resource_model,
@@ -594,6 +599,14 @@ class ResourceProviderExecutor:
                 physical_resource_id = resolve_json_pointer(resource_model, primary_id_paths[0])
 
         return physical_resource_id
+
+    def validate_model_properties(self, logical_resource_id: str, schema: dict, model: dict):
+        required_fields = schema.get("required", [])
+        for required_field in required_fields:
+            if required_field not in model or model[required_field] is None:
+                raise ValueError(
+                    f"Missing required field '{required_field}' in resource definition for resource '{logical_resource_id}'"
+                )
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
