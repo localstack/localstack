@@ -3,28 +3,28 @@
     "last_validated_date": "2024-04-03T07:12:29+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[ap-northeast-1]": {
-    "last_validated_date": "2024-04-17T10:25:52+00:00"
+    "last_validated_date": "2024-05-09T08:15:21+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[ap-southeast-2]": {
-    "last_validated_date": "2024-04-17T10:25:33+00:00"
+    "last_validated_date": "2024-05-09T08:15:01+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[eu-central-1]": {
-    "last_validated_date": "2024-04-17T10:26:09+00:00"
+    "last_validated_date": "2024-05-09T08:15:36+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[eu-west-1]": {
-    "last_validated_date": "2024-04-17T10:26:24+00:00"
+    "last_validated_date": "2024-05-09T08:15:52+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-east-1]": {
-    "last_validated_date": "2024-04-17T10:24:29+00:00"
+    "last_validated_date": "2024-05-09T08:13:47+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-east-2]": {
-    "last_validated_date": "2024-04-17T10:24:45+00:00"
+    "last_validated_date": "2024-05-09T08:14:05+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-west-1]": {
-    "last_validated_date": "2024-04-17T10:24:59+00:00"
+    "last_validated_date": "2024-05-09T08:14:25+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function[us-west-2]": {
-    "last_validated_date": "2024-04-17T10:25:14+00:00"
+    "last_validated_date": "2024-05-09T08:14:42+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_capabilities_requirements": {
     "last_validated_date": "2023-01-30T19:15:46+00:00"

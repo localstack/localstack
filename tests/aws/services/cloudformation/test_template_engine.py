@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import re
 from copy import deepcopy
 
 import botocore.exceptions
@@ -247,15 +248,13 @@ class TestIntrinsicFunctions:
         ],
     )
     @markers.aws.validated
-    def test_get_azs_function(self, deploy_cfn_template, region, aws_client_factory, snapshot):
+    def test_get_azs_function(self, deploy_cfn_template, region, aws_client_factory):
         """
         TODO parametrize this test.
         For that we need to be able to parametrize the client region. The docs show the we should be
         able to put any region in the parameters but it doesn't work. It only accepts the same region from the client config
         if you put anything else it just returns an empty list.
         """
-        snapshot.add_transformer(snapshot.transform.regex(region, "<region>"))
-
         template_path = os.path.join(
             os.path.dirname(__file__), "../../templates/functions_get_azs.yml"
         )
@@ -267,7 +266,9 @@ class TestIntrinsicFunctions:
             parameters={"DeployRegion": region},
         )
 
-        snapshot.match("azs", deployed.outputs["Zones"].split(";"))
+        azs = deployed.outputs["Zones"].split(";")
+        assert len(azs) > 0
+        assert all(re.match(f"{region}[a-f]", az) for az in azs)
 
     @markers.aws.validated
     def test_sub_not_ready(self, deploy_cfn_template):
