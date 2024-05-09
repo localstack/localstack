@@ -143,12 +143,14 @@ script-files = [
     "bin/localstack.bat",
     "bin/localstack-supervisor",
 ]
+package-dir = { "" = "localstack-core"}
 
 [tool.setuptools.dynamic]
 readme = { file = ["README.md"], content-type = "text/markdown"}
 version = { file = "VERSION" }
 
 [tool.setuptools.packages.find]
+where = ["localstack-core/"]
 include = ["localstack*"]
 exclude = ["tests*"]
 
@@ -169,6 +171,7 @@ exclude = ["tests*"]
 # Always generate Python 3.8-compatible code.
 target-version = "py38"
 line-length = 100
+src = ["localstack-core", "tests"]
 exclude = [
     ".venv*",
     "venv*",
@@ -176,9 +179,11 @@ exclude = [
     "build",
     "target",
     "*.egg-info",
+    "localstack-core/*.egg-info",
     ".filesystem",
+    "localstack-core/.filesystem",
     ".git",
-    "localstack/services/stepfunctions/asl/antlr/runtime"
+    "localstack-core/localstack/services/stepfunctions/asl/antlr/runtime"
     ]
 
 [tool.ruff.lint]
@@ -205,12 +210,12 @@ select = ["B", "C", "E", "F", "I", "W", "T", "B9"]
 [tool.coverage.run]
 relative_files = true
 source = [
-    "localstack/"
+    "localstack-core/localstack"
 ]
 omit = [
-    "localstack/aws/api/*",
-    "localstack/extensions/api/*",
-    "localstack/services/stepfunctions/asl/antlr/runtime/*"
+    "localstack-core/localstack/aws/api/*",
+    "localstack-core/localstack/extensions/api/*",
+    "localstack-core/localstack/services/stepfunctions/asl/antlr/runtime/*"
 ]
 dynamic_context = "test_function"
 

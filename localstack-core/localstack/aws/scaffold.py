@@ -472,7 +472,9 @@ def scaffold():
     help="whether or not to save the result into the api directory",
 )
 @click.option(
-    "--path", default="./localstack/aws/api", help="the path where the api should be saved"
+    "--path",
+    default="./localstack-core/localstack/aws/api",
+    help="the path where the api should be saved",
 )
 def generate(service: str, doc: bool, save: bool, path: str):
     """
@@ -525,7 +527,7 @@ def create_code_directory(service_name: str, code: str, base_path: str):
 @click.option("--doc/--no-doc", default=False, help="whether or not to generate docstrings")
 @click.option(
     "--path",
-    default="./localstack/aws/api",
+    default="./localstack-core/localstack/aws/api",
     help="the path in which to upgrade ASF APIs",
 )
 def upgrade(path: str, doc: bool = False):

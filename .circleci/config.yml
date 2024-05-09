@@ -134,7 +134,7 @@ jobs:
                     circleci-agent step halt
                   else
                     source .venv/bin/activate
-                    python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr /tmp/workspace/repo $CI_PULL_REQUEST target/testselection/test-selection.txt
+                    PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr /tmp/workspace/repo $CI_PULL_REQUEST target/testselection/test-selection.txt
                     cat target/testselection/test-selection.txt
                   fi
 
@@ -402,7 +402,7 @@ jobs:
             if [ -z $TESTSELECTION_PYTEST_ARGS ] ; then
               TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
             else
-              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | python -m localstack.testing.testselection.scripts.filter_by_test_selection target/testselection/test-selection.txt | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
+              TEST_FILES=$(circleci tests glob "tests/aws/**/test_*.py" "tests/integration/**/test_*.py" | PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.filter_by_test_selection target/testselection/test-selection.txt | circleci tests split --verbose --split-by=timings | tr '\n' ' ')
             fi
             echo $TEST_FILES
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
@@ -465,8 +465,9 @@ jobs:
       - run:
           name: Run localstack
           command: |
-            DEBUG=1 DISABLE_EVENTS="1" IMAGE_NAME="localstack/localstack:latest" bin/localstack start -d
-            bin/localstack wait -t 120 || (bin/localstack logs && false)
+            source .venv/bin/activate
+            DEBUG=1 DISABLE_EVENTS="1" IMAGE_NAME="localstack/localstack:latest" localstack start -d
+            localstack wait -t 120 || (python -m localstack.cli.main logs && false)
       - run:
           name: Run capture-not-implemented
           command: |
@@ -556,10 +557,10 @@ jobs:
           command: |
             source .venv/bin/activate
             pip install pycobertura
-            coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack/services/*/**" --omit="*/**/__init__.py"
-            coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack/services/*/**"  --omit="*/**/__init__.py"
-            pycobertura show --format html -s localstack/ acceptance.coverage.report.xml -o coverage-acceptance.html
-            bash -c "pycobertura diff --format html -s1 localstack/ -s2 localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html; if [[ \$? -eq 1 ]] ; then exit 1 ; else exit 0 ; fi"
+            coverage xml --data-file=.coverage -o all.coverage.report.xml --include="localstack-core/localstack/services/*/**" --omit="*/**/__init__.py"
+            coverage xml --data-file=.coverage.acceptance -o acceptance.coverage.report.xml --include="localstack-core/localstack/services/*/**"  --omit="*/**/__init__.py"
+            pycobertura show --format html -s localstack-core/localstack acceptance.coverage.report.xml -o coverage-acceptance.html
+            bash -c "pycobertura diff --format html -s1 localstack-core/localstack/ -s2 localstack-core/localstack/ all.coverage.report.xml acceptance.coverage.report.xml -o coverage-diff.html; if [[ \$? -eq 1 ]] ; then exit 1 ; else exit 0 ; fi"
       - run:
           name: Create Metric Coverage Diff (API Coverage)
           environment:

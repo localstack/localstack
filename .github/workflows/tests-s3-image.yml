@@ -4,15 +4,15 @@ on:
   push:
     paths:
       - .github/workflows/tests-s3-image.yml
-      - localstack/aws/*.py
-      - localstack/aws/handlers/*¨
-      - localstack/aws/protocol/**
-      - localstack/aws/serving/**
-      - localstack/aws/api/s3/**
-      - localstack/http/**
-      - localstack/runtime/**
-      - localstack/services/s3/**
-      - localstack/*.py
+      - localstack-core/localstack/aws/*.py
+      - localstack-core/localstack/aws/handlers/*¨
+      - localstack-core/localstack/aws/protocol/**
+      - localstack-core/localstack/aws/serving/**
+      - localstack-core/localstack/aws/api/s3/**
+      - localstack-core/localstack/http/**
+      - localstack-core/localstack/runtime/**
+      - localstack-core/localstack/services/s3/**
+      - localstack-core/localstack/*.py
       - tests/aws/services/s3/**
       - Dockerfile.s3
       - requirements-*.txt
@@ -23,15 +23,15 @@ on:
   pull_request:
     paths:
       - .github/workflows/tests-s3-image.yml
-      - localstack/aws/*.py
-      - localstack/aws/handlers/*¨
-      - localstack/aws/protocol/**
-      - localstack/aws/serving/**
-      - localstack/aws/api/s3/**
-      - localstack/http/**
-      - localstack/runtime/**
-      - localstack/services/s3/**
-      - localstack/*.py
+      - localstack-core/localstack/aws/*.py
+      - localstack-core/localstack/aws/handlers/*¨
+      - localstack-core/localstack/aws/protocol/**
+      - localstack-core/localstack/aws/serving/**
+      - localstack-core/localstack/aws/api/s3/**
+      - localstack-core/localstack/http/**
+      - localstack-core/localstack/runtime/**
+      - localstack-core/localstack/services/s3/**
+      - localstack-core/localstack/*.py
       - tests/aws/services/s3/**
       - Dockerfile.s3
       - requirements-*.txt

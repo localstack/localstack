@@ -99,6 +99,7 @@ ENV PATH "${PATH}:${JAVA_HOME}/bin"
 
 # set workdir
 RUN mkdir -p /opt/code/localstack
+RUN mkdir /opt/code/localstack/localstack-core
 WORKDIR /opt/code/localstack/
 
 # create localstack user and filesystem hierarchy, perform some permission fixes
@@ -176,7 +177,7 @@ ADD Makefile pyproject.toml VERSION ./
 ADD bin/localstack bin/localstack.bat bin/localstack-supervisor bin/
 
 # add the code as late as possible
-ADD localstack/ localstack/
+ADD localstack-core/ /opt/code/localstack/localstack-core
 
 # Generate the plugin entrypoints
 RUN make entrypoints

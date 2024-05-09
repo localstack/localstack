@@ -73,14 +73,14 @@ install: install-dev entrypoints  ## Install full dependencies into venv
 entrypoints:              ## Run plux to build entry points
 	$(VENV_RUN); python -m plux entrypoints
 	@# make sure that the entrypoints were correctly created and are non-empty
-	@test -s localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
+	@test -s localstack-core/localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
 
 dist: entrypoints        ## Build source and built (wheel) distributions of the current version
 	$(VENV_RUN); pip install --upgrade twine; python -m build
 
 publish: clean-dist dist  ## Publish the library to the central PyPi repository
 	# make sure the dist archive contains a non-empty entry_points.txt file before uploading
-	tar --wildcards --to-stdout -xf dist/localstack?core*.tar.gz "localstack?core*/localstack_core.egg-info/entry_points.txt" | grep . > /dev/null 2>&1 || (echo "Refusing upload, localstack-core dist does not contain entrypoints." && exit 1)
+	tar --wildcards --to-stdout -xf dist/localstack?core*.tar.gz "localstack?core*/localstack-core/localstack_core.egg-info/entry_points.txt" | grep . > /dev/null 2>&1 || (echo "Refusing upload, localstack-core dist does not contain entrypoints." && exit 1)
 	$(VENV_RUN); twine upload dist/*
 
 coveralls:         		  ## Publish coveralls metrics
@@ -237,10 +237,11 @@ clean:             		  ## Clean up (npm dependencies, downloaded infrastructure 
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info
+	rm -rf localstack-core/*.egg-info
 	rm -rf $(VENV_DIR)
 
 clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
-	rm -rf *.egg-info
+	rm -rf localstack-core/*.egg-info
 
 .PHONY: usage freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-save-image docker-build docker-build-multiarch docker-push-master docker-create-push-manifests docker-run-tests docker-cp-coverage test test-coverage lint lint-modified format format-modified init-precommit clean clean-dist upgrade-pinned-dependencies
