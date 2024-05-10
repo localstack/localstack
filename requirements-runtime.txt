@@ -73,7 +73,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.87.1
+cfn-lint==0.87.2
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -212,7 +212,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.6.post1
+moto-ext==5.0.6.post2
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -267,7 +267,7 @@ pydantic-core==2.18.2
     # via pydantic
 pygments==2.18.0
     # via rich
-pymongo==4.7.1
+pymongo==4.7.2
     # via localstack-core (pyproject.toml)
 pyopenssl==24.1.0
     # via
@@ -305,7 +305,7 @@ referencing==0.31.1
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2024.4.28
+regex==2024.5.10
     # via cfn-lint
 requests==2.31.0
     # via
