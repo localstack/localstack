@@ -197,7 +197,7 @@ class TestSNSFilterPolicyCrud:
         )
 
 
-class TestSNSFilterPolicyBody:
+class TestSNSFilterPolicyAttributes:
     @markers.aws.validated
     def test_filter_policy(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
@@ -522,7 +522,7 @@ class TestSNSFilterPolicyBody:
         snapshot.match("messages-3", response_3)
 
 
-class TestSNSFilterPolicyAttributes:
+class TestSNSFilterPolicyBody:
     @markers.aws.validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     def test_filter_policy_on_message_body(
@@ -1060,3 +1060,113 @@ class TestSNSFilterPolicyAttributes:
         # we need to sort the list (the order does not matter as we're not using FIFO)
         received_messages.sort(key=itemgetter("Body"))
         snapshot.match("messages", {"Messages": received_messages})
+
+    @markers.aws.validated
+    def test_filter_policy_on_message_body_or_attribute(
+        self,
+        sqs_create_queue,
+        sns_create_topic,
+        sns_create_sqs_subscription_with_filter_policy,
+        snapshot,
+        aws_client,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        queue_url = sqs_create_queue()
+
+        filter_policy = {
+            "$or": [
+                {"metricName": ["CPUUtilization", "ReadLatency"]},
+                {"namespace": ["AWS/EC2", "AWS/ES"]},
+            ],
+            "detail": {
+                "scope": ["Service"],
+                "$or": [
+                    {"source": ["aws.cloudwatch"]},
+                    {"type": ["CloudWatch Alarm State Change"]},
+                ],
+            },
+        }
+        sns_create_sqs_subscription_with_filter_policy(
+            topic_arn=topic_arn,
+            queue_url=queue_url,
+            filter_scope="MessageBody",
+            filter_policy=filter_policy,
+        )
+
+        # publish messages that satisfies the filter policy, assert that messages are received
+        messages = [
+            # not passing
+            # wrong value for `metricName`
+            {
+                "metricName": "CPUUtilization",
+                "detail": {"scope": "aws.cloudwatch", "type": "CloudWatch Alarm State Change"},
+            },
+            # wrong value for `detail.type`
+            {
+                "metricName": "CPUUtilization",
+                "detail": {"scope": "Service", "type": "CPUUtilization"},
+            },
+            # missing value for `detail.scope`
+            {"metricName": "CPUUtilization", "detail": {"type": "CloudWatch Alarm State Change"}},
+            # missing value for `detail.type` or `detail.source`
+            {"metricName": "CPUUtilization", "detail": {"scope": "Service"}},
+            # missing value for `detail.scope` AND `detail.source` or `detail.type`
+            {"metricName": "CPUUtilization", "scope": "Service"},
+            # passing
+            {
+                "metricName": "CPUUtilization",
+                "detail": {"scope": "Service", "source": "aws.cloudwatch"},
+            },
+            {
+                "metricName": "ReadLatency",
+                "detail": {"scope": "Service", "source": "aws.cloudwatch"},
+            },
+            {"namespace": "AWS/EC2", "detail": {"scope": "Service", "source": "aws.cloudwatch"}},
+            {"namespace": "AWS/ES", "detail": {"scope": "Service", "source": "aws.cloudwatch"}},
+            {
+                "metricName": "CPUUtilization",
+                "detail": {"scope": "Service", "type": "CloudWatch Alarm State Change"},
+            },
+            {
+                "metricName": "AWS/EC2",
+                "detail": {"scope": "Service", "type": "CloudWatch Alarm State Change"},
+            },
+            {
+                "namespace": "CPUUtilization",
+                "detail": {"scope": "Service", "type": "CloudWatch Alarm State Change"},
+            },
+        ]
+        for message in messages:
+            aws_client.sns.publish(
+                TopicArn=topic_arn,
+                Message=json.dumps(message),
+            )
+
+        def get_messages(_queue_url: str, _recv_messages: list):
+            # due to the random nature of receiving SQS messages, we need to consolidate a single object to match
+            sqs_response = aws_client.sqs.receive_message(
+                QueueUrl=_queue_url,
+                WaitTimeSeconds=1,
+                VisibilityTimeout=0,
+                MessageAttributeNames=["All"],
+                AttributeNames=["All"],
+            )
+            for _message in sqs_response["Messages"]:
+                _recv_messages.append(_message)
+                aws_client.sqs.delete_message(
+                    QueueUrl=_queue_url, ReceiptHandle=_message["ReceiptHandle"]
+                )
+
+            assert len(_recv_messages) == 7
+
+            recv_messages = []
+            retry(
+                get_messages,
+                retries=10,
+                sleep=0.1,
+                _queue_url=queue_url,
+                _recv_messages=recv_messages,
+            )
+            # we need to sort the list (the order does not matter as we're not using FIFO)
+            recv_messages.sort(key=itemgetter("Body"))
+            snapshot.match("messages-queue", {"Messages": recv_messages})
