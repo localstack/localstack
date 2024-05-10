@@ -7,6 +7,9 @@ parameters:
   ubuntu-arm64-machine-image:
     type: string
     default: "ubuntu-2204:2023.02.1"
+  PYTEST_LOGLEVEL:
+    type: string
+    default: "WARNING"
   skip_test_selection:
     type: boolean
     default: false
@@ -20,7 +23,7 @@ executors:
       image: << pipeline.parameters.ubuntu-amd64-machine-image >>
 
 commands:
-  prepare-pytest-tinybird:
+  prepare-testselection:
     steps:
       - unless:
           condition: << pipeline.parameters.skip_test_selection >>
@@ -31,6 +34,9 @@ commands:
                   if [[ -n "$CI_PULL_REQUEST" ]] ; then
                     echo "export TESTSELECTION_PYTEST_ARGS='--path-filter=target/testselection/test-selection.txt '" >> $BASH_ENV
                   fi
+
+  prepare-pytest-tinybird:
+    steps:
       - run:
           name: Setup Environment Variables
           command: |
@@ -166,6 +172,8 @@ jobs:
   acceptance-tests:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -194,9 +202,12 @@ jobs:
   itest-sfn-legacy-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -220,9 +231,12 @@ jobs:
   itest-s3-v2-legacy-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -246,9 +260,12 @@ jobs:
   itest-cloudwatch-v2-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -272,9 +289,12 @@ jobs:
   itest-events-v2-provider:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -347,6 +367,8 @@ jobs:
     resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
     parallelism: 4
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -369,6 +391,7 @@ jobs:
           key: common-functions-<< parameters.platform >>-{{ checksum "/tmp/common-functions-checksums" }}
           paths:
             - "tests/aws/services/lambda_/functions/common"
+      - prepare-testselection
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -402,6 +425,8 @@ jobs:
   bootstrap-tests:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
       - attach_workspace:
           at: /tmp/workspace

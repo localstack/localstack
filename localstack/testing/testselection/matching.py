@@ -10,6 +10,12 @@ from localstack.aws.scaffold import is_keyword
 SENTINEL_NO_TEST = "SENTINEL_NO_TEST"  # a line item which signals that we don't default to everything, we just don't want to actually want to run a test => useful to differentiate between empty / nothing
 SENTINEL_ALL_TESTS = "SENTINEL_ALL_TESTS"  # a line item which signals that we don't default to everything, we just don't want to actually want to run a test => useful to differentiate between empty / nothing
 
+DEFAULT_SEARCH_PATTERNS = (
+    r"localstack/services/([^/]+)/.+",
+    r"localstack/aws/api/([^/]+)/__init__\.py",
+    r"tests/aws/services/([^/]+)/.+",
+)
+
 
 def _map_to_module_name(service_name: str) -> str:
     """sanitize a service name like we're doing when scaffolding, e.g. lambda => lambda_"""
@@ -27,11 +33,13 @@ def _map_to_service_name(module_name: str) -> str:
     return module_name.replace("_", "-")
 
 
-def resolve_dependencies(module_name: str, api_dependencies) -> set[str]:
+def resolve_dependencies(module_name: str, api_dependencies: dict[str, Iterable[str]]) -> set[str]:
     """
     Resolves dependencies for a given service module name
 
     :param module_name: the name of the service to resolve (e.g. lambda_)
+    :param api_dependencies: dict of API dependencies where each key is the service and its value a list of services it
+                             depends on
     :return: set of resolved _service names_ that the service depends on (e.g. sts)
     """
     svc_name = _map_to_service_name(module_name)
@@ -39,7 +47,7 @@ def resolve_dependencies(module_name: str, api_dependencies) -> set[str]:
 
 
 # TODO: might want to cache that, but for now it shouldn't be too much overhead
-def _reverse_dependency_map(dependency_map: dict[str, dict]) -> dict[str, set[str]]:
+def _reverse_dependency_map(dependency_map: dict[str, Iterable[str]]) -> dict[str, Iterable[str]]:
     """
     The current API_DEPENDENCIES actually maps the services to their own dependencies.
     In our case here we need the inverse of this, we need to of which other services this service is a dependency of.
@@ -91,13 +99,18 @@ class Matchers:
 
 
 def generic_service_test_matching_rule(
-    changed_file_path: str, api_dependencies: Optional[dict] = None
+    changed_file_path: str,
+    api_dependencies: Optional[dict[str, Iterable[str]]] = None,
+    search_patterns: Iterable[str] = DEFAULT_SEARCH_PATTERNS,
+    test_dirs: Iterable[str] = ("tests/aws/services",),
 ) -> set[str]:
     """
     Generic matching of changes in service files to their tests
 
     :param api_dependencies: dict of API dependencies where each key is the service and its value a list of services it depends on
     :param changed_file_path: the file path of the detected change
+    :param search_patterns: list of regex patterns to search for in the changed file path
+    :param test_dirs: list of test directories to match for a changed service
     :return: list of partial test file path filters for the matching service and all services it depends on
     """
     # TODO: consider API_COMPOSITES
@@ -113,11 +126,11 @@ def generic_service_test_matching_rule(
         for service, optional_dependencies in API_DEPENDENCIES_OPTIONAL.items():
             api_dependencies[service].update(optional_dependencies)
 
-    match = re.findall("localstack/services/([^/]+)/.+", changed_file_path)
-    if not match:
-        match = re.findall(r"localstack/aws/api/([^/]+)/__init__\.py", changed_file_path)
-    if not match:
-        match = re.findall(r"tests/aws/services/([^/]+)/.+", changed_file_path)
+    match = None
+    for pattern in search_patterns:
+        match = re.findall(pattern, changed_file_path)
+        if match:
+            break
 
     if match:
         changed_service = match[0]
@@ -125,7 +138,9 @@ def generic_service_test_matching_rule(
         service_dependencies = resolve_dependencies(changed_service, api_dependencies)
         changed_services.extend(service_dependencies)
         changed_service_module_names = [_map_to_module_name(svc) for svc in changed_services]
-        return {f"tests/aws/services/{svc}/" for svc in changed_service_module_names}
+        return {
+            f"{test_dir}/{svc}/" for test_dir in test_dirs for svc in changed_service_module_names
+        }
 
     return set()
 

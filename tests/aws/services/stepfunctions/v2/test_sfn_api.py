@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
+from localstack.aws.api.stepfunctions import HistoryEventList
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
@@ -16,6 +17,7 @@ from tests.aws.services.stepfunctions.utils import (
     await_execution_success,
     await_execution_terminated,
     await_list_execution_status,
+    await_on_execution_events,
     await_state_machine_listed,
     await_state_machine_not_listed,
 )
@@ -490,6 +492,21 @@ class TestSnfApi:
         sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
         sfn_snapshot.match("exec_resp", exec_resp)
         execution_arn = exec_resp["executionArn"]
+
+        def _check_stated_entered(events: HistoryEventList) -> bool:
+            # Check the evaluation entered the wait state, called State_1.
+            for event in events:
+                event_details = event.get("stateEnteredEventDetails")
+                if event_details:
+                    return event_details.get("name") == "State_1"
+            return False
+
+        # Wait until the state machine enters the wait state.
+        await_on_execution_events(
+            stepfunctions_client=aws_client.stepfunctions,
+            execution_arn=execution_arn,
+            check_func=_check_stated_entered,
+        )
 
         await_execution_started(
             stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn

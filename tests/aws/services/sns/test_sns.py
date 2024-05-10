@@ -4765,6 +4765,17 @@ class TestSNSMultiAccounts:
             region_name,
         )
 
+        # create a second queue with the secondary AccountId
+        queue_name_2 = "sample_queue_two"
+        queue_3 = sqs_secondary_client.create_queue(QueueName=queue_name_2)
+        queue_3_url = queue_3["QueueUrl"]
+        # test that we get the right queue URL at the same time, even if we use the primary client
+        queue_3_arn = sqs_queue_arn(
+            queue_3_url,
+            secondary_account_id,
+            region_name,
+        )
+
         # test that we can subscribe with the primary client to a queue from the same account
         sns_primary_client.subscribe(
             TopicArn=topic_1_arn,
@@ -4779,8 +4790,17 @@ class TestSNSMultiAccounts:
             Endpoint=queue_2_arn,
         )
 
-        # now, we have 2 subscriptions in topic_1, one to the queue_1 located in the same account, and to queue_2
-        # located in the secondary account
+        # test that we can subscribe with the secondary client (not owning the topic) to a queue of the secondary client
+        sns_secondary_client.subscribe(
+            TopicArn=topic_1_arn,
+            Protocol="sqs",
+            Endpoint=queue_3_arn,
+        )
+
+        # now, we have 3 subscriptions in topic_1, one to the queue_1 located in the same account, and 2 to queue_2 and
+        # queue_3 located in the secondary account
+        subscriptions = sns_primary_client.list_subscriptions_by_topic(TopicArn=topic_1_arn)
+        assert len(subscriptions["Subscriptions"]) == 3
 
         sns_primary_client.publish(TopicArn=topic_1_arn, Message="TestMessageOwner")
 
@@ -4788,6 +4808,7 @@ class TestSNSMultiAccounts:
             for client, queue_url in (
                 (sqs_primary_client, queue_1_url),
                 (sqs_secondary_client, queue_2_url),
+                (sqs_secondary_client, queue_3_url),
             ):
                 response = client.receive_message(
                     QueueUrl=queue_url,

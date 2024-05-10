@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
+  <img src="https://raw.githubusercontent.com/localstack/localstack/master/docs/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 
 <p align="center">
   <a href="#overview">Overview</a> •
-  <a href="#installing">Install</a> •
+  <a href="#install">Install</a> •
   <a href="#quickstart">Quickstart</a> •
   <a href="#running">Run</a> •
   <a href="#usage">Usage</a> •
@@ -48,7 +48,7 @@ LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynam
 
 LocalStack also provides additional features to make your life as a cloud developer easier! Check out LocalStack's [User Guides](https://docs.localstack.cloud/user-guide/) for more information.
 
-## Installation
+## Install
 
 The quickest way get started with LocalStack is by using the LocalStack CLI. It enables you to start and manage the LocalStack Docker container directly through your command line. Ensure that your machine has a functional [`docker` environment](https://docs.docker.com/get-docker/) installed before proceeding.
 
@@ -164,8 +164,8 @@ Please refer to [GitHub releases](https://github.com/localstack/localstack/relea
 
 If you are interested in contributing to LocalStack:
 
-- Start by reading our [contributing guide](CONTRIBUTING.md).
-- Check out our [developer guide](https://docs.localstack.cloud/contributing/).
+- Start by reading our [contributing guide](docs/CONTRIBUTING.md).
+- Check out our [development environment setup guide](docs/development-environment-setup.md).
 - Navigate our codebase and [open issues](https://github.com/localstack/localstack/issues).
 
 We are thankful for all the contributions and feedback we receive.
@@ -215,4 +215,4 @@ Copyright (c) 2017-2024 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
-This version of LocalStack is released under the Apache License, Version 2.0 (see [LICENSE](LICENSE.txt)). By downloading and using this software you agree to the [End-User License Agreement (EULA)](doc/end_user_license_agreement). To know about the external software we use, look at our [third party software tools](doc/third-party-software-tools/README.md) page.
+This version of LocalStack is released under the Apache License, Version 2.0 (see [LICENSE](LICENSE.txt)). By downloading and using this software you agree to the [End-User License Agreement (EULA)](docs/end_user_license_agreement).

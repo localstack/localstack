@@ -580,6 +580,94 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
+    def test_map_state_legacy_reentrant(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        template = ST.load_sfn_template(ST.MAP_STATE_LEGACY_REENTRANT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_state_config_distributed_reentrant(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+    ):
+        # Replace MapRunArns with fixed values to circumvent random ordering issues.
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..mapRunArn", replacement="map_run_arn", replace_reference=False
+            )
+        )
+
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    def test_map_state_config_distributed_reentrant_lambda(
+        self,
+        aws_client,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+    ):
+        # Replace MapRunArns with fixed values to circumvent random ordering issues.
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..mapRunArn", replacement="map_run_arn", replace_reference=False
+            )
+        )
+
+        function_name = f"sfn_lambda_{short_uid()}"
+        create_res = create_lambda_function(
+            func_name=function_name,
+            handler_file=SerT.LAMBDA_ID_FUNCTION,
+            runtime=Runtime.python3_12,
+        )
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+        function_arn = create_res["CreateFunctionResponse"]["FunctionArn"]
+
+        template = ST.load_sfn_template(ST.MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT_LAMBDA)
+        definition = json.dumps(template)
+        definition = definition.replace("_tbd_", function_arn)
+
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # TODO: AWS appears to have changed json encoding to include spaces after separators,

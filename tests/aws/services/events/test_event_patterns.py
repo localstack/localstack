@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
 
@@ -8,7 +9,6 @@ import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from tests.aws.services.events.helper_functions import is_v2_provider
 
 THIS_FOLDER: str = os.path.dirname(os.path.realpath(__file__))
 REQUEST_TEMPLATE_DIR = os.path.join(THIS_FOLDER, "event_pattern_templates")
@@ -80,7 +80,6 @@ SKIP_LABELS = [
 # TODO: extend these test cases based on the open source docs + tests: https://github.com/aws/event-ruler
 #  For example, "JSON Array Matching", "And and Or Relationship among fields with Ruler", rule validation,
 #  and exception handling.
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 @pytest.mark.parametrize(
     "request_template,label", request_template_tuples, ids=[t[1] for t in request_template_tuples]
 )
@@ -118,7 +117,6 @@ def test_test_event_pattern(aws_client, snapshot, request_template, label):
             assert response["Result"]
 
 
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 @markers.aws.validated
 def test_test_event_pattern_with_multi_key(aws_client):
     """Test the special case of a duplicate JSON key separately because it requires working around the
@@ -140,7 +138,6 @@ def test_test_event_pattern_with_multi_key(aws_client):
         assert response["Result"]
 
 
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
 @markers.aws.validated
 def test_test_event_pattern_with_escape_characters(aws_client):
     r"""Test the special case of using escape characters separately because it requires working around JSON escaping.
@@ -159,3 +156,47 @@ def test_test_event_pattern_with_escape_characters(aws_client):
         EventPattern=event_pattern,
     )
     assert response["Result"]
+
+
+@markers.aws.validated
+def test_event_pattern_source(aws_client, snapshot, account_id, region_name):
+    response = aws_client.events.test_event_pattern(
+        Event=json.dumps(
+            {
+                "id": "1",
+                "source": "order",
+                "detail-type": "Test",
+                "account": account_id,
+                "region": region_name,
+                "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            }
+        ),
+        EventPattern=json.dumps(
+            {
+                "source": ["order"],
+                "detail-type": ["Test"],
+            }
+        ),
+    )
+    snapshot.match("eventbridge-test-event-pattern-response", response)
+
+    # negative test, source is not matched
+    response = aws_client.events.test_event_pattern(
+        Event=json.dumps(
+            {
+                "id": "1",
+                "source": "order",
+                "detail-type": "Test",
+                "account": account_id,
+                "region": region_name,
+                "time": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+            }
+        ),
+        EventPattern=json.dumps(
+            {
+                "source": ["shipment"],
+                "detail-type": ["Test"],
+            }
+        ),
+    )
+    snapshot.match("eventbridge-test-event-pattern-response-no-match", response)

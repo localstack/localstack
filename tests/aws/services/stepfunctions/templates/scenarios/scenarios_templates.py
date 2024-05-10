@@ -58,6 +58,15 @@ class ScenariosTemplate(TemplateLoader):
     MAP_STATE_CONFIG_DISTRIBUTED_ITEM_SELECTOR: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_distributed_item_selector.json5"
     )
+    MAP_STATE_LEGACY_REENTRANT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_reentrant.json5"
+    )
+    MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_reentrant.json5"
+    )
+    MAP_STATE_CONFIG_DISTRIBUTED_REENTRANT_LAMBDA: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_config_distributed_reentrant_lambda.json5"
+    )
     MAP_STATE_CONFIG_INLINE_PARAMETERS: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_config_inline_parameters.json5"
     )
@@ -109,6 +118,9 @@ class ScenariosTemplate(TemplateLoader):
     )
     MAP_STATE_CATCH_LEGACY: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/map_state_catch_legacy.json5"
+    )
+    MAP_STATE_LEGACY_REENTRANT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/map_state_legacy_reentrant.json5"
     )
     MAP_STATE_RETRY: Final[str] = os.path.join(_THIS_FOLDER, "statemachines/map_state_retry.json5")
     MAP_STATE_RETRY_LEGACY: Final[str] = os.path.join(

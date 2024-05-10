@@ -7,6 +7,7 @@ from botocore.client import BaseClient
 
 from localstack.aws.api.events import (
     Arn,
+    PutEventsRequestEntry,
     Target,
 )
 from localstack.aws.connect import connect_to
@@ -53,7 +54,7 @@ class TargetSender(ABC):
         return self._client
 
     @abstractmethod
-    def send_event(self):
+    def send_event(self, event: PutEventsRequestEntry):
         pass
 
     def _validate_input(self, target: Target):
@@ -82,6 +83,8 @@ class TargetSender(ABC):
 
 
 TargetSenderDict = dict[Arn, TargetSender]
+
+# Target Senders are ordered alphabetically by service name
 
 
 class ApiGatewayTargetSender(TargetSender):
@@ -174,6 +177,7 @@ class KinesisTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
+        # TODO add validated test to check if RoleArn is mandatory
         if not collections.get_safe(target, "$.RoleArn"):
             raise ValueError("RoleArn is required for Kinesis target")
         if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):

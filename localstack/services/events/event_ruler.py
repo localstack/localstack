@@ -3,9 +3,8 @@ import os
 from functools import cache
 from pathlib import Path
 
-from localstack import config
+from localstack.services.events.models import InvalidEventPatternException
 from localstack.services.events.packages import event_ruler_package
-from localstack.services.events.utils import InvalidEventPatternException
 from localstack.utils.objects import singleton_factory
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -43,8 +42,6 @@ def matches_rule(event: str, rule: str) -> bool:
     There is a single static boolean method Ruler.matchesRule(event, rule) -
     both arguments are provided as JSON strings.
     """
-    if config.EVENT_RULE_ENGINE != "java":
-        raise NotImplementedError("Set EVENT_RULE_ENGINE=java to enable the Java Event Ruler.")
 
     start_jvm()
     import jpype.imports  # noqa F401: required for importing Java modules

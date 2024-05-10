@@ -44,6 +44,16 @@ on:
         required: false
         type: boolean
         default: false
+      PYTEST_LOGLEVEL:
+        type: choice
+        description: Loglevel for PyTest
+        options:
+        - DEBUG
+        - INFO
+        - WARNING
+        - ERROR
+        - CRITICAL
+        default: WARNING
 
 # Only one pull-request triggered run should be executed at a time
 # (head_ref is only set for PR events, otherwise fallback to run_id which differs for every run).
@@ -52,6 +62,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Enable colors in tests running outside of docker (not in a tty - https://github.com/pytest-dev/pytest/pull/7462)
+  PY_COLORS: "1"
+  # Configure PyTest log level
+  PYTEST_LOGLEVEL: "${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}"
   # Set non-job-specific environment variables for pytest-tinybird
   TINYBIRD_URL: https://api.tinybird.co
   TINYBIRD_DATASOURCE: community_tests_s3_image
@@ -108,7 +122,6 @@ jobs:
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy --junitxml=target/pytest-junit-s3-image-${{ matrix.arch }}.xml"
           TEST_PATH: "tests/aws/services/s3"
           DEBUG: 1
-
         run: |
           mkdir target
           make docker-run-tests-s3-only

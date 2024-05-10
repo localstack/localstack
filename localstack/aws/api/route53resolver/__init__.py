@@ -84,6 +84,11 @@ class FirewallDomainListStatus(str):
     UPDATING = "UPDATING"
 
 
+class FirewallDomainRedirectionAction(str):
+    INSPECT_REDIRECTION_DOMAIN = "INSPECT_REDIRECTION_DOMAIN"
+    TRUST_REDIRECTION_DOMAIN = "TRUST_REDIRECTION_DOMAIN"
+
+
 class FirewallDomainUpdateOperation(str):
     ADD = "ADD"
     REMOVE = "REMOVE"
@@ -523,6 +528,7 @@ class CreateFirewallRuleRequest(ServiceRequest):
     BlockOverrideDnsType: Optional[BlockOverrideDnsType]
     BlockOverrideTtl: Optional[BlockOverrideTtl]
     Name: Name
+    FirewallDomainRedirectionAction: Optional[FirewallDomainRedirectionAction]
     Qtype: Optional[Qtype]
 
 
@@ -539,6 +545,7 @@ class FirewallRule(TypedDict, total=False):
     CreatorRequestId: Optional[CreatorRequestId]
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
+    FirewallDomainRedirectionAction: Optional[FirewallDomainRedirectionAction]
     Qtype: Optional[Qtype]
 
 
@@ -1275,6 +1282,7 @@ class UpdateFirewallRuleRequest(ServiceRequest):
     BlockOverrideDnsType: Optional[BlockOverrideDnsType]
     BlockOverrideTtl: Optional[BlockOverrideTtl]
     Name: Optional[Name]
+    FirewallDomainRedirectionAction: Optional[FirewallDomainRedirectionAction]
     Qtype: Optional[Qtype]
 
 
@@ -1415,6 +1423,7 @@ class Route53ResolverApi:
         block_override_domain: BlockOverrideDomain = None,
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
+        firewall_domain_redirection_action: FirewallDomainRedirectionAction = None,
         qtype: Qtype = None,
         **kwargs,
     ) -> CreateFirewallRuleResponse:
@@ -1926,6 +1935,7 @@ class Route53ResolverApi:
         block_override_dns_type: BlockOverrideDnsType = None,
         block_override_ttl: BlockOverrideTtl = None,
         name: Name = None,
+        firewall_domain_redirection_action: FirewallDomainRedirectionAction = None,
         qtype: Qtype = None,
         **kwargs,
     ) -> UpdateFirewallRuleResponse:

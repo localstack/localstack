@@ -221,10 +221,12 @@ class TestStacksApi:
         statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"UPDATE_COMPLETE"}
 
-    @markers.aws.needs_fixing
-    def test_update_stack_with_same_template_withoutchange(self, deploy_cfn_template, aws_client):
+    @markers.aws.validated
+    def test_update_stack_with_same_template_withoutchange(
+        self, deploy_cfn_template, aws_client, snapshot
+    ):
         template = load_file(
-            os.path.join(os.path.dirname(__file__), "../../../templates/fifo_queue.json")
+            os.path.join(os.path.dirname(__file__), "../../../templates/simple_no_change.yaml")
         )
         stack = deploy_cfn_template(template=template)
 
@@ -236,9 +238,29 @@ class TestStacksApi:
                 StackName=stack.stack_name
             )
 
-        error_message = str(ctx.value)
-        assert "UpdateStack" in error_message
-        assert "No updates are to be performed." in error_message
+        snapshot.match("no_change_exception", ctx.value.response)
+
+    @markers.aws.validated
+    def test_update_stack_with_same_template_withoutchange_transformation(
+        self, deploy_cfn_template, aws_client
+    ):
+        template = load_file(
+            os.path.join(
+                os.path.dirname(__file__),
+                "../../../templates/simple_no_change_with_transformation.yaml",
+            )
+        )
+        stack = deploy_cfn_template(template=template)
+
+        # transformations will always work even if there's no change in the template!
+        aws_client.cloudformation.update_stack(
+            StackName=stack.stack_name,
+            TemplateBody=template,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack.stack_name
+        )
 
     @markers.aws.validated
     def test_update_stack_actual_update(self, deploy_cfn_template, aws_client):
