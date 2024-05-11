@@ -788,3 +788,29 @@ def test_describe_stack_events_errors(aws_client, snapshot):
     with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
         aws_client.cloudformation.describe_stack_events(StackName="does-not-exist")
     snapshot.match("describe_stack_events_stack_not_found", e.value.response)
+
+
+@markers.aws.validated
+def test_delete_resource_stack_delete_ok(aws_client, deploy_cfn_template):
+    """
+    Test that when manually deleting a resource from a stack, that the stack
+    teardown does not fail
+    """
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../templates/sns_topic_subscription.yaml"
+    )
+
+    topic_name = f"topic-{short_uid()}"
+    queue_name = f"topic-{short_uid()}"
+    deployed = deploy_cfn_template(
+        template_path=template_path,
+        parameters={"TopicName": topic_name, "QueueName": queue_name},
+    )
+
+    queue_url = deployed.outputs["QueueUrl"]
+
+    # manually delete the sqs queue which the SNS topic depends on
+    aws_client.sqs.delete_queue(QueueUrl=queue_url)
+
+    # trigger the teardown
+    deployed.destroy()

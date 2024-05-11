@@ -26,3 +26,5 @@ Outputs:
   TopicArnOutput:
     Value:
       Ref: topic
+  QueueUrl:
+    Value: !GetAtt queue276F7297.QueueUrl
