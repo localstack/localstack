@@ -2,7 +2,7 @@ import base64
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Callable, Optional
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.events import (
@@ -70,9 +70,12 @@ from localstack.services.events.models import (
     InvalidEventPatternException as InternalInvalidEventPatternException,
 )
 from localstack.services.events.rule import RuleService, RuleServiceDict
+from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.common import truncate
 from localstack.utils.strings import long_uid
+from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
 
@@ -150,6 +153,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._event_bus_services_store: EventBusServiceDict = {}
         self._rule_services_store: RuleServiceDict = {}
         self._target_sender_store: TargetSenderDict = {}
+
+    def on_before_start(self):
+        JobScheduler.start()
+
+    def on_before_stop(self):
+        JobScheduler.shutdown()
 
     ##########
     # EventBus
@@ -427,6 +436,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         for target in targets:  # TODO only add successful targets
             self.create_target_sender(target, region, account_id, rule_arn, rule_name)
 
+        schedule_job_function = self._get_scheduled_rule_job_function(
+            account_id, region, rule_service.rule
+        )
+        rule_service.create_schedule_job(schedule_job_function)
         response = PutTargetsResponse(
             FailedEntryCount=len(failed_entries), FailedEntries=failed_entries
         )
@@ -698,3 +711,35 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                             )
                             failed_entry_count += 1
         return processed_entries, failed_entry_count
+
+    def _get_scheduled_rule_job_function(self, account_id, region, rule: Rule) -> Callable:
+        def func(*args, **kwargs):
+            """Create custom scheduled event and send it to all targets specified by associated rule using respective TargetSender"""
+            for target in rule.targets.values():
+                if custom_input := target.get("Input"):
+                    event = json.loads(custom_input)
+                else:
+                    event = {
+                        "version": "0",
+                        "id": long_uid(),
+                        "detail-type": "Scheduled Event",
+                        "source": "aws.events",
+                        "account": account_id,
+                        "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
+                        "region": region,
+                        "resources": [rule.arn],
+                        "detail": {},
+                    }
+
+                target_sender = self._target_sender_store[target["Arn"]]
+                try:
+                    target_sender.process_event(event)
+                except Exception as e:
+                    LOG.info(
+                        "Unable to send event notification %s to target %s: %s",
+                        truncate(event),
+                        target,
+                        e,
+                    )
+
+        return func

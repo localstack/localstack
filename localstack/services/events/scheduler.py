@@ -1,4 +1,5 @@
 import logging
+import re
 import threading
 
 from crontab import CronTab
@@ -7,6 +8,41 @@ from localstack.utils.common import short_uid
 from localstack.utils.run import FuncThread
 
 LOG = logging.getLogger(__name__)
+
+CRON_REGEX = re.compile(r"\s*cron\s*\(([^\)]*)\)\s*")
+RATE_REGEX = re.compile(r"\s*rate\s*\(([^\)]*)\)\s*")
+
+
+def convert_schedule_to_cron(schedule):
+    """Convert Events schedule like "cron(0 20 * * ? *)" or "rate(5 minutes)" """
+    cron_match = CRON_REGEX.match(schedule)
+    if cron_match:
+        return cron_match.group(1)
+
+    rate_match = RATE_REGEX.match(schedule)
+    if rate_match:
+        rate = rate_match.group(1)
+        rate_value, rate_unit = re.split(r"\s+", rate.strip())
+        rate_value = int(rate_value)
+
+        if rate_value < 1:
+            raise ValueError("Rate value must be larger than 0")
+        # see https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-rate-expressions.html
+        if rate_value == 1 and rate_unit.endswith("s"):
+            raise ValueError("If the value is equal to 1, then the unit must be singular")
+        if rate_value > 1 and not rate_unit.endswith("s"):
+            raise ValueError("If the value is greater than 1, the unit must be plural")
+
+        if "minute" in rate_unit:
+            return "*/%s * * * *" % rate_value
+        if "hour" in rate_unit:
+            return "0 */%s * * *" % rate_value
+        if "day" in rate_unit:
+            return "0 0 */%s * *" % rate_value
+
+        raise ValueError("Unable to parse events schedule expression: %s" % schedule)
+
+    return schedule
 
 
 class Job:
