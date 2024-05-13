@@ -1,17 +1,23 @@
 import json
 import logging
+import re
 import uuid
 from abc import ABC, abstractmethod
+from typing import Any
 
 from botocore.client import BaseClient
 
 from localstack.aws.api.events import (
     Arn,
+    InputTransformer,
     Target,
     TargetInputPath,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.events.models import FormattedEvent, TransformedEvent
+from localstack.services.events.models import (
+    FormattedEvent,
+    TransformedEvent,
+)
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_service_from_arn,
@@ -25,12 +31,70 @@ from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
 
+AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES = {
+    "aws.events.rule-arn",
+    "aws.events.rule-name",
+    "aws.events.event.ingestion-time",
+}
+AWS_PREDEFINED_PLACEHOLDERS_JSON_VALUES = {"aws.events.event", "aws.events.event.json"}
+
+TRANSFORMER_PLACEHOLDER_PATTERN = re.compile(r"<(.*?)>")
+
 
 def transform_event_with_target_input_path(
     input_path: TargetInputPath, event: FormattedEvent
 ) -> TransformedEvent:
     formatted_event = extract_jsonpath(event, input_path)
     return formatted_event
+
+
+def get_template_replacements(
+    input_transformer: InputTransformer, event: FormattedEvent
+) -> dict[str, Any]:
+    """Extracts values from the event using the input paths map keys and places them in the input template dict."""
+    template_replacements = {}
+    transformer_path_map = input_transformer.get("InputPathsMap", {})
+    for placeholder, transformer_path in transformer_path_map.items():
+        if (
+            placeholder in AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES
+            or placeholder in AWS_PREDEFINED_PLACEHOLDERS_JSON_VALUES
+        ):
+            continue
+        value = extract_jsonpath(event, transformer_path)
+        if not value:
+            value = ""  # default value is empty string
+        template_replacements[placeholder] = value
+    return template_replacements
+
+
+def replace_template_placeholders(
+    template: str, replacements: dict[str, Any], is_json: bool
+) -> TransformedEvent:
+    """Replace placeholders defined by <key> in the template with the values from the replacements dict.
+    Can handle single template string or template dict."""
+
+    def replace_placeholder(match):
+        key = match.group(1)
+        value = replacements.get(key, match.group(0))  # handle non defined placeholders
+        return json.dumps(value) if is_json else value
+
+    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
+
+    return json.loads(formatted_template) if is_json else formatted_template[1:-1]
+
+
+def transform_event_with_target_input_transformer(
+    input_transformer: InputTransformer, event: FormattedEvent
+) -> TransformedEvent:
+    input_template = input_transformer["InputTemplate"]
+    template_replacements = get_template_replacements(input_transformer, event)
+
+    is_json_format = input_template.strip().startswith(("{", "["))
+    formatted_template = replace_template_placeholders(
+        input_template, template_replacements, is_json_format
+    )
+
+    return formatted_template
 
 
 class TargetSender(ABC):
@@ -70,6 +134,8 @@ class TargetSender(ABC):
         """Processes the event and send it to the target."""
         if input_path := self.target.get("InputPath"):
             event = transform_event_with_target_input_path(input_path, event)
+        if input_transformer := self.target.get("InputTransformer"):
+            event = transform_event_with_target_input_transformer(input_transformer, event)
         self.send_event(event)
 
     def _validate_input(self, target: Target):
