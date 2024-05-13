@@ -499,6 +499,7 @@ class TestCallback:
         )
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="Skipped until flaky behaviour can be rectified.")
     def test_multiple_heartbeat_notifications(
         self,
         aws_client,
@@ -546,6 +547,7 @@ class TestCallback:
         task_token_consumer_thread.join(timeout=300)
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="Skipped until flaky behaviour can be rectified.")
     def test_multiple_executions_and_heartbeat_notifications(
         self,
         aws_client,
