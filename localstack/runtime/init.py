@@ -67,7 +67,17 @@ class ShellScriptRunner(ScriptRunner):
     """
 
     def run(self, path: str) -> None:
-        exit_code = subprocess.call(args=[], executable=path)
+        from localstack import config
+
+        # add special known paths to the system path
+        new_env = os.environ.copy()
+        for additional_path in [
+            # node modules dirs
+            os.path.join(config.dirs.var_libs, "node-packages", "node_modules", ".bin"),
+            os.path.join(config.dirs.static_libs, "node-packages", "node_modules", ".bin"),
+        ]:
+            new_env["PATH"] = f"{new_env['PATH']}:{additional_path}"
+        exit_code = subprocess.call(args=[], executable=path, env=new_env)
         if exit_code != 0:
             raise OSError("Script %s returned a non-zero exit code %s" % (path, exit_code))
 
