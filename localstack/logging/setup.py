@@ -26,6 +26,7 @@ default_log_levels = {
     "localstack.aws.accounts": logging.INFO,
     "localstack.aws.protocol.serializer": logging.INFO,
     "localstack.aws.serving.wsgi": logging.WARNING,
+    "localstack.dns": logging.INFO,
     "localstack.request": logging.INFO,
     "localstack.request.internal": logging.WARNING,
     "localstack.state.inspect": logging.INFO,
