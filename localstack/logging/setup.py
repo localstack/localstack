@@ -1,10 +1,10 @@
-import json
 import logging
 import sys
 import warnings
 
 from localstack import config, constants
 
+from ..utils.collections import parse_key_value_pairs
 from .format import AddFormattedAttributes, DefaultFormatter
 
 # The log levels for modules are evaluated incrementally for logging granularity,
@@ -82,7 +82,7 @@ def setup_logging_from_config():
     raw_logging_override = config.LOGGING_OVERRIDE
     if raw_logging_override:
         try:
-            logging_overrides = json.loads(raw_logging_override)
+            logging_overrides = parse_key_value_pairs(raw_logging_override)
             for logger, level_name in logging_overrides.items():
                 level = getattr(logging, level_name, None)
                 if not level:

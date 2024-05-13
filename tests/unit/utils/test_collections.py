@@ -9,6 +9,7 @@ from localstack.utils.collections import (
     ImmutableList,
     convert_to_typed_dict,
     is_comma_delimited_list,
+    parse_key_value_pairs,
     select_from_typed_dict,
 )
 
@@ -193,3 +194,28 @@ def test_is_comma_limited_list():
     assert not is_comma_delimited_list("foo, bar baz")
     assert not is_comma_delimited_list("foo,")
     assert not is_comma_delimited_list("")
+
+
+@pytest.mark.parametrize(
+    "input_text,expected",
+    [
+        ("a=b", {"a": "b"}),
+        ("a=b,c=d", {"a": "b", "c": "d"}),
+    ],
+)
+def test_parse_key_value_pairs(input_text, expected):
+    assert parse_key_value_pairs(input_text) == expected
+
+
+@pytest.mark.parametrize(
+    "input_text,message",
+    [
+        ("a=b,", "invalid key/value pair: ''"),
+        ("a=b,c=", "missing value: 'c='"),
+    ],
+)
+def test_parse_key_value_pairs_error_messages(input_text, message):
+    with pytest.raises(ValueError) as exc_info:
+        parse_key_value_pairs(input_text)
+
+    assert str(exc_info.value) == message

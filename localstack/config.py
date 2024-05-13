@@ -419,7 +419,7 @@ LS_LOG = eval_log_type("LS_LOG")
 DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
 
 # allow setting custom log levels for individual loggers
-LOGGING_OVERRIDE = os.environ.get("LOGGING_OVERRIDE", "{}")
+LOGGING_OVERRIDE = os.environ.get("LOGGING_OVERRIDE", "")
 
 # whether to enable debugpy
 DEVELOP = is_env_true("DEVELOP")
