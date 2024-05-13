@@ -20,6 +20,54 @@ INPUT_TEMPLATE_PREDEFINE_VARIABLES_STR = '"Message containing all pre defined va
 INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON = '{"originalEvent": <aws.events.event>, "originalEventJson": <aws.events.event.json>}'  # important to not quote the predefined variables
 
 
+@markers.aws.validated
+def test_put_event_input_path_and_input_transfomer(
+    create_sqs_events_target, events_create_event_bus, events_put_rule, aws_client, snapshot
+):
+    _, queue_arn = create_sqs_events_target()
+    bus_name = f"test-bus-{short_uid()}"
+    events_create_event_bus(Name=bus_name)
+
+    rule_name = f"test-rule-{short_uid()}"
+    events_put_rule(
+        Name=rule_name,
+        EventBusName=bus_name,
+        EventPattern=json.dumps(TEST_EVENT_PATTERN),
+    )
+
+    target_id = f"target-{short_uid()}"
+    input_path_map = {
+        "detail-type": "$.detail-type",
+        "timestamp": "$.time",
+        "command": "$.detail.command",
+    }
+    input_template = '{"detailType": <detail-type>,  "time": <timestamp>, "command": <command>}'
+    input_transformer = {
+        "InputPathsMap": input_path_map,
+        "InputTemplate": input_template,
+    }
+    with pytest.raises(Exception) as exception:
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                    "InputTransformer": input_transformer,
+                    "InputPath": "$.detail",
+                },
+            ],
+        )
+
+    snapshot.add_transformer(
+        [
+            snapshot.transform.regex(target_id, "<target-id>"),
+        ]
+    )
+    snapshot.match("missing-key-exception", exception)
+
+
 class TestInputPath:
     @markers.aws.validated
     def test_put_events_with_input_path(self, put_events_with_filter_to_sqs, snapshot):

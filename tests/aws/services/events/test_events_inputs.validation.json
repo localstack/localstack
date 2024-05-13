@@ -28,5 +28,8 @@
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": {
     "last_validated_date": "2024-05-13T12:27:28+00:00"
+  },
+  "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transfomer": {
+    "last_validated_date": "2024-05-13T13:01:15+00:00"
   }
 }
