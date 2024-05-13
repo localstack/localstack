@@ -140,6 +140,10 @@ class TargetSender(ABC):
     def _validate_input(self, target: Target):
         """Provide a default implementation extended for each target based on specifications."""
         # TODO add For Lambda and Amazon SNS resources, EventBridge relies on resource-based policies.
+        if "InputPath" in target and "InputTransformer" in target:
+            raise ValidationException(
+                f"Only one of Input, InputPath, or InputTransformer must be provided for target {target.get('Id')}."
+            )
         if input_transformer := target.get("InputTransformer"):
             self._validate_input_transformer(input_transformer)
 
