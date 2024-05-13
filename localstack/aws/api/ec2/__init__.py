@@ -1,7 +1,14 @@
 from datetime import datetime
 from typing import List, Optional, TypedDict
 
-from localstack.aws.api import RequestContext, ServiceRequest, handler
+from localstack.aws.api import (
+    RequestContext,
+    ServiceRequest,
+    handler,
+)
+from localstack.aws.api import (
+    ServiceException as ServiceException,
+)
 
 AddressMaxResults = int
 AllocationId = str
@@ -2550,6 +2557,11 @@ class PeriodType(str):
 
 class PermissionGroup(str):
     all = "all"
+
+
+class PhcSupport(str):
+    unsupported = "unsupported"
+    supported = "supported"
 
 
 class PlacementGroupState(str):
@@ -11534,6 +11546,7 @@ class InstanceTypeInfo(TypedDict, total=False):
     NitroTpmInfo: Optional[NitroTpmInfo]
     MediaAcceleratorInfo: Optional[MediaAcceleratorInfo]
     NeuronInfo: Optional[NeuronInfo]
+    PhcSupport: Optional[PhcSupport]
 
 
 InstanceTypeInfoList = List[InstanceTypeInfo]

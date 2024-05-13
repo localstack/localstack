@@ -14,6 +14,7 @@ Token = str
 
 
 class MessageSystemAttributeName(str):
+    All = "All"
     SenderId = "SenderId"
     SentTimestamp = "SentTimestamp"
     ApproximateReceiveCount = "ApproximateReceiveCount"
@@ -457,6 +458,7 @@ MessageBodySystemAttributeMap = Dict[
     MessageSystemAttributeNameForSends, MessageSystemAttributeValue
 ]
 MessageList = List[Message]
+MessageSystemAttributeList = List[MessageSystemAttributeName]
 
 
 class PurgeQueueRequest(ServiceRequest):
@@ -466,6 +468,7 @@ class PurgeQueueRequest(ServiceRequest):
 class ReceiveMessageRequest(ServiceRequest):
     QueueUrl: String
     AttributeNames: Optional[AttributeNameList]
+    MessageSystemAttributeNames: Optional[MessageSystemAttributeList]
     MessageAttributeNames: Optional[MessageAttributeNameList]
     MaxNumberOfMessages: Optional[NullableInteger]
     VisibilityTimeout: Optional[NullableInteger]
@@ -705,6 +708,7 @@ class SqsApi:
         context: RequestContext,
         queue_url: String,
         attribute_names: AttributeNameList = None,
+        message_system_attribute_names: MessageSystemAttributeList = None,
         message_attribute_names: MessageAttributeNameList = None,
         max_number_of_messages: NullableInteger = None,
         visibility_timeout: NullableInteger = None,

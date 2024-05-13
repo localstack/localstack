@@ -45,7 +45,7 @@ aws-sam-translator==1.88.0
     #   localstack-core
 aws-xray-sdk==2.13.0
     # via moto-ext
-awscli==1.32.98
+awscli==1.32.103
     # via localstack-core
 awscrt==0.20.9
     # via localstack-core
@@ -55,12 +55,12 @@ blinker==1.8.2
     #   quart
 boto==2.49.0
     # via amazon-kclpy
-boto3==1.34.98
+boto3==1.34.103
     # via
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.34.98
+botocore==1.34.103
     # via
     #   aws-xray-sdk
     #   awscli
