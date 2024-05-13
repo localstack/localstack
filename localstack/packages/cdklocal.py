@@ -2,7 +2,7 @@ import os
 from functools import lru_cache
 from typing import List
 
-from localstack.packages import Package, PackageInstaller
+from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.packages.core import NodePackageInstaller
 
 DEFAULT_CDKLOCAL_VERSION = "2.18.0"
@@ -28,6 +28,10 @@ class CdkLocalInstaller(NodePackageInstaller):
             package_spec=[f"{package_name}@{version}", "aws-cdk"],
             version=version,
         )
+
+    def _get_install_dir(self, target: InstallTarget) -> str:
+        # get the global node install path
+        return os.path.join(target.value, "node-packages")
 
     def _get_install_marker_path(self, install_dir: str) -> str:
         return os.path.join(
