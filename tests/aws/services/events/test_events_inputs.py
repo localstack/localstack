@@ -3,6 +3,7 @@
 import json
 
 import pytest
+from botocore.client import Config
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -265,6 +266,58 @@ class TestInputTransformer:
         )
         snapshot.match("custom-variables-match-all", messages_match_all)
         snapshot.match("custom-variables-not-match-all", messages_not_match_all)
+
+    @markers.aws.validated
+    def test_put_events_with_input_transformer_missing_keys(
+        self,
+        create_sqs_events_target,
+        events_create_event_bus,
+        events_put_rule,
+        aws_client_factory,
+        aws_client,
+        snapshot,
+    ):
+        _, queue_arn = create_sqs_events_target()
+
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        rule_name = f"test-rule-{short_uid()}"
+        events_put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+
+        events_client = aws_client_factory(config=Config(parameter_validation=False)).events
+        target_id = f"target-{short_uid()}"
+        input_path_map = {
+            "detail-type": "$.detail-type",
+            "timestamp": "$.time",
+            "command": "$.detail.command",
+        }
+        # input template with not defined key
+        input_template = '"Event of <detail-type> type, with not defined key <notdefinedkey>"'
+        input_transformer = {
+            "InputPathsMap": input_path_map,
+            "InputTemplate": input_template,
+        }
+
+        with pytest.raises(Exception) as exception:
+            events_client.put_targets(
+                Rule=rule_name,
+                EventBusName=bus_name,
+                Targets=[
+                    {"Id": target_id, "Arn": queue_arn, "InputTransformer": input_transformer},
+                ],
+            )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(target_id, "<target-id>"),
+            ]
+        )
+        snapshot.match("missing-key-exception", exception)
 
     @markers.aws.validated
     @pytest.mark.parametrize(
