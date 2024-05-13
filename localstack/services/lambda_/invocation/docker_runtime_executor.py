@@ -363,7 +363,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             container_config.dns = config.LAMBDA_DOCKER_DNS
         else:
             if dns_server.is_server_running():
-                # Enable transparent endpoint injection by setting DNS to the embedded DNS re-writer in the Go init.
+                # Set the container DNS to LocalStack to resolve localhost.localstack.cloud and
+                # enable transparent endpoint injection (Pro image only).
                 container_config.dns = self.get_endpoint_from_executor()
 
         lambda_hooks.start_docker_executor.run(container_config, self.function_version)
