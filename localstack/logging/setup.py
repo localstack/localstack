@@ -1,3 +1,4 @@
+import json
 import logging
 import sys
 import warnings
@@ -77,6 +78,23 @@ def setup_logging_from_config():
     if config.LS_LOG == constants.LS_LOG_TRACE_INTERNAL:
         for name, level in trace_internal_log_levels.items():
             logging.getLogger(name).setLevel(level)
+
+    if raw_value := config.LOGGING_OVERRIDE:
+        try:
+            logging_overrides = json.loads(raw_value)
+            for logger, level_name in logging_overrides.items():
+                level = getattr(logging, level_name, None)
+                if not level:
+                    raise RuntimeError(
+                        f"Failed to configure logging overrides ({raw_value}): '{level_name}' is not a valid log level"
+                    )
+                logging.getLogger(logger).setLevel(level)
+        except RuntimeError:
+            raise
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to configure logging overrides ({raw_value}): Malformed value. ({e})"
+            ) from e
 
 
 def create_default_handler(log_level: int):
