@@ -3,7 +3,7 @@ import logging
 import re
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Set
 
 from botocore.client import BaseClient
 
@@ -35,6 +35,10 @@ AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES = {
 }
 AWS_PREDEFINED_PLACEHOLDERS_JSON_VALUES = {"aws.events.event", "aws.events.event.json"}
 
+PREDEFINED_PLACEHOLDERS: Set[str] = AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES.union(
+    AWS_PREDEFINED_PLACEHOLDERS_JSON_VALUES
+)
+
 TRANSFORMER_PLACEHOLDER_PATTERN = re.compile(r"<(.*?)>")
 
 
@@ -52,10 +56,7 @@ def get_template_replacements(
     template_replacements = {}
     transformer_path_map = input_transformer.get("InputPathsMap", {})
     for placeholder, transformer_path in transformer_path_map.items():
-        if (
-            placeholder in AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES
-            or placeholder in AWS_PREDEFINED_PLACEHOLDERS_JSON_VALUES
-        ):
+        if placeholder in PREDEFINED_PLACEHOLDERS:
             continue
         value = extract_jsonpath(event, transformer_path)
         if not value:
@@ -78,20 +79,6 @@ def replace_template_placeholders(
     formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
 
     return json.loads(formatted_template) if is_json else formatted_template[1:-1]
-
-
-def transform_event_with_target_input_transformer(
-    input_transformer: InputTransformer, event: FormattedEvent
-) -> TransformedEvent:
-    input_template = input_transformer["InputTemplate"]
-    template_replacements = get_template_replacements(input_transformer, event)
-
-    is_json_format = input_template.strip().startswith(("{", "["))
-    formatted_template = replace_template_placeholders(
-        input_template, template_replacements, is_json_format
-    )
-
-    return formatted_template
 
 
 class TargetSender(ABC):
@@ -132,8 +119,23 @@ class TargetSender(ABC):
         if input_path := self.target.get("InputPath"):
             event = transform_event_with_target_input_path(input_path, event)
         if input_transformer := self.target.get("InputTransformer"):
-            event = transform_event_with_target_input_transformer(input_transformer, event)
+            event = self.transform_event_with_target_input_transformer(input_transformer, event)
         self.send_event(event)
+
+    def transform_event_with_target_input_transformer(
+        self, input_transformer: InputTransformer, event: FormattedEvent
+    ) -> TransformedEvent:
+        input_template = input_transformer["InputTemplate"]
+        template_replacements = get_template_replacements(input_transformer, event)
+        predefined_template_replacements = self._get_predefined_template_replacements(event)
+        template_replacements.update(predefined_template_replacements)
+
+        is_json_format = input_template.strip().startswith(("{", "["))
+        formatted_template = replace_template_placeholders(
+            input_template, template_replacements, is_json_format
+        )
+
+        return formatted_template
 
     def _validate_input(self, target: Target):
         """Provide a default implementation extended for each target based on specifications."""
@@ -167,10 +169,23 @@ class TargetSender(ABC):
         input_paths_map = input_transformer.get("InputPathsMap", {})
         placeholders = TRANSFORMER_PLACEHOLDER_PATTERN.findall(input_template)
         for placeholder in placeholders:
-            if placeholder not in input_paths_map:
+            if placeholder not in input_paths_map and placeholder not in PREDEFINED_PLACEHOLDERS:
                 raise ValidationException(
                     f"InputTemplate for target {self.target.get('Id')} contains invalid placeholder {placeholder}."
                 )
+
+    def _get_predefined_template_replacements(self, event: FormattedEvent) -> dict[str, Any]:
+        """Extracts predefined values from the event."""
+        predefined_template_replacements = {}
+        predefined_template_replacements["aws.events.rule-arn"] = self.rule_arn
+        predefined_template_replacements["aws.events.rule-name"] = self.rule_arn.split("/")[-1]
+        predefined_template_replacements["aws.events.event.ingestion-time"] = event["time"]
+        predefined_template_replacements["aws.events.event"] = {
+            "detailType" if k == "detail-type" else k: v for k, v in event.items() if k != "detail"
+        }
+        predefined_template_replacements["aws.events.event.json"] = event
+
+        return predefined_template_replacements
 
 
 TargetSenderDict = dict[Arn, TargetSender]
