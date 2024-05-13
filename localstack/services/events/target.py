@@ -131,11 +131,11 @@ class TargetSender(ABC):
         template_replacements.update(predefined_template_replacements)
 
         is_json_format = input_template.strip().startswith(("{", "["))
-        formatted_template = replace_template_placeholders(
+        populated_template = replace_template_placeholders(
             input_template, template_replacements, is_json_format
         )
 
-        return formatted_template
+        return populated_template
 
     def _validate_input(self, target: Target):
         """Provide a default implementation extended for each target based on specifications."""
