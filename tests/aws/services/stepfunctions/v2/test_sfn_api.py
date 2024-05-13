@@ -13,7 +13,6 @@ from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.utils import (
     await_execution_aborted,
-    await_execution_started,
     await_execution_success,
     await_execution_terminated,
     await_list_execution_status,
@@ -506,10 +505,6 @@ class TestSnfApi:
             stepfunctions_client=aws_client.stepfunctions,
             execution_arn=execution_arn,
             check_func=_check_stated_entered,
-        )
-
-        await_execution_started(
-            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
         )
 
         stop_res = aws_client.stepfunctions.stop_execution(executionArn=execution_arn)
