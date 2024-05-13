@@ -59,6 +59,7 @@ from localstack.services.events.models import (
     EventBus,
     EventBusDict,
     EventsStore,
+    FormattedEvent,
     Rule,
     RuleDict,
     TargetDict,
@@ -125,7 +126,7 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
         }
 
 
-def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> dict:
+def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
     # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
     formatted_event = {
         "version": "0",
@@ -685,7 +686,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     for target in rule.targets.values():
                         target_sender = self._target_sender_store[target["Arn"]]
                         try:
-                            target_sender.send_event(event)
+                            target_sender.process_event(event)
                             processed_entries.append({"EventId": event["id"]})
                         except Exception as error:
                             processed_entries.append(
