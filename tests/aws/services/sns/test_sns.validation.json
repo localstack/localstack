@@ -93,7 +93,7 @@
     "last_validated_date": "2023-08-25T14:23:53+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_list_subscriptions_by_topic_pagination": {
-    "last_validated_date": "2024-05-13T12:44:52+00:00"
+    "last_validated_date": "2024-05-13T12:50:03+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_not_found_error_on_set_subscription_attributes": {
     "last_validated_date": "2023-08-24T21:27:55+00:00"

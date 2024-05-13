@@ -5257,7 +5257,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_list_subscriptions_by_topic_pagination": {
-    "recorded-date": "13-05-2024, 12:45:13",
+    "recorded-date": "13-05-2024, 12:50:25",
     "recorded-content": {
       "list-sub-per-topic-page-2": {
         "Subscriptions": [

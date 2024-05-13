@@ -841,6 +841,7 @@ class TestSNSSubscriptionCrud:
             sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint=phone_number)
 
         response = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
+        page_1_subs = {sub["SubscriptionArn"] for sub in response["Subscriptions"]}
         # not snapshotting the results, it contains 100 entries
         assert "NextToken" in response
         # seems to be b64 encoded
@@ -853,6 +854,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("list-sub-per-topic-page-2", response)
         assert "NextToken" not in response
         assert len(response["Subscriptions"]) == 1
+        assert response["Subscriptions"][0]["SubscriptionArn"] not in page_1_subs
 
         response = aws_client.sns.list_subscriptions()
         # not snapshotting because there might be subscriptions outside the topic, this is all the requester subs
