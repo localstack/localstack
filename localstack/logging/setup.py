@@ -79,21 +79,22 @@ def setup_logging_from_config():
         for name, level in trace_internal_log_levels.items():
             logging.getLogger(name).setLevel(level)
 
-    if raw_value := config.LOGGING_OVERRIDE:
+    raw_logging_override = config.LOGGING_OVERRIDE
+    if raw_logging_override:
         try:
-            logging_overrides = json.loads(raw_value)
+            logging_overrides = json.loads(raw_logging_override)
             for logger, level_name in logging_overrides.items():
                 level = getattr(logging, level_name, None)
                 if not level:
                     raise RuntimeError(
-                        f"Failed to configure logging overrides ({raw_value}): '{level_name}' is not a valid log level"
+                        f"Failed to configure logging overrides ({raw_logging_override}): '{level_name}' is not a valid log level"
                     )
                 logging.getLogger(logger).setLevel(level)
         except RuntimeError:
             raise
         except Exception as e:
             raise RuntimeError(
-                f"Failed to configure logging overrides ({raw_value}): Malformed value. ({e})"
+                f"Failed to configure logging overrides ({raw_logging_override}): Malformed value. ({e})"
             ) from e
 
 
