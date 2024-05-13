@@ -5,6 +5,7 @@ import os
 import re
 import textwrap
 import threading
+import time
 from datetime import datetime
 from functools import cache
 from ipaddress import IPv4Address, IPv4Interface
@@ -374,6 +375,13 @@ class Resolver(DnsServerProtocol):
         reply = request.reply()
         found = False
 
+        LOG.debug(
+            "[%s] received dns query: %s (type %s)",
+            request.header.id,
+            request.q.qname,
+            QTYPE.get(request.q.qtype, "??"),
+        )
+
         try:
             if not self._skip_local_resolution(request):
                 found = self._resolve_name(request, reply, handler.client_address)
@@ -381,13 +389,23 @@ class Resolver(DnsServerProtocol):
             LOG.info("Unable to get DNS result: %s", e)
 
         if found:
+            LOG.debug("[%s] found name locally", request.header.id)
             return reply
 
+        LOG.debug("[%s] name not found locally, querying upstream", request.header.id)
         # If we did not find a matching record in our local zones, we forward to our upstream dns
         try:
+            start_time = time.perf_counter()
             req_parsed = dns.message.from_wire(bytes(request.pack()))
             r = dns.query.udp(req_parsed, self.upstream_dns, timeout=REQUEST_TIMEOUT_SECS)
             result = self._map_response_dnspython_to_dnslib(r)
+            end_time = time.perf_counter()
+            LOG.debug(
+                "[%s] name resolved upstream in %d ms (rcode %s)",
+                request.header.id,
+                (end_time - start_time) / 1000.0,
+                RCODE.get(result.header.rcode, "??"),
+            )
             return result
         except Exception as e:
             LOG.info(
@@ -401,11 +419,12 @@ class Resolver(DnsServerProtocol):
         if not reply.rr and reply.header.get_rcode == RCODE.NOERROR:
             # setting this return code will cause commands like 'host' to try the next nameserver
             reply.header.set_rcode(RCODE.SERVFAIL)
+            LOG.debug("[%s] failed to resolve name", request.header.id)
             return None
 
         return reply
 
-    def _skip_local_resolution(self, request) -> bool:
+    def _skip_local_resolution(self, request: DNSRecord) -> bool:
         """
         Check whether we should skip local resolution for the given request, and directly contact upstream
 
@@ -415,6 +434,7 @@ class Resolver(DnsServerProtocol):
         request_name = to_str(str(request.q.qname))
         for p in self.skip_patterns:
             if re.match(p, request_name):
+                LOG.debug("[%s] skipping local resolution of query", request.header.id)
                 return True
         return False
 
@@ -449,7 +469,7 @@ class Resolver(DnsServerProtocol):
         self, request: DNSRecord, reply: DNSRecord, client_address: ClientAddress
     ) -> bool:
         if alias_found := self._resolve_alias(request, reply, client_address):
-            LOG.debug("Alias found: %s", request.q.qname)
+            LOG.debug("[%s] alias found: %s", request.header.id, request.q.qname)
             return alias_found
         return self._resolve_name_from_zones(request, reply, client_address)
 
@@ -671,7 +691,7 @@ class DnsServer(Server, DnsServerProtocol):
         self.servers = self._get_servers()
         for server in self.servers:
             server.start_thread()
-        LOG.debug("DNS Server started")
+        LOG.info("DNS Server started")
         for server in self.servers:
             server.thread.join()
 
@@ -780,7 +800,7 @@ def get_available_dns_server():
                 pass
 
         if result:
-            LOG.debug("Determined fallback dns: %s", result)
+            LOG.info("Determined fallback dns: %s", result)
         else:
             LOG.info(
                 "Unable to determine fallback DNS. Please check if '%s' is reachable by your configured DNS servers"
@@ -864,10 +884,10 @@ def start_server(upstream_dns: str, host: str, port: int = config.DNS_PORT):
 
     if DNS_SERVER:
         # already started - bail
-        LOG.debug("DNS servers are already started. Avoid starting again.")
+        LOG.info("DNS servers are already started. Avoid starting again.")
         return
 
-    LOG.debug("Starting DNS servers (tcp/udp port %s on %s)..." % (port, host))
+    LOG.info("Starting DNS servers (tcp/udp port %s on %s)..." % (port, host))
     dns_server = DnsServer(port, protocols=["tcp", "udp"], host=host, upstream_dns=upstream_dns)
 
     for name in NAME_PATTERNS_POINTING_TO_LOCALSTACK:
@@ -904,7 +924,7 @@ def stop_servers():
 
 def start_dns_server_as_sudo(port: int):
     global DNS_SERVER
-    LOG.debug(
+    LOG.info(
         "Starting the DNS on its privileged port (%s) needs root permissions. Trying to start DNS with sudo.",
         config.DNS_PORT,
     )
@@ -929,7 +949,7 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
 
     # check if DNS server is disabled
     if not config.use_custom_dns():
-        LOG.debug("Not starting DNS. DNS_ADDRESS=%s", config.DNS_ADDRESS)
+        LOG.info("Not starting DNS. DNS_ADDRESS=%s", config.DNS_ADDRESS)
         return
 
     upstream_dns = get_fallback_dns_server()
@@ -949,7 +969,7 @@ def start_dns_server(port: int, asynchronous: bool = False, standalone: bool = F
         return
 
     if standalone:
-        LOG.debug("Already in standalone mode and port binding still fails.")
+        LOG.warning("Already in standalone mode and port binding still fails.")
         return
 
     start_dns_server_as_sudo(port)
