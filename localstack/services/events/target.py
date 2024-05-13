@@ -14,10 +14,7 @@ from localstack.aws.api.events import (
     TargetInputPath,
 )
 from localstack.aws.connect import connect_to
-from localstack.services.events.models import (
-    FormattedEvent,
-    TransformedEvent,
-)
+from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_service_from_arn,
@@ -139,9 +136,10 @@ class TargetSender(ABC):
         self.send_event(event)
 
     def _validate_input(self, target: Target):
-        """Provide a default implementation that does nothing if no specific validation is needed."""
+        """Provide a default implementation extended for each target based on specifications."""
         # TODO add For Lambda and Amazon SNS resources, EventBridge relies on resource-based policies.
-        pass
+        if input_transformer := target.get("InputTransformer"):
+            self._validate_input_transformer(input_transformer)
 
     def _initialize_client(self) -> BaseClient:
         """Initializes internal botocore client.
@@ -161,6 +159,18 @@ class TargetSender(ABC):
             service_principal=service_principal, source_arn=self.rule_arn
         )
         return client
+
+    def _validate_input_transformer(self, input_transformer: InputTransformer):
+        if "InputTemplate" not in input_transformer:
+            raise ValueError("InputTemplate is required for InputTransformer")
+        input_template = input_transformer["InputTemplate"]
+        input_paths_map = input_transformer.get("InputPathsMap", {})
+        placeholders = TRANSFORMER_PLACEHOLDER_PATTERN.findall(input_template)
+        for placeholder in placeholders:
+            if placeholder not in input_paths_map:
+                raise ValidationException(
+                    f"InputTemplate for target {self.target.get('Id')} contains invalid placeholder {placeholder}."
+                )
 
 
 TargetSenderDict = dict[Arn, TargetSender]
