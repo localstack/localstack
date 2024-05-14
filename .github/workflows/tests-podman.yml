@@ -15,8 +15,6 @@ on:
         default: WARNING
 
 env:
-  # Enable colors in tests running outside of docker (not in a tty - https://github.com/pytest-dev/pytest/pull/7462)
-  PY_COLORS: "1"
   # Configure PyTest log level
   PYTEST_LOGLEVEL: "${{ inputs.PYTEST_LOGLEVEL || 'WARNING' }}"
   # Set non-job-specific environment variables for pytest-tinybird
