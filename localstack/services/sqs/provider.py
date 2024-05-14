@@ -45,6 +45,7 @@ from localstack.aws.api.sqs import (
     MessageAttributeNameList,
     MessageBodyAttributeMap,
     MessageBodySystemAttributeMap,
+    MessageSystemAttributeList,
     MessageSystemAttributeName,
     NullableInteger,
     PurgeQueueInProgress,
@@ -1183,6 +1184,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         context: RequestContext,
         queue_url: String,
         attribute_names: AttributeNameList = None,
+        message_system_attribute_names: MessageSystemAttributeList = None,
         message_attribute_names: MessageAttributeNameList = None,
         max_number_of_messages: NullableInteger = None,
         visibility_timeout: NullableInteger = None,
@@ -1190,6 +1192,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         receive_request_attempt_id: String = None,
         **kwargs,
     ) -> ReceiveMessageResult:
+        # TODO add support for message_system_attribute_names
         queue = self._resolve_queue(context, queue_url=queue_url)
 
         if wait_time_seconds is None:

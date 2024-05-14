@@ -48,7 +48,7 @@ jobs:
         run: |
           source .venv/bin/activate
           # explicitly perform an unsafe fix to remove unused imports in the generated ASF APIs
-          ruff check --select F401 --unsafe-fixes --fix . --config "lint.ignore-init-module-imports = false"
+          ruff check --select F401 --unsafe-fixes --fix . --config "lint.preview = true"
           make format-modified
 
       - name: Check for changes
