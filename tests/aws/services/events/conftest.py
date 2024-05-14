@@ -392,3 +392,59 @@ def sqs_collect_messages(
     retry(collect_events, retries=retries, sleep=0.01)
 
     return events
+
+
+@pytest.fixture
+def logs_create_log_group(aws_client):
+    log_group_names = []
+
+    def _create_log_group(name: str = None) -> str:
+        if not name:
+            name = f"test-log-group-{short_uid()}"
+
+        aws_client.logs.create_log_group(logGroupName=name)
+        log_group_names.append(name)
+
+        return name
+
+    yield _create_log_group
+
+    for name in log_group_names:
+        try:
+            aws_client.logs.delete_log_group(logGroupName=name)
+        except Exception as e:
+            LOG.debug("error cleaning up log group %s: %s", name, e)
+
+
+@pytest.fixture
+def add_resource_policy_logs_events_access(aws_client):
+    policies = []
+
+    def _add_resource_policy_logs_events_access(log_group_arn: str):
+        policy_name = f"test-policy-{short_uid()}"
+
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AllowPutEvents",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": ["logs:PutLogEvents", "logs:CreateLogStream"],
+                    "Resource": log_group_arn,
+                },
+            ],
+        }
+        policy = aws_client.logs.put_resource_policy(
+            policyName=policy_name,
+            policyDocument=json.dumps(policy_document),
+        )
+
+        policies.append(policy_name)
+
+        return policy
+
+    yield _add_resource_policy_logs_events_access
+
+    for policy_name in policies:
+        aws_client.logs.delete_resource_policy(policyName=policy_name)
