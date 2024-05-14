@@ -7,12 +7,7 @@ from typing import Any, Set
 
 from botocore.client import BaseClient
 
-from localstack.aws.api.events import (
-    Arn,
-    InputTransformer,
-    Target,
-    TargetInputPath,
-)
+from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
 from localstack.utils import collections
@@ -89,12 +84,14 @@ class TargetSender(ABC):
         region: str,
         account_id: str,
         rule_arn: Arn,
+        rule_name: RuleName,
         service: str,
     ):
         self.target = target
         self.region = region
         self.account_id = account_id
         self.rule_arn = rule_arn
+        self.rule_name = rule_name
         self.service = service
 
         self._validate_input(target)
@@ -183,7 +180,7 @@ class TargetSender(ABC):
         """Extracts predefined values from the event."""
         predefined_template_replacements = {}
         predefined_template_replacements["aws.events.rule-arn"] = self.rule_arn
-        predefined_template_replacements["aws.events.rule-name"] = self.rule_arn.split("/")[-1]
+        predefined_template_replacements["aws.events.rule-name"] = self.rule_name
         predefined_template_replacements["aws.events.event.ingestion-time"] = event["time"]
         predefined_template_replacements["aws.events.event"] = {
             "detailType" if k == "detail-type" else k: v for k, v in event.items() if k != "detail"
@@ -396,11 +393,14 @@ class TargetSenderFactory:
         # TODO custom endpoints via http target
     }
 
-    def __init__(self, target: Target, region: str, account_id: str, rule_arn: Arn):
+    def __init__(
+        self, target: Target, region: str, account_id: str, rule_arn: Arn, rule_name: RuleName
+    ):
         self.target = target
         self.region = region
         self.account_id = account_id
         self.rule_arn = rule_arn
+        self.rule_name = rule_name
 
     def get_target_sender(self) -> TargetSender:
         service = extract_service_from_arn(self.target["Arn"])
@@ -409,6 +409,6 @@ class TargetSenderFactory:
         else:
             raise Exception(f"Unsupported target for Service: {service}")
         target_sender = target_sender_class(
-            self.target, self.region, self.account_id, self.rule_arn, service
+            self.target, self.region, self.account_id, self.rule_arn, self.rule_name, service
         )
         return target_sender
