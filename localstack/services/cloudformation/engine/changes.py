@@ -22,6 +22,8 @@ def construct_changes_for_create(new_resources: dict) -> list[ChangeConfig]:
                     Action="Add",
                     LogicalResourceId=item["LogicalResourceId"],
                     ResourceType=item["Type"],
+                    Scope=[],
+                    Details=[],
                 ),
             )
         )
@@ -57,6 +59,8 @@ def construct_changes(
                             Action=action,
                             LogicalResourceId=resource_new["LogicalResourceId"],
                             ResourceType=resource_new["Type"],
+                            Scope=[],
+                            Details=[],
                         ),
                     )
                 )
@@ -88,7 +92,8 @@ def construct_changes(
                                 # PhysicalResourceId=resource_old["PhysicalResourceId"],
                                 Replacement="True",
                                 # Scope=["Properties"],
-                                # Details=[],
+                                Scope=[],
+                                Details=[],
                             ),
                         )
                     else:
@@ -102,7 +107,8 @@ def construct_changes(
                                 # PhysicalResourceId=resource_old["PhysicalResourceId"],
                                 Replacement="False",
                                 # Scope=["Properties"],
-                                # Details=[],
+                                Scope=[],
+                                Details=[],
                             ),
                         )
                     changes.append(change)
