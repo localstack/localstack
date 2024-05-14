@@ -1,8 +1,11 @@
+import time
+
 import pytest
 from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from tests.aws.services.events.conftest import sqs_collect_messages
 
 
 class TestScheduleRate:
@@ -67,3 +70,40 @@ class TestScheduleRate:
             "Code": "ValidationException",
             "Message": "Parameter ScheduleExpression is not valid.",
         }
+
+    @markers.aws.validated
+    def tests_schedule_target_sqs(
+        self,
+        create_sqs_events_target,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        queue_url, queue_arn = create_sqs_events_target()
+
+        bus_name = "default"
+        rule_name = f"test-rule-{short_uid()}"
+        events_put_rule(Name=rule_name, EventBusName=bus_name, ScheduleExpression="rate(1 minute)")
+
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn},
+            ],
+        )  # cleanup is handled by rule fixture
+
+        response = aws_client.events.list_targets_by_rule(Rule=rule_name)
+        snapshot.match("list-targets", response)
+
+        time.sleep(60)
+        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("messages", messages)
