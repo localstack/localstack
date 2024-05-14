@@ -612,5 +612,8 @@ def create_image_code(image_uri: str) -> ImageCode:
                 "Cannot inspect image %s. Is this image and/or docker available: %s", image_uri, e
             )
     else:
-        LOG.warning("Unable to get image hash for image - no docker socket available", image_uri)
+        LOG.warning(
+            "Unable to get image hash for image %s - no docker socket available. API responses might differ.",
+            image_uri,
+        )
     return ImageCode(image_uri=image_uri, code_sha256=code_sha256, repository_type="ECR")
