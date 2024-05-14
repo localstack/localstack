@@ -207,8 +207,15 @@ class TestInputPath:
 
 class TestInputTransformer:
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "input_template",
+        [
+            '"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>"',
+            '"{[/Check with special starting characters for event of <detail-type> type"',
+        ],
+    )
     def test_put_events_with_input_transformer_input_template_string(
-        self, put_events_with_filter_to_sqs, snapshot
+        self, input_template, put_events_with_filter_to_sqs, snapshot
     ):
         entries = [
             {
@@ -225,7 +232,7 @@ class TestInputTransformer:
             "timestamp": "$.time",
             "command": "$.detail.command",
         }
-        input_template = '"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>"'
+        input_template = input_template
         input_transformer_match_all = {
             "InputPathsMap": input_path_map,
             "InputTemplate": input_template,
