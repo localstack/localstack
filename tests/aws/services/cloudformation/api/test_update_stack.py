@@ -1,6 +1,5 @@
 import json
 import os
-import textwrap
 
 import botocore.errorfactory
 import botocore.exceptions
@@ -410,45 +409,224 @@ def test_update_with_rollback_configuration(deploy_cfn_template, aws_client):
     aws_client.cloudwatch.delete_alarms(AlarmNames=["HighResourceUsage"])
 
 
-@markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(["$..Stacks..ChangeSetId"])
-def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
-    template_1 = textwrap.dedent("""
-    Resources:
-        SimpleParam:
-            Type: AWS::SSM::Parameter
-            Properties:
-                Value: before-stack-update
-                Type: String
-    """)
-    template_2 = textwrap.dedent("""
-    Resources:
-        SimpleParam1:
-            Type: AWS::SSM::Parameter
-            Properties:
-                Value: after-stack-update
-                Type: String
-    """)
+class TestUpdateDetection:
+    # TODO
+    # def test_update_in_place_with_parameterchanges(deploy_cfn_template, aws_client, cleanups):
+    # def test_update_with_replacement_with_parameterchanges(deploy_cfn_template, aws_client, cleanups):
 
-    stack = deploy_cfn_template(
-        template=template_1,
+    # TODO
+    # def test_update_in_place_with_parameterchanges(deploy_cfn_template, aws_client, cleanups):
+    # def test_update_with_replacement_with_parameterchanges(deploy_cfn_template, aws_client, cleanups):
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..StackResourceDetail.DriftInformation", "$..StackResourceDetail.Metadata"]
     )
+    @markers.aws.unknown
+    def test_update_in_place(self, deploy_cfn_template, aws_client, cleanups, snapshot):
+        """Update on a single resource which should keep the same physical resource ID and call the update handler"""
+        random_scope = short_uid()
+        ssm_param_name = f"/test/updates/{random_scope}/param"
+        ssm_param_value_1 = "val1"
+        ssm_param_value_2 = "val2"
 
-    aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack.stack_name)
-    aws_client.cloudformation.update_stack(
-        StackName=stack.stack_name,
-        TemplateBody=template_2,
-    )
-    aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
-    get_template_response = aws_client.cloudformation.get_template(StackName=stack.stack_name)
-    snapshot.match("get-template-response", get_template_response)
+        logical_resource_id = "TestSsmParam"
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.regex(random_scope, "<random-scope>"))
 
-    with pytest.raises(botocore.exceptions.ClientError) as exc_info:
-        aws_client.cloudformation.update_stack(
-            StackName=stack.stack_name,
-            TemplateBody=template_2,
+        # 1. create
+        template_content = load_file(
+            os.path.join(os.path.dirname(__file__), "../../../templates/update-ssm-parameter.yaml")
         )
-    snapshot.match("update-error", exc_info.value.response)
+        stack_name = f"slsstack-{short_uid()}"
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template_content.replace("<param-name>", ssm_param_name).replace(
+                "<param-value>", ssm_param_value_1
+            ),
+        )
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+            StackName=stack["StackId"]
+        )
 
-    describe_stack_response = aws_client.cloudformation.describe_stacks(StackName=stack.stack_name)
-    assert describe_stack_response["Stacks"][0]["StackStatus"] == "UPDATE_COMPLETE"
+        stack_resource_preupdate = aws_client.cloudformation.describe_stack_resource(
+            StackName=stack_name, LogicalResourceId=logical_resource_id
+        )
+        snapshot.match("stack_resource_preupdate", stack_resource_preupdate)
+
+        get_param_1 = aws_client.ssm.get_parameter(Name=ssm_param_name)
+        snapshot.match("get_param_1", get_param_1)
+
+        # 2. update
+        template_content = load_file(
+            os.path.join(os.path.dirname(__file__), "../../../templates/update-ssm-parameter.yaml")
+        )
+        stack = aws_client.cloudformation.update_stack(
+            StackName=stack_name,
+            TemplateBody=template_content.replace("<param-name>", ssm_param_name).replace(
+                "<param-value>", ssm_param_value_2
+            ),
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        stack_resource_postupdate = aws_client.cloudformation.describe_stack_resource(
+            StackName=stack_name, LogicalResourceId=logical_resource_id
+        )
+        snapshot.match("stack_resource_postupdate", stack_resource_postupdate)
+
+        get_param_2 = aws_client.ssm.get_parameter(Name=ssm_param_name)
+        snapshot.match("get_param_2", get_param_2)
+
+        # in-place update expected
+        assert get_param_1["Parameter"]["Value"] != get_param_2["Parameter"]["Value"]
+
+    @markers.aws.unknown
+    def test_update_with_replacement(self, deploy_cfn_template, aws_client, cleanups, snapshot):
+        """
+        Update on a single resource which modifies a createOnly property and should thus lead to replacement (delete + create)
+
+        Note that we're not using parameters here, since this is handlded as a separate issue in LS
+        """
+        random_scope = short_uid()
+        ssm_param_name_1 = f"/test/updates/{random_scope}/param1"
+        ssm_param_name_2 = f"/test/updates/{random_scope}/param2"
+
+        logical_resource_id = "TestSsmParam"
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(snapshot.transform.regex(random_scope, "<random-scope>"))
+
+        # 1. create
+        template_content = load_file(
+            os.path.join(os.path.dirname(__file__), "../../../templates/update-ssm-parameter.yaml")
+        )
+        stack_name = f"slsstack-{short_uid()}"
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template_content.replace("<param-name>", ssm_param_name_1).replace(
+                "<param-value>", "myvalue"
+            ),
+        )
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        stack_resource_preupdate = aws_client.cloudformation.describe_stack_resource(
+            StackName=stack_name, LogicalResourceId=logical_resource_id
+        )
+        snapshot.match("stack_resource_preupdate", stack_resource_preupdate)
+
+        get_param_1 = aws_client.ssm.get_parameter(Name=ssm_param_name_1)
+        snapshot.match("get_param_1", get_param_1)
+
+        # 2. update
+        template_content = load_file(
+            os.path.join(os.path.dirname(__file__), "../../../templates/update-ssm-parameter.yaml")
+        )
+        stack = aws_client.cloudformation.update_stack(
+            StackName=stack_name,
+            TemplateBody=template_content.replace("<param-name>", ssm_param_name_2).replace(
+                "<param-value>", "myvalue"
+            ),
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        stack_resource_postupdate = aws_client.cloudformation.describe_stack_resource(
+            StackName=stack_name, LogicalResourceId=logical_resource_id
+        )
+        snapshot.match("stack_resource_postupdate", stack_resource_postupdate)
+
+        with pytest.raises(aws_client.ssm.exceptions.ParameterNotFound) as e:
+            aws_client.ssm.get_parameter(Name=ssm_param_name_1)  # fails
+        snapshot.match("get_param_1_postupdate_exception", e.value.response)
+        get_param_2 = aws_client.ssm.get_parameter(Name=ssm_param_name_2)
+        snapshot.match("get_param_2", get_param_2)
+
+        aws_client.cloudformation.describe_stack_events(StackName=stack["StackId"])
+        print("done")
+
+    @markers.aws.unknown
+    def test_update_with_replacement_cs(self, deploy_cfn_template, aws_client, cleanups):
+        """
+        Update on a single resource which modifies a createOnly property and should thus lead to replacement (delete + create)
+
+        Note that we're not using parameters here, since this is handlded as a separate issue in LS
+        """
+        random_scope = short_uid()
+        ssm_param_name_1 = f"/test/updates/{random_scope}/param1"
+        ssm_param_name_2 = f"/test/updates/{random_scope}/param2"
+
+        logical_resource_id = "TestSsmParam"
+
+        # 1. create
+        template_content = load_file(
+            os.path.join(os.path.dirname(__file__), "../../../templates/update-ssm-parameter.yaml")
+        )
+        stack_name = f"slsstack-{short_uid()}"
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template_content.replace("<param-name>", ssm_param_name_1).replace(
+                "<param-value>", "myvalue"
+            ),
+        )
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+            StackName=stack["StackId"]
+        )
+
+        # TODO: snapshot return value
+        aws_client.cloudformation.describe_stack_resource(
+            StackName=stack_name, LogicalResourceId=logical_resource_id
+        )
+        # TODO: snapshot return value
+        aws_client.ssm.get_parameter(Name=ssm_param_name_1)
+
+        # 2. update
+        template_content = load_file(
+            os.path.join(os.path.dirname(__file__), "../../../templates/update-ssm-parameter.yaml")
+        )
+        cs = aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName="MyUpdate",
+            TemplateBody=template_content.replace("<param-name>", ssm_param_name_2).replace(
+                "<param-value>", "myvalue"
+            ),
+        )
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=cs["Id"]
+        )
+
+        # TODO: snapshot return value
+        aws_client.cloudformation.describe_change_set(ChangeSetName=cs["Id"])
+
+        # TODO
+        # dw = {
+        #     "Action": "Modify",
+        #     "LogicalResourceId": "TestSsmParam",
+        #     "PhysicalResourceId": "/test/updates/e3f16698/param1",
+        #     "ResourceType": "AWS::SSM::Parameter",
+        #     "Replacement": "True",
+        #     "Scope": ["Properties"],
+        #     "Details": [
+        #         {
+        #             "Target": {
+        #                 "Attribute": "Properties",
+        #                 "Name": "Name",
+        #                 "RequiresRecreation": "Always",
+        #             },
+        #             "Evaluation": "Static",
+        #             "ChangeSource": "DirectModification",
+        #         }
+        #     ],
+        # }
+
+
+# gathering cases / questions
+
+# * does only the change of an export/import value cause a stack update? i.e. all parametrs and template are the same but updatestack leads to an update?
+# transitivity: test if transitive resources are also automatically updated and how this is represented via the API
+# transitivity: test how Ref vs. GetAtt might differ

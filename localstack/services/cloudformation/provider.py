@@ -1,4 +1,3 @@
-import copy
 import json
 import logging
 import re
@@ -83,6 +82,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import parameters as param_resolver
 from localstack.services.cloudformation.engine import template_deployer, template_preparer
+from localstack.services.cloudformation.engine.changes import construct_changes
 from localstack.services.cloudformation.engine.entities import (
     Stack,
     StackChangeSet,
@@ -352,7 +352,7 @@ class CloudformationProvider(CloudformationApi):
             stack_name=stack_name,
         )
 
-        raw_new_template = copy.deepcopy(template)
+        raw_new_template = deepcopy(template)
         try:
             template = template_preparer.transform_template(
                 context.account_id,
@@ -364,7 +364,7 @@ class CloudformationProvider(CloudformationApi):
                 resolved_stack_conditions,
                 resolved_parameters,
             )
-            processed_template = copy.deepcopy(
+            processed_template = deepcopy(
                 template
             )  # copying it here since it's being mutated somewhere downstream
         except FailedTransformationException as e:
@@ -711,16 +711,18 @@ class CloudformationProvider(CloudformationApi):
         )
         change_set.set_resolved_stack_conditions(resolved_stack_conditions)
 
-        deployer = template_deployer.TemplateDeployer(
-            context.account_id, context.region, change_set
+        # deployer = template_deployer.TemplateDeployer(
+        #     context.account_id, context.region, change_set
+        # )
+        changes = construct_changes(
+            stack.template["Resources"],
+            change_set.template["Resources"],
+            # TODO: filter whatever we apparently wanted to filter?
+            # filter_unchanged_resources=True,
         )
-        changes = deployer.construct_changes(
-            stack,
-            change_set,
-            change_set_id=change_set.change_set_id,
-            append_to_changeset=True,
-            filter_unchanged_resources=True,
-        )
+        assert change_set.changes == []
+        # change_set.changes = changes # would we need to extend?
+        change_set.changes.extend(changes)
         stack.change_sets.append(change_set)
         if not changes:
             change_set.metadata["Status"] = "FAILED"
@@ -842,7 +844,7 @@ class CloudformationProvider(CloudformationApi):
             context.account_id, context.region, change_set.stack
         )
         try:
-            deployer.apply_change_set(change_set)
+            deployer.execute_change_set(change_set)
             change_set.stack.metadata["ChangeSetId"] = change_set.change_set_id
         except NoStackUpdates:
             # TODO: parity-check if this exception should be re-raised or swallowed
