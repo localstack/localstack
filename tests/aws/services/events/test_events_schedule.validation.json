@@ -57,6 +57,6 @@
     "last_validated_date": "2024-05-14T11:38:21+00:00"
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_target_sqs": {
-    "last_validated_date": "2024-05-14T11:42:15+00:00"
+    "last_validated_date": "2024-05-14T12:22:00+00:00"
   }
 }

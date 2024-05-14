@@ -1,4 +1,6 @@
+import json
 import time
+from datetime import timedelta
 
 import pytest
 from botocore.exceptions import ClientError
@@ -6,6 +8,7 @@ from botocore.exceptions import ClientError
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.aws.services.events.conftest import sqs_collect_messages
+from tests.aws.services.events.helper_functions import events_time_string_to_timestamp
 
 
 class TestScheduleRate:
@@ -98,7 +101,7 @@ class TestScheduleRate:
         snapshot.match("list-targets", response)
 
         time.sleep(60)
-        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+        messages_first = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
 
         snapshot.add_transformers_list(
             [
@@ -106,4 +109,18 @@ class TestScheduleRate:
                 snapshot.transform.key_value("ReceiptHandle"),
             ]
         )
-        snapshot.match("messages", messages)
+        snapshot.match("messages-first", messages_first)
+
+        time.sleep(60)
+        messages_second = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+        snapshot.match("messages-second", messages_second)
+
+        # check if the messages are 60 seconds apart
+        time_messages_first = events_time_string_to_timestamp(
+            json.loads(messages_first[0]["Body"])["time"]
+        )
+        time_messages_second = events_time_string_to_timestamp(
+            json.loads(messages_second[0]["Body"])["time"]
+        )
+        time_delta = time_messages_second - time_messages_first
+        assert time_delta == timedelta(seconds=60)
