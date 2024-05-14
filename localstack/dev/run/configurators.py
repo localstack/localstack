@@ -97,7 +97,8 @@ class CustomEntryPointConfigurator:
 
         file = Path(tempdir, file_name)
         if not file.exists():
-            file.write_text(self.script)
+            # newline separator should be '\n' independent of the os, since the entrypoint is executed in the container
+            file.write_text(self.script, newline="\n")
             file.chmod(0o777)
         cfg.volumes.add(VolumeBind(str(file), f"/tmp/{file.name}"))
         cfg.entrypoint = f"/tmp/{file.name}"
