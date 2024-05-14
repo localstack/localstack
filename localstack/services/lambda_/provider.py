@@ -719,6 +719,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateFunctionRequest,
     ) -> FunctionConfiguration:
+        LOG.warning("Function being created", extra={"function_name": request['FunctionName'], "customthing": {"names": "joeldominik"}})
         zip_file = request.get("Code", {}).get("ZipFile")
         if zip_file and len(zip_file) > config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED:
             raise RequestEntityTooLargeException(
@@ -765,6 +766,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                 Type="User",
             )
+
         request_function_name = request["FunctionName"]
         # Validate FunctionName:
         # a) Function name: just function name (max 64 chars)

@@ -441,6 +441,7 @@ class TestLambdaBehavior:
             timeout=9,
             Architectures=[Architecture.x86_64],
         )
+        # logging.getLogger("localstack.request.http").debug("?jsds2024")
 
         invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
         snapshot.match("invoke_runtime_x86_introspection", invoke_result)
