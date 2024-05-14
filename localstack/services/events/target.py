@@ -183,7 +183,9 @@ class TargetSender(ABC):
         predefined_template_replacements["aws.events.rule-name"] = self.rule_name
         predefined_template_replacements["aws.events.event.ingestion-time"] = event["time"]
         predefined_template_replacements["aws.events.event"] = {
-            "detailType" if k == "detail-type" else k: v for k, v in event.items() if k != "detail"
+            "detailType" if k == "detail-type" else k: v  # detail-type is is returned as detailType
+            for k, v in event.items()
+            if k != "detail"  # detail is not part of .event placeholder
         }
         predefined_template_replacements["aws.events.event.json"] = event
 
