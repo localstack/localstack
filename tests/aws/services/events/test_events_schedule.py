@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import timedelta
+from datetime import timedelta, timezone
 
 import pytest
 from botocore.exceptions import ClientError
@@ -8,7 +8,10 @@ from botocore.exceptions import ClientError
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.aws.services.events.conftest import sqs_collect_messages
-from tests.aws.services.events.helper_functions import events_time_string_to_timestamp
+from tests.aws.services.events.helper_functions import (
+    events_time_string_to_timestamp,
+    get_cron_expression,
+)
 
 
 class TestScheduleRate:
@@ -137,3 +140,47 @@ class TestScheduleCron:
 
         response = aws_client.events.list_rules(NamePrefix=rule_name)
         snapshot.match("list-rules", response)
+
+    @markers.aws.validated
+    def test_schedule_cron_target_sqs(
+        self,
+        create_sqs_events_target,
+        events_put_rule,
+        aws_client,
+        snapshot,
+    ):
+        queue_url, queue_arn = create_sqs_events_target()
+
+        schedule_cron, target_datetime = get_cron_expression(
+            1
+        )  # only next full minut might be to fast for setup must be UTC time zone
+
+        bus_name = "default"
+        rule_name = f"test-rule-{short_uid()}"
+        events_put_rule(Name=rule_name, EventBusName=bus_name, ScheduleExpression=schedule_cron)
+
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn},
+            ],
+        )
+
+        time.sleep(120)  # required to wait for time delta 1 minute starting from next full minute
+        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=5)
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("MD5OfBody"),
+                snapshot.transform.key_value("ReceiptHandle"),
+            ]
+        )
+        snapshot.match("message", messages)
+
+        # check if message was delivered at the correct time
+        time_message = events_time_string_to_timestamp(
+            json.loads(messages[0]["Body"])["time"]
+        ).replace(tzinfo=timezone.utc)
+        assert time_message == target_datetime
