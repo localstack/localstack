@@ -387,5 +387,35 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_rate_custom_input_target_sqs": {
+    "recorded-date": "14-05-2024, 15:49:59",
+    "recorded-content": {
+      "list-targets": {
+        "Targets": [
+          {
+            "Arn": "arn:aws:sqs:<region>:111111111111:tests-queue-0d70fd15",
+            "Id": "target-81bd7bab",
+            "Input": {
+              "custom-value": "somecustominput"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "custom-value": "somecustominput"
+          }
+        }
+      ]
+    }
   }
 }
