@@ -8,6 +8,7 @@ from botocore.client import Config
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.aws.services.events.conftest import sqs_collect_messages
+from tests.aws.services.events.helper_functions import is_v2_provider
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
 
 EVENT_DETAIL_DUPLICATED_KEY = {
@@ -21,6 +22,10 @@ INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON = '{"originalEvent": <aws.events.event>
 
 
 @markers.aws.validated
+@pytest.mark.skipif(
+    not is_v2_provider(),
+    reason="V1 provider does not support this feature",
+)
 def test_put_event_input_path_and_input_transfomer(
     create_sqs_events_target, events_create_event_bus, events_put_rule, aws_client, snapshot
 ):
@@ -261,6 +266,10 @@ class TestInputTransformer:
         snapshot.match("custom-variables-not-match-all", messages_not_match_all)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        not is_v2_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_put_events_with_input_transformer_input_template_json(
         self, put_events_with_filter_to_sqs, snapshot
     ):
@@ -316,6 +325,10 @@ class TestInputTransformer:
         snapshot.match("custom-variables-not-match-all", messages_not_match_all)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        not is_v2_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_put_events_with_input_transformer_missing_keys(
         self,
         create_sqs_events_target,
@@ -368,6 +381,10 @@ class TestInputTransformer:
         snapshot.match("missing-key-exception", exception)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        not is_v2_provider(),
+        reason="V1 provider does not support this feature",
+    )
     @pytest.mark.parametrize(
         "input_template",
         [INPUT_TEMPLATE_PREDEFINE_VARIABLES_STR, INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON],
