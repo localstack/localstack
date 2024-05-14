@@ -28,6 +28,7 @@ from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
 
+# https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html#eb-transform-input-predefined
 AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES = {
     "aws.events.rule-arn",
     "aws.events.rule-name",
