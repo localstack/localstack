@@ -18,6 +18,23 @@ class TestScheduleRate:
         snapshot.match("list-rules", response)
 
     @markers.aws.validated
+    def tests_put_rule_with_schedule_custom_event_bus(
+        self,
+        events_create_event_bus,
+        aws_client,
+        snapshot,
+    ):
+        bus_name = f"test-bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        rule_name = f"test-rule-{short_uid()}"
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_rule(
+                Name=rule_name, EventBusName=bus_name, ScheduleExpression="rate(1 minute)"
+            )
+        snapshot.match("put-rule-with-custom-event-bus-error", e)
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "schedule_expression",
         [
