@@ -130,7 +130,7 @@ class TargetSender(ABC):
         predefined_template_replacements = self._get_predefined_template_replacements(event)
         template_replacements.update(predefined_template_replacements)
 
-        is_json_format = input_template.strip().startswith(("{", "["))
+        is_json_format = input_template.strip().startswith(("{"))
         populated_template = replace_template_placeholders(
             input_template, template_replacements, is_json_format
         )
