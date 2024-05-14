@@ -66,6 +66,9 @@ def construct_changes(
                 resource_old = old_resources[resource_id]
                 resource_type = resource_new["Type"]
                 schema = SCHEMA_PROVIDER.schema(resource_type)
+                if not schema:
+                    # some resources do not have a schema, e.g. `AWS::CDK::Metadata`
+                    continue
 
                 mismatch = resource_new["Properties"] != resource_old["Properties"]
                 if not mismatch:

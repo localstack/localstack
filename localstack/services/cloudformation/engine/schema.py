@@ -14,8 +14,9 @@ class SchemaProvider:
                     typename = schema["typeName"]
                     self.schemas[typename] = schema
 
-    def schema(self, resource_type: str) -> dict:
-        return self.schemas[resource_type]
+    def schema(self, resource_type: str) -> dict | None:
+        # Some resources do not have a schema, e.g. `AWS::CDK::Metadata`
+        return self.schemas.get(resource_type)
 
 
 SCHEMA_PROVIDER = SchemaProvider(zipfile_path=Path(__file__).parent / "CloudformationSchema.zip")
