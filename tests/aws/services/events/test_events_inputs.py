@@ -65,11 +65,7 @@ def test_put_event_input_path_and_input_transfomer(
             ],
         )
 
-    snapshot.add_transformer(
-        [
-            snapshot.transform.regex(target_id, "<target-id>"),
-        ]
-    )
+    snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
     snapshot.match("missing-key-exception", exception)
 
 
@@ -373,11 +369,7 @@ class TestInputTransformer:
                 ],
             )
 
-        snapshot.add_transformer(
-            [
-                snapshot.transform.regex(target_id, "<target-id>"),
-            ]
-        )
+        snapshot.add_transformer(snapshot.transform.regex(target_id, "<target-id>"))
         snapshot.match("missing-key-exception", exception)
 
     @markers.aws.validated
