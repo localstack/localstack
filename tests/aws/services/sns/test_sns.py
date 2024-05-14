@@ -3744,6 +3744,15 @@ class TestSNSMultiAccounts:
         subscriptions = [s["SubscriptionArn"] for s in response["Subscriptions"]]
         assert subscription_arn in subscriptions
 
+        response = sns_primary_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="RawMessageDelivery",
+            AttributeValue="true",
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        response = sns_primary_client.get_subscription_attributes(SubscriptionArn=subscription_arn)
+        assert response["Attributes"]["RawMessageDelivery"] == "true"
+
         assert sns_secondary_client.delete_topic(TopicArn=topic_arn)
 
     @markers.aws.only_localstack
