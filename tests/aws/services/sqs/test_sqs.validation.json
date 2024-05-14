@@ -41,6 +41,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_different_attributes_raises_exception[sqs_query]": {
     "last_validated_date": "2024-04-30T13:33:20+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_standard_queue_with_fifo_attribute_raises_error[sqs]": {
+    "last_validated_date": "2024-05-14T22:40:39+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_standard_queue_with_fifo_attribute_raises_error[sqs_query]": {
+    "last_validated_date": "2024-05-14T22:40:39+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_message_attributes": {
     "last_validated_date": "2024-04-30T13:33:55+00:00"
   },
@@ -271,6 +277,18 @@
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_message_multiple_queues": {
     "last_validated_date": "2024-04-30T13:40:05+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_fifo[sqs]": {
+    "last_validated_date": "2024-05-14T22:23:46+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_fifo[sqs_query]": {
+    "last_validated_date": "2024-05-14T22:23:47+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_standard[sqs]": {
+    "last_validated_date": "2024-05-14T22:34:35+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_standard[sqs_query]": {
+    "last_validated_date": "2024-05-14T22:34:35+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_same_dedup_id_different_message_groups[sqs]": {
     "last_validated_date": "2024-04-30T13:51:17+00:00"

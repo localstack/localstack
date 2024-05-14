@@ -290,6 +290,7 @@ class SqsQueue:
 
         self.attributes = self.default_attributes()
         if attributes:
+            self.validate_queue_attributes(attributes)
             self.attributes.update(attributes)
 
         self.purge_in_progress = False

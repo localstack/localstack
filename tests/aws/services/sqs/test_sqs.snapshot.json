@@ -1320,12 +1320,64 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_fifo[sqs]": {
-    "recorded-date": "30-04-2024, 13:33:56",
-    "recorded-content": {}
+    "recorded-date": "14-05-2024, 22:23:46",
+    "recorded-content": {
+      "invalid-attr-name-1": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "Unknown Attribute FifoQueue.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "Unknown Attribute FifoQueue.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-attr-name-2": {
+        "Error": {
+          "Code": "InvalidAttributeValue",
+          "Message": "Invalid value for the parameter FifoQueue. Reason: Modifying queue type is not supported.",
+          "QueryErrorCode": "InvalidAttributeValue",
+          "Type": "Sender"
+        },
+        "message": "Invalid value for the parameter FifoQueue. Reason: Modifying queue type is not supported.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_fifo[sqs_query]": {
-    "recorded-date": "30-04-2024, 13:33:57",
-    "recorded-content": {}
+    "recorded-date": "14-05-2024, 22:23:47",
+    "recorded-content": {
+      "invalid-attr-name-1": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Detail": null,
+          "Message": "Unknown Attribute FifoQueue.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-attr-name-2": {
+        "Error": {
+          "Code": "InvalidAttributeValue",
+          "Detail": null,
+          "Message": "Invalid value for the parameter FifoQueue. Reason: Modifying queue type is not supported.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[sqs-True]": {
     "recorded-date": "30-04-2024, 13:34:01",
@@ -3019,6 +3071,102 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_standard[sqs]": {
+    "recorded-date": "14-05-2024, 22:34:35",
+    "recorded-content": {
+      "invalid-attr-name-1": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "Unknown Attribute FifoQueue.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "Unknown Attribute FifoQueue.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-attr-name-2": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "Unknown Attribute FifoQueue.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "Unknown Attribute FifoQueue.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_set_unsupported_attribute_standard[sqs_query]": {
+    "recorded-date": "14-05-2024, 22:34:35",
+    "recorded-content": {
+      "invalid-attr-name-1": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Detail": null,
+          "Message": "Unknown Attribute FifoQueue.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-attr-name-2": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Detail": null,
+          "Message": "Unknown Attribute FifoQueue.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_standard_queue_with_fifo_attribute_raises_error[sqs]": {
+    "recorded-date": "14-05-2024, 22:40:39",
+    "recorded-content": {
+      "invalid-attribute": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "Unknown Attribute FifoQueue.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "Unknown Attribute FifoQueue.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_standard_queue_with_fifo_attribute_raises_error[sqs_query]": {
+    "recorded-date": "14-05-2024, 22:40:39",
+    "recorded-content": {
+      "invalid-attribute": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "Unknown Attribute FifoQueue.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "Unknown Attribute FifoQueue.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
