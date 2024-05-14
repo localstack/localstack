@@ -191,7 +191,7 @@
               "id": "<uuid:2>",
               "account": "111111111111",
               "detailType": "core.update-account-command",
-              "time": 1715603252000,
+              "time": "<ingestion-time>",
               "source": "core.update-account-command",
               "region": "<region>",
               "resources": [],

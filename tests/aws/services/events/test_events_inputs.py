@@ -429,9 +429,11 @@ class TestInputTransformer:
                 snapshot.transform.regex(rule_name, "<rule-name>"),
                 snapshot.transform.key_value("MD5OfBody"),
                 snapshot.transform.key_value("ReceiptHandle"),
-                # snapshot.transform.jsonpath(
-                #     "$.messages[*].Body.originalEvent.time", value_replacement="ingestion-time"
-                # ), # TODO fix error for int replacement value
+                snapshot.transform.jsonpath(
+                    "$.messages[*].Body.originalEvent.time",
+                    value_replacement="<ingestion-time>",
+                    reference_replacement=False,
+                ),
             ]
         )
         snapshot.match("messages", messages)
