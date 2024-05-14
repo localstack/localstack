@@ -131,11 +131,27 @@ class TestScheduleRate:
 
 class TestScheduleCron:
     @markers.aws.validated
-    def tests_put_rule_with_schedule_cron(self, events_put_rule, aws_client, snapshot):
+    @pytest.mark.parametrize(
+        "schedule_cron",
+        [
+            "cron(0 10 * * ? *)",  # Run at 10:00 am every day
+            "cron(15 12 * * ? *)",  # Run at 12:15 pm every day
+            "cron(0 18 ? * MON-FRI *)",  # Run at 6:00 pm every Monday through Friday
+            "cron(0 8 1 * ? *)",  # Run at 8:00 am on the 1st day of every month
+            "cron(0/15 * * * ? *)",  # Run every 15 minutes
+            "cron(0/10 * ? * MON-FRI *)",  # Run every 10 minutes Monday through Friday
+            "cron(0/5 8-17 ? * MON-FRI *)",  # Run every 5 minutes Monday through Friday between 8:00 am and 5:55 pm
+            "cron(0/30 20-23 ? * MON-FRI *)",  # Run every 30 minutes between 8:00 pm and 11:59 pm Monday through Friday
+            "cron(0/30 0-2 ? * MON-FRI *)",  # Run every 30 minutes between 12:00 am and 2:00 am Monday through Friday
+        ],
+    )
+    def tests_put_rule_with_schedule_cron(
+        self, schedule_cron, events_put_rule, aws_client, snapshot
+    ):
         rule_name = f"rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
 
-        response = events_put_rule(Name=rule_name, ScheduleExpression="cron(0 20 * * ? *)")
+        response = events_put_rule(Name=rule_name, ScheduleExpression=schedule_cron)
         snapshot.match("put-rule", response)
 
         response = aws_client.events.list_rules(NamePrefix=rule_name)

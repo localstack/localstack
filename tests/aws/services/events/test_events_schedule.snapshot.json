@@ -144,5 +144,248 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 10 * * ? *)]": {
+    "recorded-date": "14-05-2024, 15:43:09",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "Name": "<rule-name>",
+            "ScheduleExpression": "cron(0 10 * * ? *)",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(15 12 * * ? *)]": {
+    "recorded-date": "14-05-2024, 15:43:09",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "Name": "<rule-name>",
+            "ScheduleExpression": "cron(15 12 * * ? *)",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 18 ? * MON-FRI *)]": {
+    "recorded-date": "14-05-2024, 15:43:10",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "Name": "<rule-name>",
+            "ScheduleExpression": "cron(0 18 ? * MON-FRI *)",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 8 1 * ? *)]": {
+    "recorded-date": "14-05-2024, 15:43:11",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "Name": "<rule-name>",
+            "ScheduleExpression": "cron(0 8 1 * ? *)",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/15 * * * ? *)]": {
+    "recorded-date": "14-05-2024, 15:43:12",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "Name": "<rule-name>",
+            "ScheduleExpression": "cron(0/15 * * * ? *)",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/10 * ? * MON-FRI *)]": {
+    "recorded-date": "14-05-2024, 15:43:12",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "Name": "<rule-name>",
+            "ScheduleExpression": "cron(0/10 * ? * MON-FRI *)",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/5 8-17 ? * MON-FRI *)]": {
+    "recorded-date": "14-05-2024, 15:43:13",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "Name": "<rule-name>",
+            "ScheduleExpression": "cron(0/5 8-17 ? * MON-FRI *)",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/30 20-23 ? * MON-FRI *)]": {
+    "recorded-date": "14-05-2024, 15:43:14",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "Name": "<rule-name>",
+            "ScheduleExpression": "cron(0/30 20-23 ? * MON-FRI *)",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/30 0-2 ? * MON-FRI *)]": {
+    "recorded-date": "14-05-2024, 15:43:14",
+    "recorded-content": {
+      "put-rule": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-rules": {
+        "Rules": [
+          {
+            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "EventBusName": "default",
+            "Name": "<rule-name>",
+            "ScheduleExpression": "cron(0/30 0-2 ? * MON-FRI *)",
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -5,6 +5,33 @@
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron": {
     "last_validated_date": "2024-05-14T14:50:51+00:00"
   },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 10 * * ? *)]": {
+    "last_validated_date": "2024-05-14T15:43:09+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 18 ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:10+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 8 1 * ? *)]": {
+    "last_validated_date": "2024-05-14T15:43:11+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/10 * ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:12+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/15 * * * ? *)]": {
+    "last_validated_date": "2024-05-14T15:43:12+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/30 0-2 ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:14+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/30 20-23 ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:14+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/5 8-17 ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:13+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(15 12 * * ? *)]": {
+    "last_validated_date": "2024-05-14T15:43:09+00:00"
+  },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[ rate(10 minutes)]": {
     "last_validated_date": "2024-05-14T11:27:18+00:00"
   },
