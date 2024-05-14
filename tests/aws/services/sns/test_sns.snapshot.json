@@ -4114,5 +4114,34 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_subscribe_sms_endpoint": {
+    "recorded-date": "14-05-2024, 19:34:12",
+    "recorded-content": {
+      "subscribe-sms-endpoint": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-sms-attrs": {
+        "Attributes": {
+          "ConfirmationWasAuthenticated": "true",
+          "Endpoint": "+123123123",
+          "Owner": "111111111111",
+          "PendingConfirmation": "false",
+          "Protocol": "sms",
+          "RawMessageDelivery": "false",
+          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:1>",
+          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:2>",
+          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
