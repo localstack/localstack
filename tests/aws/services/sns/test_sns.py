@@ -3147,6 +3147,35 @@ class TestSNSSMS:
 
 
 class TestSNSSubscriptionHttp:
+    @markers.aws.validated
+    def test_http_subscription_response(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        aws_client,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+        snapshot.match("topic-arn", {"TopicArn": topic_arn})
+
+        # we need to hit whatever URL, even external, the publishing is async, but we need an endpoint who won't
+        # confirm the subscription
+        subscription = sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="http",
+            Endpoint="http://example.com",
+            ReturnSubscriptionArn=False,
+        )
+        snapshot.match("subscription", subscription)
+
+        subscription_with_arn = sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="http",
+            Endpoint="http://example.com",
+            ReturnSubscriptionArn=True,
+        )
+        snapshot.match("subscription-with-arn", subscription_with_arn)
+
     @markers.aws.manual_setup_required
     def test_redrive_policy_http_subscription(
         self, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, sns_subscription, aws_client

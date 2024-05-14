@@ -4092,5 +4092,27 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionHttp::test_http_subscription_response": {
+    "recorded-date": "13-05-2024, 21:28:15",
+    "recorded-content": {
+      "topic-arn": {
+        "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>"
+      },
+      "subscription": {
+        "SubscriptionArn": "pending confirmation",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-with-arn": {
+        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

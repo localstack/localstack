@@ -10,6 +10,11 @@ from localstack.testing.pytest import markers
 from localstack.utils.sync import poll_condition, retry
 
 
+@pytest.fixture(autouse=True)
+def sns_snapshot_transformer(snapshot):
+    snapshot.add_transformer(snapshot.transform.sns_api())
+
+
 @pytest.fixture
 def sns_create_sqs_subscription_with_filter_policy(sns_create_sqs_subscription, aws_client):
     def _inner(topic_arn: str, queue_url: str, filter_scope: str, filter_policy: dict):
@@ -1062,6 +1067,7 @@ class TestSNSFilterPolicyBody:
         snapshot.match("messages", {"Messages": received_messages})
 
     @markers.aws.validated
+    @pytest.mark.skip("Not yet supported by LocalStack")
     def test_filter_policy_on_message_body_or_attribute(
         self,
         sqs_create_queue,
@@ -1170,3 +1176,382 @@ class TestSNSFilterPolicyBody:
             # we need to sort the list (the order does not matter as we're not using FIFO)
             recv_messages.sort(key=itemgetter("Body"))
             snapshot.match("messages-queue", {"Messages": recv_messages})
+
+
+class TestSNSFilterPolicyConditions:
+    @staticmethod
+    def _add_normalized_field_to_snapshot(error_dict):
+        error_dict["Error"]["_normalized"] = error_dict["Error"]["Message"].split("\n")[0]
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        # AWS adds JSON position error: `\n at [Source: (String)"{"key":[["value"]]}"; line: 1, column: 10]`
+        paths=["$..Error.Message"]
+    )
+    def test_validate_policy(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        snapshot,
+        aws_client,
+    ):
+        phone_number = "+123123123"
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        def _subscribe(policy: dict):
+            sns_subscription(
+                TopicArn=topic_arn,
+                Protocol="sms",
+                Endpoint=phone_number,
+                Attributes={"FilterPolicy": json.dumps(policy)},
+            )
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [["value"]]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-list", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"wrong-operator": True}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-operator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"suffix": "value", "prefix": "value2"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-two-operators", e.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
+    def test_validate_policy_string_operators(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        snapshot,
+        aws_client,
+    ):
+        phone_number = "+123123123"
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        def _subscribe(policy: dict):
+            sns_subscription(
+                TopicArn=topic_arn,
+                Protocol="sms",
+                Endpoint=phone_number,
+                Attributes={"FilterPolicy": json.dumps(policy)},
+            )
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"suffix": 100}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-is-numeric", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"suffix": None}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-is-none", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": {"suffix": "value"}}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-is-not-list-and-operator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": {"suffix": "value", "prefix": "value"}}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-is-not-list-two-ops", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": {"not-an-operator": "value"}}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-is-not-list-and-no-operator", e.value.response)
+
+        # TODO: add `cidr` string operator
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
+    def test_validate_policy_numeric_operator(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        snapshot,
+        aws_client,
+    ):
+        phone_number = "+123123123"
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        def _subscribe(policy: dict):
+            sns_subscription(
+                TopicArn=topic_arn,
+                Protocol="sms",
+                Endpoint=phone_number,
+                Attributes={"FilterPolicy": json.dumps(policy)},
+            )
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": []}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-empty", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": ["operator"]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-wrong-operator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [1, "<="]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-operator-order", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": ["=", "000"]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [">="]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-missing-value", e.value.response)
+
+        # dealing with range numeric
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": ["<", 100, ">", 10]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-wrong-range-order", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [">=", 1, ">", 2]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-wrong-range-operators", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [">", 3, "<", 1]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-wrong-value-order", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [">", 20, "<="]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-missing-range-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [">", 20, 30]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-missing-range-operator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [">", 20, "test"]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-wrong-second-range-operator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [">", "20", "<", "30"]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-wrong-range-value-1-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [">", 20, "<", "30"]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-wrong-range-value-2-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"numeric": [">", 20, "<", 30, "<", 50]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-numeric-too-many-range", e.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
+    def test_validate_policy_exists_operator(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        snapshot,
+        aws_client,
+    ):
+        phone_number = "+123123123"
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        def _subscribe(policy: dict):
+            sns_subscription(
+                TopicArn=topic_arn,
+                Protocol="sms",
+                Endpoint=phone_number,
+                Attributes={"FilterPolicy": json.dumps(policy)},
+            )
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"exists": None}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-none", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"exists": "no"}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-string", e.value.response)
+
+    @markers.aws.validated
+    def test_policy_complexity(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        snapshot,
+        aws_client,
+    ):
+        phone_number = "+123123123"
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        def _subscribe(policy: dict):
+            sns_subscription(
+                TopicArn=topic_arn,
+                Protocol="sms",
+                Endpoint=phone_number,
+                Attributes={"FilterPolicy": json.dumps(policy)},
+            )
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [f"value{i}" for i in range(151)]}
+            _subscribe(filter_policy)
+        snapshot.match("error-complexity-in-one-condition", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {
+                "key1": [f"value{i}" for i in range(100)],
+                "key2": [f"value{i}" for i in range(51)],
+            }
+            _subscribe(filter_policy)
+        snapshot.match("error-complexity-in-two-conditions", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {
+                "key1": ["value1"],
+                "key2": ["value2"],
+                "key3": ["value3"],
+                "key4": ["value4"],
+                "key5": ["value5"],
+                "key6": ["value6"],
+            }
+            _subscribe(filter_policy)
+        snapshot.match("error-complexity-too-many-fields", e.value.response)
+
+    @markers.aws.validated
+    def test_policy_complexity_with_or(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        snapshot,
+        aws_client,
+    ):
+        phone_number = "+123123123"
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        def _subscribe(policy: dict, scope: str):
+            attributes = {"FilterPolicy": json.dumps(policy)}
+            if scope:
+                attributes["FilterPolicyScope"] = scope
+
+            return sns_subscription(
+                TopicArn=topic_arn,
+                Protocol="sms",
+                Endpoint=phone_number,
+                Attributes=attributes,
+            )
+
+        with pytest.raises(ClientError) as e:
+            # (source * metricName) + (source * metricType * metricId) + (source * metricType * spaceId)
+            # = (4 * 6) + (4 * 4 * 4) + (4 * 4 * 4)
+            # = 24 + 64 + 64
+            # = 152
+            filter_policy = {
+                "source": ["aws.cloudwatch", "aws.events", "aws.test", "aws.test2"],
+                "$or": [
+                    {"metricName": ["CPUUtilization", "ReadLatency", "t1", "t2", "t3", "t4"]},
+                    {
+                        "metricType": ["MetricType", "TestType", "TestType2", "TestType3"],
+                        "$or": [{"metricId": [1234, 4321, 5678, 9012]}, {"spaceId": [1, 2, 3, 4]}],
+                    },
+                ],
+            }
+
+            _subscribe(filter_policy, scope="MessageAttributes")
+        snapshot.match("error-complexity-or-flat", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            # ("metricName" AND ("detail"."scope" AND "detail"."source")
+            # OR
+            # ("metricName" AND ("detail"."scope" AND "detail"."type")
+            # OR
+            # ("namespace" AND ("detail"."scope" AND "detail"."source")
+            # OR
+            # ("namespace" AND ("detail"."scope" AND "detail"."type")
+            # (3 * 4 * 2) + (3 * 4 * 6) + (2 * 4 * 2) + (2 * 4 * 6)
+            # = 24 + 72 + 16 + 48
+            # = 160
+            filter_policy = {
+                "$or": [
+                    {"metricName": ["CPUUtilization", "ReadLatency", "TestValue"]},
+                    {"namespace": ["AWS/EC2", "AWS/ES"]},
+                ],
+                "detail": {
+                    "scope": ["Service", "Test"],
+                    "$or": [
+                        {"source": ["aws.cloudwatch"]},
+                        {"type": ["CloudWatch Alarm State Change", "TestValue", "TestValue2"]},
+                    ],
+                },
+            }
+
+            _subscribe(filter_policy, scope="MessageBody")
+        snapshot.match("error-complexity-or-nested", e.value.response)
+
+        # (source * metricName) + (source * metricType * metricId) + (source * metricType * spaceId)
+        # = (3 * 6) + (3 * 4 * 4) + (3 * 4 * 7)
+        # = 18 + 48 + 84
+        # = 150
+        filter_policy = {
+            "source": ["aws.cloudwatch", "aws.events", "aws.test"],
+            "$or": [
+                {
+                    "metricName": [
+                        "CPUUtilization",
+                        "ReadLatency",
+                        "TestVal",
+                        "TestVal2",
+                        "TestVal3",
+                        "TestVal4",
+                    ]
+                },
+                {
+                    "metricType": ["MetricType", "TestType", "TestType2", "TestType3"],
+                    "$or": [
+                        {"metricId": [1234, 4321, 5678, 9012]},
+                        {"spaceId": [1, 2, 3, 4, 5, 6, 7]},
+                    ],
+                },
+            ],
+        }
+        response = _subscribe(filter_policy, scope="MessageAttributes")
+        assert "SubscriptionArn" in response

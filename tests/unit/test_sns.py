@@ -8,6 +8,7 @@ import dateutil.parser
 import pytest
 
 from localstack.aws.api.sns import InvalidParameterException
+from localstack.services.sns.filter import FilterPolicyValidator, SubscriptionFilter
 from localstack.services.sns.models import SnsMessage
 from localstack.services.sns.provider import (
     encode_subscription_token_with_region,
@@ -15,7 +16,6 @@ from localstack.services.sns.provider import (
     is_raw_message_delivery,
 )
 from localstack.services.sns.publisher import (
-    SubscriptionFilter,
     compute_canonical_string,
     create_sns_message_body,
 )
@@ -691,3 +691,75 @@ class TestSns:
             canonical_string
             == f"Message\ntest content\nMessageId\nabdcdef\nSubscribeURL\nhttp://randomurl.com\nTimestamp\n{timestamp}\nToken\nrandomtoken\nTopicArn\narn\nType\nSubscriptionConfirmation\n"
         )
+
+    def test_filter_policy_complexity(self):
+        # examples taken from https://docs.aws.amazon.com/sns/latest/dg/subscription-filter-policy-constraints.html
+        # and https://docs.aws.amazon.com/sns/latest/dg/and-or-logic.html
+        validator_flat = FilterPolicyValidator(scope="MessageAttributes", is_subscribe_call=True)
+        validator_nested = FilterPolicyValidator(scope="MessageBody", is_subscribe_call=True)
+
+        filter_policy = {
+            "key_a": {
+                "key_b": {"key_c": ["value_one", "value_two", "value_three", "value_four"]},
+            },
+            "key_d": {"key_e": ["value_one", "value_two", "value_three"]},
+            "key_f": ["value_one", "value_two", "value_three"],
+        }
+        rules, combinations = validator_nested.aggregate_rules(filter_policy)
+        assert combinations == 216
+
+        filter_policy = {
+            "source": ["aws.cloudwatch", "aws.events", "aws.test", "aws.test2"],
+            "$or": [
+                {"metricName": ["CPUUtilization", "ReadLatency", "t1", "t2", "t3", "t4"]},
+                {
+                    "metricType": ["MetricType", "TestType", "TestType2", "TestType3"],
+                    "$or": [{"metricId": [1234, 4321, 5678, 9012]}, {"spaceId": [1, 2, 3, 4]}],
+                },
+            ],
+        }
+
+        rules, combinations = validator_flat.aggregate_rules(filter_policy)
+        assert combinations == 152
+
+        filter_policy = {
+            "$or": [
+                {"metricName": ["CPUUtilization", "ReadLatency", "TestValue"]},
+                {"namespace": ["AWS/EC2", "AWS/ES"]},
+            ],
+            "detail": {
+                "scope": ["Service", "Test"],
+                "$or": [
+                    {"source": ["aws.cloudwatch"]},
+                    {"type": ["CloudWatch Alarm State Change", "TestValue", "TestValue2"]},
+                ],
+            },
+        }
+
+        rules, combinations = validator_nested.aggregate_rules(filter_policy)
+        assert combinations == 160
+
+        filter_policy = {
+            "source": ["aws.cloudwatch", "aws.events", "aws.test"],
+            "$or": [
+                {
+                    "metricName": [
+                        "CPUUtilization",
+                        "ReadLatency",
+                        "TestVal",
+                        "TestVal2",
+                        "TestVal3",
+                        "TestVal4",
+                    ]
+                },
+                {
+                    "metricType": ["MetricType", "TestType", "TestType2", "TestType3"],
+                    "$or": [
+                        {"metricId": [1234, 4321, 5678, 9012]},
+                        {"spaceId": [1, 2, 3, 4, 5, 6, 7]},
+                    ],
+                },
+            ],
+        }
+        rules, combinations = validator_flat.aggregate_rules(filter_policy)
+        assert combinations == 150
