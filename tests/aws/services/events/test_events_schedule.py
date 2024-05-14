@@ -13,7 +13,7 @@ from tests.aws.services.events.helper_functions import events_time_string_to_tim
 
 class TestScheduleRate:
     @markers.aws.validated
-    def test_put_rule_with_schedule(self, events_put_rule, aws_client, snapshot):
+    def test_put_rule_with_schedule_rate(self, events_put_rule, aws_client, snapshot):
         rule_name = f"rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
 
@@ -63,7 +63,7 @@ class TestScheduleRate:
             " rate(10 minutes)",
         ],
     )
-    def test_put_rule_with_invalid_schedule(self, schedule_expression, aws_client):
+    def test_put_rule_with_invalid_schedule_rate(self, schedule_expression, aws_client):
         with pytest.raises(ClientError) as e:
             aws_client.events.put_rule(
                 Name=f"rule-{short_uid()}", ScheduleExpression=schedule_expression
@@ -75,7 +75,7 @@ class TestScheduleRate:
         }
 
     @markers.aws.validated
-    def tests_schedule_target_sqs(
+    def tests_schedule_rate_target_sqs(
         self,
         create_sqs_events_target,
         events_put_rule,
@@ -124,3 +124,16 @@ class TestScheduleRate:
         )
         time_delta = time_messages_second - time_messages_first
         assert time_delta == timedelta(seconds=60)
+
+
+class TestScheduleCron:
+    @markers.aws.validated
+    def tests_put_rule_with_schedule_cron(self, events_put_rule, aws_client, snapshot):
+        rule_name = f"rule-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
+
+        response = events_put_rule(Name=rule_name, ScheduleExpression="cron(0 20 * * ? *)")
+        snapshot.match("put-rule", response)
+
+        response = aws_client.events.list_rules(NamePrefix=rule_name)
+        snapshot.match("list-rules", response)

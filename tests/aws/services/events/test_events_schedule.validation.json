@@ -1,62 +1,65 @@
 {
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[ rate(10 minutes)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron": {
+    "last_validated_date": "2024-05-14T14:50:51+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[ rate(10 minutes)]": {
     "last_validated_date": "2024-05-14T11:27:18+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate( 10 minutes )]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate( 10 minutes )]": {
     "last_validated_date": "2024-05-14T11:27:18+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate()]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate()]": {
     "last_validated_date": "2024-05-14T11:27:13+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(-10 minutes)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(-10 minutes)]": {
     "last_validated_date": "2024-05-14T11:27:16+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(0 minutes)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(0 minutes)]": {
     "last_validated_date": "2024-05-14T11:27:16+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(1 days)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(1 days)]": {
     "last_validated_date": "2024-05-14T11:27:11+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(1 hours)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(1 hours)]": {
     "last_validated_date": "2024-05-14T11:27:10+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(1 minutes)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(1 minutes)]": {
     "last_validated_date": "2024-05-14T11:27:09+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(10 MINUTES)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 MINUTES)]": {
     "last_validated_date": "2024-05-14T11:27:17+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(10 day)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 day)]": {
     "last_validated_date": "2024-05-14T11:27:13+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(10 hour)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 hour)]": {
     "last_validated_date": "2024-05-14T11:27:12+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(10 minute)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 minute)]": {
     "last_validated_date": "2024-05-14T11:27:11+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(10 minutess)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 minutess)]": {
     "last_validated_date": "2024-05-14T11:27:14+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(10 seconds)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 seconds)]": {
     "last_validated_date": "2024-05-14T11:27:08+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(10 years)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 years)]": {
     "last_validated_date": "2024-05-14T11:27:09+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(10)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10)]": {
     "last_validated_date": "2024-05-14T11:27:14+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule[rate(foo minutes)]": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(foo minutes)]": {
     "last_validated_date": "2024-05-14T11:27:15+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_schedule": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_schedule_rate": {
     "last_validated_date": "2024-05-14T11:23:22+00:00"
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_put_rule_with_schedule_custom_event_bus": {
     "last_validated_date": "2024-05-14T11:38:21+00:00"
   },
-  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_target_sqs": {
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_rate_target_sqs": {
     "last_validated_date": "2024-05-14T12:22:00+00:00"
   }
 }
