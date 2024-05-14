@@ -37,50 +37,25 @@ def apply_patches():
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
 
-    @patch(APIGatewayResponse.integrations)
-    def apigateway_response_integrations(fn, self, request, *args, **kwargs):
-        result = fn(self, request, *args, **kwargs)
-
-        if self.method not in ["PUT", "PATCH"]:
-            return result
+    @patch(APIGatewayResponse.put_integration)
+    def apigateway_put_integration(fn, self, *args, **kwargs):
+        # TODO: verify if this patch is still necessary, this might have been fixed upstream
+        fn(self, *args, **kwargs)
 
         url_path_parts = self.path.split("/")
         function_id = url_path_parts[2]
         resource_id = url_path_parts[4]
         method_type = url_path_parts[6]
-
         integration = self.backend.get_integration(function_id, resource_id, method_type)
-        if not integration:
-            return result
 
-        if self.method == "PUT":
-            timeout_milliseconds = self._get_param("timeoutInMillis")
-            cache_key_parameters = self._get_param("cacheKeyParameters") or []
-            content_handling = self._get_param("contentHandling")
-            integration.cache_namespace = resource_id
-            integration.timeout_in_millis = timeout_milliseconds
-            integration.cache_key_parameters = cache_key_parameters
-            integration.content_handling = content_handling
-            return 201, {}, json.dumps(integration.to_json())
-
-        if self.method == "PATCH":
-            patch_operations = self._get_param("patchOperations")
-            apply_json_patch_safe(integration.to_json(), patch_operations, in_place=True)
-            # fix data types
-            if integration.timeout_in_millis:
-                integration.timeout_in_millis = int(integration.timeout_in_millis)
-            if skip_verification := (integration.tls_config or {}).get("insecureSkipVerification"):
-                integration.tls_config["insecureSkipVerification"] = str_to_bool(skip_verification)
-            return 200, {}, json.dumps(integration.to_json())
-
-        return result
-
-    def backend_update_deployment(self, function_id, deployment_id, patch_operations):
-        rest_api = self.get_rest_api(function_id)
-        deployment = rest_api.get_deployment(deployment_id)
-        deployment = deployment.to_json() or {}
-        apply_json_patch_safe(deployment, patch_operations, in_place=True)
-        return deployment
+        timeout_milliseconds = self._get_param("timeoutInMillis")
+        cache_key_parameters = self._get_param("cacheKeyParameters") or []
+        content_handling = self._get_param("contentHandling")
+        integration.cache_namespace = resource_id
+        integration.timeout_in_millis = timeout_milliseconds
+        integration.cache_key_parameters = cache_key_parameters
+        integration.content_handling = content_handling
+        return 201, {}, json.dumps(integration.to_json())
 
     # define json-patch operations for backend models
 
@@ -140,9 +115,6 @@ def apply_patches():
             raise NoIntegrationDefined()
         return resource_method.method_integration
 
-    if not hasattr(apigateway_models.APIGatewayBackend, "update_deployment"):
-        apigateway_models.APIGatewayBackend.update_deployment = backend_update_deployment
-
     @patch(apigateway_models.RestAPI.to_dict)
     def apigateway_models_rest_api_to_dict(fn, self):
         resp = fn(self)
@@ -170,20 +142,6 @@ def apply_patches():
         if "documentationVersion" not in result:
             result["documentationVersion"] = getattr(self, "documentation_version", None)
 
-        return result
-
-    @patch(APIGatewayResponse.individual_deployment)
-    def individual_deployment(fn, self, request, full_url, headers, *args, **kwargs):
-        result = fn(self, request, full_url, headers, *args, **kwargs)
-        if self.method == "PATCH":
-            url_path_parts = self.path.split("/")
-            function_id = url_path_parts[2]
-            deployment_id = url_path_parts[4]
-            patch_operations = self._get_param("patchOperations")
-            deployment = self.backend.update_deployment(
-                function_id, deployment_id, patch_operations
-            )
-            return 201, {}, json.dumps(deployment)
         return result
 
     @patch(apigateway_models.APIGatewayBackend.create_rest_api)
