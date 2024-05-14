@@ -1,17 +1,15 @@
 import json
 import logging
+import re
 import uuid
 from abc import ABC, abstractmethod
+from typing import Any, Set
 
 from botocore.client import BaseClient
 
-from localstack.aws.api.events import (
-    Arn,
-    Target,
-    TargetInputPath,
-)
+from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
-from localstack.services.events.models import FormattedEvent, TransformedEvent
+from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_service_from_arn,
@@ -25,12 +23,58 @@ from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
 
+# https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html#eb-transform-input-predefined
+AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES = {
+    "aws.events.rule-arn",
+    "aws.events.rule-name",
+    "aws.events.event.ingestion-time",
+}
+AWS_PREDEFINED_PLACEHOLDERS_JSON_VALUES = {"aws.events.event", "aws.events.event.json"}
+
+PREDEFINED_PLACEHOLDERS: Set[str] = AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES.union(
+    AWS_PREDEFINED_PLACEHOLDERS_JSON_VALUES
+)
+
+TRANSFORMER_PLACEHOLDER_PATTERN = re.compile(r"<(.*?)>")
+
 
 def transform_event_with_target_input_path(
     input_path: TargetInputPath, event: FormattedEvent
 ) -> TransformedEvent:
     formatted_event = extract_jsonpath(event, input_path)
     return formatted_event
+
+
+def get_template_replacements(
+    input_transformer: InputTransformer, event: FormattedEvent
+) -> dict[str, Any]:
+    """Extracts values from the event using the input paths map keys and places them in the input template dict."""
+    template_replacements = {}
+    transformer_path_map = input_transformer.get("InputPathsMap", {})
+    for placeholder, transformer_path in transformer_path_map.items():
+        if placeholder in PREDEFINED_PLACEHOLDERS:
+            continue
+        value = extract_jsonpath(event, transformer_path)
+        if not value:
+            value = ""  # default value is empty string
+        template_replacements[placeholder] = value
+    return template_replacements
+
+
+def replace_template_placeholders(
+    template: str, replacements: dict[str, Any], is_json: bool
+) -> TransformedEvent:
+    """Replace placeholders defined by <key> in the template with the values from the replacements dict.
+    Can handle single template string or template dict."""
+
+    def replace_placeholder(match):
+        key = match.group(1)
+        value = replacements.get(key, match.group(0))  # handle non defined placeholders
+        return json.dumps(value) if is_json else value
+
+    formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
+
+    return json.loads(formatted_template) if is_json else formatted_template[1:-1]
 
 
 class TargetSender(ABC):
@@ -40,12 +84,14 @@ class TargetSender(ABC):
         region: str,
         account_id: str,
         rule_arn: Arn,
+        rule_name: RuleName,
         service: str,
     ):
         self.target = target
         self.region = region
         self.account_id = account_id
         self.rule_arn = rule_arn
+        self.rule_name = rule_name
         self.service = service
 
         self._validate_input(target)
@@ -70,12 +116,34 @@ class TargetSender(ABC):
         """Processes the event and send it to the target."""
         if input_path := self.target.get("InputPath"):
             event = transform_event_with_target_input_path(input_path, event)
+        if input_transformer := self.target.get("InputTransformer"):
+            event = self.transform_event_with_target_input_transformer(input_transformer, event)
         self.send_event(event)
 
+    def transform_event_with_target_input_transformer(
+        self, input_transformer: InputTransformer, event: FormattedEvent
+    ) -> TransformedEvent:
+        input_template = input_transformer["InputTemplate"]
+        template_replacements = get_template_replacements(input_transformer, event)
+        predefined_template_replacements = self._get_predefined_template_replacements(event)
+        template_replacements.update(predefined_template_replacements)
+
+        is_json_format = input_template.strip().startswith(("{"))
+        populated_template = replace_template_placeholders(
+            input_template, template_replacements, is_json_format
+        )
+
+        return populated_template
+
     def _validate_input(self, target: Target):
-        """Provide a default implementation that does nothing if no specific validation is needed."""
+        """Provide a default implementation extended for each target based on specifications."""
         # TODO add For Lambda and Amazon SNS resources, EventBridge relies on resource-based policies.
-        pass
+        if "InputPath" in target and "InputTransformer" in target:
+            raise ValidationException(
+                f"Only one of Input, InputPath, or InputTransformer must be provided for target {target.get('Id')}."
+            )
+        if input_transformer := target.get("InputTransformer"):
+            self._validate_input_transformer(input_transformer)
 
     def _initialize_client(self) -> BaseClient:
         """Initializes internal botocore client.
@@ -95,6 +163,33 @@ class TargetSender(ABC):
             service_principal=service_principal, source_arn=self.rule_arn
         )
         return client
+
+    def _validate_input_transformer(self, input_transformer: InputTransformer):
+        if "InputTemplate" not in input_transformer:
+            raise ValueError("InputTemplate is required for InputTransformer")
+        input_template = input_transformer["InputTemplate"]
+        input_paths_map = input_transformer.get("InputPathsMap", {})
+        placeholders = TRANSFORMER_PLACEHOLDER_PATTERN.findall(input_template)
+        for placeholder in placeholders:
+            if placeholder not in input_paths_map and placeholder not in PREDEFINED_PLACEHOLDERS:
+                raise ValidationException(
+                    f"InputTemplate for target {self.target.get('Id')} contains invalid placeholder {placeholder}."
+                )
+
+    def _get_predefined_template_replacements(self, event: FormattedEvent) -> dict[str, Any]:
+        """Extracts predefined values from the event."""
+        predefined_template_replacements = {}
+        predefined_template_replacements["aws.events.rule-arn"] = self.rule_arn
+        predefined_template_replacements["aws.events.rule-name"] = self.rule_name
+        predefined_template_replacements["aws.events.event.ingestion-time"] = event["time"]
+        predefined_template_replacements["aws.events.event"] = {
+            "detailType" if k == "detail-type" else k: v  # detail-type is is returned as detailType
+            for k, v in event.items()
+            if k != "detail"  # detail is not part of .event placeholder
+        }
+        predefined_template_replacements["aws.events.event.json"] = event
+
+        return predefined_template_replacements
 
 
 TargetSenderDict = dict[Arn, TargetSender]
@@ -192,7 +287,6 @@ class KinesisTargetSender(TargetSender):
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
-        # TODO add validated test to check if RoleArn is mandatory
         if not collections.get_safe(target, "$.RoleArn"):
             raise ValueError("RoleArn is required for Kinesis target")
         if not collections.get_safe(target, "$.KinesisParameters.PartitionKeyPath"):
@@ -301,11 +395,14 @@ class TargetSenderFactory:
         # TODO custom endpoints via http target
     }
 
-    def __init__(self, target: Target, region: str, account_id: str, rule_arn: Arn):
+    def __init__(
+        self, target: Target, region: str, account_id: str, rule_arn: Arn, rule_name: RuleName
+    ):
         self.target = target
         self.region = region
         self.account_id = account_id
         self.rule_arn = rule_arn
+        self.rule_name = rule_name
 
     def get_target_sender(self) -> TargetSender:
         service = extract_service_from_arn(self.target["Arn"])
@@ -314,6 +411,6 @@ class TargetSenderFactory:
         else:
             raise Exception(f"Unsupported target for Service: {service}")
         target_sender = target_sender_class(
-            self.target, self.region, self.account_id, self.rule_arn, service
+            self.target, self.region, self.account_id, self.rule_arn, self.rule_name, service
         )
         return target_sender
