@@ -31,6 +31,10 @@ PHYSICAL_RESOURCE_ID_SPECIAL_CASES = {
     "AWS::SSM::Parameter": "/properties/Name",
     "AWS::RDS::DBProxyTargetGroup": "/properties/TargetGroupName",
     "AWS::Glue::SchemaVersionMetadata": "</properties/SchemaVersionId>|</properties/Key>|</properties/Value>",  # composite
+    "AWS::WAFv2::WebACL": "</properties/Name>|</properties/Id>|</properties/Scope>",
+    "AWS::WAFv2::WebACLAssociation": "</properties/ResourceArn>|</properties/WebACLArn>",
+    "AWS::WAFv2::IPSet": "</properties/Name>|</properties/Id>|</properties/Scope>",
+    # composite
 }
 
 # You can usually find the available GetAtt targets in the official resource documentation:
