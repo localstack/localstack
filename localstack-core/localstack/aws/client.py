@@ -304,7 +304,11 @@ class GatewayShortCircuit:
         # create request
         context = RequestContext()
         context.request = create_http_request(request)
-        context.service = operation.service_model
+
+        # TODO: just a hacky thing to unblock the service model being set to `sqs-query` blocking for now
+        if operation.service_model.service_name != "sqs-query":
+            context.service = operation.service_model
+
         context.operation = operation
         context.service_request = params["body"]
 
