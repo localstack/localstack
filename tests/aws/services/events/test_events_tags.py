@@ -4,6 +4,7 @@ import pytest
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from tests.aws.services.events.helper_functions import is_v2_provider
 from tests.aws.services.events.test_events import TEST_EVENT_PATTERN
 
 
@@ -62,6 +63,10 @@ def tests_tag_untag_resource(
 
 
 @markers.aws.validated
+@pytest.mark.skipif(
+    not is_v2_provider(),
+    reason="V1 provider does not support this feature",
+)
 @pytest.mark.parametrize("resource_to_tag", ["not_existing_rule", "not_existing_event_bus"])
 def tests_tag_list_untag_not_existing_resource(
     resource_to_tag,
@@ -136,6 +141,10 @@ class TestRuleTags:
         snapshot.match("list_tags_for_rule", response_put_rule)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        not is_v2_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_list_tags_for_deleted_rule(
         self, events_create_event_bus, events_put_rule, aws_client, snapshot
     ):
@@ -189,6 +198,10 @@ class TestEventBusTags:
         snapshot.match("list_tags_for_event_bus", response_create_event_bus)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        not is_v2_provider(),
+        reason="V1 provider does not support this feature",
+    )
     def test_list_tags_for_deleted_event_bus(self, events_create_event_bus, aws_client, snapshot):
         bus_name = f"test_bus-{short_uid()}"
         response = events_create_event_bus(Name=bus_name)
