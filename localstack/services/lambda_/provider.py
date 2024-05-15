@@ -719,7 +719,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateFunctionRequest,
     ) -> FunctionConfiguration:
-        LOG.warning("Function being created", extra={"function_name": request['FunctionName'], "customthing": {"names": "joeldominik"}})
         zip_file = request.get("Code", {}).get("ZipFile")
         if zip_file and len(zip_file) > config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED:
             raise RequestEntityTooLargeException(

@@ -3,8 +3,9 @@ import logging
 import sys
 import warnings
 
-from localstack import config, constants
 from localstack_snapshot.util.encoding import CustomJsonEncoder
+
+from localstack import config, constants
 
 from .format import AddFormattedAttributes, DefaultFormatter
 
@@ -88,6 +89,7 @@ def create_default_handler(log_level: int):
     log_handler.addFilter(AddFormattedAttributes())
     return log_handler
 
+
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         # TODO: extras are currently flat at root level and not nested
@@ -114,7 +116,6 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(data, cls=CustomJsonEncoder)
 
 
-
 def setup_logging(log_level=logging.INFO) -> None:
     """
     Configures the python logging environment for LocalStack.
@@ -137,28 +138,19 @@ def setup_logging(log_level=logging.INFO) -> None:
     for logger, level in default_log_levels.items():
         logging.getLogger(logger).setLevel(level)
 
+    # Configure JSON logs
+    # TODO: make configurable/opt-in
     logging.basicConfig(level=logging.DEBUG)
     file_handler = logging.FileHandler("/tmp/localstack.log", mode="w", encoding="utf-8")
 
     file_handler.setFormatter(JsonFormatter())
     logging.root.addHandler(file_handler)
-    logging.root.setLevel(logging.DEBUG)
-
-    # loki_handler = LokiHandler()
-    # loki_handler.setLevel(logging.DEBUG)
-    # logging.root.addHandler(loki_handler)
+    logging.root.setLevel(logging.DEBUG)  # FIXME
 
     # silence noisy libs by default
     logging.getLogger("werkzeug").setLevel(logging.CRITICAL)
     logging.getLogger("stevedore").setLevel(logging.CRITICAL)
     logging.getLogger("botocore").setLevel(logging.CRITICAL)
-    # aws_logger = logging.getLogger("localstack.request.aws")
-    # http_logger = logging.getLogger("localstack.request.http")
-    # logging.getLogger("localstack.request.http").setLevel(logging.DEBUG)
-    # logging.getLogger("localstack.request.http").addHandler(file_handler)
-
-    # logging.getLogger("localstack.request.aws").addHandler(file_handler)
-    # logging.getLogger("localstack.request.aws").addHandler(loki_handler)
 
 
 def setup_hypercorn_logger(hypercorn_config) -> None:
