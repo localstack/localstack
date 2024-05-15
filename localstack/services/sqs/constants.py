@@ -31,6 +31,12 @@ INTERNAL_QUEUE_ATTRIBUTES = [
     QueueAttributeName.QueueArn,
 ]
 
+INVALID_STANDARD_QUEUE_ATTRIBUTES = [
+    QueueAttributeName.FifoQueue,
+    QueueAttributeName.ContentBasedDeduplication,
+    *INTERNAL_QUEUE_ATTRIBUTES,
+]
+
 # URL regexes for various endpoint strategies
 STANDARD_STRATEGY_URL_REGEX = r"sqs.(?P<region_name>[a-z0-9-]{1,})\.[^:]+:\d{4,5}\/(?P<account_id>\d{12})\/(?P<queue_name>[a-zA-Z0-9_-]+(.fifo)?)$"
 DOMAIN_STRATEGY_URL_REGEX = r"((?P<region_name>[a-z0-9-]{1,})\.)?queue\.[^:]+:\d{4,5}\/(?P<account_id>\d{12})\/(?P<queue_name>[a-zA-Z0-9_-]+(.fifo)?)$"
