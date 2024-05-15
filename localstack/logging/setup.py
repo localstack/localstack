@@ -94,7 +94,7 @@ def setup_logging_from_config():
             raise
         except Exception as e:
             raise RuntimeError(
-                f"Failed to configure logging overrides ({raw_logging_override}): Malformed value. ({e})"
+                f"Failed to configure logging overrides ({raw_logging_override})"
             ) from e
 
 
