@@ -4266,7 +4266,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_async_invoke_queue_upon_function_update": {
-    "recorded-date": "15-05-2024, 15:11:30",
+    "recorded-date": "15-05-2024, 17:38:05",
     "recorded-content": {
       "async_invoke_history_sorted": [
         "01-sleep--variant-1",

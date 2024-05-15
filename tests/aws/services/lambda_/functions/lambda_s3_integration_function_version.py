@@ -12,9 +12,10 @@ FUNCTION_VARIANT = os.environ.get("FUNCTION_VARIANT")
 
 def handler(event, context):
     sleep_duration = int(event.get("sleep_seconds", 0))
-    print(f"Sleeping for {sleep_duration} seconds ...")
-    time.sleep(sleep_duration)
-    print("... done sleeping")
+    if sleep_duration > 0:
+        print(f"Sleeping for {sleep_duration} seconds ...")
+        time.sleep(sleep_duration)
+        print("... done sleeping")
 
     request_prefix = event.get("request_prefix")
     response = {

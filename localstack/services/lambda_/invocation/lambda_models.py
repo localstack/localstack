@@ -41,7 +41,7 @@ from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.lambda_.api_utils import qualified_lambda_arn, unqualified_lambda_arn
 from localstack.utils.archives import unzip
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -598,6 +598,13 @@ class Function:
 
     def latest(self) -> FunctionVersion:
         return self.versions["$LATEST"]
+
+    # HACK to model a volatile variable that should be ignored for persistence
+    def __post_init__(self):
+        # Identifier unique to this function and LocalStack instance.
+        # A LocalStack restart or persistence load should create a new instance id.
+        # Used for retaining invoke queues across version updates for $LATEST, but separate unrelated instances.
+        self.instance_id = short_uid()
 
 
 class ValidationException(CommonServiceException):

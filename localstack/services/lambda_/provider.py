@@ -1277,8 +1277,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 destroy_code_if_not_used(code=version.config.code, function=function)
         else:
             # delete the whole function
-            # TODO: move that down / add locking because we could create a new version before the old one gets cleaned up in the internal lambda services
-            # => we need some locking or safe status
+            # TODO: introduce locking for safe deletion: We could create a new version at the API layer before
+            #  the old version gets cleaned up in the internal lambda service.
             function = store.functions.pop(function_name)
             for version in function.versions.values():
                 self.lambda_service.stop_version(qualified_arn=version.id.qualified_arn())
