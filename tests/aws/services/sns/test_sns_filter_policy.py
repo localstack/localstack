@@ -1067,7 +1067,6 @@ class TestSNSFilterPolicyBody:
         snapshot.match("messages", {"Messages": received_messages})
 
     @markers.aws.validated
-    @pytest.mark.skip("Not yet supported by LocalStack")
     def test_filter_policy_on_message_body_or_attribute(
         self,
         sqs_create_queue,
@@ -1237,7 +1236,7 @@ class TestSNSFilterPolicyConditions:
         topic_arn = sns_create_topic()["TopicArn"]
 
         def _subscribe(policy: dict):
-            sns_subscription(
+            return sns_subscription(
                 TopicArn=topic_arn,
                 Protocol="sms",
                 Endpoint=phone_number,
@@ -1261,6 +1260,18 @@ class TestSNSFilterPolicyConditions:
             _subscribe(filter_policy)
         self._add_normalized_field_to_snapshot(e.value.response)
         snapshot.match("error-condition-is-not-list-and-operator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"suffix": []}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-empty-list", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"suffix": ["test", "test2"]}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-list-wrong-type", e.value.response)
 
         with pytest.raises(ClientError) as e:
             filter_policy = {"key": {"suffix": "value", "prefix": "value"}}
@@ -1412,6 +1423,72 @@ class TestSNSFilterPolicyConditions:
             _subscribe(filter_policy)
         self._add_normalized_field_to_snapshot(e.value.response)
         snapshot.match("error-condition-string", e.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
+    def test_validate_policy_nested_anything_but_operator(
+        self,
+        sns_create_topic,
+        sns_subscription,
+        snapshot,
+        aws_client,
+    ):
+        phone_number = "+123123123"
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        def _subscribe(policy: dict):
+            return sns_subscription(
+                TopicArn=topic_arn,
+                Protocol="sms",
+                Endpoint=phone_number,
+                Attributes={"FilterPolicy": json.dumps(policy)},
+            )
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"anything-but": {"wrong-operator": None}}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-wrong-operator", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"anything-but": {"suffix": "test"}}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-anything-but-suffix", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"anything-but": {"exists": False}}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-anything-but-exists", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            filter_policy = {"key": [{"anything-but": {"prefix": False}}]}
+            _subscribe(filter_policy)
+        self._add_normalized_field_to_snapshot(e.value.response)
+        snapshot.match("error-condition-anything-but-prefix-wrong-type", e.value.response)
+
+        # positive testing
+        filter_policy = {"key": [{"anything-but": {"prefix": "test-"}}]}
+        response = _subscribe(filter_policy)
+        assert "SubscriptionArn" in response
+        subscription_arn = response["SubscriptionArn"]
+
+        filter_policy = {"key": [{"anything-but": ["test", "test2"]}]}
+        response = aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps(filter_policy),
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        filter_policy = {"key": [{"anything-but": "test"}]}
+        response = aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="FilterPolicy",
+            AttributeValue=json.dumps(filter_policy),
+        )
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.aws.validated
     def test_policy_complexity(

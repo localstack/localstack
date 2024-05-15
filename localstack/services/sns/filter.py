@@ -109,10 +109,13 @@ class SubscriptionFilter:
             # the remaining conditions require the value to not be None
             return False
         elif anything_but := condition.get("anything-but"):
-            # TODO: anything-but can be combined with prefix (and maybe others) by putting another condition in
-            #  > "event":[{"anything-but": {"prefix": "order-"}}]
-            # > https://docs.aws.amazon.com/sns/latest/dg/string-value-matching.html#string-anything-but-matching-prefix
-            return value not in anything_but
+            if isinstance(anything_but, dict):
+                not_prefix = anything_but.get("prefix")
+                return not value.startswith(not_prefix)
+            elif isinstance(anything_but, list):
+                return value not in anything_but
+            else:
+                return value != anything_but
         elif prefix := condition.get("prefix"):
             return value.startswith(prefix)
         elif suffix := condition.get("suffix"):
@@ -369,7 +372,6 @@ class FilterPolicyValidator:
                     operator, value = k, v
 
                 if operator in (
-                    "anything-but",
                     "equals-ignore-case",
                     "prefix",
                     "suffix",
@@ -378,6 +380,25 @@ class FilterPolicyValidator:
                         raise InvalidParameterException(
                             f"{self.error_prefix}FilterPolicy: {operator} match pattern must be a string"
                         )
+                    return
+
+                elif operator == "anything-but":
+                    # anything-but can actually contain any kind of simple rule (str, number, and list)
+                    if isinstance(value, list):
+                        for v in value:
+                            self._validate_rule(v)
+
+                        return
+
+                    # or have a nested `prefix` pattern
+                    elif isinstance(value, dict):
+                        for inner_operator in value.keys():
+                            if inner_operator != "prefix":
+                                raise InvalidParameterException(
+                                    f"{self.error_prefix}FilterPolicy: Unsupported anything-but pattern: {inner_operator}"
+                                )
+
+                    self._validate_rule(value)
                     return
 
                 elif operator == "exists":

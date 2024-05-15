@@ -41,11 +41,14 @@
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_exists_operator": {
     "last_validated_date": "2024-05-14T16:51:06+00:00"
   },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_nested_anything_but_operator": {
+    "last_validated_date": "2024-05-15T14:39:32+00:00"
+  },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_numeric_operator": {
     "last_validated_date": "2024-05-14T16:51:06+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_string_operators": {
-    "last_validated_date": "2024-05-14T16:51:03+00:00"
+    "last_validated_date": "2024-05-15T14:39:23+00:00"
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyCrud::test_set_subscription_filter_policy_scope": {
     "last_validated_date": "2024-05-14T16:49:11+00:00"

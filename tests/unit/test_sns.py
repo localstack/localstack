@@ -280,6 +280,30 @@ class TestSns:
                 True,
             ),
             (
+                "anything-but list filter with match",
+                {"filter": [{"anything-but": ["type1", "type2"]}]},
+                {"filter": {"Type": "String", "Value": "type1"}},
+                False,
+            ),
+            (
+                "anything-but list filter with no match",
+                {"filter": [{"anything-but": ["type1", "type3"]}]},
+                {"filter": {"Type": "String", "Value": "type2"}},
+                True,
+            ),
+            (
+                "anything-but string filter with prefix match",
+                {"filter": [{"anything-but": {"prefix": "type"}}]},
+                {"filter": {"Type": "String", "Value": "type1"}},
+                False,
+            ),
+            (
+                "anything-but string filter with no prefix match",
+                {"filter": [{"anything-but": {"prefix": "type-"}}]},
+                {"filter": {"Type": "String", "Value": "type1"}},
+                True,
+            ),
+            (
                 "prefix string filter with match",
                 {"filter": [{"prefix": "typ"}]},
                 {"filter": {"Type": "String", "Value": "type1"}},
@@ -905,11 +929,25 @@ class TestSns:
     )
     def test_filter_flatten_payload(self, payload, expected):
         sub_filter = SubscriptionFilter()
-        # payload = {"f3": ["v3"], "f1": {"f2": "v2"}}
-        # expected = [
-        #     {
-        #         "f3": "v3",
-        #         "f1.f2": "v2",
-        #     }
-        # ]
         assert sub_filter.flatten_payload(payload) == expected
+
+    @pytest.mark.parametrize(
+        "policy,expected",
+        [
+            (
+                {"filter": [{"anything-but": {"prefix": "type"}}]},
+                [{"filter": [{"anything-but": {"prefix": "type"}}]}],
+            ),
+            (
+                {"field1": {"field2": {"field3": "val1", "field4": "val2"}}},
+                [{"field1.field2.field3": "val1", "field1.field2.field4": "val2"}],
+            ),
+            (
+                {"$or": [{"field1": "val1"}, {"field2": "val2"}], "field3": "val3"},
+                [{"field1": "val1", "field3": "val3"}, {"field2": "val2", "field3": "val3"}],
+            ),
+        ],
+    )
+    def test_filter_flatten_policy(self, policy, expected):
+        sub_filter = SubscriptionFilter()
+        assert sub_filter.flatten_policy(policy) == expected
