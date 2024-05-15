@@ -4835,6 +4835,22 @@ class TestS3:
         key_name = "test-key"
         aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Tagging="tag1=tag1")
 
+        # Lists all objects versions in a bucket
+        list_objects_version_url = f"{bucket_url}?versions"
+        resp = s3_http_client.get(list_objects_version_url, headers=headers)
+        assert b'<?xml version="1.0" encoding="UTF-8"?>\n' in get_xml_content(resp.content)
+        resp_dict = xmltodict.parse(resp.content)
+        assert "ListVersionsResult" in resp_dict
+        assert (
+            resp_dict["ListVersionsResult"]["@xmlns"] == "http://s3.amazonaws.com/doc/2006-03-01/"
+        )
+        # same as ListObjects
+        list_objects_versions_tags = list(resp_dict["ListVersionsResult"].keys())
+        assert list_objects_versions_tags.index("Name") < list_objects_versions_tags.index(
+            "Version"
+        )
+        assert list_objects_versions_tags[-1] == "Version"
+
         # GetObjectTagging
         get_object_tagging_url = f"{bucket_url}/{key_name}?tagging"
         resp = s3_http_client.get(get_object_tagging_url, headers=headers)
