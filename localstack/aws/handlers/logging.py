@@ -9,7 +9,6 @@ from localstack.aws.chain import ExceptionHandler, HandlerChain
 from localstack.http import Response
 from localstack.http.request import restore_payload
 from localstack.logging.format import AwsTraceLoggingFormatter, TraceLoggingFormatter
-from localstack.logging.setup import create_default_handler
 
 LOG = logging.getLogger(__name__)
 
@@ -164,3 +163,25 @@ class ResponseLogger:
                     "response_headers": dict(response.headers),
                 },
             )
+
+
+class RequestLogger:
+    def __call__(self, _: HandlerChain, context: RequestContext, response: Response):
+        if context.request.path == "/health" or context.request.path == "/_localstack/health":
+            # special case so the health check doesn't spam the logs
+            return
+
+        logger = logging.getLogger("localstack.request.raw_http")
+        logger.info(
+            "%s %s",
+            context.request.method,
+            context.request.path,
+            extra={
+                "request_id": context.request_id or "NOREQUESTID",
+                "http_method": context.request.method,
+                # request
+                "input_type": "Request",
+                "input": restore_payload(context.request),  # TODO: remove?
+                "request_headers": dict(context.request.headers),
+            },
+        )

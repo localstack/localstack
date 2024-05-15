@@ -1,4 +1,3 @@
-
 from localstack import config
 from localstack.aws import handlers
 from localstack.aws.api import RequestContext
@@ -29,6 +28,7 @@ class LocalstackAwsGateway(Gateway):
         # the main request handler chain
         self.request_handlers.extend(
             [
+                handlers.log_request,
                 handlers.push_request_context,
                 handlers.add_internal_request_params,
                 handlers.handle_runtime_shutdown,
