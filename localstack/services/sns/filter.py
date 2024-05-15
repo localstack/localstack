@@ -94,6 +94,8 @@ class SubscriptionFilter:
             # the remaining conditions require the value to not be None
             return False
         elif anything_but := condition.get("anything-but"):
+            # TODO: support with `prefix`
+            # https://docs.aws.amazon.com/sns/latest/dg/string-value-matching.html#string-anything-but-matching-prefix
             return value not in anything_but
         elif prefix := (condition.get("prefix")):
             return value.startswith(prefix)
@@ -322,7 +324,7 @@ class FilterPolicyValidator:
                 return
 
             case int() | float():
-                # TODO: AWS says they support onyl from -10^9 to 10^9 but seems to accept it, so we just return
+                # TODO: AWS says they support only from -10^9 to 10^9 but seems to accept it, so we just return
                 # if rule <= -1000000000 or rule >= 1000000000:
                 #     raise ""
                 return
