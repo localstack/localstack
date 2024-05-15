@@ -88,5 +88,33 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_put_rule_with_tags": {
+    "recorded-date": "15-05-2024, 14:00:25",
+    "recorded-content": {
+      "put_rule_with_tags": {
+        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule_name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_rule": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
