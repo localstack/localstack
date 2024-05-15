@@ -294,7 +294,7 @@ pluggy==1.5.0
     # via
     #   localstack-core (pyproject.toml)
     #   pytest
-plux==1.9.0
+plux==1.10.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -441,7 +441,6 @@ stevedore==5.2.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-    #   plux
 sympy==1.12
     # via cfn-lint
 tailer==0.4.1

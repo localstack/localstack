@@ -114,7 +114,7 @@ packaging==24.0
     #   docker
 pbr==6.0.0
     # via stevedore
-plux==1.9.0
+plux==1.10.0
     # via localstack-core (pyproject.toml)
 priority==1.3.0
     # via
@@ -163,9 +163,7 @@ six==1.16.0
     #   python-dateutil
     #   requests-aws4auth
 stevedore==5.2.0
-    # via
-    #   localstack-core (pyproject.toml)
-    #   plux
+    # via localstack-core (pyproject.toml)
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
 typing-extensions==4.11.0
