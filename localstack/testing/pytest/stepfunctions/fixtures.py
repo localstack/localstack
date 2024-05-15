@@ -12,9 +12,6 @@ from localstack_snapshot.snapshots.transformer import (
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest.stepfunctions.utils import await_execution_success
 from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
-    CallbackTemplates,
-)
 
 LOG = logging.getLogger(__name__)
 
@@ -242,11 +239,79 @@ def sqs_send_task_success_state_machine(aws_client, create_state_machine, create
     def _create_state_machine(sqs_queue_url):
         snf_role_arn = create_iam_role_for_sfn()
         sm_name: str = f"sqs_send_task_success_state_machine_{short_uid()}"
-        template = CallbackTemplates.load_sfn_template(CallbackTemplates.SQS_SUCCESS_ON_TASK_TOKEN)
-        definition = json.dumps(template)
+
+        template = {
+            "Comment": "sqs_success_on_task_token",
+            "StartAt": "Iterate",
+            "States": {
+                "Iterate": {
+                    "Type": "Pass",
+                    "Parameters": {"Count.$": "States.MathAdd($.Iterator.Count, -1)"},
+                    "ResultPath": "$.Iterator",
+                    "Next": "IterateStep",
+                },
+                "IterateStep": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                            "Variable": "$.Iterator.Count",
+                            "NumericLessThanEquals": 0,
+                            "Next": "NoMoreCycles",
+                        }
+                    ],
+                    "Default": "WaitAndReceive",
+                },
+                "WaitAndReceive": {"Type": "Wait", "Seconds": 1, "Next": "Receive"},
+                "Receive": {
+                    "Type": "Task",
+                    "Parameters": {"QueueUrl.$": "$.QueueUrl"},
+                    "Resource": "arn:aws:states:::aws-sdk:sqs:receiveMessage",
+                    "ResultPath": "$.SQSOutput",
+                    "Next": "CheckMessages",
+                },
+                "CheckMessages": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                            "Variable": "$.SQSOutput.Messages",
+                            "IsPresent": True,
+                            "Next": "SendSuccesses",
+                        }
+                    ],
+                    "Default": "Iterate",
+                },
+                "SendSuccesses": {
+                    "Type": "Map",
+                    "InputPath": "$.SQSOutput.Messages",
+                    "ItemProcessor": {
+                        "ProcessorConfig": {"Mode": "INLINE"},
+                        "StartAt": "ParseBody",
+                        "States": {
+                            "ParseBody": {
+                                "Type": "Pass",
+                                "Parameters": {"Body.$": "States.StringToJson($.Body)"},
+                                "Next": "Send",
+                            },
+                            "Send": {
+                                "Type": "Task",
+                                "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+                                "Parameters": {
+                                    "Output.$": "States.JsonToString($.Body.Message)",
+                                    "TaskToken.$": "$.Body.TaskToken",
+                                },
+                                "End": True,
+                            },
+                        },
+                    },
+                    "ResultPath": None,
+                    "Next": "Iterate",
+                },
+                "NoMoreCycles": {"Type": "Pass", "End": True},
+            },
+        }
 
         creation_resp = create_state_machine(
-            name=sm_name, definition=definition, roleArn=snf_role_arn
+            name=sm_name, definition=json.dumps(template), roleArn=snf_role_arn
         )
         state_machine_arn = creation_resp["stateMachineArn"]
 
@@ -263,11 +328,80 @@ def sqs_send_task_failure_state_machine(aws_client, create_state_machine, create
     def _create_state_machine(sqs_queue_url):
         snf_role_arn = create_iam_role_for_sfn()
         sm_name: str = f"sqs_send_task_failure_state_machine_{short_uid()}"
-        template = CallbackTemplates.load_sfn_template(CallbackTemplates.SQS_FAILURE_ON_TASK_TOKEN)
-        definition = json.dumps(template)
+
+        template = {
+            "Comment": "sqs_failure_on_task_token",
+            "StartAt": "Iterate",
+            "States": {
+                "Iterate": {
+                    "Type": "Pass",
+                    "Parameters": {"Count.$": "States.MathAdd($.Iterator.Count, -1)"},
+                    "ResultPath": "$.Iterator",
+                    "Next": "IterateStep",
+                },
+                "IterateStep": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                            "Variable": "$.Iterator.Count",
+                            "NumericLessThanEquals": 0,
+                            "Next": "NoMoreCycles",
+                        }
+                    ],
+                    "Default": "WaitAndReceive",
+                },
+                "WaitAndReceive": {"Type": "Wait", "Seconds": 1, "Next": "Receive"},
+                "Receive": {
+                    "Type": "Task",
+                    "Parameters": {"QueueUrl.$": "$.QueueUrl"},
+                    "Resource": "arn:aws:states:::aws-sdk:sqs:receiveMessage",
+                    "ResultPath": "$.SQSOutput",
+                    "Next": "CheckMessages",
+                },
+                "CheckMessages": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                            "Variable": "$.SQSOutput.Messages",
+                            "IsPresent": True,
+                            "Next": "SendFailure",
+                        }
+                    ],
+                    "Default": "Iterate",
+                },
+                "SendFailure": {
+                    "Type": "Map",
+                    "InputPath": "$.SQSOutput.Messages",
+                    "ItemProcessor": {
+                        "ProcessorConfig": {"Mode": "INLINE"},
+                        "StartAt": "ParseBody",
+                        "States": {
+                            "ParseBody": {
+                                "Type": "Pass",
+                                "Parameters": {"Body.$": "States.StringToJson($.Body)"},
+                                "Next": "Send",
+                            },
+                            "Send": {
+                                "Type": "Task",
+                                "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskFailure",
+                                "Parameters": {
+                                    "Error": "Failure error",
+                                    "Cause": "Failure cause",
+                                    "TaskToken.$": "$.Body.TaskToken",
+                                },
+                                "End": True,
+                            },
+                        },
+                    },
+                    "ResultPath": None,
+                    "Next": "Iterate",
+                },
+                "NoMoreCycles": {"Type": "Pass", "End": True},
+            },
+        }
 
         creation_resp = create_state_machine(
-            name=sm_name, definition=definition, roleArn=snf_role_arn
+            name=sm_name, definition=json.dumps(template), roleArn=snf_role_arn
         )
         state_machine_arn = creation_resp["stateMachineArn"]
 
@@ -286,13 +420,91 @@ def sqs_send_heartbeat_and_task_success_state_machine(
     def _create_state_machine(sqs_queue_url):
         snf_role_arn = create_iam_role_for_sfn()
         sm_name: str = f"sqs_send_heartbeat_and_task_success_state_machine_{short_uid()}"
-        template = CallbackTemplates.load_sfn_template(
-            CallbackTemplates.SQS_HEARTBEAT_SUCCESS_ON_TASK_TOKEN
-        )
-        definition = json.dumps(template)
+
+        template = {
+            "Comment": "SQS_HEARTBEAT_SUCCESS_ON_TASK_TOKEN",
+            "StartAt": "Iterate",
+            "States": {
+                "Iterate": {
+                    "Type": "Pass",
+                    "Parameters": {"Count.$": "States.MathAdd($.Iterator.Count, -1)"},
+                    "ResultPath": "$.Iterator",
+                    "Next": "IterateStep",
+                },
+                "IterateStep": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                            "Variable": "$.Iterator.Count",
+                            "NumericLessThanEquals": 0,
+                            "Next": "NoMoreCycles",
+                        }
+                    ],
+                    "Default": "WaitAndReceive",
+                },
+                "WaitAndReceive": {"Type": "Wait", "Seconds": 1, "Next": "Receive"},
+                "Receive": {
+                    "Type": "Task",
+                    "Parameters": {"QueueUrl.$": "$.QueueUrl"},
+                    "Resource": "arn:aws:states:::aws-sdk:sqs:receiveMessage",
+                    "ResultPath": "$.SQSOutput",
+                    "Next": "CheckMessages",
+                },
+                "CheckMessages": {
+                    "Type": "Choice",
+                    "Choices": [
+                        {
+                            "Variable": "$.SQSOutput.Messages",
+                            "IsPresent": True,
+                            "Next": "SendSuccesses",
+                        }
+                    ],
+                    "Default": "Iterate",
+                },
+                "SendSuccesses": {
+                    "Type": "Map",
+                    "InputPath": "$.SQSOutput.Messages",
+                    "ItemProcessor": {
+                        "ProcessorConfig": {"Mode": "INLINE"},
+                        "StartAt": "ParseBody",
+                        "States": {
+                            "ParseBody": {
+                                "Type": "Pass",
+                                "Parameters": {"Body.$": "States.StringToJson($.Body)"},
+                                "Next": "WaitBeforeHeartbeat",
+                            },
+                            "WaitBeforeHeartbeat": {
+                                "Type": "Wait",
+                                "Seconds": 5,
+                                "Next": "SendHeartbeat",
+                            },
+                            "SendHeartbeat": {
+                                "Type": "Task",
+                                "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskHeartbeat",
+                                "Parameters": {"TaskToken.$": "$.Body.TaskToken"},
+                                "ResultPath": None,
+                                "Next": "SendSuccess",
+                            },
+                            "SendSuccess": {
+                                "Type": "Task",
+                                "Resource": "arn:aws:states:::aws-sdk:sfn:sendTaskSuccess",
+                                "Parameters": {
+                                    "Output.$": "States.JsonToString($.Body.Message)",
+                                    "TaskToken.$": "$.Body.TaskToken",
+                                },
+                                "End": True,
+                            },
+                        },
+                    },
+                    "ResultPath": None,
+                    "Next": "Iterate",
+                },
+                "NoMoreCycles": {"Type": "Pass", "End": True},
+            },
+        }
 
         creation_resp = create_state_machine(
-            name=sm_name, definition=definition, roleArn=snf_role_arn
+            name=sm_name, definition=json.dumps(template), roleArn=snf_role_arn
         )
         state_machine_arn = creation_resp["stateMachineArn"]
 
@@ -373,3 +585,60 @@ def sfn_events_to_sqs_queue(events_to_sqs_queue):
         return events_to_sqs_queue(event_pattern=event_pattern)
 
     return _create
+
+
+@pytest.fixture
+def sfn_glue_create_job(aws_client, create_role, create_policy, wait_and_assume_role):
+    job_names = []
+
+    def _execute(**kwargs):
+        job_name = f"glue-job-{short_uid()}"
+
+        assume_role_policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+        policy_document = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": ["*"],
+                    "Resource": "*",
+                },
+            ],
+        }
+
+        role = create_role(AssumeRolePolicyDocument=json.dumps(assume_role_policy_document))
+        role_name = role["Role"]["RoleName"]
+        role_arn = role["Role"]["Arn"]
+
+        policy = create_policy(PolicyDocument=json.dumps(policy_document))
+        policy_arn = policy["Policy"]["Arn"]
+
+        aws_client.iam.attach_role_policy(
+            RoleName=role_name,
+            PolicyArn=policy_arn,
+        )
+
+        wait_and_assume_role(role_arn)
+
+        aws_client.glue.create_job(Name=job_name, Role=role_arn, **kwargs)
+
+        job_names.append(job_name)
+        return job_name
+
+    yield _execute
+
+    for job_name in job_names:
+        try:
+            aws_client.glue.delete_job(JobName=job_name)
+        except Exception as ex:
+            # TODO: the glue provider should not fail on deletion of deleted job, however this is currently the case.
+            LOG.warning(f"Could not delete job '{job_name}': {ex}")
