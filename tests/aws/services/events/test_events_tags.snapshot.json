@@ -1,6 +1,6 @@
 {
   "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus]": {
-    "recorded-date": "15-05-2024, 14:08:25",
+    "recorded-date": "15-05-2024, 14:23:15",
     "recorded-content": {
       "tag_resource": {
         "ResponseMetadata": {
@@ -8,7 +8,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "list_tagged_rule": {
+      "list_tags_for_resource": {
         "Tags": [
           {
             "Key": "tag1",
@@ -30,7 +30,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "list_untagged_rule": {
+      "list_tags_for_untagged_resource": {
         "Tags": [
           {
             "Key": "tag1",
@@ -45,7 +45,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule]": {
-    "recorded-date": "15-05-2024, 14:08:27",
+    "recorded-date": "15-05-2024, 14:23:17",
     "recorded-content": {
       "tag_resource": {
         "ResponseMetadata": {
@@ -53,7 +53,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "list_tagged_rule": {
+      "list_tags_for_resource": {
         "Tags": [
           {
             "Key": "tag1",
@@ -75,7 +75,7 @@
           "HTTPStatusCode": 200
         }
       },
-      "list_untagged_rule": {
+      "list_tags_for_untagged_resource": {
         "Tags": [
           {
             "Key": "tag1",
@@ -90,7 +90,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_put_rule_with_tags": {
-    "recorded-date": "15-05-2024, 14:00:25",
+    "recorded-date": "15-05-2024, 14:23:23",
     "recorded-content": {
       "put_rule_with_tags": {
         "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule_name>",
@@ -118,7 +118,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_create_event_bus_with_tags": {
-    "recorded-date": "15-05-2024, 14:01:46",
+    "recorded-date": "15-05-2024, 14:23:25",
     "recorded-content": {
       "create_event_bus_with_tags": {
         "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus_name>",
