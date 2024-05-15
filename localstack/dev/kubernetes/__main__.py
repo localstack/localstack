@@ -227,9 +227,9 @@ def run(
     print(f"\n    k3d cluster create --config {config_file_path}\n")
 
     print("2. Once the cluster is created, start LocalStack with the generated overrides:")
-    print("\n   helm repo add localstack https://localstack.github.io/helm-charts # (if required)")
+    print("\n    helm repo add localstack https://localstack.github.io/helm-charts # (if required)")
     print(
-        f"\n   helm upgrade --install localstack localstack/localstack -f {overrides_file_path}\n"
+        f"\n    helm upgrade --install localstack localstack/localstack -f {overrides_file_path}\n"
     )
 
 
