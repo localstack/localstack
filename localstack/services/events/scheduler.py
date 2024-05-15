@@ -61,7 +61,10 @@ class Job:
 
     def should_run_now(self):
         schedule = CronTab(self.schedule)
-        delay_secs = schedule.next()
+        delay_secs = schedule.next(
+            default_utc=True
+        )  # utc default time format for rule schedule cron
+        # TODO fix execute on exact cron time
         return delay_secs is not None and delay_secs < 60
 
     def do_run(self):
@@ -86,6 +89,7 @@ class JobScheduler:
         for job in self.jobs:
             if job.job_id == job_id:
                 return job
+        return None
 
     def disable_job(self, job_id):
         for job in self.jobs:
@@ -94,12 +98,7 @@ class JobScheduler:
                 break
 
     def cancel_job(self, job_id):
-        i = 0
-        while i < len(self.jobs):
-            if self.jobs[i].job_id == job_id:
-                del self.jobs[i]
-            else:
-                i += 1
+        self.jobs = [job for job in self.jobs if job.job_id != job_id]
 
     def loop(self, *args):
         while not self._stop_event.is_set():
@@ -108,7 +107,7 @@ class JobScheduler:
                     job.run()
             except Exception:
                 pass
-            # This is a simple heuristic to cause the loop to run apprx every minute
+            # This is a simple heuristic to cause the loop to run approximately every minute
             # TODO: we should keep track of jobs execution times, to avoid duplicate executions
             self._stop_event.wait(timeout=59.9)
 
@@ -132,6 +131,5 @@ class JobScheduler:
     @classmethod
     def shutdown(cls):
         instance = cls.instance()
-        if not instance.thread:
-            return
-        instance._stop_event.set()
+        if instance.thread:
+            instance._stop_event.set()
