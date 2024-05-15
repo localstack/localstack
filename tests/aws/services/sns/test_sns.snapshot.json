@@ -5255,5 +5255,25 @@
         ]
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_list_subscriptions_by_topic_pagination": {
+    "recorded-date": "13-05-2024, 12:50:25",
+    "recorded-content": {
+      "list-sub-per-topic-page-2": {
+        "Subscriptions": [
+          {
+            "Endpoint": "<endpoint:1>",
+            "Owner": "111111111111",
+            "Protocol": "sms",
+            "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:2>:<resource:1>",
+            "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

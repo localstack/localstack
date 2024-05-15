@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 from typing import Dict, List
@@ -73,8 +74,8 @@ from localstack.utils.aws.arns import (
     extract_region_from_arn,
     parse_arn,
 )
-from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.strings import short_uid
+from localstack.utils.collections import PaginatedList, select_from_typed_dict
+from localstack.utils.strings import short_uid, to_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -464,7 +465,17 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         subscriptions = [
             select_from_typed_dict(Subscription, sub) for sub in list(store.subscriptions.values())
         ]
-        return ListSubscriptionsResponse(Subscriptions=subscriptions)
+        paginated_subscriptions = PaginatedList(subscriptions)
+        page, next_token = paginated_subscriptions.get_page(
+            token_generator=lambda x: get_next_page_token_from_arn(x["SubscriptionArn"]),
+            page_size=100,
+            next_token=next_token,
+        )
+
+        response = ListSubscriptionsResponse(Subscriptions=page)
+        if next_token:
+            response["NextToken"] = next_token
+        return response
 
     def list_subscriptions_by_topic(
         self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
@@ -474,7 +485,18 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         store = self.get_store(parsed_topic_arn["account"], parsed_topic_arn["region"])
         sns_subscriptions = store.get_topic_subscriptions(topic_arn)
         subscriptions = [select_from_typed_dict(Subscription, sub) for sub in sns_subscriptions]
-        return ListSubscriptionsByTopicResponse(Subscriptions=subscriptions)
+
+        paginated_subscriptions = PaginatedList(subscriptions)
+        page, next_token = paginated_subscriptions.get_page(
+            token_generator=lambda x: get_next_page_token_from_arn(x["SubscriptionArn"]),
+            page_size=100,
+            next_token=next_token,
+        )
+
+        response = ListSubscriptionsResponse(Subscriptions=page)
+        if next_token:
+            response["NextToken"] = next_token
+        return response
 
     def publish(
         self,
@@ -997,6 +1019,10 @@ def get_region_from_subscription_token(token: str) -> str:
         return bytes.fromhex(region).decode("utf-8")
     except (IndexError, ValueError, TypeError, UnicodeDecodeError):
         raise InvalidParameterException("Invalid parameter: Token")
+
+
+def get_next_page_token_from_arn(resource_arn: str) -> str:
+    return to_str(base64.b64encode(to_bytes(resource_arn)))
 
 
 def register_sns_api_resource(router: Router):
