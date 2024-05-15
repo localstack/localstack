@@ -2,6 +2,9 @@
   "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_create_event_bus_with_tags": {
     "last_validated_date": "2024-05-15T14:23:25+00:00"
   },
+  "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_list_tags_for_deleted_rule": {
+    "last_validated_date": "2024-05-15T14:53:08+00:00"
+  },
   "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_put_rule_with_tags": {
     "last_validated_date": "2024-05-15T14:23:23+00:00"
   },

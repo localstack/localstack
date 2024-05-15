@@ -168,5 +168,15 @@
       "list_tags_for_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Event bus <not-existing-resource-name> does not exist.') tblen=3>",
       "untag_not_existing_resource_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the UntagResource operation: Event bus <not-existing-resource-name> does not exist.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_list_tags_for_deleted_resource": {
+    "recorded-date": "15-05-2024, 14:43:11",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_events_tags.py::TestRuleTags::test_list_tags_for_deleted_rule": {
+    "recorded-date": "15-05-2024, 14:53:08",
+    "recorded-content": {
+      "list_tags_for_deleted_rule_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Rule <rule_name> does not exist on EventBus <bus_name>.') tblen=3>"
+    }
   }
 }

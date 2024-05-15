@@ -90,7 +90,9 @@ def tests_tag_list_untag_not_existing_resource(
 
     snapshot.match("tag_not_existing_resource_error", error)
 
-    snapshot.add_transformer(snapshot.transform.regex(resource_name, "<not-existing-resource-name>"))
+    snapshot.add_transformer(
+        snapshot.transform.regex(resource_name, "<not-existing-resource-name>")
+    )
     with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as error:
         aws_client.events.list_tags_for_resource(ResourceARN=resource_arn)
     snapshot.match("list_tags_for_not_existing_resource_error", error)
@@ -132,6 +134,34 @@ class TestRuleTags:
         response_put_rule = aws_client.events.list_tags_for_resource(ResourceARN=rule_arn)
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule_name>"))
         snapshot.match("list_tags_for_rule", response_put_rule)
+
+    @markers.aws.validated
+    def test_list_tags_for_deleted_rule(
+        self, events_create_event_bus, events_put_rule, aws_client, snapshot
+    ):
+        bus_name = f"test_bus-{short_uid()}"
+        events_create_event_bus(Name=bus_name)
+
+        rule_name = f"test_rule-{short_uid()}"
+        response_put_rule = events_put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        rule_arn = response_put_rule["RuleArn"]
+
+        aws_client.events.delete_rule(Name=rule_name, EventBusName=bus_name)
+
+        with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as error:
+            aws_client.events.list_tags_for_resource(ResourceARN=rule_arn)
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(rule_name, "<rule_name>"),
+                snapshot.transform.regex(bus_name, "<bus_name>"),
+            ]
+        )
+        snapshot.match("list_tags_for_deleted_rule_error", error)
 
 
 class TestEventBusTags:
