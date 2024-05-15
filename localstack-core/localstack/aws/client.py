@@ -18,6 +18,7 @@ from localstack.utils.patch import patch
 from localstack.utils.strings import to_str
 
 from .api import CommonServiceException, RequestContext, ServiceException, ServiceResponse
+from .connect import get_service_endpoint
 from .gateway import Gateway
 
 LOG = logging.getLogger(__name__)
@@ -293,10 +294,16 @@ class GatewayShortCircuit:
 
     def __init__(self, gateway: Gateway):
         self.gateway = gateway
+        self._internal_url = get_service_endpoint()
 
     def __call__(
         self, event_name: str, request: awsrequest.AWSPreparedRequest, **kwargs
-    ) -> awsrequest.AWSResponse:
+    ) -> awsrequest.AWSResponse | None:
+        # TODO: we sometimes overrides the endpoint_url to direct it to DynamoDBLocal directly
+        # if the default endpoint_url is not in the request, just skips the in-memory forwarding
+        if self._internal_url not in request.url:
+            return
+
         # extract extra data from enriched AWSPreparedRequest
         params = request.params
         operation: OperationModel = request.operation_model
