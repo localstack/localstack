@@ -1778,6 +1778,49 @@ class TestLambdaCleanup:
 
         assert not errored
 
+    @markers.aws.validated
+    def test_recreate_function(
+        self, aws_client, create_lambda_function, check_lambda_logs, snapshot
+    ):
+        """Recreating a function with the same name should not cause any resource cleanup issues or namespace collisions
+        Reproduces a GitHub issue: https://github.com/localstack/localstack/issues/10280"""
+        function_name = f"test-function-{short_uid()}"
+        create_function_response_one = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_12,
+        )
+        snapshot.match("create_function_response_one", create_function_response_one)
+
+        aws_client.lambda_.delete_function(FunctionName=function_name)
+
+        # Immediately re-create the same function
+        create_function_response_two = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_12,
+        )
+        snapshot.match("create_function_response_two", create_function_response_two)
+
+        # Validate that async invokes still work
+        invoke_response = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType="Event",
+        )
+        invoke_response = read_streams(invoke_response)
+        assert 202 == invoke_response["StatusCode"]
+
+        # Assert that the function gets invoked by checking the logs.
+        # This also ensures that we wait until the invocation is done before deleting the function.
+        expected = [".*{}"]
+
+        def check_logs():
+            check_lambda_logs(function_name, expected_lines=expected)
+
+        retry(check_logs, retries=15)
+
 
 class TestLambdaMultiAccounts:
     @pytest.fixture
