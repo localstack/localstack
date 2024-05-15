@@ -190,7 +190,7 @@ class ApiGatewayVtlTemplate(VtlTemplate):
             namespace["stageVariables"] = stage_var
         input_var = variables.get("input") or {}
         variables = {
-            "input": VelocityInput(input_var.get("body"), input_var.get("params")),
+            "input": VelocityInput(input_var.get("body") or {}, input_var.get("params")),
             "util": VelocityUtilApiGateway(),
         }
         namespace.update(variables)

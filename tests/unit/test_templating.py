@@ -80,6 +80,21 @@ APIGW_TEMPLATE_CUSTOM_BODY = """
 }
 """
 
+APIGW_TEMPLATE_BODY_FORWARDING_ONLY = """
+## Template that attempts to forward the request body to the execution input of
+## the state machine.
+
+#set($inputString = '')
+#set($allParams = $input.params())
+{
+    #set($inputString = "$inputString,@@body@@: $input.body")
+    #set($inputString = "$inputString}")
+    #set($inputString = $inputString.replaceAll("@@",'"'))
+    #set($len = $inputString.length() - 1)
+    "input": "{$util.escapeJavaScript($inputString.substring(1,$len)).replaceAll("\\'","'")}"
+}
+"""
+
 
 class TestMessageTransformationBasic:
     def test_return_macro(self):
@@ -181,6 +196,14 @@ class TestMessageTransformationApiGateway:
 
         result = ApiGatewayVtlTemplate().render_vtl(template, variables)
         assert result == " 2"
+
+    def test_template_rendering_with_empty_string_body(self):
+        template = APIGW_TEMPLATE_BODY_FORWARDING_ONLY
+        variables = {"input": {"body": ""}}
+        result = ApiGatewayVtlTemplate().render_vtl(template, variables)
+        result = re.sub(r"\s+", " ", result).strip()
+        result = json.loads(result)
+        assert result == {"input": '{"body": {}}'}
 
     def test_message_transformation(self):
         template = APIGW_TEMPLATE_TRANSFORM_KINESIS
