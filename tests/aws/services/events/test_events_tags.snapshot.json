@@ -1,6 +1,51 @@
 {
-  "tests/aws/services/events/test_events_tags.py::TestRuleTags::tests_tag_untag_resource": {
-    "recorded-date": "15-05-2024, 13:41:22",
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus]": {
+    "recorded-date": "15-05-2024, 13:47:52",
+    "recorded-content": {
+      "tag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tagged_rule": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_untagged_rule": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule]": {
+    "recorded-date": "15-05-2024, 13:47:54",
     "recorded-content": {
       "tag_resource": {
         "ResponseMetadata": {
