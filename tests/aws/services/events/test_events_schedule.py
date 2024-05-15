@@ -88,13 +88,14 @@ class TestScheduleRate:
         aws_client,
         snapshot,
     ):
-        queue_url, queue_arn = create_sqs_events_target()
+        queue_name = f"test-queue-{short_uid()}"
+        queue_url, queue_arn = create_sqs_events_target(queue_name)
 
         bus_name = "default"
         rule_name = f"test-rule-{short_uid()}"
         events_put_rule(Name=rule_name, EventBusName=bus_name, ScheduleExpression="rate(1 minute)")
 
-        target_id = f"target-{short_uid()}"
+        target_id = f"test-target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name,
             EventBusName=bus_name,
@@ -113,6 +114,9 @@ class TestScheduleRate:
             [
                 snapshot.transform.key_value("MD5OfBody"),
                 snapshot.transform.key_value("ReceiptHandle"),
+                snapshot.transform.regex(target_id, "<target-id>"),
+                snapshot.transform.regex(rule_name, "<rule-name>"),
+                snapshot.transform.regex(queue_name, "<queue-name"),
             ]
         )
         snapshot.match("messages-first", messages_first)
@@ -164,6 +168,8 @@ class TestScheduleRate:
             [
                 snapshot.transform.key_value("MD5OfBody"),
                 snapshot.transform.key_value("ReceiptHandle"),
+                snapshot.transform.regex(target_id, "<target-id>"),
+                snapshot.transform.regex(queue_arn, "<queue-arn>"),
             ]
         )
         snapshot.match("messages", messages_first)
@@ -322,6 +328,7 @@ class TestScheduleCron:
             [
                 snapshot.transform.key_value("MD5OfBody"),
                 snapshot.transform.key_value("ReceiptHandle"),
+                snapshot.transform.regex(rule_name, "<rule-name>"),
             ]
         )
         snapshot.match("message", messages)

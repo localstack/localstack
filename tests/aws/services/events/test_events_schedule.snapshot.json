@@ -37,13 +37,13 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_rate_target_sqs": {
-    "recorded-date": "14-05-2024, 12:22:00",
+    "recorded-date": "15-05-2024, 08:57:51",
     "recorded-content": {
       "list-targets": {
         "Targets": [
           {
-            "Arn": "arn:aws:sqs:<region>:111111111111:tests-queue-cf13614b",
-            "Id": "target-56991308"
+            "Arn": "arn:aws:sqs:<region>:111111111111:<queue-name",
+            "Id": "<target-id>"
           }
         ],
         "ResponseMetadata": {
@@ -65,7 +65,7 @@
             "time": "date",
             "region": "<region>",
             "resources": [
-              "arn:aws:events:<region>:111111111111:rule/test-rule-7ebb41f2"
+              "arn:aws:events:<region>:111111111111:rule/<rule-name>"
             ],
             "detail": {}
           }
@@ -85,7 +85,7 @@
             "time": "date",
             "region": "<region>",
             "resources": [
-              "arn:aws:events:<region>:111111111111:rule/test-rule-7ebb41f2"
+              "arn:aws:events:<region>:111111111111:rule/<rule-name>"
             ],
             "detail": {}
           }
@@ -121,7 +121,7 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::test_schedule_cron_target_sqs": {
-    "recorded-date": "14-05-2024, 15:38:47",
+    "recorded-date": "15-05-2024, 10:58:53",
     "recorded-content": {
       "message": [
         {
@@ -137,7 +137,7 @@
             "time": "date",
             "region": "<region>",
             "resources": [
-              "arn:aws:events:<region>:111111111111:rule/test-rule-a5878d11"
+              "arn:aws:events:<region>:111111111111:rule/<rule-name>"
             ],
             "detail": {}
           }
@@ -389,13 +389,13 @@
     }
   },
   "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_rate_custom_input_target_sqs": {
-    "recorded-date": "14-05-2024, 15:49:59",
+    "recorded-date": "15-05-2024, 09:31:53",
     "recorded-content": {
       "list-targets": {
         "Targets": [
           {
-            "Arn": "arn:aws:sqs:<region>:111111111111:tests-queue-0d70fd15",
-            "Id": "target-81bd7bab",
+            "Arn": "<queue-arn>",
+            "Id": "<target-id>",
             "Input": {
               "custom-value": "somecustominput"
             }
