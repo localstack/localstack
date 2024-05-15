@@ -1210,6 +1210,19 @@
         "documentation": "<p>Your proposed upload exceeds the maximum allowed size</p>",
         "exception": true
       }
+    },
+    {
+      "op": "remove",
+      "path": "/shapes/ListObjectVersionsOutput/members/Versions"
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ListObjectVersionsOutput/members/Versions",
+      "value": {
+        "shape":"ObjectVersionList",
+        "documentation":"<p>Container for version information.</p>",
+        "locationName":"Version"
+      }
     }
   ]
 }

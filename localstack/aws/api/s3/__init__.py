@@ -2588,7 +2588,6 @@ class ListObjectVersionsOutput(TypedDict, total=False):
     VersionIdMarker: Optional[VersionIdMarker]
     NextKeyMarker: Optional[NextKeyMarker]
     NextVersionIdMarker: Optional[NextVersionIdMarker]
-    Versions: Optional[ObjectVersionList]
     DeleteMarkers: Optional[DeleteMarkers]
     Name: Optional[BucketName]
     Prefix: Optional[Prefix]
@@ -2597,6 +2596,7 @@ class ListObjectVersionsOutput(TypedDict, total=False):
     CommonPrefixes: Optional[CommonPrefixList]
     EncodingType: Optional[EncodingType]
     RequestCharged: Optional[RequestCharged]
+    Versions: Optional[ObjectVersionList]
 
 
 OptionalObjectAttributesList = List[OptionalObjectAttributes]
