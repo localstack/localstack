@@ -47,6 +47,8 @@ class RuleService:
         self._validate_input(event_pattern, schedule_expression, event_bus_name)
         if schedule_expression:
             self.schedule_cron = self._get_schedule_cron(schedule_expression)
+        else:
+            self.schedule_cron = None
         # required to keep data and functionality separate for persistence
         self.rule = Rule(
             name,

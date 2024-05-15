@@ -436,10 +436,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         for target in targets:  # TODO only add successful targets
             self.create_target_sender(target, region, account_id, rule_arn, rule_name)
 
-        schedule_job_function = self._get_scheduled_rule_job_function(
-            account_id, region, rule_service.rule
-        )
-        rule_service.create_schedule_job(schedule_job_function)
+        if rule_service.schedule_cron:
+            schedule_job_function = self._get_scheduled_rule_job_function(
+                account_id, region, rule_service.rule
+            )
+            rule_service.create_schedule_job(schedule_job_function)
         response = PutTargetsResponse(
             FailedEntryCount=len(failed_entries), FailedEntries=failed_entries
         )
