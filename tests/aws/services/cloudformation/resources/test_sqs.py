@@ -33,8 +33,7 @@ def test_sqs_fifo_queue_generates_valid_name(deploy_cfn_template):
     assert ".fifo" in result.outputs["FooQueueName"]
 
 
-# FIXME: doesn't work on AWS. (known bug in cloudformation: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/165)
-@markers.aws.unknown
+@markers.aws.validated
 def test_sqs_non_fifo_queue_generates_valid_name(deploy_cfn_template):
     result = deploy_cfn_template(
         template_path=os.path.join(

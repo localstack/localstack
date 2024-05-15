@@ -3136,9 +3136,9 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_standard_queue_with_fifo_attribute_raises_error[sqs]": {
-    "recorded-date": "14-05-2024, 22:40:39",
+    "recorded-date": "15-05-2024, 02:30:47",
     "recorded-content": {
-      "invalid-attribute": {
+      "invalid-attribute-fifo-queue": {
         "Error": {
           "Code": "InvalidAttributeName",
           "Message": "Unknown Attribute FifoQueue.",
@@ -3150,13 +3150,52 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      },
+      "invalid-attribute-content-based-deduplication": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "Unknown Attribute ContentBasedDeduplication.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "Unknown Attribute ContentBasedDeduplication.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-attribute-deduplication-scope": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "You can specify the DeduplicationScope only when FifoQueue is set to true.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "You can specify the DeduplicationScope only when FifoQueue is set to true.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-attribute-throughput-limit": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "You can specify the FifoThroughputLimit only when FifoQueue is set to true.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "You can specify the FifoThroughputLimit only when FifoQueue is set to true.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
       }
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_standard_queue_with_fifo_attribute_raises_error[sqs_query]": {
-    "recorded-date": "14-05-2024, 22:40:39",
+    "recorded-date": "15-05-2024, 02:30:48",
     "recorded-content": {
-      "invalid-attribute": {
+      "invalid-attribute-fifo-queue": {
         "Error": {
           "Code": "InvalidAttributeName",
           "Message": "Unknown Attribute FifoQueue.",
@@ -3164,6 +3203,45 @@
           "Type": "Sender"
         },
         "message": "Unknown Attribute FifoQueue.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-attribute-content-based-deduplication": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "Unknown Attribute ContentBasedDeduplication.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "Unknown Attribute ContentBasedDeduplication.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-attribute-deduplication-scope": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "You can specify the DeduplicationScope only when FifoQueue is set to true.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "You can specify the DeduplicationScope only when FifoQueue is set to true.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-attribute-throughput-limit": {
+        "Error": {
+          "Code": "InvalidAttributeName",
+          "Message": "You can specify the FifoThroughputLimit only when FifoQueue is set to true.",
+          "QueryErrorCode": "InvalidAttributeName",
+          "Type": "Sender"
+        },
+        "message": "You can specify the FifoThroughputLimit only when FifoQueue is set to true.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
