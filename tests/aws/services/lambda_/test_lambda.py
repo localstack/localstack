@@ -41,6 +41,7 @@ from localstack.utils.platform import Arch, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
+from tests.aws.services.lambda_.utils import get_s3_keys
 
 LOG = logging.getLogger(__name__)
 
@@ -74,6 +75,9 @@ TEST_LAMBDA_PYTHON_HANDLER_EXIT = os.path.join(THIS_FOLDER, "functions/lambda_ha
 TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
 TEST_LAMBDA_AWS_PROXY_FORMAT = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy_format.py")
 TEST_LAMBDA_PYTHON_S3_INTEGRATION = os.path.join(THIS_FOLDER, "functions/lambda_s3_integration.py")
+TEST_LAMBDA_PYTHON_S3_INTEGRATION_FUNCTION_VERSION = os.path.join(
+    THIS_FOLDER, "functions/lambda_s3_integration_function_version.py"
+)
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
 TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
@@ -540,12 +544,10 @@ class TestLambdaBehavior:
         payload = json.load(invoke_result_x86["Payload"])
         assert payload.get("platform_machine") == "x86_64"
 
-        update_function_configuration_response = aws_client.lambda_.update_function_code(
+        update_function_code_response = aws_client.lambda_.update_function_code(
             FunctionName=func_name, ZipFile=zip_file, Architectures=[Architecture.arm64]
         )
-        snapshot.match(
-            "update_function_configuration_response", update_function_configuration_response
-        )
+        snapshot.match("update_function_code_response", update_function_code_response)
         aws_client.lambda_.get_waiter(waiter_name="function_updated_v2").wait(
             FunctionName=func_name
         )
@@ -2643,6 +2645,86 @@ class TestLambdaVersions:
         snapshot.match(
             "invoke_result_handler_two_postpublish", invoke_result_handler_two_postpublish
         )
+
+    @markers.aws.validated
+    def test_async_invoke_queue_upon_function_update(
+        self, aws_client, create_lambda_function, s3_create_bucket, snapshot
+    ):
+        """Test what happens with queued async invokes (i.e., event invokes) when updating a function.
+        We are using a combination of reserved concurrency and sleeps to design this test case predictable.
+        Observation: If we don't wait after sending the first invoke, some queued invokes can still be handled by an
+        old variant in some non-deterministic way.
+        """
+        # MAYBE: consider validating whether a code update behaves differently than a configuration update
+        bucket_name = f"lambda-target-bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name)
+
+        function_name = f"test-function-{short_uid()}"
+        environment_v1 = {
+            "Variables": {"S3_BUCKET_NAME": bucket_name, "FUNCTION_VARIANT": "variant-1"}
+        }
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION_FUNCTION_VERSION,
+            runtime=Runtime.python3_12,
+            Environment=environment_v1,
+        )
+        # Add reserved concurrency limits the throughput and makes it easier to cause event invokes to queue up.
+        reserved_concurrency_response = aws_client.lambda_.put_function_concurrency(
+            FunctionName=function_name,
+            ReservedConcurrentExecutions=1,
+        )
+        assert reserved_concurrency_response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        payload = {"request_prefix": f"{1:02}-sleep", "sleep_seconds": 22}
+        aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType="Event",
+            Payload=json.dumps(payload),
+        )
+        # Make it very likely that the first request is being processed before sending further requests without sleeps.
+        time.sleep(2)
+
+        # Send async invokes that should queue up before we update the function
+        num_invocations_before = 9
+        for index in range(num_invocations_before):
+            payload = {"request_prefix": f"{index + 2:02}-before"}
+            aws_client.lambda_.invoke(
+                FunctionName=function_name,
+                InvocationType="Event",
+                Payload=json.dumps(payload),
+            )
+
+        # Update the function variant while still having invokes in the async invoke queue
+        environment_v2 = environment_v1.copy()
+        environment_v2["Variables"]["FUNCTION_VARIANT"] = "variant-2"
+        aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, Environment=environment_v2
+        )
+        waiter = aws_client.lambda_.get_waiter("function_updated_v2")
+        waiter.wait(FunctionName=function_name)
+
+        # Send further async invokes after the update succeeded
+        num_invocations_after = 5
+        for index in range(num_invocations_after):
+            payload = {"request_prefix": f"{index + num_invocations_before + 2:02}-after"}
+            aws_client.lambda_.invoke(
+                FunctionName=function_name,
+                InvocationType="Event",
+                Payload=json.dumps(payload),
+            )
+
+        # +1 for the first sleep invocation
+        total_invocations = 1 + num_invocations_before + num_invocations_after
+
+        def assert_s3_objects():
+            s3_keys_output = get_s3_keys(aws_client, bucket_name)
+            assert len(s3_keys_output) >= total_invocations
+            return s3_keys_output
+
+        s3_keys = retry(assert_s3_objects, retries=20, sleep=5)
+        s3_keys_sorted = sorted(s3_keys)
+        snapshot.match("async_invoke_history_sorted", s3_keys_sorted)
 
 
 # TODO: test if routing is static for a single invocation:
