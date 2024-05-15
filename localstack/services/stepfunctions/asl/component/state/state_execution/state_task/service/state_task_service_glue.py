@@ -108,9 +108,9 @@ class StateTaskServiceGlue(StateTaskServiceCallback):
         glue_client = self._get_glue_client(resource_runtime_part=resource_runtime_part)
         response = glue_client.start_job_run(**normalised_parameters)
         response.pop("ResponseMetadata", None)
-        # AWS StepFunctions extracts from the request and inserts it into the response, which
-        # normally only contains JobRunID; as this is a required field for start_job_run, the
-        # access at this depth is safe.
+        # AWS StepFunctions extracts the JobName from the request and inserts it into the response, which
+        # normally only contains JobRunID; as this is a required field for start_job_run, the access at
+        # this depth is safe.
         response["JobName"] = normalised_parameters.get("JobName")
         env.stack.append(response)
 
@@ -130,7 +130,7 @@ class StateTaskServiceGlue(StateTaskServiceCallback):
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
     ):
-        # Sample the job run state from glue, using GetJobRun until the job has terminated. Hence, append the output
+        # Poll the job run state from glue, using GetJobRun until the job has terminated. Hence, append the output
         # of GetJobRun to the state.
 
         # Access the JobName and the JobRunId from the StartJobRun output call that must
