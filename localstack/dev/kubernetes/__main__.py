@@ -45,7 +45,7 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False):
 
     ports = [{"port": "4566:31566", "nodeFilters": ["server:0"]}]
 
-    config = {"apiVersion": "k3d.io/v1alpha3", "kind": "Simple", "volumes": volumes, "ports": ports}
+    config = {"apiVersion": "k3d.io/v1alpha5", "kind": "Simple", "volumes": volumes, "ports": ports}
 
     return config
 
