@@ -4286,5 +4286,24 @@
         "15-after--variant-2"
       ]
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_handler_update_during_invoke": {
+    "recorded-date": "15-05-2024, 19:05:05",
+    "recorded-content": {
+      "invoke_response_before": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "function_version": "$LATEST",
+          "request_id": "<uuid:1>",
+          "request_prefix": "1-sleep",
+          "function_variant": "variant-1"
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

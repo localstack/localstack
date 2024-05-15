@@ -5,7 +5,7 @@ import time
 import boto3
 
 s3 = boto3.client("s3", endpoint_url=os.environ.get("AWS_ENDPOINT_URL"))
-S3_BUCKET_NAME = os.environ["S3_BUCKET_NAME"]
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
 # Configurable identifier to test function updates
 FUNCTION_VARIANT = os.environ.get("FUNCTION_VARIANT")
 

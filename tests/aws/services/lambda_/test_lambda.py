@@ -2646,6 +2646,68 @@ class TestLambdaVersions:
             "invoke_result_handler_two_postpublish", invoke_result_handler_two_postpublish
         )
 
+    # TODO: Fix this test by not stopping running invokes for function updates of $LATEST
+    @pytest.mark.skip(
+        reason="""Fails with 'Internal error while executing lambda' because
+                  the current implementation stops all running invokes upon update."""
+    )
+    @markers.aws.validated
+    def test_handler_update_during_invoke(self, aws_client, create_lambda_function, snapshot):
+        function_name = f"test-function-{short_uid()}"
+        environment_v1 = {"Variables": {"FUNCTION_VARIANT": "variant-1"}}
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION_FUNCTION_VERSION,
+            runtime=Runtime.python3_12,
+            Environment=environment_v1,
+        )
+
+        errored = False
+
+        def _update_function():
+            nonlocal errored
+            try:
+                # Make it very likely that the invocation is being processed
+                # In LocalStack, Lambda image pulling could potentially affect the exact timing,
+                # but at least the invocation runtime startup should be in progress.
+                time.sleep(5)
+
+                environment_v2 = environment_v1.copy()
+                environment_v2["Variables"]["FUNCTION_VARIANT"] = "variant-2"
+                aws_client.lambda_.update_function_configuration(
+                    FunctionName=function_name, Environment=environment_v2
+                )
+                waiter = aws_client.lambda_.get_waiter("function_updated_v2")
+                waiter.wait(FunctionName=function_name)
+
+                payload = {"request_prefix": "2-post-update"}
+                invoke_response_after = aws_client.lambda_.invoke(
+                    FunctionName=function_name,
+                    Payload=json.dumps(payload),
+                )
+                assert invoke_response_after["StatusCode"] == 200
+                payload = json.load(invoke_response_after["Payload"])
+                assert payload["function_variant"] == "variant-2"
+                assert payload["function_version"] == "$LATEST"
+            except Exception:
+                LOG.exception(f"Updating lambda function {function_name} failed.")
+                errored = True
+
+        # Start thread with upcoming function update (slightly delayed)
+        thread = threading.Thread(target=_update_function)
+        thread.start()
+
+        # Start an invocation with a sleep
+        payload = {"request_prefix": "1-sleep", "sleep_seconds": 20}
+        invoke_response_before = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps(payload),
+        )
+        snapshot.match("invoke_response_before", invoke_response_before)
+
+        thread.join()
+        assert not errored
+
     # TODO: Fix first invoke getting retried and ending up being executed against the new variant because the
     #  update stops the running function version. We should let running executions finish for $LATEST in this case.
     # MAYBE: consider validating whether a code update behaves differently than a configuration update
@@ -2690,10 +2752,10 @@ class TestLambdaVersions:
         )
         # Make it very likely that the first request is being processed before sending further requests without sleeps.
         # We could use a side effect (e.g., via S3) to signal a status update if Lambda image pulling causes flakiness,
-        # but the poller should have already picked up the async invoke such that a sleep works reliably.
+        # but the poller should have already picked up the async invocation such that a sleep works reliably.
         time.sleep(2)
 
-        # Send async invokes that should queue up before we update the function
+        # Send async invocation, which should queue up before we update the function
         num_invocations_before = 9
         for index in range(num_invocations_before):
             payload = {"request_prefix": f"{index + 2:02}-before"}
@@ -2712,7 +2774,7 @@ class TestLambdaVersions:
         waiter = aws_client.lambda_.get_waiter("function_updated_v2")
         waiter.wait(FunctionName=function_name)
 
-        # Send further async invokes after the update succeeded
+        # Send further async invocations after the update succeeded
         num_invocations_after = 5
         for index in range(num_invocations_after):
             payload = {"request_prefix": f"{index + num_invocations_before + 2:02}-after"}
