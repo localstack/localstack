@@ -87,3 +87,28 @@ class TestRuleTags:
         response_put_rule = aws_client.events.list_tags_for_resource(ResourceARN=rule_arn)
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule_name>"))
         snapshot.match("list_tags_for_rule", response_put_rule)
+
+
+class TestEventBusTags:
+    @markers.aws.validated
+    def test_create_event_bus_with_tags(self, events_create_event_bus, aws_client, snapshot):
+        bus_name = f"test_bus-{short_uid()}"
+        response_create_event_bus = events_create_event_bus(
+            Name=bus_name,
+            Tags=[
+                {
+                    "Key": "tag1",
+                    "Value": "value1",
+                },
+                {
+                    "Key": "tag2",
+                    "Value": "value2",
+                },
+            ],
+        )
+        bus_arn = response_create_event_bus["EventBusArn"]
+        snapshot.match("create_event_bus_with_tags", response_create_event_bus)
+
+        response_create_event_bus = aws_client.events.list_tags_for_resource(ResourceARN=bus_arn)
+        snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus_name>"))
+        snapshot.match("list_tags_for_event_bus", response_create_event_bus)

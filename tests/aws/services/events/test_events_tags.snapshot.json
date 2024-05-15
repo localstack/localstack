@@ -116,5 +116,33 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_create_event_bus_with_tags": {
+    "recorded-date": "15-05-2024, 14:01:46",
+    "recorded-content": {
+      "create_event_bus_with_tags": {
+        "EventBusArn": "arn:aws:events:<region>:111111111111:event-bus/<bus_name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_event_bus": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          },
+          {
+            "Key": "tag2",
+            "Value": "value2"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
