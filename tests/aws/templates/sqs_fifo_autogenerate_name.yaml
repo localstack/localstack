@@ -1,5 +1,9 @@
+Parameters:
+  IsFifo:
+    Type: String
+
 Conditions:
-  IsFifo: !Equals [ {{ is_fifo }}, "true"]
+  IsFifo: !Equals [ !Ref IsFifo, "true"]
 
 Resources:
   FooQueueA2A23E59:

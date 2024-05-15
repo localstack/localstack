@@ -589,7 +589,7 @@ class SqsQueue:
             )
 
     def validate_queue_attributes(self, attributes):
-        raise NotImplementedError
+        pass
 
     def add_permission(self, label: str, actions: list[str], account_ids: list[str]) -> None:
         """
