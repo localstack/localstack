@@ -6,7 +6,7 @@ import yaml
 from localstack import version as localstack_version
 
 
-def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False):
+def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, port: int = 4566):
     volumes = []
     root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
     localstack_code_path = os.path.join(root_path, "localstack")
@@ -43,7 +43,7 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False):
             {"volume": f"{moto_path}:/code/moto", "nodeFilters": ["server:*", "agent:*"]}
         )
 
-    ports = [{"port": "4566:31566", "nodeFilters": ["server:0"]}]
+    ports = [{"port": f"{port}:31566", "nodeFilters": ["server:0"]}]
 
     config = {"apiVersion": "k3d.io/v1alpha5", "kind": "Simple", "volumes": volumes, "ports": ports}
 
@@ -181,6 +181,13 @@ def print_file(content: dict, file_name: str):
 @click.option(
     "--env", "-e", default=None, help="Environment variable to set in the pod", multiple=True
 )
+@click.option(
+    "--port",
+    "-p",
+    default=4566,
+    help="Port to expose from the kubernetes node",
+    type=click.IntRange(0, 65535),
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     pro: bool = None,
@@ -191,12 +198,13 @@ def run(
     config_file: str = None,
     command: str = None,
     env: list[str] = None,
+    port: int = None,
 ):
     """
     A tool for localstack developers to generate the kubernetes cluster configuration file and the overrides to mount the localstack code into the cluster.
     """
 
-    config = generate_k8s_cluster_config(pro=pro, mount_moto=mount_moto)
+    config = generate_k8s_cluster_config(pro=pro, mount_moto=mount_moto, port=port)
 
     overrides = generate_k8s_cluster_overrides(pro, config, env=env)
 
