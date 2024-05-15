@@ -233,37 +233,22 @@ class SubscriptionFilter:
         :param nested_dict: a (nested) dictionary
         :return: flatten_dict: a dictionary with no nested dict inside, flattened to a single level
         """
-        flattened = []
-        current_object = {}
 
-        def _traverse(_object, parent_key=None):
+        def _traverse(_object: dict, array=None, parent_key=None) -> list:
             if isinstance(_object, dict):
                 for key, values in _object.items():
-                    flattened_parent_key = key if not parent_key else f"{parent_key}.{key}"
-                    _traverse(values, flattened_parent_key)
+                    # We update the parent key do that {"key1": {"key2": ""}} becomes "key1.key2"
+                    _parent_key = f"{parent_key}.{key}" if parent_key else key
+                    array = _traverse(values, array, _parent_key)
 
-            # we don't have to worry about `parent_key` being None for list or any other type, because we have a check
-            # that the first object is always a dict, thus setting a parent key on first iteration
             elif isinstance(_object, list):
-                for value in _object:
-                    if isinstance(value, (dict, list)):
-                        _traverse(value, parent_key=parent_key)
-                    else:
-                        current_object[parent_key] = value
-
-                    if current_object:
-                        flattened.append({**current_object})
-                        current_object.clear()
+                array = [i for value in _object for i in _traverse(value, array, parent_key)]
             else:
-                current_object[parent_key] = _object
+                array = [{**item, parent_key: _object} for item in array]
 
-        _traverse(nested_dict)
+            return array
 
-        # if the payload did not have any list, we manually append the current object
-        if not flattened:
-            flattened.append(current_object)
-
-        return flattened
+        return _traverse(nested_dict, array=[{}], parent_key=None)
 
 
 class FilterPolicyValidator:

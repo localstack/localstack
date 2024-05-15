@@ -889,3 +889,27 @@ class TestSns:
         }
         rules, combinations = validator_flat.aggregate_rules(filter_policy)
         assert combinations == 150
+
+    @pytest.mark.parametrize(
+        "payload,expected",
+        [
+            (
+                {"f3": ["v3"], "f1": {"f2": "v2"}},
+                [{"f3": "v3", "f1.f2": "v2"}],
+            ),
+            (
+                {"f3": ["v3", "v4"], "f1": {"f2": "v2"}},
+                [{"f3": "v3", "f1.f2": "v2"}, {"f3": "v4", "f1.f2": "v2"}],
+            ),
+        ],
+    )
+    def test_filter_flatten_payload(self, payload, expected):
+        sub_filter = SubscriptionFilter()
+        # payload = {"f3": ["v3"], "f1": {"f2": "v2"}}
+        # expected = [
+        #     {
+        #         "f3": "v3",
+        #         "f1.f2": "v2",
+        #     }
+        # ]
+        assert sub_filter.flatten_payload(payload) == expected
