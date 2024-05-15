@@ -55,7 +55,48 @@ def tests_tag_untag_resource(
     snapshot.match("untag_resource", response_untag_resource)
 
     response = aws_client.events.list_tags_for_resource(ResourceARN=resource_arn)
-    snapshot.match("list_untagged_rule", response)
+
+
+@markers.aws.validated
+@pytest.mark.parametrize("resource_to_tag", ["not_existing_rule", "not_existing_event_bus"])
+def tests_tag_list_untag_not_existing_resource(
+    resource_to_tag,
+    region_name,
+    account_id,
+    aws_client,
+    snapshot,
+):
+    resource_name = short_uid()
+    if resource_to_tag == "not_existing_rule":
+        resource_arn = f"arn:aws:events:{region_name}:{account_id}:rule/{resource_name}"
+    if resource_to_tag == "not_existing_event_bus":
+        resource_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/{resource_name}"
+
+    tag_key_1 = "tag1"
+    with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as error:
+        aws_client.events.tag_resource(
+            ResourceARN=resource_arn,
+            Tags=[
+                {
+                    "Key": tag_key_1,
+                    "Value": "value1",
+                },
+            ],
+        )
+
+    snapshot.match("tag_not_existing_resource_error", error)
+
+    snapshot.add_transformer(snapshot.transform.regex(resource_name, "<not-existing-resource-name>"))
+    with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as error:
+        aws_client.events.list_tags_for_resource(ResourceARN=resource_arn)
+    snapshot.match("list_tags_for_not_existing_resource_error", error)
+
+    with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as error:
+        aws_client.events.untag_resource(
+            ResourceARN=resource_arn,
+            TagKeys=[tag_key_1],
+        )
+    snapshot.match("untag_not_existing_resource_error", error)
 
 
 class TestRuleTags:
