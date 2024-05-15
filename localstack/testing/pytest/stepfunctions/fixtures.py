@@ -4,21 +4,17 @@ from typing import Final
 
 import pytest
 from botocore.config import Config
-from jsonpath_ng.ext import parse
 from localstack_snapshot.snapshots.transformer import (
     JsonpathTransformer,
     RegexTransformer,
-    TransformContext,
 )
 
-from localstack.aws.api.stepfunctions import HistoryEventType
-from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest.stepfunctions.utils import await_execution_success
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.callbacks.callback_templates import (
     CallbackTemplates,
 )
-from tests.aws.services.stepfunctions.utils import await_execution_success
 
 LOG = logging.getLogger(__name__)
 
@@ -95,56 +91,6 @@ def sfn_ecs_snapshot(sfn_snapshot):
     )
     sfn_snapshot.add_transformer(RegexTransformer(":".join(["[0-9a-z][0-9a-z]+"] * 6), "mac_value"))
     return sfn_snapshot
-
-
-class SfnNoneRecursiveParallelTransformer:
-    """
-    Normalises a sublist of events triggered in by a Parallel state to be order-independent.
-    """
-
-    def __init__(self, events_jsonpath: str = "$..events"):
-        self.events_jsonpath: str = events_jsonpath
-
-    @staticmethod
-    def _normalise_events(events: list[dict]) -> None:
-        start_idx = None
-        sublist = list()
-        in_sublist = False
-        for i, event in enumerate(events):
-            event_type = event.get("type")
-            if event_type is None:
-                LOG.debug(f"No 'type' in event item '{event}'.")
-                in_sublist = False
-
-            elif event_type in {
-                None,
-                HistoryEventType.ParallelStateSucceeded,
-                HistoryEventType.ParallelStateAborted,
-                HistoryEventType.ParallelStateExited,
-                HistoryEventType.ParallelStateFailed,
-            }:
-                events[start_idx:i] = sorted(sublist, key=lambda e: to_json_str(e))
-                in_sublist = False
-            elif event_type == HistoryEventType.ParallelStateStarted:
-                in_sublist = True
-                sublist = []
-                start_idx = i + 1
-            elif in_sublist:
-                event["id"] = (0,)
-                event["previousEventId"] = 0
-                sublist.append(event)
-
-    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
-        pattern = parse("$..events")
-        events = pattern.find(input_data)
-        if not events:
-            LOG.debug(f"No Stepfunctions 'events' for jsonpath '{self.events_jsonpath}'.")
-            return input_data
-
-        for events_data in events:
-            self._normalise_events(events_data.value)
-
-        return input_data
 
 
 @pytest.fixture
@@ -379,20 +325,6 @@ def sfn_activity_consumer(aws_client, create_state_machine, create_iam_role_for_
 
 
 @pytest.fixture
-def sfn_events_to_sqs_queue(events_to_sqs_queue, aws_client):
-    def _create(state_machine_arn: str) -> str:
-        event_pattern = {
-            "source": ["aws.states"],
-            "detail": {
-                "stateMachineArn": [state_machine_arn],
-            },
-        }
-        return events_to_sqs_queue(event_pattern=event_pattern)
-
-    return _create
-
-
-@pytest.fixture
 def events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_get_queue_arn, aws_client):
     def _setup(event_pattern):
         queue_name = f"test-queue-{short_uid()}"
@@ -427,3 +359,17 @@ def events_to_sqs_queue(events_create_rule, sqs_create_queue, sqs_get_queue_arn,
         return queue_url
 
     return _setup
+
+
+@pytest.fixture
+def sfn_events_to_sqs_queue(events_to_sqs_queue):
+    def _create(state_machine_arn: str) -> str:
+        event_pattern = {
+            "source": ["aws.states"],
+            "detail": {
+                "stateMachineArn": [state_machine_arn],
+            },
+        }
+        return events_to_sqs_queue(event_pattern=event_pattern)
+
+    return _create

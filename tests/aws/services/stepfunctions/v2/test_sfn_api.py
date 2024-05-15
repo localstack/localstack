@@ -8,10 +8,7 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.stepfunctions import HistoryEventList
 from localstack.testing.pytest import markers
-from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
-from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
-from tests.aws.services.stepfunctions.utils import (
+from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_aborted,
     await_execution_success,
     await_execution_terminated,
@@ -20,6 +17,9 @@ from tests.aws.services.stepfunctions.utils import (
     await_state_machine_listed,
     await_state_machine_not_listed,
 )
+from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
+from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])

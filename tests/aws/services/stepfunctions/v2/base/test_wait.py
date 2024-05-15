@@ -5,10 +5,10 @@ import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
-from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
-from tests.aws.services.stepfunctions.utils import (
+from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
 )
+from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
 
 # TODO: add tests for seconds, secondspath, timestamp

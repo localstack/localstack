@@ -5,8 +5,8 @@ from typing import Any, TypedDict
 
 from localstack.aws.api.stepfunctions import ExecutionStatus
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import is_legacy_provider, is_not_legacy_provider
 from localstack.utils.sync import wait_until
-from tests.aws.services.stepfunctions.utils import is_legacy_provider, is_not_legacy_provider
 
 THIS_FOLDER = Path(os.path.dirname(__file__))
 

@@ -7,6 +7,11 @@ from localstack_snapshot.snapshots.transformer import JsonpathTransformer, Regex
 from localstack.services.stepfunctions.asl.eval.count_down_latch import CountDownLatch
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    await_execution_terminated,
+    create,
+    create_and_record_execution,
+)
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate as BT
@@ -15,11 +20,6 @@ from tests.aws.services.stepfunctions.templates.callbacks.callback_templates imp
 )
 from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates import (
     TimeoutTemplates as TT,
-)
-from tests.aws.services.stepfunctions.utils import (
-    await_execution_terminated,
-    create,
-    create_and_record_execution,
 )
 from tests.aws.test_notifications import PUBLICATION_RETRIES, PUBLICATION_TIMEOUT
 

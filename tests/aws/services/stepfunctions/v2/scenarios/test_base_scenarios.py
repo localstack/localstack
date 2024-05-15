@@ -7,8 +7,13 @@ from localstack_snapshot.snapshots.transformer import JsonpathTransformer, Regex
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    SfnNoneRecursiveParallelTransformer,
+    await_execution_terminated,
+    create,
+    create_and_record_execution,
+)
 from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.conftest import SfnNoneRecursiveParallelTransformer
 from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_templates import (
     ErrorHandlingTemplate as EHT,
 )
@@ -17,11 +22,6 @@ from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates im
 )
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as SerT,
-)
-from tests.aws.services.stepfunctions.utils import (
-    await_execution_terminated,
-    create,
-    create_and_record_execution,
 )
 
 
