@@ -187,3 +187,17 @@ class TestEventBusTags:
         response_create_event_bus = aws_client.events.list_tags_for_resource(ResourceARN=bus_arn)
         snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus_name>"))
         snapshot.match("list_tags_for_event_bus", response_create_event_bus)
+
+    @markers.aws.validated
+    def test_list_tags_for_deleted_event_bus(self, events_create_event_bus, aws_client, snapshot):
+        bus_name = f"test_bus-{short_uid()}"
+        response = events_create_event_bus(Name=bus_name)
+        bus_arn = response["EventBusArn"]
+
+        aws_client.events.delete_event_bus(Name=bus_name)
+
+        with pytest.raises(aws_client.events.exceptions.ResourceNotFoundException) as error:
+            aws_client.events.list_tags_for_resource(ResourceARN=bus_arn)
+
+        snapshot.add_transformer(snapshot.transform.regex(bus_name, "<bus_name>"))
+        snapshot.match("list_tags_for_deleted_rule_error", error)

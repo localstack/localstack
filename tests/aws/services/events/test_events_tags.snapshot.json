@@ -178,5 +178,11 @@
     "recorded-content": {
       "list_tags_for_deleted_rule_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Rule <rule_name> does not exist on EventBus <bus_name>.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_events_tags.py::TestEventBusTags::test_list_tags_for_deleted_event_bus": {
+    "recorded-date": "15-05-2024, 14:54:48",
+    "recorded-content": {
+      "list_tags_for_deleted_rule_error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListTagsForResource operation: Event bus <bus_name> does not exist.') tblen=3>"
+    }
   }
 }
