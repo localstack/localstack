@@ -238,7 +238,6 @@ pbr==6.0.0
     # via
     #   jschema-to-python
     #   sarif-om
-    #   stevedore
 plux==1.10.0
     # via
     #   localstack-core
@@ -355,10 +354,6 @@ six==1.16.0
     #   python-dateutil
     #   requests-aws4auth
     #   rfc3339-validator
-stevedore==5.2.0
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
 sympy==1.12
     # via cfn-lint
 tailer==0.4.1

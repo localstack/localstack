@@ -25,7 +25,6 @@ dependencies = [
     "rich>=12.3.0",
     "requests>=2.20.0",
     "semver>=2.10",
-    "stevedore>=3.4.0",
     "tailer>=0.4.1",
 ]
 dynamic = ["version"]
