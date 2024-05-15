@@ -3,7 +3,6 @@ import logging
 import threading
 import time
 from concurrent.futures import Future
-from typing import TYPE_CHECKING
 
 from localstack import config
 from localstack.aws.api.lambda_ import (
@@ -33,9 +32,6 @@ from localstack.services.lambda_.invocation.runtime_executor import get_runtime_
 from localstack.utils.strings import long_uid, truncate
 from localstack.utils.threads import FuncThread, start_thread
 
-if TYPE_CHECKING:
-    from localstack.services.lambda_.invocation.lambda_service import LambdaService
-
 LOG = logging.getLogger(__name__)
 
 
@@ -53,8 +49,6 @@ class LambdaVersionManager:
     state: VersionState | None
     provisioned_state: ProvisionedConcurrencyState | None  # TODO: remove?
     log_handler: LogHandler
-    # TODO not sure about this backlink, maybe a callback is better?
-    lambda_service: "LambdaService"
     counting_service: CountingService
     assignment_service: AssignmentService
 
