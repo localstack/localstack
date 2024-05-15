@@ -65,24 +65,27 @@ class TestGatewayShortCircuit:
     def test_query_request(self):
         class MockGateway:
             def handle(self, context: RequestContext, response: Response):
-                assert context.operation.name == "DeleteQueue"
-                assert context.service.service_name == "sqs"
+                assert context.operation.name == "DeleteTopic"
+                assert context.service.service_name == "sns"
                 assert context.service_request == {
-                    "QueueUrl": "http://example.com/queue",
-                    "Action": "DeleteQueue",
-                    "Version": "2012-11-05",
+                    "TopicArn": "arn:aws:sns:us-east-1:000000000000:test-topic",
+                    "Action": "DeleteTopic",
+                    "Version": "2010-03-31",
                 }
-
-                response.data = b"<DeleteQueueResponse><ResponseMetadata><RequestId></RequestId></ResponseMetadata></DeleteQueueResponse>"
+                data = b"""<DeleteTopicResponse xmlns="https://sns.amazonaws.com/doc/2010-03-31/">
+                    <ResponseMetadata>
+                        <RequestId>f3aa9ac9-3c3d-11df-8235-9dab105e9c32</RequestId>
+                    </ResponseMetadata>
+                </DeleteTopicResponse>"""
+                response.data = data
                 response.status_code = 200
 
         gateway = MockGateway()
 
-        client = boto3.client("sqs")
+        client = boto3.client("sns")
         GatewayShortCircuit.modify_client(client, gateway)
-
-        response = client.delete_queue(QueueUrl="http://example.com/queue")
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        delete_topic = client.delete_topic(TopicArn="arn:aws:sns:us-east-1:000000000000:test-topic")
+        assert delete_topic["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     def test_query_exception(self):
         class MockGateway:
@@ -91,25 +94,27 @@ class TestGatewayShortCircuit:
 
         gateway = MockGateway()
 
-        client = boto3.client("sqs")
+        client = boto3.client("sns")
         GatewayShortCircuit.modify_client(client, gateway)
 
         # FIXME currently, exceptions in the gateway will be handed down to the client and not translated into 500
         #  errors
         with pytest.raises(ValueError):
-            client.list_queues()
+            client.list_topics()
 
     def test_query_response(self):
         class MockGateway:
             def handle(self, context: RequestContext, response: Response):
-                response.data = b"<ListQueuesResponse><ListQueuesResult><QueueUrl>http://example.com/queue</QueueUrl></ListQueuesResult><ResponseMetadata><RequestId></RequestId></ResponseMetadata></ListQueuesResponse>"
+                response.data = b"<ListTopicsResponse><ListTopicsResult><Topics><member><TopicArn>arn:aws:sns:us-east-1:000000000000:test-1d5a154d</TopicArn></member></Topics></ListTopicsResult><ResponseMetadata><RequestId></RequestId></ResponseMetadata></ListTopicsResponse>"
                 response.status_code = 202
 
         gateway = MockGateway()
 
-        client = boto3.client("sqs")
+        client = boto3.client("sns")
         GatewayShortCircuit.modify_client(client, gateway)
 
-        response = client.list_queues()
-        assert response["QueueUrls"] == ["http://example.com/queue"]
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 202
+        list_topics = client.list_topics()
+        assert list_topics["Topics"] == [
+            {"TopicArn": "arn:aws:sns:us-east-1:000000000000:test-1d5a154d"}
+        ]
+        assert list_topics["ResponseMetadata"]["HTTPStatusCode"] == 202
