@@ -843,7 +843,7 @@ class TestSNSSubscriptionCrud:
         # not snapshotting the results, it contains 100 entries
         assert "NextToken" in response
         # seems to be b64 encoded
-        assert response["NextToken"].endswith("==")
+        assert base64.b64decode(response["NextToken"])
         assert len(response["Subscriptions"]) == 100
         # keep the page 1 subscriptions ARNs
         page_1_subs = {sub["SubscriptionArn"] for sub in response["Subscriptions"]}
