@@ -788,3 +788,27 @@ def test_describe_stack_events_errors(aws_client, snapshot):
     with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
         aws_client.cloudformation.describe_stack_events(StackName="does-not-exist")
     snapshot.match("describe_stack_events_stack_not_found", e.value.response)
+
+
+@markers.aws.only_localstack
+def test_stack_deploy_order(deploy_cfn_template):
+    template = """
+    Resources:
+        B:
+          Type: AWS::SSM::Parameter
+          Properties:
+            Type: String
+            Value: !GetAtt A.TopicName
+        A:
+          Type: AWS::SNS::Topic
+    Outputs:
+        ParameterName:
+            Value: !Ref B
+    """
+    stack = deploy_cfn_template(
+        template=template,
+    )
+
+    topic_name = stack.outputs["ParameterName"]
+
+    assert topic_name != ""

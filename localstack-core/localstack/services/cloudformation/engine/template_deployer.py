@@ -4,6 +4,7 @@ import logging
 import re
 import traceback
 import uuid
+from collections import OrderedDict
 from typing import Literal, Optional, TypedDict
 
 from localstack import config
@@ -789,6 +790,59 @@ class ResourceChange(TypedDict):
 class ChangeConfig(TypedDict):
     Type: str
     ResourceChange: ResourceChange
+
+
+def order_resources(stack: Stack, reverse: bool = False) -> OrderedDict:
+    """
+    Given a dictionary of resources, topologically sort the resources based on
+    inter-resource dependencies (e.g. usages of intrinsic functions).
+    """
+    # nodes = set()
+    # # collection of edges from
+    # edges = set()
+
+    nodes: dict[str, list[str]] = {}
+    for logical_resource_id, properties in stack.template_resources.items():
+        nodes.setdefault(logical_resource_id, [])
+        deps = get_deps_for_resource(properties, stack.resolved_conditions)
+        for dep in deps:
+            nodes.setdefault(dep, [])
+            nodes[dep].append(logical_resource_id)
+
+    # implementation from https://dev.to/leopfeiffer/topological-sort-with-kahns-algorithm-3dl1
+    indegrees = {k: 0 for k in nodes.keys()}
+    for dependencies in nodes.values():
+        for dependency in dependencies:
+            indegrees[dependency] += 1
+
+    # Place all elements with indegree 0 in queue
+    queue = [k for k in nodes.keys() if indegrees[k] == 0]
+
+    sorted_logical_resource_ids = []
+
+    # Continue until all nodes have been dealt with
+    while len(queue) > 0:
+        # node of current iteration is the first one from the queue
+        curr = queue.pop(0)
+        sorted_logical_resource_ids.append(curr)
+
+        # remove the current node from other dependencies
+        for dependency in nodes[curr]:
+            indegrees[dependency] -= 1
+
+            if indegrees[dependency] == 0:
+                queue.append(dependency)
+
+    # check for circular dependencies
+    if len(sorted_logical_resource_ids) != len(nodes):
+        raise Exception("Circular dependency found.")
+
+    return OrderedDict(
+        [
+            (logical_resource_id, stack.template_resources[logical_resource_id])
+            for logical_resource_id in sorted_logical_resource_ids
+        ]
+    )
 
 
 class TemplateDeployer:
