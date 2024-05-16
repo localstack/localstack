@@ -21,6 +21,7 @@ def events_time_string_to_timestamp(time_string: str) -> datetime:
 
 
 def get_cron_expression(delta_minutes: int) -> tuple[str, datetime]:
+    """Get a exact cron expression for a future time in UTC from now rounded to the next full minute + delta_minutes."""
     now = datetime.now(timezone.utc)
     future_time = now + timedelta(minutes=delta_minutes)
 
