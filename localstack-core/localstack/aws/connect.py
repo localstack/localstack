@@ -448,11 +448,12 @@ class InternalClientFactory(ClientFactory):
 
         client.meta.events.register("before-call.*.*", handler=_handler_inject_dto_header)
 
-        # this make the client call the gateway directly
-        from localstack.aws.client import GatewayShortCircuit
-        from localstack.runtime import components
+        if localstack_config.IN_MEMORY_CLIENT:
+            # this make the client call the gateway directly
+            from localstack.aws.client import GatewayShortCircuit
+            from localstack.runtime import components
 
-        GatewayShortCircuit.modify_client(client, components.gateway())
+            GatewayShortCircuit.modify_client(client, components.gateway())
 
         return client
 
