@@ -34,13 +34,13 @@ def convert_schedule_to_cron(schedule):
             raise ValueError("If the value is greater than 1, the unit must be plural")
 
         if "minute" in rate_unit:
-            return "*/%s * * * *" % rate_value
+            return f"*/{rate_value} * * * *"
         if "hour" in rate_unit:
-            return "0 */%s * * *" % rate_value
+            return f"0 */{rate_value} * * *"
         if "day" in rate_unit:
-            return "0 0 */%s * *" % rate_value
+            return f"0 0 */{rate_value} * *"
 
-        raise ValueError("Unable to parse events schedule expression: %s" % schedule)
+        raise ValueError(f"Unable to parse events schedule expression: {schedule}")
 
     return schedule
 
