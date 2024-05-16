@@ -8,7 +8,7 @@ from botocore.client import Config
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from tests.aws.services.events.conftest import sqs_collect_messages
-from tests.aws.services.events.helper_functions import is_v2_provider
+from tests.aws.services.events.helper_functions import is_old_provider, is_v2_provider
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN
 
 EVENT_DETAIL_DUPLICATED_KEY = {
@@ -270,7 +270,7 @@ class TestInputTransformer:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_put_events_with_input_transformer_input_template_json(
@@ -329,7 +329,7 @@ class TestInputTransformer:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_put_events_with_input_transformer_missing_keys(
@@ -381,7 +381,7 @@ class TestInputTransformer:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     @pytest.mark.parametrize(
