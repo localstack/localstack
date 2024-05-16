@@ -69,6 +69,12 @@ def tests_tag_untag_resource(
     response = aws_client.events.list_tags_for_resource(ResourceARN=resource_arn)
     snapshot.match("list_tags_for_untagged_resource", response)
 
+    response_untag_resource_not_existing_tag = aws_client.events.untag_resource(
+        ResourceARN=resource_arn,
+        TagKeys=[f"not_existing_tag-{short_uid()}"],
+    )
+    snapshot.match("untag_resource_not_existing_tag", response_untag_resource_not_existing_tag)
+
 
 @markers.aws.validated
 @pytest.mark.skipif(

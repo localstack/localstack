@@ -174,7 +174,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus-event_bus_default]": {
-    "recorded-date": "16-05-2024, 09:49:39",
+    "recorded-date": "16-05-2024, 11:45:30",
     "recorded-content": {
       "tag_resource": {
         "ResponseMetadata": {
@@ -211,6 +211,12 @@
             "Value": "value1"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_not_existing_tag": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -219,7 +225,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[event_bus-event_bus_custom]": {
-    "recorded-date": "16-05-2024, 09:49:40",
+    "recorded-date": "16-05-2024, 11:45:31",
     "recorded-content": {
       "tag_resource": {
         "ResponseMetadata": {
@@ -256,6 +262,12 @@
             "Value": "value1"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_not_existing_tag": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -264,7 +276,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule-event_bus_default]": {
-    "recorded-date": "16-05-2024, 09:49:41",
+    "recorded-date": "16-05-2024, 11:45:32",
     "recorded-content": {
       "tag_resource": {
         "ResponseMetadata": {
@@ -301,6 +313,12 @@
             "Value": "value1"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_not_existing_tag": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -309,7 +327,7 @@
     }
   },
   "tests/aws/services/events/test_events_tags.py::tests_tag_untag_resource[rule-event_bus_custom]": {
-    "recorded-date": "16-05-2024, 09:49:42",
+    "recorded-date": "16-05-2024, 11:45:34",
     "recorded-content": {
       "tag_resource": {
         "ResponseMetadata": {
@@ -346,6 +364,12 @@
             "Value": "value1"
           }
         ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "untag_resource_not_existing_tag": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
