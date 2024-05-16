@@ -9,17 +9,25 @@ from tests.aws.services.events.test_events import TEST_EVENT_PATTERN
 
 
 @markers.aws.validated
+@pytest.mark.parametrize("event_bus_name", ["event_bus_default", "event_bus_custom"])
 @pytest.mark.parametrize("resource_to_tag", ["event_bus", "rule"])
 def tests_tag_untag_resource(
+    event_bus_name,
     resource_to_tag,
+    region_name,
+    account_id,
     events_create_event_bus,
     events_put_rule,
     aws_client,
     snapshot,
 ):
-    bus_name = f"test_bus-{short_uid()}"
-    response = events_create_event_bus(Name=bus_name)
-    event_bus_arn = response["EventBusArn"]
+    if event_bus_name == "event_bus_default":
+        bus_name = "default"
+        event_bus_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+    if event_bus_name == "event_bus_custom":
+        bus_name = f"test_bus-{short_uid()}"
+        response = events_create_event_bus(Name=bus_name)
+        event_bus_arn = response["EventBusArn"]
 
     rule_name = f"test_rule-{short_uid()}"
     response = events_put_rule(
