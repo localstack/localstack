@@ -376,5 +376,58 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[event_bus-event_bus_default]": {
+    "recorded-date": "16-05-2024, 12:13:16",
+    "recorded-content": {
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "value1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[event_bus-event_bus_custom]": {
+    "recorded-date": "16-05-2024, 12:13:17",
+    "recorded-content": {
+      "list_tags_for_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[rule-event_bus_default]": {
+    "recorded-date": "16-05-2024, 12:13:18",
+    "recorded-content": {
+      "list_tags_for_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events_tags.py::test_recreate_tagged_resource_without_tags[rule-event_bus_custom]": {
+    "recorded-date": "16-05-2024, 12:13:20",
+    "recorded-content": {
+      "list_tags_for_resource": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
