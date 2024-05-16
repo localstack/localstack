@@ -32,9 +32,7 @@ mdurl==0.1.2
     # via markdown-it-py
 packaging==24.0
     # via build
-pbr==6.0.0
-    # via stevedore
-plux==1.9.0
+plux==1.10.0
     # via localstack-core (pyproject.toml)
 psutil==5.9.8
     # via localstack-core (pyproject.toml)
@@ -54,10 +52,6 @@ rich==13.7.1
     # via localstack-core (pyproject.toml)
 semver==3.0.2
     # via localstack-core (pyproject.toml)
-stevedore==5.2.0
-    # via
-    #   localstack-core (pyproject.toml)
-    #   plux
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
 urllib3==2.2.1
