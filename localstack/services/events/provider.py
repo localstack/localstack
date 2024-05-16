@@ -403,6 +403,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             targets,
         )
         event_bus.rules[name] = rule_service.rule
+
+        if tags:
+            self.tag_resource(context, rule_service.arn, tags)
+
         response = PutRuleResponse(RuleArn=rule_service.arn)
         return response
 
