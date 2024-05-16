@@ -9,7 +9,7 @@ parameters:
     default: "ubuntu-2204:2023.02.1"
   PYTEST_LOGLEVEL:
     type: string
-    default: "WARNING"
+    default: "DEBUG"
   skip_test_selection:
     type: boolean
     default: false
