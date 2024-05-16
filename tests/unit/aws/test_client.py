@@ -3,6 +3,7 @@ import pytest
 
 from localstack.aws.api import RequestContext, ServiceException
 from localstack.aws.client import GatewayShortCircuit, _ResponseStream, parse_service_exception
+from localstack.aws.connect import get_service_endpoint
 from localstack.http import Response
 
 
@@ -82,7 +83,7 @@ class TestGatewayShortCircuit:
 
         gateway = MockGateway()
 
-        client = boto3.client("sns")
+        client = boto3.client("sns", endpoint_url=get_service_endpoint())
         GatewayShortCircuit.modify_client(client, gateway)
         delete_topic = client.delete_topic(TopicArn="arn:aws:sns:us-east-1:000000000000:test-topic")
         assert delete_topic["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -94,7 +95,7 @@ class TestGatewayShortCircuit:
 
         gateway = MockGateway()
 
-        client = boto3.client("sns")
+        client = boto3.client("sns", endpoint_url=get_service_endpoint())
         GatewayShortCircuit.modify_client(client, gateway)
 
         # FIXME currently, exceptions in the gateway will be handed down to the client and not translated into 500
@@ -110,7 +111,7 @@ class TestGatewayShortCircuit:
 
         gateway = MockGateway()
 
-        client = boto3.client("sns")
+        client = boto3.client("sns", endpoint_url=get_service_endpoint())
         GatewayShortCircuit.modify_client(client, gateway)
 
         list_topics = client.list_topics()
