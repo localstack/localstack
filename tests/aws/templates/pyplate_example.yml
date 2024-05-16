@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: tests String macro functions
+
+Parameters:
+  Tags:
+    Type: CommaDelimitedList
+    Default: Env=Prod
+
+Transform:
+  - PyPlate
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Metadata:
+      Comment: Suppressing typical rules for sample purposes only
+      guard:
+        SuppressedRules:
+          - S3_BUCKET_LOGGING_ENABLED
+          - S3_BUCKET_PUBLIC_READ_PROHIBITED
+          - S3_BUCKET_PUBLIC_WRITE_PROHIBITED
+          - S3_BUCKET_REPLICATION_ENABLED
+          - S3_BUCKET_VERSIONING_ENABLED
+          - S3_BUCKET_DEFAULT_LOCK_ENABLED
+          - S3_BUCKET_SERVER_SIDE_ENCRYPTION_ENABLED
+    Properties:
+      Tags: |-
+        #!PyPlate
+        output = []
+        for tag in params['Tags']:
+           key, value = tag.split('=')
+           output.append({"Key": key, "Value": value})
+
+Outputs:
+  BucketName:
+    Value:
+      Ref: S3Bucket

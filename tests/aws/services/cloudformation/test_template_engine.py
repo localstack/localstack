@@ -1064,6 +1064,35 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("failed_description", failed_events_by_policy[0])
 
+    @markers.aws.validated
+    def test_pyplate_param_type_list(self, deploy_cfn_template, aws_client):
+        deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/pyplate_deploy_template.yml"
+            ),
+        )
+
+        tags = "Env=Prod,Application=MyApp,BU=ModernisationTeam"
+        param_tags = {pair.split("=")[0]: pair.split("=")[1] for pair in tags.split(",")}
+
+        stack_with_macro = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/pyplate_example.yml"
+            ),
+            parameters={"Tags": tags},
+        )
+
+        bucket_name_output = stack_with_macro.outputs["BucketName"]
+        assert bucket_name_output
+
+        tagging = aws_client.s3.get_bucket_tagging(Bucket=bucket_name_output)
+        tags_s3 = [tag for tag in tagging["TagSet"]]
+
+        for tag in tags_s3:
+            if tag["Key"] in param_tags:
+                assert tag["Value"] == param_tags[tag["Key"]]
+        assert len(tags_s3) >= len(param_tags)
+
 
 class TestStackEvents:
     @markers.aws.validated

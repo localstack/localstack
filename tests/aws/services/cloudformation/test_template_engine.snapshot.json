@@ -612,5 +612,9 @@
         "<region>f"
       ]
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_pyplate_param_type_list": {
+    "recorded-date": "16-05-2024, 09:33:24",
+    "recorded-content": {}
   }
 }
