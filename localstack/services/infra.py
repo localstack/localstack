@@ -210,8 +210,8 @@ def print_runtime_information(in_docker=False):
             print("LocalStack Docker container id: %s" % container_id[:12])
             image_sha = inspect_result["Image"]
             print("LocalStack Docker image sha: %s" % image_sha)
-        except ContainerException:
-            pass
+        except ContainerException as e:
+            print("Failed to inspect docker container: %s %s" % (e, traceback.format_exc()))
 
     if config.LOCALSTACK_BUILD_DATE:
         print("LocalStack build date: %s" % config.LOCALSTACK_BUILD_DATE)
