@@ -628,6 +628,29 @@ class TestSqsProvider:
         snapshot.match("queue-already-exists", e.value.response)
 
     @markers.aws.validated
+    def test_create_standard_queue_with_fifo_attribute_raises_error(
+        self, sqs_create_queue, aws_sqs_client, snapshot
+    ):
+        queue_name = f"queue-{short_uid()}"
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(QueueName=queue_name, Attributes={"FifoQueue": "false"})
+        snapshot.match("invalid-attribute-fifo-queue", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(
+                QueueName=queue_name, Attributes={"ContentBasedDeduplication": "false"}
+            )
+        snapshot.match("invalid-attribute-content-based-deduplication", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(QueueName=queue_name, Attributes={"DeduplicationScope": "queue"})
+        snapshot.match("invalid-attribute-deduplication-scope", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sqs_create_queue(QueueName=queue_name, Attributes={"FifoThroughputLimit": "perQueue"})
+        snapshot.match("invalid-attribute-throughput-limit", e.value.response)
+
+    @markers.aws.validated
     def test_send_message_with_delay_0_works_for_fifo(self, sqs_create_queue, aws_sqs_client):
         # see issue https://github.com/localstack/localstack/issues/6612
         queue_name = f"queue-{short_uid()}.fifo"
@@ -3034,10 +3057,25 @@ class TestSqsProvider:
         assert constructed_arn == get_single_attribute.get("Attributes").get("QueueArn")
         assert max_receive_count == redrive_policy.get("maxReceiveCount")
 
-    @pytest.mark.xfail
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail", "$..Error.Type"])
+    @markers.aws.validated
+    def test_set_unsupported_attribute_standard(self, sqs_create_queue, aws_sqs_client, snapshot):
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.set_queue_attributes(
+                QueueUrl=queue_url, Attributes={"FifoQueue": "true"}
+            )
+        snapshot.match("invalid-attr-name-1", e.value.response)
+        with pytest.raises(ClientError) as e:
+            aws_sqs_client.set_queue_attributes(
+                QueueUrl=queue_url, Attributes={"FifoQueue": "false"}
+            )
+        snapshot.match("invalid-attr-name-2", e.value.response)
+
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail", "$..Error.Type"])
     @markers.aws.validated
     def test_set_unsupported_attribute_fifo(self, sqs_create_queue, aws_sqs_client, snapshot):
-        # TODO: behaviour diverges from AWS
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         with pytest.raises(ClientError) as e:

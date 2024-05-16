@@ -290,6 +290,7 @@ class SqsQueue:
 
         self.attributes = self.default_attributes()
         if attributes:
+            self.validate_queue_attributes(attributes)
             self.attributes.update(attributes)
 
         self.purge_in_progress = False
@@ -588,16 +589,7 @@ class SqsQueue:
             )
 
     def validate_queue_attributes(self, attributes):
-        valid = [
-            k[1]
-            for k in inspect.getmembers(QueueAttributeName)
-            if k not in sqs_constants.INTERNAL_QUEUE_ATTRIBUTES
-        ]
-        del valid[valid.index(QueueAttributeName.FifoQueue)]
-
-        for k in attributes.keys():
-            if k not in valid:
-                raise InvalidAttributeName(f"Unknown Attribute {k}.")
+        pass
 
     def add_permission(self, label: str, actions: list[str], account_ids: list[str]) -> None:
         """
@@ -880,6 +872,23 @@ class StandardQueue(SqsQueue):
             except ValueError:
                 # this may happen if the message no longer exists because it was removed earlier
                 pass
+
+    def validate_queue_attributes(self, attributes):
+        valid = [
+            k[1]
+            for k in inspect.getmembers(
+                QueueAttributeName, lambda x: isinstance(x, str) and not x.startswith("__")
+            )
+            if k[1] not in sqs_constants.INVALID_STANDARD_QUEUE_ATTRIBUTES
+        ]
+
+        for k in attributes.keys():
+            if k in [QueueAttributeName.FifoThroughputLimit, QueueAttributeName.DeduplicationScope]:
+                raise InvalidAttributeName(
+                    f"You can specify the {k} only when FifoQueue is set to true."
+                )
+            if k not in valid:
+                raise InvalidAttributeName(f"Unknown Attribute {k}.")
 
 
 class MessageGroup:
