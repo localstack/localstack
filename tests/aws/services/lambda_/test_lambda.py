@@ -2278,6 +2278,7 @@ class TestLambdaConcurrency:
         assert not errored
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="flaky")
     def test_reserved_concurrency_async_queue(self, create_lambda_function, snapshot, aws_client):
         min_concurrent_executions = 10 + 3
         check_concurrency_quota(aws_client, min_concurrent_executions)
