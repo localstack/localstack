@@ -230,9 +230,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 if rules := event_bus.rules:
                     self._delete_rule_services(rules)
                 del store.event_buses[name]
+                del store.TAGS[event_bus.arn]
         except ResourceNotFoundException as error:
             return error
-        # TODO remove tags
 
     @handler("DescribeEventBus")
     def describe_event_bus(
@@ -304,9 +304,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 raise ValidationException("Rule can't be deleted since it has targets.")
             self._delete_rule_services(rule)
             del event_bus.rules[name]
+            del store.TAGS[rule.arn]
         except ResourceNotFoundException as error:
             return error
-        # TODO remove tags
 
     @handler("DescribeRule")
     def describe_rule(
