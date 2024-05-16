@@ -20,7 +20,9 @@ from localstack.utils.bootstrap import (
     setup_logging,
     should_eager_load_api,
 )
-from localstack.utils.container_networking import get_main_container_id
+from localstack.utils.container_networking import get_main_container_name
+from localstack.utils.container_utils.container_client import ContainerException
+from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import is_port_open
 from localstack.utils.patch import patch
@@ -200,9 +202,16 @@ def print_runtime_information(in_docker=False):
     print()
     print(f"LocalStack version: {VERSION}")
     if in_docker:
-        id = get_main_container_id()
-        if id:
-            print("LocalStack Docker container id: %s" % id[:12])
+        try:
+            container_name = get_main_container_name()
+            print("LocalStack Docker container name: %s" % container_name)
+            inspect_result = DOCKER_CLIENT.inspect_container(container_name)
+            container_id = inspect_result["Id"]
+            print("LocalStack Docker container id: %s" % container_id[:12])
+            image_sha = inspect_result["Image"]
+            print("LocalStack Docker image sha: %s" % image_sha)
+        except ContainerException as e:
+            print("Failed to inspect docker container: %s %s" % (e, traceback.format_exc()))
 
     if config.LOCALSTACK_BUILD_DATE:
         print("LocalStack build date: %s" % config.LOCALSTACK_BUILD_DATE)
