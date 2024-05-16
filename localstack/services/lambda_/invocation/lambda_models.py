@@ -606,6 +606,18 @@ class Function:
         # Used for retaining invoke queues across version updates for $LATEST, but separate unrelated instances.
         self.instance_id = short_uid()
 
+    def __getstate__(self):
+        """Ignore certain volatile fields for pickling.
+        # https://docs.python.org/3/library/pickle.html#handling-stateful-objects
+        """
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes. Always use the dict.copy()
+        # method to avoid modifying the original state.
+        state = self.__dict__.copy()
+        # Remove the volatile entries.
+        del state["instance_id"]
+        return state
+
 
 class ValidationException(CommonServiceException):
     def __init__(self, message: str):
