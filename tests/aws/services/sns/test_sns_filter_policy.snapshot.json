@@ -41,7 +41,7 @@
     }
   },
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_string_operators": {
-    "recorded-date": "14-05-2024, 16:51:03",
+    "recorded-date": "15-05-2024, 14:39:23",
     "recorded-content": {
       "error-condition-is-numeric": {
         "Error": {
@@ -73,6 +73,30 @@
           "Message": "Invalid parameter: Attributes Reason: FilterPolicy: \"suffix\" must be an object or an array\n at [Source: (String)\"{\"key\":{\"suffix\":\"value\"}}\"; line: 1, column: 19]",
           "Type": "Sender",
           "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: \"suffix\" must be an object or an array"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-empty-list": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"suffix\":[]}]}\"; line: 1, column: 20]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-list-wrong-type": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"suffix\":[\"test\",\"test2\"]}]}\"; line: 1, column: 20]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: suffix match pattern must be a string"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1529,5 +1553,58 @@
   "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyBody::test_filter_policy_on_message_body_or_attribute": {
     "recorded-date": "14-05-2024, 16:51:02",
     "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns_filter_policy.py::TestSNSFilterPolicyConditions::test_validate_policy_nested_anything_but_operator": {
+    "recorded-date": "15-05-2024, 14:39:32",
+    "recorded-content": {
+      "error-condition-wrong-operator": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: wrong-operator\n at [Source: (String)\"{\"key\":[{\"anything-but\":{\"wrong-operator\":null}}]}\"; line: 1, column: 47]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: wrong-operator"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-anything-but-suffix": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: suffix\n at [Source: (String)\"{\"key\":[{\"anything-but\":{\"suffix\":\"test\"}}]}\"; line: 1, column: 36]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: suffix"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-anything-but-exists": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: exists\n at [Source: (String)\"{\"key\":[{\"anything-but\":{\"exists\":false}}]}\"; line: 1, column: 40]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: Unsupported anything-but pattern: exists"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-condition-anything-but-prefix-wrong-type": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: prefix match pattern must be a string\n at [Source: (String)\"{\"key\":[{\"anything-but\":{\"prefix\":false}}]}\"; line: 1, column: 40]",
+          "Type": "Sender",
+          "_normalized": "Invalid parameter: Attributes Reason: FilterPolicy: prefix match pattern must be a string"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
