@@ -4287,7 +4287,7 @@
       ]
     }
   },
-  "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_handler_update_during_invoke": {
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_function_update_during_invoke": {
     "recorded-date": "15-05-2024, 19:05:05",
     "recorded-content": {
       "invoke_response_before": {

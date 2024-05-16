@@ -2652,7 +2652,7 @@ class TestLambdaVersions:
                   the current implementation stops all running invokes upon update."""
     )
     @markers.aws.validated
-    def test_handler_update_during_invoke(self, aws_client, create_lambda_function, snapshot):
+    def test_function_update_during_invoke(self, aws_client, create_lambda_function, snapshot):
         function_name = f"test-function-{short_uid()}"
         environment_v1 = {"Variables": {"FUNCTION_VARIANT": "variant-1"}}
         create_lambda_function(

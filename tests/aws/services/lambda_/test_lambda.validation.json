@@ -209,7 +209,7 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_async_invoke_queue_upon_function_update": {
     "last_validated_date": "2024-05-15T18:29:38+00:00"
   },
-  "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_handler_update_during_invoke": {
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_function_update_during_invoke": {
     "last_validated_date": "2024-05-15T19:05:04+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_lambda_handler_update": {
