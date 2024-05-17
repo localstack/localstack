@@ -224,3 +224,19 @@ class TestArchive:
             ]
         )
         snapshot.match("list-archives-with-source-arn", response_list_archives_source_arn)
+
+    @markers.aws.validated
+    def test_list_archive_error_unknown_source_arn(
+        self, region_name, account_id, aws_client, snapshot
+    ):
+        not_existing_event_bus_name = f"doesnotexist-{short_uid()}"
+        non_existing_event_bus_arn = (
+            f"arn:aws:events:{region_name}:{account_id}:event-bus/{not_existing_event_bus_name}"
+        )
+        with pytest.raises(Exception) as error:
+            aws_client.events.list_archives(EventSourceArn=non_existing_event_bus_arn)
+
+        snapshot.add_transformer(
+            [snapshot.transform.regex(not_existing_event_bus_name, "<event-bus-name>")]
+        )
+        snapshot.match("list-archives-unknown-event-bus-error", error)

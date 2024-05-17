@@ -352,5 +352,11 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_error_unknown_source_arn": {
+    "recorded-date": "17-05-2024, 16:34:48",
+    "recorded-content": {
+      "list-archives-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the ListArchives operation: Event bus <event-bus-name> does not exist.') tblen=3>"
+    }
   }
 }
