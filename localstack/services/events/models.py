@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Optional, TypeAlias, TypedDict
 
 from localstack.aws.api.core import ServiceException
@@ -22,8 +23,10 @@ from localstack.aws.api.events import (
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
+    CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.utils.tagging import TaggingService
 
 TargetDict = dict[TargetId, Target]
 
@@ -88,6 +91,9 @@ class EventsStore(BaseStore):
     # Map of eventbus names to eventbus objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     event_buses: EventBusDict = LocalAttribute(default=dict)
 
+    # Maps resource ARN to tags
+    TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
+
 
 events_store = AccountRegionBundle("events", EventsStore)
 
@@ -119,3 +125,8 @@ class FormattedEvent(TypedDict):
 
 
 TransformedEvent: TypeAlias = FormattedEvent | dict | str
+
+
+class ResourceType(Enum):
+    EVENT_BUS = "event_bus"
+    RULE = "rule"

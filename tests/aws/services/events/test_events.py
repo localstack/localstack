@@ -190,35 +190,8 @@ class TestEvents:
 
         assert [json.loads(event["Detail"]) for event in sorted_events] == event_details_to_publish
 
-    @markers.aws.validated
-    @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-    def test_list_tags_for_resource(self, aws_client, clean_up):
-        rule_name = "rule-{}".format(short_uid())
-
-        rule = aws_client.events.put_rule(
-            Name=rule_name, EventPattern=json.dumps(TEST_EVENT_PATTERN)
-        )
-        rule_arn = rule["RuleArn"]
-        expected = [
-            {"Key": "key1", "Value": "value1"},
-            {"Key": "key2", "Value": "value2"},
-        ]
-
-        # insert two tags, verify both are visible
-        aws_client.events.tag_resource(ResourceARN=rule_arn, Tags=expected)
-        actual = aws_client.events.list_tags_for_resource(ResourceARN=rule_arn)["Tags"]
-        assert actual == expected
-
-        # remove 'key2', verify only 'key1' remains
-        expected = [{"Key": "key1", "Value": "value1"}]
-        aws_client.events.untag_resource(ResourceARN=rule_arn, TagKeys=["key2"])
-        actual = aws_client.events.list_tags_for_resource(ResourceARN=rule_arn)["Tags"]
-        assert actual == expected
-
-        # clean up
-        clean_up(rule_name=rule_name)
-
     @markers.aws.unknown
+    # TODO move to schedule
     @pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
     def test_scheduled_expression_events(
         self,

@@ -125,15 +125,18 @@ def events_put_rule(aws_client):
     yield _factory
 
     for rule, event_bus_name in rules:
-        targets_response = aws_client.events.list_targets_by_rule(
-            Rule=rule, EventBusName=event_bus_name
-        )
-        if targets := targets_response["Targets"]:
-            targets_ids = [target["Id"] for target in targets]
-            aws_client.events.remove_targets(
-                Rule=rule, EventBusName=event_bus_name, Ids=targets_ids
+        try:
+            targets_response = aws_client.events.list_targets_by_rule(
+                Rule=rule, EventBusName=event_bus_name
             )
-        aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
+            if targets := targets_response["Targets"]:
+                targets_ids = [target["Id"] for target in targets]
+                aws_client.events.remove_targets(
+                    Rule=rule, EventBusName=event_bus_name, Ids=targets_ids
+                )
+            aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
+        except Exception as e:
+            LOG.debug("error cleaning up rule %s: %s", rule, e)
 
 
 @pytest.fixture

@@ -1,10 +1,12 @@
 import base64
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Callable, Optional
 
 from localstack.aws.api import RequestContext, handler
+from localstack.aws.api.config import TagsList
 from localstack.aws.api.events import (
     Arn,
     Boolean,
@@ -23,6 +25,7 @@ from localstack.aws.api.events import (
     ListEventBusesResponse,
     ListRuleNamesByTargetResponse,
     ListRulesResponse,
+    ListTagsForResourceResponse,
     ListTargetsByRuleResponse,
     NextToken,
     PutEventsRequestEntry,
@@ -38,18 +41,22 @@ from localstack.aws.api.events import (
     ResourceAlreadyExistsException,
     ResourceNotFoundException,
     RoleArn,
+    RuleArn,
     RuleDescription,
     RuleName,
     RuleResponseList,
     RuleState,
     ScheduleExpression,
+    TagKeyList,
     TagList,
+    TagResourceResponse,
     Target,
     TargetArn,
     TargetId,
     TargetIdList,
     TargetList,
     TestEventPatternResponse,
+    UntagResourceResponse,
 )
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Rule as ApiTypeRule
@@ -60,6 +67,7 @@ from localstack.services.events.models import (
     EventBusDict,
     EventsStore,
     FormattedEvent,
+    ResourceType,
     Rule,
     RuleDict,
     TargetDict,
@@ -73,11 +81,16 @@ from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import truncate
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
+
+RULE_ARN_CUSTOM_EVENT_BUS_PATTERN = re.compile(
+    r"^arn:aws:events:[a-z0-9-]+:\d{12}:rule/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$"
+)
 
 
 def decode_next_token(token: NextToken) -> int:
@@ -146,6 +159,24 @@ def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> 
     return formatted_event
 
 
+def get_resource_type(arn: Arn) -> ResourceType:
+    parsed_arn = parse_arn(arn)
+    resource_type = parsed_arn["resource"].split("/", 1)[0]
+    if resource_type == "event-bus":
+        return ResourceType.EVENT_BUS
+    if resource_type == "rule":
+        return ResourceType.RULE
+    raise ValidationException(
+        f"Parameter {arn} is not valid. Reason: Provided Arn is not in correct format."
+    )
+
+
+def check_unique_tags(tags: TagsList) -> None:
+    unique_tag_keys = {tag["Key"] for tag in tags}
+    if len(unique_tag_keys) < len(tags):
+        raise ValidationException("Invalid parameter: Duplicated keys are not allowed.")
+
+
 class EventsProvider(EventsApi, ServiceLifecycleHook):
     # api methods are grouped by resource type and sorted in hierarchical order
     # each group is sorted alphabetically
@@ -183,6 +214,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         store.event_buses[event_bus_service.event_bus.name] = event_bus_service.event_bus
 
+        if tags:
+            self.tag_resource(context, event_bus_service.arn, tags)
+
         response = CreateEventBusResponse(
             EventBusArn=event_bus_service.arn,
         )
@@ -199,6 +233,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 if rules := event_bus.rules:
                     self._delete_rule_services(rules)
                 del store.event_buses[name]
+                del store.TAGS[event_bus.arn]
         except ResourceNotFoundException as error:
             return error
 
@@ -272,6 +307,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 raise ValidationException("Rule can't be deleted since it has targets.")
             self._delete_rule_services(rule)
             del event_bus.rules[name]
+            del store.TAGS[rule.arn]
         except ResourceNotFoundException as error:
             return error
 
@@ -373,6 +409,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             targets,
         )
         event_bus.rules[name] = rule_service.rule
+
+        if tags:
+            self.tag_resource(context, rule_service.arn, tags)
+
         response = PutRuleResponse(RuleArn=rule_service.arn)
         return response
 
@@ -490,6 +530,41 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, entries: PutPartnerEventsRequestEntryList, **kwargs
     ) -> PutPartnerEventsResponse:
         raise NotImplementedError
+
+    ######
+    # Tags
+    ######
+
+    @handler("ListTagsForResource")
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: Arn, **kwargs
+    ) -> ListTagsForResourceResponse:
+        store = self.get_store(context)
+        resource_type = get_resource_type(resource_arn)
+        self._check_resource_exists(resource_arn, resource_type, store)
+        tags = store.TAGS.list_tags_for_resource(resource_arn)
+        return ListTagsForResourceResponse(tags)
+
+    @handler("TagResource")
+    def tag_resource(
+        self, context: RequestContext, resource_arn: Arn, tags: TagList, **kwargs
+    ) -> TagResourceResponse:
+        # each tag key must be unique
+        # https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html#tag-best-practices
+        store = self.get_store(context)
+        resource_type = get_resource_type(resource_arn)
+        self._check_resource_exists(resource_arn, resource_type, store)
+        check_unique_tags(tags)
+        store.TAGS.tag_resource(resource_arn, tags)
+
+    @handler("UntagResource")
+    def untag_resource(
+        self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList, **kwargs
+    ) -> UntagResourceResponse:
+        store = self.get_store(context)
+        resource_type = get_resource_type(resource_arn)
+        self._check_resource_exists(resource_arn, resource_type, store)
+        store.TAGS.untag_resource(resource_arn, tag_keys)
 
     #########
     # Methods
@@ -610,12 +685,21 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         return limited_dict, next_token
 
     def _extract_event_bus_name(
-        self, event_bus_name_or_arn: EventBusNameOrArn | None
+        self, resource_arn_or_name: EventBusNameOrArn | RuleArn | None
     ) -> EventBusName:
         """Return the event bus name. Input can be either an event bus name or ARN."""
-        if not event_bus_name_or_arn:
+        if not resource_arn_or_name:
             return "default"
-        return event_bus_name_or_arn.split("/")[-1]
+        if "arn:aws:events" not in resource_arn_or_name:
+            return resource_arn_or_name
+        resource_type = get_resource_type(resource_arn_or_name)
+        # TODO how to deal with / in event bus name or rule name
+        if resource_type == ResourceType.EVENT_BUS:
+            return resource_arn_or_name.split("/")[-1]
+        if resource_type == ResourceType.RULE:
+            if bool(RULE_ARN_CUSTOM_EVENT_BUS_PATTERN.match(resource_arn_or_name)):
+                return resource_arn_or_name.split("rule/", 1)[1].split("/", 1)[0]
+            return "default"
 
     def _event_bust_dict_to_api_type_list(self, event_buses: EventBusDict) -> EventBusList:
         """Return a converted dict of EventBus model objects as a list of event buses in API type EventBus format."""
@@ -673,6 +757,18 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     del self._target_sender_store[target_arn]
                 except KeyError:
                     LOG.error(f"Error deleting target service {target_arn}.")
+
+    def _check_resource_exists(
+        self, resource_arn: Arn, resource_type: ResourceType, store: EventsStore
+    ) -> None:
+        if resource_type == ResourceType.EVENT_BUS:
+            event_bus_name = self._extract_event_bus_name(resource_arn)
+            self.get_event_bus(event_bus_name, store)
+        if resource_type == ResourceType.RULE:
+            event_bus_name = self._extract_event_bus_name(resource_arn)
+            event_bus = self.get_event_bus(event_bus_name, store)
+            rule_name = resource_arn.split("/")[-1]
+            self.get_rule(rule_name, event_bus)
 
     def _process_entries(
         self, context: RequestContext, entries: PutEventsRequestEntryList
