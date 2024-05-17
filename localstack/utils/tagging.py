@@ -25,3 +25,10 @@ class TaggingService:
         tags = self.tags.get(arn, {})
         for name in tag_names:
             tags.pop(name, None)
+
+    def del_resource(self, arn: str):
+        if arn in self.tags:
+            del self.tags[arn]
+
+    def __delitem__(self, arn: str):
+        self.del_resource(arn)
