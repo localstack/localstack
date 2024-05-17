@@ -37,9 +37,9 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.141.0
+aws-cdk-lib==2.142.1
     # via localstack-core
-aws-sam-translator==1.88.0
+aws-sam-translator==1.89.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -108,11 +108,11 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.3.0
     # via aws-cdk-lib
-coverage==7.4.4
+coverage==7.5.1
     # via
     #   coveralls
     #   localstack-core
-coveralls==4.0.0
+coveralls==4.0.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
@@ -275,7 +275,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.6.post2
+moto-ext==5.0.7.post1
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -311,7 +311,7 @@ pbr==6.0.0
     # via
     #   jschema-to-python
     #   sarif-om
-platformdirs==4.2.1
+platformdirs==4.2.2
     # via virtualenv
 pluggy==1.5.0
     # via
@@ -346,7 +346,7 @@ publication==0.0.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-py-partiql-parser==0.5.4
+py-partiql-parser==0.5.5
     # via moto-ext
 pyasn1==0.6.0
     # via rsa
@@ -413,7 +413,7 @@ referencing==0.31.1
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2024.5.10
+regex==2024.5.15
     # via cfn-lint
 requests==2.31.0
     # via
@@ -525,7 +525,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.3
+zope-interface==6.4
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
