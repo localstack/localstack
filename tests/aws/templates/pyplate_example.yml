@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: tests String macro functions
+
+Parameters:
+  Tags:
+    Type: CommaDelimitedList
+
+Transform:
+  - PyPlate
+
+Resources:
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      Tags: |
+        #!PyPlate
+        output = []
+        for tag in params['Tags']:
+           key, value = tag.split('=')
+           output.append({"Key": key, "Value": value})
+
+Outputs:
+  BucketName:
+    Value:
+      Ref: S3Bucket
