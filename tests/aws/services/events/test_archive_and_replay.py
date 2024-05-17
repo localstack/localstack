@@ -37,13 +37,13 @@ class TestArchive:
             ]
         )
 
-        snapshot.match("create_archive", response_create_archive)
+        snapshot.match("create-archive", response_create_archive)
 
         response_list_archives = aws_client.events.list_archives()
-        snapshot.match("list_archives", response_list_archives)
+        snapshot.match("list-archives", response_list_archives)
 
         response_describe_archive = aws_client.events.describe_archive(ArchiveName=archive_name)
-        snapshot.match("describe_archive", response_describe_archive)
+        snapshot.match("describe-archive", response_describe_archive)
 
         response_update_archive = aws_client.events.update_archive(
             ArchiveName=archive_name,
@@ -51,10 +51,10 @@ class TestArchive:
             EventPattern=json.dumps(TEST_EVENT_PATTERN_NO_DETAIL),
             RetentionDays=2,
         )
-        snapshot.match("update_archive", response_update_archive)
+        snapshot.match("update-archive", response_update_archive)
 
         response_delete_archive = aws_client.events.delete_archive(ArchiveName=archive_name)
-        snapshot.match("delete_archive", response_delete_archive)
+        snapshot.match("delete-archive", response_delete_archive)
 
     @markers.aws.validated
     def test_create_archive_error_unknown_event_bus(self, aws_client, snapshot):
@@ -74,4 +74,4 @@ class TestArchive:
         snapshot.add_transformer(
             [snapshot.transform.regex(not_existing_event_bus_name, "<event-bus-name>")]
         )
-        snapshot.match("create_archive_error_unknown_event_bus", error)
+        snapshot.match("create-archive-unknown-event-bus-error", error)
