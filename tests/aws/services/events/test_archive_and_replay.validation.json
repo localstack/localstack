@@ -1,4 +1,10 @@
 {
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_list_describe_update_delete_archive[custom]": {
+    "last_validated_date": "2024-05-17T15:04:23+00:00"
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_list_describe_update_delete_archive[default]": {
+    "last_validated_date": "2024-05-17T15:04:22+00:00"
+  },
   "tests/aws/services/events/test_archive_and_replay.py::test_create_list_describe_update_delete_archive[custom]": {
     "last_validated_date": "2024-05-17T11:17:57+00:00"
   },
