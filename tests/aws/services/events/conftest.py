@@ -12,7 +12,7 @@ LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def events_create_event_bus(aws_client):
+def events_create_event_bus(aws_client, region_name, account_id):
     event_bus_names = []
 
     def _create_event_bus(**kwargs):
@@ -48,6 +48,18 @@ def events_create_event_bus(aws_client):
                     aws_client.events.delete_rule(Name=rule, EventBusName=event_bus_name)
                 except Exception as e:
                     LOG.warning(f"Failed to delete rule {rule}: {e}")
+
+            # Delete archives for event bus
+            event_source_arn = (
+                f"arn:aws:events:{region_name}:{account_id}:event-bus/{event_bus_name}"
+            )
+            response = aws_client.events.list_archives(EventSourceArn=event_source_arn)
+            archives = [archive["ArchiveName"] for archive in response["Archives"]]
+            for archive in archives:
+                try:
+                    aws_client.events.delete_archive(ArchiveName=archive)
+                except Exception as e:
+                    LOG.warning(f"Failed to delete archive {archive}: {e}")
 
             aws_client.events.delete_event_bus(Name=event_bus_name)
         except Exception as e:
