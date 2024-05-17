@@ -152,5 +152,21 @@
     "recorded-content": {
       "create-archive-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the CreateArchive operation: Event bus <event-bus-name> does not exist.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[default]": {
+    "recorded-date": "17-05-2024, 16:15:51",
+    "recorded-content": {
+      "create-archive-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateArchive operation: Archive <archive-name> already exists.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_duplicate[custom]": {
+    "recorded-date": "17-05-2024, 16:15:53",
+    "recorded-content": {
+      "create-archive-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the CreateArchive operation: Archive <archive-name> already exists.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_describe_archive_error_unknown_archive": {
+    "recorded-date": "17-05-2024, 15:56:24",
+    "recorded-content": {}
   }
 }
