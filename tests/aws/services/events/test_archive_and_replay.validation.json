@@ -25,5 +25,11 @@
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_name_prefix[default]": {
     "last_validated_date": "2024-05-17T16:28:03+00:00"
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_source_arn[custom]": {
+    "last_validated_date": "2024-05-17T16:32:52+00:00"
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_source_arn[default]": {
+    "last_validated_date": "2024-05-17T16:32:51+00:00"
   }
 }

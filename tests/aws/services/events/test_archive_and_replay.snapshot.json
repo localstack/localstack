@@ -308,5 +308,49 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_source_arn[default]": {
+    "recorded-date": "17-05-2024, 16:32:51",
+    "recorded-content": {
+      "list-archives-with-source-arn": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_source_arn[custom]": {
+    "recorded-date": "17-05-2024, 16:32:52",
+    "recorded-content": {
+      "list-archives-with-source-arn": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
