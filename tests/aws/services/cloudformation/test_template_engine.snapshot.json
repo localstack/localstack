@@ -614,7 +614,22 @@
     }
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_pyplate_param_type_list": {
-    "recorded-date": "16-05-2024, 09:33:24",
-    "recorded-content": {}
+    "recorded-date": "17-05-2024, 06:19:03",
+    "recorded-content": {
+      "tags": [
+        [
+          "Application",
+          "MyApp"
+        ],
+        [
+          "BU",
+          "ModernisationTeam"
+        ],
+        [
+          "Env",
+          "Prod"
+        ]
+      ]
+    }
   }
 }
