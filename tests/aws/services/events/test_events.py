@@ -23,7 +23,7 @@ from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
 from tests.aws.services.events.conftest import assert_valid_event, sqs_collect_messages
-from tests.aws.services.events.helper_functions import is_v2_provider
+from tests.aws.services.events.helper_functions import is_old_provider, is_v2_provider
 
 EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
 
@@ -83,7 +83,7 @@ EVENT_BUS_ROLE = {
 class TestEvents:
     @markers.aws.validated
     @pytest.mark.skipif(
-        not is_v2_provider(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_put_events_without_source(self, snapshot, aws_client):
@@ -98,7 +98,7 @@ class TestEvents:
 
     @markers.aws.unknown
     @pytest.mark.skipif(
-        not is_v2_provider(),
+        is_old_provider(),
         reason="V1 provider does not support this feature",
     )
     def test_put_event_without_detail(self, snapshot, aws_client):

@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import Callable, Optional
 
 from localstack.aws.api.events import (
     Arn,
@@ -20,6 +20,7 @@ from localstack.aws.api.events import (
     TargetList,
 )
 from localstack.services.events.models import Rule, TargetDict, ValidationException
+from localstack.services.events.scheduler import JobScheduler, convert_schedule_to_cron
 
 TARGET_ID_REGEX = re.compile(r"^[\.\-_A-Za-z0-9]+$")
 TARGET_ARN_REGEX = re.compile(r"arn:[\d\w:\-/]*")
@@ -44,6 +45,10 @@ class RuleService:
         managed_by: Optional[ManagedBy] = None,
     ):
         self._validate_input(event_pattern, schedule_expression, event_bus_name)
+        if schedule_expression:
+            self.schedule_cron = self._get_schedule_cron(schedule_expression)
+        else:
+            self.schedule_cron = None
         # required to keep data and functionality separate for persistence
         self.rule = Rule(
             name,
@@ -111,6 +116,11 @@ class RuleService:
                     }
                 )
         return delete_errors
+
+    def create_schedule_job(self, schedule_job_sender_func: Callable) -> None:
+        cron = self.schedule_cron
+        state = self.rule.state != "DISABLED"
+        self.job_id = JobScheduler.instance().add_job(schedule_job_sender_func, cron, state)
 
     def validate_targets_input(self, targets: TargetList) -> PutTargetsResultEntryList:
         validation_errors = []
@@ -181,6 +191,13 @@ class RuleService:
         if len(self.rule.targets) >= 5:
             return True
         return False
+
+    def _get_schedule_cron(self, schedule_expression: ScheduleExpression) -> str:
+        try:
+            cron = convert_schedule_to_cron(schedule_expression)
+            return cron
+        except ValueError as e:
+            raise ValidationException("Parameter ScheduleExpression is not valid.") from e
 
 
 RuleServiceDict = dict[Arn, RuleService]

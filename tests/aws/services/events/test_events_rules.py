@@ -5,7 +5,6 @@ Tests for rule routing of events as well as rule creation and deletion.
 import json
 
 import pytest
-from botocore.exceptions import ClientError
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
@@ -49,41 +48,6 @@ def test_rule_disable(aws_client, clean_up):
 
     # clean up
     clean_up(rule_name=rule_name)
-
-
-@markers.aws.validated
-# TODO move to test_events_schedules.py
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-@pytest.mark.parametrize(
-    "expression",
-    [
-        "rate(10 seconds)",
-        "rate(10 years)",
-        "rate(1 minutes)",
-        "rate(1 hours)",
-        "rate(1 days)",
-        "rate(10 minute)",
-        "rate(10 hour)",
-        "rate(10 day)",
-        "rate()",
-        "rate(10)",
-        "rate(10 minutess)",
-        "rate(foo minutes)",
-        "rate(0 minutes)",
-        "rate(-10 minutes)",
-        "rate(10 MINUTES)",
-        "rate( 10 minutes )",
-        " rate(10 minutes)",
-    ],
-)
-def test_put_rule_invalid_rate_schedule_expression(expression, aws_client):
-    with pytest.raises(ClientError) as e:
-        aws_client.events.put_rule(Name=f"rule-{short_uid()}", ScheduleExpression=expression)
-
-    assert e.value.response["Error"] == {
-        "Code": "ValidationException",
-        "Message": "Parameter ScheduleExpression is not valid.",
-    }
 
 
 @markers.aws.validated
@@ -333,22 +297,6 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
         target_ids=target_id,
         queue_url=queue_url,
     )
-
-
-@markers.aws.validated
-# TODO move to test_events_schedules.py
-@pytest.mark.skipif(is_v2_provider(), reason="V2 provider does not support this feature yet")
-@pytest.mark.parametrize("schedule_expression", ["rate(1 minute)", "rate(1 day)", "rate(1 hour)"])
-def test_create_rule_with_one_unit_in_singular_should_succeed(
-    schedule_expression, aws_client, clean_up
-):
-    rule_name = f"rule-{short_uid()}"
-
-    # rule should be creatable with given expression
-    try:
-        aws_client.events.put_rule(Name=rule_name, ScheduleExpression=schedule_expression)
-    finally:
-        clean_up(rule_name=rule_name)
 
 
 @markers.aws.validated

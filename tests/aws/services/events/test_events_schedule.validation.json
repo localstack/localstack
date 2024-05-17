@@ -1,0 +1,98 @@
+{
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::test_schedule_cron_target_sqs": {
+    "last_validated_date": "2024-05-15T10:58:53+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron": {
+    "last_validated_date": "2024-05-14T14:50:51+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 10 * * ? *)]": {
+    "last_validated_date": "2024-05-14T15:43:09+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 18 ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:10+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0 8 1 * ? *)]": {
+    "last_validated_date": "2024-05-14T15:43:11+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/10 * ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:12+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/15 * * * ? *)]": {
+    "last_validated_date": "2024-05-14T15:43:12+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/30 0-2 ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:14+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/30 20-23 ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:14+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(0/5 8-17 ? * MON-FRI *)]": {
+    "last_validated_date": "2024-05-14T15:43:13+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleCron::tests_put_rule_with_schedule_cron[cron(15 12 * * ? *)]": {
+    "last_validated_date": "2024-05-14T15:43:09+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[ rate(10 minutes)]": {
+    "last_validated_date": "2024-05-14T11:27:18+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate( 10 minutes )]": {
+    "last_validated_date": "2024-05-14T11:27:18+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate()]": {
+    "last_validated_date": "2024-05-14T11:27:13+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(-10 minutes)]": {
+    "last_validated_date": "2024-05-14T11:27:16+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(0 minutes)]": {
+    "last_validated_date": "2024-05-14T11:27:16+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(1 days)]": {
+    "last_validated_date": "2024-05-14T11:27:11+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(1 hours)]": {
+    "last_validated_date": "2024-05-14T11:27:10+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(1 minutes)]": {
+    "last_validated_date": "2024-05-14T11:27:09+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 MINUTES)]": {
+    "last_validated_date": "2024-05-14T11:27:17+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 day)]": {
+    "last_validated_date": "2024-05-14T11:27:13+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 hour)]": {
+    "last_validated_date": "2024-05-14T11:27:12+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 minute)]": {
+    "last_validated_date": "2024-05-14T11:27:11+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 minutess)]": {
+    "last_validated_date": "2024-05-14T11:27:14+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 seconds)]": {
+    "last_validated_date": "2024-05-14T11:27:08+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10 years)]": {
+    "last_validated_date": "2024-05-14T11:27:09+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(10)]": {
+    "last_validated_date": "2024-05-14T11:27:14+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_invalid_schedule_rate[rate(foo minutes)]": {
+    "last_validated_date": "2024-05-14T11:27:15+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::test_put_rule_with_schedule_rate": {
+    "last_validated_date": "2024-05-14T11:23:22+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_put_rule_with_schedule_custom_event_bus": {
+    "last_validated_date": "2024-05-14T11:38:21+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_rate_custom_input_target_sqs": {
+    "last_validated_date": "2024-05-15T09:31:53+00:00"
+  },
+  "tests/aws/services/events/test_events_schedule.py::TestScheduleRate::tests_schedule_rate_target_sqs": {
+    "last_validated_date": "2024-05-15T08:57:51+00:00"
+  }
+}
