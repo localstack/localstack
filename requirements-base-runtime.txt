@@ -184,7 +184,7 @@ wsproto==1.2.0
     # via hypercorn
 xmltodict==0.13.0
     # via localstack-core (pyproject.toml)
-zope-interface==6.3
+zope-interface==6.4
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
