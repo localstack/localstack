@@ -1186,7 +1186,7 @@ class TestEventRule:
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
     def test_put_list_with_prefix_describe_delete_rule(
-        self, bus_name, events_create_event_bus, put_rule, aws_client, snapshot
+        self, bus_name, events_create_event_bus, events_put_rule, aws_client, snapshot
     ):
         if bus_name == "custom":
             bus_name = f"bus-{short_uid()}"
@@ -1195,7 +1195,7 @@ class TestEventRule:
 
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
-        response = put_rule(
+        response = events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             EventBusName=bus_name,
@@ -1217,7 +1217,7 @@ class TestEventRule:
 
     @markers.aws.validated
     def test_put_multiple_rules_with_same_name(
-        self, events_create_event_bus, put_rule, aws_client, snapshot
+        self, events_create_event_bus, events_put_rule, aws_client, snapshot
     ):
         event_bus_name = f"bus-{short_uid()}"
         events_create_event_bus(Name=event_bus_name)
@@ -1226,7 +1226,7 @@ class TestEventRule:
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
 
-        response = put_rule(
+        response = events_put_rule(
             Name=rule_name,
             EventBusName=event_bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
@@ -1234,7 +1234,7 @@ class TestEventRule:
         snapshot.match("put-rule", response)
 
         # put_rule updates the rule if it already exists
-        response = put_rule(
+        response = events_put_rule(
             Name=rule_name,
             EventBusName=event_bus_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
@@ -1245,7 +1245,9 @@ class TestEventRule:
         snapshot.match("list-rules", response)
 
     @markers.aws.validated
-    def test_list_rule_with_limit(self, events_create_event_bus, put_rule, aws_client, snapshot):
+    def test_list_rule_with_limit(
+        self, events_create_event_bus, events_put_rule, aws_client, snapshot
+    ):
         snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
 
         event_bus_name = f"bus-{short_uid()}"
@@ -1258,7 +1260,7 @@ class TestEventRule:
 
         for i in range(count):
             rule_name = f"{rule_name_prefix}-{i}"
-            put_rule(
+            events_put_rule(
                 Name=rule_name,
                 EventBusName=event_bus_name,
                 EventPattern=json.dumps(TEST_EVENT_PATTERN),
@@ -1288,7 +1290,7 @@ class TestEventRule:
     @markers.aws.validated
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
     def test_disable_re_enable_rule(
-        self, events_create_event_bus, put_rule, aws_client, snapshot, bus_name
+        self, events_create_event_bus, events_put_rule, aws_client, snapshot, bus_name
     ):
         if bus_name == "custom":
             bus_name = f"bus-{short_uid()}"
@@ -1297,7 +1299,7 @@ class TestEventRule:
 
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
-        put_rule(
+        events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             EventBusName=bus_name,
@@ -1317,11 +1319,11 @@ class TestEventRule:
 
     @markers.aws.validated
     def test_delete_rule_with_targets(
-        self, put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
     ):
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
-        put_rule(
+        events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
@@ -1349,11 +1351,11 @@ class TestEventRule:
 
     @markers.aws.validated
     def test_update_rule_with_targets(
-        self, put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
     ):
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
-        put_rule(
+        events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
@@ -1378,7 +1380,7 @@ class TestEventRule:
         response = aws_client.events.list_targets_by_rule(Rule=rule_name)
         snapshot.match("list-targets", response)
 
-        response = put_rule(
+        response = events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
@@ -1477,7 +1479,7 @@ class TestEventTarget:
         self,
         bus_name,
         events_create_event_bus,
-        put_rule,
+        events_put_rule,
         sqs_create_queue,
         sqs_get_queue_arn,
         aws_client,
@@ -1492,7 +1494,7 @@ class TestEventTarget:
 
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
-        put_rule(
+        events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             EventBusName=bus_name,
@@ -1530,11 +1532,11 @@ class TestEventTarget:
         reason="V1 provider does not support this feature",
     )
     def test_add_exceed_fife_targets_per_rule(
-        self, put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
     ):
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
-        put_rule(
+        events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
@@ -1555,12 +1557,12 @@ class TestEventTarget:
         reason="V1 provider does not support this feature",
     )
     def test_list_target_by_rule_limit(
-        self, put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+        self, events_put_rule, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
     ):
         snapshot.add_transformer(snapshot.transform.jsonpath("$..NextToken", "next_token"))
         rule_name = f"test-rule-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(rule_name, "<rule-name>"))
-        put_rule(
+        events_put_rule(
             Name=rule_name,
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
