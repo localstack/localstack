@@ -161,10 +161,10 @@ def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> 
 
 def get_bus_or_rule(arn: Arn) -> ResourceType:
     parsed_arn = parse_arn(arn)
-    service = parsed_arn["resource"].split("/", 1)[0]
-    if service == "event-bus":
+    resource_type = parsed_arn["resource"].split("/", 1)[0]
+    if resource_type == "event-bus":
         return ResourceType.EVENT_BUS
-    if service == "rule":
+    if resource_type == "rule":
         return ResourceType.RULE
 
 
