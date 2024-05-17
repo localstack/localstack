@@ -11,7 +11,14 @@ class TestArchive:
     @markers.aws.validated
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     def test_create_list_describe_update_delete_archive(
-        self, event_bus_type, region_name, account_id, events_create_event_bus, aws_client, snapshot
+        self,
+        event_bus_type,
+        region_name,
+        account_id,
+        events_create_event_bus,
+        events_create_archive,
+        aws_client,
+        snapshot,
     ):
         if event_bus_type == "default":
             event_bus_name = "default"
@@ -22,7 +29,7 @@ class TestArchive:
             event_source_arn = response["EventBusArn"]
 
         archive_name = f"test-archive.{short_uid()}"
-        response_create_archive = aws_client.events.create_archive(
+        response_create_archive = events_create_archive(
             ArchiveName=archive_name,
             EventSourceArn=event_source_arn,  # ARN of the source event bus
             Description="description of the archive",

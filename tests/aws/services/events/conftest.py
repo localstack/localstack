@@ -100,6 +100,32 @@ def events_put_rule(aws_client):
 
 
 @pytest.fixture
+def events_create_archive(aws_client, region_name, account_id):
+    archives = []
+
+    def _create_archive(**kwargs):
+        if "ArchiveName" not in kwargs:
+            kwargs["ArchiveName"] = f"test-archive-{short_uid()}"
+
+        if "EventSourceArn" not in kwargs:
+            kwargs["EventSourceArn"] = (
+                f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+            )
+
+        response = aws_client.events.create_archive(**kwargs)
+        archives.append(kwargs["ArchiveName"])
+        return response
+
+    yield _create_archive
+
+    for archive in archives:
+        try:
+            aws_client.events.delete_archive(ArchiveName=archive)
+        except Exception as e:
+            LOG.warning(f"Failed to delete archive {archive}: {e}")
+
+
+@pytest.fixture
 def events_allow_event_rule_to_sqs_queue(aws_client):
     def _allow_event_rule(sqs_queue_url, sqs_queue_arn, event_rule_arn) -> None:
         # allow event rule to write to sqs queue
