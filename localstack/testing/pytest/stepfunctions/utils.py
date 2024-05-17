@@ -4,7 +4,12 @@ import os
 from typing import Callable, Final
 
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
+from jsonpath_ng.ext import parse
+from localstack_snapshot.snapshots.transformer import (
+    JsonpathTransformer,
+    RegexTransformer,
+    TransformContext,
+)
 
 from localstack.aws.api.stepfunctions import (
     CreateStateMachineOutput,
@@ -12,6 +17,7 @@ from localstack.aws.api.stepfunctions import (
     HistoryEventList,
     HistoryEventType,
 )
+from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.strings import short_uid
@@ -400,3 +406,53 @@ def record_sqs_events(aws_client, queue_url, sfn_snapshot, num_events):
     poll_condition(_get_events, timeout=60)
     stepfunctions_events.sort(key=lambda e: json.dumps(e.get("detail", dict())))
     sfn_snapshot.match("stepfunctions_events", stepfunctions_events)
+
+
+class SfnNoneRecursiveParallelTransformer:
+    """
+    Normalises a sublist of events triggered in by a Parallel state to be order-independent.
+    """
+
+    def __init__(self, events_jsonpath: str = "$..events"):
+        self.events_jsonpath: str = events_jsonpath
+
+    @staticmethod
+    def _normalise_events(events: list[dict]) -> None:
+        start_idx = None
+        sublist = list()
+        in_sublist = False
+        for i, event in enumerate(events):
+            event_type = event.get("type")
+            if event_type is None:
+                LOG.debug(f"No 'type' in event item '{event}'.")
+                in_sublist = False
+
+            elif event_type in {
+                None,
+                HistoryEventType.ParallelStateSucceeded,
+                HistoryEventType.ParallelStateAborted,
+                HistoryEventType.ParallelStateExited,
+                HistoryEventType.ParallelStateFailed,
+            }:
+                events[start_idx:i] = sorted(sublist, key=lambda e: to_json_str(e))
+                in_sublist = False
+            elif event_type == HistoryEventType.ParallelStateStarted:
+                in_sublist = True
+                sublist = []
+                start_idx = i + 1
+            elif in_sublist:
+                event["id"] = (0,)
+                event["previousEventId"] = 0
+                sublist.append(event)
+
+    def transform(self, input_data: dict, *, ctx: TransformContext) -> dict:
+        pattern = parse("$..events")
+        events = pattern.find(input_data)
+        if not events:
+            LOG.debug(f"No Stepfunctions 'events' for jsonpath '{self.events_jsonpath}'.")
+            return input_data
+
+        for events_data in events:
+            self._normalise_events(events_data.value)
+
+        return input_data

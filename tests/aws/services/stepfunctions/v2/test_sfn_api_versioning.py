@@ -4,14 +4,14 @@ import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.testing.pytest import markers
-from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
-from tests.aws.services.stepfunctions.utils import (
+from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_lists_terminated,
     await_execution_terminated,
     await_state_machine_version_listed,
     await_state_machine_version_not_listed,
 )
+from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])

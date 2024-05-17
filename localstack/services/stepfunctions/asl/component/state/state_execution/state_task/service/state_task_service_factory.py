@@ -18,6 +18,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_events import (
     StateTaskServiceEvents,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_glue import (
+    StateTaskServiceGlue,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_lambda import (
     StateTaskServiceLambda,
 )
@@ -53,5 +56,7 @@ def state_task_service_for(service_name: str) -> StateTaskService:
             return StateTaskServiceEvents()
         case "ecs":
             return StateTaskServiceEcs()
+        case "glue":
+            return StateTaskServiceGlue()
         case unknown:
             raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa

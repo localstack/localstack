@@ -5,14 +5,14 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    await_execution_terminated,
+    create_and_record_execution,
+)
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates import (
     TimeoutTemplates as TT,
-)
-from tests.aws.services.stepfunctions.utils import (
-    await_execution_terminated,
-    create_and_record_execution,
 )
 
 

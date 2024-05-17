@@ -6,8 +6,8 @@ import pytest
 
 from localstack import config
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import await_execution_terminated
 from localstack.utils.sync import wait_until
-from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 
 @markers.aws.validated

@@ -3,10 +3,13 @@ import json
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import (
+    await_execution_terminated,
+    create,
+)
 from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates import (
     ScenariosTemplate as ST,
 )
-from tests.aws.services.stepfunctions.utils import await_execution_terminated, create
 
 
 @markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])

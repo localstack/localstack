@@ -18,9 +18,9 @@ import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import await_execution_terminated
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from tests.aws.services.stepfunctions.utils import await_execution_terminated
 
 RECIPIENT_LIST_STACK_NAME = "LoanBroker-RecipientList"
 PROJECT_NAME = "CDK Loan Broker"

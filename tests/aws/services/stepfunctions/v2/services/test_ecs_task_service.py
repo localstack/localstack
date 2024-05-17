@@ -8,8 +8,8 @@ import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.stepfunctions.utils import launch_and_record_execution
 from localstack.utils.analytics.metadata import is_license_activated
-from tests.aws.services.stepfunctions.utils import launch_and_record_execution
 
 _ECS_SNAPSHOT_SKIP_PATHS: [list[str]] = [
     "$..Attachments..Details",
