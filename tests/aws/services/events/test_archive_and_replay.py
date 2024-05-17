@@ -252,3 +252,14 @@ class TestArchive:
             [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
         )
         snapshot.match("update-archive-unknown-archive-error", error)
+
+    @markers.aws.validated
+    def test_delete_archive_error_unknown_archive(self, aws_client, snapshot):
+        not_existing_archive_name = f"doesnotexist-{short_uid()}"
+        with pytest.raises(Exception) as error:
+            aws_client.events.delete_archive(ArchiveName=not_existing_archive_name)
+
+        snapshot.add_transformer(
+            [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
+        )
+        snapshot.match("delete-archive-unknown-archive-error", error)

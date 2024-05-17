@@ -364,5 +364,11 @@
     "recorded-content": {
       "update-archive-unknown-archive-error": "<ExceptionInfo InternalException('An error occurred (InternalException) when calling the UpdateArchive operation (reached max retries: 4): Service encountered unexpected problem. Please try again.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_delete_archive_error_unknown_archive": {
+    "recorded-date": "17-05-2024, 16:46:11",
+    "recorded-content": {
+      "delete-archive-unknown-archive-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DeleteArchive operation: Archive <archive-name> does not exist.') tblen=3>"
+    }
   }
 }
