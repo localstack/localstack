@@ -16,7 +16,6 @@ from localstack.aws.api.events import (
     RuleName,
     RuleState,
     ScheduleExpression,
-    Tag,
     TagList,
     Target,
     TargetId,
@@ -27,6 +26,7 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.utils.tagging import TaggingService
 
 TargetDict = dict[TargetId, Target]
 
@@ -86,15 +86,13 @@ class EventBus:
 
 EventBusDict = dict[EventBusName, EventBus]
 
-TagDict = dict[Arn, Tag]
-
 
 class EventsStore(BaseStore):
     # Map of eventbus names to eventbus objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     event_buses: EventBusDict = LocalAttribute(default=dict)
 
     # Maps resource ARN to tags
-    TAGS: TagDict = CrossRegionAttribute(default=dict)
+    TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
 
 events_store = AccountRegionBundle("events", EventsStore)

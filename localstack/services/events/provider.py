@@ -541,12 +541,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if not resource_type:
             pass  # TODO handle error for tagging not rule or event_bus
         self._check_resource_exists(resource_arn, resource_type, store)
-        try:
-            tags = store.TAGS.get(resource_arn, {})
-            tags_list = [{"Key": key, "Value": value} for key, value in tags.items()]
-        except KeyError:
-            raise ResourceNotFoundException(f"Resource not found: '{resource_arn}'")
-        return ListTagsForResourceResponse(Tags=tags_list)
+        tags = store.TAGS.list_tags_for_resource(resource_arn)
+        return ListTagsForResourceResponse(tags)
 
     @handler("TagResource")
     def tag_resource(
@@ -560,9 +556,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             pass  # TODO handle error for tagging not rule or event_bus
         self._check_resource_exists(resource_arn, resource_type, store)
         check_unique_tags(tags)
-        for tag in tags:
-            resource_tags = store.TAGS.setdefault(resource_arn, {})
-            resource_tags.update({tag["Key"]: tag["Value"]} or {})
+        store.TAGS.tag_resource(resource_arn, tags)
 
     @handler("UntagResource")
     def untag_resource(
@@ -573,15 +567,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if not resource_type:
             pass  # TODO handle error for tagging not rule or event_bus
         self._check_resource_exists(resource_arn, resource_type, store)
-        try:
-            resource_tags = store.TAGS.get(resource_arn, {})
-        except KeyError:
-            raise ResourceNotFoundException(f"Resource not found: '{resource_arn}'")
-        for tag_key in tag_keys:
-            try:
-                del resource_tags[tag_key]
-            except KeyError:
-                pass  # default behavior is to ignore if tag key does not exist
+        store.TAGS.untag_resource(resource_arn, tag_keys)
 
     #########
     # Methods
