@@ -178,8 +178,11 @@ class PropertyTypeScaffolding:
                 case "object":
                     resolved_type = "dict"  # TODO: any cases where we need to continue here?
                 case "array":
-                    item_type = self.resolve_type_of_property(property_def["items"])
-                    resolved_type = f"list[{item_type}]"
+                    try:
+                        item_type = self.resolve_type_of_property(property_def["items"])
+                        resolved_type = f"list[{item_type}]"
+                    except RecursionError:
+                        resolved_type = "list[Any]"
                 case _:
                     # TODO: allOf, anyOf, patternProperties (?)
                     # AWS::ApiGateway::RestApi passes a ["object", "string"] here for the "Body" property
