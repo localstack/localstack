@@ -159,7 +159,7 @@ def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> 
     return formatted_event
 
 
-def get_bus_or_rule(arn: Arn) -> ResourceType:
+def get_resource_type(arn: Arn) -> ResourceType:
     parsed_arn = parse_arn(arn)
     resource_type = parsed_arn["resource"].split("/", 1)[0]
     if resource_type == "event-bus":
@@ -537,7 +537,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, resource_arn: Arn, **kwargs
     ) -> ListTagsForResourceResponse:
         store = self.get_store(context)
-        resource_type = get_bus_or_rule(resource_arn)
+        resource_type = get_resource_type(resource_arn)
         if not resource_type:
             pass  # TODO handle error for tagging not rule or event_bus
         self._check_resource_exists(resource_arn, resource_type, store)
@@ -551,7 +551,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         # each tag key must be unique
         # https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html#tag-best-practices
         store = self.get_store(context)
-        resource_type = get_bus_or_rule(resource_arn)
+        resource_type = get_resource_type(resource_arn)
         if not resource_type:
             pass  # TODO handle error for tagging not rule or event_bus
         self._check_resource_exists(resource_arn, resource_type, store)
@@ -563,7 +563,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, resource_arn: Arn, tag_keys: TagKeyList, **kwargs
     ) -> UntagResourceResponse:
         store = self.get_store(context)
-        resource_type = get_bus_or_rule(resource_arn)
+        resource_type = get_resource_type(resource_arn)
         if not resource_type:
             pass  # TODO handle error for tagging not rule or event_bus
         self._check_resource_exists(resource_arn, resource_type, store)
@@ -695,7 +695,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             return "default"
         if "arn:aws:events" not in resource_arn_or_name:
             return resource_arn_or_name
-        resource_type = get_bus_or_rule(resource_arn_or_name)
+        resource_type = get_resource_type(resource_arn_or_name)
         # TODO how to deal with / in event bus name or rule name
         if resource_type == ResourceType.EVENT_BUS:
             return resource_arn_or_name.split("/")[-1]
