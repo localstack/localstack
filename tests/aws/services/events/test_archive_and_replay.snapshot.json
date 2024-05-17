@@ -1,0 +1,150 @@
+{
+  "tests/aws/services/events/test_archive_and_replay.py::test_create_list_describe_update_delete_archive[default]": {
+    "recorded-date": "17-05-2024, 11:17:56",
+    "recorded-content": {
+      "create_archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "CreationTime": "datetime",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_archives": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveName": "<archive-name>",
+        "CreationTime": "datetime",
+        "Description": "description of the archive",
+        "EventCount": 0,
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "RetentionDays": 1,
+        "SizeBytes": 0,
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "CreationTime": "datetime",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_archive": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::test_create_list_describe_update_delete_archive[custom]": {
+    "recorded-date": "17-05-2024, 11:17:57",
+    "recorded-content": {
+      "create_archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "CreationTime": "datetime",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_archives": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 0,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 0,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveName": "<archive-name>",
+        "CreationTime": "datetime",
+        "Description": "description of the archive",
+        "EventCount": 0,
+        "EventPattern": {
+          "source": [
+            "core.update-account-command"
+          ],
+          "detail-type": [
+            "core.update-account-command"
+          ],
+          "detail": {
+            "command": [
+              "update-account"
+            ]
+          }
+        },
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "RetentionDays": 1,
+        "SizeBytes": 0,
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "CreationTime": "datetime",
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_archive": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
