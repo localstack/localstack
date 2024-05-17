@@ -23,6 +23,12 @@
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_error_unknown_source_arn": {
     "last_validated_date": "2024-05-17T16:34:48+00:00"
   },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_state_enabled[custom]": {
+    "last_validated_date": "2024-05-17T16:51:14+00:00"
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_state_enabled[default]": {
+    "last_validated_date": "2024-05-17T16:51:14+00:00"
+  },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_name_prefix": {
     "last_validated_date": "2024-05-17T16:23:31+00:00"
   },

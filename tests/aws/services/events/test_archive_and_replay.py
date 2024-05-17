@@ -227,6 +227,44 @@ class TestArchive:
         snapshot.match("list-archives-with-source-arn", response_list_archives_source_arn)
 
     @markers.aws.validated
+    @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
+    def test_list_archive_state_enabled(
+        self,
+        event_bus_type,
+        region_name,
+        account_id,
+        events_create_event_bus,
+        events_create_archive,
+        aws_client,
+        snapshot,
+    ):
+        if event_bus_type == "default":
+            event_bus_name = "default"
+            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+        if event_bus_type == "custom":
+            event_bus_name = f"test-bus-{short_uid()}"
+            response = events_create_event_bus(Name=event_bus_name)
+            event_source_arn = response["EventBusArn"]
+
+        archive_name = f"test-archive-{short_uid()}"
+        events_create_archive(
+            ArchiveName=archive_name,
+            EventSourceArn=event_source_arn,
+            Description="description of the archive",
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            RetentionDays=1,
+        )
+
+        response_list_archives = aws_client.events.list_archives(State="ENABLED")
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(event_bus_name, "<event-bus-name>"),
+                snapshot.transform.regex(archive_name, "<archive-name>"),
+            ]
+        )
+        snapshot.match("list-archives-state-enabled", response_list_archives)
+
+    @markers.aws.validated
     def test_list_archive_error_unknown_source_arn(
         self, region_name, account_id, aws_client, snapshot
     ):
