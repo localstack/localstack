@@ -133,3 +133,27 @@ class TestArchive:
             [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
         )
         snapshot.match("describe-archive-unknown-archive-error", error)
+
+    @markers.aws.validated
+    def test_list_archive_with_name_prefix(self, events_create_archive, aws_client, snapshot):
+        archive_name_prefix = "test-archive"
+        archive_name = f"{archive_name_prefix}-{short_uid()}"
+        events_create_archive(
+            ArchiveName=archive_name,
+            Description="description of the archive",
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+            RetentionDays=1,
+        )
+
+        response_list_archives_prefix = aws_client.events.list_archives(
+            NamePrefix=archive_name_prefix
+        )
+        snapshot.match("list-archives-with-name-prefix", response_list_archives_prefix)
+
+        response_list_archives_full_name = aws_client.events.list_archives(NamePrefix=archive_name)
+        snapshot.match("list-archives-with-full-name", response_list_archives_full_name)
+
+        response_list_not_existing_archive = aws_client.events.list_archives(
+            NamePrefix="doesnotexist"
+        )
+        snapshot.match("list-archives-not-existing-archive", response_list_not_existing_archive)
