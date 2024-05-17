@@ -55,3 +55,23 @@ class TestArchive:
 
         response_delete_archive = aws_client.events.delete_archive(ArchiveName=archive_name)
         snapshot.match("delete_archive", response_delete_archive)
+
+    @markers.aws.validated
+    def test_create_archive_error_unknown_event_bus(self, aws_client, snapshot):
+        not_existing_event_bus_name = f"doesnotexist-{short_uid()}"
+        non_existing_event_bus_arn = (
+            f"arn:aws:events:us-east-1:123456789012:event-bus/{not_existing_event_bus_name}"
+        )
+        with pytest.raises(Exception) as error:
+            aws_client.events.create_archive(
+                ArchiveName="test-archive",
+                EventSourceArn=non_existing_event_bus_arn,
+                Description="description of the archive",
+                EventPattern=json.dumps(TEST_EVENT_PATTERN),
+                RetentionDays=1,
+            )
+
+        snapshot.add_transformer(
+            [snapshot.transform.regex(not_existing_event_bus_name, "<event-bus-name>")]
+        )
+        snapshot.match("create_archive_error_unknown_event_bus", error)

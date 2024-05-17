@@ -294,5 +294,11 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_unknown_event_bus": {
+    "recorded-date": "17-05-2024, 15:11:46",
+    "recorded-content": {
+      "create_archive_error_unknown_event_bus": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the CreateArchive operation: Event bus <event-bus-name> does not exist.') tblen=3>"
+    }
   }
 }

@@ -1,4 +1,7 @@
 {
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_archive_error_unknown_event_bus": {
+    "last_validated_date": "2024-05-17T15:11:46+00:00"
+  },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_create_list_describe_update_delete_archive[custom]": {
     "last_validated_date": "2024-05-17T15:04:23+00:00"
   },
