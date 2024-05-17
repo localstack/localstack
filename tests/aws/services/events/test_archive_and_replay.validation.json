@@ -34,5 +34,8 @@
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_source_arn[default]": {
     "last_validated_date": "2024-05-17T16:32:51+00:00"
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_update_archive_error_unknown_archive": {
+    "last_validated_date": "2024-05-17T16:44:35+00:00"
   }
 }

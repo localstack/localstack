@@ -7,6 +7,7 @@ from localstack.utils.strings import short_uid
 from tests.aws.services.events.test_events import TEST_EVENT_PATTERN, TEST_EVENT_PATTERN_NO_DETAIL
 
 
+# TODO order tests - add section errors
 class TestArchive:
     @markers.aws.validated
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
@@ -240,3 +241,14 @@ class TestArchive:
             [snapshot.transform.regex(not_existing_event_bus_name, "<event-bus-name>")]
         )
         snapshot.match("list-archives-unknown-event-bus-error", error)
+
+    @markers.aws.validated
+    def test_update_archive_error_unknown_archive(self, aws_client, snapshot):
+        not_existing_archive_name = f"doesnotexist-{short_uid()}"
+        with pytest.raises(Exception) as error:
+            aws_client.events.update_archive(ArchiveName=not_existing_archive_name)
+
+        snapshot.add_transformer(
+            [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
+        )
+        snapshot.match("update-archive-unknown-archive-error", error)
