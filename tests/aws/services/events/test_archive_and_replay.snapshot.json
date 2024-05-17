@@ -166,7 +166,9 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_describe_archive_error_unknown_archive": {
-    "recorded-date": "17-05-2024, 15:56:24",
-    "recorded-content": {}
+    "recorded-date": "17-05-2024, 16:19:03",
+    "recorded-content": {
+      "describe-archive-unknown-archive-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeArchive operation: Archive <archive-name> does not exist.') tblen=3>"
+    }
   }
 }

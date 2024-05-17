@@ -122,3 +122,14 @@ class TestArchive:
 
         snapshot.add_transformer([snapshot.transform.regex(archive_name, "<archive-name>")])
         snapshot.match("create-archive-duplicate-error", error)
+
+    @markers.aws.validated
+    def test_describe_archive_error_unknown_archive(self, aws_client, snapshot):
+        not_existing_archive_name = f"doesnotexist-{short_uid()}"
+        with pytest.raises(Exception) as error:
+            aws_client.events.describe_archive(ArchiveName=not_existing_archive_name)
+
+        snapshot.add_transformer(
+            [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
+        )
+        snapshot.match("describe-archive-unknown-archive-error", error)
