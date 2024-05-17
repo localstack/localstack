@@ -166,6 +166,9 @@ def get_resource_type(arn: Arn) -> ResourceType:
         return ResourceType.EVENT_BUS
     if resource_type == "rule":
         return ResourceType.RULE
+    raise ValidationException(
+        f"Parameter {arn} is not valid. Reason: Provided Arn is not in correct format."
+    )
 
 
 def check_unique_tags(tags: TagsList) -> None:
@@ -538,8 +541,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> ListTagsForResourceResponse:
         store = self.get_store(context)
         resource_type = get_resource_type(resource_arn)
-        if not resource_type:
-            pass  # TODO handle error for tagging not rule or event_bus
         self._check_resource_exists(resource_arn, resource_type, store)
         tags = store.TAGS.list_tags_for_resource(resource_arn)
         return ListTagsForResourceResponse(tags)
@@ -552,8 +553,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         # https://docs.aws.amazon.com/general/latest/gr/aws_tagging.html#tag-best-practices
         store = self.get_store(context)
         resource_type = get_resource_type(resource_arn)
-        if not resource_type:
-            pass  # TODO handle error for tagging not rule or event_bus
         self._check_resource_exists(resource_arn, resource_type, store)
         check_unique_tags(tags)
         store.TAGS.tag_resource(resource_arn, tags)
@@ -564,8 +563,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> UntagResourceResponse:
         store = self.get_store(context)
         resource_type = get_resource_type(resource_arn)
-        if not resource_type:
-            pass  # TODO handle error for tagging not rule or event_bus
         self._check_resource_exists(resource_arn, resource_type, store)
         store.TAGS.untag_resource(resource_arn, tag_keys)
 
