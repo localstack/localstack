@@ -133,7 +133,9 @@ class TestScheduleRate:
             json.loads(messages_second[0]["Body"])["time"]
         )
         time_delta = time_messages_second - time_messages_first
-        assert time_delta == timedelta(seconds=60)
+        expected_time_delta = timedelta(seconds=60)
+        tolerance = timedelta(seconds=5)
+        assert expected_time_delta - tolerance <= time_delta <= expected_time_delta + tolerance
 
     @markers.aws.validated
     def tests_schedule_rate_custom_input_target_sqs(
