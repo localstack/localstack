@@ -1,11 +1,8 @@
-from typing import cast
-
 from localstack.services.cloudformation.api_utils import is_local_service_url
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     remove_none_values,
 )
-from localstack.services.cloudformation.engine.entities import Stack
 from localstack.services.cloudformation.engine.template_deployer import order_resources
 
 
@@ -42,14 +39,6 @@ def test_remove_none_values():
     assert result == {"Properties": {"prop1": 123, "nested": {}, "list": [1, 2, 3]}}
 
 
-class StubStack:
-    def __init__(
-        self, resources: dict[str, dict], resolved_conditions: dict[str, bool] | None = None
-    ):
-        self.template_resources = resources
-        self.resolved_conditions = resolved_conditions or {}
-
-
 def test_order_resources():
     resources: dict[str, dict] = {
         "B": {
@@ -66,6 +55,6 @@ def test_order_resources():
         },
     }
 
-    resources = order_resources(cast(Stack, StubStack(resources)))
+    sorted_resources = order_resources(resources=resources, resolved_conditions={})
 
-    assert list(resources.keys()) == ["A", "B"]
+    assert list(sorted_resources.keys()) == ["A", "B"]
