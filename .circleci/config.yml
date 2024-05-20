@@ -366,7 +366,7 @@ jobs:
       image: << parameters.machine_image >>
     resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
-    parallelism: 5
+    parallelism: 4
     environment:
       PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
     steps:
