@@ -845,10 +845,10 @@ def order_resources(
     if len(sorted_logical_resource_ids) != len(nodes):
         raise Exception("Circular dependency found.")
 
-    sorted_mapping = [
-        (logical_resource_id, resources[logical_resource_id])
-        for logical_resource_id in sorted_logical_resource_ids
-    ]
+    sorted_mapping = []
+    for logical_resource_id in sorted_logical_resource_ids:
+        if properties := resources.get(logical_resource_id):
+            sorted_mapping.append((logical_resource_id, properties))
     if reverse:
         sorted_mapping = sorted_mapping[::-1]
     return OrderedDict(sorted_mapping)
