@@ -793,7 +793,10 @@ class ChangeConfig(TypedDict):
 
 
 def order_resources(
-    resources: dict, resolved_conditions: dict[str, bool], reverse: bool = False
+    resources: dict,
+    resolved_parameters: dict[str, StackParameter],
+    resolved_conditions: dict[str, bool],
+    reverse: bool = False,
 ) -> OrderedDict:
     """
     Given a dictionary of resources, topologically sort the resources based on
@@ -808,6 +811,9 @@ def order_resources(
         nodes.setdefault(logical_resource_id, [])
         deps = get_deps_for_resource(properties, resolved_conditions)
         for dep in deps:
+            if dep in resolved_parameters:
+                # we only care about other resources
+                continue
             nodes.setdefault(dep, [])
             nodes[dep].append(logical_resource_id)
 
@@ -852,6 +858,7 @@ def order_resources(
 def order_changes(
     given_changes: list[ChangeConfig],
     resources: dict,
+    resolved_parameters: dict[str, StackParameter],
     # TODO: remove resolved conditions somehow
     resolved_conditions: dict[str, bool],
     reverse: bool = False,
@@ -861,7 +868,10 @@ def order_changes(
     changes based on inter-resource dependencies (e.g. usages of intrinsic functions).
     """
     ordered_resources = order_resources(
-        resources=resources, resolved_conditions=resolved_conditions, reverse=reverse
+        resources=resources,
+        resolved_parameters=resolved_parameters,
+        resolved_conditions=resolved_conditions,
+        reverse=reverse,
     )
     sorted_changes = []
     for logical_resource_id in ordered_resources.keys():
@@ -973,7 +983,10 @@ class TemplateDeployer:
                 return True  # just an assumption
 
         ordered_resources = order_resources(
-            resources=resources, resolved_conditions=self.stack.resolved_conditions, reverse=True
+            resources=resources,
+            resolved_conditions=self.stack.resolved_conditions,
+            resolved_parameters=self.stack.resolved_parameters,
+            reverse=True,
         )
         for i, (resource_id, resource) in enumerate(ordered_resources.items()):
             try:
@@ -1310,6 +1323,7 @@ class TemplateDeployer:
             given_changes=changes,
             resources=new_resources,
             resolved_conditions=stack.resolved_conditions,
+            resolved_parameters=stack.resolved_parameters,
         )
         for change_idx, change in enumerate(sorted_changes):
             res_change = change["ResourceChange"]
