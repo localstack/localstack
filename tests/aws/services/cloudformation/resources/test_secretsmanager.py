@@ -1,6 +1,8 @@
 import json
 import re
 
+import pytest
+
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
@@ -46,6 +48,17 @@ Resources:
 
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-secretsmanager-resourcepolicy.html#aws-resource-secretsmanager-resourcepolicy--examples--Attaching_a_resource-based_policy_to_an_RDS_database_instance_secret_--yaml
 TEST_TEMPLATE_SECRET_POLICY = """
+Parameters:
+  BlockPublicPolicy:
+    Type: String
+    AllowedValues:
+      - "true"
+      - "default"
+
+Conditions:
+  ShouldBlockPublicPolicy:
+    !Equals [!Ref BlockPublicPolicy, "true"]
+
 Resources:
   MySecret:
     Type: AWS::SecretsManager::Secret
@@ -54,7 +67,7 @@ Resources:
   MySecretResourcePolicy:
     Type: AWS::SecretsManager::ResourcePolicy
     Properties:
-      BlockPublicPolicy: True
+      BlockPublicPolicy: !If [ShouldBlockPublicPolicy, True, !Ref AWS::NoValue]
       SecretId:
         Ref: MySecret
       ResourcePolicy:
@@ -121,8 +134,11 @@ def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-def test_cfn_secret_policy(deploy_cfn_template, aws_client, snapshot):
-    stack = deploy_cfn_template(template=TEST_TEMPLATE_SECRET_POLICY)
+@pytest.mark.parametrize("block_public_policy", ["true", "default"])
+def test_cfn_secret_policy(deploy_cfn_template, block_public_policy, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template=TEST_TEMPLATE_SECRET_POLICY, parameters={"BlockPublicPolicy": block_public_policy}
+    )
     secret_id = stack.outputs["SecretId"]
 
     snapshot.match("outputs", stack.outputs)

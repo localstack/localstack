@@ -57,7 +57,7 @@ class SecretsManagerResourcePolicyProvider(
         params = {
             "SecretId": model["SecretId"],
             "ResourcePolicy": json.dumps(model["ResourcePolicy"]),
-            "BlockPublicPolicy": model.get("BlockPublicPolicy"),
+            "BlockPublicPolicy": model.get("BlockPublicPolicy") or True,
         }
         response = secret_manager.put_resource_policy(**params)
 
