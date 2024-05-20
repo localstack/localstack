@@ -35,6 +35,7 @@ EndpointStateReason = str
 EndpointUrl = str
 ErrorCode = str
 ErrorMessage = str
+EventBusDescription = str
 EventBusName = str
 EventBusNameOrArn = str
 EventId = str
@@ -52,6 +53,7 @@ HttpsEndpoint = str
 IamRoleArn = str
 InputTransformerPathKey = str
 Integer = int
+KmsKeyIdentifier = str
 LimitMax100 = int
 LimitMin1 = int
 ManagedBy = str
@@ -571,14 +573,24 @@ class Tag(TypedDict, total=False):
 TagList = List[Tag]
 
 
+class DeadLetterConfig(TypedDict, total=False):
+    Arn: Optional[ResourceArn]
+
+
 class CreateEventBusRequest(ServiceRequest):
     Name: EventBusName
     EventSourceName: Optional[EventSourceName]
+    Description: Optional[EventBusDescription]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    DeadLetterConfig: Optional[DeadLetterConfig]
     Tags: Optional[TagList]
 
 
 class CreateEventBusResponse(TypedDict, total=False):
     EventBusArn: Optional[String]
+    Description: Optional[EventBusDescription]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    DeadLetterConfig: Optional[DeadLetterConfig]
 
 
 class CreatePartnerEventSourceRequest(ServiceRequest):
@@ -592,10 +604,6 @@ class CreatePartnerEventSourceResponse(TypedDict, total=False):
 
 class DeactivateEventSourceRequest(ServiceRequest):
     Name: EventSourceName
-
-
-class DeadLetterConfig(TypedDict, total=False):
-    Arn: Optional[ResourceArn]
 
 
 class DeauthorizeConnectionRequest(ServiceRequest):
@@ -742,7 +750,12 @@ class DescribeEventBusRequest(ServiceRequest):
 class DescribeEventBusResponse(TypedDict, total=False):
     Name: Optional[String]
     Arn: Optional[String]
+    Description: Optional[EventBusDescription]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    DeadLetterConfig: Optional[DeadLetterConfig]
     Policy: Optional[String]
+    CreationTime: Optional[Timestamp]
+    LastModifiedTime: Optional[Timestamp]
 
 
 class DescribeEventSourceRequest(ServiceRequest):
@@ -885,7 +898,10 @@ EndpointList = List[Endpoint]
 class EventBus(TypedDict, total=False):
     Name: Optional[String]
     Arn: Optional[String]
+    Description: Optional[EventBusDescription]
     Policy: Optional[String]
+    CreationTime: Optional[Timestamp]
+    LastModifiedTime: Optional[Timestamp]
 
 
 EventBusList = List[EventBus]
@@ -1475,6 +1491,21 @@ class UpdateEndpointResponse(TypedDict, total=False):
     State: Optional[EndpointState]
 
 
+class UpdateEventBusRequest(ServiceRequest):
+    Name: Optional[EventBusName]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    Description: Optional[EventBusDescription]
+    DeadLetterConfig: Optional[DeadLetterConfig]
+
+
+class UpdateEventBusResponse(TypedDict, total=False):
+    Arn: Optional[String]
+    Name: Optional[EventBusName]
+    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    Description: Optional[EventBusDescription]
+    DeadLetterConfig: Optional[DeadLetterConfig]
+
+
 class EventsApi:
     service = "events"
     version = "2015-10-07"
@@ -1550,6 +1581,9 @@ class EventsApi:
         context: RequestContext,
         name: EventBusName,
         event_source_name: EventSourceName = None,
+        description: EventBusDescription = None,
+        kms_key_identifier: KmsKeyIdentifier = None,
+        dead_letter_config: DeadLetterConfig = None,
         tags: TagList = None,
         **kwargs,
     ) -> CreateEventBusResponse:
@@ -2006,4 +2040,16 @@ class EventsApi:
         role_arn: IamRoleArn = None,
         **kwargs,
     ) -> UpdateEndpointResponse:
+        raise NotImplementedError
+
+    @handler("UpdateEventBus")
+    def update_event_bus(
+        self,
+        context: RequestContext,
+        name: EventBusName = None,
+        kms_key_identifier: KmsKeyIdentifier = None,
+        description: EventBusDescription = None,
+        dead_letter_config: DeadLetterConfig = None,
+        **kwargs,
+    ) -> UpdateEventBusResponse:
         raise NotImplementedError
