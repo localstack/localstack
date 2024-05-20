@@ -231,9 +231,9 @@
 /tests/aws/services/ssm/ @dominikschubert
 
 # stepfunctions
-/localstack/aws/api/stepfunctions/ @dominikschubert @MEPalma
-/localstack/services/stepfunctions/ @dominikschubert @MEPalma
-/tests/aws/services/stepfunctions/ @dominikschubert @MEPalma
+/localstack/aws/api/stepfunctions/ @MEPalma @joe4dev @dominikschubert
+/localstack/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert
+/tests/aws/services/stepfunctions/ @MEPalma @joe4dev @dominikschubert
 
 # sts
 /localstack/aws/api/sts/ @pinzon
