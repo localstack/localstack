@@ -117,10 +117,10 @@ jobs:
         github.event.pull_request.head.repo.full_name == github.repository
       )
     runs-on: ubuntu-latest
-    # timeout-minutes: 90
+    timeout-minutes: 90
     strategy:
       matrix:
-        group: [ 1 ]
+        group: [ 1, 2 ]
       fail-fast: false
     env:
       # Set job-specific environment variables for pytest-tinybird
@@ -330,21 +330,12 @@ jobs:
           AWS_DEFAULT_REGION: "us-east-1"
           TEST_PATH: "../localstack/tests/aws/"  # TODO: also include tests/integration/
           JUNIT_REPORTS_FILE: "pytest-junit-community-${{ matrix.group }}.xml"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}--splits 2 --group ${{ matrix.group }} --store-durations --durations-path ../localstack/.test_durations"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}--splits 2 --group ${{ matrix.group }} --durations-path ../localstack/.test_durations"
         working-directory: localstack-ext
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
           make test
-
-      - name: Archive Test Durations
-        uses: actions/upload-artifact@v4
-        if: success() || failure()
-        with:
-          name: pytest-split-durations-community-${{ matrix.group }}
-          path: |
-            localstack/.test_durations
-          retention-days: 5
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v4
