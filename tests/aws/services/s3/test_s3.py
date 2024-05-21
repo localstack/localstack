@@ -10770,6 +10770,32 @@ class TestS3PresignedPost:
         final_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("final-object", final_object)
 
+        # test casing for x-amz-meta and specific Content-Type/Expires S3 headers, but without eq
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Fields={
+                "x-amz-meta-test-1": "test-meta-1",
+                "x-amz-meta-TEST-2": "test-meta-2",
+                "Content-Type": "text/plain",
+                "Expires": object_expires,
+            },
+            Conditions=[
+                {"bucket": s3_bucket},
+                {"x-amz-meta-test-1": "test-meta-1"},
+                {"x-amz-meta-test-2": "test-meta-2"},
+                {"Content-Type": "text/plain"},
+                {"Expires": object_expires},
+            ],
+        )
+        # assert that it kept the casing
+        assert "x-amz-meta-TEST-2" in presigned_request["fields"]
+        assert "Content-Type" in presigned_request["fields"]
+        response = self.post_generated_presigned_post_with_default_file(presigned_request)
+        # assert that it's accepted
+        assert response.status_code == 204
+
     @pytest.mark.skipif(
         condition=LEGACY_V2_S3_PROVIDER,
         reason="not implemented in moto",
