@@ -232,7 +232,7 @@ def get_credentials_from_parameters(parameters: dict) -> PreSignedCredentials:
         credential_value = parameters.get(
             "X-Amz-Credential", parameters.get("x-amz-credential", "")
         ).split("/")
-        if len(credential_value):
+        if credential_value:
             access_key_id = credential_value[0]
 
     if not access_key_id:
@@ -540,7 +540,7 @@ class S3SigV4SignatureContext:
             credentials.security_token,
         )
         self.credentials = credentials
-        region = self._query_parameters["X-Amz-Credential"].split("/")[2]
+        region = self._get_region_from_x_amz_credential(self._query_parameters["X-Amz-Credential"])
         expires = int(self._query_parameters["X-Amz-Expires"])
         self.signature_date = self._query_parameters["X-Amz-Date"]
 
@@ -683,6 +683,16 @@ class S3SigV4SignatureContext:
             },
         }
         return create_request_object(request_dict)
+
+    @staticmethod
+    def _get_region_from_x_amz_credential(credential: str) -> str:
+        if not (split_creds := credential.split("/")) or len(split_creds) != 5:
+            raise AuthorizationQueryParametersError(
+                'Error parsing the X-Amz-Credential parameter; the Credential is mal-formed; expecting "<YOUR-AKID>/YYYYMMDD/REGION/SERVICE/aws4_request".',
+                HostId=FAKE_HOST_ID,
+            )
+
+        return split_creds[2]
 
 
 def add_headers_to_original_request(context: RequestContext, headers: Mapping[str, str]):

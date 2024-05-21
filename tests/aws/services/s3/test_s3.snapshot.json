@@ -11629,5 +11629,18 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3PresignedUrl::test_presigned_double_encoded_credentials": {
+    "recorded-date": "21-05-2024, 10:26:17",
+    "recorded-content": {
+      "error-malformed": {
+        "Error": {
+          "Code": "AuthorizationQueryParametersError",
+          "HostId": "host-id",
+          "Message": "Error parsing the X-Amz-Credential parameter; the Credential is mal-formed; expecting \"<YOUR-AKID>/YYYYMMDD/REGION/SERVICE/aws4_request\".",
+          "RequestId": "<request-id:1>"
+        }
+      }
+    }
   }
 }
