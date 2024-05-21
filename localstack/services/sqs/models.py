@@ -1221,7 +1221,14 @@ class FifoQueue(SqsQueue):
                 # in FIFO queues, this should not happen, as expired receipt handles cannot be used to
                 # delete a message.
                 pass
+            self.update_message_group_visibility(message_group)
 
+    def update_message_group_visibility(self, message_group: MessageGroup):
+        """
+        Check if the passed message group should be made visible again
+        """
+
+        with self.mutex:
             if message_group in self.inflight_groups:
                 # it becomes visible again only if there are no other in flight messages in that group
                 for message in self.inflight:
