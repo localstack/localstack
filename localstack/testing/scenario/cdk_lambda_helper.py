@@ -175,6 +175,40 @@ def generate_ecr_image_from_dockerfile(
     DOCKER_CLIENT.push_image(repository_uri)
 
 
+def generate_ecr_image_from_docker_image(
+    ecr_client: "ECRClient", repository_name: str, image_name: str, platform: str = None
+):
+    """
+    Parameters
+    ----------
+    ecr_client
+    repository_name
+    image_name
+    platform
+
+    Returns
+    -------
+
+    """
+    if platform is None:
+        platform = "linux/amd64"
+
+    DOCKER_CLIENT.pull_image(image_name, platform=platform)
+
+    repository_uri = ecr_client.create_repository(
+        repositoryName=repository_name,
+    )["repository"]["repositoryUri"]
+
+    auth_response = ecr_client.get_authorization_token()
+    auth_token = auth_response["authorizationData"][0]["authorizationToken"].encode()
+    username, password = base64.b64decode(auth_token).decode().split(":")
+    registry = auth_response["authorizationData"][0]["proxyEndpoint"]
+    DOCKER_CLIENT.login(username, password, registry=registry)
+
+    DOCKER_CLIENT.tag_image(image_name, repository_uri)
+    DOCKER_CLIENT.push_image(repository_uri)
+
+
 def _upload_to_s3(s3_client: "S3Client", bucket_name: str, key_name: str, file: str):
     try:
         create_s3_bucket(bucket_name, s3_client)
