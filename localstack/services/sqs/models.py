@@ -510,8 +510,6 @@ class SqsQueue:
         message_deduplication_id: str = None,
         message_group_id: str = None,
         delay_seconds: int = None,
-        *,
-        source_queue: "SqsQueue" = None,
     ) -> SqsMessage:
         raise NotImplementedError
 
@@ -541,7 +539,7 @@ class SqsQueue:
             self.delayed.clear()
             self.receipts.clear()
 
-    def _put_message(self, message: SqsMessage, source_queue: "SqsQueue" = None):
+    def _put_message(self, message: SqsMessage):
         """Low-level put operation to put messages into a queue and modify visibilities accordingly."""
         raise NotImplementedError
 
@@ -740,7 +738,6 @@ class StandardQueue(SqsQueue):
         message_deduplication_id: str = None,
         message_group_id: str = None,
         delay_seconds: int = None,
-        source_queue: "SqsQueue" = None,
     ):
         if message_deduplication_id:
             raise InvalidParameterValueException(
@@ -773,7 +770,7 @@ class StandardQueue(SqsQueue):
 
         return standard_message
 
-    def _put_message(self, message: SqsMessage, source_queue: "SqsQueue" = None):
+    def _put_message(self, message: SqsMessage):
         self.visible.put_nowait(message)
 
     def remove_expired_messages(self):
@@ -1002,7 +999,6 @@ class FifoQueue(SqsQueue):
         message_deduplication_id: str = None,
         message_group_id: str = None,
         delay_seconds: int = None,
-        source_queue: "SqsQueue" = None,
     ):
         if delay_seconds:
             # in fifo queues, delay is only applied on queue level. However, explicitly setting delay_seconds=0 is valid
@@ -1058,13 +1054,13 @@ class FifoQueue(SqsQueue):
             if fifo_message.is_delayed:
                 self.delayed.add(fifo_message)
             else:
-                self._put_message(fifo_message, source_queue=source_queue)
+                self._put_message(fifo_message)
 
             self.deduplication[dedup_id] = fifo_message
 
         return fifo_message
 
-    def _put_message(self, message: SqsMessage, source_queue: "SqsQueue" = None):
+    def _put_message(self, message: SqsMessage):
         """Once a message becomes visible in a FIFO queue, its message group also becomes visible."""
         message_group = self.get_message_group(message.message_group_id)
 
@@ -1074,15 +1070,8 @@ class FifoQueue(SqsQueue):
             message_group.push(message)
 
             # new messages should not make groups visible that are currently inflight
-            if (
-                not source_queue
-                and message.receive_count < 1
-                and message_group in self.inflight_groups
-            ):
+            if message.receive_count < 1 and message_group in self.inflight_groups:
                 return
-            if source_queue:
-                source_queue.inflight_groups.remove(message_group)
-                source_queue.message_group_queue.put_nowait(message_group)
             # if an older message becomes visible again in the queue, that message's group becomes visible also.
             if message_group in self.inflight_groups:
                 self.inflight_groups.remove(message_group)

@@ -1231,8 +1231,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     message=message,
                     message_deduplication_id=standard_message.message_deduplication_id,
                     message_group_id=standard_message.message_group_id,
-                    source_queue=queue,
                 )
+
+                queue._on_remove_message(standard_message)
 
         # prepare result
         messages = []
