@@ -112,7 +112,7 @@ jobs:
         env:
           PLATFORM: ${{ matrix.arch }}
           DOCKERFILE: "./Dockerfile.s3"
-        run: make docker-build
+        run: IMAGE_NAME="localstack/localstack" ./bin/docker-helper.sh build
 
       - name: Run S3 Image tests
         timeout-minutes: 10

@@ -338,10 +338,10 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Build community docker image
-          command: make docker-build
+          command: IMAGE_NAME="localstack/localstack" ./bin/docker-helper.sh build
       - run:
           name: Save docker image
-          command: PLATFORM="<< parameters.platform >>" make docker-save-image
+          command: PLATFORM="<< parameters.platform >>" docker save -o target/localstack-docker-image-$(PLATFORM).tar localstack/localstack
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -608,9 +608,9 @@ jobs:
           name: Push docker image - amd64
           command: |
             # Push to Docker Hub
-            PLATFORM="amd64" make docker-push-master
+            PLATFORM="amd64" ./bin/docker-helper.sh push
             # Push to Amazon Public ECR
-            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="amd64" IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
       # Load and push per architecture (load overwrites the previous ones)
       - run:
           name: Load docker image - arm64
@@ -621,16 +621,16 @@ jobs:
           name: Push docker image - arm64
           command: |
             # Push to Docker Hub
-            PLATFORM="arm64" make docker-push-master
+            PLATFORM="arm64" ./bin/docker-helper.sh push
             # Push to Amazon Public ECR
-            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
+            PLATFORM="arm64" IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
       - run:
           name: Create multi-platform manifests
           command: |
             # Push to Docker Hub
-            make docker-create-push-manifests
+            IMAGE_NAME="localstack/localstack" ./bin/docker-helper.sh push-manifest
             # Push to Amazon Public ECR
-            MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests
+            IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push-manifest
       - run:
           name: Publish a dev release
           command: |
