@@ -297,6 +297,7 @@ class TestScheduleCron:
         snapshot.match("list-rules", response)
 
     @markers.aws.validated
+    @pytest.mark.skip("Flaky, target time can be 1min off message time")
     def test_schedule_cron_target_sqs(
         self,
         create_sqs_events_target,
