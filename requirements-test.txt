@@ -136,7 +136,7 @@ dnspython==2.6.1
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   pymongo
-docker==6.1.3
+docker==7.0.0
     # via
     #   localstack-core
     #   moto-ext
@@ -383,7 +383,7 @@ referencing==0.31.1
     #   jsonschema-specifications
 regex==2024.5.15
     # via cfn-lint
-requests==2.32.1
+requests==2.31.0
     # via
     #   docker
     #   jsonschema-path
@@ -467,9 +467,7 @@ urllib3==2.2.1
     #   requests
     #   responses
 websocket-client==1.8.0
-    # via
-    #   docker
-    #   localstack-core (pyproject.toml)
+    # via localstack-core (pyproject.toml)
 werkzeug==3.0.3
     # via
     #   flask

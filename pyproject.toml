@@ -23,7 +23,7 @@ dependencies = [
     "python-dotenv>=0.19.1",
     "pyyaml>=5.1",
     "rich>=12.3.0",
-    "requests>=2.20.0",
+    "requests>=2.20.0,<2.32",
     "semver>=2.10",
     "tailer>=0.4.1",
 ]
@@ -53,8 +53,7 @@ base-runtime = [
     "awscrt>=0.13.14",
     "cbor2>=5.2.0",
     "dnspython>=1.16.0",
-    # TODO tag incompatibility introduced in 7.0.0 with https://github.com/docker/docker-py/pull/3191
-    "docker>=6.1.1,<7.0.0",
+    "docker>=6.1.1",
     "jsonpatch>=1.24",
     "hypercorn>=0.14.4",
     "localstack-twisted>=23.0",

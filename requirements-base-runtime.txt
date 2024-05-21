@@ -50,7 +50,7 @@ dnslib==0.9.24
     # via localstack-core (pyproject.toml)
 dnspython==2.6.1
     # via localstack-core (pyproject.toml)
-docker==6.1.3
+docker==7.0.0
     # via localstack-core (pyproject.toml)
 flask==3.0.3
     # via
@@ -140,7 +140,7 @@ quart==0.19.6
     # via localstack-core (pyproject.toml)
 readerwriterlock==1.0.9
     # via localstack-core (pyproject.toml)
-requests==2.32.1
+requests==2.31.0
     # via
     #   docker
     #   localstack-core (pyproject.toml)
@@ -172,8 +172,6 @@ urllib3==2.2.1
     #   docker
     #   localstack-core (pyproject.toml)
     #   requests
-websocket-client==1.8.0
-    # via docker
 werkzeug==3.0.3
     # via
     #   flask
