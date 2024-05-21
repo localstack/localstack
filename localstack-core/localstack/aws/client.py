@@ -313,7 +313,14 @@ class GatewayShortCircuit:
         context.request = create_http_request(request)
 
         # TODO: just a hacky thing to unblock the service model being set to `sqs-query` blocking for now
-        if operation.service_model.service_name != "sqs-query":
+        # this is using the same services as `localstack.aws.protocol.service_router.resolve_conflicts`, maybe
+        # consolidate. `docdb` and `neptune` uses the RDS API and service.
+        if operation.service_model.service_name not in {
+            "sqs-query",
+            "docdb",
+            "neptune",
+            "timestream-write",
+        }:
             context.service = operation.service_model
 
         context.operation = operation
