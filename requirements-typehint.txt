@@ -611,7 +611,7 @@ referencing==0.31.1
     #   jsonschema-specifications
 regex==2024.5.15
     # via cfn-lint
-requests==2.31.0
+requests==2.32.0
     # via
     #   coveralls
     #   docker
