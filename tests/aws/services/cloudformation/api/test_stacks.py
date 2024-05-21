@@ -1,5 +1,7 @@
 import json
 import os
+from collections import OrderedDict
+from itertools import permutations
 
 import botocore.exceptions
 import pytest
@@ -812,3 +814,91 @@ def test_stack_deploy_order(deploy_cfn_template):
     topic_name = stack.outputs["ParameterName"]
 
     assert topic_name != ""
+
+
+TEMPLATE_ORDER_CASES = list(permutations(["A", "B", "C"]))
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..StackId",
+        # TODO
+        "$..PhysicalResourceId",
+        # TODO
+        "$..ResourceProperties",
+    ]
+)
+@pytest.mark.skip(reason="WIP")
+@pytest.mark.parametrize(
+    "deploy_order", TEMPLATE_ORDER_CASES, ids=["-".join(vals) for vals in TEMPLATE_ORDER_CASES]
+)
+def test_stack_deploy_order2(deploy_cfn_template, aws_client, snapshot, deploy_order: tuple[str]):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.key_value("EventId"))
+    resources = {
+        "A": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Type": "String",
+                "Value": "root",
+            },
+        },
+        "B": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Type": "String",
+                "Value": {
+                    "Ref": "A",
+                },
+            },
+        },
+        "C": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Type": "String",
+                "Value": {
+                    "Ref": "B",
+                },
+            },
+        },
+    }
+
+    resources = OrderedDict(
+        [
+            (logical_resource_id, resources[logical_resource_id])
+            for logical_resource_id in deploy_order
+        ]
+    )
+    assert len(resources) == 3
+
+    stack = deploy_cfn_template(
+        template=json.dumps(
+            {
+                "Resources": resources,
+            }
+        )
+    )
+
+    stack.destroy()
+
+    events = aws_client.cloudformation.describe_stack_events(
+        StackName=stack.stack_id,
+    )["StackEvents"]
+
+    filtered_events = []
+    for event in events:
+        # only the resources we care about
+        if event["LogicalResourceId"] not in deploy_order:
+            continue
+
+        # only _COMPLETE events
+        if not event["ResourceStatus"].endswith("_COMPLETE"):
+            continue
+
+        filtered_events.append(event)
+
+    # sort by event time
+    filtered_events.sort(key=lambda e: e["Timestamp"])
+
+    snapshot.match("events", filtered_events)
