@@ -829,7 +829,6 @@ TEMPLATE_ORDER_CASES = list(permutations(["A", "B", "C"]))
         "$..ResourceProperties",
     ]
 )
-@pytest.mark.skip(reason="WIP")
 @pytest.mark.parametrize(
     "deploy_order", TEMPLATE_ORDER_CASES, ids=["-".join(vals) for vals in TEMPLATE_ORDER_CASES]
 )

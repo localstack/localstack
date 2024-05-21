@@ -965,6 +965,7 @@ class TemplateDeployer:
         self.stack.set_stack_status("DELETE_IN_PROGRESS")
         stack_resources = list(self.stack.resources.values())
         resources = {r["LogicalResourceId"]: clone_safe(r) for r in stack_resources}
+        original_resources = self.stack.template_original["Resources"]
 
         # TODO: what is this doing?
         for key, resource in resources.items():
@@ -982,13 +983,16 @@ class TemplateDeployer:
                     LOG.exception(f"failed to lookup if resource {r_id} is deleted")
                 return True  # just an assumption
 
-        ordered_resources = order_resources(
-            resources=resources,
-            resolved_conditions=self.stack.resolved_conditions,
-            resolved_parameters=self.stack.resolved_parameters,
-            reverse=True,
+        ordered_resource_ids = list(
+            order_resources(
+                resources=original_resources,
+                resolved_conditions=self.stack.resolved_conditions,
+                resolved_parameters=self.stack.resolved_parameters,
+                reverse=True,
+            ).keys()
         )
-        for i, (resource_id, resource) in enumerate(ordered_resources.items()):
+        for i, resource_id in enumerate(ordered_resource_ids):
+            resource = resources[resource_id]
             try:
                 # TODO: cache condition value in resource details on deployment and use cached value here
                 if not evaluate_resource_condition(
