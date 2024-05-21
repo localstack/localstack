@@ -6262,6 +6262,29 @@ class TestS3PresignedUrl:
         assert response.text == body
 
     @markers.aws.validated
+    def test_presigned_double_encoded_credentials(
+        self, s3_bucket, aws_client, snapshot, presigned_snapshot_transformers
+    ):
+        key = "foo-key"
+        body = "foobar"
+
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body=body)
+
+        presigned_client = _s3_client_pre_signed_client(
+            Config(signature_version="s3v4"),
+            endpoint_url=_endpoint_url(),
+        )
+        url = presigned_client.generate_presigned_url(
+            "get_object", Params={"Bucket": s3_bucket, "Key": key}
+        )
+        url = url.replace("%2F", "%252F")
+
+        response = requests.get(url)
+        assert response.status_code == 400
+        exception = xmltodict.parse(response.content)
+        snapshot.match("error-malformed", exception)
+
+    @markers.aws.validated
     @pytest.mark.parametrize(
         "signature_version, verify_signature",
         [
