@@ -802,10 +802,6 @@ def order_resources(
     Given a dictionary of resources, topologically sort the resources based on
     inter-resource dependencies (e.g. usages of intrinsic functions).
     """
-    # nodes = set()
-    # # collection of edges from
-    # edges = set()
-
     nodes: dict[str, list[str]] = {}
     for logical_resource_id, properties in resources.items():
         nodes.setdefault(logical_resource_id, [])
@@ -849,6 +845,13 @@ def order_resources(
     for logical_resource_id in sorted_logical_resource_ids:
         if properties := resources.get(logical_resource_id):
             sorted_mapping.append((logical_resource_id, properties))
+        else:
+            if (
+                logical_resource_id not in resolved_parameters
+                and logical_resource_id not in resolved_conditions
+            ):
+                raise ValueError(f"Resource '{logical_resource_id}' not found in stack")
+
     if reverse:
         sorted_mapping = sorted_mapping[::-1]
     return OrderedDict(sorted_mapping)
