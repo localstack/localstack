@@ -55,6 +55,8 @@ def test_order_resources():
         },
     }
 
-    sorted_resources = order_resources(resources=resources, resolved_conditions={})
+    sorted_resources = order_resources(
+        resources=resources, resolved_conditions={}, resolved_parameters={}
+    )
 
     assert list(sorted_resources.keys()) == ["A", "B"]
