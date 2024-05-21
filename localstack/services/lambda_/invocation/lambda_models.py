@@ -5,6 +5,7 @@ The actual function code is stored in S3 (see S3Code).
 
 import dataclasses
 import logging
+import os.path
 import shutil
 import tempfile
 import threading
@@ -257,7 +258,8 @@ class HotReloadingCode(ArchiveCode):
         return f"Code location: {self.host_path}"
 
     def get_unzipped_code_location(self) -> Path:
-        return Path(self.host_path)
+        path = os.path.expandvars(self.host_path)
+        return Path(path)
 
     def is_hot_reloading(self) -> bool:
         """

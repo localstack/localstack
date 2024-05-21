@@ -3,6 +3,7 @@ import concurrent.futures
 import dataclasses
 import io
 import logging
+import os.path
 import random
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
@@ -549,12 +550,26 @@ def store_lambda_archive(
     )
 
 
-def create_hot_reloading_code(path: str) -> HotReloadingCode:
-    # TODO extract into other function
-    if not PurePosixPath(path).is_absolute() and not PureWindowsPath(path).is_absolute():
+def assert_hot_reloading_path_absolute(path: str) -> None:
+    """
+    Check whether a given path is an absolute path, either posix or windows.
+    Will expand variables in the path before the check.
+
+    :param path: Posix or windows path, potentially containing environment variable placeholders.
+    """
+    # expand variables in path before checking for an absolute path
+    expanded_path = os.path.expandvars(path)
+    if (
+        not PurePosixPath(expanded_path).is_absolute()
+        and not PureWindowsPath(expanded_path).is_absolute()
+    ):
         raise InvalidParameterValueException(
             f"When using hot reloading, the archive key has to be an absolute path! Your archive key: {path}",
         )
+
+
+def create_hot_reloading_code(path: str) -> HotReloadingCode:
+    assert_hot_reloading_path_absolute(path)
     return HotReloadingCode(host_path=path)
 
 
