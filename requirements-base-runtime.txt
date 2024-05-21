@@ -136,11 +136,11 @@ python-dotenv==1.0.1
     # via localstack-core (pyproject.toml)
 pyyaml==6.0.1
     # via localstack-core (pyproject.toml)
-quart==0.19.5
+quart==0.19.6
     # via localstack-core (pyproject.toml)
 readerwriterlock==1.0.9
     # via localstack-core (pyproject.toml)
-requests==2.31.0
+requests==2.32.1
     # via
     #   docker
     #   localstack-core (pyproject.toml)

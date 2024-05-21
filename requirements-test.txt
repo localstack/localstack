@@ -10,7 +10,7 @@ airspeed-ext==0.6.5
     # via localstack-core
 amazon-kclpy==2.1.3
     # via localstack-core
-annotated-types==0.6.0
+annotated-types==0.7.0
     # via pydantic
 antlr4-python3-runtime==4.13.1
     # via
@@ -43,7 +43,7 @@ aws-sam-translator==1.89.0
     # via
     #   cfn-lint
     #   localstack-core
-aws-xray-sdk==2.13.0
+aws-xray-sdk==2.13.1
     # via moto-ext
 awscli==1.32.108
     # via localstack-core
@@ -90,7 +90,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.87.2
+cfn-lint==0.87.3
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -339,7 +339,7 @@ pyparsing==3.1.2
     # via moto-ext
 pyproject-hooks==1.1.0
     # via build
-pytest==8.2.0
+pytest==8.2.1
     # via
     #   localstack-core (pyproject.toml)
     #   pytest-rerunfailures
@@ -372,7 +372,7 @@ pyyaml==6.0.1
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   responses
-quart==0.19.5
+quart==0.19.6
     # via localstack-core
 readerwriterlock==1.0.9
     # via localstack-core
@@ -383,7 +383,7 @@ referencing==0.31.1
     #   jsonschema-specifications
 regex==2024.5.15
     # via cfn-lint
-requests==2.31.0
+requests==2.32.1
     # via
     #   docker
     #   jsonschema-path
