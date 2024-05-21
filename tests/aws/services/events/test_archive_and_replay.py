@@ -4,7 +4,12 @@ import pytest
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
-from tests.aws.services.events.test_events import TEST_EVENT_PATTERN, TEST_EVENT_PATTERN_NO_DETAIL
+from localstack.utils.sync import retry
+from tests.aws.services.events.test_events import (
+    EVENT_DETAIL,
+    TEST_EVENT_PATTERN,
+    TEST_EVENT_PATTERN_NO_DETAIL,
+)
 
 
 class TestArchive:
@@ -28,7 +33,7 @@ class TestArchive:
             response = events_create_event_bus(Name=event_bus_name)
             event_source_arn = response["EventBusArn"]
 
-        archive_name = f"test-archive.{short_uid()}"
+        archive_name = f"test-archive-{short_uid()}"
         response_create_archive = events_create_archive(
             ArchiveName=archive_name,
             EventSourceArn=event_source_arn,  # ARN of the source event bus
@@ -191,6 +196,86 @@ class TestArchive:
             ]
         )
         snapshot.match("list-archives-state-enabled", response_list_archives)
+
+    @markers.aws.validated
+    # the archive seams to persist events also after deletion of the archive
+    # and restores them if recreated for the same event source arn
+    @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
+    @pytest.mark.parametrize("archive_pattern_match", [True, False])
+    def test_list_archive_with_events(
+        self,
+        event_bus_type,
+        archive_pattern_match,
+        region_name,
+        account_id,
+        events_create_event_bus,
+        events_create_archive,
+        aws_client,
+        put_events_with_filter_to_sqs,
+        snapshot,
+    ):
+        if event_bus_type == "default":
+            event_bus_name = "default"
+            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+        if event_bus_type == "custom":
+            event_bus_name = f"test-bus-{short_uid()}"
+            response = events_create_event_bus(Name=event_bus_name)
+            event_source_arn = response["EventBusArn"]
+
+        archive_name = f"test-archive-{short_uid()}"
+        if archive_pattern_match:
+            events_create_archive(
+                ArchiveName=archive_name,
+                EventSourceArn=event_source_arn,
+                Description="description of the archive",
+                EventPattern=json.dumps(TEST_EVENT_PATTERN),
+                RetentionDays=1,
+            )
+        else:
+            events_create_archive(
+                ArchiveName=archive_name,
+                EventSourceArn=event_source_arn,
+                Description="description of the archive",
+                RetentionDays=1,
+            )
+
+        num_events = 10
+
+        entries = []
+        for _ in range(num_events):
+            entry = {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+            }
+            entries.append(entry)
+
+        put_events_with_filter_to_sqs(
+            pattern=TEST_EVENT_PATTERN,
+            entries_asserts=[(entries, True)],
+            event_bus_name=event_bus_name,
+        )
+
+        def wait_for_archive_event_count():
+            response = aws_client.events.describe_archive(ArchiveName=archive_name)
+            event_count = response["EventCount"]
+            assert event_count == num_events
+
+        retry(
+            wait_for_archive_event_count, retries=35, sleep=10
+        )  # events are batched and sent to the archive, this mostly takes at least 5 minutes on AWS
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(event_bus_name, "<event-bus-name>"),
+                snapshot.transform.regex(archive_name, "<archive-name>"),
+            ]
+        )
+        response_list_archives = aws_client.events.list_archives()
+        snapshot.match("list-archives", response_list_archives)
+
+        response_describe_archive = aws_client.events.describe_archive(ArchiveName=archive_name)
+        snapshot.match("describe-archive", response_describe_archive)
 
     # Tests Errors
     @markers.aws.validated
