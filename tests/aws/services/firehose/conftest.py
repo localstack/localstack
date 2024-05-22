@@ -36,26 +36,6 @@ def read_s3_data(aws_client):
     return _read_s3_data
 
 
-@pytest.fixture
-def list_s3_objects(aws_client):
-    s3 = aws_client.s3
-
-    def _list_s3_objects(bucket_name: str, timeout: int = 10):
-        def _list_objects() -> list[str]:
-            response = s3.list_objects_v2(Bucket=bucket_name)
-
-            if (contents := response.get("Contents")) is None:
-                raise Exception("No objects in bucket yet")
-
-            return [content.get("Key") for content in contents]
-
-        objects = retry(_list_objects, sleep=1, retries=timeout)
-
-        return objects
-
-    return _list_s3_objects
-
-
 def get_firehose_iam_documents(
     bucket_arns: Union[List[str], str], stream_arns: Union[List[str], str]
 ) -> tuple[dict, dict]:
