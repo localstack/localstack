@@ -550,7 +550,7 @@ class TestReplay:
         end_time = datetime.now(timezone.utc)
 
         replay_name_prefix = (
-            f"{short_uid()}"  # prefix must be unique since replays are stored 90 days
+            short_uid()  # prefix must be unique since replays are stored 90 days
         )
         replay_name = f"{replay_name_prefix}-test-replay"
         aws_client.events.start_replay(
@@ -585,6 +585,60 @@ class TestReplay:
 
         response_list_replays_prefix = aws_client.events.list_replays(NamePrefix=replay_name_prefix)
         snapshot.match("list-replays-with-prefix", response_list_replays_prefix)
+
+    @markers.aws.validated
+    def test_list_replay_with_limit(
+        self, events_create_event_bus, events_create_archive, aws_client, snapshot
+    ):
+        start_time = datetime.now(timezone.utc)
+
+        event_bus_name = f"test-bus-{short_uid()}"
+        event_bus_arn = events_create_event_bus(Name=event_bus_name)["EventBusArn"]
+
+        archive_name = f"test-archive-{short_uid()}"
+        archive_arn = events_create_archive(
+            ArchiveName=archive_name,
+            EventSourceArn=event_bus_arn,
+            RetentionDays=1,
+        )["ArchiveArn"]
+
+        end_time = datetime.now(timezone.utc)
+
+        replay_name_prefix = short_uid()
+
+        num_replays = 6
+        for i in range(num_replays):
+            replay_name = f"{replay_name_prefix}-test-replay-{i}"
+            aws_client.events.start_replay(
+                ReplayName=replay_name,
+                Description="description of the replay",
+                EventSourceArn=archive_arn,
+                EventStartTime=start_time,
+                EventEndTime=end_time,
+                Destination={
+                    "Arn": event_bus_arn,
+                },
+            )
+            wait_for_replay_in_state(aws_client, replay_name, "COMPLETED", retries=35, sleep=10)
+
+        response = aws_client.events.list_replays(
+            Limit=int(num_replays / 2), NamePrefix=replay_name_prefix
+        )
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(replay_name_prefix, "<replay-name-prefix>"),
+                snapshot.transform.regex(archive_name, "<archive-name>"),
+                snapshot.transform.jsonpath("$..NextToken", "next_token"),
+            ]
+        )
+        snapshot.match("list-replays-with-limit", response)
+
+        response = aws_client.events.list_replays(
+            Limit=int(num_replays / 2) + 2,
+            NextToken=response["NextToken"],
+            NamePrefix=replay_name_prefix,
+        )
+        snapshot.match("list-replays-with-limit-next-token", response)
 
     # Tests Errors
     @markers.aws.validated
@@ -642,3 +696,7 @@ class TestReplay:
             )
 
         snapshot.match("start-replay-wrong-event-bus-error", error)
+
+    @markers.aws.validated
+    def tests_concurrency_error_too_many_active_replays():
+        pass

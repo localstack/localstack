@@ -927,5 +927,81 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replay_with_limit": {
+    "recorded-date": "22-05-2024, 13:43:13",
+    "recorded-content": {
+      "list-replays-with-limit": {
+        "NextToken": "<next_token:1>",
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-0",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          },
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-1",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          },
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-2",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-replays-with-limit-next-token": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-3",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          },
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-4",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          },
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay-5",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
