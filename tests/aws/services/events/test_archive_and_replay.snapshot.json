@@ -1003,5 +1003,11 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_archive": {
+    "recorded-date": "22-05-2024, 15:09:07",
+    "recorded-content": {
+      "start-replay-unknown-archive-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter EventSourceArn is not valid. Reason: Archive <archive-name> does not exist.') tblen=3>"
+    }
   }
 }

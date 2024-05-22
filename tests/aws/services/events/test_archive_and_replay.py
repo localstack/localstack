@@ -698,5 +698,29 @@ class TestReplay:
         snapshot.match("start-replay-wrong-event-bus-error", error)
 
     @markers.aws.validated
+    def test_start_replay_error_unknown_archive(
+        self, aws_client, region_name, account_id, snapshot
+    ):
+        not_existing_archive_name = f"doesnotexist-{short_uid()}"
+        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+        end_time = datetime.now(timezone.utc)
+        with pytest.raises(Exception) as error:
+            aws_client.events.start_replay(
+                ReplayName="test-replay",
+                Description="description of the replay",
+                EventSourceArn=f"arn:aws:events:{region_name}:{account_id}:archive/{not_existing_archive_name}",
+                EventStartTime=start_time,
+                EventEndTime=end_time,
+                Destination={
+                    "Arn": f"arn:aws:events:{region_name}:{account_id}:event-bus/default",
+                },
+            )
+
+        snapshot.add_transformer(
+            [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
+        )
+        snapshot.match("start-replay-unknown-archive-error", error)
+
+    @markers.aws.validated
     def tests_concurrency_error_too_many_active_replays():
         pass
