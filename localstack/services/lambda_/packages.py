@@ -2,6 +2,8 @@
 
 import os
 import stat
+from functools import cache
+from pathlib import Path
 from typing import List
 
 from localstack import config
@@ -87,3 +89,12 @@ class LambdaJavaPackageInstaller(DownloadInstaller):
 
 lambda_runtime_package = LambdaRuntimePackage()
 lambda_java_libs_package = LambdaJavaPackage()
+
+
+# TODO: handle architecture-specific installer and caching because we currently assume that the lambda-runtime-init
+#   Golang binary is cross-architecture compatible.
+@cache
+def get_runtime_client_path() -> Path:
+    installer = lambda_runtime_package.get_installer()
+    installer.install()
+    return Path(installer.get_installed_dir())

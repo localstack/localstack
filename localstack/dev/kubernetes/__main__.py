@@ -6,7 +6,7 @@ import yaml
 from localstack import version as localstack_version
 
 
-def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False):
+def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, port: int = 4566):
     volumes = []
     root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
     localstack_code_path = os.path.join(root_path, "localstack")
@@ -43,7 +43,9 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False):
             {"volume": f"{moto_path}:/code/moto", "nodeFilters": ["server:*", "agent:*"]}
         )
 
-    config = {"apiVersion": "k3d.io/v1alpha3", "kind": "Simple", "volumes": volumes}
+    ports = [{"port": f"{port}:31566", "nodeFilters": ["server:0"]}]
+
+    config = {"apiVersion": "k3d.io/v1alpha5", "kind": "Simple", "volumes": volumes, "ports": ports}
 
     return config
 
@@ -53,7 +55,7 @@ def snake_to_kebab_case(string: str):
 
 
 def generate_k8s_cluster_overrides(
-    pro: bool = False, cluster_config: dict = None, write: bool = False
+    pro: bool = False, cluster_config: dict = None, env: list[str] | None = None
 ):
     volumes = []
     for volume in cluster_config["volumes"]:
@@ -98,10 +100,33 @@ def generate_k8s_cluster_overrides(
             }
         )
 
+    extra_env_vars = []
+    if env:
+        for env_variable in env:
+            lhs, _, rhs = env_variable.partition("=")
+            extra_env_vars.append(
+                {
+                    "name": lhs,
+                    "value": rhs,
+                }
+            )
+
+    if pro:
+        extra_env_vars.append(
+            {
+                "name": "LOCALSTACK_API_KEY",
+                "value": "test",
+            }
+        )
+
+    image_repository = "localstack/localstack-pro" if pro else "localstack/localstack"
+
     overrides = {
         "debug": True,
         "volumes": volumes,
         "volumeMounts": volume_mounts,
+        "extraEnvVars": extra_env_vars,
+        "image": {"repository": image_repository},
     }
 
     return overrides
@@ -153,6 +178,16 @@ def print_file(content: dict, file_name: str):
     default=None,
     help="Name of the configuration file (default: configuration.yml).",
 )
+@click.option(
+    "--env", "-e", default=None, help="Environment variable to set in the pod", multiple=True
+)
+@click.option(
+    "--port",
+    "-p",
+    default=4566,
+    help="Port to expose from the kubernetes node",
+    type=click.IntRange(0, 65535),
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     pro: bool = None,
@@ -162,14 +197,16 @@ def run(
     overrides_file: str = None,
     config_file: str = None,
     command: str = None,
+    env: list[str] = None,
+    port: int = None,
 ):
     """
     A tool for localstack developers to generate the kubernetes cluster configuration file and the overrides to mount the localstack code into the cluster.
     """
 
-    config = generate_k8s_cluster_config(pro=pro, mount_moto=mount_moto)
+    config = generate_k8s_cluster_config(pro=pro, mount_moto=mount_moto, port=port)
 
-    overrides = generate_k8s_cluster_overrides(pro, config)
+    overrides = generate_k8s_cluster_overrides(pro, config, env=env)
 
     output_dir = output_dir or os.getcwd()
     overrides_file = overrides_file or "overrides.yml"
@@ -190,9 +227,9 @@ def run(
     print(f"\n    k3d cluster create --config {config_file_path}\n")
 
     print("2. Once the cluster is created, start LocalStack with the generated overrides:")
-    print("\n   helm repo add localstack https://localstack.github.io/helm-charts # (if required)")
+    print("\n    helm repo add localstack https://localstack.github.io/helm-charts # (if required)")
     print(
-        f"\n   helm upgrade --install localstack localstack/localstack -f {overrides_file_path}\n"
+        f"\n    helm upgrade --install localstack localstack/localstack -f {overrides_file_path}\n"
     )
 
 

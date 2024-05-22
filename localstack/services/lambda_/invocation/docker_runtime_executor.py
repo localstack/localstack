@@ -5,7 +5,6 @@ import shutil
 import tempfile
 import threading
 from collections import defaultdict
-from functools import cache
 from pathlib import Path
 from typing import Callable, Dict, Literal, Optional
 
@@ -29,7 +28,7 @@ from localstack.services.lambda_.networking import (
     get_all_container_networks_for_lambda,
     get_main_endpoint_from_container,
 )
-from localstack.services.lambda_.packages import lambda_runtime_package
+from localstack.services.lambda_.packages import get_runtime_client_path
 from localstack.services.lambda_.runtimes import IMAGE_MAPPING
 from localstack.utils.container_networking import get_main_container_name
 from localstack.utils.container_utils.container_client import (
@@ -192,15 +191,6 @@ class RuntimeImageResolver:
 
 
 resolver = RuntimeImageResolver()
-
-
-# TODO: handle architecture-specific installer and caching because we currently assume that the lambda-runtime-init
-#   Golang binary is cross-architecture compatible.
-@cache
-def get_runtime_client_path() -> Path:
-    installer = lambda_runtime_package.get_installer()
-    installer.install()
-    return Path(installer.get_installed_dir())
 
 
 def prepare_image(function_version: FunctionVersion, platform: DockerPlatform) -> None:

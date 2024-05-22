@@ -597,17 +597,24 @@ def create_image_code(image_uri: str) -> ImageCode:
     :param image_uri: Image URI of the image to inspect
     :return: Image code object
     """
-    code_sha256 = "<cannot-find-image>"
-    try:
-        CONTAINER_CLIENT.pull_image(docker_image=image_uri)
-    except ContainerException:
-        LOG.debug("Cannot pull image %s. Maybe only available locally?", image_uri)
-    try:
-        code_sha256 = CONTAINER_CLIENT.inspect_image(image_name=image_uri)["RepoDigests"][
-            0
-        ].rpartition(":")[2]
-    except Exception as e:
-        LOG.debug(
-            "Cannot inspect image %s. Is this image and/or docker available: %s", image_uri, e
+    code_sha256 = "<cannot-get-image-hash>"
+    if CONTAINER_CLIENT.has_docker():
+        try:
+            CONTAINER_CLIENT.pull_image(docker_image=image_uri)
+        except ContainerException:
+            LOG.debug("Cannot pull image %s. Maybe only available locally?", image_uri)
+        try:
+            code_sha256 = CONTAINER_CLIENT.inspect_image(image_name=image_uri)["RepoDigests"][
+                0
+            ].rpartition(":")[2]
+        except Exception as e:
+            LOG.debug(
+                "Cannot inspect image %s. Is this image and/or docker available: %s", image_uri, e
+            )
+    else:
+        LOG.warning(
+            "Unable to get image hash for image %s - no docker socket available."
+            "Image hash returned by Lambda will not be correct.",
+            image_uri,
         )
     return ImageCode(image_uri=image_uri, code_sha256=code_sha256, repository_type="ECR")
