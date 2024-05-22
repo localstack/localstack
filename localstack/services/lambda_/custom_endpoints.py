@@ -18,7 +18,7 @@ class LambdaRuntimesResponse(TypedDict, total=False):
 
 
 class LambdaCustomEndpoints:
-    @route("/_aws/lambda/runtimes")
+    @route("/_aws/lambda/runtimes", methods=["GET"])
     def runtimes(self, request: Request) -> LambdaRuntimesResponse:
         """This metadata endpoint needs to be loaded before the Lambda provider.
         It can be used by the Webapp to query supported Lambda runtimes of an unknown LocalStack version."""
@@ -36,7 +36,7 @@ class LambdaCustomEndpoints:
 
         return LambdaRuntimesResponse(Runtimes=list(runtimes))
 
-    @route("/_aws/lambda/init")
+    @route("/_aws/lambda/init", methods=["GET"])
     def init(self, request: Request) -> Response:
         """
         This internal endpoint exposes the init binary over an http API

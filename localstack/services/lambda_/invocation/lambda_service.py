@@ -613,7 +613,8 @@ def create_image_code(image_uri: str) -> ImageCode:
             )
     else:
         LOG.warning(
-            "Unable to get image hash for image %s - no docker socket available. API responses might differ.",
+            "Unable to get image hash for image %s - no docker socket available."
+            "Image hash returned by Lambda will not be correct.",
             image_uri,
         )
     return ImageCode(image_uri=image_uri, code_sha256=code_sha256, repository_type="ECR")
