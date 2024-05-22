@@ -1913,6 +1913,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     "Integrations of type 'AWS_PROXY' currently only supports "
                     "Lambda function and Firehose stream invocations."
                 )
+
+        # TODO: if the IntegrationType is AWS, `credentials` is mandatory
         moto_request = copy.copy(request)
         moto_request.setdefault("passthroughBehavior", "WHEN_NO_MATCH")
         moto_request.setdefault("timeoutInMillis", 29000)
