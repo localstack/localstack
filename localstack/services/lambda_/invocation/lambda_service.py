@@ -3,6 +3,7 @@ import concurrent.futures
 import dataclasses
 import io
 import logging
+import os.path
 import random
 import uuid
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
@@ -549,12 +550,28 @@ def store_lambda_archive(
     )
 
 
-def create_hot_reloading_code(path: str) -> HotReloadingCode:
-    # TODO extract into other function
-    if not PurePosixPath(path).is_absolute() and not PureWindowsPath(path).is_absolute():
+def assert_hot_reloading_path_absolute(path: str) -> None:
+    """
+    Check whether a given path, after environment variable substitution, is an absolute path.
+    Accepts either posix or windows paths, with environment placeholders.
+    Example placeholders: $ENV_VAR, ${ENV_VAR}
+
+    :param path: Posix or windows path, potentially containing environment variable placeholders.
+        Example: `$ENV_VAR/lambda/src` with `ENV_VAR=/home/user/test-repo` set.
+    """
+    # expand variables in path before checking for an absolute path
+    expanded_path = os.path.expandvars(path)
+    if (
+        not PurePosixPath(expanded_path).is_absolute()
+        and not PureWindowsPath(expanded_path).is_absolute()
+    ):
         raise InvalidParameterValueException(
             f"When using hot reloading, the archive key has to be an absolute path! Your archive key: {path}",
         )
+
+
+def create_hot_reloading_code(path: str) -> HotReloadingCode:
+    assert_hot_reloading_path_absolute(path)
     return HotReloadingCode(host_path=path)
 
 
@@ -597,17 +614,24 @@ def create_image_code(image_uri: str) -> ImageCode:
     :param image_uri: Image URI of the image to inspect
     :return: Image code object
     """
-    code_sha256 = "<cannot-find-image>"
-    try:
-        CONTAINER_CLIENT.pull_image(docker_image=image_uri)
-    except ContainerException:
-        LOG.debug("Cannot pull image %s. Maybe only available locally?", image_uri)
-    try:
-        code_sha256 = CONTAINER_CLIENT.inspect_image(image_name=image_uri)["RepoDigests"][
-            0
-        ].rpartition(":")[2]
-    except Exception as e:
-        LOG.debug(
-            "Cannot inspect image %s. Is this image and/or docker available: %s", image_uri, e
+    code_sha256 = "<cannot-get-image-hash>"
+    if CONTAINER_CLIENT.has_docker():
+        try:
+            CONTAINER_CLIENT.pull_image(docker_image=image_uri)
+        except ContainerException:
+            LOG.debug("Cannot pull image %s. Maybe only available locally?", image_uri)
+        try:
+            code_sha256 = CONTAINER_CLIENT.inspect_image(image_name=image_uri)["RepoDigests"][
+                0
+            ].rpartition(":")[2]
+        except Exception as e:
+            LOG.debug(
+                "Cannot inspect image %s. Is this image and/or docker available: %s", image_uri, e
+            )
+    else:
+        LOG.warning(
+            "Unable to get image hash for image %s - no docker socket available."
+            "Image hash returned by Lambda will not be correct.",
+            image_uri,
         )
     return ImageCode(image_uri=image_uri, code_sha256=code_sha256, repository_type="ECR")

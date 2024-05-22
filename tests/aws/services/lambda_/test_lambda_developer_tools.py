@@ -135,6 +135,57 @@ class TestHotReloading:
         )
         aws_client.lambda_.publish_version(FunctionName=function_name, CodeSha256="zipfilehash")
 
+    @markers.aws.only_localstack
+    def test_hot_reloading_error_path_not_absolute(
+        self,
+        create_lambda_function_aws,
+        lambda_su_role,
+        cleanups,
+        aws_client,
+    ):
+        """Tests validation of hot reloading paths"""
+        function_name = f"test-hot-reloading-{short_uid()}"
+        hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
+        with pytest.raises(Exception):
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Handler="handler.handler",
+                Code={"S3Bucket": hot_reloading_bucket, "S3Key": "not/an/absolute/path"},
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+
+    @markers.aws.only_localstack
+    def test_hot_reloading_environment_placeholder(
+        self, create_lambda_function_aws, lambda_su_role, cleanups, aws_client, monkeypatch
+    ):
+        """Test hot reloading of lambda code when the S3Key containers an environment variable placeholder like $DIR"""
+        function_name = f"test-hot-reloading-{short_uid()}"
+        hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
+        tmp_path = config.dirs.mounted_tmp
+        hot_reloading_dir_path = os.path.join(tmp_path, f"hot-reload-{short_uid()}")
+        mkdir(hot_reloading_dir_path)
+        cleanups.append(lambda: rm_rf(hot_reloading_dir_path))
+        function_content = load_file(HOT_RELOADING_PYTHON_HANDLER)
+        with open(os.path.join(hot_reloading_dir_path, "handler.py"), mode="wt") as f:
+            f.write(function_content)
+
+        mount_path = get_host_path_for_path_in_docker(hot_reloading_dir_path)
+        head, tail = os.path.split(mount_path)
+        monkeypatch.setenv("HEAD_DIR", head)
+
+        create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="handler.handler",
+            Code={"S3Bucket": hot_reloading_bucket, "S3Key": f"$HEAD_DIR/{tail}"},
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+        )
+        response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
+        response_dict = json.load(response["Payload"])
+        assert response_dict["counter"] == 1
+        assert response_dict["constant"] == "value1"
+
 
 class TestDockerFlags:
     @markers.aws.only_localstack
