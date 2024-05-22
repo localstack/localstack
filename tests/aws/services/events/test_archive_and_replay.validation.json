@@ -68,6 +68,9 @@
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replay_with_limit": {
     "last_validated_date": "2024-05-22T13:43:13+00:00"
   },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_event_source_arn": {
+    "last_validated_date": "2024-05-22T15:51:17+00:00"
+  },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_prefix": {
     "last_validated_date": "2024-05-22T13:15:37+00:00"
   },

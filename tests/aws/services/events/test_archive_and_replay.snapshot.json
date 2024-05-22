@@ -1039,5 +1039,26 @@
     "recorded-content": {
       "list-replays-with-limit": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the StartReplay operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_event_source_arn": {
+    "recorded-date": "22-05-2024, 15:51:17",
+    "recorded-content": {
+      "list-replays-with-source-arn": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "<archive-name>",
+            "EventStartTime": "datetime",
+            "ReplayName": "test-replay-ae4051f3",
+            "ReplayStartTime": "datetime",
+            "State": "STARTING"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
