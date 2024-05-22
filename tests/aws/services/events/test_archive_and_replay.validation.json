@@ -62,6 +62,9 @@
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_update_archive_error_unknown_archive": {
     "last_validated_date": "2024-05-17T16:44:35+00:00"
   },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_prefix": {
+    "last_validated_date": "2024-05-22T13:15:37+00:00"
+  },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[custom]": {
     "last_validated_date": "2024-05-22T11:35:52+00:00"
   },

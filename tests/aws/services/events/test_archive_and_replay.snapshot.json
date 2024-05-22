@@ -888,5 +888,44 @@
       "start-replay-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the StartReplay operation: Event bus <event-bus-name> does not exist.') tblen=3>",
       "start-replay-wrong-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter Destination.Arn is not valid. Reason: Cross event bus replay is not permitted.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_prefix": {
+    "recorded-date": "22-05-2024, 13:15:37",
+    "recorded-content": {
+      "list-replays-with-full-name": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-5b45b58b",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-replays-with-prefix": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-5b45b58b",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name-prefix>-test-replay",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
