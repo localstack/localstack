@@ -54,7 +54,7 @@
     "last_validated_date": "2024-01-02T20:42:00+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_sqs.py::test_message_body_and_attributes_passed_correctly": {
-    "last_validated_date": "2023-03-17T16:04:06+00:00"
+    "last_validated_date": "2024-05-22T14:00:30+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_integration_sqs.py::test_redrive_policy_with_failing_lambda": {
     "last_validated_date": "2023-02-27T16:03:26+00:00"

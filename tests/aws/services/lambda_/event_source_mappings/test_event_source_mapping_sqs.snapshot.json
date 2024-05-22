@@ -1,0 +1,43 @@
+{
+  "tests/aws/services/lambda_/event_source_mappings/test_event_source_mapping_sqs.py::TestEventSourceMappingSqs::test_event_source_mappings_sqs": {
+    "recorded-date": "22-05-2024, 14:36:18",
+    "recorded-content": {
+      "first_attempt": {
+        "Messages": [
+          {
+            "Body": {
+              "error": null,
+              "event": {
+                "Records": [
+                  {
+                    "messageId": "<uuid:1>",
+                    "receiptHandle": "<receipt-handle:2>",
+                    "body": "{\"message\": \"event1\", \"destination\": \"<queue-url>\", \"fail_attempts\": 0}",
+                    "attributes": {
+                      "ApproximateReceiveCount": "1",
+                      "SentTimestamp": "timestamp",
+                      "SenderId": "sender-id",
+                      "ApproximateFirstReceiveTimestamp": "timestamp"
+                    },
+                    "messageAttributes": {},
+                    "md5OfBody": "<md5-of-body:1>",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "awsRegion": "<region>"
+                  }
+                ]
+              }
+            },
+            "MD5OfBody": "<m-d5-of-body:1>",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}
