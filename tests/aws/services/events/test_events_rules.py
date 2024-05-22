@@ -281,7 +281,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
     )
     aws_client.events.put_events(Entries=[event])
 
-    messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+    messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1, retries=3)
     assert len(messages) == 1
     assert json.loads(messages[0].get("Body")) == json.loads(event["Detail"])
     event_details = json.loads(event["Detail"])
@@ -290,7 +290,9 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
 
     aws_client.events.put_events(Entries=[event])
 
-    messages = sqs_collect_messages(aws_client, queue_url, min_events=0, retries=1, wait_time=3)
+    messages = sqs_collect_messages(
+        aws_client, queue_url, expected_events_count=0, retries=1, wait_time=3
+    )
     assert messages == []
 
     # clean up

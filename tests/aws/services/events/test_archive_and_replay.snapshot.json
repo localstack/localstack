@@ -563,5 +563,311 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[default]": {
+    "recorded-date": "22-05-2024, 11:32:47",
+    "recorded-content": {
+      "start-replay": {
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayStartTime": "datetime",
+        "State": "STARTING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "replay-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "list-replays": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventLastReplayedTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-a8b0182a",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "replay-name",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replay": {
+        "Description": "description of the replay",
+        "Destination": {
+          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "FilterArns": [
+            "arn:aws:events:<region>:111111111111:rule/test-rule-4c12750a"
+          ]
+        },
+        "EventEndTime": "datetime",
+        "EventLastReplayedTime": "datetime",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-a8b0182a",
+        "EventStartTime": "datetime",
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayEndTime": "datetime",
+        "ReplayName": "replay-name",
+        "ReplayStartTime": "datetime",
+        "State": "COMPLETED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel-replay": {
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "State": "CANCELLING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replay-canceled": {
+        "Description": "description of the replay",
+        "Destination": {
+          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "FilterArns": [
+            "arn:aws:events:<region>:111111111111:rule/test-rule-4c12750a"
+          ]
+        },
+        "EventEndTime": "datetime",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-a8b0182a",
+        "EventStartTime": "datetime",
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "ReplayName": "replay-name",
+        "ReplayStartTime": "datetime",
+        "State": "CANCELLING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[custom]": {
+    "recorded-date": "22-05-2024, 11:35:52",
+    "recorded-content": {
+      "start-replay": {
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayStartTime": "datetime",
+        "State": "STARTING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "replay-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "core.update-account-command",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "replay-name": "<replay-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "list-replays": {
+        "Replays": [
+          {
+            "EventEndTime": "datetime",
+            "EventLastReplayedTime": "datetime",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-c3b97245",
+            "EventStartTime": "datetime",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "replay-name",
+            "ReplayStartTime": "datetime",
+            "State": "COMPLETED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replay": {
+        "Description": "description of the replay",
+        "Destination": {
+          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "FilterArns": [
+            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/test-rule-8f6bea0d"
+          ]
+        },
+        "EventEndTime": "datetime",
+        "EventLastReplayedTime": "datetime",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-c3b97245",
+        "EventStartTime": "datetime",
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayEndTime": "datetime",
+        "ReplayName": "replay-name",
+        "ReplayStartTime": "datetime",
+        "State": "COMPLETED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "cancel-replay": {
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "State": "CANCELLING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-replay-canceled": {
+        "Description": "description of the replay",
+        "Destination": {
+          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "FilterArns": [
+            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/test-rule-8f6bea0d"
+          ]
+        },
+        "EventEndTime": "datetime",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-c3b97245",
+        "EventStartTime": "datetime",
+        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "ReplayName": "replay-name",
+        "ReplayStartTime": "datetime",
+        "State": "CANCELLING",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -343,7 +343,7 @@ class TestScheduleCron:
 
         # TODO fix JobScheduler to execute on exact time
         # round datetime to nearest minute
-        if time_message.second > 0 or time_message.microsecond > 0:
+        if time_message.second > 0:
             time_message += timedelta(minutes=1)
             time_message = time_message.replace(second=0, microsecond=0)
 

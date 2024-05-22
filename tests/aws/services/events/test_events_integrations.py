@@ -174,7 +174,7 @@ def test_put_events_with_target_sns(
         ]
     )
 
-    messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+    messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1, retries=3)
     assert len(messages) == 1
 
     actual_event = json.loads(messages[0]["Body"]).get("Message")

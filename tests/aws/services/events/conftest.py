@@ -6,6 +6,7 @@ import pytest
 
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 from tests.aws.services.events.helper_functions import put_entries_assert_results_sqs
 
 LOG = logging.getLogger(__name__)
@@ -239,31 +240,33 @@ def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up
     def _put_events_with_filter_to_sqs(
         pattern: dict,
         entries_asserts: list[Tuple[list[dict], bool]],
+        event_bus_name: str = None,
         input_path: str = None,
         input_transformer: dict[dict, str] = None,
     ):
         rule_name = f"test-rule-{short_uid()}"
         target_id = f"test-target-{short_uid()}"
-        bus_name = f"test-bus-{short_uid()}"
+        if not event_bus_name:
+            event_bus_name = f"test-bus-{short_uid()}"
+            aws_client.events.create_event_bus(Name=event_bus_name)
+            event_bus_names.append(event_bus_name)
 
         queue_url, queue_arn = create_sqs_events_target()
 
-        events_client = aws_client.events
-        events_client.create_event_bus(Name=bus_name)
-        event_bus_names.append(bus_name)
-
-        events_client.put_rule(
+        aws_client.events.put_rule(
             Name=rule_name,
-            EventBusName=bus_name,
+            EventBusName=event_bus_name,
             EventPattern=json.dumps(pattern),
         )
         rule_names.append(rule_name)
+
         kwargs = {"InputPath": input_path} if input_path else {}
         if input_transformer:
             kwargs["InputTransformer"] = input_transformer
-        response = events_client.put_targets(
+
+        response = aws_client.events.put_targets(
             Rule=rule_name,
-            EventBusName=bus_name,
+            EventBusName=event_bus_name,
             Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
         )
         target_ids.append(target_id)
@@ -275,9 +278,9 @@ def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up
         for entry_asserts in entries_asserts:
             entries = entry_asserts[0]
             for entry in entries:
-                entry["EventBusName"] = bus_name
+                entry["EventBusName"] = event_bus_name
             message = put_entries_assert_results_sqs(
-                events_client,
+                aws_client.events,
                 aws_client.sqs,
                 queue_url,
                 entries=entries,
@@ -352,3 +355,67 @@ def add_resource_policy_logs_events_access(aws_client):
 
     for policy_name in policies:
         aws_client.logs.delete_resource_policy(policyName=policy_name)
+
+
+@pytest.fixture
+def put_event_to_archive(aws_client, events_create_event_bus, events_create_archive):
+    def _put_event_to_archive(
+        archive_name: str = None,
+        event_pattern: dict = None,
+        event_bus_name: str = None,
+        event_source_arn: str = None,
+        entries: list[dict] = None,
+        num_events: int = 1,
+    ):
+        if not event_bus_name:
+            event_bus_name = f"test-bus-{short_uid()}"
+        if not event_source_arn:
+            response = events_create_event_bus(Name=event_bus_name)
+            event_source_arn = response["EventBusArn"]
+        if not archive_name:
+            archive_name = f"test-archive-{short_uid()}"
+
+        response = events_create_archive(
+            ArchiveName=archive_name,
+            EventSourceArn=event_source_arn,
+            EventPattern=json.dumps(event_pattern),
+            RetentionDays=1,
+        )
+        archive_arn = response["ArchiveArn"]
+
+        if entries:
+            num_events = len(entries)
+
+        if not entries:
+            entries = []
+            for i in range(num_events):
+                entries.append(
+                    {
+                        "Source": "test",
+                        "DetailType": "test",
+                        "Detail": f"event number {i}",
+                        "EventBusName": event_bus_name,
+                    }
+                )
+
+        aws_client.events.put_events(
+            Entries=entries,
+        )
+
+        def wait_for_archive_event_count():
+            response = aws_client.events.describe_archive(ArchiveName=archive_name)
+            event_count = response["EventCount"]
+            assert event_count == num_events
+
+        retry(
+            wait_for_archive_event_count, retries=35, sleep=10
+        )  # events are batched and sent to the archive, this mostly takes at least 5 minutes on AWS
+
+        return {
+            "ArchiveName": archive_name,
+            "ArchiveArn": archive_arn,
+            "EventBusName": event_bus_name,
+            "EventBusArn": event_source_arn,
+        }
+
+    yield _put_event_to_archive

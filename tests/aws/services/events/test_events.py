@@ -960,7 +960,7 @@ class TestEventBus:
             ]
         )
 
-        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+        messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1, retries=3)
         assert len(messages) == 1
 
         actual_event = json.loads(messages[0]["Body"])
@@ -1096,7 +1096,7 @@ class TestEventBus:
 
         retries = 20 if is_aws_cloud() else 3
         messages = sqs_collect_messages(
-            aws_client, queue_url, min_events=1, retries=retries, wait_time=5
+            aws_client, queue_url, expected_events_count=1, retries=retries, wait_time=5
         )
         assert len(messages) == 1
         snapshot.match("get-events", {"Messages": messages})

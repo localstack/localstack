@@ -1,10 +1,15 @@
 import json
+from datetime import datetime, timezone
 
 import pytest
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.events.helper_functions import (
+    sqs_collect_messages,
+    wait_for_replay_in_state,
+)
 from tests.aws.services.events.test_events import (
     EVENT_DETAIL,
     TEST_EVENT_PATTERN,
@@ -200,6 +205,7 @@ class TestArchive:
     @markers.aws.validated
     # the archive seams to persist events also after deletion of the archive
     # and restores them if recreated for the same event source arn
+    # this causes issues with the default event bus and the expected event count
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     @pytest.mark.parametrize("archive_pattern_match", [True, False])
     def test_list_archive_with_events(
@@ -386,3 +392,144 @@ class TestArchive:
             [snapshot.transform.regex(not_existing_archive_name, "<archive-name>")]
         )
         snapshot.match("delete-archive-unknown-archive-error", error)
+
+
+class TestReplay:
+    @markers.aws.validated
+    @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
+    def test_start_list_describe_canceled_replay(
+        self,
+        event_bus_type,
+        region_name,
+        account_id,
+        events_create_event_bus,
+        events_put_rule,
+        create_sqs_events_target,
+        put_event_to_archive,
+        aws_client,
+        snapshot,
+    ):
+        event_start_time = datetime.now(timezone.utc)
+        # setup event bus
+        if event_bus_type == "default":
+            event_bus_name = "default"
+            event_source_arn = f"arn:aws:events:{region_name}:{account_id}:event-bus/default"
+        if event_bus_type == "custom":
+            event_bus_name = f"test-bus-{short_uid()}"
+            response = events_create_event_bus(Name=event_bus_name)
+            event_source_arn = response["EventBusArn"]
+
+        # setup rule
+        rule_name = f"test-rule-{short_uid()}"
+        response = events_put_rule(
+            Name=rule_name,
+            EventBusName=event_bus_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
+        )
+        rule_arn = response["RuleArn"]
+
+        # setup sqs target
+        queue_url, queue_arn = create_sqs_events_target()
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=event_bus_name,
+            Targets=[
+                {"Id": target_id, "Arn": queue_arn},
+            ],
+        )
+
+        # put events to archive
+        num_events = 3
+        entries = []
+        for _ in range(num_events):
+            entry = {
+                "Source": TEST_EVENT_PATTERN["source"][0],
+                "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+                "EventBusName": event_bus_name,
+            }
+            entries.append(entry)
+
+        archive_name = f"test-archive-{short_uid()}"
+        archive_arn = put_event_to_archive(
+            archive_name,
+            TEST_EVENT_PATTERN,
+            event_bus_name,
+            event_source_arn,
+            entries,
+        )["ArchiveArn"]
+        sqs_collect_messages(
+            aws_client, queue_url, num_events, wait_time=5, retries=12
+        )  # reset queue for replay
+
+        event_end_time = datetime.now(timezone.utc)
+
+        # start replay
+        replay_name = f"test-replay-{short_uid()}"
+        response_start_replay = aws_client.events.start_replay(
+            ReplayName=replay_name,
+            Description="description of the replay",
+            EventSourceArn=archive_arn,
+            EventStartTime=event_start_time,
+            EventEndTime=event_end_time,
+            Destination={
+                "Arn": event_source_arn,
+                "FilterArns": [
+                    rule_arn,
+                ],
+            },
+        )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(event_bus_name, "<event-bus-name>"),
+                snapshot.transform.regex(replay_name, "<replay-name>"),
+                snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
+                snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+                snapshot.transform.key_value("ReplayName", reference_replacement=False),
+            ]
+        )
+        snapshot.match("start-replay", response_start_replay)
+
+        # replaying an archive mostly takes at least 5 minutes on AWS
+        wait_for_replay_in_state(aws_client, replay_name, "COMPLETED", retries=35, sleep=10)
+
+        # fetch messages from sqs
+        messages_replay = sqs_collect_messages(
+            aws_client, queue_url, num_events, wait_time=5, retries=12
+        )
+
+        snapshot.match("replay-messages", messages_replay)
+
+        response_list_replays = aws_client.events.list_replays(NamePrefix=replay_name)
+        snapshot.match("list-replays", response_list_replays)
+
+        response_describe_replay = aws_client.events.describe_replay(ReplayName=replay_name)
+        snapshot.match("describe-replay", response_describe_replay)
+
+        replay_canceled_name = f"test-replay-canceled-{short_uid()}"
+        aws_client.events.start_replay(
+            ReplayName=replay_canceled_name,
+            Description="description of the replay",
+            EventSourceArn=archive_arn,
+            EventStartTime=event_start_time,
+            EventEndTime=event_end_time,
+            Destination={
+                "Arn": event_source_arn,
+                "FilterArns": [
+                    rule_arn,
+                ],
+            },
+        )
+
+        response_cancel_replay = aws_client.events.cancel_replay(ReplayName=replay_canceled_name)
+        snapshot.add_transformer(
+            snapshot.transform.regex(replay_canceled_name, "<replay-canceled-name>")
+        )
+        snapshot.match("cancel-replay", response_cancel_replay)
+
+        response_describe_replay_canceled = aws_client.events.describe_replay(
+            ReplayName=replay_canceled_name
+        )
+        snapshot.match("describe-replay-canceled", response_describe_replay_canceled)
