@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/lambda_/event_source_mappings/test_event_source_mapping_sqs.py::TestEventSourceMappingSqs::test_event_source_mappings_sqs": {
+    "last_validated_date": "2024-05-22T14:36:18+00:00"
+  }
+}

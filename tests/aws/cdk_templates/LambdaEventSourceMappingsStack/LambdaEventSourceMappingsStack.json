@@ -1,0 +1,141 @@
+{
+  "Resources": {
+    "SourceQueue6E809DF0": {
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "DestinationQueueCFE59110": {
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    },
+    "TargetFunctionServiceRoleF757D6E7": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "TargetFunctionServiceRoleDefaultPolicy9E28C2C5": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "DestinationQueueCFE59110",
+                  "Arn"
+                ]
+              }
+            },
+            {
+              "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:ChangeMessageVisibility",
+                "sqs:GetQueueUrl",
+                "sqs:DeleteMessage",
+                "sqs:GetQueueAttributes"
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "SourceQueue6E809DF0",
+                  "Arn"
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "TargetFunctionServiceRoleDefaultPolicy9E28C2C5",
+        "Roles": [
+          {
+            "Ref": "TargetFunctionServiceRoleF757D6E7"
+          }
+        ]
+      }
+    },
+    "TargetFunctionBA89AD45": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "\"\"\"This lambda is used for lambda/sqs integration tests. Since SQS event source mappings don't allow\nDestinationConfigurations that send lambda results to other source (like SQS queues), that can be used to verify\ninvocations, this lambda does this manually. You can pass in an event that looks like this::\n\n    {\n        \"destination\": \"<queue_url>\",\n        \"fail_attempts\": 2\n    }\n\nWhich will cause the lambda to fail twice (comparing the \"ApproximateReceiveCount\" of the SQS event triggering\nthe lambda), and send either an error or success result to the SQS queue passed in the destination key.\n\"\"\"\n\nimport json\nimport os\n\nimport boto3\n\n\ndef handler(event, context):\n    # this lambda expects inputs from an SQS event source mapping\n    if len(event.get(\"Records\", [])) != 1:\n        raise ValueError(\"the payload must consist of exactly one record\")\n\n    # it expects exactly one record where the message body is '{\"destination\": \"<queue_url>\"}' that mimics a\n    # DestinationConfig (which is not possible with SQS event source mappings).\n    record = event[\"Records\"][0]\n    message = json.loads(record[\"body\"])\n\n    if not message.get(\"destination\"):\n        raise ValueError(\"no destination for the event given\")\n\n    error = None\n    try:\n        if message[\"fail_attempts\"] >= int(record[\"attributes\"][\"ApproximateReceiveCount\"]):\n            raise ValueError(\"failed attempt\")\n    except Exception as e:\n        error = e\n        raise\n    finally:\n        # we then send a message to the destination queue\n        result = {\"error\": None if not error else str(error), \"event\": event}\n        sqs = create_external_boto_client(\"sqs\")\n        sqs.send_message(QueueUrl=message.get(\"destination\"), MessageBody=json.dumps(result))\n\n\ndef create_external_boto_client(service):\n    endpoint_url = None\n    if os.environ.get(\"AWS_ENDPOINT_URL\"):\n        endpoint_url = os.environ[\"AWS_ENDPOINT_URL\"]\n    region_name = (\n        os.environ.get(\"AWS_DEFAULT_REGION\") or os.environ.get(\"AWS_REGION\") or \"us-east-1\"\n    )\n    return boto3.client(service, endpoint_url=endpoint_url, region_name=region_name)\n"
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "TargetFunctionServiceRoleF757D6E7",
+            "Arn"
+          ]
+        },
+        "Runtime": "python3.12"
+      },
+      "DependsOn": [
+        "TargetFunctionServiceRoleDefaultPolicy9E28C2C5",
+        "TargetFunctionServiceRoleF757D6E7"
+      ]
+    },
+    "TargetFunctionSqsEventSourceLambdaEventSourceMappingsStackSourceQueueCDB2490E44F101B5": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "BatchSize": 1,
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "SourceQueue6E809DF0",
+            "Arn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "TargetFunctionBA89AD45"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "SourceArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "SourceQueue6E809DF0",
+          "Arn"
+        ]
+      }
+    },
+    "DestinationQueueUrl": {
+      "Value": {
+        "Ref": "DestinationQueueCFE59110"
+      }
+    }
+  }
+}
