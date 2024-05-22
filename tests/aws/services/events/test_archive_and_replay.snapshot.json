@@ -1027,5 +1027,11 @@
     "recorded-content": {
       "start-replay-invalid-end-time-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_describe_replay_error_unknown_replay": {
+    "recorded-date": "22-05-2024, 15:20:45",
+    "recorded-content": {
+      "describe-replay-unknown-replay-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeReplay operation: Replay <replay-name> does not exist.') tblen=3>"
+    }
   }
 }

@@ -793,3 +793,14 @@ class TestReplay:
     @markers.aws.validated
     def tests_concurrency_error_too_many_active_replays():
         pass
+
+    @markers.aws.validated
+    def test_describe_replay_error_unknown_replay(self, aws_client, snapshot):
+        not_existing_replay_name = f"doesnotexist-{short_uid()}"
+        with pytest.raises(Exception) as error:
+            aws_client.events.describe_replay(ReplayName=not_existing_replay_name)
+
+        snapshot.add_transformer(
+            [snapshot.transform.regex(not_existing_replay_name, "<replay-name>")]
+        )
+        snapshot.match("describe-replay-unknown-replay-error", error)
