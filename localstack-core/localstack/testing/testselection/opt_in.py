@@ -42,6 +42,7 @@ OPT_IN = [
     # SQS
     "localstack/services/sqs/**",
     "tests/aws/services/sqs/**",
+    # TODO add more services
 ]
 
 

@@ -58,6 +58,7 @@ API_DEPENDENCIES = {
     # firehose currently only supports kinesis as source, this could become optional when more sources are supported
     "firehose": ["kinesis"],
     "transcribe": ["s3"],
+    # TODO: add more dependencies
 }
 
 # Optional dependencies of services on other services
@@ -77,6 +78,7 @@ API_DEPENDENCIES_OPTIONAL = {
     "cloudformation": ["secretsmanager", "ssm", "lambda"],
     "events": ["lambda", "kinesis", "firehose", "sns", "sqs", "stepfunctions", "logs"],
     "stepfunctions": ["logs", "lambda", "dynamodb", "ecs", "sns", "sqs", "apigateway", "events"],
+    # TODO: add more dependencies
 }
 
 # composites define an abstract name like "serverless" that maps to a set of services
