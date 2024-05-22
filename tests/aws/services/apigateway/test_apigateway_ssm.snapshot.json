@@ -1,0 +1,33 @@
+{
+  "tests/aws/services/apigateway/test_apigateway_ssm.py::test_ssm_aws_integration": {
+    "recorded-date": "22-05-2024, 20:07:01",
+    "recorded-content": {
+      "put-param": {
+        "Tier": "Standard",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "ssm-aws-integration": {
+        "GetParameterResult": {
+          "Parameter": {
+            "ARN": "arn:aws:ssm:<region>:111111111111:parameter/param-test-123",
+            "DataType": "text",
+            "LastModifiedDate": "<timestamp>",
+            "Name": "param-test-123",
+            "Selector": null,
+            "SourceResult": null,
+            "Type": "String",
+            "Value": "123",
+            "Version": 1
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {}
+        }
+      }
+    }
+  }
+}
