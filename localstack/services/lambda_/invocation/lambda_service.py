@@ -552,10 +552,12 @@ def store_lambda_archive(
 
 def assert_hot_reloading_path_absolute(path: str) -> None:
     """
-    Check whether a given path is an absolute path, either posix or windows.
-    Will expand variables in the path before the check.
+    Check whether a given path, after environment variable substitution, is an absolute path.
+    Accepts either posix or windows paths, with environment placeholders.
+    Example placeholders: $ENV_VAR, ${ENV_VAR}
 
     :param path: Posix or windows path, potentially containing environment variable placeholders.
+        Example: `$ENV_VAR/lambda/src` with `ENV_VAR=/home/user/test-repo` set.
     """
     # expand variables in path before checking for an absolute path
     expanded_path = os.path.expandvars(path)

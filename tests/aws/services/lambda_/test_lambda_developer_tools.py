@@ -143,9 +143,7 @@ class TestHotReloading:
         cleanups,
         aws_client,
     ):
-        """Test hot reloading of lambda code"""
-        # Hot reloading is debounced with 500ms
-        # 0.6 works on Linux, but it takes slightly longer on macOS
+        """Tests validation of hot reloading paths"""
         function_name = f"test-hot-reloading-{short_uid()}"
         hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
         with pytest.raises(Exception):
