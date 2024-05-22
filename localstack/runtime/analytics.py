@@ -13,11 +13,13 @@ TRACKED_ENV_VAR = [
     "DISABLE_CORS_CHECK",
     "DISABLE_CORS_HEADERS",
     "DNS_ADDRESS",
+    "DYNAMODB_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
     "EDGE_PORT",
     "ENFORCE_IAM",
     "IAM_SOFT_MODE",
     "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
+    "KINESIS_ERROR_PROBABILITY",
     "KMS_PROVIDER",
     "LAMBDA_DOWNLOAD_AWS_LAYERS",
     "LAMBDA_EXECUTOR",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
