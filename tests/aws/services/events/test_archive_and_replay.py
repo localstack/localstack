@@ -722,5 +722,43 @@ class TestReplay:
         snapshot.match("start-replay-unknown-archive-error", error)
 
     @markers.aws.validated
+    def test_start_replay_error_duplicate(self, events_create_archive, aws_client, snapshot):
+        event_bus_name = f"test-bus-{short_uid()}"
+        event_bus_arn = aws_client.events.create_event_bus(Name=event_bus_name)["EventBusArn"]
+
+        archive_arn = events_create_archive(EventSourceArn=event_bus_arn, RetentionDays=1)[
+            "ArchiveArn"
+        ]
+
+        replay_name = f"test-replay-{short_uid()}"
+        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+        end_time = datetime.now(timezone.utc)
+        aws_client.events.start_replay(
+            ReplayName=replay_name,
+            Description="description of the replay",
+            EventSourceArn=archive_arn,
+            EventStartTime=start_time,
+            EventEndTime=end_time,
+            Destination={
+                "Arn": event_bus_arn,
+            },
+        )
+
+        with pytest.raises(Exception) as error:
+            aws_client.events.start_replay(
+                ReplayName=replay_name,
+                Description="description of the replay",
+                EventSourceArn=archive_arn,
+                EventStartTime=start_time,
+                EventEndTime=end_time,
+                Destination={
+                    "Arn": event_bus_arn,
+                },
+            )
+
+        snapshot.add_transformer([snapshot.transform.regex(replay_name, "<replay-name>")])
+        snapshot.match("start-replay-duplicate-error", error)
+
+    @markers.aws.validated
     def tests_concurrency_error_too_many_active_replays():
         pass
