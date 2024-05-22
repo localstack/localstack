@@ -760,5 +760,36 @@ class TestReplay:
         snapshot.match("start-replay-duplicate-error", error)
 
     @markers.aws.validated
+    @pytest.mark.parametrize("negative_time_delta_seconds", [0, 10])
+    def test_start_replay_error_invalid_end_time(
+        self, negative_time_delta_seconds, events_create_archive, aws_client, snapshot
+    ):
+        event_bus_name = f"test-bus-{short_uid()}"
+        event_bus_arn = aws_client.events.create_event_bus(Name=event_bus_name)["EventBusArn"]
+
+        response = events_create_archive()
+        archive_arn = response["ArchiveArn"]
+
+        start_time = datetime.now(timezone.utc)
+        end_time = start_time.replace(microsecond=0) - timedelta(
+            seconds=negative_time_delta_seconds
+        )
+
+        replay_name = f"test-replay-{short_uid()}"
+        with pytest.raises(Exception) as error:
+            aws_client.events.start_replay(
+                ReplayName=replay_name,
+                Description="description of the replay",
+                EventSourceArn=archive_arn,
+                EventStartTime=start_time,
+                EventEndTime=end_time,
+                Destination={
+                    "Arn": event_bus_arn,
+                },
+            )
+
+        snapshot.match("start-replay-invalid-end-time-error", error)
+
+    @markers.aws.validated
     def tests_concurrency_error_too_many_active_replays():
         pass
