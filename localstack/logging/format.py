@@ -2,7 +2,7 @@
 
 import logging
 from functools import lru_cache
-from typing import Dict
+from typing import Any, Dict
 
 from localstack.utils.numbers import format_bytes
 
@@ -111,16 +111,31 @@ def compress_logger_name(name: str, length: int) -> str:
 
 class TraceLoggingFormatter(logging.Formatter):
     aws_trace_log_format = "; ".join([LOG_FORMAT, LOG_INPUT_FORMAT, LOG_OUTPUT_FORMAT])
+    bytes_length_display_threshold = 512
 
     def __init__(self):
         super().__init__(fmt=self.aws_trace_log_format, datefmt=LOG_DATE_FORMAT)
+
+    def _replace_large_payloads(self, input: Any) -> Any:
+        """
+        Replaces large payloads in the logs with placeholders to avoid cluttering the logs with huge bytes payloads.
+        :param input: Input/output extra passed when logging. If it is bytes, it will be replaced if larger than
+            bytes_length_display_threshold
+        :return: Input, unless it is bytes and longer than bytes_length_display_threshold, then `Bytes(length_of_input)`
+        """
+        if isinstance(input, bytes) and len(input) > self.bytes_length_display_threshold:
+            return f"Bytes({format_bytes(len(input))})"
+
+    def format(self, record: logging.LogRecord) -> str:
+        record.input = self._replace_large_payloads(record.input)
+        record.output = self._replace_large_payloads(record.output)
+        return super().format(record=record)
 
 
 class AwsTraceLoggingFormatter(TraceLoggingFormatter):
     aws_trace_log_format = "; ".join(
         [LOG_FORMAT, LOG_CONTEXT_FORMAT, LOG_INPUT_FORMAT, LOG_OUTPUT_FORMAT]
     )
-    bytes_length_display_threshold = 512
 
     def __init__(self):
         super().__init__()
