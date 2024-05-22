@@ -167,7 +167,10 @@ class ArnPartitionRewriteHandler(Handler):
         response.headers = self._adjust_partition(
             dict(response.headers), request_region=request_region
         )
-        response.data = self._adjust_partition(response.data, request_region=request_region)
+        # setting data also causes content-length to be re-calculated in WerkzeugResponse class
+        # so bellow is a quick and dirty fix
+        if response.data:
+            response.data = self._adjust_partition(response.data, request_region=request_region)
         self._post_process_response_headers(response)
 
     def modify_response_guard(self, response: Response):
