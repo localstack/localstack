@@ -532,3 +532,58 @@ class TestFirehoseIntegration:
             ]
         )
         snapshot.match("kinesis-event-stream-multiple-delivery-streams", s3_data)
+
+    @markers.aws.validated
+    def test_kinesis_firehose_s3_as_destination_with_file_extension(
+        self,
+        s3_bucket,
+        aws_client,
+        account_id,
+        firehose_create_delivery_stream,
+        create_iam_role_with_policy,
+    ):
+        bucket_arn = arns.s3_bucket_arn(s3_bucket)
+        delivery_stream_name = f"test-delivery-stream-{short_uid()}"
+        file_extension = ".txt"
+
+        role_policy, policy_document = get_firehose_iam_documents(bucket_arn, "*")
+
+        role_arn = create_iam_role_with_policy(
+            RoleDefinition=role_policy, PolicyDefinition=policy_document
+        )
+
+        if is_aws_cloud():
+            time.sleep(10)  # AWS IAM propagation delay
+
+        firehose_create_delivery_stream(
+            DeliveryStreamName=delivery_stream_name,
+            DeliveryStreamType="DirectPut",
+            ExtendedS3DestinationConfiguration={
+                "BucketARN": bucket_arn,
+                "RoleARN": role_arn,
+                "FileExtension": file_extension,
+                "ErrorOutputPrefix": "errors",
+            },
+        )
+
+        # prepare sample message
+        data = base64.b64encode(TEST_MESSAGE.encode())
+        record = {"Data": data}
+
+        def assert_s3_contents():
+            aws_client.firehose.put_record(
+                DeliveryStreamName=delivery_stream_name,
+                Record=record,
+            )
+            s3_objects = aws_client.s3.list_objects(Bucket=s3_bucket)["Contents"]
+            s3_object = s3_objects[0]
+            assert s3_object["Key"].endswith(file_extension)
+
+        retry_options = {"sleep": 1, "retries": 10, "sleep_before": 1}
+
+        if is_aws_cloud():
+            retry_options["retries"] = 600
+            retry_options["sleep"] = 5
+            retry_options["sleep_before"] = 10
+
+        retry(assert_s3_contents, **retry_options)

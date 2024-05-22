@@ -812,6 +812,7 @@ class FirehoseProvider(FirehoseApi):
     ):
         bucket = s3_bucket_name(s3_destination_description["BucketARN"])
         prefix = s3_destination_description.get("Prefix", "")
+        file_extension = s3_destination_description.get("FileExtension", "")
 
         if role_arn := s3_destination_description.get("RoleARN"):
             factory = connect_to.with_assumed_role(
@@ -824,7 +825,7 @@ class FirehoseProvider(FirehoseApi):
         )
         batched_data = b"".join([base64.b64decode(r.get("Data") or r.get("data")) for r in records])
 
-        obj_path = self._get_s3_object_path(stream_name, prefix)
+        obj_path = self._get_s3_object_path(stream_name, prefix, file_extension)
         try:
             LOG.debug("Publishing to S3 destination: %s. Data: %s", bucket, batched_data)
             s3.put_object(Bucket=bucket, Key=obj_path, Body=batched_data)
@@ -832,7 +833,7 @@ class FirehoseProvider(FirehoseApi):
             LOG.exception(f"Unable to put records {records} to s3 bucket.")
             raise e
 
-    def _get_s3_object_path(self, stream_name, prefix):
+    def _get_s3_object_path(self, stream_name, prefix, file_extension):
         # See https://aws.amazon.com/kinesis/data-firehose/faqs/#Data_delivery
         # Path prefix pattern: myApp/YYYY/MM/DD/HH/
         # Object name pattern: DeliveryStreamName-DeliveryStreamVersion-YYYY-MM-DD-HH-MM-SS-RandomString
@@ -841,6 +842,10 @@ class FirehoseProvider(FirehoseApi):
         pattern = "{pre}%Y/%m/%d/%H/{name}-%Y-%m-%d-%H-%M-%S-{rand}"
         path = pattern.format(pre=prefix, name=stream_name, rand=str(uuid.uuid4()))
         path = timestamp(format=path)
+
+        if file_extension:
+            path += file_extension
+
         return path
 
     def _put_to_redshift(
