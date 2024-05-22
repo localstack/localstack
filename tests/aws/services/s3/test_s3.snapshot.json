@@ -11495,7 +11495,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
-    "recorded-date": "10-04-2024, 15:09:48",
+    "recorded-date": "21-05-2024, 16:51:17",
     "recorded-content": {
       "invalid-condition-eq": {
         "Error": {

@@ -812,7 +812,7 @@ def _verify_condition(condition: list | dict, form: dict, additional_policy_meta
                 if k == "bucket":
                     return additional_policy_metadata.get("bucket") == val
                 else:
-                    return form.get(key) == val
+                    return form.get(k) == val
 
         case ["eq", key, value]:
             k = key.lower()
