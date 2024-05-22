@@ -791,8 +791,59 @@ class TestReplay:
         snapshot.match("start-replay-invalid-end-time-error", error)
 
     @markers.aws.validated
-    def tests_concurrency_error_too_many_active_replays():
-        pass
+    def tests_concurrency_error_too_many_active_replays(
+        self, events_create_event_bus, events_create_archive, aws_client, snapshot
+    ):
+        event_bus_name = f"test-bus-{short_uid()}"
+        event_bus_arn = events_create_event_bus(Name=event_bus_name)["EventBusArn"]
+
+        archive_name = f"test-archive-{short_uid()}"
+        archive_arn = events_create_archive(
+            ArchiveName=archive_name,
+            EventSourceArn=event_bus_arn,
+            RetentionDays=1,
+        )["ArchiveArn"]
+
+        replay_name_prefix = short_uid()
+        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+        end_time = datetime.now(timezone.utc)
+
+        num_replays = 10
+        for i in range(num_replays):
+            replay_name = f"{replay_name_prefix}-test-replay-{i}"
+            aws_client.events.start_replay(
+                ReplayName=replay_name,
+                Description="description of the replay",
+                EventSourceArn=archive_arn,
+                EventStartTime=start_time,
+                EventEndTime=end_time,
+                Destination={
+                    "Arn": event_bus_arn,
+                },
+            )
+
+        # only 10 replays are allowed to be in state STARTING or RUNNING at the same time
+        with pytest.raises(Exception) as error:
+            replay_name = f"{replay_name_prefix}-test-replay-{num_replays}"
+            aws_client.events.start_replay(
+                ReplayName=replay_name,
+                Description="description of the replay",
+                EventSourceArn=archive_arn,
+                EventStartTime=start_time,
+                EventEndTime=end_time,
+                Destination={
+                    "Arn": event_bus_arn,
+                },
+            )
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(replay_name_prefix, "<replay-name-prefix>"),
+                snapshot.transform.regex(archive_name, "<archive-name>"),
+                snapshot.transform.jsonpath("$..NextToken", "next_token"),
+            ]
+        )
+        snapshot.match("list-replays-with-limit", error)
 
     @markers.aws.validated
     def test_describe_replay_error_unknown_replay(self, aws_client, snapshot):

@@ -1033,5 +1033,11 @@
     "recorded-content": {
       "describe-replay-unknown-replay-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeReplay operation: Replay <replay-name> does not exist.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::tests_concurrency_error_too_many_active_replays": {
+    "recorded-date": "22-05-2024, 15:34:28",
+    "recorded-content": {
+      "list-replays-with-limit": "<ExceptionInfo LimitExceededException('An error occurred (LimitExceededException) when calling the StartReplay operation: The requested resource exceeds the maximum number allowed.') tblen=3>"
+    }
   }
 }

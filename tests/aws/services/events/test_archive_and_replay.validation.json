@@ -91,5 +91,8 @@
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus": {
     "last_validated_date": "2024-05-22T12:49:01+00:00"
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::tests_concurrency_error_too_many_active_replays": {
+    "last_validated_date": "2024-05-22T15:34:28+00:00"
   }
 }
