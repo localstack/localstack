@@ -87,7 +87,7 @@ from localstack.aws.api.events import (
 )
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Rule as ApiTypeRule
-from localstack.services.events.archive import ArchiveServiceDict
+from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
 from localstack.services.events.event_ruler import matches_rule
 from localstack.services.events.models import (
@@ -599,7 +599,40 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         retention_days: RetentionDays = None,
         **kwargs,
     ) -> CreateArchiveResponse:
-        raise NotImplementedError
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(context)
+        event_bus_name = self._extract_event_bus_name(event_source_arn)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        # TODO check if in same region / account
+        if archive_name in event_bus.archives.keys():
+            raise ResourceAlreadyExistsException(f"Archive {archive_name} already exists.")
+        archive_service = self.create_archive_service(
+            archive_name,
+            region,
+            account_id,
+            event_source_arn,
+            description,
+            event_pattern,
+            retention_days,
+        )
+        event_bus.archives[archive_service.archive.name] = archive_service.archive
+        rule_name = self._create_archive_rule(
+            context,
+            event_bus.name,
+            archive_service.archive.name,
+            archive_service.archive.event_pattern,
+        )
+        archive_service.rule_name = rule_name
+        self._create_archive_target(
+            context,
+            archive_service.rule_name,
+            event_bus.name,
+            archive_service.archive.arn,
+            archive_service.archive.event_source_arn,
+        )
+        response = CreateArchiveResponse(ArchiveArn=archive_service.arn)
+        return response
 
     @handler("DeleteArchive")
     def delete_archive(
@@ -846,6 +879,28 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._target_sender_store[target_sender.arn] = target_sender
         return target_sender
 
+    def create_archive_service(
+        self,
+        archive_name: ArchiveName,
+        region: str,
+        account_id: str,
+        event_source_arn: Arn,
+        description: ArchiveDescription,
+        event_pattern: EventPattern,
+        retention_days: RetentionDays,
+    ) -> ArchiveService:
+        archive_service = ArchiveService(
+            archive_name,
+            region,
+            account_id,
+            event_source_arn,
+            description,
+            event_pattern,
+            retention_days,
+        )
+        self._archive_service_store[archive_service.arn] = archive_service
+        return archive_service
+
     def _get_limited_dict_and_next_token(
         self, input_dict: dict, next_token: NextToken | None, limit: LimitMax100 | None
     ) -> tuple[dict, NextToken]:
@@ -932,6 +987,47 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             rules = {rules.name: rules}
         for rule in rules.values():
             del self._rule_services_store[rule.arn]
+
+    def _create_archive_rule(
+        self,
+        context: RequestContext,
+        event_bus_name: EventBusName,
+        archive_name: ArchiveName,
+        event_pattern: EventPattern = None,
+    ) -> RuleName:
+        rule_name = f"Events-Archive--{archive_name}"
+        default_pattern = {
+            "replay-name": [{"exists": False}],
+        }
+        if event_pattern:
+            updated_event_pattern = json.loads(event_pattern)
+            updated_event_pattern.update(default_pattern)
+        else:
+            updated_pattern = default_pattern
+        self.put_rule(
+            context,
+            rule_name,
+            event_pattern=json.dumps(updated_pattern),
+            event_bus_name=event_bus_name,
+        )
+        return rule_name
+
+    def _create_archive_target(
+        self,
+        context: RequestContext,
+        rule: RuleName,
+        event_bus_name: EventBusName,
+        archive_arn: Arn,
+        archive_name: ArchiveName,
+    ) -> None:
+        target_id = f"Events-Archive--{archive_name}"
+        targets = [{"Id": target_id, "Arn": archive_arn}]
+        self.put_targets(
+            context,
+            rule,
+            targets,
+            event_bus_name,
+        )
 
     def _rule_dict_to_api_type_list(self, rules: RuleDict) -> RuleResponseList:
         """Return a converted dict of Rule model objects as a list of rules in API type Rule format."""

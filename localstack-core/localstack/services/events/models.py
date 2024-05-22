@@ -7,6 +7,9 @@ from bson import Timestamp
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
+    ArchiveDescription,
+    ArchiveName,
+    ArchiveState,
     Arn,
     CreatedBy,
     EventBusName,
@@ -14,6 +17,7 @@ from localstack.aws.api.events import (
     EventResourceList,
     EventSourceName,
     ManagedBy,
+    RetentionDays,
     RoleArn,
     RuleDescription,
     RuleName,
@@ -89,6 +93,25 @@ RuleDict = dict[RuleName, Rule]
 
 
 @dataclass
+class Archive:
+    name: ArchiveName
+    region: str
+    account_id: str
+    event_source_arn: Arn
+    description: ArchiveDescription = None
+    event_pattern: EventPattern = None
+    retention_days: RetentionDays = None
+    state: ArchiveState = ArchiveState.DISABLED
+    arn: Arn = field(init=False)
+
+    def __post_init__(self):
+        self.arn = f"arn:aws:events:{self.region}:{self.account_id}:archive/{self.name}"
+
+
+ArchiveDict = dict[ArchiveName, Archive]
+
+
+@dataclass
 class EventBus:
     name: EventBusName
     region: str
@@ -97,6 +120,7 @@ class EventBus:
     tags: TagList = field(default_factory=list)
     policy: Optional[ResourcePolicy] = None
     rules: RuleDict = field(default_factory=dict)
+    archives: ArchiveDict = field(default_factory=dict)
     arn: Arn = field(init=False)
     creation_time: Timestamp = field(init=False)
     last_modified_time: Timestamp = field(init=False)
@@ -107,6 +131,8 @@ class EventBus:
         self.last_modified_time = datetime.now(timezone.utc)
         if self.rules is None:
             self.rules = {}
+        if self.archives is None:
+            self.archives = {}
         if self.tags is None:
             self.tags = []
 

@@ -46,6 +46,7 @@ class TestArchive:
             EventPattern=json.dumps(TEST_EVENT_PATTERN),
             RetentionDays=1,
         )
+        # TODO list rule created for archive
 
         snapshot.add_transformer(
             [
@@ -70,7 +71,9 @@ class TestArchive:
         )
         snapshot.match("update-archive", response_update_archive)
 
-        response_delete_archive = aws_client.events.delete_archive(ArchiveName=archive_name)
+        response_delete_archive = aws_client.events.delete_archive(
+            ArchiveName=archive_name
+        )  # TODO test delete archive with active replay
         snapshot.match("delete-archive", response_delete_archive)
 
     @markers.aws.validated
