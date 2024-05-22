@@ -140,7 +140,7 @@ quart==0.19.5
     # via localstack-core (pyproject.toml)
 readerwriterlock==1.0.9
     # via localstack-core (pyproject.toml)
-requests==2.31.0
+requests==2.32.2
     # via
     #   docker
     #   localstack-core (pyproject.toml)
