@@ -9,12 +9,20 @@ from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
 from localstack.aws.api.events import (
     Action,
+    ArchiveDescription,
+    ArchiveName,
+    ArchiveState,
     Arn,
     Boolean,
+    CancelReplayResponse,
     Condition,
+    CreateArchiveResponse,
     CreateEventBusResponse,
     DeadLetterConfig,
+    DeleteArchiveResponse,
+    DescribeArchiveResponse,
     DescribeEventBusResponse,
+    DescribeReplayResponse,
     DescribeRuleResponse,
     EndpointId,
     EventBusDescription,
@@ -27,7 +35,9 @@ from localstack.aws.api.events import (
     InvalidEventPatternException,
     KmsKeyIdentifier,
     LimitMax100,
+    ListArchivesResponse,
     ListEventBusesResponse,
+    ListReplaysResponse,
     ListRuleNamesByTargetResponse,
     ListRulesResponse,
     ListTagsForResourceResponse,
@@ -45,8 +55,13 @@ from localstack.aws.api.events import (
     PutRuleResponse,
     PutTargetsResponse,
     RemoveTargetsResponse,
+    ReplayDescription,
+    ReplayDestination,
+    ReplayName,
+    ReplayState,
     ResourceAlreadyExistsException,
     ResourceNotFoundException,
+    RetentionDays,
     RoleArn,
     RuleArn,
     RuleDescription,
@@ -54,6 +69,7 @@ from localstack.aws.api.events import (
     RuleResponseList,
     RuleState,
     ScheduleExpression,
+    StartReplayResponse,
     StatementId,
     String,
     TagKeyList,
@@ -65,10 +81,13 @@ from localstack.aws.api.events import (
     TargetIdList,
     TargetList,
     TestEventPatternResponse,
+    Timestamp,
     UntagResourceResponse,
+    UpdateArchiveResponse,
 )
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Rule as ApiTypeRule
+from localstack.services.events.archive import ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
 from localstack.services.events.event_ruler import matches_rule
 from localstack.services.events.models import (
@@ -205,6 +224,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._event_bus_services_store: EventBusServiceDict = {}
         self._rule_services_store: RuleServiceDict = {}
         self._target_sender_store: TargetSenderDict = {}
+        self._archive_service_store: ArchiveServiceDict = {}
 
     def on_before_start(self):
         JobScheduler.start()
@@ -565,6 +585,59 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         return response
 
+    #########
+    # Archive
+    #########
+    @handler("CreateArchive")
+    def create_archive(
+        self,
+        context: RequestContext,
+        archive_name: ArchiveName,
+        event_source_arn: Arn,
+        description: ArchiveDescription = None,
+        event_pattern: EventPattern = None,
+        retention_days: RetentionDays = None,
+        **kwargs,
+    ) -> CreateArchiveResponse:
+        raise NotImplementedError
+
+    @handler("DeleteArchive")
+    def delete_archive(
+        self, context: RequestContext, archive_name: ArchiveName, **kwargs
+    ) -> DeleteArchiveResponse:
+        raise NotImplementedError
+
+    @handler("DescribeArchive")
+    def describe_archive(
+        self, context: RequestContext, archive_name: ArchiveName, **kwargs
+    ) -> DescribeArchiveResponse:
+        raise NotImplementedError
+
+    @handler("ListArchives")
+    def list_archives(
+        self,
+        context: RequestContext,
+        name_prefix: ArchiveName = None,
+        event_source_arn: Arn = None,
+        state: ArchiveState = None,
+        next_token: NextToken = None,
+        limit: LimitMax100 = None,
+        **kwargs,
+    ) -> ListArchivesResponse:
+        raise NotImplementedError
+
+    @handler("UpdateArchive")
+    def update_archive(
+        self,
+        context: RequestContext,
+        archive_name: ArchiveName,
+        description: ArchiveDescription = None,
+        event_pattern: EventPattern = None,
+        retention_days: RetentionDays = None,
+        **kwargs,
+    ) -> UpdateArchiveResponse:
+        raise NotImplementedError
+
     ########
     # Events
     ########
@@ -595,6 +668,49 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def put_partner_events(
         self, context: RequestContext, entries: PutPartnerEventsRequestEntryList, **kwargs
     ) -> PutPartnerEventsResponse:
+        raise NotImplementedError
+
+    ########
+    # Replay
+    ########
+
+    @handler("CancelReplay")
+    def cancel_replay(
+        self, context: RequestContext, replay_name: ReplayName, **kwargs
+    ) -> CancelReplayResponse:
+        raise NotImplementedError
+
+    @handler("DescribeReplay")
+    def describe_replay(
+        self, context: RequestContext, replay_name: ReplayName, **kwargs
+    ) -> DescribeReplayResponse:
+        raise NotImplementedError
+
+    @handler("ListReplays")
+    def list_replays(
+        self,
+        context: RequestContext,
+        name_prefix: ReplayName = None,
+        state: ReplayState = None,
+        event_source_arn: Arn = None,
+        next_token: NextToken = None,
+        limit: LimitMax100 = None,
+        **kwargs,
+    ) -> ListReplaysResponse:
+        raise NotImplementedError
+
+    @handler("StartReplay")
+    def start_replay(
+        self,
+        context: RequestContext,
+        replay_name: ReplayName,
+        event_source_arn: Arn,
+        event_start_time: Timestamp,
+        event_end_time: Timestamp,
+        destination: ReplayDestination,
+        description: ReplayDescription = None,
+        **kwargs,
+    ) -> StartReplayResponse:
         raise NotImplementedError
 
     ######
