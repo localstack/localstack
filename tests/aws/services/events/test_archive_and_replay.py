@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -533,3 +533,60 @@ class TestReplay:
             ReplayName=replay_canceled_name
         )
         snapshot.match("describe-replay-canceled", response_describe_replay_canceled)
+
+    # Tests Errors
+    @markers.aws.validated
+    def test_start_replay_error_unknown_event_bus(
+        self,
+        events_create_archive,
+        region_name,
+        account_id,
+        events_create_event_bus,
+        aws_client,
+        snapshot,
+    ):
+        archive_arn = events_create_archive(
+            RetentionDays=1,
+        )["ArchiveArn"]
+
+        not_existing_event_bus_name = f"doesnotexist-{short_uid()}"
+        not_existing_event_bus_arn = (
+            f"arn:aws:events:{region_name}:{account_id}:event-bus/{not_existing_event_bus_name}"
+        )
+
+        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+        end_time = datetime.now(timezone.utc)
+
+        replay_name = f"test-replay-{short_uid()}"
+        with pytest.raises(Exception) as error:
+            aws_client.events.start_replay(
+                ReplayName=replay_name,
+                Description="description of the replay",
+                EventSourceArn=archive_arn,
+                EventStartTime=start_time,
+                EventEndTime=end_time,
+                Destination={
+                    "Arn": not_existing_event_bus_arn,
+                },  # the destination must be the exact same event bus the archive is created for
+            )
+
+        snapshot.add_transformer(
+            [snapshot.transform.regex(not_existing_event_bus_name, "<event-bus-name>")]
+        )
+        snapshot.match("start-replay-unknown-event-bus-error", error)
+
+        event_bus_arn = events_create_event_bus(Name=not_existing_event_bus_name)["EventBusArn"]
+
+        with pytest.raises(Exception) as error:
+            aws_client.events.start_replay(
+                ReplayName=replay_name,
+                Description="description of the replay",
+                EventSourceArn=archive_arn,
+                EventStartTime=start_time,
+                EventEndTime=end_time,
+                Destination={
+                    "Arn": event_bus_arn,
+                },  # the destination must be the exact same event bus the archive is created for
+            )
+
+        snapshot.match("start-replay-wrong-event-bus-error", error)

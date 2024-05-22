@@ -869,5 +869,24 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus[missing]": {
+    "recorded-date": "22-05-2024, 11:58:22",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus[cross_account]": {
+    "recorded-date": "22-05-2024, 11:49:30",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus[cross_region]": {
+    "recorded-date": "22-05-2024, 11:49:31",
+    "recorded-content": {}
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_unknown_event_bus": {
+    "recorded-date": "22-05-2024, 12:49:01",
+    "recorded-content": {
+      "start-replay-unknown-event-bus-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the StartReplay operation: Event bus <event-bus-name> does not exist.') tblen=3>",
+      "start-replay-wrong-event-bus-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter Destination.Arn is not valid. Reason: Cross event bus replay is not permitted.') tblen=3>"
+    }
   }
 }
