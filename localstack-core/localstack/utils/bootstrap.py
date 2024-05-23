@@ -49,7 +49,7 @@ LOG = logging.getLogger(__name__)
 # - do not add "optional" dependencies of services here, use API_DEPENDENCIES_OPTIONAL instead
 API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
-    # dynamodbsteams uses kinesis under the hood
+    # dynamodbstreams uses kinesis under the hood
     "dynamodbstreams": ["kinesis"],
     # es forwards all requests to opensearch (basically an API deprecation path in AWS)
     "es": ["opensearch"],
@@ -78,6 +78,20 @@ API_DEPENDENCIES_OPTIONAL = {
     "cloudformation": ["secretsmanager", "ssm", "lambda"],
     "events": ["lambda", "kinesis", "firehose", "sns", "sqs", "stepfunctions", "logs"],
     "stepfunctions": ["logs", "lambda", "dynamodb", "ecs", "sns", "sqs", "apigateway", "events"],
+    "apigateway": [
+        "s3",
+        "sqs",
+        "sns",
+        "kinesis",
+        "route53",
+        "servicediscovery",
+        "lambda",
+        "dynamodb",
+        "stepfunctions",
+        "events",
+    ],
+    # This is for S3 notifications and S3 KMS key
+    "s3": ["events", "sqs", "sns", "lambda", "kms"],
     # TODO: add more dependencies
 }
 
