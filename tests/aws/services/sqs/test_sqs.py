@@ -2818,11 +2818,10 @@ class TestSqsProvider:
                 "RedrivePolicy": json.dumps({"deadLetterTargetArn": dlq_arn, "maxReceiveCount": 2}),
             },
         )
-
-        response = aws_sqs_client.send_message(
+        send_response_1 = aws_sqs_client.send_message(
             QueueUrl=queue_url, MessageBody="foobar", MessageGroupId="1"
         )
-        message_id = response["MessageId"]
+        message_id_1 = send_response_1["MessageId"]
 
         # receive the messages twice, which is the maximum allowed
         aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1, VisibilityTimeout=0)
@@ -2831,13 +2830,28 @@ class TestSqsProvider:
         aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1, VisibilityTimeout=0)
 
         # check the DLQ
-        response = aws_sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
+        dlq_receive_response = aws_sqs_client.receive_message(QueueUrl=dlq_url, WaitTimeSeconds=10)
         assert (
-            len(response["Messages"]) == 1
-        ), f"invalid number of messages in DLQ response {response}"
-        message = response["Messages"][0]
-        assert message["MessageId"] == message_id
-        assert message["Body"] == "foobar"
+            len(dlq_receive_response["Messages"]) == 1
+        ), f"invalid number of messages in DLQ response {dlq_receive_response}"
+        message_1 = dlq_receive_response["Messages"][0]
+        assert message_1["MessageId"] == message_id_1
+        assert message_1["Body"] == "foobar"
+
+        # make sure the fifo queue stays operational: issue # 10107
+        # send another message with the same messageGroupId
+
+        send_response_2 = aws_sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody="foobar2", MessageGroupId="1"
+        )
+        message_id_2 = send_response_2["MessageId"]
+        # check if the new message arrived in the fifo queue
+        fifo_receive_response = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=1
+        )
+        message_2 = fifo_receive_response["Messages"][0]
+        assert message_2["MessageId"] == message_id_2
+        assert message_2["Body"] == "foobar2"
 
     @markers.aws.validated
     def test_dead_letter_queue_max_receive_count(

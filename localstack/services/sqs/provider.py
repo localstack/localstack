@@ -1233,6 +1233,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                     message_group_id=standard_message.message_group_id,
                 )
 
+                if isinstance(queue, FifoQueue):
+                    message_group = queue.get_message_group(standard_message.message_group_id)
+                    queue.update_message_group_visibility(message_group)
+
         # prepare result
         messages = []
         for i, standard_message in enumerate(result.successful):

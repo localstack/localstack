@@ -3248,5 +3248,13 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_with_fifo_and_content_based_deduplication[sqs]": {
+    "recorded-date": "21-05-2024, 13:48:08",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_with_fifo_and_content_based_deduplication[sqs_query]": {
+    "recorded-date": "21-05-2024, 13:48:14",
+    "recorded-content": {}
   }
 }
