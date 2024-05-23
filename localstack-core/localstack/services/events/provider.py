@@ -10,6 +10,7 @@ from localstack.aws.api.events import (
     Action,
     ArchiveDescription,
     ArchiveName,
+    ArchiveResponseList,
     ArchiveState,
     Arn,
     Boolean,
@@ -83,6 +84,7 @@ from localstack.aws.api.events import (
     UntagResourceResponse,
     UpdateArchiveResponse,
 )
+from localstack.aws.api.events import Archive as ApiTypeArchive
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
 from localstack.aws.api.events import Rule as ApiTypeRule
 from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
@@ -627,7 +629,18 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListArchivesResponse:
-        raise NotImplementedError
+        store = self.get_store(context)
+        archives = get_filtered_dict(name_prefix, store.archives) if name_prefix else store.archives
+        limited_archives, next_token = self._get_limited_dict_and_next_token(
+            archives, next_token, limit
+        )
+
+        response = ListArchivesResponse(
+            Archives=list(self._archive_dict_to_api_type_list(limited_archives))
+        )
+        if next_token is not None:
+            response["NextToken"] = next_token
+        return response
 
     @handler("UpdateArchive")
     def update_archive(
@@ -871,6 +884,25 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._archive_service_store[archive_service.arn] = archive_service
         return archive_service
 
+    def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
+        """
+        Delete all rule services associated to the input from the store.
+        Accepts a single Rule object or a dict of Rule objects as input.
+        """
+        if isinstance(rules, Rule):
+            rules = {rules.name: rules}
+        for rule in rules.values():
+            del self._rule_services_store[rule.arn]
+
+    def _delete_target_sender(self, ids: TargetIdList, rule) -> None:
+        for target_id in ids:
+            if target := rule.targets.get(target_id):
+                target_arn = target["Arn"]
+                try:
+                    del self._target_sender_store[target_arn]
+                except KeyError:
+                    LOG.error(f"Error deleting target service {target_arn}.")
+
     def _get_limited_dict_and_next_token(
         self, input_dict: dict, next_token: NextToken | None, limit: LimitMax100 | None
     ) -> tuple[dict, NextToken]:
@@ -888,6 +920,52 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             else None
         )
         return limited_dict, next_token
+
+    def _check_resource_exists(
+        self, resource_arn: Arn, resource_type: ResourceType, store: EventsStore
+    ) -> None:
+        if resource_type == ResourceType.EVENT_BUS:
+            event_bus_name = extract_event_bus_name(resource_arn)
+            self.get_event_bus(event_bus_name, store)
+        if resource_type == ResourceType.RULE:
+            event_bus_name = extract_event_bus_name(resource_arn)
+            event_bus = self.get_event_bus(event_bus_name, store)
+            rule_name = resource_arn.split("/")[-1]
+            self.get_rule(rule_name, event_bus)
+
+    def _get_scheduled_rule_job_function(self, account_id, region, rule: Rule) -> Callable:
+        def func(*args, **kwargs):
+            """Create custom scheduled event and send it to all targets specified by associated rule using respective TargetSender"""
+            for target in rule.targets.values():
+                if custom_input := target.get("Input"):
+                    event = json.loads(custom_input)
+                else:
+                    event = {
+                        "version": "0",
+                        "id": long_uid(),
+                        "detail-type": "Scheduled Event",
+                        "source": "aws.events",
+                        "account": account_id,
+                        "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
+                        "region": region,
+                        "resources": [rule.arn],
+                        "detail": {},
+                    }
+
+                target_sender = self._target_sender_store[target["Arn"]]
+                try:
+                    target_sender.process_event(event)
+                except Exception as e:
+                    LOG.info(
+                        "Unable to send event notification %s to target %s: %s",
+                        truncate(event),
+                        target,
+                        e,
+                    )
+
+        return func
+
+    # Internal type to API type remappings
 
     def _event_bust_dict_to_api_type_list(self, event_buses: EventBusDict) -> EventBusList:
         """Return a converted dict of EventBus model objects as a list of event buses in API type EventBus format."""
@@ -931,16 +1009,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             f")"
         )
 
-    def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
-        """
-        Delete all rule services associated to the input from the store.
-        Accepts a single Rule object or a dict of Rule objects as input.
-        """
-        if isinstance(rules, Rule):
-            rules = {rules.name: rules}
-        for rule in rules.values():
-            del self._rule_services_store[rule.arn]
-
     def _rule_dict_to_api_type_list(self, rules: RuleDict) -> RuleResponseList:
         """Return a converted dict of Rule model objects as a list of rules in API type Rule format."""
         rule_list = [self._rule_dict_to_api_type_rule(rule) for rule in rules.values()]
@@ -961,26 +1029,25 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in rule.items() if value is not None}
 
-    def _delete_target_sender(self, ids: TargetIdList, rule) -> None:
-        for target_id in ids:
-            if target := rule.targets.get(target_id):
-                target_arn = target["Arn"]
-                try:
-                    del self._target_sender_store[target_arn]
-                except KeyError:
-                    LOG.error(f"Error deleting target service {target_arn}.")
+    def _archive_dict_to_api_type_list(self, archives: ArchiveServiceDict) -> ArchiveResponseList:
+        """Return a converted dict of Archive model objects as a list of archives in API type Archive format."""
+        archive_list = [
+            self._archive_dict_to_api_type_archive(archive) for archive in archives.values()
+        ]
+        return archive_list
 
-    def _check_resource_exists(
-        self, resource_arn: Arn, resource_type: ResourceType, store: EventsStore
-    ) -> None:
-        if resource_type == ResourceType.EVENT_BUS:
-            event_bus_name = extract_event_bus_name(resource_arn)
-            self.get_event_bus(event_bus_name, store)
-        if resource_type == ResourceType.RULE:
-            event_bus_name = extract_event_bus_name(resource_arn)
-            event_bus = self.get_event_bus(event_bus_name, store)
-            rule_name = resource_arn.split("/")[-1]
-            self.get_rule(rule_name, event_bus)
+    def _archive_dict_to_api_type_archive(self, archive: ArchiveService) -> ApiTypeArchive:
+        archive = {
+            "ArchiveName": archive.name,
+            "EventSourceArn": archive.event_source_arn,
+            "State": archive.state,
+            # TODO "StateReason": "what?",
+            "RetentionDays": archive.retention_days,
+            # TODO "SiceBytes": 0,
+            "EventCount": archive.event_count,
+            "CreationTime": archive.creation_time,
+        }
+        return {key: value for key, value in archive.items() if value is not None}
 
     def _process_entries(
         self, context: RequestContext, entries: PutEventsRequestEntryList
@@ -1021,35 +1088,3 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                             )
                             failed_entry_count += 1
         return processed_entries, failed_entry_count
-
-    def _get_scheduled_rule_job_function(self, account_id, region, rule: Rule) -> Callable:
-        def func(*args, **kwargs):
-            """Create custom scheduled event and send it to all targets specified by associated rule using respective TargetSender"""
-            for target in rule.targets.values():
-                if custom_input := target.get("Input"):
-                    event = json.loads(custom_input)
-                else:
-                    event = {
-                        "version": "0",
-                        "id": long_uid(),
-                        "detail-type": "Scheduled Event",
-                        "source": "aws.events",
-                        "account": account_id,
-                        "time": timestamp(format=TIMESTAMP_FORMAT_TZ),
-                        "region": region,
-                        "resources": [rule.arn],
-                        "detail": {},
-                    }
-
-                target_sender = self._target_sender_store[target["Arn"]]
-                try:
-                    target_sender.process_event(event)
-                except Exception as e:
-                    LOG.info(
-                        "Unable to send event notification %s to target %s: %s",
-                        truncate(event),
-                        target,
-                        e,
-                    )
-
-        return func

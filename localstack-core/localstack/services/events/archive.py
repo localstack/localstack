@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 
 from botocore.client import BaseClient
 
@@ -37,6 +38,7 @@ class ArchiveService:
             retention_days,
         )
         self.set_state(ArchiveState.CREATING)
+        self.set_creation_time()
         self.client: BaseClient = self._initialize_client()
         self.event_bus_name = extract_event_bus_name(event_source_arn)
 
@@ -59,6 +61,9 @@ class ArchiveService:
 
     def set_state(self, state: ArchiveState) -> None:
         self.archive.state = state
+
+    def set_creation_time(self) -> None:
+        self.archive.creation_time = datetime.now(timezone.utc)
 
     def update(self) -> None:
         raise NotImplementedError
