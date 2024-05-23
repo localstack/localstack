@@ -631,6 +631,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> ListArchivesResponse:
         store = self.get_store(context)
         if event_source_arn:
+            event_bus_name = extract_event_bus_name(event_source_arn)
+            self.get_event_bus(event_bus_name, store)
             archives = {
                 key: archive
                 for key, archive in store.archives.items()
