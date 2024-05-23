@@ -34,12 +34,12 @@ class StateTaskServiceUnsupported(StateTaskServiceCallback):
         # and relays the call to the target service with the computed parameters.
         self._log_unsupported_warning()
         service_name = self._get_boto_service_name()
-        api_action = self._get_boto_service_action()
-        sqs_client = boto_client_for(
+        boto_action = self._get_boto_service_action()
+        boto_client = boto_client_for(
             region=resource_runtime_part.region,
             account=resource_runtime_part.account,
             service=service_name,
         )
-        response = getattr(sqs_client, api_action)(**normalised_parameters)
+        response = getattr(boto_client, boto_action)(**normalised_parameters)
         response.pop("ResponseMetadata", None)
         env.stack.append(response)
