@@ -47,7 +47,7 @@ aws-xray-sdk==2.13.1
     # via moto-ext
 awscli==1.32.108
     # via localstack-core
-awscrt==0.20.9
+awscrt==0.20.10
     # via localstack-core
 blinker==1.8.2
     # via
@@ -146,7 +146,7 @@ dnspython==2.6.1
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   pymongo
-docker==7.0.0
+docker==7.1.0
     # via
     #   localstack-core
     #   moto-ext
@@ -299,7 +299,6 @@ packaging==24.0
     # via
     #   apispec
     #   build
-    #   docker
     #   jpype1
     #   pytest
     #   pytest-rerunfailures
@@ -415,7 +414,7 @@ referencing==0.31.1
     #   jsonschema-specifications
 regex==2024.5.15
     # via cfn-lint
-requests==2.31.0
+requests==2.32.2
     # via
     #   coveralls
     #   docker
@@ -448,7 +447,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.4.4
+ruff==0.4.5
     # via localstack-core (pyproject.toml)
 s3transfer==0.10.1
     # via
@@ -523,7 +522,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.4
+zope-interface==6.4.post1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
