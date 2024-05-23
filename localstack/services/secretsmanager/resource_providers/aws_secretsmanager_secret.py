@@ -94,8 +94,15 @@ class SecretsManagerSecretProvider(ResourceProvider[SecretsManagerSecretProperti
         attributes = ["Name", "Description", "KmsKeyId", "SecretString", "Tags"]
         params = util.select_attributes(model, attributes)
 
+        """
+        From CFn Docs:
+        If you omit both GenerateSecretString and SecretString, you create an empty secret.
+        When you make a change to this property, a new secret version is created.
+        CDK wil generate empty dict in which case we also need to generate SecretString
+        """
+
         gen_secret = model.get("GenerateSecretString")
-        if gen_secret:
+        if gen_secret is not None:
             secret_value = self._get_secret_value(gen_secret)
             template = gen_secret.get("SecretStringTemplate")
             if template:

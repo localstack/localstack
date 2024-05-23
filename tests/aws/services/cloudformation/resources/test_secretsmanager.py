@@ -1,6 +1,7 @@
 import json
 import re
 
+import aws_cdk as cdk
 import pytest
 
 from localstack.testing.pytest import markers
@@ -149,3 +150,32 @@ def test_cfn_secret_policy(deploy_cfn_template, block_public_policy, aws_client,
     # res = aws_client.secretsmanager.get_resource_policy(SecretId=secret_id)
     # snapshot.match("resource-policy", res["ResourcePolicy"])
     aws_client.secretsmanager.get_resource_policy(SecretId=secret_id)
+
+
+@markers.aws.validated
+def test_cdk_deployment_generates_secret_value_if_no_value_is_provided(
+    aws_client, snapshot, infrastructure_setup
+):
+    infra = infrastructure_setup(namespace="SecretGeneration")
+    stack_name = f"SecretGeneration{short_uid()}"
+    stack = cdk.Stack(infra.cdk_app, stack_name=stack_name)
+
+    secret_name = f"my_secret{short_uid()}"
+    secret = cdk.aws_secretsmanager.Secret(stack, id=secret_name, secret_name=secret_name)
+
+    cdk.CfnOutput(stack, "SecretName", value=secret.secret_name)
+    cdk.CfnOutput(stack, "SecretARN", value=secret.secret_arn)
+
+    with infra.provisioner() as prov:
+        outputs = prov.get_stack_outputs(stack_name=stack_name)
+
+        secret_name = outputs["SecretName"]
+        secret_arn = outputs["SecretARN"]
+
+        response = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
+
+        snapshot.add_transformer(snapshot.transform.key_value("SecretString"))
+        snapshot.add_transformer(snapshot.transform.regex(secret_arn, "<secret_arn>"))
+        snapshot.add_transformer(snapshot.transform.regex(secret_name, "<secret_name>"))
+
+        snapshot.match("generated_key", response)
