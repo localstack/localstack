@@ -171,52 +171,6 @@
       "describe-archive-unknown-archive-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the DescribeArchive operation: Archive <archive-name> does not exist.') tblen=3>"
     }
   },
-  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_name_prefix": {
-    "recorded-date": "17-05-2024, 16:23:31",
-    "recorded-content": {
-      "list-archives-with-name-prefix": {
-        "Archives": [
-          {
-            "ArchiveName": "test-archive-f2fe5ed5",
-            "CreationTime": "datetime",
-            "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "RetentionDays": 1,
-            "SizeBytes": 0,
-            "State": "ENABLED"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-archives-with-full-name": {
-        "Archives": [
-          {
-            "ArchiveName": "test-archive-f2fe5ed5",
-            "CreationTime": "datetime",
-            "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/default",
-            "RetentionDays": 1,
-            "SizeBytes": 0,
-            "State": "ENABLED"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-archives-not-existing-archive": {
-        "Archives": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_name_prefix[default]": {
     "recorded-date": "17-05-2024, 16:28:03",
     "recorded-content": {
