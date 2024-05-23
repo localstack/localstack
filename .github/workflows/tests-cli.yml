@@ -70,6 +70,9 @@ env:
   # report to tinybird if executed on master
   TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
 
+permissions: 
+  contents: read # checkout the repository
+
 jobs:
   cli-tests:
     runs-on: ubuntu-latest
@@ -103,9 +106,11 @@ jobs:
         run: make test
 
   push-to-tinybird:
-    if: always() && github.ref == 'refs/heads/master'
+    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs: cli-tests
+    permissions: 
+      actions: read
     steps:
       - name: Push to Tinybird
         uses: localstack/tinybird-workflow-push@v3
