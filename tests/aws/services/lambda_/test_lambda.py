@@ -2667,9 +2667,8 @@ class TestLambdaVersions:
         def _update_function():
             nonlocal errored
             try:
-                # Make it very likely that the invocation is being processed
-                # In LocalStack, Lambda image pulling could potentially affect the exact timing,
-                # but at least the invocation runtime startup should be in progress.
+                # Make it very likely that the invocation is being processed because the incoming invocation acquires
+                # an invocation lease quickly.
                 time.sleep(5)
 
                 environment_v2 = environment_v1.copy()
@@ -2750,9 +2749,8 @@ class TestLambdaVersions:
             InvocationType="Event",
             Payload=json.dumps(payload),
         )
-        # Make it very likely that the first request is being processed before sending further requests without sleeps.
-        # We could use a side effect (e.g., via S3) to signal a status update if Lambda image pulling causes flakiness,
-        # but the poller should have already picked up the async invocation such that a sleep works reliably.
+        # Make it very likely that the invocation is being processed because the Lambda poller should pick up queued
+        # async invokes quickly using long polling.
         time.sleep(2)
 
         # Send async invocation, which should queue up before we update the function
