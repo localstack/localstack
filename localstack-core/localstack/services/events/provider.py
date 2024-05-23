@@ -278,7 +278,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         event_bus = self.get_event_bus(name, store)
 
-        response = self._event_bus_dict_to_api_type_event_bus(event_bus)
+        response = self._event_bus_to_api_type_event_bus(event_bus)
         return response
 
     @handler("ListEventBuses")
@@ -299,7 +299,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
 
         response = ListEventBusesResponse(
-            EventBuses=self._event_bust_dict_to_api_type_list(limited_event_buses)
+            EventBuses=self._event_bust_dict_to_event_bus_response_list(limited_event_buses)
         )
         if next_token is not None:
             response["NextToken"] = next_token
@@ -393,7 +393,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
 
-        response = self._rule_dict_to_api_type_rule(rule)
+        response = self._rule_to_api_type_rule(rule)
         return response
 
     @handler("DisableRule")
@@ -426,7 +426,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         rules = get_filtered_dict(name_prefix, event_bus.rules) if name_prefix else event_bus.rules
         limited_rules, next_token = self._get_limited_dict_and_next_token(rules, next_token, limit)
 
-        response = ListRulesResponse(Rules=list(self._rule_dict_to_api_type_list(limited_rules)))
+        response = ListRulesResponse(
+            Rules=list(self._rule_dict_to_rule_response_list(limited_rules))
+        )
         if next_token is not None:
             response["NextToken"] = next_token
         return response
@@ -622,7 +624,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         archive = self.get_archive(archive_name, store)
 
-        response = self._archive_dict_to_describe_archive_response(archive)
+        response = self._archive_to_describe_archive_response(archive)
         return response
 
     @handler("ListArchives")
@@ -653,7 +655,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
 
         response = ListArchivesResponse(
-            Archives=list(self._archive_dict_to_api_type_list(limited_archives))
+            Archives=list(self._archive_dit_to_archive_response_list(limited_archives))
         )
         if next_token is not None:
             response["NextToken"] = next_token
@@ -995,15 +997,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     # Internal type to API type remappings
 
-    def _event_bust_dict_to_api_type_list(self, event_buses: EventBusDict) -> EventBusList:
+    def _event_bust_dict_to_event_bus_response_list(
+        self, event_buses: EventBusDict
+    ) -> EventBusList:
         """Return a converted dict of EventBus model objects as a list of event buses in API type EventBus format."""
         event_bus_list = [
-            self._event_bus_dict_to_api_type_event_bus(event_bus)
-            for event_bus in event_buses.values()
+            self._event_bus_to_api_type_event_bus(event_bus) for event_bus in event_buses.values()
         ]
         return event_bus_list
 
-    def _event_bus_dict_to_api_type_event_bus(self, event_bus: EventBus) -> ApiTypeEventBus:
+    def _event_bus_to_api_type_event_bus(self, event_bus: EventBus) -> ApiTypeEventBus:
         event_bus_api_type = {
             "Name": event_bus.name,
             "Arn": event_bus.arn,
@@ -1037,12 +1040,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             f")"
         )
 
-    def _rule_dict_to_api_type_list(self, rules: RuleDict) -> RuleResponseList:
+    def _rule_dict_to_rule_response_list(self, rules: RuleDict) -> RuleResponseList:
         """Return a converted dict of Rule model objects as a list of rules in API type Rule format."""
-        rule_list = [self._rule_dict_to_api_type_rule(rule) for rule in rules.values()]
+        rule_list = [self._rule_to_api_type_rule(rule) for rule in rules.values()]
         return rule_list
 
-    def _rule_dict_to_api_type_rule(self, rule: Rule) -> ApiTypeRule:
+    def _rule_to_api_type_rule(self, rule: Rule) -> ApiTypeRule:
         rule = {
             "Name": rule.name,
             "Arn": rule.arn,
@@ -1057,14 +1060,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in rule.items() if value is not None}
 
-    def _archive_dict_to_api_type_list(self, archives: ArchiveDict) -> ArchiveResponseList:
+    def _archive_dit_to_archive_response_list(self, archives: ArchiveDict) -> ArchiveResponseList:
         """Return a converted dict of Archive model objects as a list of archives in API type Archive format."""
-        archive_list = [
-            self._archive_dict_to_api_type_archive(archive) for archive in archives.values()
-        ]
+        archive_list = [self._archive_to_api_type_archive(archive) for archive in archives.values()]
         return archive_list
 
-    def _archive_dict_to_api_type_archive(self, archive: Archive) -> ApiTypeArchive:
+    def _archive_to_api_type_archive(self, archive: Archive) -> ApiTypeArchive:
         archive = {
             "ArchiveName": archive.name,
             "EventSourceArn": archive.event_source_arn,
@@ -1077,9 +1078,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in archive.items() if value is not None}
 
-    def _archive_dict_to_describe_archive_response(
-        self, archive: Archive
-    ) -> DescribeArchiveResponse:
+    def _archive_to_describe_archive_response(self, archive: Archive) -> DescribeArchiveResponse:
         archive_dict = {
             "ArchiveArn": archive.arn,
             "ArchiveName": archive.name,
