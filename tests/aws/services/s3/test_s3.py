@@ -1465,12 +1465,121 @@ class TestS3:
             MetadataDirective="REPLACE",
         )
         snapshot.match("copy-in-place-versioned", copy_obj)
+        object_version_id = copy_obj["VersionId"]
 
         head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("head-object-copied", head_object)
 
         get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("get-object-copied", get_obj)
+
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Suspended"}
+        )
+
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-in-place-versioned-suspended", copy_obj)
+        assert copy_obj["VersionId"] == "null"
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-copied-suspended", head_object)
+
+        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-copied-suspended", get_obj)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=object_key, VersionId=object_version_id
+        )
+        snapshot.match("head-object-previous-version-suspended", head_object)
+
+        # re-enable the bucket versioning, to copy from `null` to new version
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-in-place-versioned-re-enabled", copy_obj)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="Behaviour is not in line with AWS, does not raise exception",
+    )
+    def test_s3_copy_object_in_place_suspended_only(
+        self, s3_bucket, allow_bucket_acl, snapshot, aws_client
+    ):
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID", value_replacement="owner-id"),
+            ]
+        )
+        object_key = "source-object"
+
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=object_key,
+            Body='{"key": "value"}',
+            ContentType="application/json",
+            Metadata={"key": "value"},
+        )
+        snapshot.match("put_object", resp)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head_object", head_object)
+
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-in-place-non-versioned", copy_obj)
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-copied", head_object)
+
+        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-copied", get_obj)
+
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Suspended"}
+        )
+
+        copy_obj = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-in-place-versioned-suspended", copy_obj)
+        assert copy_obj["VersionId"] == "null"
+
+        head_object = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("head-object-copied-suspended", head_object)
+
+        get_obj = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-copied-suspended", get_obj)
+
+        # this is to verify the CopySourceVersionId field, if returned if both objects got `null`
+        copy_obj_again = aws_client.s3.copy_object(
+            Bucket=s3_bucket,
+            CopySource=f"{s3_bucket}/{object_key}",
+            Key=object_key,
+            MetadataDirective="REPLACE",
+        )
+        snapshot.match("copy-in-place-versioned-suspended-twice", copy_obj_again)
+        assert copy_obj_again["VersionId"] == "null"
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
