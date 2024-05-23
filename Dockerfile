@@ -206,7 +206,7 @@ VOLUME /var/lib/localstack
 
 # mark the image version
 RUN touch /usr/lib/localstack/.community-version
-
+RUN find . -iwholename "*models/subnets.py" -exec sed -i {} -e "s/random_subnet_id()/f\"subnet-{availability_zone}\"/g" \;
 LABEL authors="LocalStack Contributors"
 LABEL maintainer="LocalStack Team (info@localstack.cloud)"
 LABEL description="LocalStack Docker image"
