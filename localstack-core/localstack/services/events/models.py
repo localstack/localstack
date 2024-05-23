@@ -120,7 +120,6 @@ class EventBus:
     tags: TagList = field(default_factory=list)
     policy: Optional[ResourcePolicy] = None
     rules: RuleDict = field(default_factory=dict)
-    archives: ArchiveDict = field(default_factory=dict)
     arn: Arn = field(init=False)
     creation_time: Timestamp = field(init=False)
     last_modified_time: Timestamp = field(init=False)
@@ -131,8 +130,6 @@ class EventBus:
         self.last_modified_time = datetime.now(timezone.utc)
         if self.rules is None:
             self.rules = {}
-        if self.archives is None:
-            self.archives = {}
         if self.tags is None:
             self.tags = []
 
@@ -143,6 +140,9 @@ EventBusDict = dict[EventBusName, EventBus]
 class EventsStore(BaseStore):
     # Map of eventbus names to eventbus objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     event_buses: EventBusDict = LocalAttribute(default=dict)
+
+    # Map of archive names to archive objects. The name MUST be unique per account and region (works with AccountRegionBundle)
+    archives: ArchiveDict = LocalAttribute(default=dict)
 
     # Maps resource ARN to tags
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)

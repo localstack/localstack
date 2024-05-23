@@ -587,10 +587,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region = context.region
         account_id = context.account_id
         store = self.get_store(context)
-        event_bus_name = extract_event_bus_name(event_source_arn)
-        event_bus = self.get_event_bus(event_bus_name, store)
         # TODO check if in same region / account
-        if archive_name in event_bus.archives.keys():
+        if archive_name in store.archives.keys():
             raise ResourceAlreadyExistsException(f"Archive {archive_name} already exists.")
         archive_service = self.create_archive_service(
             archive_name,
@@ -601,7 +599,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             event_pattern,
             retention_days,
         )
-        event_bus.archives[archive_service.archive.name] = archive_service.archive
+        store.archives[archive_service.archive.name] = archive_service.archive
 
         response = CreateArchiveResponse(ArchiveArn=archive_service.arn)
         return response
