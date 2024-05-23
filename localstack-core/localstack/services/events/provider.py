@@ -608,7 +608,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         store.archives[archive_service.archive.name] = archive_service.archive
 
-        response = CreateArchiveResponse(ArchiveArn=archive_service.arn)
+        response = CreateArchiveResponse(
+            ArchiveArn=archive_service.arn,
+            State=archive_service.state,
+            CreationTime=archive_service.creation_time,
+        )
         return response
 
     @handler("DeleteArchive")
