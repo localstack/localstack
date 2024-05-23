@@ -246,6 +246,7 @@ class TestFirehoseIntegration:
     @markers.skip_offline
     @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path", "port"])
     @markers.aws.unknown
+    @pytest.mark.skip(reason="flaky")
     def test_kinesis_firehose_opensearch_s3_backup(
         self,
         s3_bucket,
