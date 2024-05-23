@@ -10,7 +10,7 @@ airspeed-ext==0.6.5
     # via localstack-core (pyproject.toml)
 amazon-kclpy==2.1.3
     # via localstack-core (pyproject.toml)
-annotated-types==0.6.0
+annotated-types==0.7.0
     # via pydantic
 antlr4-python3-runtime==4.13.1
     # via
@@ -31,11 +31,11 @@ aws-sam-translator==1.89.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
-aws-xray-sdk==2.13.0
+aws-xray-sdk==2.13.1
     # via moto-ext
 awscli==1.32.108
     # via localstack-core (pyproject.toml)
-awscrt==0.20.9
+awscrt==0.20.10
     # via localstack-core
 blinker==1.8.2
     # via
@@ -73,7 +73,7 @@ certifi==2024.2.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.87.2
+cfn-lint==0.87.3
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -111,7 +111,7 @@ dnspython==2.6.1
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   pymongo
-docker==6.1.3
+docker==7.1.0
     # via
     #   localstack-core
     #   moto-ext
@@ -230,7 +230,6 @@ packaging==24.0
     # via
     #   apispec
     #   build
-    #   docker
     #   jpype1
 pathable==0.4.3
     # via jsonschema-path
@@ -295,7 +294,7 @@ pyyaml==6.0.1
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   responses
-quart==0.19.5
+quart==0.19.6
     # via localstack-core
 readerwriterlock==1.0.9
     # via localstack-core
@@ -306,7 +305,7 @@ referencing==0.31.1
     #   jsonschema-specifications
 regex==2024.5.15
     # via cfn-lint
-requests==2.31.0
+requests==2.32.2
     # via
     #   docker
     #   jsonschema-path
@@ -375,8 +374,6 @@ urllib3==2.2.1
     #   opensearch-py
     #   requests
     #   responses
-websocket-client==1.8.0
-    # via docker
 werkzeug==3.0.3
     # via
     #   flask
@@ -392,7 +389,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.4
+zope-interface==6.4.post1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
