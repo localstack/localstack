@@ -104,6 +104,7 @@ class Archive:
     arn: Arn = field(init=False)
     event_count: int = 0
     creation_time: Timestamp = None
+    size_bytes: int = 0  # TODO how to deal with updating this value?
 
     def __post_init__(self):
         self.arn = f"arn:aws:events:{self.region}:{self.account_id}:archive/{self.name}"

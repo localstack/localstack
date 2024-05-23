@@ -630,7 +630,16 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ListArchivesResponse:
         store = self.get_store(context)
-        archives = get_filtered_dict(name_prefix, store.archives) if name_prefix else store.archives
+        if event_source_arn:
+            archives = {
+                key: archive
+                for key, archive in store.archives.items()
+                if archive.event_source_arn == event_source_arn
+            }
+        elif name_prefix:
+            archives = get_filtered_dict(name_prefix, store.archives)
+        else:
+            archives = store.archives
         limited_archives, next_token = self._get_limited_dict_and_next_token(
             archives, next_token, limit
         )
@@ -1043,7 +1052,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "State": archive.state,
             # TODO "StateReason": "what?",
             "RetentionDays": archive.retention_days,
-            # TODO "SiceBytes": 0,
+            "SizeBytes": archive.size_bytes,
             "EventCount": archive.event_count,
             "CreationTime": archive.creation_time,
         }
