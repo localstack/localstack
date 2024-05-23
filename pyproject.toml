@@ -23,7 +23,7 @@ dependencies = [
     "python-dotenv>=0.19.1",
     "pyyaml>=5.1",
     "rich>=12.3.0",
-    "requests>=2.20.0,<2.32",
+    "requests>=2.20.0",
     "semver>=2.10",
     "tailer>=0.4.1",
 ]
