@@ -1107,8 +1107,8 @@ DISABLE_BOTO_RETRIES = is_env_true("DISABLE_BOTO_RETRIES")
 
 DISTRIBUTED_MODE = is_env_true("DISTRIBUTED_MODE")
 
-# TODO: switch the logic to `is_env_true`, this is for testing purpose
-IN_MEMORY_CLIENT = is_env_not_false("IN_MEMORY_CLIENT")
+# This flag enables `connect_to` to be in-memory only and not do networking calls
+IN_MEMORY_CLIENT = is_env_true("IN_MEMORY_CLIENT")
 
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
