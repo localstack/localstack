@@ -174,7 +174,9 @@ def test_cdk_deployment_generates_secret_value_if_no_value_is_provided(
 
         response = aws_client.secretsmanager.get_secret_value(SecretId=secret_name)
 
-        snapshot.add_transformer(snapshot.transform.key_value("SecretString"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("SecretString", reference_replacement=False)
+        )
         snapshot.add_transformer(snapshot.transform.regex(secret_arn, "<secret_arn>"))
         snapshot.add_transformer(snapshot.transform.regex(secret_name, "<secret_name>"))
 
