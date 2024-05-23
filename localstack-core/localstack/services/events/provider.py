@@ -1,7 +1,6 @@
 import base64
 import json
 import logging
-import re
 from datetime import datetime, timezone
 from typing import Callable, Optional
 
@@ -63,7 +62,6 @@ from localstack.aws.api.events import (
     ResourceNotFoundException,
     RetentionDays,
     RoleArn,
-    RuleArn,
     RuleDescription,
     RuleName,
     RuleResponseList,
@@ -108,18 +106,17 @@ from localstack.services.events.models import (
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
-from localstack.services.events.utils import recursive_remove_none_values_from_dict
+from localstack.services.events.utils import (
+    extract_event_bus_name,
+    get_resource_type,
+    recursive_remove_none_values_from_dict,
+)
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import truncate
 from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
-
-RULE_ARN_CUSTOM_EVENT_BUS_PATTERN = re.compile(
-    r"^arn:aws:events:[a-z0-9-]+:\d{12}:rule/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$"
-)
 
 
 def decode_next_token(token: NextToken) -> int:
@@ -199,18 +196,6 @@ def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> 
     return formatted_event
 
 
-def get_resource_type(arn: Arn) -> ResourceType:
-    parsed_arn = parse_arn(arn)
-    resource_type = parsed_arn["resource"].split("/", 1)[0]
-    if resource_type == "event-bus":
-        return ResourceType.EVENT_BUS
-    if resource_type == "rule":
-        return ResourceType.RULE
-    raise ValidationException(
-        f"Parameter {arn} is not valid. Reason: Provided Arn is not in correct format."
-    )
-
-
 def check_unique_tags(tags: TagsList) -> None:
     unique_tag_keys = {tag["Key"] for tag in tags}
     if len(unique_tag_keys) < len(tags):
@@ -285,7 +270,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_event_bus(
         self, context: RequestContext, name: EventBusNameOrArn = None, **kwargs
     ) -> DescribeEventBusResponse:
-        name = self._extract_event_bus_name(name)
+        name = extract_event_bus_name(name)
         store = self.get_store(context)
         event_bus = self.get_event_bus(name, store)
 
@@ -364,7 +349,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> None:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
         rule.state = RuleState.ENABLED
@@ -379,7 +364,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> None:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         try:
             rule = self.get_rule(name, event_bus)
@@ -400,7 +385,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> DescribeRuleResponse:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
 
@@ -416,7 +401,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> None:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(name, event_bus)
         rule.state = RuleState.DISABLED
@@ -432,7 +417,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ListRulesResponse:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rules = get_filtered_dict(name_prefix, event_bus.rules) if name_prefix else event_bus.rules
         limited_rules, next_token = self._get_limited_dict_and_next_token(rules, next_token, limit)
@@ -470,7 +455,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> PutRuleResponse:
         region = context.region
         account_id = context.account_id
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         store = self.get_store(context)
         event_bus = self.get_event_bus(event_bus_name, store)
         existing_rule = event_bus.rules.get(name)
@@ -525,7 +510,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ListTargetsByRuleResponse:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule, event_bus)
         targets = rule.targets
@@ -602,7 +587,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         region = context.region
         account_id = context.account_id
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_source_arn)
+        event_bus_name = extract_event_bus_name(event_source_arn)
         event_bus = self.get_event_bus(event_bus_name, store)
         # TODO check if in same region / account
         if archive_name in event_bus.archives.keys():
@@ -617,20 +602,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             retention_days,
         )
         event_bus.archives[archive_service.archive.name] = archive_service.archive
-        rule_name = self._create_archive_rule(
-            context,
-            event_bus.name,
-            archive_service.archive.name,
-            archive_service.archive.event_pattern,
-        )
-        archive_service.rule_name = rule_name
-        self._create_archive_target(
-            context,
-            archive_service.rule_name,
-            event_bus.name,
-            archive_service.archive.arn,
-            archive_service.archive.event_source_arn,
-        )
+
         response = CreateArchiveResponse(ArchiveArn=archive_service.arn)
         return response
 
@@ -819,7 +791,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, context: RequestContext, rule_name: RuleName, event_bus_name: EventBusName
     ) -> RuleService:
         store = self.get_store(context)
-        event_bus_name = self._extract_event_bus_name(event_bus_name)
+        event_bus_name = extract_event_bus_name(event_bus_name)
         event_bus = self.get_event_bus(event_bus_name, store)
         rule = self.get_rule(rule_name, event_bus)
         return self._rule_services_store[rule.arn]
@@ -919,23 +891,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         return limited_dict, next_token
 
-    def _extract_event_bus_name(
-        self, resource_arn_or_name: EventBusNameOrArn | RuleArn | None
-    ) -> EventBusName:
-        """Return the event bus name. Input can be either an event bus name or ARN."""
-        if not resource_arn_or_name:
-            return "default"
-        if "arn:aws:events" not in resource_arn_or_name:
-            return resource_arn_or_name
-        resource_type = get_resource_type(resource_arn_or_name)
-        # TODO how to deal with / in event bus name or rule name
-        if resource_type == ResourceType.EVENT_BUS:
-            return resource_arn_or_name.split("/")[-1]
-        if resource_type == ResourceType.RULE:
-            if bool(RULE_ARN_CUSTOM_EVENT_BUS_PATTERN.match(resource_arn_or_name)):
-                return resource_arn_or_name.split("rule/", 1)[1].split("/", 1)[0]
-            return "default"
-
     def _event_bust_dict_to_api_type_list(self, event_buses: EventBusDict) -> EventBusList:
         """Return a converted dict of EventBus model objects as a list of event buses in API type EventBus format."""
         event_bus_list = [
@@ -988,47 +943,6 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         for rule in rules.values():
             del self._rule_services_store[rule.arn]
 
-    def _create_archive_rule(
-        self,
-        context: RequestContext,
-        event_bus_name: EventBusName,
-        archive_name: ArchiveName,
-        event_pattern: EventPattern = None,
-    ) -> RuleName:
-        rule_name = f"Events-Archive--{archive_name}"
-        default_pattern = {
-            "replay-name": [{"exists": False}],
-        }
-        if event_pattern:
-            updated_event_pattern = json.loads(event_pattern)
-            updated_event_pattern.update(default_pattern)
-        else:
-            updated_pattern = default_pattern
-        self.put_rule(
-            context,
-            rule_name,
-            event_pattern=json.dumps(updated_pattern),
-            event_bus_name=event_bus_name,
-        )
-        return rule_name
-
-    def _create_archive_target(
-        self,
-        context: RequestContext,
-        rule: RuleName,
-        event_bus_name: EventBusName,
-        archive_arn: Arn,
-        archive_name: ArchiveName,
-    ) -> None:
-        target_id = f"Events-Archive--{archive_name}"
-        targets = [{"Id": target_id, "Arn": archive_arn}]
-        self.put_targets(
-            context,
-            rule,
-            targets,
-            event_bus_name,
-        )
-
     def _rule_dict_to_api_type_list(self, rules: RuleDict) -> RuleResponseList:
         """Return a converted dict of Rule model objects as a list of rules in API type Rule format."""
         rule_list = [self._rule_dict_to_api_type_rule(rule) for rule in rules.values()]
@@ -1062,10 +976,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self, resource_arn: Arn, resource_type: ResourceType, store: EventsStore
     ) -> None:
         if resource_type == ResourceType.EVENT_BUS:
-            event_bus_name = self._extract_event_bus_name(resource_arn)
+            event_bus_name = extract_event_bus_name(resource_arn)
             self.get_event_bus(event_bus_name, store)
         if resource_type == ResourceType.RULE:
-            event_bus_name = self._extract_event_bus_name(resource_arn)
+            event_bus_name = extract_event_bus_name(resource_arn)
             event_bus = self.get_event_bus(event_bus_name, store)
             rule_name = resource_arn.split("/")[-1]
             self.get_rule(rule_name, event_bus)
@@ -1083,6 +997,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 continue
             event = format_event(event, context.region, context.account_id)
             store = self.get_store(context)
+            # TODO send to archive if archive arn
             try:
                 event_bus = self.get_event_bus(event_bus_name, store)
             except ResourceNotFoundException:
