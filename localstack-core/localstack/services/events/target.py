@@ -292,11 +292,6 @@ class EventsTargetSender(TargetSender):
             return json.dumps({"original_id": original_id, "original_account": original_account})
 
 
-class EventsArchiveTargetSender(TargetSender):
-    def send_event(self, event):
-        raise NotImplementedError("EventsArchive target is not yet implemented")
-
-
 class FirehoseTargetSender(TargetSender):
     def send_event(self, event):
         delivery_stream_name = firehose_name(self.target["Arn"])
@@ -414,7 +409,6 @@ class TargetSenderFactory:
         "batch": BatchTargetSender,
         "ecs": ContainerTargetSender,
         "events": EventsTargetSender,
-        "events-archive": EventsArchiveTargetSender,
         "firehose": FirehoseTargetSender,
         "kinesis": KinesisTargetSender,
         "lambda": LambdaTargetSender,
