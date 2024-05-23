@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, timezone
 
 from botocore.client import BaseClient
@@ -15,6 +16,8 @@ from localstack.services.events.models import (
 )
 from localstack.services.events.utils import extract_event_bus_name
 from localstack.utils.aws.client_types import ServicePrincipal
+
+LOG = logging.getLogger(__name__)
 
 
 class ArchiveService:
@@ -81,9 +84,18 @@ class ArchiveService:
         self.set_state(ArchiveState.ENABLED)
 
     def delete(self) -> None:
-        raise NotImplementedError
-        # delete targe
-        # delete rule
+        # TODO handle active replays
+        self.set_state(ArchiveState.DISABLED)
+        try:
+            self.client.remove_targets(
+                Rule=self.rule_name, EventBusName=self.event_bus_name, Ids=[self.target_id]
+            )
+        except Exception as e:
+            LOG.debug(f"Target {self.target_id} could not be removed, {e}")
+        try:
+            self.client.delete_rule(Name=self.rule_name, EventBusName=self.event_bus_name)
+        except Exception as e:
+            LOG.debug(f"Rule {self.rule_name} could not be deleted, {e}")
 
     def _initialize_client(self) -> BaseClient:
         client_factory = connect_to(aws_access_key_id=self.account_id, region_name=self.region)

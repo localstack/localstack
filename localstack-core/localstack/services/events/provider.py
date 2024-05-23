@@ -615,7 +615,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def delete_archive(
         self, context: RequestContext, archive_name: ArchiveName, **kwargs
     ) -> DeleteArchiveResponse:
-        raise NotImplementedError
+        store = self.get_store(context)
+        if archive := self.get_archive(archive_name, store):
+            try:
+                archive_service = self._archive_service_store.pop(archive.arn)
+                archive_service.delete()
+                del store.archives[archive_name]
+            except ResourceNotFoundException as error:
+                return error
 
     @handler("DescribeArchive")
     def describe_archive(
