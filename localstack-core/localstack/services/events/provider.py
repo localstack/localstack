@@ -592,6 +592,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         # TODO check if in same region / account
         if archive_name in store.archives.keys():
             raise ResourceAlreadyExistsException(f"Archive {archive_name} already exists.")
+        self._check_event_bus_exists(event_source_arn, store)
         archive_service = self.create_archive_service(
             archive_name,
             region,
@@ -631,8 +632,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> ListArchivesResponse:
         store = self.get_store(context)
         if event_source_arn:
-            event_bus_name = extract_event_bus_name(event_source_arn)
-            self.get_event_bus(event_bus_name, store)
+            self._check_event_bus_exists(event_source_arn, store)
             archives = {
                 key: archive
                 for key, archive in store.archives.items()
@@ -975,6 +975,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                     )
 
         return func
+
+    def _check_event_bus_exists(
+        self, event_bus_name_or_arn: EventBusNameOrArn, store: EventsStore
+    ) -> None:
+        event_bus_name = extract_event_bus_name(event_bus_name_or_arn)
+        self.get_event_bus(event_bus_name, store)
 
     # Internal type to API type remappings
 
