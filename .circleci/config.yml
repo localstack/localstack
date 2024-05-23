@@ -333,15 +333,19 @@ jobs:
       image: << parameters.machine_image >>
     resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
+    environment:
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "<< parameters.platform >>"
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
           name: Build community docker image
-          command: IMAGE_NAME="localstack/localstack" ./bin/docker-helper.sh build
+          command: ./bin/docker-helper.sh build
       - run:
           name: Save docker image
-          command: PLATFORM="<< parameters.platform >>" docker save -o target/localstack-docker-image-$(PLATFORM).tar localstack/localstack
+          working_directory: target
+          command: ../bin/docker-helper.sh save
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -369,12 +373,15 @@ jobs:
     parallelism: 5
     environment:
       PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "<< parameters.platform >>"
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
           name: Load docker image
-          command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
+          working_directory: target
+          command: ../bin/docker-helper.sh load
       # Prebuild and cache Lambda multiruntime test functions, supporting both architectures: amd64 and arm64
       # Currently, all runners prebuild the Lambda functions, not just the one(s) executing Lambda multiruntime tests.
       - run:
@@ -427,12 +434,15 @@ jobs:
     working_directory: /tmp/workspace/repo
     environment:
       PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "amd64"
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
           name: Load docker image
-          command: docker load -i target/localstack-docker-image-amd64.tar
+          working_directory: target
+          command: ../bin/docker-helper.sh load
       - prepare-pytest-tinybird
       - prepare-account-region-randomization
       - run:
@@ -456,12 +466,16 @@ jobs:
   capture-not-implemented:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      IMAGE_NAME: "localstack/localstack"
+      PLATFORM: "amd64"
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
           name: Load docker image
-          command: docker load -i target/localstack-docker-image-amd64.tar
+          working_directory: target
+          command: ../bin/docker-helper.sh load
       - run:
           name: Run localstack
           command: |
@@ -593,42 +607,50 @@ jobs:
   push:
     executor: ubuntu-machine-amd64
     working_directory: /tmp/workspace/repo
+    environment:
+      IMAGE_NAME: "localstack/localstack"
     steps:
       - attach_workspace:
           at: /tmp/workspace
       - run:
           name: Load docker image - amd64
-          command: |
-            # Load all image for AMD64
-            docker load -i target/localstack-docker-image-amd64.tar
+          working_directory: target
+          environment:
+            PLATFORM: amd64
+          command: ../bin/docker-helper.sh load
       - run:
           name: Log in to ECR registry
           command: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
       - run:
           name: Push docker image - amd64
+          environment:
+            PLATFORM: amd64
           command: |
             # Push to Docker Hub
-            PLATFORM="amd64" ./bin/docker-helper.sh push
+            ./bin/docker-helper.sh push
             # Push to Amazon Public ECR
-            PLATFORM="amd64" IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
+            TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
       # Load and push per architecture (load overwrites the previous ones)
       - run:
           name: Load docker image - arm64
-          command: |
-            # Load all image for AMD64
-            docker load -i target/localstack-docker-image-arm64.tar
+          working_directory: target
+          environment:
+            PLATFORM: arm64
+          command: ../bin/docker-helper.sh load
       - run:
           name: Push docker image - arm64
+          environment:
+            PLATFORM: arm64
           command: |
             # Push to Docker Hub
-            PLATFORM="arm64" ./bin/docker-helper.sh push
+            ./bin/docker-helper.sh push
             # Push to Amazon Public ECR
-            PLATFORM="arm64" IMAGE_NAME="localstack/localstack" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
+            TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
       - run:
           name: Create multi-platform manifests
           command: |
             # Push to Docker Hub
-            IMAGE_NAME="localstack/localstack" ./bin/docker-helper.sh push-manifest
+            ./bin/docker-helper.sh push-manifest
             # Push to Amazon Public ECR
             IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push-manifest
       - run:
