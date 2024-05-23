@@ -91,6 +91,8 @@ from localstack.services.events.archive import ArchiveService, ArchiveServiceDic
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
 from localstack.services.events.event_ruler import matches_rule
 from localstack.services.events.models import (
+    Archive,
+    ArchiveDict,
     EventBus,
     EventBusDict,
     EventsStore,
@@ -617,7 +619,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_archive(
         self, context: RequestContext, archive_name: ArchiveName, **kwargs
     ) -> DescribeArchiveResponse:
-        raise NotImplementedError
+        store = self.get_store(context)
+        archive = self.get_archive(archive_name, store)
+
+        response = self._archive_dict_to_describe_archive_response(archive)
+        return response
 
     @handler("ListArchives")
     def list_archives(
@@ -808,6 +814,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if target := rule.targets.get(target_id):
             return target
         raise ResourceNotFoundException(f"Target {target_id} does not exist on Rule {rule.name}.")
+
+    def get_archive(self, name: ArchiveName, store: EventsStore) -> Archive:
+        if archive := store.archives.get(name):
+            return archive
+        raise ResourceNotFoundException(f"Archive {name} does not exist.")
 
     def get_rule_service(
         self, context: RequestContext, rule_name: RuleName, event_bus_name: EventBusName
@@ -1046,14 +1057,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in rule.items() if value is not None}
 
-    def _archive_dict_to_api_type_list(self, archives: ArchiveServiceDict) -> ArchiveResponseList:
+    def _archive_dict_to_api_type_list(self, archives: ArchiveDict) -> ArchiveResponseList:
         """Return a converted dict of Archive model objects as a list of archives in API type Archive format."""
         archive_list = [
             self._archive_dict_to_api_type_archive(archive) for archive in archives.values()
         ]
         return archive_list
 
-    def _archive_dict_to_api_type_archive(self, archive: ArchiveService) -> ApiTypeArchive:
+    def _archive_dict_to_api_type_archive(self, archive: Archive) -> ApiTypeArchive:
         archive = {
             "ArchiveName": archive.name,
             "EventSourceArn": archive.event_source_arn,
@@ -1065,6 +1076,24 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "CreationTime": archive.creation_time,
         }
         return {key: value for key, value in archive.items() if value is not None}
+
+    def _archive_dict_to_describe_archive_response(
+        self, archive: Archive
+    ) -> DescribeArchiveResponse:
+        archive_dict = {
+            "ArchiveArn": archive.arn,
+            "ArchiveName": archive.name,
+            "EventSourceArn": archive.event_source_arn,
+            "State": archive.state,
+            # TODO "StateReason": archive.state_reason,
+            "RetentionDays": archive.retention_days,
+            "SizeBytes": archive.size_bytes,
+            "EventCount": archive.event_count,
+            "CreationTime": archive.creation_time,
+            "EventPattern": archive.event_pattern,
+            "Description": archive.description,
+        }
+        return {key: value for key, value in archive_dict.items() if value is not None}
 
     def _process_entries(
         self, context: RequestContext, entries: PutEventsRequestEntryList
