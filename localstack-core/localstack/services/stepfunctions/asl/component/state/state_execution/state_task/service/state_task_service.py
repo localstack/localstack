@@ -6,6 +6,7 @@ import json
 from typing import Any, Final, Optional, Union
 
 from botocore.model import ListShape, OperationModel, StringShape, StructureShape
+from botocore.response import StreamingBody
 
 from localstack.aws.api.stepfunctions import (
     HistoryEventExecutionDataDetails,
@@ -38,7 +39,7 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.quotas import is_within_size_quota
-from localstack.utils.strings import camel_to_snake_case, snake_to_camel_case
+from localstack.utils.strings import camel_to_snake_case, snake_to_camel_case, to_str
 
 
 class StateTaskService(StateTask, abc.ABC):
@@ -121,6 +122,13 @@ class StateTaskService(StateTask, abc.ABC):
         norm_member_key = snake_to_camel_case(norm_member_key)
         return norm_member_key
 
+    @staticmethod
+    def _from_boto_response_value(response_value: Any) -> Any:
+        if isinstance(response_value, StreamingBody):
+            body_str = to_str(response_value.read())
+            return body_str
+        return response_value
+
     def _from_boto_response(self, response: Any, structure_shape: StructureShape) -> None:
         if not isinstance(response, dict):
             return
@@ -133,11 +141,14 @@ class StateTaskService(StateTask, abc.ABC):
                 shape_member = shape_members[response_key]
 
                 response_value = response.pop(response_key)
+                response_value = self._from_boto_response_value(response_value)
+
                 if isinstance(shape_member, StructureShape):
                     self._from_boto_response(response_value, shape_member)
                 elif isinstance(shape_member, ListShape) and isinstance(response_value, list):
                     for response_value_member in response_value:
                         self._from_boto_response(response_value_member, shape_member.member)  # noqa
+
                 response[norm_response_key] = response_value
 
     def _get_boto_service_name(self, boto_service_name: Optional[str] = None) -> str:

@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from localstack_snapshot.snapshots.transformer import JsonpathTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
@@ -244,6 +244,40 @@ class TestTaskServiceAwsSdk:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "file_body",
+        ["", "text data", b"", b"binary data", bytearray(b"byte array data")],
+        ids=["empty_str", "str", "empty_binary", "binary", "bytearray"],
+    )
+    def test_s3_get_object(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        file_body,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        file_key = "file_key"
+        aws_client.s3.put_object(Bucket=bucket_name, Key=file_key, Body=file_body)
+
+        template = ST.load_sfn_template(ST.AWS_SDK_S3_GET_OBJECT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": file_key})
         create_and_record_execution(
             aws_client.stepfunctions,
             create_iam_role_for_sfn,
