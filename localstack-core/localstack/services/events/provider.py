@@ -671,7 +671,18 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         retention_days: RetentionDays = None,
         **kwargs,
     ) -> UpdateArchiveResponse:
-        raise NotImplementedError
+        store = self.get_store(context)
+        archive = self.get_archive(archive_name, store)
+        archive_service = self._archive_service_store[archive.arn]
+        archive_service.update(description, event_pattern, retention_days)
+
+        response = UpdateArchiveResponse(
+            ArchiveArn=archive_service.arn,
+            State=archive.state,
+            # StateReason=archive.state_reason,
+            CreationTime=archive.creation_time,
+        )
+        return response
 
     ########
     # Events

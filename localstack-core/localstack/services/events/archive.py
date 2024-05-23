@@ -65,8 +65,20 @@ class ArchiveService:
     def set_creation_time(self) -> None:
         self.archive.creation_time = datetime.now(timezone.utc)
 
-    def update(self) -> None:
-        raise NotImplementedError
+    def update(
+        self,
+        description: ArchiveDescription,
+        event_pattern: EventPattern,
+        retention_days: RetentionDays,
+    ) -> None:
+        self.set_state(ArchiveState.UPDATING)
+        if description is not None:
+            self.archive.description = description
+        if event_pattern is not None:
+            self.archive.event_pattern = event_pattern
+        if retention_days is not None:
+            self.archive.retention_days = retention_days
+        self.set_state(ArchiveState.ENABLED)
 
     def delete(self) -> None:
         raise NotImplementedError
