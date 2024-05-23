@@ -176,7 +176,7 @@ def generate_ecr_image_from_dockerfile(
 
 
 def generate_ecr_image_from_docker_image(
-    ecr_client: "ECRClient", repository_name: str, image_name: str, platform: str = None
+    ecr_client: "ECRClient", repository_name: str, image_name: str, platform: str = "linux/amd64"
 ):
     """
     Parameters
@@ -190,8 +190,6 @@ def generate_ecr_image_from_docker_image(
     -------
 
     """
-    if platform is None:
-        platform = "linux/amd64"
 
     DOCKER_CLIENT.pull_image(image_name, platform=platform)
 
