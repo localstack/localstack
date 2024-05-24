@@ -196,7 +196,7 @@ def signal_supervisor_restart():
 # -------------
 
 
-def print_runtime_information(in_docker=False):
+def print_runtime_information(in_docker: bool = False):
     # FIXME: this is legacy code from the old CLI, reconcile with new CLI and runtime output
 
     print()
@@ -210,8 +210,21 @@ def print_runtime_information(in_docker=False):
             print("LocalStack Docker container id: %s" % container_id[:12])
             image_sha = inspect_result["Image"]
             print("LocalStack Docker image sha: %s" % image_sha)
-        except ContainerException as e:
-            print("Failed to inspect docker container: %s %s" % (e, traceback.format_exc()))
+        except ContainerException:
+            print(
+                "LocalStack Docker container info: Failed to inspect the LocalStack docker container. "
+                "This is likely because the docker socket was not mounted into the container. "
+                "Without access to the docker socket, LocalStack will not function properly. Please "
+                "consult the LocalStack documentation on how to correctly start up LocalStack. ",
+                end="",
+            )
+            if config.DEBUG:
+                print("Docker debug information:")
+                traceback.print_exc()
+            else:
+                print(
+                    "You can run LocalStack with `DEBUG=1` to get more information about the error."
+                )
 
     if config.LOCALSTACK_BUILD_DATE:
         print("LocalStack build date: %s" % config.LOCALSTACK_BUILD_DATE)
