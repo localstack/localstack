@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Callable, Optional
 
@@ -114,6 +115,7 @@ from localstack.services.events.target import TargetSender, TargetSenderDict, Ta
 from localstack.services.events.utils import (
     extract_event_bus_name,
     get_resource_type,
+    is_archive_arn,
     recursive_remove_none_values_from_dict,
 )
 from localstack.services.plugins import ServiceLifecycleHook
@@ -122,6 +124,8 @@ from localstack.utils.strings import long_uid
 from localstack.utils.time import TIMESTAMP_FORMAT_TZ, timestamp
 
 LOG = logging.getLogger(__name__)
+
+ARCHIVE_TARGET_ID_NAME_PATTERN = re.compile(r"^Events-Archive-(?P<name>[a-zA-Z0-9_-]+)$")
 
 
 def decode_next_token(token: NextToken) -> int:
@@ -1120,6 +1124,17 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in archive_dict.items() if value is not None}
 
+    def _put_to_archive(
+        self, context: RequestContext, archive_target_id: str, event: FormattedEvent
+    ) -> None:
+        archive_name = ARCHIVE_TARGET_ID_NAME_PATTERN.match(archive_target_id).group("name")
+
+        event_formatted = format_event(event, context.region, context.account_id)
+        store = self.get_store(context)
+        archive = self.get_archive(archive_name, store)
+        archive_service = self._archive_service_store[archive.arn]
+        archive_service.put_events([event_formatted])
+
     def _process_entries(
         self, context: RequestContext, entries: PutEventsRequestEntryList
     ) -> tuple[PutEventsResultEntryList, int]:
@@ -1136,31 +1151,36 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 processed_entries.append(event_failed_validation)
                 failed_entry_count += 1
                 continue
-            event = format_event(event, context.region, context.account_id)
+            event_formatted = format_event(event, context.region, context.account_id)
             store = self.get_store(context)
-            # TODO send to archive if archive arn
             try:
                 event_bus = self.get_event_bus(event_bus_name, store)
             except ResourceNotFoundException:
                 # ignore events for non-existing event buses but add processed event
-                processed_entries.append({"EventId": event["id"]})
+                processed_entries.append({"EventId": event_formatted["id"]})
                 continue
             matching_rules = [rule for rule in event_bus.rules.values()]
             for rule in matching_rules:
                 event_pattern = rule.event_pattern
-                event_str = json.dumps(event)
+                event_str = json.dumps(event_formatted)
                 if matches_rule(event_str, event_pattern):
                     for target in rule.targets.values():
-                        target_sender = self._target_sender_store[target["Arn"]]
-                        try:
-                            target_sender.process_event(event)
-                            processed_entries.append({"EventId": event["id"]})
-                        except Exception as error:
-                            processed_entries.append(
-                                {
-                                    "ErrorCode": "InternalException",
-                                    "ErrorMessage": str(error),
-                                }
+                        target_arn = target["Arn"]
+                        if is_archive_arn(target_arn):
+                            self._put_to_archive(
+                                context, archive_target_id=target["Id"], event=event_formatted
                             )
-                            failed_entry_count += 1
+                        else:
+                            target_sender = self._target_sender_store[target_arn]
+                            try:
+                                target_sender.process_event(event_formatted)
+                                processed_entries.append({"EventId": event_formatted["id"]})
+                            except Exception as error:
+                                processed_entries.append(
+                                    {
+                                        "ErrorCode": "InternalException",
+                                        "ErrorMessage": str(error),
+                                    }
+                                )
+                                failed_entry_count += 1
         return processed_entries, failed_entry_count
