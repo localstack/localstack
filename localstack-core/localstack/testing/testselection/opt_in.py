@@ -42,6 +42,12 @@ OPT_IN = [
     # SQS
     "localstack/services/sqs/**",
     "tests/aws/services/sqs/**",
+    # KMS
+    "localstack/services/kms/**",
+    "tests/aws/services/kms/**",
+    # transcribe
+    "localstack/services/transcribe/**",
+    "tests/aws/services/transcribe/**",
     # TODO add more services
 ]
 
