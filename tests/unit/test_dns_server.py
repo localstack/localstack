@@ -441,6 +441,9 @@ class TestDnsUtils:
         assert "search default.svc.cluster.local svc.cluster.local cluster.local" in lines
         assert "options ndots:5" in lines
 
+        # check the previous value is _not_ in the file
+        assert "nameserver 127.0.0.11" not in lines
+
     def test_no_resolv_conf_overwriting_on_host(self, tmp_path: Path, monkeypatch):
         from localstack.dns import server
 
