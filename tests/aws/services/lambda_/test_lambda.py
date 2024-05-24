@@ -41,6 +41,7 @@ from localstack.utils.platform import Arch, standardized_arch
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive
+from tests.aws.services.lambda_.utils import get_s3_keys
 
 LOG = logging.getLogger(__name__)
 
@@ -74,6 +75,9 @@ TEST_LAMBDA_PYTHON_HANDLER_EXIT = os.path.join(THIS_FOLDER, "functions/lambda_ha
 TEST_LAMBDA_AWS_PROXY = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy.py")
 TEST_LAMBDA_AWS_PROXY_FORMAT = os.path.join(THIS_FOLDER, "functions/lambda_aws_proxy_format.py")
 TEST_LAMBDA_PYTHON_S3_INTEGRATION = os.path.join(THIS_FOLDER, "functions/lambda_s3_integration.py")
+TEST_LAMBDA_PYTHON_S3_INTEGRATION_FUNCTION_VERSION = os.path.join(
+    THIS_FOLDER, "functions/lambda_s3_integration_function_version.py"
+)
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
 TEST_LAMBDA_NODEJS_ES6 = os.path.join(THIS_FOLDER, "functions/lambda_handler_es6.mjs")
@@ -540,12 +544,10 @@ class TestLambdaBehavior:
         payload = json.load(invoke_result_x86["Payload"])
         assert payload.get("platform_machine") == "x86_64"
 
-        update_function_configuration_response = aws_client.lambda_.update_function_code(
+        update_function_code_response = aws_client.lambda_.update_function_code(
             FunctionName=func_name, ZipFile=zip_file, Architectures=[Architecture.arm64]
         )
-        snapshot.match(
-            "update_function_configuration_response", update_function_configuration_response
-        )
+        snapshot.match("update_function_code_response", update_function_code_response)
         aws_client.lambda_.get_waiter(waiter_name="function_updated_v2").wait(
             FunctionName=func_name
         )
@@ -1778,6 +1780,49 @@ class TestLambdaCleanup:
 
         assert not errored
 
+    @markers.aws.validated
+    def test_recreate_function(
+        self, aws_client, create_lambda_function, check_lambda_logs, snapshot
+    ):
+        """Recreating a function with the same name should not cause any resource cleanup issues or namespace collisions
+        Reproduces a GitHub issue: https://github.com/localstack/localstack/issues/10280"""
+        function_name = f"test-function-{short_uid()}"
+        create_function_response_one = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_12,
+        )
+        snapshot.match("create_function_response_one", create_function_response_one)
+
+        aws_client.lambda_.delete_function(FunctionName=function_name)
+
+        # Immediately re-create the same function
+        create_function_response_two = create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler="lambda_echo.handler",
+            runtime=Runtime.python3_12,
+        )
+        snapshot.match("create_function_response_two", create_function_response_two)
+
+        # Validate that async invokes still work
+        invoke_response = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType="Event",
+        )
+        invoke_response = read_streams(invoke_response)
+        assert 202 == invoke_response["StatusCode"]
+
+        # Assert that the function gets invoked by checking the logs.
+        # This also ensures that we wait until the invocation is done before deleting the function.
+        expected = [".*{}"]
+
+        def check_logs():
+            check_lambda_logs(function_name, expected_lines=expected)
+
+        retry(check_logs, retries=15)
+
 
 class TestLambdaMultiAccounts:
     @pytest.fixture
@@ -2601,6 +2646,154 @@ class TestLambdaVersions:
         snapshot.match(
             "invoke_result_handler_two_postpublish", invoke_result_handler_two_postpublish
         )
+
+    # TODO: Fix this test by not stopping running invokes for function updates of $LATEST
+    @pytest.mark.skip(
+        reason="""Fails with 'Internal error while executing lambda' because
+                  the current implementation stops all running invokes upon update."""
+    )
+    @markers.aws.validated
+    def test_function_update_during_invoke(self, aws_client, create_lambda_function, snapshot):
+        function_name = f"test-function-{short_uid()}"
+        environment_v1 = {"Variables": {"FUNCTION_VARIANT": "variant-1"}}
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION_FUNCTION_VERSION,
+            runtime=Runtime.python3_12,
+            Environment=environment_v1,
+        )
+
+        errored = False
+
+        def _update_function():
+            nonlocal errored
+            try:
+                # Make it very likely that the invocation is being processed because the incoming invocation acquires
+                # an invocation lease quickly.
+                time.sleep(5)
+
+                environment_v2 = environment_v1.copy()
+                environment_v2["Variables"]["FUNCTION_VARIANT"] = "variant-2"
+                aws_client.lambda_.update_function_configuration(
+                    FunctionName=function_name, Environment=environment_v2
+                )
+                waiter = aws_client.lambda_.get_waiter("function_updated_v2")
+                waiter.wait(FunctionName=function_name)
+
+                payload = {"request_prefix": "2-post-update"}
+                invoke_response_after = aws_client.lambda_.invoke(
+                    FunctionName=function_name,
+                    Payload=json.dumps(payload),
+                )
+                assert invoke_response_after["StatusCode"] == 200
+                payload = json.load(invoke_response_after["Payload"])
+                assert payload["function_variant"] == "variant-2"
+                assert payload["function_version"] == "$LATEST"
+            except Exception:
+                LOG.exception(f"Updating lambda function {function_name} failed.")
+                errored = True
+
+        # Start thread with upcoming function update (slightly delayed)
+        thread = threading.Thread(target=_update_function)
+        thread.start()
+
+        # Start an invocation with a sleep
+        payload = {"request_prefix": "1-sleep", "sleep_seconds": 20}
+        invoke_response_before = aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps(payload),
+        )
+        snapshot.match("invoke_response_before", invoke_response_before)
+
+        thread.join()
+        assert not errored
+
+    # TODO: Fix first invoke getting retried and ending up being executed against the new variant because the
+    #  update stops the running function version. We should let running executions finish for $LATEST in this case.
+    # MAYBE: consider validating whether a code update behaves differently than a configuration update
+    @markers.aws.validated
+    def test_async_invoke_queue_upon_function_update(
+        self, aws_client, create_lambda_function, s3_create_bucket, snapshot
+    ):
+        """Test what happens with queued async invokes (i.e., event invokes) when updating a function.
+        We are using a combination of reserved concurrency and sleeps to design this test case predictable.
+        Observation: If we don't wait after sending the first invoke, some queued invokes can still be handled by an
+        old variant in some non-deterministic way.
+        """
+        # HACK: workaround to ignore `$..async_invoke_history_sorted[0]` because indices don't work in the ignore list
+        snapshot.add_transformer(
+            snapshot.transform.regex("01-sleep--variant-2", "01-sleep--variant-1")
+        )
+        bucket_name = f"lambda-target-bucket-{short_uid()}"
+        s3_create_bucket(Bucket=bucket_name)
+
+        function_name = f"test-function-{short_uid()}"
+        environment_v1 = {
+            "Variables": {"S3_BUCKET_NAME": bucket_name, "FUNCTION_VARIANT": "variant-1"}
+        }
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_S3_INTEGRATION_FUNCTION_VERSION,
+            runtime=Runtime.python3_12,
+            Environment=environment_v1,
+        )
+        # Add reserved concurrency limits the throughput and makes it easier to cause event invokes to queue up.
+        reserved_concurrency_response = aws_client.lambda_.put_function_concurrency(
+            FunctionName=function_name,
+            ReservedConcurrentExecutions=1,
+        )
+        assert reserved_concurrency_response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        payload = {"request_prefix": f"{1:02}-sleep", "sleep_seconds": 22}
+        aws_client.lambda_.invoke(
+            FunctionName=function_name,
+            InvocationType="Event",
+            Payload=json.dumps(payload),
+        )
+        # Make it very likely that the invocation is being processed because the Lambda poller should pick up queued
+        # async invokes quickly using long polling.
+        time.sleep(2)
+
+        # Send async invocation, which should queue up before we update the function
+        num_invocations_before = 9
+        for index in range(num_invocations_before):
+            payload = {"request_prefix": f"{index + 2:02}-before"}
+            aws_client.lambda_.invoke(
+                FunctionName=function_name,
+                InvocationType="Event",
+                Payload=json.dumps(payload),
+            )
+
+        # Update the function variant while still having invokes in the async invoke queue
+        environment_v2 = environment_v1.copy()
+        environment_v2["Variables"]["FUNCTION_VARIANT"] = "variant-2"
+        aws_client.lambda_.update_function_configuration(
+            FunctionName=function_name, Environment=environment_v2
+        )
+        waiter = aws_client.lambda_.get_waiter("function_updated_v2")
+        waiter.wait(FunctionName=function_name)
+
+        # Send further async invocations after the update succeeded
+        num_invocations_after = 5
+        for index in range(num_invocations_after):
+            payload = {"request_prefix": f"{index + num_invocations_before + 2:02}-after"}
+            aws_client.lambda_.invoke(
+                FunctionName=function_name,
+                InvocationType="Event",
+                Payload=json.dumps(payload),
+            )
+
+        # +1 for the first sleep invocation
+        total_invocations = 1 + num_invocations_before + num_invocations_after
+
+        def assert_s3_objects():
+            s3_keys_output = get_s3_keys(aws_client, bucket_name)
+            assert len(s3_keys_output) >= total_invocations
+            return s3_keys_output
+
+        s3_keys = retry(assert_s3_objects, retries=20, sleep=5)
+        s3_keys_sorted = sorted(s3_keys)
+        snapshot.match("async_invoke_history_sorted", s3_keys_sorted)
 
 
 # TODO: test if routing is static for a single invocation:

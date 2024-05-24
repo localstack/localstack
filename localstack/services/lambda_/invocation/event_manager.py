@@ -470,11 +470,14 @@ class LambdaEventManager:
             function_id = self.version_manager.function_version.id
             # Truncate function name to ensure queue name limit of max 80 characters
             function_name_short = function_id.function_name[:47]
-            queue_name = f"{function_name_short}-{md5(function_id.qualified_arn())}"
+            # The instance id MUST be unique to the function and a given LocalStack instance
+            queue_namespace = (
+                f"{function_id.qualified_arn()}-{self.version_manager.function.instance_id}"
+            )
+            queue_name = f"{function_name_short}-{md5(queue_namespace)}"
             create_queue_response = sqs_client.create_queue(QueueName=queue_name)
             self.event_queue_url = create_queue_response["QueueUrl"]
-            # Ensure no events are in new queues due to persistence and cloud pods
-            sqs_client.purge_queue(QueueUrl=self.event_queue_url)
+            # We don't need to purge the queue for persistence or cloud pods because the instance id is MUST be unique
 
             self.poller = Poller(self.version_manager, self.event_queue_url)
             self.poller_thread = FuncThread(
