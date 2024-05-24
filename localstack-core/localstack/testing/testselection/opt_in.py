@@ -18,6 +18,9 @@ OPT_IN = [
     # elasticsearch
     "localstack/services/es/**",
     "tests/aws/services/es/**",
+    # IAM
+    "localstack/services/iam/**",
+    "tests/aws/services/iam/**",
     # lambda
     "localstack/services/lambda_/**",
     "tests/aws/services/lambda_/**",
@@ -42,6 +45,9 @@ OPT_IN = [
     # SQS
     "localstack/services/sqs/**",
     "tests/aws/services/sqs/**",
+    # STS
+    "localstack/services/sts/**",
+    "tests/aws/services/sts/**",
     # KMS
     "localstack/services/kms/**",
     "tests/aws/services/kms/**",

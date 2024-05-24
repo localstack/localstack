@@ -92,6 +92,9 @@ API_DEPENDENCIES_OPTIONAL = {
     ],
     # This is for S3 notifications and S3 KMS key
     "s3": ["events", "sqs", "sns", "lambda", "kms"],
+    # IAM and STS are tightly coupled
+    "sts": ["iam"],
+    "iam": ["sts"],
     # TODO: add more dependencies
 }
 
