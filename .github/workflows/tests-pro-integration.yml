@@ -291,14 +291,14 @@ jobs:
         # Entrypoints need to be generated _after_ the community edition has been linked into the venv
         run: |
           VENV_DIR="../localstack-ext/.venv" make entrypoints
-          cat localstack_core.egg-info/entry_points.txt
+          ../localstack-ext/.venv/bin/python -m plux show
 
       - name: Create Pro Entrypoints
         working-directory: localstack-ext
         # Entrypoints need to be generated _after_ the community edition has been linked into the venv
         run: |
           make entrypoints
-          cat localstack_ext.egg-info/entry_points.txt
+          .venv/bin/python -m plux show
 
       - name: Test Pro Startup
         env:
@@ -334,7 +334,7 @@ jobs:
         working-directory: localstack-ext
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
-          sudo rm -rf ../localstack/.filesystem/var/lib/localstack/tmp
+          sudo rm -rf ../localstack/localstack-core/.filesystem/var/lib/localstack/tmp
           make test
 
       - name: Archive Test Durations

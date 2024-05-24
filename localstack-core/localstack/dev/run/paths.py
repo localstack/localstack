@@ -55,10 +55,10 @@ class ContainerPaths:
 
 
 class CommunityContainerPaths(ContainerPaths):
-    """In the community image, code is copied into /opt/code/localstack"""
+    """In the community image, code is copied into /opt/code/localstack/localstack-core/localstack"""
 
     def __init__(self):
-        self.localstack_source_dir = f"{self.project_dir}/localstack"
+        self.localstack_source_dir = f"{self.project_dir}/localstack-core/localstack"
 
 
 class ProContainerPaths(ContainerPaths):

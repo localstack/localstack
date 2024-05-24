@@ -2,6 +2,7 @@
 .venv*
 
 .filesystem
+**/.filesystem
 
 # ignore files generated in CI build
 tests/aws/**/node_modules
