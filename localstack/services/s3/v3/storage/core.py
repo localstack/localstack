@@ -255,9 +255,13 @@ def should_copy_in_place(
     if src_object.key != dest_object.key:
         return False
 
-    # if the objects have version id, the bucket is versioned, and we should not copy in place: the new destination
-    # object will be a new version of the source object
-    if src_object.version_id or dest_object.version_id:
+    # if the objects are versioned, we should not copy in place: the new destination
+    # object will be a new version of the source object, with a different version id (both can be fetched)
+    if _is_object_versioned(src_object) or _is_object_versioned(dest_object):
         return False
 
     return True
+
+
+def _is_object_versioned(s3_object: S3Object) -> bool:
+    return s3_object.version_id and s3_object.version_id != "null"

@@ -11363,7 +11363,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_versioned": {
-    "recorded-date": "19-03-2024, 18:12:57",
+    "recorded-date": "23-05-2024, 19:05:18",
     "recorded-content": {
       "put_object": {
         "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
@@ -11448,6 +11448,76 @@
         "Metadata": {},
         "ServerSideEncryption": "AES256",
         "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-in-place-versioned-suspended": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "CopySourceVersionId": "<version-id:2>",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-copied-suspended": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-copied-suspended": {
+        "AcceptRanges": "bytes",
+        "Body": {
+          "key": "value"
+        },
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-previous-version-suspended": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-in-place-versioned-re-enabled": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:4>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -11639,6 +11709,129 @@
           "HostId": "host-id",
           "Message": "Error parsing the X-Amz-Credential parameter; the Credential is mal-formed; expecting \"<YOUR-AKID>/YYYYMMDD/REGION/SERVICE/aws4_request\".",
           "RequestId": "<request-id:1>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_copy_object_in_place_suspended_only": {
+    "recorded-date": "23-05-2024, 19:02:15",
+    "recorded-content": {
+      "put_object": {
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head_object": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "application/json",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {
+          "key": "value"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-in-place-non-versioned": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-copied": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-copied": {
+        "AcceptRanges": "bytes",
+        "Body": {
+          "key": "value"
+        },
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-in-place-versioned-suspended": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-copied-suspended": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-copied-suspended": {
+        "AcceptRanges": "bytes",
+        "Body": {
+          "key": "value"
+        },
+        "ContentLength": 16,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "copy-in-place-versioned-suspended-twice": {
+        "CopyObjectResult": {
+          "ETag": "\"88bac95f31528d13a072c05f2a1cf371\"",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

@@ -1313,7 +1313,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         add_encryption_to_response(response, s3_object=s3_object)
 
-        if src_s3_bucket.versioning_status and src_s3_object.version_id:
+        if (
+            src_s3_bucket.versioning_status
+            and src_s3_object.version_id
+            and src_s3_object.version_id != "null"
+        ):
             response["CopySourceVersionId"] = src_s3_object.version_id
 
         # RequestCharged: Optional[RequestCharged] # TODO
