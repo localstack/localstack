@@ -11079,6 +11079,45 @@ class TestS3PresignedPost:
         final_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("final-object", final_object)
 
+        # try with string values for the content length range
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["content-length-range", "5", "10"],
+            ],
+        )
+        # PostObject with a body length of 10
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 10},
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        # try with string values that are not cast-able for the content length range
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["content-length-range", "test", "10"],
+            ],
+        )
+        # PostObject with a body length of 10
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 10},
+            verify=False,
+        )
+        assert response.status_code == 403
+        snapshot.match("invalid-content-length-wrong-type", xmltodict.parse(response.content))
+
     @pytest.mark.skipif(
         condition=TEST_S3_IMAGE or LEGACY_V2_S3_PROVIDER,
         reason="STS not enabled in S3 image / moto does not implement this",

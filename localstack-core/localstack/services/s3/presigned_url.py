@@ -790,8 +790,9 @@ def validate_post_policy(
     form_dict = {k.lower(): v for k, v in request_form.items()}
     for condition in conditions:
         if not _verify_condition(condition, form_dict, additional_policy_metadata):
+            str_condition = str(condition).replace("'", '"')
             raise AccessDenied(
-                f"Invalid according to Policy: Policy Condition failed: {condition}",
+                f"Invalid according to Policy: Policy Condition failed: {str_condition}",
                 HostId=FAKE_HOST_ID,
             )
 
@@ -829,6 +830,11 @@ def _verify_condition(condition: list | dict, form: dict, additional_policy_meta
 
         case ["content-length-range", start, end]:
             size = additional_policy_metadata.get("content_length", 0)
+            try:
+                start, end = int(start), int(end)
+            except ValueError:
+                return False
+
             if size < start:
                 raise EntityTooSmall(
                     "Your proposed upload is smaller than the minimum allowed size",

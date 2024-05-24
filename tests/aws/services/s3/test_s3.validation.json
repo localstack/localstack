@@ -528,7 +528,7 @@
     "last_validated_date": "2024-04-10T12:16:01+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_validation_size": {
-    "last_validated_date": "2024-04-08T17:29:34+00:00"
+    "last_validated_date": "2024-05-24T11:43:48+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_with_file_as_string": {
     "last_validated_date": "2024-02-24T01:01:59+00:00"

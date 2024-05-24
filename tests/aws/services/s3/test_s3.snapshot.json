@@ -11526,7 +11526,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_validation_size": {
-    "recorded-date": "08-04-2024, 17:29:34",
+    "recorded-date": "24-05-2024, 11:43:48",
     "recorded-content": {
       "invalid-content-length-too-big": {
         "Error": {
@@ -11560,6 +11560,14 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "invalid-content-length-wrong-type": {
+        "Error": {
+          "Code": "AccessDenied",
+          "HostId": "<host-id>",
+          "Message": "Invalid according to Policy: Policy Condition failed: [\"content-length-range\", \"test\", \"10\"]",
+          "RequestId": "<request-id:4>"
         }
       }
     }
