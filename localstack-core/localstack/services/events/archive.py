@@ -11,6 +11,7 @@ from localstack.services.events.models import (
     ArchiveDescription,
     ArchiveName,
     EventPattern,
+    FormattedEvent,
     RetentionDays,
     RuleName,
 )
@@ -46,9 +47,7 @@ class ArchiveService:
         self.event_bus_name = extract_event_bus_name(event_source_arn)
 
         self.rule_name = self._create_archive_rule()
-        self.target_id = (
-            self._create_archive_target()
-        )  # TODO lazily create target on start first replay
+        self.target_id = self._create_archive_target()
         self.set_state(ArchiveState.ENABLED)
 
     def __getattr__(self, name):
@@ -96,6 +95,10 @@ class ArchiveService:
             self.client.delete_rule(Name=self.rule_name, EventBusName=self.event_bus_name)
         except Exception as e:
             LOG.debug(f"Rule {self.rule_name} could not be deleted, {e}")
+
+    def put_events(self, events: list[FormattedEvent]) -> None:
+        for event in events:
+            self.archive.events[event["id"]] = event
 
     def _initialize_client(self) -> BaseClient:
         client_factory = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
