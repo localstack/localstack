@@ -37,7 +37,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.142.1
+aws-cdk-lib==2.143.0
     # via localstack-core
 aws-sam-translator==1.89.0
     # via
@@ -355,7 +355,7 @@ mypy-boto3-elbv2==1.34.108
     # via boto3-stubs
 mypy-boto3-emr==1.34.75
     # via boto3-stubs
-mypy-boto3-emr-serverless==1.34.87
+mypy-boto3-emr-serverless==1.34.112
     # via boto3-stubs
 mypy-boto3-es==1.34.36
     # via boto3-stubs
@@ -686,7 +686,7 @@ types-awscrt==0.20.9
     # via botocore-stubs
 types-s3transfer==0.10.1
     # via boto3-stubs
-typing-extensions==4.11.0
+typing-extensions==4.12.0
     # via
     #   aws-sam-translator
     #   boto3-stubs
@@ -819,7 +819,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.4.post1
+zope-interface==6.4.post2
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

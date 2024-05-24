@@ -37,7 +37,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.142.1
+aws-cdk-lib==2.143.0
     # via localstack-core
 aws-sam-translator==1.89.0
     # via
@@ -486,7 +486,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-typing-extensions==4.11.0
+typing-extensions==4.12.0
     # via
     #   aws-sam-translator
     #   jsii
@@ -522,7 +522,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.4.post1
+zope-interface==6.4.post2
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
