@@ -57,6 +57,9 @@ OPT_IN = [
     # secretsmanager
     "localstack/services/secretsmanager/**",
     "tests/aws/services/secretsmanager/**",
+    # route53resolver
+    "localstack/services/route53resolver/**",
+    "tests/aws/services/route53resolver/**",
     # TODO add more services
 ]
 
