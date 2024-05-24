@@ -211,8 +211,12 @@ class TestArchive:
     # the archive seams to persist events also after deletion of the archive
     # and restores them if recreated for the same event source arn
     # this causes issues with the default event bus and the expected event count
+    # TODO test with input path and input transformer
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     @pytest.mark.parametrize("archive_pattern_match", [True, False])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..SizeBytes"]
+    )  # TODO currently not possible to accurately predict the size of the archive
     def test_list_archive_with_events(
         self,
         event_bus_type,
@@ -282,7 +286,8 @@ class TestArchive:
                 snapshot.transform.regex(archive_name, "<archive-name>"),
             ]
         )
-        response_list_archives = aws_client.events.list_archives()
+
+        response_list_archives = aws_client.events.list_archives(NamePrefix=archive_name)
         snapshot.match("list-archives", response_list_archives)
 
         response_describe_archive = aws_client.events.describe_archive(ArchiveName=archive_name)
