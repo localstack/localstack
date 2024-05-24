@@ -9,7 +9,6 @@ from localstack.aws.chain import ExceptionHandler, HandlerChain
 from localstack.http import Response
 from localstack.http.request import restore_payload
 from localstack.logging.format import AwsTraceLoggingFormatter, TraceLoggingFormatter
-from localstack.logging.setup import create_default_handler
 
 LOG = logging.getLogger(__name__)
 
@@ -72,11 +71,12 @@ class ResponseLogger:
 
     # make sure loggers are loaded after logging config is loaded
     def _prepare_logger(self, logger: logging.Logger, formatter: Type):
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.propagate = False
-            handler = create_default_handler(logger.level)
-            handler.setFormatter(formatter())
-            logger.addHandler(handler)
+        # TODO: uncommenting this will block .http and .aws logs from being propagated
+        # if logger.isEnabledFor(logging.DEBUG):
+        #     logger.propagate = False
+        #     handler = create_default_handler(logger.level)
+        #     handler.setFormatter(formatter())
+        #     logger.addHandler(handler)
         return logger
 
     def _log(self, context: RequestContext, response: Response):
@@ -95,6 +95,10 @@ class ResponseLogger:
                     response.status_code,
                     context.service_exception.code,
                     extra={
+                        "request_id": context.request_id,
+                        "service": context.service.service_name,
+                        "operation": context.operation.name,
+                        "status_code": response.status_code,
                         # context
                         "account_id": context.account_id,
                         "region": context.region,
@@ -117,6 +121,10 @@ class ResponseLogger:
                     context.operation.name,
                     response.status_code,
                     extra={
+                        "request_id": context.request_id,
+                        "service": context.service.service_name,
+                        "operation": context.operation.name,
+                        "status_code": response.status_code,
                         # context
                         "account_id": context.account_id,
                         "region": context.region,
@@ -142,6 +150,9 @@ class ResponseLogger:
                 context.request.path,
                 response.status_code,
                 extra={
+                    "request_id": context.request_id or "NOREQUESTID",
+                    "http_method": context.request.method,
+                    "status_code": response.status_code,
                     # request
                     "input_type": "Request",
                     "input": restore_payload(context.request),
@@ -152,3 +163,25 @@ class ResponseLogger:
                     "response_headers": dict(response.headers),
                 },
             )
+
+
+class RequestLogger:
+    def __call__(self, _: HandlerChain, context: RequestContext, response: Response):
+        if context.request.path == "/health" or context.request.path == "/_localstack/health":
+            # special case so the health check doesn't spam the logs
+            return
+
+        logger = logging.getLogger("localstack.request.raw_http")
+        logger.info(
+            "%s %s",
+            context.request.method,
+            context.request.path,
+            extra={
+                "request_id": context.request_id or "NOREQUESTID",
+                "http_method": context.request.method,
+                # request
+                "input_type": "Request",
+                "input": restore_payload(context.request),  # TODO: remove?
+                "request_headers": dict(context.request.headers),
+            },
+        )

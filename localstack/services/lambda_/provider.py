@@ -765,6 +765,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                 Type="User",
             )
+
         request_function_name = request["FunctionName"]
         # Validate FunctionName:
         # a) Function name: just function name (max 64 chars)

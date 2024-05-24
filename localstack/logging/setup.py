@@ -1,6 +1,9 @@
+import json
 import logging
 import sys
 import warnings
+
+from localstack_snapshot.util.encoding import CustomJsonEncoder
 
 from localstack import config, constants
 
@@ -87,6 +90,32 @@ def create_default_handler(log_level: int):
     return log_handler
 
 
+class JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        # TODO: extras are currently flat at root level and not nested
+        data = {}
+        skip_kw = ["msg", "message", "args", "exc_info"]
+        for k, v in record.__dict__.items():
+            if k in skip_kw:
+                continue
+            if v is not None:
+                data[k] = v
+        data["message"] = record.getMessage()
+
+        if record.exc_info:
+            data["error_type"] = record.exc_info[0].__name__
+            data["error_msg"] = str(record.exc_info[1])
+            if record.exc_text:
+                data["exc_text"] = record.exc_text
+
+        # import re
+        # reg = re.compile(r"./localstack/services/([^/])")
+        # if "localstack/services/" in record.pathname:
+        #     service = record.pathname.split("")
+        #     data["service"] =
+        return json.dumps(data, cls=CustomJsonEncoder)
+
+
 def setup_logging(log_level=logging.INFO) -> None:
     """
     Configures the python logging environment for LocalStack.
@@ -108,6 +137,20 @@ def setup_logging(log_level=logging.INFO) -> None:
     logging.getLogger("localstack").setLevel(log_level)
     for logger, level in default_log_levels.items():
         logging.getLogger(logger).setLevel(level)
+
+    # Configure JSON logs
+    # TODO: make configurable/opt-in
+    logging.basicConfig(level=logging.DEBUG)
+    file_handler = logging.FileHandler("/tmp/localstack.log", mode="w", encoding="utf-8")
+
+    file_handler.setFormatter(JsonFormatter())
+    logging.root.addHandler(file_handler)
+    logging.root.setLevel(logging.DEBUG)  # FIXME
+
+    # silence noisy libs by default
+    logging.getLogger("werkzeug").setLevel(logging.CRITICAL)
+    logging.getLogger("stevedore").setLevel(logging.CRITICAL)
+    logging.getLogger("botocore").setLevel(logging.CRITICAL)
 
 
 def setup_hypercorn_logger(hypercorn_config) -> None:

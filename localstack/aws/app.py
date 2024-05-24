@@ -28,6 +28,7 @@ class LocalstackAwsGateway(Gateway):
         # the main request handler chain
         self.request_handlers.extend(
             [
+                handlers.log_request,
                 handlers.push_request_context,
                 handlers.add_internal_request_params,
                 handlers.handle_runtime_shutdown,
@@ -45,6 +46,7 @@ class LocalstackAwsGateway(Gateway):
                 handlers.add_region_from_header,
                 handlers.add_account_id,
                 handlers.parse_service_request,
+                # TODO: add logger that initializes a request "trace"
                 metric_collector.record_parsed_request,
                 handlers.serve_custom_service_request_handlers,
                 load_service,  # once we have the service request we can make sure we load the service
