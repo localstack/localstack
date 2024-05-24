@@ -11573,7 +11573,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_eq": {
-    "recorded-date": "21-05-2024, 16:51:17",
+    "recorded-date": "24-05-2024, 15:10:58",
     "recorded-content": {
       "invalid-condition-eq": {
         "Error": {
@@ -11641,7 +11641,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_policy_conditions_validation_starts_with": {
-    "recorded-date": "10-04-2024, 12:16:01",
+    "recorded-date": "24-05-2024, 15:11:14",
     "recorded-content": {
       "invalid-condition-starts-with": {
         "Error": {
