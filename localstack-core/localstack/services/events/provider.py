@@ -1119,6 +1119,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def _process_entries(
         self, context: RequestContext, entries: PutEventsRequestEntryList
     ) -> tuple[PutEventsResultEntryList, int]:
+        """Main method to process events put to an event bus.
+        Events are validated to contain the proper fields and formatted.
+        Events are matched against all the rules of the respective event bus.
+        For matching rules the event is either sent to the respective target,
+        via the target sender put to the defined archived."""
         processed_entries = []
         failed_entry_count = 0
         for event in entries:
