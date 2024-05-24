@@ -32,6 +32,7 @@ from localstack.aws.api.events import (
     EventPattern,
     EventsApi,
     EventSourceName,
+    InternalException,
     InvalidEventPatternException,
     KmsKeyIdentifier,
     LimitMax100,
@@ -683,7 +684,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> UpdateArchiveResponse:
         store = self.get_store(context)
-        archive = self.get_archive(archive_name, store)
+        try:
+            archive = self.get_archive(archive_name, store)
+        except ResourceNotFoundException:
+            raise InternalException("Service encountered unexpected problem. Please try again.")
         archive_service = self._archive_service_store[archive.arn]
         archive_service.update(description, event_pattern, retention_days)
 
