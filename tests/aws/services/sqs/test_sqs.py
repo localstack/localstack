@@ -4077,7 +4077,7 @@ class TestSqsProvider:
         self, sqs_create_queue, aws_sqs_client, snapshot
     ):
         # issue #10460
-        # the deduplication scope is apparently not restricted to high throughput fifo queues.
+        # the 'messageGroup' deduplication scope is apparently not restricted to high throughput fifo queues.
         attributes = {
             "FifoQueue": "True",
             "ContentBasedDeduplication": "True",
