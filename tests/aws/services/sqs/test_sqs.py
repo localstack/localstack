@@ -3988,9 +3988,33 @@ class TestSqsProvider:
             MessageGroupId="group3",
             MessageDeduplicationId=dedup_id,
         )
-
         response = aws_sqs_client.receive_message(QueueUrl=queue_url)
         snapshot.match("same-dedup-different-grp-high-throughput-2", response)
+
+        # the new dedup scope does not apply to newly received dedup ids either
+        dedup_id_2 = "dedup_2"
+        # send new message with new dedup id
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test4",
+            MessageGroupId="group4",
+            MessageDeduplicationId=dedup_id_2,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("new-dedup2-high-throughput", response)
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        # send another message with the same, new dedup id
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test5",
+            MessageGroupId="group5",
+            MessageDeduplicationId=dedup_id_2,
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup2-high-throughput", response)
 
     @markers.aws.validated
     def test_fifo_change_to_regular_throughput_after_creation(
@@ -4047,6 +4071,37 @@ class TestSqsProvider:
 
         response = aws_sqs_client.receive_message(QueueUrl=queue_url)
         snapshot.match("same-dedup-different-grp-regular-throughput", response)
+
+    @markers.aws.unknown
+    def test_sqs_fifo_message_group_scope_no_throughput_setting(
+        self, sqs_create_queue, aws_sqs_client, snapshot
+    ):
+        # issue #10460
+        # the deduplication scope is apparently not restricted to high throughput fifo queues.
+        attributes = {
+            "FifoQueue": "True",
+            "ContentBasedDeduplication": "True",
+            "DeduplicationScope": "messageGroup",
+        }
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}.fifo", Attributes=attributes)
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test",
+            MessageGroupId="group1",
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-1", response)
+        aws_sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+        )
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Test",
+            MessageGroupId="group2",
+        )
+        response = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        snapshot.match("same-dedup-different-grp-2", response)
 
     @markers.aws.validated
     def test_sse_queue_attributes(self, sqs_create_queue, snapshot, aws_sqs_client):

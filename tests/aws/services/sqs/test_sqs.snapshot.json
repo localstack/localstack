@@ -1852,7 +1852,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs]": {
-    "recorded-date": "30-04-2024, 13:34:32",
+    "recorded-date": "24-05-2024, 09:41:13",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -1905,6 +1905,26 @@
         }
       },
       "same-dedup-different-grp-high-throughput-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "new-dedup2-high-throughput": {
+        "Messages": [
+          {
+            "Body": "Test4",
+            "MD5OfBody": "41d5e808720c8ee71257214e952a6721",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup2-high-throughput": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1913,7 +1933,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs_query]": {
-    "recorded-date": "30-04-2024, 13:34:35",
+    "recorded-date": "24-05-2024, 09:41:19",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -1966,6 +1986,26 @@
         }
       },
       "same-dedup-different-grp-high-throughput-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "new-dedup2-high-throughput": {
+        "Messages": [
+          {
+            "Body": "Test4",
+            "MD5OfBody": "41d5e808720c8ee71257214e952a6721",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup2-high-throughput": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -3256,5 +3296,71 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_with_fifo_and_content_based_deduplication[sqs_query]": {
     "recorded-date": "21-05-2024, 13:48:14",
     "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_message_group_scope_no_throughput_setting[sqs]": {
+    "recorded-date": "24-05-2024, 09:03:33",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test",
+            "MD5OfBody": "0cbc6611f5540bd0809a388dc95a615b",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "Messages": [
+          {
+            "Body": "Test",
+            "MD5OfBody": "0cbc6611f5540bd0809a388dc95a615b",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_sqs_fifo_message_group_scope_no_throughput_setting[sqs_query]": {
+    "recorded-date": "24-05-2024, 09:03:35",
+    "recorded-content": {
+      "same-dedup-different-grp-1": {
+        "Messages": [
+          {
+            "Body": "Test",
+            "MD5OfBody": "0cbc6611f5540bd0809a388dc95a615b",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "same-dedup-different-grp-2": {
+        "Messages": [
+          {
+            "Body": "Test",
+            "MD5OfBody": "0cbc6611f5540bd0809a388dc95a615b",
+            "MessageId": "<uuid:2>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

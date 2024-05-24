@@ -934,7 +934,7 @@ class FifoQueue(SqsQueue):
     message_groups: dict[str, MessageGroup]
     inflight_groups: set[MessageGroup]
     message_group_queue: Queue
-    high_throughput: bool
+    deduplication_scope: str
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
@@ -943,15 +943,10 @@ class FifoQueue(SqsQueue):
         self.message_groups = {}
         self.inflight_groups = set()
         self.message_group_queue = Queue()
-        self.high_throughput = False
 
         # SQS does not seem to change the deduplication behaviour of fifo queues if you
-        # change to/from high-throughput mode after creation -> we need to set this on creation
-        if (
-            self.attributes[QueueAttributeName.DeduplicationScope] == "messageGroup"
-            and self.attributes[QueueAttributeName.FifoThroughputLimit] == "perMessageGroupId"
-        ):
-            self.high_throughput = True
+        # change to/from 'queue'/'messageGroup' scope after creation -> we need to set this on creation
+        self.deduplication_scope = attributes.get(QueueAttributeName.DeduplicationScope, "queue")
 
     @property
     def approx_number_of_messages(self):
@@ -1043,9 +1038,9 @@ class FifoQueue(SqsQueue):
             original_message
             and original_message.priority + sqs_constants.DEDUPLICATION_INTERVAL_IN_SEC
             > fifo_message.priority
-            # account for high-throughput-mode
+            # account for deduplication scope required for (but not restricted to) high-throughput-mode
             and (
-                not self.high_throughput
+                not self.deduplication_scope == "messageGroup"
                 or fifo_message.message_group_id == original_message.message_group_id
             )
         ):
