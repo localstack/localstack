@@ -405,12 +405,31 @@ class ResourceProviderExecutor:
 
         max_iterations = max(ceil(max_timeout / sleep_time), 2)
 
+        resource_type = get_resource_type(
+            {"Type": raw_payload["resourceType"]}
+        )  # TODO: simplify signature of get_resource_type to just take the type
+
         for current_iteration in range(max_iterations):
-            resource_type = get_resource_type(
-                {"Type": raw_payload["resourceType"]}
-            )  # TODO: simplify signature of get_resource_type to just take the type
             try:
+                # re-create the resource provider to ensure no state is
+                # incorrectly stored on the provider. Any state _must_ be
+                # propagated between loop iterations through `custom_context`.
                 resource_provider = self.load_resource_provider(resource_type)
+                if not hasattr(resource_provider, "SCHEMA"):
+                    raise Exception(
+                        "A ResourceProvider should always have a SCHEMA property defined."
+                    )
+
+                resource_type_schema = resource_provider.SCHEMA
+
+                if current_iteration == 0 and raw_payload["action"] == "CREATE":
+                    # only validate the schema on the first iteration, and only
+                    # validate create operations
+                    self.validate_model_properties(
+                        logical_resource_id=raw_payload["requestData"]["logicalResourceId"],
+                        schema=resource_type_schema,
+                        model=raw_payload["requestData"]["resourceProperties"],
+                    )
 
                 resource["SpecifiedProperties"] = raw_payload["requestData"]["resourceProperties"]
 
@@ -420,11 +439,6 @@ class ResourceProviderExecutor:
                     case OperationStatus.FAILED:
                         return event
                     case OperationStatus.SUCCESS:
-                        if not hasattr(resource_provider, "SCHEMA"):
-                            raise Exception(
-                                "A ResourceProvider should always have a SCHEMA property defined."
-                            )
-                        resource_type_schema = resource_provider.SCHEMA
                         physical_resource_id = (
                             self.extract_physical_resource_id_from_model_with_schema(
                                 event.resource_model,
@@ -594,6 +608,14 @@ class ResourceProviderExecutor:
                 physical_resource_id = resolve_json_pointer(resource_model, primary_id_paths[0])
 
         return physical_resource_id
+
+    def validate_model_properties(self, logical_resource_id: str, schema: dict, model: dict):
+        required_fields = schema.get("required", [])
+        for required_field in required_fields:
+            if required_field not in model or model[required_field] is None:
+                raise ValueError(
+                    f"Missing required field '{required_field}' in resource definition for resource '{logical_resource_id}'"
+                )
 
 
 plugin_manager = PluginManager(CloudFormationResourceProviderPlugin.namespace)
