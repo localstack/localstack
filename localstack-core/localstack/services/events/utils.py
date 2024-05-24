@@ -1,4 +1,5 @@
 import re
+from typing import Any, Dict
 
 from localstack.aws.api.events import (
     Arn,
@@ -15,6 +16,8 @@ from localstack.utils.aws.arns import parse_arn
 RULE_ARN_CUSTOM_EVENT_BUS_PATTERN = re.compile(
     r"^arn:aws:events:[a-z0-9-]+:\d{12}:rule/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$"
 )
+
+RULE_ARN_ARCHIVE_PATTERN = re.compile(r"^arn:aws:events:[a-z0-9-]+:\d{12}:archive/[a-zA-Z0-9_-]+$")
 
 
 def get_resource_type(arn: Arn) -> ResourceType:
@@ -47,7 +50,8 @@ def extract_event_bus_name(
         return "default"
 
 
-from typing import Any, Dict
+def is_archive_arn(arn: Arn) -> bool:
+    return bool(RULE_ARN_ARCHIVE_PATTERN.match(arn))
 
 
 def recursive_remove_none_values_from_dict(d: Dict[str, Any]) -> Dict[str, Any]:
