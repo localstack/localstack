@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from typing import Final
+
+from antlr4 import RecognitionException
+
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service import (
     StateTaskService,
 )
@@ -33,6 +37,23 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_sqs import (
     StateTaskServiceSqs,
 )
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.service.state_task_service_unsupported import (
+    StateTaskServiceUnsupported,
+)
+
+_UNSUPPORTED_SERVICE_NAMES: Final[set[str]] = {
+    "athena",
+    "batch",
+    "bedrock",
+    "codebuild",
+    "eks",
+    "elasticmapreduce",
+    "emr-containers",
+    "emr-serverless",
+    "databrew",
+    "mediaconvert",
+    "sagemaker",
+}
 
 
 # TODO: improve on factory constructor (don't use SubtypeManager: cannot reuse state task instances).
@@ -58,5 +79,7 @@ def state_task_service_for(service_name: str) -> StateTaskService:
             return StateTaskServiceEcs()
         case "glue":
             return StateTaskServiceGlue()
+        case _ if service_name in _UNSUPPORTED_SERVICE_NAMES:
+            return StateTaskServiceUnsupported()
         case unknown:
-            raise NotImplementedError(f"Unsupported service: '{unknown}'.")  # noqa
+            raise RecognitionException(f"Unknown service '{unknown}'")
