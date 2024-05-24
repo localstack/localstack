@@ -108,7 +108,7 @@ class ArchiveService:
     def _create_archive_rule(
         self,
     ) -> RuleName:
-        rule_name = f"Events-Archive--{self.name}"
+        rule_name = f"Events-Archive-{self.name}"
         default_event_pattern = {
             "replay-name": [{"exists": False}],
         }
@@ -127,7 +127,7 @@ class ArchiveService:
     def _create_archive_target(
         self,
     ) -> TargetId:
-        target_id = f"Events-Archive--{self.name}"
+        target_id = f"Events-Archive-{self.name}"
         self.client.put_targets(
             Rule=self.rule_name,
             EventBusName=self.event_bus_name,
