@@ -369,14 +369,6 @@
       }
     }
   },
-  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_events[default]": {
-    "recorded-date": "21-05-2024, 13:06:25",
-    "recorded-content": {}
-  },
-  "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_events[custom]": {
-    "recorded-date": "21-05-2024, 13:10:09",
-    "recorded-content": {}
-  },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_events[True-default]": {
     "recorded-date": "21-05-2024, 13:15:50",
     "recorded-content": {
@@ -479,7 +471,40 @@
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_events[False-default]": {
     "recorded-date": "21-05-2024, 13:24:58",
-    "recorded-content": {}
+    "recorded-content": {
+      "list-archives": {
+        "Archives": [
+          {
+            "ArchiveName": "<archive-name>",
+            "CreationTime": "datetime",
+            "EventCount": 10,
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "RetentionDays": 1,
+            "SizeBytes": 10959,
+            "State": "ENABLED"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-archive": {
+        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveName": "<archive-name>",
+        "CreationTime": "datetime",
+        "Description": "description of the archive",
+        "EventCount": 10,
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "RetentionDays": 1,
+        "SizeBytes": 10959,
+        "State": "ENABLED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestArchive::test_list_archive_with_events[False-custom]": {
     "recorded-date": "21-05-2024, 13:29:14",
