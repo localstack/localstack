@@ -946,7 +946,7 @@ class FifoQueue(SqsQueue):
 
         # SQS does not seem to change the deduplication behaviour of fifo queues if you
         # change to/from 'queue'/'messageGroup' scope after creation -> we need to set this on creation
-        self.deduplication_scope = attributes.get(QueueAttributeName.DeduplicationScope, "queue")
+        self.deduplication_scope = self.attributes[QueueAttributeName.DeduplicationScope]
 
     @property
     def approx_number_of_messages(self):

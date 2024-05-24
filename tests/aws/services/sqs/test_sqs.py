@@ -4072,7 +4072,7 @@ class TestSqsProvider:
         response = aws_sqs_client.receive_message(QueueUrl=queue_url)
         snapshot.match("same-dedup-different-grp-regular-throughput", response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_sqs_fifo_message_group_scope_no_throughput_setting(
         self, sqs_create_queue, aws_sqs_client, snapshot
     ):
