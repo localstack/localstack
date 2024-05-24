@@ -54,6 +54,9 @@ OPT_IN = [
     # transcribe
     "localstack/services/transcribe/**",
     "tests/aws/services/transcribe/**",
+    # secretsmanager
+    "localstack/services/secretsmanager/**",
+    "tests/aws/services/secretsmanager/**",
     # TODO add more services
 ]
 

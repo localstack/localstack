@@ -58,6 +58,8 @@ API_DEPENDENCIES = {
     # firehose currently only supports kinesis as source, this could become optional when more sources are supported
     "firehose": ["kinesis"],
     "transcribe": ["s3"],
+    # secretsmanager uses lambda for rotation
+    "secretsmanager": ["kms", "lambda"],
     # TODO: add more dependencies
 }
 
