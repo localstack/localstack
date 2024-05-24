@@ -37,6 +37,42 @@ from localstack.utils.tagging import TaggingService
 TargetDict = dict[TargetId, Target]
 
 
+class ValidationException(ServiceException):
+    code: str = "ValidationException"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
+class InvalidEventPatternException(Exception):
+    reason: str
+
+    def __init__(self, reason=None, message=None) -> None:
+        self.reason = reason
+        self.message = message or f"Event pattern is not valid. Reason: {reason}"
+
+
+class FormattedEvent(TypedDict):
+    version: str
+    id: str
+    detail_type: Optional[str]  # key "detail-type" is automatically interpreted as detail_type
+    source: Optional[EventSourceName]
+    account: str
+    time: str
+    region: str
+    resources: Optional[EventResourceList]
+    detail: dict[str, str | dict]
+
+
+FormattedEventDict = dict[str, FormattedEvent]
+
+TransformedEvent: TypeAlias = FormattedEvent | dict | str
+
+
+class ResourceType(Enum):
+    EVENT_BUS = "event_bus"
+    RULE = "rule"
+
+
 class Condition(TypedDict):
     Type: Literal["StringEquals"]
     Key: Literal["aws:PrincipalOrgID"]
@@ -151,37 +187,3 @@ class EventsStore(BaseStore):
 
 
 events_store = AccountRegionBundle("events", EventsStore)
-
-
-class ValidationException(ServiceException):
-    code: str = "ValidationException"
-    sender_fault: bool = True
-    status_code: int = 400
-
-
-class InvalidEventPatternException(Exception):
-    reason: str
-
-    def __init__(self, reason=None, message=None) -> None:
-        self.reason = reason
-        self.message = message or f"Event pattern is not valid. Reason: {reason}"
-
-
-class FormattedEvent(TypedDict):
-    version: str
-    id: str
-    detail_type: Optional[str]  # key "detail-type" is automatically interpreted as detail_type
-    source: Optional[EventSourceName]
-    account: str
-    time: str
-    region: str
-    resources: Optional[EventResourceList]
-    detail: dict[str, str | dict]
-
-
-TransformedEvent: TypeAlias = FormattedEvent | dict | str
-
-
-class ResourceType(Enum):
-    EVENT_BUS = "event_bus"
-    RULE = "rule"
