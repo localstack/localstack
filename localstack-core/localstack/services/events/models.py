@@ -138,12 +138,16 @@ class Archive:
     retention_days: RetentionDays = None
     state: ArchiveState = ArchiveState.DISABLED
     arn: Arn = field(init=False)
-    event_count: int = 0
     creation_time: Timestamp = None
     size_bytes: int = 0  # TODO how to deal with updating this value?
+    events: FormattedEventDict = field(default_factory=dict)
 
     def __post_init__(self):
         self.arn = f"arn:aws:events:{self.region}:{self.account_id}:archive/{self.name}"
+
+    @property
+    def event_count(self) -> int:
+        return len(self.events)
 
 
 ArchiveDict = dict[ArchiveName, Archive]
