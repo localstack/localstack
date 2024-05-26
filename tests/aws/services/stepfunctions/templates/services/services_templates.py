@@ -32,6 +32,9 @@ class ServicesTemplates(TemplateLoader):
     AWS_SDK_SFN_START_EXECUTION_IMPLICIT_JSON_SERIALISATION: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/aws_sdk_sfn_start_execution_implicit_json_serialisation.json5"
     )
+    AWS_SDK_S3_GET_OBJECT: Final[str] = os.path.join(
+        _THIS_FOLDER, "statemachines/aws_sdk_s3_get_object.json5"
+    )
     API_GATEWAY_INVOKE_BASE: Final[str] = os.path.join(
         _THIS_FOLDER, "statemachines/api_gateway_invoke_base.json5"
     )

@@ -1666,5 +1666,685 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_str]": {
+    "recorded-date": "23-05-2024, 19:11:31",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "S3GetObject"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "region": "<region>",
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 0,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": ""
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "S3GetObject",
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 0,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": ""
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 0,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": ""
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[str]": {
+    "recorded-date": "23-05-2024, 19:11:47",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "S3GetObject"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "region": "<region>",
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 9,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"332eec544317a6d340b8e77da7fe54ad\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": "text data"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "S3GetObject",
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 9,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"332eec544317a6d340b8e77da7fe54ad\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": "text data"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 9,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"332eec544317a6d340b8e77da7fe54ad\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": "text data"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_binary]": {
+    "recorded-date": "23-05-2024, 19:12:03",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "S3GetObject"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "region": "<region>",
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 0,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": ""
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "S3GetObject",
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 0,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": ""
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 0,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": ""
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[binary]": {
+    "recorded-date": "23-05-2024, 19:12:25",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "S3GetObject"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "region": "<region>",
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 11,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"e1a49b59e0c42e4fd3735ad644f25d57\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": "binary data"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "S3GetObject",
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 11,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"e1a49b59e0c42e4fd3735ad644f25d57\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": "binary data"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 11,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"e1a49b59e0c42e4fd3735ad644f25d57\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": "binary data"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[bytearray]": {
+    "recorded-date": "23-05-2024, 19:12:51",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "S3GetObject"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "taskScheduledEventDetails": {
+              "parameters": {
+                "Bucket": "bucket-name",
+                "Key": "file_key"
+              },
+              "region": "<region>",
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskScheduled"
+          },
+          {
+            "id": 4,
+            "previousEventId": 3,
+            "taskStartedEventDetails": {
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStarted"
+          },
+          {
+            "id": 5,
+            "previousEventId": 4,
+            "taskSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 15,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"383fd42bdf94a2ab38cbeb1d8eb7e53f\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": "byte array data"
+              },
+              "outputDetails": {
+                "truncated": false
+              },
+              "resource": "getObject",
+              "resourceType": "aws-sdk:s3"
+            },
+            "timestamp": "timestamp",
+            "type": "TaskSucceeded"
+          },
+          {
+            "id": 6,
+            "previousEventId": 5,
+            "stateExitedEventDetails": {
+              "name": "S3GetObject",
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 15,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"383fd42bdf94a2ab38cbeb1d8eb7e53f\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": "byte array data"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "TaskStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "AcceptRanges": "bytes",
+                "ContentLength": 15,
+                "ContentType": "binary/octet-stream",
+                "ETag": "\"383fd42bdf94a2ab38cbeb1d8eb7e53f\"",
+                "LastModified": "date",
+                "Metadata": {},
+                "ServerSideEncryption": "AES256",
+                "Body": "byte array data"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 7,
+            "previousEventId": 6,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
