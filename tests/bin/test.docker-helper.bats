@@ -152,6 +152,17 @@ setup_file() {
 
 # push-manifests
 
+@test "push-manifests works without FORCE_VERSION_TAG_PUSH" {
+  export IMAGE_NAME="localstack/test"
+  export MAIN_BRANCH="`git branch --show-current`"
+  export DOCKER_USERNAME=test
+  export DOCKER_PASSWORD=test
+  export VERSION_FILE="$BATS_TEST_DIRNAME/files/VERSION"
+  run bin/docker-helper.sh push-manifests
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "docker manifest push $IMAGE_NAME:latest" ]]
+}
+
 @test "push-manifests pushes built image wo versions" {
   export IMAGE_NAME="localstack/test"
   export MAIN_BRANCH="`git branch --show-current`"

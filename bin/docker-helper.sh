@@ -188,10 +188,10 @@ function cmd-push() {
       docker push $TARGET_IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION-$PLATFORM
     }
 
-    if [ "$FORCE_VERSION_TAG_PUSH" -eq "1" ]; then
+    if [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "1" ]; then
       echo "Force-enabled version tag push."
       _push
-    elif [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
+    elif [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
       echo "Force-disabled version tag push. Not pushing any other tags."
     elif (git diff HEAD~1 ${VERSION_FILE} | grep -v '.dev'); then
       echo "Pushing version tags, version has changed in last commit."
@@ -251,13 +251,15 @@ function cmd-push-manifests() {
       docker manifest push $IMAGE_NAME:$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION
     }
 
-
-    if [ "$FORCE_VERSION_TAG_PUSH" -eq "1" ]; then
+    if [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "1" ]; then
       echo "Force-enabled version tag push."
       _push
-    elif [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
+    elif [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
       echo "Force-disabled version tag push. Not pushing any other tags."
     elif (git diff HEAD~1 ${VERSION_FILE} | grep -v '.dev'); then
+      echo "Pushing version tags, version has changed in last commit."
+      _push
+    else
       echo "Not pushing any other tags, version has not changed in last commit."
     fi
 }

@@ -651,9 +651,9 @@ jobs:
           name: Create multi-platform manifests
           command: |
             # Push to Docker Hub
-            ./bin/docker-helper.sh push-manifest
+            ./bin/docker-helper.sh push-manifests
             # Push to Amazon Public ECR
-            IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push-manifest
+            IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push-manifests
       - run:
           name: Publish a dev release
           command: |
