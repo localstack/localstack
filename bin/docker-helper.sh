@@ -193,7 +193,7 @@ function cmd-push() {
       _push
     elif [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
       echo "Force-disabled version tag push. Not pushing any other tags."
-    elif (git diff HEAD~1 ${VERSION_FILE} | grep -v '.dev'); then
+    elif (git diff HEAD^ ${VERSION_FILE} | tail -n 1 | grep -v '.dev'); then
       echo "Pushing version tags, version has changed in last commit."
       _push
     else
@@ -256,7 +256,7 @@ function cmd-push-manifests() {
       _push
     elif [ -n "$FORCE_VERSION_TAG_PUSH" ] && [ "$FORCE_VERSION_TAG_PUSH" -eq "0" ]; then
       echo "Force-disabled version tag push. Not pushing any other tags."
-    elif (git diff HEAD~1 ${VERSION_FILE} | grep -v '.dev'); then
+    elif (git diff HEAD^ ${VERSION_FILE} | tail -n 1 | grep -v '.dev'); then
       echo "Pushing version tags, version has changed in last commit."
       _push
     else
