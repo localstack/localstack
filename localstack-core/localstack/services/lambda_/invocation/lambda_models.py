@@ -620,6 +620,12 @@ class Function:
         del state["instance_id"]
         return state
 
+    def __setstate__(self, state):
+        # Inject persistent state
+        self.__dict__.update(state)
+        # Create new instance id
+        self.__post_init__()
+
 
 class ValidationException(CommonServiceException):
     def __init__(self, message: str):
