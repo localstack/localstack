@@ -30,7 +30,7 @@ The basic steps include:
 4. Install the Python dependencies using `make install`.
 > [!NOTE]
 > This will install the required pip dependencies in a local Python 3 `venv` directory called `.venv` (your global Python packages will remain untouched).
-> Depending on your system, some `pip` modules may require additional native libs installed. 
+> Depending on your system, some `pip` modules may require additional native libs installed.
 5. Start localstack in host mode using `make start`
 
 <div align="left">
@@ -44,7 +44,7 @@ The basic steps include:
 We generally recommend using this command to build the `localstack/localstack` Docker image locally (works on Linux/MacOS):
 
 ```bash
-make docker-build
+IMAGE_NAME="localstack/localstack" ./bin/docker-helper.sh build
 ```
 
 ### Additional Dependencies for running LocalStack in Host Mode

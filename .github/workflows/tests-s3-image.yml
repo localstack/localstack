@@ -86,7 +86,9 @@ jobs:
             runner: buildjet-2vcpu-ubuntu-2204-arm
     name: "Build and Test S3 image"
     env:
-      IMAGE_NAME: "localstack-s3-${{ matrix.arch }}"
+      PLATFORM: ${{ matrix.arch }}
+      IMAGE_NAME: "localstack/localstack"
+      DEFAULT_TAG: "s3-latest"
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
@@ -110,9 +112,8 @@ jobs:
 
       - name: Build S3 Docker Image
         env:
-          PLATFORM: ${{ matrix.arch }}
           DOCKERFILE: "./Dockerfile.s3"
-        run: make docker-build
+        run: ./bin/docker-helper.sh build
 
       - name: Run S3 Image tests
         timeout-minutes: 10
@@ -133,13 +134,14 @@ jobs:
           retention-days: 30
 
       - name: Save the S3 image
-        run: docker save ${{ env.IMAGE_NAME }} | gzip > ${{ env.IMAGE_NAME }}.tar.gz
+        id: save-image
+        run: ./bin/docker-helper.sh save
 
       - name: Store Docker image as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.IMAGE_NAME }}
-          path: ${{ env.IMAGE_NAME }}.tar.gz
+          name: localstack-s3-image-${{ matrix.arch }}
+          path: ${{ steps.save-image.outputs.IMAGE_FILENAME }}
           retention-days: 1
 
   publish-test-results:
@@ -183,8 +185,8 @@ jobs:
       - build-test-s3
     if: inputs.publishDockerImage
     env:
-      LOCAL_IMAGE_NAME: "localstack-s3"
-      DOCKERHUB_IMAGE_NAME: "localstack/localstack:s3-latest"
+      IMAGE_NAME: "localstack/localstack"
+      DEFAULT_TAG: "s3-latest"
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -195,35 +197,35 @@ jobs:
       - name: Download AMD64 image
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.LOCAL_IMAGE_NAME }}-amd64
+          name: localstack-s3-image-amd64
 
       - name: Download ARM64 image
         uses: actions/download-artifact@v4
         with:
-          name: ${{ env.LOCAL_IMAGE_NAME }}-arm64
+          name: localstack-s3-image-arm64
 
       - name: Load AMD64 image
-        run: docker load --input ${{ env.LOCAL_IMAGE_NAME }}-amd64.tar.gz
+        env:
+          PLATFORM: amd64
+        run: ./bin/docker-helper.sh load
 
       - name: Push AMD64 image
-        run: |
-          docker tag ${{ env.LOCAL_IMAGE_NAME }}-amd64 ${{ env.DOCKERHUB_IMAGE_NAME }}-amd64
-          docker push ${{ env.DOCKERHUB_IMAGE_NAME }}-amd64
+        env:
+          PLATFORM: amd64
+        run: ./bin/docker-helper.sh push
 
       - name: Load ARM64 image
-        run: docker load --input ${{ env.LOCAL_IMAGE_NAME }}-arm64.tar.gz
+        env:
+          PLATFORM: arm64
+        run: ./bin/docker-helper.sh load
 
       - name: Push ARM64 image
-        run: |
-          docker tag ${{ env.LOCAL_IMAGE_NAME }}-arm64 ${{ env.DOCKERHUB_IMAGE_NAME }}-arm64
-          docker push ${{ env.DOCKERHUB_IMAGE_NAME }}-arm64
+        env:
+          PLATFORM: arm64
+        run: ./bin/docker-helper.sh push
 
       - name: Create and push manifest
-        run: |
-          docker manifest create ${{ env.DOCKERHUB_IMAGE_NAME }} \
-            --amend ${{ env.DOCKERHUB_IMAGE_NAME }}-arm64 \
-            --amend ${{ env.DOCKERHUB_IMAGE_NAME }}-amd64
-          docker manifest push ${{ env.DOCKERHUB_IMAGE_NAME }}
+        run: ./bin/docker-helper.sh push-manifests
 
   cleanup:
     name: "Clean up"
@@ -233,7 +235,7 @@ jobs:
     steps:
       - uses: geekyeggo/delete-artifact@v5
         with:
-          name: localstack-s3-*
+          name: localstack-s3-image-*
           failOnError: false
 
   push-to-tinybird:
