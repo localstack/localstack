@@ -7,10 +7,7 @@ We welcome contributions to LocalStack! Please refer to the following sections t
 - [Contribution Guidelines](#contribution-guidelines)
 - [Development Environment Setup](development-environment-setup/README.md)
 - [LocalStack Concepts](localstack-concepts/README.md)
-- [Integration Tests](integration-tests/README.md)
-- [Parity Testing](parity-testing/README.md)
-- [Multi-account and Multi-region Testing](multi-account-region-testing/README.md)
-- [Terraform Tests](terraform-tests/README.md)
+- [Testing](testing/README.md)
 
 ## Contribution Guidelines
 
