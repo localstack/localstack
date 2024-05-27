@@ -232,6 +232,35 @@ def get_name_and_qualifier(
     return function_name, qualifier
 
 
+def get_function_arn(function_name_or_arn, context, state):
+    # Can be either a partial arn or a full arn for the version/alias
+    function_name, qualifier, account, region = function_locators_from_arn(function_name_or_arn)
+    account = account or context.account_id
+    region = region or context.region
+    fn = state.functions.get(function_name)
+    if not fn:
+        raise InvalidParameterValueException("Function does not exist", Type="User")
+    if qualifier:
+        # make sure the function version/alias exists
+        if qualifier_is_alias(qualifier):
+            fn_alias = fn.aliases.get(qualifier)
+            if not fn_alias:
+                raise Exception("unknown alias")  # TODO: cover via test
+        elif qualifier_is_version(qualifier):
+            fn_version = fn.versions.get(qualifier)
+            if not fn_version:
+                raise Exception("unknown version")  # TODO: cover via test
+        elif qualifier == "$LATEST":
+            pass
+        else:
+            raise Exception("invalid functionname")  # TODO: cover via test
+        fn_arn = qualified_lambda_arn(function_name, qualifier, account, region)
+
+    else:
+        fn_arn = unqualified_lambda_arn(function_name, account, region)
+    return fn_arn, function_name
+
+
 def build_statement(
     resource_arn: str,
     statement_id: str,

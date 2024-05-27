@@ -880,6 +880,9 @@ LAMBDA_DOCKER_DNS = os.environ.get("LAMBDA_DOCKER_DNS", "").strip()
 # Additional flags passed to Docker run|create commands.
 LAMBDA_DOCKER_FLAGS = os.environ.get("LAMBDA_DOCKER_FLAGS", "").strip()
 
+# PUBLIC: Version of the Lambda Event Source Mapping implementation
+LAMBDA_EVENT_SOURCE_MAPPING = os.environ.get("LAMBDA_EVENT_SOURCE_MAPPING", "v1").strip()
+
 # PUBLIC: 0 (default)
 # Enable this flag to run cross-platform compatible lambda functions natively (i.e., Docker selects architecture) and
 # ignore the AWS architectures (i.e., x86_64, arm64) configured for the lambda function.
