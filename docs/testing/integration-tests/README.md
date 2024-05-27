@@ -4,7 +4,7 @@ LocalStack has an extensive set of [integration tests](https://github.com/locals
 
 ## Writing integration tests
 
-The following guiding principles apply to writing integration tests:
+The following guiding principles apply to writing integration tests in addition to the [general rules](../README.md):
 
 -   Tests should pass when running against AWS:
     -   Don't make assumptions about the time it takes to create resources. If you do asserts after creating resources, use `poll_condition`, `retry` or one of the waiters included in the boto3 library to wait for the resource to be created.
