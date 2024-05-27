@@ -46,6 +46,7 @@ class AlgorithmSpec(str):
     RSAES_OAEP_SHA_256 = "RSAES_OAEP_SHA_256"
     RSA_AES_KEY_WRAP_SHA_1 = "RSA_AES_KEY_WRAP_SHA_1"
     RSA_AES_KEY_WRAP_SHA_256 = "RSA_AES_KEY_WRAP_SHA_256"
+    SM2PKE = "SM2PKE"
 
 
 class ConnectionErrorCodeType(str):
@@ -235,6 +236,7 @@ class WrappingKeySpec(str):
     RSA_2048 = "RSA_2048"
     RSA_3072 = "RSA_3072"
     RSA_4096 = "RSA_4096"
+    SM2 = "SM2"
 
 
 class XksProxyConnectivityType(str):

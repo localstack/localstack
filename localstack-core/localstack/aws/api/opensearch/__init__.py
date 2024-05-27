@@ -149,6 +149,11 @@ class ConnectionMode(str):
     VPC_ENDPOINT = "VPC_ENDPOINT"
 
 
+class DataSourceStatus(str):
+    ACTIVE = "ACTIVE"
+    DISABLED = "DISABLED"
+
+
 class DeploymentStatus(str):
     PENDING_UPDATE = "PENDING_UPDATE"
     IN_PROGRESS = "IN_PROGRESS"
@@ -1251,6 +1256,7 @@ class DataSourceDetails(TypedDict, total=False):
     DataSourceType: Optional[DataSourceType]
     Name: Optional[DataSourceName]
     Description: Optional[DataSourceDescription]
+    Status: Optional[DataSourceStatus]
 
 
 DataSourceList = List[DataSourceDetails]
@@ -1775,6 +1781,7 @@ class GetDataSourceResponse(TypedDict, total=False):
     DataSourceType: Optional[DataSourceType]
     Name: Optional[DataSourceName]
     Description: Optional[DataSourceDescription]
+    Status: Optional[DataSourceStatus]
 
 
 class GetDomainMaintenanceStatusRequest(ServiceRequest):
@@ -2074,6 +2081,7 @@ class UpdateDataSourceRequest(ServiceRequest):
     Name: DataSourceName
     DataSourceType: DataSourceType
     Description: Optional[DataSourceDescription]
+    Status: Optional[DataSourceStatus]
 
 
 class UpdateDataSourceResponse(TypedDict, total=False):
@@ -2658,6 +2666,7 @@ class OpensearchApi:
         name: DataSourceName,
         data_source_type: DataSourceType,
         description: DataSourceDescription = None,
+        status: DataSourceStatus = None,
         **kwargs,
     ) -> UpdateDataSourceResponse:
         raise NotImplementedError
