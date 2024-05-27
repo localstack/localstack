@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 
 from jsonschema import ValidationError, validate
 from requests.models import Response
@@ -31,6 +32,7 @@ from localstack.services.apigateway.integration import (
     StepFunctionIntegration,
 )
 from localstack.services.apigateway.models import ApiGatewayStore
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX
 from localstack.utils.aws.aws_responses import requests_response
 
 LOG = logging.getLogger(__name__)
@@ -344,8 +346,8 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     integration_method = integration.get("httpMethod")
     uri = integration.get("uri") or integration.get("integrationUri") or ""
 
-    if (uri.startswith("arn:aws:apigateway:") and ":lambda:path" in uri) or uri.startswith(
-        "arn:aws:lambda"
+    if (re.match(f"{ARN_PARTITION_REGEX}:apigateway:", uri) and ":lambda:path" in uri) or re.match(
+        f"{ARN_PARTITION_REGEX}:lambda", uri
     ):
         invocation_context.context = helpers.get_event_request_context(invocation_context)
         if integration_type == "AWS_PROXY":
@@ -374,7 +376,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
 
         if (
             method == "POST"
-            and uri.startswith("arn:aws:apigateway:")
+            and re.match(f"{ARN_PARTITION_REGEX}:apigateway:", uri)
             and "events:action/PutEvents" in uri
         ):
             return EventBridgeIntegration().invoke(invocation_context)

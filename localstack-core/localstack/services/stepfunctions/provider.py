@@ -138,6 +138,7 @@ from localstack.services.stepfunctions.stepfunctions_utils import (
 )
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import (
+    ARN_PARTITION_REGEX,
     stepfunctions_activity_arn,
     stepfunctions_express_execution_arn,
     stepfunctions_standard_execution_arn,
@@ -160,15 +161,15 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         visitor.visit(sfn_stores)
 
     _STATE_MACHINE_ARN_REGEX: Final[re.Pattern] = re.compile(
-        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:stateMachine:[a-zA-Z0-9-_.]+(:\d+)?$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:stateMachine:[a-zA-Z0-9-_.]+(:\d+)?$"
     )
 
     _STATE_MACHINE_EXECUTION_ARN_REGEX: Final[re.Pattern] = re.compile(
-        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:(stateMachine|execution|express):[a-zA-Z0-9-_.]+(:\d+)?(:[a-zA-Z0-9-_.]+)*$"
+        rf"^{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{12}:(stateMachine|execution|express):[a-zA-Z0-9-_.]+(:\d+)?(:[a-zA-Z0-9-_.]+)*$"
     )
 
     _ACTIVITY_ARN_REGEX: Final[re.Pattern] = re.compile(
-        r"^arn:aws:states:[a-z0-9-]+:[0-9]{12}:activity:[a-zA-Z0-9-_]+$"
+        rf"{ARN_PARTITION_REGEX}:states:[a-z0-9-]+:[0-9]{{12}}:activity:[a-zA-Z0-9-_]+$"
     )
 
     @staticmethod

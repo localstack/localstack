@@ -337,8 +337,8 @@ class IamProvider(IamApi):
             tags={},
             max_session_duration=3600,
         )
-        role.service_linked_role_arn = "arn:aws:iam::{0}:role/aws-service-role/{1}/{2}".format(
-            context.account_id, aws_service_name, role.name
+        role.service_linked_role_arn = "arn:{0}:iam::{1}:role/aws-service-role/{2}/{3}".format(
+            context.partition, context.account_id, aws_service_name, role.name
         )
 
         res_role = self.moto_role_to_role_type(role)

@@ -41,7 +41,7 @@ from localstack.services.apigateway.templates import (
 )
 from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
-from localstack.utils.aws.arns import extract_region_from_arn
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX, extract_region_from_arn, get_partition
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
     request_response_stream,
@@ -188,7 +188,7 @@ def get_internal_mocked_headers(
 
 
 def get_source_arn(invocation_context: ApiInvocationContext):
-    return f"arn:aws:execute-api:{invocation_context.region_name}:{invocation_context.account_id}:{invocation_context.api_id}/{invocation_context.stage}/{invocation_context.method}{invocation_context.path}"
+    return f"arn:{get_partition(invocation_context.region_name)}:execute-api:{invocation_context.region_name}:{invocation_context.account_id}:{invocation_context.api_id}/{invocation_context.stage}/{invocation_context.method}{invocation_context.path}"
 
 
 def call_lambda(
@@ -686,10 +686,8 @@ class DynamoDBIntegration(BackendIntegration):
 
 class S3Integration(BackendIntegration):
     # target ARN patterns
-    TARGET_REGEX_PATH_S3_URI = (
-        r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
-    )
-    TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
+    TARGET_REGEX_PATH_S3_URI = rf"{ARN_PARTITION_REGEX}:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
+    TARGET_REGEX_ACTION_S3_URI = rf"{ARN_PARTITION_REGEX}:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
 
     def invoke(self, invocation_context: ApiInvocationContext):
         invocation_path = invocation_context.path_with_query_string
