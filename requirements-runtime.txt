@@ -212,7 +212,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.7.post1
+moto-ext==5.0.8.post1
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -359,7 +359,7 @@ tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.11.0
+typing-extensions==4.12.0
     # via
     #   aws-sam-translator
     #   localstack-twisted
@@ -389,7 +389,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.4.post1
+zope-interface==6.4.post2
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
