@@ -264,6 +264,11 @@ class ConcurrencyMode(str):
     SOFT_FAILURE_TOLERANCE = "SOFT_FAILURE_TOLERANCE"
 
 
+class DeletionMode(str):
+    STANDARD = "STANDARD"
+    FORCE_DELETE_STACK = "FORCE_DELETE_STACK"
+
+
 class DeprecatedStatus(str):
     LIVE = "LIVE"
     DEPRECATED = "DEPRECATED"
@@ -1251,6 +1256,7 @@ class DeleteStackInput(ServiceRequest):
     RetainResources: Optional[RetainResources]
     RoleARN: Optional[RoleARN]
     ClientRequestToken: Optional[ClientRequestToken]
+    DeletionMode: Optional[DeletionMode]
 
 
 class DeleteStackInstancesInput(ServiceRequest):
@@ -1738,6 +1744,7 @@ class Stack(TypedDict, total=False):
     RootId: Optional[StackId]
     DriftInformation: Optional[StackDriftInformation]
     RetainExceptOnCreate: Optional[RetainExceptOnCreate]
+    DeletionMode: Optional[DeletionMode]
     DetailedStatus: Optional[DetailedStatus]
 
 
@@ -2860,6 +2867,7 @@ class CloudformationApi:
         retain_resources: RetainResources = None,
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
+        deletion_mode: DeletionMode = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
