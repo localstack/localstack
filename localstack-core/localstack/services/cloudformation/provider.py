@@ -28,6 +28,7 @@ from localstack.aws.api.cloudformation import (
     DeleteStackInstancesInput,
     DeleteStackInstancesOutput,
     DeleteStackSetOutput,
+    DeletionMode,
     DescribeChangeSetOutput,
     DescribeStackEventsOutput,
     DescribeStackResourceOutput,
@@ -300,6 +301,7 @@ class CloudformationProvider(CloudformationApi):
         retain_resources: RetainResources = None,
         role_arn: RoleARN = None,
         client_request_token: ClientRequestToken = None,
+        deletion_mode: DeletionMode = None,
         **kwargs,
     ) -> None:
         stack = find_active_stack_by_name_or_id(context.account_id, context.region, stack_name)
