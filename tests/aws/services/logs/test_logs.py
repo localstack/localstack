@@ -4,6 +4,7 @@ import json
 import re
 
 import pytest
+from localstack_snapshot.pytest.snapshot import is_aws
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack.aws.api.lambda_ import Runtime
@@ -62,7 +63,7 @@ def logs_log_stream(logs_log_group, aws_client):
 
 class TestCloudWatchLogs:
     # TODO make creation and description atomic to avoid possible flake?
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_and_delete_log_group(self, aws_client):
         test_name = f"test-log-group-{short_uid()}"
         log_groups_before = aws_client.logs.describe_log_groups(
@@ -218,7 +219,7 @@ class TestCloudWatchLogs:
         )
         assert len(log_streams_after) == 0
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_put_events_multi_bytes_msg(self, logs_log_group, logs_log_stream, aws_client):
         body_msg = "🙀 - 参よ - 日本語"
         events = [{"timestamp": now_utc(millis=True), "message": body_msg}]
@@ -227,12 +228,20 @@ class TestCloudWatchLogs:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        events = aws_client.logs.get_log_events(
-            logGroupName=logs_log_group, logStreamName=logs_log_stream
-        )["events"]
-        assert events[0]["message"] == body_msg
+        def get_log_events():
+            events = aws_client.logs.get_log_events(
+                logGroupName=logs_log_group, logStreamName=logs_log_stream
+            )["events"]
+            assert events[0]["message"] == body_msg
 
-    @markers.aws.unknown
+        retry(
+            get_log_events,
+            retries=20 if is_aws() else 3,
+            sleep=5 if is_aws() else 1,
+            sleep_before=3 if is_aws() else 0,
+        )
+
+    @markers.aws.validated
     def test_filter_log_events_response_header(self, logs_log_group, logs_log_stream, aws_client):
         events = [
             {"timestamp": now_utc(millis=True), "message": "log message 1"},
@@ -524,8 +533,8 @@ class TestCloudWatchLogs:
                 logGroupName=logs_log_group, filterName=filter_name
             )
 
-    @pytest.mark.skip("TODO: failing against pro")
-    @markers.aws.unknown
+    @pytest.mark.skip("TODO: failing against community - filters are only in pro -> move test?")
+    @markers.aws.validated
     def test_metric_filters(self, logs_log_group, logs_log_stream, aws_client):
         basic_filter_name = f"test-filter-basic-{short_uid()}"
         json_filter_name = f"test-filter-json-{short_uid()}"
@@ -575,8 +584,16 @@ class TestCloudWatchLogs:
         )
 
         # list metrics
-        response = aws_client.cloudwatch.list_metrics(Namespace=namespace_name)
-        assert len(response["Metrics"]) == 2
+        def list_metrics():
+            res = aws_client.cloudwatch.list_metrics(Namespace=namespace_name)
+            assert len(res["Metrics"]) == 2
+
+        retry(
+            list_metrics,
+            retries=20 if is_aws() else 3,
+            sleep=5 if is_aws() else 1,
+            sleep_before=3 if is_aws() else 0,
+        )
 
         # delete filters
         aws_client.logs.delete_metric_filter(
@@ -594,7 +611,7 @@ class TestCloudWatchLogs:
         assert basic_filter_name not in filter_names
         assert json_filter_name not in filter_names
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_delivery_logs_for_sns(self, sns_create_topic, sns_subscription, aws_client):
         topic_name = f"test-logs-{short_uid()}"
         contact = "+10123456789"
@@ -607,7 +624,14 @@ class TestCloudWatchLogs:
         logs_group_name = topic_arn.replace("arn:aws:", "").replace(":", "/")
 
         def log_group_exists():
+            # TODO on AWS the log group is not created, probably need iam role
+            # see also https://repost.aws/knowledge-center/monitor-sns-texts-cloudwatch
             response = aws_client.logs.describe_log_streams(logGroupName=logs_group_name)
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        retry(log_group_exists)
+        retry(
+            log_group_exists,
+            retries=20 if is_aws() else 3,
+            sleep=5 if is_aws() else 1,
+            sleep_before=3 if is_aws() else 0,
+        )
