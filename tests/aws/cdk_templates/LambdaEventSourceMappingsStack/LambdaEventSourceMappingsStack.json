@@ -136,6 +136,11 @@
       "Value": {
         "Ref": "DestinationQueueCFE59110"
       }
+    },
+    "LambdaEventSourceMappingUUID": {
+      "Value": {
+        "Ref": "TargetFunctionSqsEventSourceLambdaEventSourceMappingsStackSourceQueueCDB2490E44F101B5"
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/event_source_mappings/test_event_source_mapping_sqs.py::TestEventSourceMappingSqs::test_event_source_mappings_sqs": {
-    "recorded-date": "22-05-2024, 14:36:18",
+    "recorded-date": "27-05-2024, 08:27:18",
     "recorded-content": {
       "first_attempt": {
         "Messages": [

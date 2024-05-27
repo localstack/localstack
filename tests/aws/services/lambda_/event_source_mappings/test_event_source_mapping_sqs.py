@@ -5,6 +5,7 @@ from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_sqs as sqs
 from localstack_ext.services.pipes.senders.sqs_sender import SqsSender
 
+from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from tests.aws.services.lambda_.test_lambda_integration_sqs import LAMBDA_SQS_INTEGRATION_FILE
@@ -44,8 +45,8 @@ class TestEventSourceMappingSqs:
         source_queue = sqs.Queue(stack, "SourceQueue")
         cdk.CfnOutput(stack, "SourceArn", value=source_queue.queue_arn)
 
-        target_queue = sqs.Queue(stack, "DestinationQueue")
-        cdk.CfnOutput(stack, "DestinationQueueUrl", value=target_queue.queue_url)
+        destination_queue = sqs.Queue(stack, "DestinationQueue")
+        cdk.CfnOutput(stack, "DestinationQueueUrl", value=destination_queue.queue_url)
 
         target_function = lambda_.Function(
             stack,
@@ -54,7 +55,7 @@ class TestEventSourceMappingSqs:
             code=lambda_.InlineCode(code=load_file(LAMBDA_SQS_INTEGRATION_FILE)),
             handler="index.handler",
         )
-        target_queue.grant_send_messages(target_function)
+        destination_queue.grant_send_messages(target_function)
 
         # Event Source Mapping:
         # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_lambda.EventSourceMapping.html
@@ -64,11 +65,12 @@ class TestEventSourceMappingSqs:
         target_function.add_event_source(event_source)
         # TODO: fix CDK token resolving because this throws the error:
         # @jsii/kernel.RuntimeError: Error: SqsEventSource is not yet bound to an event source mapping
-        # cdk.CfnOutput(
-        #     stack,
-        #     "LambdaEventSourceMappingUUID",
-        #     value=event_source.event_source_mapping_id,
-        # )
+        # Now it works magically?!
+        cdk.CfnOutput(
+            stack,
+            "LambdaEventSourceMappingUUID",
+            value=event_source.event_source_mapping_id,
+        )
 
         # # ALTERNATIVE: fix permissions when not using the high-level util (which does not yield a return value :upside)
         # event_source_mapping = target_function.add_event_source_mapping(
@@ -82,6 +84,7 @@ class TestEventSourceMappingSqs:
         #     value=event_source_mapping.event_source_mapping_id,
         # )
 
+        # TODO for dev: skip_teardown=True
         with infra.provisioner() as prov:
             yield prov
 
@@ -95,9 +98,9 @@ class TestEventSourceMappingSqs:
         )
 
         # TODO: needed? requires UUID, which is a lazy CDK token failing upon outputting via CF
-        # _await_event_source_mapping_enabled(
-        #     aws_client.lambda_, outputs["LambdaEventSourceMappingUUID"]
-        # )
+        _await_event_source_mapping_enabled(
+            aws_client.lambda_, outputs["LambdaEventSourceMappingUUID"]
+        )
 
         # Send event to the source
         events_to_send = [

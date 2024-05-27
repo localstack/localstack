@@ -10,6 +10,8 @@ import threading
 import time
 from typing import IO, Optional, Tuple
 
+from localstack_ext.services.pipes.pipe_worker_factory import get_default_source_parameters
+
 from localstack import config
 from localstack.aws.api import RequestContext, ServiceException, handler
 from localstack.aws.api.lambda_ import (
@@ -150,6 +152,16 @@ from localstack.services.lambda_.event_source_listeners.event_source_listener im
     EventSourceListener,
 )
 from localstack.services.lambda_.event_source_listeners.utils import validate_filters
+from localstack.services.lambda_.event_source_mapping.esm_worker import (
+    EsmState,
+    EsmStateReason,
+    EsmWorker,
+)
+from localstack.services.lambda_.event_source_mapping.esm_worker_factory import (
+    EsmWorkerFactory,
+    convert_esm_to_pipes_source_parameters,
+    convert_pipes_to_esm_source_parameters,
+)
 from localstack.services.lambda_.invocation import AccessDeniedException
 from localstack.services.lambda_.invocation.execution_environment import (
     EnvironmentStartupTimeoutException,
@@ -204,7 +216,7 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import StateVisitor
 from localstack.utils.aws.arns import extract_service_from_arn, get_partition
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.collections import PaginatedList
+from localstack.utils.collections import PaginatedList, merge_recursive
 from localstack.utils.files import load_file
 from localstack.utils.strings import get_random_hex, long_uid, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
@@ -229,6 +241,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     create_fn_lock: threading.RLock
     create_layer_lock: threading.RLock
     router: FunctionUrlRouter
+    esm_workers: dict[str, EsmWorker]
     layer_fetcher: LayerFetcher | None
 
     def __init__(self) -> None:
@@ -236,6 +249,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.create_fn_lock = threading.RLock()
         self.create_layer_lock = threading.RLock()
         self.router = FunctionUrlRouter(ROUTER, self.lambda_service)
+        self.esm_workers = {}
         self.layer_fetcher = None
         lambda_hooks.inject_layer_fetcher.run(self)
 
@@ -337,6 +351,39 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
         return function
+
+    @staticmethod
+    def _get_function_version_from_arn(function_arn: str) -> FunctionVersion:
+        function_name, qualifier, account_id, region = function_locators_from_arn(function_arn)
+        fn = lambda_stores[account_id][region].functions.get(function_name)
+        if fn is None:
+            if qualifier is None:
+                raise ResourceNotFoundException(
+                    f"Function not found: {api_utils.unqualified_lambda_arn(function_name, account_id, region)}",
+                    Type="User",
+                )
+            else:
+                raise ResourceNotFoundException(
+                    f"Function not found: {api_utils.qualified_lambda_arn(function_name, qualifier, account_id, region)}",
+                    Type="User",
+                )
+        alias_name = None
+        if qualifier and api_utils.qualifier_is_alias(qualifier):
+            if qualifier not in fn.aliases:
+                alias_arn = api_utils.qualified_lambda_arn(
+                    function_name, qualifier, account_id, region
+                )
+                raise ResourceNotFoundException(f"Function not found: {alias_arn}", Type="User")
+            alias_name = qualifier
+            qualifier = fn.aliases[alias_name].function_version
+
+        version = LambdaProvider._get_function_version(
+            function_name=function_name,
+            qualifier=qualifier,
+            account_id=account_id,
+            region=region,
+        )
+        return version
 
     @staticmethod
     def _get_function_version(
@@ -1795,11 +1842,64 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateEventSourceMappingRequest,
     ) -> EventSourceMappingConfiguration:
-        service = None
+        if config.LAMBDA_EVENT_SOURCE_MAPPING == "v2":
+            event_source_configuration = self.create_event_source_mapping_v2(context, request)
+        else:
+            event_source_configuration = self.create_event_source_mapping_v1(context, request)
 
+        return event_source_configuration
+
+    def create_event_source_mapping_v2(
+        self, context: RequestContext, request: CreateEventSourceMappingRequest
+    ) -> EventSourceMappingConfiguration:
+        state = lambda_stores[context.account_id][context.region]
+        function_arn, function_name = api_utils.get_function_arn(
+            request["FunctionName"], context, state
+        )
+        # TODO: validate `arn.region`, `request.region`, and `EventSourceArn.region`
+        # TODO: how to handle potentially different defaults for Pipes and ESM? Do we need a defaults provider abstraction?
+        # TODO: consider detecting the service first and then delegate to service-specific validators/factories
+        default_source_parameters = get_default_source_parameters(request.get("EventSourceArn"))
+        # TODO: implement esm => pipes param conversion
+        source_parameters = convert_esm_to_pipes_source_parameters(request)
+        derived_source_parameters = merge_recursive(
+            default_source_parameters, (source_parameters or {})
+        )
+        # TODO: implement pipes => esm output mapping conversion => tricky, should probably avoid and separate from logical implementation!
+        derived_source_parameters_esm = convert_pipes_to_esm_source_parameters(
+            derived_source_parameters
+        )
+        esm_config = EventSourceMappingConfiguration(
+            **derived_source_parameters_esm,
+            UUID=long_uid(),
+            EventSourceArn=request.get("EventSourceArn"),
+            FunctionArn=function_arn,
+            # TODO: last modified => does state transition affect this?
+            LastModified=datetime.datetime.now(),
+            State=EsmState.CREATING,
+            StateTransitionReason=EsmStateReason.USER_INITIATED,
+            # TODO: complete missing fields (hardcoding for SQS test case now)
+            FunctionResponseTypes=request.get("FunctionResponseTypes", []),
+        )
+        # Copy to avoid race condition with async update
+        state.event_source_mappings[esm_config["UUID"]] = esm_config.copy()
+        function_version = LambdaProvider._get_function_version_from_arn(function_arn)
+        function_role = function_version.config.role
+        enabled = request.get("Enabled", True)
+        esm_worker = EsmWorkerFactory(
+            esm_config, function_role, derived_source_parameters, enabled
+        ).get_esm_worker()
+        self.esm_workers[esm_worker.uuid] = esm_worker
+        # TODO: check StateTransitionReason, LastModified, LastProcessingResult (concurrent updates requires locking!)
+        esm_worker.create()
+        return esm_config
+
+    def create_event_source_mapping_v1(
+        self, context: RequestContext, request: CreateEventSourceMappingRequest
+    ) -> EventSourceMappingConfiguration:
+        service = None
         if "SelfManagedEventSource" in request:
             service = "kafka"
-
         if service is None and "EventSourceArn" not in request:
             raise InvalidParameterValueException("Unrecognized event source.", Type="User")
         if service is None:
@@ -1866,10 +1966,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         f"existing mapping with UUID {uuid}",
                         Type="User",
                     )
-
         # create new event source mappings
         new_uuid = long_uid()
-
         # defaults etc. vary depending on type of event source
         # TODO: find a better abstraction to create these
         params = request.copy()
@@ -1884,7 +1982,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         params["LastModified"] = api_utils.generate_lambda_date()
         params["FunctionResponseTypes"] = request.get("FunctionResponseTypes", [])
         params["State"] = "Enabled"
-
         if "sqs" in request["EventSourceArn"]:
             params["StateTransitionReason"] = "USER_INITIATED"
             if batch_size > 10 and request.get("MaximumBatchingWindowInSeconds", 0) == 0:
@@ -1904,9 +2001,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             destination_config = request.get("DestinationConfig", {"OnFailure": {}})
             self._validate_destination_config(state, function_name, destination_config)
             params["DestinationConfig"] = destination_config
-
         # TODO: create domain models and map accordingly
-
         esm_config = EventSourceMappingConfiguration(**params)
         filter_criteria = esm_config.get("FilterCriteria")
         if filter_criteria:
@@ -1915,13 +2010,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 raise InvalidParameterValueException(
                     "Invalid filter pattern definition.", Type="User"
                 )  # TODO: verify
-
         state.event_source_mappings[new_uuid] = esm_config
-
         # TODO: evaluate after temp migration
         EventSourceListener.start_listeners_for_asf(request, self.lambda_service)
-
-        return {**esm_config, "State": "Creating"}  # TODO: should be set asynchronously
+        event_source_configuration = {
+            **esm_config,
+            "State": "Creating",
+        }  # TODO: should be set asynchronously
+        return event_source_configuration
 
     @handler("UpdateEventSourceMapping", expand=False)
     def update_event_source_mapping(
