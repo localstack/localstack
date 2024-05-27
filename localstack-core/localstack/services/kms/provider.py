@@ -117,7 +117,7 @@ from localstack.services.kms.models import (
 )
 from localstack.services.kms.utils import is_valid_key_arn, parse_key_arn, validate_alias_name
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.aws.arns import kms_alias_arn, parse_arn
+from localstack.utils.aws.arns import get_partition, kms_alias_arn, parse_arn
 from localstack.utils.collections import PaginatedList
 from localstack.utils.common import select_attributes
 from localstack.utils.strings import short_uid, to_bytes, to_str
@@ -255,7 +255,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         if key_id not in store.keys:
             if not key_arn:
-                key_arn = f"arn:aws:kms:{region_name}:{account_id}:key/{key_id}"
+                key_arn = (
+                    f"arn:{get_partition(region_name)}:kms:{region_name}:{account_id}:key/{key_id}"
+                )
             raise NotFoundException(f"Key '{key_arn}' does not exist")
 
         return key_id

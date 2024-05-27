@@ -47,7 +47,7 @@ from localstack.services.apigateway.models import (
 )
 from localstack.utils import common
 from localstack.utils.aws import resources as resource_utils
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import get_partition, parse_arn
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.json import try_json
 from localstack.utils.numbers import is_number
@@ -864,6 +864,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
         sqs_account = account_id
         sqs_region = region_name
 
+    partition = get_partition(region_name)
     resources[resource_path] = [
         {
             "httpMethod": "POST",
@@ -871,8 +872,8 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
             "integrations": [
                 {
                     "type": "AWS",
-                    "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
-                    % (sqs_region, sqs_account, queue_name),
+                    "uri": "arn:%s:apigateway:%s:sqs:path/%s/%s"
+                    % (partition, sqs_region, sqs_account, queue_name),
                     "requestTemplates": {"application/json": template},
                 }
             ],

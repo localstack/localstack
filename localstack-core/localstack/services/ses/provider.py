@@ -578,7 +578,7 @@ class SNSEmitter:
 
         if emit_source_arn:
             event_payload["mail"]["sourceArn"] = (
-                f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
+                f"arn:{self.context.partition}:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}"
             )
 
         client = self._client_for_topic(sns_topic_arn)
@@ -603,7 +603,7 @@ class SNSEmitter:
             "mail": {
                 "timestamp": now.isoformat(),
                 "source": payload.sender_email,
-                "sourceArn": f"arn:aws:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}",
+                "sourceArn": f"arn:{self.context.partition}:ses:{self.context.region}:{self.context.account_id}:identity/{payload.sender_email}",
                 "sendingAccountId": self.context.account_id,
                 "destination": payload.destination_addresses,
                 "messageId": payload.message_id,

@@ -37,6 +37,7 @@ from localstack.services.sqs.utils import (
     is_message_deduplication_id_required,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.strings import long_uid
 from localstack.utils.time import now
 from localstack.utils.urls import localstack_host
@@ -341,7 +342,7 @@ class SqsQueue:
 
     @property
     def arn(self) -> str:
-        return f"arn:aws:sqs:{self.region}:{self.account_id}:{self.name}"
+        return f"arn:{get_partition(self.region)}:sqs:{self.region}:{self.account_id}:{self.name}"
 
     def url(self, context: RequestContext) -> str:
         """Return queue URL which depending on the endpoint strategy returns e.g.:
@@ -603,9 +604,12 @@ class SqsQueue:
             "Sid": label,
             "Effect": "Allow",
             "Principal": {
-                "AWS": [f"arn:aws:iam::{account_id}:root" for account_id in account_ids]
+                "AWS": [
+                    f"arn:{get_partition(self.region)}:iam::{account_id}:root"
+                    for account_id in account_ids
+                ]
                 if len(account_ids) > 1
-                else f"arn:aws:iam::{account_ids[0]}:root"
+                else f"arn:{get_partition(self.region)}:iam::{account_ids[0]}:root"
             },
             "Action": [f"SQS:{action}" for action in actions]
             if len(actions) > 1

@@ -12,7 +12,11 @@ from localstack.services.lambda_.event_source_listeners.utils import (
     filter_stream_records,
     has_data_filter_criteria,
 )
-from localstack.utils.aws.arns import extract_account_id_from_arn, extract_region_from_arn
+from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
+    extract_region_from_arn,
+    get_partition,
+)
 from localstack.utils.common import first_char_to_lower, to_str
 from localstack.utils.threads import FuncThread
 
@@ -102,6 +106,9 @@ class KinesisEventSourceListener(StreamEventSourceListener):
         self, stream_arn: str, record_payloads: list[dict], shard_id: Optional[str] = None
     ) -> dict:
         records = []
+        account_id = extract_account_id_from_arn(stream_arn)
+        region = extract_region_from_arn(stream_arn)
+        partition = get_partition(region)
         for record_payload in record_payloads:
             records.append(
                 {
@@ -110,8 +117,8 @@ class KinesisEventSourceListener(StreamEventSourceListener):
                     "eventSource": "aws:kinesis",
                     "eventVersion": "1.0",
                     "eventName": "aws:kinesis:record",
-                    "invokeIdentityArn": f"arn:aws:iam::{extract_account_id_from_arn(stream_arn)}:role/lambda-role",
-                    "awsRegion": extract_region_from_arn(stream_arn),
+                    "invokeIdentityArn": f"arn:{partition}:iam::{account_id}:role/lambda-role",
+                    "awsRegion": region,
                     "kinesis": {
                         **record_payload,
                         # boto3 automatically decodes records in get_records(), so we must re-encode

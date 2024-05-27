@@ -15,17 +15,21 @@ from localstack.aws.api.events import (
     Timestamp,
 )
 from localstack.services.events.models import FormattedEvent, ResourceType, ValidationException
-from localstack.utils.aws.arns import parse_arn
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX, parse_arn
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
 RULE_ARN_CUSTOM_EVENT_BUS_PATTERN = re.compile(
-    r"^arn:aws:events:[a-z0-9-]+:\d{12}:rule/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$"
+    rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{{12}}:rule/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$"
 )
 
-RULE_ARN_ARCHIVE_PATTERN = re.compile(r"^arn:aws:events:[a-z0-9-]+:\d{12}:archive/[a-zA-Z0-9_-]+$")
-ARCHIVE_NAME_ARN_PATTERN = re.compile(r"^arn:aws:events:[a-z0-9-]+:\d{12}:archive/(?P<name>.+)$")
+RULE_ARN_ARCHIVE_PATTERN = re.compile(
+    rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{12}:archive/[a-zA-Z0-9_-]+$"
+)
+ARCHIVE_NAME_ARN_PATTERN = re.compile(
+    rf"{ARN_PARTITION_REGEX}:events:[a-z0-9-]+:\d{12}:archive/(?P<name>.+)$"
+)
 
 
 class EventJSONEncoder(json.JSONEncoder):
@@ -44,7 +48,7 @@ def extract_event_bus_name(
     """Return the event bus name. Input can be either an event bus name or ARN."""
     if not resource_arn_or_name:
         return "default"
-    if "arn:aws:events" not in resource_arn_or_name:
+    if not re.match(f"{ARN_PARTITION_REGEX}:events", resource_arn_or_name):
         return resource_arn_or_name
     resource_type = get_resource_type(resource_arn_or_name)
     if resource_type == ResourceType.EVENT_BUS:

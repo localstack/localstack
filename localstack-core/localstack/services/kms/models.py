@@ -44,7 +44,7 @@ from localstack.aws.api.kms import (
 from localstack.services.kms.exceptions import ValidationException
 from localstack.services.kms.utils import is_valid_key_arn
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
-from localstack.utils.aws.arns import kms_alias_arn, kms_key_arn
+from localstack.utils.aws.arns import get_partition, kms_alias_arn, kms_key_arn
 from localstack.utils.crypto import decrypt, encrypt
 from localstack.utils.strings import long_uid, to_bytes, to_str
 
@@ -259,7 +259,9 @@ class KmsKey:
         self.tags = {}
         self.add_tags(create_key_request.get("Tags"))
         # Same goes for the policy. It is in the request, but not in the metadata.
-        self.policy = create_key_request.get("Policy") or self._get_default_key_policy(account_id)
+        self.policy = create_key_request.get("Policy") or self._get_default_key_policy(
+            account_id, region
+        )
         # https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html
         # "Automatic key rotation is disabled by default on customer managed keys but authorized users can enable and
         # disable it."
@@ -533,7 +535,7 @@ class KmsKey:
     # https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-overview.html
     # The default statement is here:
     # https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-default.html#key-policy-default-allow-root-enable-iam
-    def _get_default_key_policy(self, account_id: str) -> str:
+    def _get_default_key_policy(self, account_id: str, region: str) -> str:
         return json.dumps(
             {
                 "Version": "2012-10-17",
@@ -542,7 +544,7 @@ class KmsKey:
                     {
                         "Sid": "Enable IAM User Permissions",
                         "Effect": "Allow",
-                        "Principal": {"AWS": f"arn:aws:iam::{account_id}:root"},
+                        "Principal": {"AWS": f"arn:{get_partition(region)}:iam::{account_id}:root"},
                         "Action": "kms:*",
                         "Resource": "*",
                     }

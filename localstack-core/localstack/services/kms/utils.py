@@ -2,9 +2,10 @@ import re
 from typing import Tuple
 
 from localstack.services.kms.exceptions import ValidationException
+from localstack.utils.aws.arns import ARN_PARTITION_REGEX
 
 KMS_KEY_ARN_PATTERN = re.compile(
-    r"^arn:aws:kms:(?P<region_name>[^:]+):(?P<account_id>\d{12}):key\/(?P<key_id>[^:]+)$"
+    rf"{ARN_PARTITION_REGEX}:kms:(?P<region_name>[^:]+):(?P<account_id>\d{{12}}):key\/(?P<key_id>[^:]+)$"
 )
 
 
