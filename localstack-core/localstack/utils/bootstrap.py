@@ -60,7 +60,6 @@ API_DEPENDENCIES = {
     "transcribe": ["s3"],
     # secretsmanager uses lambda for rotation
     "secretsmanager": ["kms", "lambda"],
-    # TODO: add more dependencies
 }
 
 # Optional dependencies of services on other services
@@ -97,7 +96,6 @@ API_DEPENDENCIES_OPTIONAL = {
     # IAM and STS are tightly coupled
     "sts": ["iam"],
     "iam": ["sts"],
-    # TODO: add more dependencies
 }
 
 # composites define an abstract name like "serverless" that maps to a set of services
