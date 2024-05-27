@@ -5,8 +5,6 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 
-from moto.cloudformation import cloudformation_backends
-
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudformation import (
     AlreadyExistsException,
@@ -170,7 +168,6 @@ class CloudformationProvider(CloudformationApi):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(cloudformation_stores)
-        visitor.visit(cloudformation_backends)
 
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
