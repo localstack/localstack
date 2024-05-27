@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import re
 from copy import deepcopy
 
 import botocore.exceptions
@@ -8,7 +9,6 @@ import pytest
 import yaml
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
 from localstack.testing.pytest import markers
@@ -234,25 +234,41 @@ class TestIntrinsicFunctions:
 
         assert deployed.outputs["Address"] == "10.0.0.0/24"
 
+    @pytest.mark.parametrize(
+        "region",
+        [
+            "us-east-1",
+            "us-east-2",
+            "us-west-1",
+            "us-west-2",
+            "ap-southeast-2",
+            "ap-northeast-1",
+            "eu-central-1",
+            "eu-west-1",
+        ],
+    )
     @markers.aws.validated
-    def test_get_azs_function(self, deploy_cfn_template, snapshot):
+    def test_get_azs_function(self, deploy_cfn_template, region, aws_client_factory):
         """
         TODO parametrize this test.
         For that we need to be able to parametrize the client region. The docs show the we should be
         able to put any region in the parameters but it doesn't work. It only accepts the same region from the client config
         if you put anything else it just returns an empty list.
         """
-
         template_path = os.path.join(
             os.path.dirname(__file__), "../../templates/functions_get_azs.yml"
         )
 
+        aws_client = aws_client_factory(region_name=region)
         deployed = deploy_cfn_template(
             template_path=template_path,
+            custom_aws_client=aws_client,
+            parameters={"DeployRegion": region},
         )
 
-        snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
-        snapshot.match("azs", deployed.outputs["Zones"].split(";"))
+        azs = deployed.outputs["Zones"].split(";")
+        assert len(azs) > 0
+        assert all(re.match(f"{region}[a-f]", az) for az in azs)
 
     @markers.aws.validated
     def test_sub_not_ready(self, deploy_cfn_template):

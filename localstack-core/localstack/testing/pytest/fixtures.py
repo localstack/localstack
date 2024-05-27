@@ -21,6 +21,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     SECONDARY_TEST_AWS_ACCOUNT_ID,
@@ -955,13 +956,9 @@ class StackDeployError(Exception):
 
 @pytest.fixture
 def deploy_cfn_template(
-    cleanup_stacks,
-    cleanup_changesets,
-    is_change_set_created_and_available,
-    is_change_set_finished,
-    aws_client,
+    aws_client: ServiceLevelClientFactory,
 ):
-    state = []
+    state: list[tuple[str, Callable]] = []
 
     def _deploy(
         *,
@@ -970,11 +967,12 @@ def deploy_cfn_template(
         change_set_name: Optional[str] = None,
         template: Optional[str] = None,
         template_path: Optional[str | os.PathLike] = None,
-        template_mapping: Optional[Dict[str, any]] = None,
+        template_mapping: Optional[Dict[str, Any]] = None,
         parameters: Optional[Dict[str, str]] = None,
         role_arn: Optional[str] = None,
         max_wait: Optional[int] = None,
         delay_between_polls: Optional[int] = 2,
+        custom_aws_client: Optional[ServiceLevelClientFactory] = None,
     ) -> DeployResult:
         if is_update:
             assert stack_name
@@ -1005,17 +1003,18 @@ def deploy_cfn_template(
         if role_arn is not None:
             kwargs["RoleARN"] = role_arn
 
-        response = aws_client.cloudformation.create_change_set(**kwargs)
+        cfn_aws_client = custom_aws_client if custom_aws_client is not None else aws_client
+
+        response = cfn_aws_client.cloudformation.create_change_set(**kwargs)
 
         change_set_id = response["Id"]
         stack_id = response["StackId"]
-        state.append({"stack_id": stack_id, "change_set_id": change_set_id})
 
-        aws_client.cloudformation.get_waiter(WAITER_CHANGE_SET_CREATE_COMPLETE).wait(
+        cfn_aws_client.cloudformation.get_waiter(WAITER_CHANGE_SET_CREATE_COMPLETE).wait(
             ChangeSetName=change_set_id
         )
-        aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
-        stack_waiter = aws_client.cloudformation.get_waiter(
+        cfn_aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
+        stack_waiter = cfn_aws_client.cloudformation.get_waiter(
             WAITER_STACK_UPDATE_COMPLETE if is_update else WAITER_STACK_CREATE_COMPLETE
         )
 
@@ -1029,11 +1028,13 @@ def deploy_cfn_template(
             )
         except botocore.exceptions.WaiterError as e:
             raise StackDeployError(
-                aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0],
-                aws_client.cloudformation.describe_stack_events(StackName=stack_id)["StackEvents"],
+                cfn_aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0],
+                cfn_aws_client.cloudformation.describe_stack_events(StackName=stack_id)[
+                    "StackEvents"
+                ],
             ) from e
 
-        describe_stack_res = aws_client.cloudformation.describe_stacks(StackName=stack_id)[
+        describe_stack_res = cfn_aws_client.cloudformation.describe_stacks(StackName=stack_id)[
             "Stacks"
         ][0]
         outputs = describe_stack_res.get("Outputs", [])
@@ -1041,16 +1042,16 @@ def deploy_cfn_template(
         mapped_outputs = {o["OutputKey"]: o.get("OutputValue") for o in outputs}
 
         def _destroy_stack():
-            aws_client.cloudformation.delete_stack(StackName=stack_id)
-            aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
+            cfn_aws_client.cloudformation.delete_stack(StackName=stack_id)
+            cfn_aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
                 StackName=stack_id,
                 WaiterConfig={
                     "Delay": delay_between_polls,
                     "MaxAttempts": max_wait / delay_between_polls,
                 },
             )
-            # TODO: fix in localstack. stack should only be in DELETE_COMPLETE state after all resources have been deleted
-            time.sleep(2)
+
+        state.append((stack_id, _destroy_stack))
 
         return DeployResult(
             change_set_id, stack_id, stack_name, change_set_name, mapped_outputs, _destroy_stack
@@ -1059,20 +1060,11 @@ def deploy_cfn_template(
     yield _deploy
 
     # delete the stacks in the reverse order they were created in case of inter-stack dependencies
-    for entry in state[::-1]:
-        entry_stack_id = entry.get("stack_id")
+    for stack_id, teardown in state[::-1]:
         try:
-            if entry_stack_id:
-                aws_client.cloudformation.delete_stack(StackName=entry_stack_id)
-                aws_client.cloudformation.get_waiter(WAITER_STACK_DELETE_COMPLETE).wait(
-                    StackName=entry_stack_id,
-                    WaiterConfig={
-                        "Delay": 2,
-                        "MaxAttempts": 120,
-                    },
-                )
+            teardown()
         except Exception as e:
-            LOG.debug(f"Failed cleaning up stack {entry_stack_id=}: {e}")
+            LOG.debug(f"Failed cleaning up stack {stack_id=}: {e}")
 
 
 @pytest.fixture
