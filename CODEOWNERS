@@ -9,7 +9,6 @@
 /docs/ @thrau @HarshCasper
 /README.md @HarshCasper
 /CODE_OF_CONDUCT.md @HarshCasper
-/CONTRIBUTING.md @HarshCasper
 /LICENSE.txt @HarshCasper @alexrashed
 
 # Docker
@@ -26,73 +25,72 @@
 /bin/release-helper.sh @thrau @alexrashed
 
 # ASF
-/localstack/aws/ @thrau
+/localstack-core/localstack/aws/ @thrau
 /tests/unit/aws/ @thrau
 # ASF parsers and serializers
-/localstack/aws/protocol @alexrashed
+/localstack-core/localstack/aws/protocol @alexrashed
 # left empty (without owner) because the generated APIs belong to the specific service owners
 # you can overwrite this for single services afterwards
-/localstack/aws/api/
+/localstack-core/localstack/aws/api/
 
 # CLI
-/localstack/cli/ @thrau @alexrashed
+/localstack-core/localstack/cli/ @thrau @alexrashed
 /tests/unit/cli/ @thrau @alexrashed
 /tests/cli/ @thrau @alexrashed
 
 # Plugins
-/localstack/plugins.py @thrau
-/localstack/config.py @thrau
+/localstack-core/localstack/plugins.py @thrau
+/localstack-core/localstack/config.py @thrau
 /tests/unit/services/test_internal.py @thrau
 
 # Extensions
-/localstack/extensions/ @thrau
+/localstack-core/localstack/extensions/ @thrau
 
 # Container utils
-/localstack/utils/container_utils/ @dfangl @dominikschubert
-/localstack/utils/docker_utils.py @dfangl @dominikschubert
+/localstack-core/localstack/utils/container_utils/ @dfangl @dominikschubert
+/localstack-core/localstack/utils/docker_utils.py @dfangl @dominikschubert
 /tests/unit/test_docker_utils.py @dfangl @dominikschubert
 /tests/unit/test_dockerclient.py @dfangl @dominikschubert
 
 # Package Installers
-/localstack/packages/ @alexrashed
-/localstack/services/kinesis/packages.py @alexrashed
+/localstack-core/localstack/packages/ @alexrashed
+/localstack-core/localstack/services/kinesis/packages.py @alexrashed
 
 # DNS server
-/localstack/dns @simonrw @dfangl
+/localstack-core/localstack/dns @simonrw @dfangl
 
 # HTTP framework
-/localstack/http/ @thrau
+/localstack-core/localstack/http/ @thrau
 /tests/unit/http_/ @thrau
 
 # Runtime
-/localstack/runtime/ @thrau
+/localstack-core/localstack/runtime/ @thrau
 
 # Logging
-/localstack/logging/ @dfangl @alexrashed @dominikschubert
+/localstack-core/localstack/logging/ @dfangl @alexrashed @dominikschubert
 
 # Stores
-/localstack/services/stores.py @viren-nadkarni
+/localstack-core/localstack/services/stores.py @viren-nadkarni
 /tests/unit/test_stores.py @viren-nadkarni
 
 # Analytics client
-/localstack/utils/analytics/ @thrau
+/localstack-core/localstack/utils/analytics/ @thrau
 /tests/unit/utils/analytics/ @thrau
 
 # Snapshot testing
-/localstack/testing/snapshots/ @dominikschubert @steffyP
-/localstack/testing/pytest/ @dominikschubert
-/localstack/testing/pytest/snapshot.py @dominikschubert @steffyP
+/localstack-core/localstack/testing/snapshots/ @dominikschubert @steffyP
+/localstack-core/localstack/testing/pytest/ @dominikschubert
 /tests/unit/utils/testing/ @dominikschubert @steffyP
 
 # Scenario testing
-/localstack/testing/scenario/ @dominikschubert @steffyP
+/localstack-core/localstack/testing/scenario/ @dominikschubert @steffyP
 
 # Bootstrap tests
 /tests/bootstrap @simonrw
-/localstack/testing/pytest/container.py @dominikschubert @simonrw
+/localstack-core/localstack/testing/pytest/container.py @dominikschubert @simonrw
 
 # Test Selection
-/localstack/testing/testselection @dominikschubert @alexrashed @silv-io
+/localstack-core/localstack/testing/testselection @dominikschubert @alexrashed @silv-io
 
 ######################
 ### SERVICE OWNERS ###
