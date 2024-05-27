@@ -52,6 +52,7 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                 "lex-runtime",
                 "lexv2-models",
                 "lexv2-runtime",
+                "mailmanager",
                 "marketplace-catalog",
                 "marketplace-deployment",
                 "personalize",
