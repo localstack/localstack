@@ -215,6 +215,9 @@ class EventsStore(BaseStore):
     # Map of archive names to archive objects. The name MUST be unique per account and region (works with AccountRegionBundle)
     archives: ArchiveDict = LocalAttribute(default=dict)
 
+    # Map of replay names to replay objects. The name MUST be unique per account and region (works with AccountRegionBundle)
+    replays: ReplayDict = LocalAttribute(default=dict)
+
     # Maps resource ARN to tags
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
