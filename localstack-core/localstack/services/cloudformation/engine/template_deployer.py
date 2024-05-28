@@ -63,6 +63,15 @@ class NoStackUpdates(Exception):
     pass
 
 
+class NoResourceInStack(ValueError):
+    """Raised when we preprocess the template and do not find a resource"""
+
+    def __init__(self, logical_resource_id: str):
+        msg = f"Template format error: Unresolved resource dependencies [{logical_resource_id}] in the Resources block of the template"
+
+        super().__init__(msg)
+
+
 # ---------------------
 # CF TEMPLATE HANDLING
 # ---------------------
@@ -851,7 +860,7 @@ def order_resources(
                 logical_resource_id not in resolved_parameters
                 and logical_resource_id not in resolved_conditions
             ):
-                raise ValueError(f"Resource '{logical_resource_id}' not found in stack")
+                raise NoResourceInStack(logical_resource_id)
 
     if reverse:
         sorted_mapping = sorted_mapping[::-1]

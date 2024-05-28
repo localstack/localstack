@@ -89,7 +89,11 @@ from localstack.services.cloudformation.engine.entities import (
     StackSet,
 )
 from localstack.services.cloudformation.engine.parameters import strip_parameter_type
-from localstack.services.cloudformation.engine.template_deployer import NoStackUpdates
+from localstack.services.cloudformation.engine.template_deployer import (
+    NoResourceInStack,
+    NoStackUpdates,
+    order_resources,
+)
 from localstack.services.cloudformation.engine.template_utils import resolve_stack_conditions
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
@@ -715,6 +719,16 @@ class CloudformationProvider(CloudformationApi):
             stack_name=stack_name,
         )
         change_set.set_resolved_stack_conditions(resolved_stack_conditions)
+
+        # a bit gross but use the template ordering to validate missing resources
+        try:
+            order_resources(
+                template["Resources"],
+                resolved_parameters=resolved_parameters,
+                resolved_conditions=resolved_stack_conditions,
+            )
+        except NoResourceInStack as e:
+            raise ValidationError(str(e)) from e
 
         deployer = template_deployer.TemplateDeployerBase.factory(
             context.account_id, context.region, change_set
