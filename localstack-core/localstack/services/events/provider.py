@@ -112,6 +112,7 @@ from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
 from localstack.services.events.utils import (
+    EventJSONEncoder,
     extract_event_bus_name,
     format_event,
     get_resource_type,
@@ -1118,7 +1119,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             matching_rules = [rule for rule in event_bus.rules.values()]
             for rule in matching_rules:
                 event_pattern = rule.event_pattern
-                event_str = json.dumps(event_formatted)
+                event_str = json.dumps(event_formatted, cls=EventJSONEncoder)
                 if matches_rule(event_str, event_pattern):
                     for target in rule.targets.values():
                         target_arn = target["Arn"]

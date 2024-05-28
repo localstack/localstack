@@ -10,6 +10,7 @@ from botocore.client import BaseClient
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
+from localstack.services.events.utils import EventJSONEncoder
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
@@ -321,7 +322,8 @@ class FirehoseTargetSender(TargetSender):
     def send_event(self, event):
         delivery_stream_name = firehose_name(self.target["Arn"])
         self.client.put_record(
-            DeliveryStreamName=delivery_stream_name, Record={"Data": to_bytes(json.dumps(event))}
+            DeliveryStreamName=delivery_stream_name,
+            Record={"Data": to_bytes(json.dumps(event, cls=EventJSONEncoder))},
         )
 
 
@@ -332,7 +334,7 @@ class KinesisTargetSender(TargetSender):
         partition_key = event.get(partition_key_path, event["id"])
         self.client.put_record(
             StreamName=stream_name,
-            Data=to_bytes(json.dumps(event)),
+            Data=to_bytes(json.dumps(event, cls=EventJSONEncoder)),
             PartitionKey=partition_key,
         )
 
@@ -349,7 +351,7 @@ class LambdaTargetSender(TargetSender):
         asynchronous = True  # TODO clarify default behavior of AWS
         self.client.invoke(
             FunctionName=self.target["Arn"],
-            Payload=to_bytes(json.dumps(event)),
+            Payload=to_bytes(json.dumps(event, cls=EventJSONEncoder)),
             InvocationType="Event" if asynchronous else "RequestResponse",
         )
 
@@ -362,7 +364,12 @@ class LogsTargetSender(TargetSender):
         self.client.put_log_events(
             logGroupName=log_group_name,
             logStreamName=log_stream_name,
-            logEvents=[{"timestamp": now_utc(millis=True), "message": json.dumps(event)}],
+            logEvents=[
+                {
+                    "timestamp": now_utc(millis=True),
+                    "message": json.dumps(event, cls=EventJSONEncoder),
+                }
+            ],
         )
 
 
@@ -383,7 +390,9 @@ class SagemakerTargetSender(TargetSender):
 
 class SnsTargetSender(TargetSender):
     def send_event(self, event):
-        self.client.publish(TopicArn=self.target["Arn"], Message=json.dumps(event))
+        self.client.publish(
+            TopicArn=self.target["Arn"], Message=json.dumps(event, cls=EventJSONEncoder)
+        )
 
 
 class SqsTargetSender(TargetSender):
@@ -392,7 +401,13 @@ class SqsTargetSender(TargetSender):
         msg_group_id = self.target.get("SqsParameters", {}).get("MessageGroupId", None)
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         self.client.send_message(
-            QueueUrl=queue_url, MessageBody=json.dumps(event, separators=(",", ":")), **kwargs
+            QueueUrl=queue_url,
+            MessageBody=json.dumps(
+                event,
+                separators=(",", ":"),
+                cls=EventJSONEncoder,
+            ),
+            **kwargs,
         )
 
 
@@ -400,7 +415,9 @@ class StatesTargetSender(TargetSender):
     """Step Functions Target Sender"""
 
     def send_event(self, event):
-        self.client.start_execution(stateMachineArn=self.target["Arn"], input=json.dumps(event))
+        self.client.start_execution(
+            stateMachineArn=self.target["Arn"], input=json.dumps(event, cls=EventJSONEncoder)
+        )
 
     def _validate_input(self, target: Target):
         super()._validate_input(target)
