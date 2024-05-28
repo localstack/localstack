@@ -46,6 +46,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
@@ -427,16 +428,17 @@ class TestLambdaFunction:
     ):
         function_name = "some-function"
         method = getattr(aws_client.lambda_, clientfn)
+        region_name = aws_client.lambda_.meta.region_name
         with pytest.raises(ClientError) as e:
             method(
-                FunctionName=f"arn:aws:lambda:{aws_client.lambda_.meta.region_name}:{account_id}:function:{function_name}:1",
+                FunctionName=f"arn:{get_partition(region_name)}:lambda:{region_name}:{account_id}:function:{function_name}:1",
                 Qualifier="$LATEST",
             )
         snapshot.match("not_match_exception", e.value.response)
         # check if it works if it matches - still no function there
         with pytest.raises(ClientError) as e:
             method(
-                FunctionName=f"arn:aws:lambda:{aws_client.lambda_.meta.region_name}:{account_id}:function:{function_name}:$LATEST",
+                FunctionName=f"arn:{get_partition(region_name)}:lambda:{region_name}:{account_id}:function:{function_name}:$LATEST",
                 Qualifier="$LATEST",
             )
         snapshot.match("match_exception", e.value.response)
@@ -541,7 +543,7 @@ class TestLambdaFunction:
             "us-east-1" if aws_client.lambda_.meta.region_name != "us-east-1" else "eu-central-1"
         )
         snapshot.add_transformer(snapshot.transform.regex(wrong_region, "<wrong-region>"))
-        wrong_region_arn = f"arn:aws:lambda:{wrong_region}:{account_id}:function:{function_name}"
+        wrong_region_arn = f"arn:{get_partition(wrong_region)}:lambda:{wrong_region}:{account_id}:function:{function_name}"
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException) as e:
             method = getattr(aws_client.lambda_, clientfn)
             method(FunctionName=wrong_region_arn)
@@ -658,7 +660,7 @@ class TestLambdaFunction:
     ):
         # create_function
         function_name_1 = f"test-function-arn-{short_uid()}"
-        function_arn = f"arn:aws:lambda:{region_name}:{account_id}:function:{function_name_1}"
+        function_arn = f"arn:{get_partition(region_name)}:lambda:{region_name}:{account_id}:function:{function_name_1}"
         function_arn_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_arn,
@@ -703,7 +705,9 @@ class TestLambdaFunction:
 
         # test too long function arn
         max_function_arn_length = 140
-        function_arn_prefix = f"arn:aws:lambda:{region_name}:{account_id}:function:"
+        function_arn_prefix = (
+            f"arn:{get_partition(region_name)}:lambda:{region_name}:{account_id}:function:"
+        )
         suffix_length = max_function_arn_length - len(function_arn_prefix) + 1
         long_function_name = "a" * suffix_length
         snapshot.add_transformer(snapshot.transform.regex(long_function_name, "<function-name>"))
@@ -725,9 +729,7 @@ class TestLambdaFunction:
         assert (
             region_name != other_region
         ), "This test assumes that the region in the function arn differs from the client region"
-        function_arn_other_region = (
-            f"arn:aws:lambda:{other_region}:{account_id}:function:{function_name_1}"
-        )
+        function_arn_other_region = f"arn:{get_partition(other_region)}:lambda:{other_region}:{account_id}:function:{function_name_1}"
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
                 FunctionName=function_arn_other_region,
@@ -745,9 +747,7 @@ class TestLambdaFunction:
         assert (
             account_id != other_account
         ), "This test assumes that the account in the function arn differs from the client region"
-        function_arn_other_account = (
-            f"arn:aws:lambda:{region_name}:{other_account}:function:{function_name_1}"
-        )
+        function_arn_other_account = f"arn:{get_partition(region_name)}:lambda:{region_name}:{other_account}:function:{function_name_1}"
         with pytest.raises(ClientError) as e:
             aws_client.lambda_.create_function(
                 FunctionName=function_arn_other_account,
@@ -1053,9 +1053,10 @@ class TestLambdaFunction:
 
     @markers.aws.validated
     def test_invalid_invoke(self, aws_client, snapshot):
+        region_name = aws_client.lambda_.meta.region_name
         with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
             aws_client.lambda_.invoke(
-                FunctionName=f"arn:aws:lambda:{aws_client.lambda_.meta.region_name}:123400000000@function:myfn",
+                FunctionName=f"arn:{get_partition(region_name)}:lambda:{region_name}:123400000000@function:myfn",
                 Payload=b"{}",
             )
         snapshot.match("invoke_function_name_pattern_exc", e.value.response)
@@ -2551,9 +2552,8 @@ class TestLambdaEventInvokeConfig:
 
         # FunctionName tests
 
-        fake_arn = (
-            f"arn:aws:lambda:{lambda_client.meta.region_name}:{account_id}:function:doesnotexist"
-        )
+        region_name = lambda_client.meta.region_name
+        fake_arn = f"arn:{get_partition(region_name)}:lambda:{region_name}:{account_id}:function:doesnotexist"
 
         with pytest.raises(lambda_client.exceptions.ResourceNotFoundException) as e:
             lambda_client.put_function_event_invoke_config(
@@ -4268,7 +4268,7 @@ class TestLambdaSizeLimits:
 class TestCodeSigningConfig:
     @markers.aws.validated
     def test_function_code_signing_config(
-        self, create_lambda_function, snapshot, account_id, aws_client
+        self, create_lambda_function, snapshot, account_id, aws_client, region_name
     ):
         """Testing the API of code signing config"""
 
@@ -4284,7 +4284,7 @@ class TestCodeSigningConfig:
             Description="Testing CodeSigning Config",
             AllowedPublishers={
                 "SigningProfileVersionArns": [
-                    f"arn:aws:signer:{aws_client.lambda_.meta.region_name}:{account_id}:/signing-profiles/test",
+                    f"arn:{get_partition(region_name)}:signer:{region_name}:{account_id}:/signing-profiles/test",
                 ]
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
@@ -4333,7 +4333,7 @@ class TestCodeSigningConfig:
 
     @markers.aws.validated
     def test_code_signing_not_found_excs(
-        self, snapshot, create_lambda_function, account_id, aws_client
+        self, snapshot, create_lambda_function, account_id, aws_client, region_name
     ):
         """tests for exceptions on missing resources and related corner cases"""
 
@@ -4349,7 +4349,7 @@ class TestCodeSigningConfig:
             Description="Testing CodeSigning Config",
             AllowedPublishers={
                 "SigningProfileVersionArns": [
-                    f"arn:aws:signer:{aws_client.lambda_.meta.region_name}:{account_id}:/signing-profiles/test",
+                    f"arn:{get_partition(region_name)}:signer:{region_name}:{account_id}:/signing-profiles/test",
                 ]
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
@@ -4819,7 +4819,9 @@ class TestLambdaEventSourceMappings:
 
 class TestLambdaTags:
     @markers.aws.validated
-    def test_tag_exceptions(self, create_lambda_function, snapshot, account_id, aws_client):
+    def test_tag_exceptions(
+        self, create_lambda_function, snapshot, account_id, aws_client, region_name
+    ):
         function_name = f"fn-tag-{short_uid()}"
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -4829,7 +4831,7 @@ class TestLambdaTags:
         function_arn = aws_client.lambda_.get_function(FunctionName=function_name)["Configuration"][
             "FunctionArn"
         ]
-        arn_prefix = f"arn:aws:lambda:{aws_client.lambda_.meta.region_name}:{account_id}:function:"
+        arn_prefix = f"arn:{get_partition(region_name)}:lambda:{region_name}:{account_id}:function:"
 
         # invalid ARN
         with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
