@@ -1,23 +1,30 @@
+import json
+import logging
 import re
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from localstack.aws.api.events import (
+    ArchiveName,
     Arn,
     EventBusName,
     EventBusNameOrArn,
+    EventTime,
+    PutEventsRequestEntry,
     RuleArn,
 )
-from localstack.services.events.models import (
-    ResourceType,
-    ValidationException,
-)
+from localstack.services.events.models import FormattedEvent, ResourceType, ValidationException
 from localstack.utils.aws.arns import parse_arn
+from localstack.utils.strings import long_uid
+
+LOG = logging.getLogger(__name__)
 
 RULE_ARN_CUSTOM_EVENT_BUS_PATTERN = re.compile(
     r"^arn:aws:events:[a-z0-9-]+:\d{12}:rule/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$"
 )
 
 RULE_ARN_ARCHIVE_PATTERN = re.compile(r"^arn:aws:events:[a-z0-9-]+:\d{12}:archive/[a-zA-Z0-9_-]+$")
+ARCHIVE_NAME_ARN_PATTERN = re.compile(r"^arn:aws:events:[a-z0-9-]+:\d{12}:archive/(?P<name>.+)$")
 
 
 def get_resource_type(arn: Arn) -> ResourceType:
@@ -50,8 +57,66 @@ def extract_event_bus_name(
         return "default"
 
 
+def extract_archive_name(arn: Arn) -> ArchiveName:
+    match = ARCHIVE_NAME_ARN_PATTERN.match(arn)
+    if not match:
+        raise ValidationException(
+            f"Parameter {arn} is not valid. Reason: Provided Arn is not in correct format."
+        )
+    return match.group("name")
+
+
 def is_archive_arn(arn: Arn) -> bool:
     return bool(RULE_ARN_ARCHIVE_PATTERN.match(arn))
+
+
+def get_event_time(event: PutEventsRequestEntry) -> EventTime:
+    event_time = datetime.now(timezone.utc)
+    if event_timestamp := event.get("Time"):
+        try:
+            # use time from event if provided
+            event_time = event_timestamp.replace(tzinfo=timezone.utc)
+        except ValueError:
+            # use current time if event time is invalid
+            LOG.debug(
+                "Could not parse the `Time` parameter, falling back to current time for the following Event: '%s'",
+                event,
+            )
+    return event_time
+
+
+def event_time_to_time_string(event_time: EventTime) -> str:
+    formatted_time_string = event_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return formatted_time_string
+
+
+class EventJSONEncoder(json.JSONEncoder):
+    """This json encoder is used to serialize datetime object
+    of a eventbridge event to time strings."""
+
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return event_time_to_time_string(obj)
+        return super().default(obj)
+
+
+def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
+    # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
+    formatted_event = {
+        "version": "0",
+        "id": str(long_uid()),
+        "detail-type": event.get("DetailType"),
+        "source": event.get("Source"),
+        "account": account_id,
+        "time": get_event_time(event),
+        "region": region,
+        "resources": event.get("Resources", []),
+        "detail": json.loads(event.get("Detail", "{}")),
+    }
+    if replay_name := event.get("ReplayName"):
+        formatted_event["replay-name"] = replay_name  # required for replay from archive
+
+    return formatted_event
 
 
 def recursive_remove_none_values_from_dict(d: Dict[str, Any]) -> Dict[str, Any]:

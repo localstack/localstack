@@ -2,7 +2,6 @@ import base64
 import json
 import logging
 import re
-from datetime import datetime, timezone
 from typing import Callable, Optional
 
 from localstack.aws.api import RequestContext, handler
@@ -114,6 +113,7 @@ from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
 from localstack.services.events.utils import (
     extract_event_bus_name,
+    format_event,
     get_resource_type,
     is_archive_arn,
     recursive_remove_none_values_from_dict,
@@ -143,22 +143,6 @@ def get_filtered_dict(name_prefix: str, input_dict: dict) -> dict:
     return {name: value for name, value in input_dict.items() if name.startswith(name_prefix)}
 
 
-def get_event_time(event: PutEventsRequestEntry) -> str:
-    event_time = datetime.now(timezone.utc)
-    if event_timestamp := event.get("Time"):
-        try:
-            # use time from event if provided
-            event_time = event_timestamp.replace(tzinfo=timezone.utc)
-        except ValueError:
-            # use current time if event time is invalid
-            LOG.debug(
-                "Could not parse the `Time` parameter, falling back to current time for the following Event: '%s'",
-                event,
-            )
-    formatted_time_string = event_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    return formatted_time_string
-
-
 def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
     if not event.get("Source"):
         return {
@@ -175,34 +159,6 @@ def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
             "ErrorCode": "InvalidArgument",
             "ErrorMessage": "Parameter Detail is not valid. Reason: Detail is a required argument.",
         }
-
-
-def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> FormattedEvent:
-    # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/ev-events.html
-    trace_header = event.get("TraceHeader")
-    message = {}
-    if trace_header:
-        try:
-            message = json.loads(trace_header)
-        except json.JSONDecodeError:
-            pass
-    message_id = message.get("original_id", str(long_uid()))
-    region = message.get("original_region", region)
-    account_id = message.get("original_account", account_id)
-
-    formatted_event = {
-        "version": "0",
-        "id": message_id,
-        "detail-type": event.get("DetailType"),
-        "source": event.get("Source"),
-        "account": account_id,
-        "time": get_event_time(event),
-        "region": region,
-        "resources": event.get("Resources", []),
-        "detail": json.loads(event.get("Detail", "{}")),
-    }
-
-    return formatted_event
 
 
 def check_unique_tags(tags: TagsList) -> None:
