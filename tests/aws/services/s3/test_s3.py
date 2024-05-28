@@ -10140,13 +10140,6 @@ class TestS3PresignedPost:
             allow_redirects=False,
         )
 
-    @staticmethod
-    def parse_response_xml(content: bytes) -> dict:
-        if not is_aws_cloud():
-            # AWS use double quotes in error messages and LocalStack uses single. Try to unify before snapshotting
-            content = content.replace(b"'", b'"')
-        return xmltodict.parse(content)
-
     @markers.aws.validated
     @pytest.mark.xfail(
         reason="failing sporadically with new HTTP gateway (only in CI)",
@@ -10763,8 +10756,7 @@ class TestS3PresignedPost:
 
         # assert that it's rejected
         assert response.status_code == 403
-        resp_content = self.parse_response_xml(response.content)
-        snapshot.match("invalid-condition-eq", resp_content)
+        snapshot.match("invalid-condition-eq", xmltodict.parse(response.content))
 
         # PostObject with a wrong condition (missing $ prefix)
         presigned_request = aws_client.s3.generate_presigned_post(
@@ -10781,8 +10773,7 @@ class TestS3PresignedPost:
 
         # assert that it's rejected
         assert response.status_code == 403
-        resp_content = self.parse_response_xml(response.content)
-        snapshot.match("invalid-condition-missing-prefix", resp_content)
+        snapshot.match("invalid-condition-missing-prefix", xmltodict.parse(response.content))
 
         # PostObject with a wrong condition (multiple condition in one dict)
         presigned_request = aws_client.s3.generate_presigned_post(
@@ -10799,8 +10790,7 @@ class TestS3PresignedPost:
 
         # assert that it's rejected
         assert response.status_code == 400
-        resp_content = self.parse_response_xml(response.content)
-        snapshot.match("invalid-condition-wrong-condition", resp_content)
+        snapshot.match("invalid-condition-wrong-condition", xmltodict.parse(response.content))
 
         # PostObject with a wrong condition value casing
         presigned_request = aws_client.s3.generate_presigned_post(
@@ -10815,8 +10805,7 @@ class TestS3PresignedPost:
         response = self.post_generated_presigned_post_with_default_file(presigned_request)
         # assert that it's rejected
         assert response.status_code == 403
-        resp_content = self.parse_response_xml(response.content)
-        snapshot.match("invalid-condition-wrong-value-casing", resp_content)
+        snapshot.match("invalid-condition-wrong-value-casing", xmltodict.parse(response.content))
 
         object_expires = rfc_1123_datetime(
             datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(minutes=10)
@@ -10948,8 +10937,7 @@ class TestS3PresignedPost:
 
         # assert that it's rejected
         assert response.status_code == 403
-        resp_content = self.parse_response_xml(response.content)
-        snapshot.match("invalid-condition-starts-with", resp_content)
+        snapshot.match("invalid-condition-starts-with", xmltodict.parse(response.content))
 
         # PostObject with a right redirect location start but wrong casing
         presigned_request["fields"]["success_action_redirect"] = "HTTP://localhost.test/random"
@@ -10957,8 +10945,7 @@ class TestS3PresignedPost:
 
         # assert that it's rejected
         assert response.status_code == 403
-        resp_content = self.parse_response_xml(response.content)
-        snapshot.match("invalid-condition-starts-with-casing", resp_content)
+        snapshot.match("invalid-condition-starts-with-casing", xmltodict.parse(response.content))
 
         # PostObject with a right redirect location start
         presigned_request["fields"]["success_action_redirect"] = redirect_location
@@ -11078,6 +11065,45 @@ class TestS3PresignedPost:
 
         final_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
         snapshot.match("final-object", final_object)
+
+        # try with string values for the content length range
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["content-length-range", "5", "10"],
+            ],
+        )
+        # PostObject with a body length of 10
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 10},
+            verify=False,
+        )
+        assert response.status_code == 204
+
+        # try with string values that are not cast-able for the content length range
+        presigned_request = aws_client.s3.generate_presigned_post(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ExpiresIn=60,
+            Conditions=[
+                {"bucket": s3_bucket},
+                ["content-length-range", "test", "10"],
+            ],
+        )
+        # PostObject with a body length of 10
+        response = requests.post(
+            presigned_request["url"],
+            data=presigned_request["fields"],
+            files={"file": "a" * 10},
+            verify=False,
+        )
+        assert response.status_code == 403
+        snapshot.match("invalid-content-length-wrong-type", xmltodict.parse(response.content))
 
     @pytest.mark.skipif(
         condition=TEST_S3_IMAGE or LEGACY_V2_S3_PROVIDER,
