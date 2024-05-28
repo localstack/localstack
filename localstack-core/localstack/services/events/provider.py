@@ -739,7 +739,27 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         limit: LimitMax100 = None,
         **kwargs,
     ) -> ListReplaysResponse:
-        raise NotImplementedError
+        store = self.get_store(context)
+        if event_source_arn:
+            replays = {
+                key: replay
+                for key, replay in store.replays.items()
+                if replay.event_source_arn == event_source_arn
+            }
+        elif name_prefix:
+            replays = get_filtered_dict(name_prefix, store.replays)
+        else:
+            replays = store.replays
+        limited_replays, next_token = self._get_limited_dict_and_next_token(
+            replays, next_token, limit
+        )
+
+        response = ListReplaysResponse(
+            Replays=list(self._replay_dit_to_replay_response_list(limited_replays))
+        )
+        if next_token is not None:
+            response["NextToken"] = next_token
+        return response
 
     @handler("StartReplay")
     def start_replay(
