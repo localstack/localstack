@@ -503,7 +503,7 @@ def apply_patches():
         loaded_policies = _init_aws_policies(self)
         loaded_policies.extend(
             [
-                AWSManagedPolicy.from_data(name, self.account_id, d)
+                AWSManagedPolicy.from_data(name, self.account_id, self.region_name, d)
                 for name, d in ADDITIONAL_MANAGED_POLICIES.items()
             ]
         )
@@ -520,12 +520,13 @@ def apply_patches():
         self,
         name,
         account_id,
+        region,
         default_version_id=None,
         description=None,
         document=None,
         **kwargs,
     ):
-        fn(self, name, account_id, default_version_id, description, document, **kwargs)
+        fn(self, name, account_id, region, default_version_id, description, document, **kwargs)
         self.document = document
 
     # patch unapply_policy

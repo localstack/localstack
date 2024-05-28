@@ -142,7 +142,9 @@ class S3EventNotificationContext:
             )
         except NoSuchKey as ex:
             if allow_non_existing_key:
-                key: FakeKey = FakeKey(key_name, "", request_context.account_id)
+                key: FakeKey = FakeKey(
+                    key_name, "", request_context.account_id, request_context.region
+                )
             else:
                 raise ex
 
