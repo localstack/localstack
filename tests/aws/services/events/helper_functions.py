@@ -2,7 +2,6 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
-from localstack.aws.api.events import ReplayState
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.sync import retry
 
@@ -137,7 +136,7 @@ def sqs_collect_messages(
 
 
 def wait_for_replay_in_state(
-    aws_client, replay_name: str, expected_state: ReplayState, retries: int = 10, sleep: int = 10
+    aws_client, replay_name: str, expected_state: str, retries: int = 10, sleep: int = 10
 ) -> bool:
     def _wait_for_state():
         response = aws_client.events.describe_replay(ReplayName=replay_name)
