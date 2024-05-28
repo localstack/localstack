@@ -4,7 +4,12 @@ from datetime import datetime, timezone
 
 from botocore.client import BaseClient
 
-from localstack.aws.api.events import ArchiveState, Arn, TargetId
+from localstack.aws.api.events import (
+    ArchiveState,
+    Arn,
+    TargetId,
+    Timestamp,
+)
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import (
     Archive,
@@ -137,6 +142,21 @@ class ArchiveService:
             Targets=[{"Id": target_id, "Arn": self.arn}],
         )
         return target_id
+
+    def _normalize_datetime(self, dt: datetime) -> datetime:
+        return dt.replace(second=0, microsecond=0)
+
+    def _filter_events_start_end_time(
+        self, event_start_time: Timestamp, event_end_time: Timestamp
+    ) -> list[FormattedEvent]:
+        events = self.archive.events
+        event_start_time = self._normalize_datetime(event_start_time)
+        event_end_time = self._normalize_datetime(event_end_time)
+        return [
+            event
+            for event in events.values()
+            if event_start_time <= self._normalize_datetime(event["time"]) <= event_end_time
+        ]
 
 
 ArchiveServiceDict = dict[Arn, ArchiveService]
