@@ -503,7 +503,7 @@ def apply_patches():
         loaded_policies = _init_aws_policies(self)
         loaded_policies.extend(
             [
-                AWSManagedPolicy.from_data(name, self.account_id, self.region, d)
+                AWSManagedPolicy.from_data(name, self.account_id, self.region_name, d)
                 for name, d in ADDITIONAL_MANAGED_POLICIES.items()
             ]
         )
