@@ -16,7 +16,7 @@ antlr4-python3-runtime==4.13.1
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.3.0
+anyio==4.4.0
     # via httpx
 apispec==6.6.1
     # via localstack-core
@@ -37,7 +37,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.142.1
+aws-cdk-lib==2.143.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.89.0
     # via
@@ -106,7 +106,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.3.0
     # via aws-cdk-lib
-coverage==7.5.1
+coverage==7.5.2
     # via localstack-core (pyproject.toml)
 crontab==1.0.1
     # via localstack-core
@@ -164,7 +164,7 @@ httpcore==1.0.5
     # via httpx
 httpx==0.27.0
     # via localstack-core (pyproject.toml)
-hypercorn==0.16.0
+hypercorn==0.17.2
     # via
     #   localstack-core
     #   quart
@@ -449,7 +449,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-typing-extensions==4.11.0
+typing-extensions==4.12.0
     # via
     #   aws-sam-translator
     #   jsii
@@ -483,7 +483,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.4.post1
+zope-interface==6.4.post2
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

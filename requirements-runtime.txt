@@ -133,7 +133,7 @@ h2==4.1.0
     #   localstack-twisted
 hpack==4.0.0
     # via h2
-hypercorn==0.16.0
+hypercorn==0.17.2
     # via
     #   localstack-core
     #   quart
@@ -359,7 +359,7 @@ tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.11.0
+typing-extensions==4.12.0
     # via
     #   aws-sam-translator
     #   localstack-twisted
@@ -389,7 +389,7 @@ xmltodict==0.13.0
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==6.4.post1
+zope-interface==6.4.post2
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
