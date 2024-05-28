@@ -280,7 +280,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes": {
-    "recorded-date": "03-08-2023, 04:14:00",
+    "recorded-date": "28-05-2024, 16:02:03",
     "recorded-content": {
       "object-attrs": {
         "ETag": "e92499db864217242396e8ef766079a9",
@@ -311,6 +311,16 @@
         "ObjectParts": {
           "TotalPartsCount": 2
         },
+        "ObjectSize": 5242965,
+        "StorageClass": "STANDARD",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "object-attrs-multiparts-2-parts-checksum": {
+        "ETag": "5389a7fb9c7e4b97c90255e2ee5e57f7-2",
+        "LastModified": "datetime",
         "ObjectSize": 5242965,
         "StorageClass": "STANDARD",
         "ResponseMetadata": {
@@ -3751,7 +3761,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_and_list_parts": {
-    "recorded-date": "03-08-2023, 04:14:05",
+    "recorded-date": "28-05-2024, 17:32:52",
     "recorded-content": {
       "create-multipart": {
         "Bucket": "bucket",
@@ -3911,6 +3921,33 @@
         "NextKeyMarker": "",
         "NextUploadIdMarker": "",
         "UploadIdMarker": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-multipart-checksum": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 65,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e747540af6911dbc890f8d3e0b48549b-1\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-multipart-checksum": {
+        "AcceptRanges": "bytes",
+        "Body": "upload-part-1upload-part-1upload-part-1upload-part-1upload-part-1",
+        "ContentLength": 65,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e747540af6911dbc890f8d3e0b48549b-1\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -4765,7 +4802,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_complete_multipart_parts_checksum": {
-    "recorded-date": "03-08-2023, 04:25:24",
+    "recorded-date": "28-05-2024, 16:09:21",
     "recorded-content": {
       "create-mpu-checksum": {
         "Bucket": "bucket",
@@ -4851,7 +4888,20 @@
           "HTTPStatusCode": 200
         }
       },
-      "complete-multipart-without-checksum": {
+      "complete-multipart-wrong-parts-checksum": {
+        "Error": {
+          "Code": "InvalidPart",
+          "ETag": "c4c753e69bb853187f5854c46cf801c6",
+          "Message": "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+          "PartNumber": "1",
+          "UploadId": "<upload-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "complete-multipart-wrong-checksum": {
         "Error": {
           "Code": "InvalidRequest",
           "Message": "The upload was created using a sha256 checksum. The complete request must include the checksum for each part. It was missing for part 1 in the request."
@@ -4888,10 +4938,25 @@
           "HTTPStatusCode": 200
         }
       },
+      "head-object-with-checksum": {
+        "AcceptRanges": "bytes",
+        "ChecksumSHA256": "dVAleH1OmqkLvByTMLIWSjNCz3x2Ul1KJEZw3eQ2Fqg=-3",
+        "ContentLength": 15728643,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"c7cb0938a47e31f70cf07028d22e6913-3\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "get-object-attrs": {
         "Checksum": {
           "ChecksumSHA256": "dVAleH1OmqkLvByTMLIWSjNCz3x2Ul1KJEZw3eQ2Fqg="
         },
+        "ETag": "c7cb0938a47e31f70cf07028d22e6913-3",
         "LastModified": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4901,7 +4966,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_parts_checksum_exceptions": {
-    "recorded-date": "03-08-2023, 04:25:28",
+    "recorded-date": "28-05-2024, 17:27:37",
     "recorded-content": {
       "create-mpu-no-checksum": {
         "Bucket": "bucket",
@@ -4924,7 +4989,7 @@
         }
       },
       "upload-part-no-checksum-ok": {
-        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ETag": "\"900150983cd24fb0d6963f7d28e17f72\"",
         "ServerSideEncryption": "AES256",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -4934,7 +4999,7 @@
       "complete-part-with-checksum": {
         "Error": {
           "Code": "InvalidPart",
-          "ETag": "d41d8cd98f00b204e9800998ecf8427e",
+          "ETag": "900150983cd24fb0d6963f7d28e17f72",
           "Message": "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
           "PartNumber": "1",
           "UploadId": "<upload-id:1>"

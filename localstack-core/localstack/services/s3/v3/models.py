@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import logging
 from collections import defaultdict
@@ -68,7 +69,8 @@ from localstack.services.s3.constants import (
     DEFAULT_PUBLIC_BLOCK_ACCESS,
     S3_UPLOAD_PART_MIN_SIZE,
 )
-from localstack.services.s3.utils import rfc_1123_datetime
+from localstack.services.s3.exceptions import InvalidRequest
+from localstack.services.s3.utils import get_s3_checksum, rfc_1123_datetime
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
@@ -334,7 +336,7 @@ class S3Object:
             headers[metadata_key] = metadata_value
 
         # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
-        if "ContentEncoding" not in headers and self.checksum_algorithm:
+        if "ContentEncoding" not in headers and self.checksum_algorithm and not self.parts:
             headers["ContentEncoding"] = ""
 
         if self.storage_class != StorageClass.STANDARD:
@@ -474,16 +476,23 @@ class S3Multipart:
     def complete_multipart(self, parts: CompletedPartList):
         last_part_index = len(parts) - 1
         # TODO: this part is currently not implemented, time permitting
-        # if self.object.checksum_algorithm:
-        #     checksum_key = f"Checksum{self.object.checksum_algorithm.upper()}"
         object_etag = hashlib.md5(usedforsecurity=False)
+        has_checksum = self.object.checksum_algorithm is not None
+        checksum_hash = None
+        if has_checksum:
+            checksum_hash = get_s3_checksum(self.object.checksum_algorithm)
+
         pos = 0
         for index, part in enumerate(parts):
             part_number = part["PartNumber"]
             part_etag = part["ETag"].strip('"')
 
             s3_part = self.parts.get(part_number)
-            if not s3_part or s3_part.etag != part_etag:
+            if (
+                not s3_part
+                or s3_part.etag != part_etag
+                or (not has_checksum and any(k.startswith("Checksum") for k in part))
+            ):
                 raise InvalidPart(
                     "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
                     ETag=part_etag,
@@ -491,10 +500,29 @@ class S3Multipart:
                     UploadId=self.id,
                 )
 
-            # TODO: this part is currently not implemented, time permitting
-            # part_checksum = part.get(checksum_key) if self.object.checksum_algorithm else None
-            # if part_checksum and part_checksum != s3_part.checksum_value:
-            #     raise Exception()
+            if has_checksum:
+                checksum_key = f"Checksum{self.object.checksum_algorithm.upper()}"
+                if not (part_checksum := part.get(checksum_key)):
+                    raise InvalidRequest(
+                        f"The upload was created using a {self.object.checksum_algorithm.lower()} checksum. The complete request must include the checksum for each part. It was missing for part {part_number} in the request."
+                    )
+                if part_checksum != s3_part.checksum_value:
+                    raise InvalidPart(
+                        "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+                        ETag=part_etag,
+                        PartNumber=part_number,
+                        UploadId=self.id,
+                    )
+
+                checksum_hash.update(base64.b64decode(part_checksum))
+
+            elif any(k.startswith("Checksum") for k in part):
+                raise InvalidPart(
+                    "One or more of the specified parts could not be found.  The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",
+                    ETag=part_etag,
+                    PartNumber=part_number,
+                    UploadId=self.id,
+                )
 
             if index != last_part_index and s3_part.size < S3_UPLOAD_PART_MIN_SIZE:
                 raise EntityTooSmall(
@@ -510,8 +538,12 @@ class S3Multipart:
             self.object.parts[part_number] = (pos, s3_part.size)
             pos += s3_part.size
 
-            multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
-            self.object.etag = multipart_etag
+        multipart_etag = f"{object_etag.hexdigest()}-{len(parts)}"
+        self.object.etag = multipart_etag
+        if has_checksum:
+            checksum_value = f"{base64.b64encode(checksum_hash.digest()).decode()}-{len(parts)}"
+            self.checksum_value = checksum_value
+            self.object.checksum_value = checksum_value
 
 
 # TODO: use SynchronizedDefaultDict to prevent updates during iteration?

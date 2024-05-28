@@ -693,6 +693,16 @@ class TestS3:
         )
         snapshot.match("object-attrs-multiparts-2-parts", response)
 
+        multipart_key = "test-get-obj-attrs-multipart-2"
+        s3_multipart_upload(bucket=s3_bucket, key=multipart_key, data="upload-part-1" * 5, parts=2)
+        response = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=multipart_key,
+            ObjectAttributes=["StorageClass", "ETag", "ObjectSize", "Checksum"],
+            MaxParts=3,
+        )
+        snapshot.match("object-attrs-multiparts-2-parts-checksum", response)
+
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_provider,
@@ -803,6 +813,16 @@ class TestS3:
 
         list_multipart_uploads = aws_client.s3.list_multipart_uploads(Bucket=s3_bucket)
         snapshot.match("list-all-uploads-completed", list_multipart_uploads)
+
+        head_object = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-multipart-checksum", head_object)
+
+        get_object = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        snapshot.match("get-multipart-checksum", get_object)
 
     @markers.aws.validated
     def test_multipart_no_such_upload(self, s3_bucket, snapshot, aws_client):
@@ -5097,7 +5117,10 @@ class TestS3:
         assert resp_dict["DeleteResult"]["Deleted"]["Key"] == object_key
 
     @markers.aws.validated
-    @pytest.mark.skipif(reason="Behaviour not implemented yet")
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="Behaviour not implemented in moto",
+    )
     def test_complete_multipart_parts_checksum(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -5146,20 +5169,37 @@ class TestS3:
         response = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key_name, UploadId=upload_id)
         snapshot.match("list-parts", response)
 
-        # testing completing the multipart without the checksum of parts
-        multipart_upload_parts_no_checksum = [
-            {"ETag": upload_part["ETag"], "PartNumber": upload_part["PartNumber"]}
-            for upload_part in multipart_upload_parts
-        ]
+        with pytest.raises(ClientError) as e:
+            # testing completing the multipart without the checksum of parts
+            multipart_upload_parts_wrong_checksum = [
+                {
+                    "ETag": upload_part["ETag"],
+                    "PartNumber": upload_part["PartNumber"],
+                    "ChecksumSHA256": hash_sha256("aaa"),
+                }
+                for upload_part in multipart_upload_parts
+            ]
+            aws_client.s3.complete_multipart_upload(
+                Bucket=s3_bucket,
+                Key=key_name,
+                MultipartUpload={"Parts": multipart_upload_parts_wrong_checksum},
+                UploadId=upload_id,
+            )
+        snapshot.match("complete-multipart-wrong-parts-checksum", e.value.response)
 
         with pytest.raises(ClientError) as e:
+            # testing completing the multipart without the checksum of parts
+            multipart_upload_parts_no_checksum = [
+                {"ETag": upload_part["ETag"], "PartNumber": upload_part["PartNumber"]}
+                for upload_part in multipart_upload_parts
+            ]
             aws_client.s3.complete_multipart_upload(
                 Bucket=s3_bucket,
                 Key=key_name,
                 MultipartUpload={"Parts": multipart_upload_parts_no_checksum},
                 UploadId=upload_id,
             )
-        snapshot.match("complete-multipart-without-checksum", e.value.response)
+        snapshot.match("complete-multipart-wrong-checksum", e.value.response)
 
         response = aws_client.s3.complete_multipart_upload(
             Bucket=s3_bucket,
@@ -5176,15 +5216,23 @@ class TestS3:
         get_object_with_checksum["Body"].read()
         snapshot.match("get-object-with-checksum", get_object_with_checksum)
 
+        head_object_with_checksum = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object-with-checksum", head_object_with_checksum)
+
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
             Key=key_name,
-            ObjectAttributes=["Checksum"],
+            ObjectAttributes=["Checksum", "ETag"],
         )
         snapshot.match("get-object-attrs", object_attrs)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="Behaviour not implemented yet")
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER,
+        reason="Behaviour not implemented in moto",
+    )
     def test_multipart_parts_checksum_exceptions(self, s3_bucket, snapshot, aws_client):
         snapshot.add_transformer(
             [
@@ -5203,16 +5251,13 @@ class TestS3:
 
         # data must be at least 5MiB
         part_data = "abc"
-        part_data = to_bytes(part_data)
-        checksum_part = hash_sha256(part_data)
+        checksum_part = hash_sha256(to_bytes(part_data))
 
-        # Write contents to memory rather than a file.
-        upload_file_object = BytesIO(part_data)
         with pytest.raises(ClientError) as e:
             aws_client.s3.upload_part(
                 Bucket=s3_bucket,
                 Key=key_name,
-                Body=upload_file_object,
+                Body=part_data,
                 PartNumber=1,
                 UploadId=upload_id,
                 ChecksumAlgorithm="SHA256",
@@ -5222,7 +5267,7 @@ class TestS3:
         upload_resp = aws_client.s3.upload_part(
             Bucket=s3_bucket,
             Key=key_name,
-            Body=upload_file_object,
+            Body=part_data,
             PartNumber=1,
             UploadId=upload_id,
         )
@@ -5251,12 +5296,11 @@ class TestS3:
         snapshot.match("create-mpu-with-checksum", response)
         upload_id = response["UploadId"]
 
-        upload_file_object = BytesIO(part_data)
         with pytest.raises(ClientError) as e:
             aws_client.s3.upload_part(
                 Bucket=s3_bucket,
                 Key=key_name,
-                Body=upload_file_object,
+                Body=part_data,
                 PartNumber=1,
                 UploadId=upload_id,
             )
