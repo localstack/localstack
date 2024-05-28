@@ -75,10 +75,11 @@
     "last_validated_date": "2024-05-22T13:15:37+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[custom]": {
-    "last_validated_date": "2024-05-22T11:35:52+00:00"
+    "last_validated_date": "2024-05-27T13:22:58+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[default]": {
-    "last_validated_date": "2024-05-22T11:32:47+00:00"
+    "last_validated_date": "2024-05-27T13:17:56+00:00"
+  },
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate": {
     "last_validated_date": "2024-05-22T15:15:36+00:00"

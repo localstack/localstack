@@ -544,7 +544,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[default]": {
-    "recorded-date": "22-05-2024, 11:32:47",
+    "recorded-date": "27-05-2024, 13:17:56",
     "recorded-content": {
       "start-replay": {
         "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
@@ -631,7 +631,7 @@
           {
             "EventEndTime": "datetime",
             "EventLastReplayedTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-a8b0182a",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "replay-name",
@@ -649,12 +649,12 @@
         "Destination": {
           "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
           "FilterArns": [
-            "arn:aws:events:<region>:111111111111:rule/test-rule-4c12750a"
+            "arn:aws:events:<region>:111111111111:rule/<rule-name>"
           ]
         },
         "EventEndTime": "datetime",
         "EventLastReplayedTime": "datetime",
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-a8b0182a",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
         "EventStartTime": "datetime",
         "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
         "ReplayEndTime": "datetime",
@@ -679,11 +679,11 @@
         "Destination": {
           "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
           "FilterArns": [
-            "arn:aws:events:<region>:111111111111:rule/test-rule-4c12750a"
+            "arn:aws:events:<region>:111111111111:rule/<rule-name>"
           ]
         },
         "EventEndTime": "datetime",
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-a8b0182a",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
         "EventStartTime": "datetime",
         "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
         "ReplayName": "replay-name",
@@ -697,7 +697,7 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[custom]": {
-    "recorded-date": "22-05-2024, 11:35:52",
+    "recorded-date": "27-05-2024, 13:22:58",
     "recorded-content": {
       "start-replay": {
         "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
@@ -784,7 +784,7 @@
           {
             "EventEndTime": "datetime",
             "EventLastReplayedTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-c3b97245",
+            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "replay-name",
@@ -802,12 +802,12 @@
         "Destination": {
           "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
           "FilterArns": [
-            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/test-rule-8f6bea0d"
+            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<rule-name>"
           ]
         },
         "EventEndTime": "datetime",
         "EventLastReplayedTime": "datetime",
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-c3b97245",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
         "EventStartTime": "datetime",
         "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
         "ReplayEndTime": "datetime",
@@ -832,11 +832,11 @@
         "Destination": {
           "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
           "FilterArns": [
-            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/test-rule-8f6bea0d"
+            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<rule-name>"
           ]
         },
         "EventEndTime": "datetime",
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-c3b97245",
+        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
         "EventStartTime": "datetime",
         "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
         "ReplayName": "replay-name",

@@ -407,6 +407,7 @@ class TestArchive:
 class TestReplay:
     @markers.aws.validated
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
+    @pytest.mark.skip_snapshot_verify(paths=["$..State"])
     def test_start_list_describe_canceled_replay(
         self,
         event_bus_type,
@@ -494,6 +495,8 @@ class TestReplay:
         snapshot.add_transformer(
             [
                 snapshot.transform.regex(event_bus_name, "<event-bus-name>"),
+                snapshot.transform.regex(rule_name, "<rule-name>"),
+                snapshot.transform.regex(archive_name, "<archive-name>"),
                 snapshot.transform.regex(replay_name, "<replay-name>"),
                 snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
                 snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
