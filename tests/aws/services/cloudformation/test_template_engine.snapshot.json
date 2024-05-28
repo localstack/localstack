@@ -16,7 +16,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -450,11 +450,11 @@
       "failed_description": {
         "EventId": "<uuid:1>",
         "LogicalResourceId": "<stack-name:1>",
-        "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "ResourceStatus": "ROLLBACK_IN_PROGRESS",
         "ResourceStatusReason": "Transform 111111111111::Unsuccessful failed with: failed because it is a test. Rollback requested by user.",
         "ResourceType": "AWS::CloudFormation::Stack",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
         "Timestamp": "timestamp"
       }
@@ -466,11 +466,11 @@
       "failed_description": {
         "EventId": "<uuid:1>",
         "LogicalResourceId": "<stack-name:1>",
-        "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "ResourceStatus": "ROLLBACK_IN_PROGRESS",
         "ResourceStatusReason": "Transform 111111111111::Unsuccessful failed without an error message.. Rollback requested by user.",
         "ResourceType": "AWS::CloudFormation::Stack",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
         "Timestamp": "timestamp"
       }
@@ -482,11 +482,11 @@
       "failed_description": {
         "EventId": "<uuid:1>",
         "LogicalResourceId": "<stack-name:1>",
-        "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "ResourceStatus": "ROLLBACK_IN_PROGRESS",
         "ResourceStatusReason": "Template format error: unsupported structure.. Rollback requested by user.",
         "ResourceType": "AWS::CloudFormation::Stack",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
         "Timestamp": "timestamp"
       }
@@ -498,11 +498,11 @@
       "failed_description": {
         "EventId": "<uuid:1>",
         "LogicalResourceId": "<stack-name:1>",
-        "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "ResourceStatus": "ROLLBACK_IN_PROGRESS",
         "ResourceStatusReason": "Received malformed response from transform 111111111111::Unsuccessful. Rollback requested by user.",
         "ResourceType": "AWS::CloudFormation::Stack",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
         "Timestamp": "timestamp"
       }
@@ -517,7 +517,7 @@
           "CAPABILITY_IAM",
           "CAPABILITY_NAMED_IAM"
         ],
-        "ChangeSetId": "arn:aws:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "CreationTime": "datetime",
         "DisableRollback": false,
         "DriftInformation": {
@@ -534,7 +534,7 @@
           }
         ],
         "RollbackConfiguration": {},
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
         "StackName": "<stack-name:1>",
         "StackStatus": "CREATE_COMPLETE",
         "Tags": []
@@ -569,7 +569,7 @@
             "PhysicalResourceId": "SubstitutionMacro",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::CloudFormation::Macro",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -594,7 +594,7 @@
         "ResourceStatus": "CREATE_FAILED",
         "ResourceStatusReason": "Property validation failure: [The property {/Type} is required]",
         "ResourceType": "AWS::SSM::Parameter",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
         "Timestamp": "timestamp"
       }

@@ -23,7 +23,7 @@
         "id": "<uuid:1>",
         "region": "<region>",
         "resources": [
-          "arn:aws:s3:::<bucket-name:1>"
+          "arn:<partition>:s3:::<bucket-name:1>"
         ],
         "source": "aws.s3",
         "time": "date",
@@ -51,7 +51,7 @@
         "id": "<uuid:2>",
         "region": "<region>",
         "resources": [
-          "arn:aws:s3:::<bucket-name:1>"
+          "arn:<partition>:s3:::<bucket-name:1>"
         ],
         "source": "aws.s3",
         "time": "date",
@@ -83,7 +83,7 @@
             "id": "<uuid:1>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -108,7 +108,7 @@
             "id": "<uuid:2>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -133,7 +133,7 @@
             "id": "<uuid:3>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -161,7 +161,7 @@
             "id": "<uuid:4>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -197,7 +197,7 @@
             "id": "<uuid:1>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -224,7 +224,7 @@
             "id": "<uuid:2>",
             "region": "<region>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -261,7 +261,7 @@
             "id": "<uuid:1>",
             "region": "<region:1>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",
@@ -289,7 +289,7 @@
             "id": "<uuid:2>",
             "region": "<region:1>",
             "resources": [
-              "arn:aws:s3:::<bucket-name:1>"
+              "arn:<partition>:s3:::<bucket-name:1>"
             ],
             "source": "aws.s3",
             "time": "date",

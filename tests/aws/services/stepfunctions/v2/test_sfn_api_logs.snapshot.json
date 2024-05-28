@@ -4,7 +4,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -29,7 +29,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -38,7 +38,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -56,7 +56,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -81,7 +81,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -90,7 +90,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -108,7 +108,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -133,7 +133,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -142,7 +142,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -160,7 +160,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -185,7 +185,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -194,7 +194,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -212,7 +212,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -237,7 +237,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -246,7 +246,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -264,7 +264,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -289,7 +289,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -298,7 +298,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -316,7 +316,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -341,7 +341,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -350,7 +350,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -368,7 +368,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -393,7 +393,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -402,7 +402,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -420,7 +420,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -447,7 +447,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -465,7 +465,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -493,7 +493,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -556,7 +556,7 @@
     "recorded-content": {
       "creation_resp": {
         "creationDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -581,7 +581,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -590,7 +590,7 @@
         },
         "name": "<ArnPart_0idx>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -620,7 +620,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -630,7 +630,7 @@
         "name": "<ArnPart_0idx>",
         "revisionId": "<uuid:1>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -660,7 +660,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -670,7 +670,7 @@
         "name": "<ArnPart_0idx>",
         "revisionId": "<uuid:1>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -700,7 +700,7 @@
           "destinations": [
             {
               "cloudWatchLogsLogGroup": {
-                "logGroupArn": "arn:aws:logs:<region>:111111111111:log-group:log_group_name:*"
+                "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:log_group_name:*"
               }
             }
           ],
@@ -710,7 +710,7 @@
         "name": "<ArnPart_0idx>",
         "revisionId": "<uuid:2>",
         "roleArn": "snf_role_arn",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false

@@ -3,7 +3,7 @@
     "recorded-date": "18-04-2023, 19:01:27",
     "recorded-content": {
       "request-cert": {
-        "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+        "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -11,7 +11,7 @@
       },
       "describe-cert": {
         "Certificate": {
-          "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+          "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
           "CreatedAt": "datetime",
           "DomainName": "*.<domain-name>",
           "DomainValidationOptions": [
@@ -51,7 +51,7 @@
       },
       "describe-cert-2": {
         "Certificate": {
-          "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+          "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
           "CreatedAt": "datetime",
           "DomainName": "*.<domain-name>",
           "DomainValidationOptions": [
@@ -111,7 +111,7 @@
       },
       "list-cert": [
         {
-          "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+          "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
           "DomainName": "*.<domain-name>",
           "SubjectAlternativeNameSummaries": [
             "*.<domain-name>"
@@ -142,7 +142,7 @@
     "recorded-date": "09-01-2024, 14:58:14",
     "recorded-content": {
       "list-cert-summary-list": {
-        "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+        "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
         "CreatedAt": "datetime",
         "DomainName": "test.example.com",
         "ExtendedKeyUsages": [],
@@ -161,7 +161,7 @@
         "Type": "AMAZON_ISSUED"
       },
       "describe-cert": {
-        "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+        "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
         "CreatedAt": "datetime",
         "DomainName": "test.example.com",
         "DomainValidationOptions": [
@@ -221,7 +221,7 @@
     "recorded-date": "22-02-2024, 17:41:15",
     "recorded-content": {
       "import-certificate-response": {
-        "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+        "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -229,7 +229,7 @@
       },
       "describe-certificate-response": {
         "Certificate": {
-          "CertificateArn": "arn:aws:acm:<region>:111111111111:certificate/<cert-id>",
+          "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
           "CreatedAt": "datetime",
           "DomainName": "localhost",
           "DomainValidationOptions": [

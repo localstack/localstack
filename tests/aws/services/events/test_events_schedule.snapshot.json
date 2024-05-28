@@ -3,7 +3,7 @@
     "recorded-date": "14-05-2024, 11:23:22",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -12,7 +12,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "rate(1 minute)",
@@ -42,7 +42,7 @@
       "list-targets": {
         "Targets": [
           {
-            "Arn": "arn:aws:sqs:<region>:111111111111:<queue-name",
+            "Arn": "arn:<partition>:sqs:<region>:111111111111:<queue-name",
             "Id": "<target-id>"
           }
         ],
@@ -65,7 +65,7 @@
             "time": "date",
             "region": "<region>",
             "resources": [
-              "arn:aws:events:<region>:111111111111:rule/<rule-name>"
+              "arn:<partition>:events:<region>:111111111111:rule/<rule-name>"
             ],
             "detail": {}
           }
@@ -85,7 +85,7 @@
             "time": "date",
             "region": "<region>",
             "resources": [
-              "arn:aws:events:<region>:111111111111:rule/<rule-name>"
+              "arn:<partition>:events:<region>:111111111111:rule/<rule-name>"
             ],
             "detail": {}
           }
@@ -97,7 +97,7 @@
     "recorded-date": "14-05-2024, 14:50:51",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -106,7 +106,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(0 20 * * ? *)",
@@ -137,7 +137,7 @@
             "time": "date",
             "region": "<region>",
             "resources": [
-              "arn:aws:events:<region>:111111111111:rule/<rule-name>"
+              "arn:<partition>:events:<region>:111111111111:rule/<rule-name>"
             ],
             "detail": {}
           }
@@ -149,7 +149,7 @@
     "recorded-date": "14-05-2024, 15:43:09",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -158,7 +158,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(0 10 * * ? *)",
@@ -176,7 +176,7 @@
     "recorded-date": "14-05-2024, 15:43:09",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -185,7 +185,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(15 12 * * ? *)",
@@ -203,7 +203,7 @@
     "recorded-date": "14-05-2024, 15:43:10",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -212,7 +212,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(0 18 ? * MON-FRI *)",
@@ -230,7 +230,7 @@
     "recorded-date": "14-05-2024, 15:43:11",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -239,7 +239,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(0 8 1 * ? *)",
@@ -257,7 +257,7 @@
     "recorded-date": "14-05-2024, 15:43:12",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -266,7 +266,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(0/15 * * * ? *)",
@@ -284,7 +284,7 @@
     "recorded-date": "14-05-2024, 15:43:12",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -293,7 +293,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(0/10 * ? * MON-FRI *)",
@@ -311,7 +311,7 @@
     "recorded-date": "14-05-2024, 15:43:13",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -320,7 +320,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(0/5 8-17 ? * MON-FRI *)",
@@ -338,7 +338,7 @@
     "recorded-date": "14-05-2024, 15:43:14",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -347,7 +347,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(0/30 20-23 ? * MON-FRI *)",
@@ -365,7 +365,7 @@
     "recorded-date": "14-05-2024, 15:43:14",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -374,7 +374,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "Name": "<rule-name>",
             "ScheduleExpression": "cron(0/30 0-2 ? * MON-FRI *)",

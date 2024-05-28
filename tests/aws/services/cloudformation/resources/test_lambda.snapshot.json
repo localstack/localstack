@@ -10,10 +10,10 @@
           "LastUpdatedTimestamp": "timestamp",
           "LogicalResourceId": "<url_logical_resource_id>",
           "Metadata": {},
-          "PhysicalResourceId": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+          "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceType": "AWS::Lambda::Url",
-          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
           "StackName": "<stack-name:1>"
         },
         "ResponseMetadata": {
@@ -24,7 +24,7 @@
       "url_config": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url:1>",
         "InvokeMode": "BUFFERED",
         "LastModifiedTime": "date",
@@ -48,7 +48,7 @@
       "url_config_arn": {
         "AuthType": "NONE",
         "CreationTime": "date",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "FunctionUrl": "<function-url:1>",
         "InvokeMode": "BUFFERED",
         "LastModifiedTime": "date",
@@ -77,10 +77,10 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "FunctionAlias",
-            "PhysicalResourceId": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Alias",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -92,7 +92,7 @@
             "PhysicalResourceId": "<function-name>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -104,7 +104,7 @@
             "PhysicalResourceId": "<role-name>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -113,10 +113,10 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "Version",
-            "PhysicalResourceId": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Version",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -127,7 +127,7 @@
         }
       },
       "Alias": {
-        "AliasArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "AliasArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "Description": "",
         "FunctionVersion": "1",
         "Name": "<alias-name>",
@@ -152,7 +152,7 @@
             "PhysicalResourceId": "<resource:4>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -164,7 +164,7 @@
             "PhysicalResourceId": "<sid:2>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Permission",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -176,7 +176,7 @@
             "PhysicalResourceId": "<resource:5>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -185,10 +185,10 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "fntopic09ED913A",
-            "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:3>:<resource:2>",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SNS::Subscription",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -197,10 +197,10 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "topic69831491",
-            "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:3>",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:3>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -225,7 +225,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:4>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
           "FunctionName": "<resource:4>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -237,10 +237,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:5>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
           "Runtime": "python3.9",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:6>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:6>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -255,7 +255,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "fn5FF616E3",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
           "aws:cloudformation:stack-name": "<stack-name:1>"
         },
         "ResponseMetadata": {
@@ -304,7 +304,7 @@
                   "SNS:ListSubscriptionsByTopic",
                   "SNS:Publish"
                 ],
-                "Resource": "arn:aws:sns:<region>:111111111111:<resource:3>",
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:3>",
                 "Condition": {
                   "StringEquals": {
                     "AWS:SourceOwner": "111111111111"
@@ -316,7 +316,7 @@
           "SubscriptionsConfirmed": "0",
           "SubscriptionsDeleted": "0",
           "SubscriptionsPending": "0",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -335,10 +335,10 @@
                 "Service": "sns.amazonaws.com"
               },
               "Action": "lambda:InvokeFunction",
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<resource:4>",
+              "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
               "Condition": {
                 "ArnLike": {
-                  "AWS:SourceArn": "arn:aws:sns:<region>:111111111111:<resource:3>"
+                  "AWS:SourceArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
                 }
               }
             }
@@ -365,7 +365,7 @@
             "PhysicalResourceId": "<resource:3>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -377,7 +377,7 @@
             "PhysicalResourceId": "<resource:4>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -389,7 +389,7 @@
             "PhysicalResourceId": "<iam-policy-physicalid>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Policy",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -401,7 +401,7 @@
             "PhysicalResourceId": "<uuid:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::EventSourceMapping",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -413,7 +413,7 @@
             "PhysicalResourceId": "https://sqs.<region>.amazonaws.com/111111111111/<resource:2>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SQS::Queue",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -437,7 +437,7 @@
                     "sqs:GetQueueAttributes"
                   ],
                   "Effect": "Allow",
-                  "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                  "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
                 }
               ],
               "Version": "2012-10-17"
@@ -463,7 +463,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
           "FunctionName": "<resource:3>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -475,10 +475,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:4>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:5>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -493,7 +493,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "fn5FF616E3",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
           "aws:cloudformation:stack-name": "<stack-name:1>"
         },
         "ResponseMetadata": {
@@ -503,8 +503,8 @@
       },
       "get_esm_result": {
         "BatchSize": 1,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
@@ -526,7 +526,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -538,7 +538,7 @@
       },
       "get_role_result": {
         "Role": {
-          "Arn": "arn:aws:iam::111111111111:role/<resource:4>",
+          "Arn": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -567,7 +567,7 @@
       "list_attached_role_policies_result": {
         "AttachedPolicies": [
           {
-            "PolicyArn": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
             "PolicyName": "AWSLambdaBasicExecutionRole"
           }
         ],
@@ -599,10 +599,10 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "CodeSigningConfig",
-            "PhysicalResourceId": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:code-signing-config:<resource:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::CodeSigningConfig",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -616,10 +616,10 @@
         "CodeSigningConfig": {
           "AllowedPublishers": {
             "SigningProfileVersionArns": [
-              "arn:aws:signer:<region>:111111111111:/signing-profiles/test"
+              "arn:<partition>:signer:<region>:111111111111:/signing-profiles/test"
             ]
           },
-          "CodeSigningConfigArn": "arn:aws:lambda:<region>:111111111111:code-signing-config:<resource:1>",
+          "CodeSigningConfigArn": "arn:<partition>:lambda:<region>:111111111111:code-signing-config:<resource:1>",
           "CodeSigningConfigId": "<resource:1>",
           "CodeSigningPolicies": {
             "UntrustedArtifactOnDeployment": "Enforce"
@@ -642,7 +642,7 @@
           "OnFailure": {},
           "OnSuccess": {}
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:1>",
         "LastModified": "datetime",
         "MaximumEventAgeInSeconds": 300,
         "MaximumRetryAttempts": 1,
@@ -666,7 +666,7 @@
             "PhysicalResourceId": "<resource:3>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -678,7 +678,7 @@
             "PhysicalResourceId": "<resource:4>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -687,10 +687,10 @@
               "StackResourceDriftStatus": "NOT_CHECKED"
             },
             "LogicalResourceId": "fnVersion7BF8AE5A",
-            "PhysicalResourceId": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+            "PhysicalResourceId": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Version",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -712,7 +712,7 @@
             "EphemeralStorage": {
               "Size": 512
             },
-            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>:$LATEST",
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>:$LATEST",
             "FunctionName": "<resource:3>",
             "Handler": "index.handler",
             "LastModified": "date",
@@ -723,7 +723,7 @@
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:1>",
-            "Role": "arn:aws:iam::111111111111:role/<resource:4>",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
             "Runtime": "python3.9",
             "SnapStart": {
               "ApplyOn": "None",
@@ -745,7 +745,7 @@
             "EphemeralStorage": {
               "Size": 512
             },
-            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
             "FunctionName": "<resource:3>",
             "Handler": "index.handler",
             "LastModified": "date",
@@ -756,7 +756,7 @@
             "MemorySize": 128,
             "PackageType": "Zip",
             "RevisionId": "<uuid:2>",
-            "Role": "arn:aws:iam::111111111111:role/<resource:4>",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
             "Runtime": "python3.9",
             "SnapStart": {
               "ApplyOn": "None",
@@ -789,7 +789,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
           "FunctionName": "<resource:3>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -801,10 +801,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:4>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:5>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -837,7 +837,7 @@
             "PhysicalResourceId": "<resource:3>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -849,7 +849,7 @@
             "PhysicalResourceId": "<uuid:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::EventSourceMapping",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -861,7 +861,7 @@
             "PhysicalResourceId": "<resource:4>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -873,7 +873,7 @@
             "PhysicalResourceId": "<iam-policy-physicalid>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Policy",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -885,7 +885,7 @@
             "PhysicalResourceId": "<resource:6>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::DynamoDB::Table",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -912,7 +912,7 @@
                     "dynamodb:GetShardIterator"
                   ],
                   "Effect": "Allow",
-                  "Resource": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>"
+                  "Resource": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>"
                 }
               ],
               "Version": "2012-10-17"
@@ -938,7 +938,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
           "FunctionName": "<resource:3>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -950,10 +950,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:4>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:5>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -968,7 +968,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "fn5FF616E3",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
           "aws:cloudformation:stack-name": "<stack-name:1>"
         },
         "ResponseMetadata": {
@@ -982,8 +982,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1018,7 +1018,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
           "LatestStreamLabel": "<resource:2>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -1029,7 +1029,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_AND_OLD_IMAGES"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>",
           "TableId": "<uuid:3>",
           "TableName": "<resource:6>",
           "TableSizeBytes": 0,
@@ -1057,7 +1057,7 @@
               "ShardId": "shard-id"
             }
           ],
-          "StreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
+          "StreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:6>/stream/<resource:2>",
           "StreamLabel": "<resource:2>",
           "StreamStatus": "ENABLED",
           "StreamViewType": "NEW_AND_OLD_IMAGES",
@@ -1070,7 +1070,7 @@
       },
       "get_role_result": {
         "Role": {
-          "Arn": "arn:aws:iam::111111111111:role/<resource:4>",
+          "Arn": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -1099,7 +1099,7 @@
       "list_attached_role_policies_result": {
         "AttachedPolicies": [
           {
-            "PolicyArn": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
             "PolicyName": "AWSLambdaBasicExecutionRole"
           }
         ],
@@ -1134,7 +1134,7 @@
             "PhysicalResourceId": "<resource:3>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::Function",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -1146,7 +1146,7 @@
             "PhysicalResourceId": "<uuid:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Lambda::EventSourceMapping",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -1158,7 +1158,7 @@
             "PhysicalResourceId": "<resource:4>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Role",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -1170,7 +1170,7 @@
             "PhysicalResourceId": "<iam-policy-physicalid>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::IAM::Policy",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -1182,7 +1182,7 @@
             "PhysicalResourceId": "<resource:2>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::Kinesis::Stream",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -1208,12 +1208,12 @@
                     "kinesis:ListStreams"
                   ],
                   "Effect": "Allow",
-                  "Resource": "arn:aws:kinesis:<region>:111111111111:stream/<resource:2>"
+                  "Resource": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
                 },
                 {
                   "Action": "kinesis:DescribeStream",
                   "Effect": "Allow",
-                  "Resource": "arn:aws:kinesis:<region>:111111111111:stream/<resource:2>"
+                  "Resource": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>"
                 }
               ],
               "Version": "2012-10-17"
@@ -1239,7 +1239,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
           "FunctionName": "<resource:3>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -1251,10 +1251,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:4>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "Runtime": "python3.9",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:5>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:5>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -1269,7 +1269,7 @@
         },
         "Tags": {
           "aws:cloudformation:logical-id": "fn5FF616E3",
-          "aws:cloudformation:stack-id": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
           "aws:cloudformation:stack-name": "<stack-name:1>"
         },
         "ResponseMetadata": {
@@ -1283,8 +1283,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:kinesis:<region>:111111111111:stream/<resource:2>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1324,7 +1324,7 @@
               "ShardId": "shard-id"
             }
           ],
-          "StreamARN": "arn:aws:kinesis:<region>:111111111111:stream/<resource:2>",
+          "StreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:2>",
           "StreamCreationTimestamp": "timestamp",
           "StreamModeDetails": {
             "StreamMode": "PROVISIONED"
@@ -1339,7 +1339,7 @@
       },
       "get_role_result": {
         "Role": {
-          "Arn": "arn:aws:iam::111111111111:role/<resource:4>",
+          "Arn": "arn:<partition>:iam::111111111111:role/<resource:4>",
           "AssumeRolePolicyDocument": {
             "Statement": [
               {
@@ -1368,7 +1368,7 @@
       "list_attached_role_policies_result": {
         "AttachedPolicies": [
           {
-            "PolicyArn": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+            "PolicyArn": "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
             "PolicyName": "AWSLambdaBasicExecutionRole"
           }
         ],
@@ -1403,7 +1403,7 @@
               "Principal": {
                 "Service": "lambda.amazonaws.com"
               },
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<fn-name>",
+              "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<fn-name>",
               "Sid": "<p1-sid>"
             },
             {
@@ -1412,7 +1412,7 @@
               "Principal": {
                 "Service": "states.amazonaws.com"
               },
-              "Resource": "arn:aws:lambda:<region>:111111111111:function:<fn-name>",
+              "Resource": "arn:<partition>:lambda:<region>:111111111111:function:<fn-name>",
               "Sid": "<p2-sid>"
             }
           ],
@@ -1456,7 +1456,7 @@
             "DestinationConfig": {
               "OnFailure": {}
             },
-            "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
+            "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
             "FilterCriteria": {
               "Filters": [
                 {
@@ -1468,7 +1468,7 @@
                 }
               ]
             },
-            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
             "FunctionResponseTypes": [],
             "LastModified": "datetime",
             "LastProcessingResult": "No records processed",
@@ -1496,7 +1496,7 @@
             "DestinationConfig": {
               "OnFailure": {}
             },
-            "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
+            "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<table_name>/stream/<resource:1>",
             "FilterCriteria": {
               "Filters": [
                 {
@@ -1508,7 +1508,7 @@
                 }
               ]
             },
-            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
             "FunctionResponseTypes": [],
             "LastModified": "datetime",
             "LastProcessingResult": "No records processed",

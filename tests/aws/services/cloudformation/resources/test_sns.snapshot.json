@@ -72,14 +72,14 @@
       "subscription-1": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "true",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -89,14 +89,14 @@
       "subscription-2": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

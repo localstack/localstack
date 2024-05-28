@@ -17,7 +17,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
           "FunctionName": "<function-name:1>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -29,10 +29,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.10",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -70,7 +70,7 @@
           "EphemeralStorage": {
             "Size": 512
           },
-          "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:2>",
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:2>",
           "FunctionName": "<function-name:2>",
           "Handler": "index.handler",
           "LastModified": "date",
@@ -82,10 +82,10 @@
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:2>",
-          "Role": "arn:aws:iam::111111111111:role/<resource:3>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:3>",
           "Runtime": "python3.10",
           "RuntimeVersionConfig": {
-            "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:2>"
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
           },
           "SnapStart": {
             "ApplyOn": "None",
@@ -111,13 +111,13 @@
       "event_invoke_config": {
         "DestinationConfig": {
           "OnFailure": {
-            "Destination": "arn:aws:sns:<region>:111111111111:<resource:4>"
+            "Destination": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
           },
           "OnSuccess": {
-            "Destination": "arn:aws:sns:<region>:111111111111:<resource:4>"
+            "Destination": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
           }
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:$LATEST",
         "LastModified": "datetime",
         "MaximumEventAgeInSeconds": 60,
         "MaximumRetryAttempts": 0,
@@ -167,7 +167,7 @@
                   "SNS:ListSubscriptionsByTopic",
                   "SNS:Publish"
                 ],
-                "Resource": "arn:aws:sns:<region>:111111111111:<resource:4>",
+                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
                 "Condition": {
                   "StringEquals": {
                     "AWS:SourceOwner": "111111111111"
@@ -179,7 +179,7 @@
           "SubscriptionsConfirmed": "0",
           "SubscriptionsDeleted": "0",
           "SubscriptionsPending": "0",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

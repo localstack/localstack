@@ -12,7 +12,7 @@
         "PhysicalResourceId": "<physical_resource_id:1>",
         "ResourceStatus": "CREATE_COMPLETE",
         "ResourceType": "AWS::Scheduler::Schedule",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>"
       },
       "Group": {
@@ -25,12 +25,12 @@
         "PhysicalResourceId": "<physical_resource_id:2>",
         "ResourceStatus": "CREATE_COMPLETE",
         "ResourceType": "AWS::Scheduler::ScheduleGroup",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>"
       },
       "ScheduleDesc": {
         "ActionAfterCompletion": "NONE",
-        "Arn": "arn:aws:scheduler:<region>:111111111111:schedule/<physical_resource_id:2>/<physical_resource_id:1>",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/<physical_resource_id:2>/<physical_resource_id:1>",
         "CreationDate": "datetime",
         "FlexibleTimeWindow": {
           "MaximumWindowInMinutes": 60,
@@ -43,12 +43,12 @@
         "ScheduleExpressionTimezone": "UTC",
         "State": "ENABLED",
         "Target": {
-          "Arn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+          "Arn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
           "RetryPolicy": {
             "MaximumEventAgeInSeconds": 86400,
             "MaximumRetryAttempts": 185
           },
-          "RoleArn": "arn:aws:iam::111111111111:role/<resource:3>"
+          "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:3>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -56,7 +56,7 @@
         }
       },
       "GroupDesc": {
-        "Arn": "arn:aws:scheduler:<region>:111111111111:schedule-group/<physical_resource_id:2>",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<physical_resource_id:2>",
         "CreationDate": "datetime",
         "LastModificationDate": "datetime",
         "Name": "<physical_resource_id:2>",

@@ -169,7 +169,7 @@
     "recorded-content": {
       "describe-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "test key 123",
@@ -193,9 +193,9 @@
       "describe-key-diff-region-with-id": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Key 'arn:aws:kms:<region>:111111111111:key/<key-id:1>' does not exist"
+          "Message": "Key 'arn:<partition>:kms:<region>:111111111111:key/<key-id:1>' does not exist"
         },
-        "message": "Key 'arn:aws:kms:<region>:111111111111:key/<key-id:1>' does not exist",
+        "message": "Key 'arn:<partition>:kms:<region>:111111111111:key/<key-id:1>' does not exist",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -215,7 +215,7 @@
       "describe-key-same-specific-region-with-id": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test key 123",
@@ -239,7 +239,7 @@
       "describe-key-same-specific-region-with-arn": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test key 123",
@@ -290,9 +290,9 @@
       "describe-key-with-valid-id-mrk": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Key 'arn:aws:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist"
+          "Message": "Key 'arn:<partition>:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist"
         },
-        "message": "Key 'arn:aws:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist",
+        "message": "Key 'arn:<partition>:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -344,9 +344,9 @@
       "describe-key-from-different-region": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Key 'arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>' does not exist"
+          "Message": "Key 'arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>' does not exist"
         },
-        "message": "Key 'arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>' does not exist",
+        "message": "Key 'arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>' does not exist",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -355,7 +355,7 @@
       "replicate-key": {
         "ReplicaKeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "",
@@ -372,12 +372,12 @@
           "MultiRegionConfiguration": {
             "MultiRegionKeyType": "REPLICA",
             "PrimaryKey": {
-              "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+              "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
               "Region": "<region>"
             },
             "ReplicaKeys": [
               {
-                "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+                "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
                 "Region": "ap-southeast-1"
               }
             ]
@@ -392,7 +392,7 @@
               "Sid": "Enable IAM User Permissions",
               "Effect": "Allow",
               "Principal": {
-                "AWS": "arn:aws:iam::111111111111:root"
+                "AWS": "arn:<partition>:iam::111111111111:root"
               },
               "Action": "kms:*",
               "Resource": "*"
@@ -407,7 +407,7 @@
       "describe-key-from-region": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test replicated key",
@@ -424,12 +424,12 @@
           "MultiRegionConfiguration": {
             "MultiRegionKeyType": "PRIMARY",
             "PrimaryKey": {
-              "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+              "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
               "Region": "<region>"
             },
             "ReplicaKeys": [
               {
-                "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+                "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
                 "Region": "ap-southeast-1"
               }
             ]
@@ -444,7 +444,7 @@
       "describe-replicated-key": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "",
@@ -461,12 +461,12 @@
           "MultiRegionConfiguration": {
             "MultiRegionKeyType": "REPLICA",
             "PrimaryKey": {
-              "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+              "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
               "Region": "<region>"
             },
             "ReplicaKeys": [
               {
-                "Arn": "arn:aws:kms:ap-southeast-1:111111111111:key/<key-id:1>",
+                "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
                 "Region": "ap-southeast-1"
               }
             ]
@@ -852,7 +852,7 @@
     "recorded-content": {
       "create-hmac-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "HMAC_256",
         "Description": "test key",
@@ -870,7 +870,7 @@
       },
       "describe-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "HMAC_256",
         "Description": "test key",
@@ -1212,7 +1212,7 @@
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "<description:1>",
@@ -1231,9 +1231,9 @@
       "encrypt-before-import-error": {
         "Error": {
           "Code": "KMSInvalidStateException",
-          "Message": "arn:aws:kms:<region>:111111111111:key/<key-id:1> is pending import."
+          "Message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import."
         },
-        "message": "arn:aws:kms:<region>:111111111111:key/<key-id:1> is pending import.",
+        "message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1242,7 +1242,7 @@
       "describe-key-before-import": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "<description:1>",
@@ -1276,7 +1276,7 @@
       "describe-key-after-import": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "<description:1>",
@@ -1301,7 +1301,7 @@
       "describe-key-after-deleted-import": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "<description:1>",
@@ -1325,9 +1325,9 @@
       "encrypt-after-delete-error": {
         "Error": {
           "Code": "KMSInvalidStateException",
-          "Message": "arn:aws:kms:<region>:111111111111:key/<key-id:1> is pending import."
+          "Message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import."
         },
-        "message": "arn:aws:kms:<region>:111111111111:key/<key-id:1> is pending import.",
+        "message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1340,7 +1340,7 @@
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "ECC_NIST_P256",
         "Description": "<description:1>",
@@ -1359,7 +1359,7 @@
       "describe-key-before-import": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "ECC_NIST_P256",
           "Description": "<description:1>",
@@ -1383,7 +1383,7 @@
       "describe-key-after-import": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "ECC_NIST_P256",
           "Description": "<description:1>",
@@ -1408,7 +1408,7 @@
       "describe-key-after-deleted-import": {
         "KeyMetadata": {
           "AWSAccountId": "111111111111",
-          "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "ECC_NIST_P256",
           "Description": "<description:1>",
@@ -1510,7 +1510,7 @@
     "recorded-date": "11-05-2023, 14:40:23",
     "recorded-content": {
       "generate-data-key-pair-without-plaintext": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/<resource:1>",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
         "KeyPairSpec": "RSA_2048",
         "PrivateKeyCiphertextBlob": "private-key-ciphertext-blob",
         "PublicKey": "public-key",
@@ -1525,7 +1525,7 @@
     "recorded-date": "11-05-2023, 14:40:23",
     "recorded-content": {
       "generate-data-key-pair": {
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/<resource:1>",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
         "KeyPairSpec": "RSA_2048",
         "PrivateKeyCiphertextBlob": "private-key-ciphertext-blob",
         "PrivateKeyPlaintext": "private-key-plaintext",
@@ -1542,7 +1542,7 @@
     "recorded-content": {
       "generate-data-key-result": {
         "CiphertextBlob": "ciphertext-blob",
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/<resource:1>",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
         "Plaintext": "plaintext",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1556,7 +1556,7 @@
     "recorded-content": {
       "generate-data-key-without-plaintext": {
         "CiphertextBlob": "ciphertext-blob",
-        "KeyId": "arn:aws:kms:<region>:111111111111:key/<resource:1>",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -1678,7 +1678,7 @@
     "recorded-content": {
       "create_multi_region_key": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "test multi region key",
@@ -1695,7 +1695,7 @@
         "MultiRegionConfiguration": {
           "MultiRegionKeyType": "PRIMARY",
           "PrimaryKey": {
-            "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+            "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
             "Region": "<region>"
           },
           "ReplicaKeys": []
@@ -1709,7 +1709,7 @@
     "recorded-content": {
       "non_multi_region_keys_should_not_have_multi_region_properties": {
         "AWSAccountId": "111111111111",
-        "Arn": "arn:aws:kms:<region>:111111111111:key/<key-id:1>",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "test non multi region key",

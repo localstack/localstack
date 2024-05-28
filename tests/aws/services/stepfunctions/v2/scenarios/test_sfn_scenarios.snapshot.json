@@ -57,8 +57,8 @@
           "level": "OFF"
         },
         "name": "<state-machine-name>",
-        "roleArn": "arn:aws:iam::111111111111:role/<role-name>",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -70,7 +70,7 @@
         }
       },
       "first_path__start_execution_result": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-first_path>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-first_path>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -78,7 +78,7 @@
         }
       },
       "first_path__describe_ex_done": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-first_path>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-first_path>",
         "input": {
           "type": "Public",
           "value": 3
@@ -95,7 +95,7 @@
           "included": true
         },
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "SUCCEEDED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -114,7 +114,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -207,7 +207,7 @@
         }
       },
       "second_path__start_execution_result": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-second_path>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-second_path>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -215,7 +215,7 @@
         }
       },
       "second_path__describe_ex_done": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-second_path>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-second_path>",
         "input": {
           "type": "Private",
           "value": 25
@@ -232,7 +232,7 @@
           "included": true
         },
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "SUCCEEDED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -251,7 +251,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -344,7 +344,7 @@
         }
       },
       "default_path__start_execution_result": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-default_path>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-default_path>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -352,7 +352,7 @@
         }
       },
       "default_path__describe_ex_done": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-default_path>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-default_path>",
         "input": {
           "type": "Private",
           "value": 3
@@ -369,7 +369,7 @@
           "included": true
         },
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "SUCCEEDED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -388,7 +388,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -501,7 +501,7 @@
                 }
               ],
               "Type": "Task",
-              "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+              "Resource": "arn:<partition>:states:::sqs:sendMessage.waitForTaskToken",
               "Parameters": {
                 "QueueUrl": "<queue-url:1>",
                 "MessageBody": {
@@ -524,8 +524,8 @@
           "level": "OFF"
         },
         "name": "<state-machine-name>",
-        "roleArn": "arn:aws:iam::111111111111:role/<role-name>",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -537,7 +537,7 @@
         }
       },
       "success__start_execution_result": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -545,7 +545,7 @@
         }
       },
       "success__describe_ex_done": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
         "input": {
           "shouldfail": "no"
         },
@@ -560,7 +560,7 @@
           "included": true
         },
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "SUCCEEDED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -578,7 +578,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -752,7 +752,7 @@
         }
       },
       "failure__start_execution_result": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -760,7 +760,7 @@
         }
       },
       "failure__describe_ex_done": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
         "input": {
           "shouldfail": "yes"
         },
@@ -769,7 +769,7 @@
         },
         "name": "<execution-id-failure>",
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "FAILED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -787,7 +787,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -949,7 +949,7 @@
             "Add Pet to Store": {
               "Next": "Pet was Added Successfully?",
               "Type": "Task",
-              "Resource": "arn:aws:states:::apigateway:invoke",
+              "Resource": "arn:<partition>:states:::apigateway:invoke",
               "Parameters": {
                 "ApiEndpoint": "<api-endpoint:1>",
                 "Method": "POST",
@@ -982,8 +982,8 @@
           "level": "OFF"
         },
         "name": "<state-machine-name>",
-        "roleArn": "arn:aws:iam::111111111111:role/<role-name>",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "ACTIVE",
         "tracingConfiguration": {
           "enabled": false
@@ -995,7 +995,7 @@
         }
       },
       "success__start_execution_result": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1003,7 +1003,7 @@
         }
       },
       "success__describe_ex_done": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-success>",
         "input": {
           "fail": true
         },
@@ -1012,7 +1012,7 @@
         },
         "name": "<execution-id-success>",
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "FAILED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -1030,7 +1030,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
             },
             "id": 1,
             "previousEventId": 0,
@@ -1307,7 +1307,7 @@
         }
       },
       "failure__start_execution_result": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
         "startDate": "datetime",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1315,7 +1315,7 @@
         }
       },
       "failure__describe_ex_done": {
-        "executionArn": "arn:aws:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
+        "executionArn": "arn:<partition>:states:<region>:111111111111:execution:<state-machine-name>:<execution-id-failure>",
         "input": {
           "fail": false
         },
@@ -1355,7 +1355,7 @@
           "included": true
         },
         "startDate": "datetime",
-        "stateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<state-machine-name>",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<state-machine-name>",
         "status": "SUCCEEDED",
         "stopDate": "datetime",
         "ResponseMetadata": {
@@ -1373,7 +1373,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "roleArn": "arn:aws:iam::111111111111:role/<role-name>"
+              "roleArn": "arn:<partition>:iam::111111111111:role/<role-name>"
             },
             "id": 1,
             "previousEventId": 0,

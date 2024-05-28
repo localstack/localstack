@@ -4,7 +4,7 @@
     "recorded-content": {
       "stack-outputs": {
         "KeyAlias": "<key-alias:1>",
-        "KeyArn": "arn:aws:kms:<region>:111111111111:key/<resource:1>"
+        "KeyArn": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>"
       }
     }
   }

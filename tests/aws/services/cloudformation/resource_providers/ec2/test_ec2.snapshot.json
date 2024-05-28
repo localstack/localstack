@@ -43,7 +43,7 @@
             "PhysicalResourceId": "<resource:2>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::PrefixList",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -59,7 +59,7 @@
             "AddressFamily": "IPv4",
             "MaxEntries": 10,
             "OwnerId": "111111111111",
-            "PrefixListArn": "arn:aws:ec2:<region>:111111111111:prefix-list/<resource:2>",
+            "PrefixListArn": "arn:<partition>:ec2:<region>:111111111111:prefix-list/<resource:2>",
             "PrefixListId": "<resource:2>",
             "PrefixListName": "vpc-1-servers",
             "State": "create-complete",
@@ -92,7 +92,7 @@
             "PhysicalResourceId": "<vpc-endpoint-id:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::VPCEndpoint",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -104,7 +104,7 @@
             "PhysicalResourceId": "<group-id:1>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::SecurityGroup",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -116,7 +116,7 @@
             "PhysicalResourceId": "vpc-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::VPC",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -128,7 +128,7 @@
             "PhysicalResourceId": "subnet-a-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::Subnet",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
@@ -140,7 +140,7 @@
             "PhysicalResourceId": "subnet-b-id",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::EC2::Subnet",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }

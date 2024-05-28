@@ -11,8 +11,8 @@
       },
       "event_source_mapping": {
         "BatchSize": 1,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
@@ -44,7 +44,7 @@
                     "messageAttributes": {},
                     "md5OfBody": "<md5-of-body:1>",
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "awsRegion": "<region>"
                   }
                 ]
@@ -80,7 +80,7 @@
                     "messageAttributes": {},
                     "md5OfBody": "<md5-of-body:1>",
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "awsRegion": "<region>"
                   }
                 ]
@@ -128,7 +128,7 @@
                     "messageAttributes": {},
                     "md5OfBody": "<m-d5-of-body:3>",
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "awsRegion": "<region>"
                   }
                 ]
@@ -164,7 +164,7 @@
                     "messageAttributes": {},
                     "md5OfBody": "<m-d5-of-body:3>",
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "awsRegion": "<region>"
                   }
                 ]
@@ -203,7 +203,7 @@
     "recorded-date": "09-08-2023, 15:06:36",
     "recorded-content": {
       "lambda-response-dlq-config": {
-        "TargetArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+        "TargetArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
       },
       "messages": {
         "Messages": [
@@ -282,8 +282,8 @@
       },
       "create_event_source_mapping": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [
           "ReportBatchItemFailures"
         ],
@@ -319,7 +319,7 @@
                       "fail_attempts": 0
                     },
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "md5OfBody": "<md5-of-body:1>",
                     "messageAttributes": {},
                     "messageId": "<uuid:1>",
@@ -341,7 +341,7 @@
                       "fail_attempts": 1
                     },
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "md5OfBody": "<md5-of-body:2>",
                     "messageAttributes": {},
                     "messageId": "<uuid:2>",
@@ -363,7 +363,7 @@
                       "fail_attempts": 1
                     },
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "md5OfBody": "<md5-of-body:3>",
                     "messageAttributes": {},
                     "messageId": "<uuid:3>",
@@ -385,7 +385,7 @@
                       "fail_attempts": 2
                     },
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "md5OfBody": "<m-d5-of-body:3>",
                     "messageAttributes": {},
                     "messageId": "<uuid:4>",
@@ -439,7 +439,7 @@
                       "fail_attempts": 1
                     },
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "md5OfBody": "<md5-of-body:2>",
                     "messageAttributes": {},
                     "messageId": "<uuid:2>",
@@ -461,7 +461,7 @@
                       "fail_attempts": 1
                     },
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "md5OfBody": "<md5-of-body:3>",
                     "messageAttributes": {},
                     "messageId": "<uuid:3>",
@@ -483,7 +483,7 @@
                       "fail_attempts": 2
                     },
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "md5OfBody": "<m-d5-of-body:3>",
                     "messageAttributes": {},
                     "messageId": "<uuid:4>",
@@ -579,7 +579,7 @@
                     "messageAttributes": {},
                     "md5OfBody": "<m-d5-of-body:3>",
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "awsRegion": "<region>"
                   }
                 ]
@@ -621,7 +621,7 @@
                     "messageAttributes": {},
                     "md5OfBody": "<m-d5-of-body:3>",
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "awsRegion": "<region>"
                   }
                 ]
@@ -692,7 +692,7 @@
                     "messageAttributes": {},
                     "md5OfBody": "<md5-of-body:1>",
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "awsRegion": "<region>"
                   }
                 ]
@@ -716,8 +716,8 @@
     "recorded-content": {
       "create-event-source-mapping": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
@@ -760,8 +760,8 @@
     "recorded-content": {
       "create-event-source-mapping-response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -792,7 +792,7 @@
               "md5OfMessageAttributes": null,
               "md5OfBody": "<md5-of-body:1>",
               "eventSource": "aws:sqs",
-              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
             }
           ]
@@ -805,7 +805,7 @@
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -819,7 +819,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -850,7 +850,7 @@
               "md5OfBody": "<md5-of-body:1>",
               "md5OfMessageAttributes": null,
               "eventSource": "aws:sqs",
-              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
             }
           ]
@@ -863,7 +863,7 @@
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -878,7 +878,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -909,7 +909,7 @@
               "md5OfMessageAttributes": null,
               "md5OfBody": "<md5-of-body:1>",
               "eventSource": "aws:sqs",
-              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
             }
           ]
@@ -922,7 +922,7 @@
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -940,7 +940,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -972,7 +972,7 @@
               "md5OfMessageAttributes": null,
               "md5OfBody": "<md5-of-body:1>",
               "eventSource": "aws:sqs",
-              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
             }
           ]
@@ -985,7 +985,7 @@
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1001,7 +1001,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -1032,7 +1032,7 @@
               "md5OfMessageAttributes": null,
               "md5OfBody": "<md5-of-body:1>",
               "eventSource": "aws:sqs",
-              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
             }
           ]
@@ -1045,7 +1045,7 @@
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1064,7 +1064,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -1095,7 +1095,7 @@
               "md5OfMessageAttributes": null,
               "md5OfBody": "<md5-of-body:1>",
               "eventSource": "aws:sqs",
-              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
             }
           ]
@@ -1108,7 +1108,7 @@
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1127,7 +1127,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -1158,7 +1158,7 @@
               "md5OfBody": "<md5-of-body:1>",
               "md5OfMessageAttributes": null,
               "eventSource": "aws:sqs",
-              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
             }
           ]
@@ -1171,7 +1171,7 @@
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1192,7 +1192,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -1223,7 +1223,7 @@
               "md5OfMessageAttributes": null,
               "md5OfBody": "<md5-of-body:1>",
               "eventSource": "aws:sqs",
-              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
             }
           ]
@@ -1236,7 +1236,7 @@
     "recorded-content": {
       "create_event_source_mapping_response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1252,7 +1252,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -1283,7 +1283,7 @@
               "md5OfMessageAttributes": null,
               "md5OfBody": "<md5-of-body:1>",
               "eventSource": "aws:sqs",
-              "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "awsRegion": "<region>"
             }
           ]
@@ -1409,7 +1409,7 @@
                     "md5OfMessageAttributes": "d25a6aea97eb8f585bfa92d314504a92",
                     "md5OfBody": "<md5-of-body:1>",
                     "eventSource": "aws:sqs",
-                    "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                    "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                     "awsRegion": "<region>"
                   }
                 ]
@@ -1432,8 +1432,8 @@
     "recorded-content": {
       "create-event-source-mapping-response": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -1467,7 +1467,7 @@
                 "md5OfMessageAttributes": null,
                 "md5OfBody": "<md5-of-body:1>",
                 "eventSource": "aws:sqs",
-                "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                 "awsRegion": "<region>"
               }
             ]
@@ -1476,8 +1476,8 @@
       ],
       "updated_esm": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 1,
@@ -1511,7 +1511,7 @@
                 "md5OfMessageAttributes": null,
                 "md5OfBody": "<md5-of-body:1>",
                 "eventSource": "aws:sqs",
-                "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                 "awsRegion": "<region>"
               }
             ]
@@ -1538,7 +1538,7 @@
                 "md5OfMessageAttributes": null,
                 "md5OfBody": "<md5-of-body:2>",
                 "eventSource": "aws:sqs",
-                "eventSourceARN": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                "eventSourceARN": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                 "awsRegion": "<region>"
               }
             ]
@@ -1552,8 +1552,8 @@
     "recorded-content": {
       "create": {
         "BatchSize": 10,
-        "EventSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:2>",
+        "EventSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:2>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "MaximumBatchingWindowInSeconds": 0,
@@ -1568,10 +1568,10 @@
       "error": {
         "Error": {
           "Code": "ResourceConflictException",
-          "Message": "An event source mapping with SQS arn (\" arn:aws:sqs:<region>:111111111111:<resource:1> \") and function (\" <resource:2> \") already exists. Please update or delete the existing mapping with UUID <uuid:1>"
+          "Message": "An event source mapping with SQS arn (\" arn:<partition>:sqs:<region>:111111111111:<resource:1> \") and function (\" <resource:2> \") already exists. Please update or delete the existing mapping with UUID <uuid:1>"
         },
         "Type": "User",
-        "message": "An event source mapping with SQS arn (\" arn:aws:sqs:<region>:111111111111:<resource:1> \") and function (\" <resource:2> \") already exists. Please update or delete the existing mapping with UUID <uuid:1>",
+        "message": "An event source mapping with SQS arn (\" arn:<partition>:sqs:<region>:111111111111:<resource:1> \") and function (\" <resource:2> \") already exists. Please update or delete the existing mapping with UUID <uuid:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409

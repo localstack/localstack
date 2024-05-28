@@ -27,7 +27,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -44,8 +44,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -91,7 +91,7 @@
                 "SizeBytes": 70,
                 "StreamViewType": "NEW_IMAGE"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -120,7 +120,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
           "LatestStreamLabel": "<resource:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -131,7 +131,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_IMAGE"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
@@ -148,8 +148,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -173,8 +173,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "OK",
@@ -216,7 +216,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
           "LatestStreamLabel": "<resource:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -227,7 +227,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_IMAGE"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
@@ -244,8 +244,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -271,8 +271,8 @@
             "DestinationConfig": {
               "OnFailure": {}
             },
-            "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
-            "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+            "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+            "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
             "FunctionResponseTypes": [],
             "LastModified": "datetime",
             "LastProcessingResult": "No records processed",
@@ -317,7 +317,7 @@
               "KeyType": "HASH"
             }
           ],
-          "LatestStreamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+          "LatestStreamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
           "LatestStreamLabel": "<resource:1>",
           "ProvisionedThroughput": {
             "NumberOfDecreasesToday": 0,
@@ -328,7 +328,7 @@
             "StreamEnabled": true,
             "StreamViewType": "NEW_IMAGE"
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
@@ -344,11 +344,11 @@
         "BisectBatchOnFunctionError": false,
         "DestinationConfig": {
           "OnFailure": {
-            "Destination": "arn:aws:sqs:<region>:111111111111:<resource:3>"
+            "Destination": "arn:<partition>:sqs:<region>:111111111111:<resource:3>"
           }
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:4>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -372,7 +372,7 @@
             "Body": {
               "requestContext": {
                 "requestId": "<uuid:3>",
-                "functionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:4>",
+                "functionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:4>",
                 "condition": "RetryAttemptsExhausted",
                 "approximateInvokeCount": 2
               },
@@ -390,7 +390,7 @@
                 "approximateArrivalOfFirstRecord": "date",
                 "approximateArrivalOfLastRecord": "date",
                 "batchSize": 1,
-                "streamArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>"
+                "streamArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:2>/stream/<resource:1>"
               }
             },
             "MD5OfBody": "<m-d5-of-body:1>",
@@ -467,7 +467,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -484,8 +484,8 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -506,10 +506,10 @@
       "error": {
         "Error": {
           "Code": "ResourceConflictException",
-          "Message": "The event source arn (\" arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>"
+          "Message": "The event source arn (\" arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>"
         },
         "Type": "User",
-        "message": "The event source arn (\" arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>",
+        "message": "The event source arn (\" arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2> \") and function (\" <resource:3> \") provided mapping already exists. Please update or delete the existing mapping with UUID <uuid:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 409
@@ -545,7 +545,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -562,7 +562,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -574,7 +574,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -620,7 +620,7 @@
                 "SizeBytes": 32,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -653,7 +653,7 @@
                 "SizeBytes": 32,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -688,7 +688,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -705,7 +705,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -718,7 +718,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -761,7 +761,7 @@
                 "SizeBytes": 20,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -791,7 +791,7 @@
                 "SizeBytes": 20,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         },
@@ -827,7 +827,7 @@
                 "SizeBytes": 46,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -862,7 +862,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -879,7 +879,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -894,7 +894,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -937,7 +937,7 @@
                 "SizeBytes": 20,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -967,7 +967,7 @@
                 "SizeBytes": 20,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1002,7 +1002,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -1019,7 +1019,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1037,7 +1037,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1083,7 +1083,7 @@
                 "SizeBytes": 46,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1116,7 +1116,7 @@
                 "SizeBytes": 46,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1151,7 +1151,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -1168,7 +1168,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1188,7 +1188,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1234,7 +1234,7 @@
                 "SizeBytes": 46,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1267,7 +1267,7 @@
                 "SizeBytes": 46,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1302,7 +1302,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -1319,7 +1319,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1337,7 +1337,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1380,7 +1380,7 @@
                 "SizeBytes": 24,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1410,7 +1410,7 @@
                 "SizeBytes": 24,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         },
@@ -1441,7 +1441,7 @@
                 "SizeBytes": 46,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1476,7 +1476,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -1493,7 +1493,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1519,7 +1519,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1565,7 +1565,7 @@
                 "SizeBytes": 39,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1598,7 +1598,7 @@
                 "SizeBytes": 39,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1633,7 +1633,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -1650,7 +1650,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1670,7 +1670,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1716,7 +1716,7 @@
                 "SizeBytes": 47,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1749,7 +1749,7 @@
                 "SizeBytes": 47,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1784,7 +1784,7 @@
             "ReadCapacityUnits": 0,
             "WriteCapacityUnits": 0
           },
-          "TableArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>",
+          "TableArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>",
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
@@ -1801,7 +1801,7 @@
         "DestinationConfig": {
           "OnFailure": {}
         },
-        "EventSourceArn": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
+        "EventSourceArn": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>",
         "FilterCriteria": {
           "Filters": [
             {
@@ -1813,7 +1813,7 @@
             }
           ]
         },
-        "FunctionArn": "arn:aws:lambda:<region>:111111111111:function:<resource:3>",
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<resource:3>",
         "FunctionResponseTypes": [],
         "LastModified": "datetime",
         "LastProcessingResult": "No records processed",
@@ -1856,7 +1856,7 @@
                 "SizeBytes": 24,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
@@ -1886,7 +1886,7 @@
                 "SizeBytes": 24,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         },
@@ -1914,7 +1914,7 @@
                 "SizeBytes": 24,
                 "StreamViewType": "NEW_AND_OLD_IMAGES"
               },
-              "eventSourceARN": "arn:aws:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
+              "eventSourceARN": "arn:<partition>:dynamodb:<region>:111111111111:table/<resource:1>/stream/<resource:2>"
             }
           ]
         }
