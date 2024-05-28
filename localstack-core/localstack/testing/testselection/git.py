@@ -15,3 +15,9 @@ def find_merge_base(repo: str, base_branch: str, head_branch: str) -> str:
     cmd = ["git", "-C", repo, "merge-base", base_branch, head_branch]
     output = subprocess.check_output(cmd, encoding="UTF-8")
     return output.strip()
+
+
+def get_branch_name(repo: str) -> str:
+    cmd = ["git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD"]
+    output = subprocess.check_output(cmd, encoding="UTF-8")
+    return output.strip()

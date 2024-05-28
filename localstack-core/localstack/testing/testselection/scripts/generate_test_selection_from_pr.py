@@ -2,13 +2,18 @@
 USAGE: $ GITHUB_API_TOKEN=<your-token> python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr <git-root-dir> <pull-request-url> <output-file-path>
 """
 
+import argparse
 import os
 import sys
 from pathlib import Path
 from typing import Iterable
 
-from localstack.testing.testselection.git import find_merge_base, get_changed_files_from_git_diff
-from localstack.testing.testselection.github import get_pr_details_from_url
+from localstack.testing.testselection.git import (
+    find_merge_base,
+    get_branch_name,
+    get_changed_files_from_git_diff,
+)
+from localstack.testing.testselection.github import get_pr_details_from_url, get_pr_url_from_branch
 from localstack.testing.testselection.matching import MatchingRule
 from localstack.testing.testselection.opt_in import complies_with_opt_in
 from localstack.testing.testselection.testselection import get_affected_tests_from_changes
@@ -19,18 +24,27 @@ def generate_from_pr(
     matching_rules: list[MatchingRule] | None = None,
     repo_name: str = "localstack",
 ):
-    if len(sys.argv) != 4:
-        print(
-            f"Usage: python -m {repo_name}.testing.testselection.scripts.generate_test_selection_from_pr <git-root-dir> <pull-request-url> <output-file-path>",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Generate test selection from a pull request")
+    parser.add_argument("git_root_dir", type=str, help="Path to the git repository root")
+    parser.add_argument("output_file_path", type=str, help="Path to the output file")
+    parser.add_argument("--pr", type=str, help="Pull request URL")
+    args = parser.parse_args()
 
-    output_file_path = sys.argv[-1]
-    pull_request_url = sys.argv[-2]
-    repo_root_path = sys.argv[-3]
-
+    output_file_path = args.output_file_path
+    repo_root_path = args.git_root_dir
     github_token = os.environ.get("GITHUB_API_TOKEN")
+
+    if args.pr is None:
+        current_branch = get_branch_name(repo_root_path)
+        print(
+            f"No pull request URL provided, evaluating based on current branch ({current_branch})"
+        )
+        pull_request_url = get_pr_url_from_branch(
+            f"localstack/{repo_name}", current_branch, github_token
+        )
+        print(f"Detected pull request: {pull_request_url}")
+    else:
+        pull_request_url = args.pr
 
     base_commit_sha, head_commit_sha = get_pr_details_from_url(pull_request_url, github_token)
     print(f"Pull request: {pull_request_url}")

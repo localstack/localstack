@@ -104,7 +104,7 @@ env:
   # report to tinybird if executed on master
   TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
   # enable test selection if  not running on master and test selection is not explicitly disabled
-  TESTSELECTION_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && inputs.enableTestSelection != false && '--path-filter=../localstack/target/testselection/test-selection.txt ' || '' }}"
+  TESTSELECTION_PYTEST_ARGS: "${{ inputs.enableTestSelection != false && '--path-filter=../localstack/target/testselection/test-selection.txt ' || '' }}"
 
 jobs:
   test-pro:

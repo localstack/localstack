@@ -22,3 +22,15 @@ def get_pr_details_from_url(pr_url: str, token: str) -> (str, str):
     repo_name = f"{parts[-4]}/{parts[-3]}"
     pr_number = parts[-1]
     return get_pr_details(repo_name, pr_number, token)
+
+
+def get_pr_url_from_branch(repo_name: str, branch: str, token: str = None) -> str:
+    """
+    Fetch the pull request URL of a given branch from a GitHub repository.
+    """
+    url = f"https://api.github.com/repos/{repo_name}/pulls?head=localstack:{branch}"
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    if token is not None:
+        headers["Authorization"] = f"token {token}"
+    pr_data = requests.get(url, headers=headers).json()
+    return pr_data[0]["html_url"]
