@@ -17,6 +17,7 @@ from localstack.services.events.models import (
     ArchiveName,
     EventPattern,
     FormattedEvent,
+    FormattedEventList,
     RetentionDays,
     RuleName,
 )
@@ -101,9 +102,13 @@ class ArchiveService:
         except Exception as e:
             LOG.debug(f"Rule {self.rule_name} could not be deleted, {e}")
 
-    def put_events(self, events: list[FormattedEvent]) -> None:
+    def put_events(self, events: FormattedEventList) -> None:
         for event in events:
             self.archive.events[event["id"]] = event
+
+    def get_events(self, start_time: Timestamp, end_time: Timestamp) -> FormattedEventList:
+        events_to_replay = self._filter_events_start_end_time(start_time, end_time)
+        return events_to_replay
 
     def _initialize_client(self) -> BaseClient:
         client_factory = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
