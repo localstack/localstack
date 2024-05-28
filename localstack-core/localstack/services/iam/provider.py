@@ -520,12 +520,13 @@ def apply_patches():
         self,
         name,
         account_id,
+        region,
         default_version_id=None,
         description=None,
         document=None,
         **kwargs,
     ):
-        fn(self, name, account_id, default_version_id, description, document, **kwargs)
+        fn(self, name, account_id, region, default_version_id, description, document, **kwargs)
         self.document = document
 
     # patch unapply_policy
