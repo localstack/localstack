@@ -384,6 +384,9 @@ class CloudformationProvider(CloudformationApi):
             stack.set_stack_status("ROLLBACK_COMPLETE")
             return CreateStackOutput(StackId=stack.stack_id)
 
+        # update the template
+        stack.template_original = template
+
         deployer = template_deployer.TemplateDeployerBase.factory(
             context.account_id, context.region, stack
         )
