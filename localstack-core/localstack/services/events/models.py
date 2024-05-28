@@ -14,6 +14,7 @@ from localstack.aws.api.events import (
     EventPattern,
     EventResourceList,
     EventSourceName,
+    EventTime,
     ManagedBy,
     ReplayDescription,
     ReplayDestination,
@@ -62,13 +63,17 @@ class FormattedEvent(TypedDict):
     detail_type: Optional[str]  # key "detail-type" is automatically interpreted as detail_type
     source: Optional[EventSourceName]
     account: str
-    time: str
+    time: EventTime
     region: str
     resources: Optional[EventResourceList]
     detail: dict[str, str | dict]
+    replay_name: Optional[
+        ReplayName
+    ]  # key "replay-name" is automatically interpreted as replay_name
 
 
 FormattedEventDict = dict[str, FormattedEvent]
+FormattedEventList = list[FormattedEvent]
 
 TransformedEvent: TypeAlias = FormattedEvent | dict | str
 
