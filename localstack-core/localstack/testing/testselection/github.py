@@ -1,12 +1,14 @@
 import requests
 
+GITHUB_V3_JSON = "application/vnd.github.v3+json"
+
 
 def get_pr_details(repo_name: str, pr_number: str, token: str) -> (str, str):
     """
     Fetch the base commit SHA, and the head commit SHA of a given pull request number from a GitHub repository.
     """
     url = f"https://api.github.com/repos/{repo_name}/pulls/{pr_number}"
-    headers = {"Accept": "application/vnd.github.v3+json"}
+    headers = {"Accept": GITHUB_V3_JSON}
     if token:
         headers["Authorization"] = f"token {token}"
     pr_data = requests.get(url, headers=headers).json()
@@ -29,7 +31,7 @@ def get_pr_url_from_branch(repo_name: str, branch: str, token: str = None) -> st
     Fetch the pull request URL of a given branch from a GitHub repository.
     """
     url = f"https://api.github.com/repos/{repo_name}/pulls?head=localstack:{branch}"
-    headers = {"Accept": "application/vnd.github.v3+json"}
+    headers = {"Accept": GITHUB_V3_JSON}
     if token is not None:
         headers["Authorization"] = f"token {token}"
     pr_data = requests.get(url, headers=headers).json()

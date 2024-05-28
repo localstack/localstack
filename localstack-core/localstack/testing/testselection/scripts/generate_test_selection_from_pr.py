@@ -40,7 +40,7 @@ def generate_from_pr(
             f"No pull request URL provided, evaluating based on current branch ({current_branch})"
         )
         pull_request_url = get_pr_url_from_branch(
-            f"localstack/{repo_name}", current_branch, github_token
+            f"localstack/{repo_name.replace('_', '-')}", current_branch, token=github_token
         )
         print(f"Detected pull request: {pull_request_url}")
     else:
