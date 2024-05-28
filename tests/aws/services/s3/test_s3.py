@@ -665,6 +665,10 @@ class TestS3:
         snapshot.match("expected_error", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_v2_provider,
+        paths=["$.object-attrs-multiparts-2-parts-checksum.ObjectParts"],
+    )
     def test_get_object_attributes(self, s3_bucket, snapshot, s3_multipart_upload, aws_client):
         aws_client.s3.put_object(Bucket=s3_bucket, Key="data.txt", Body=b"69\n420\n")
         response = aws_client.s3.get_object_attributes(
@@ -852,7 +856,6 @@ class TestS3:
         snapshot.match("abort-exc", e.value.response)
 
     @pytest.mark.skipif(condition=LEGACY_V2_S3_PROVIDER, reason="not implemented in moto")
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ServerSideEncryption"])
     @markers.aws.validated
     def test_multipart_complete_multipart_too_small(self, s3_bucket, snapshot, aws_client):
         key_name = "test-upload-part-exc"
