@@ -80,8 +80,10 @@
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_list_describe_canceled_replay[default]": {
     "last_validated_date": "2024-05-27T13:17:56+00:00"
   },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_different_archive": {
+    "last_validated_date": "2024-05-27T10:41:42+00:00"
   },
-  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate": {
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_name_same_archive": {
     "last_validated_date": "2024-05-22T15:15:36+00:00"
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_invalid_end_time[0]": {

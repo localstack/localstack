@@ -989,7 +989,7 @@
       "start-replay-unknown-archive-error": "<ExceptionInfo ClientError('An error occurred (ValidationException) when calling the StartReplay operation: Parameter EventSourceArn is not valid. Reason: Archive <archive-name> does not exist.') tblen=3>"
     }
   },
-  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate": {
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_name_same_archive": {
     "recorded-date": "22-05-2024, 15:15:36",
     "recorded-content": {
       "start-replay-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the StartReplay operation: Replay <replay-name> already exists.') tblen=3>"
@@ -1038,6 +1038,12 @@
           "HTTPStatusCode": 200
         }
       }
+    }
+  },
+  "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_start_replay_error_duplicate_different_archive": {
+    "recorded-date": "27-05-2024, 10:41:42",
+    "recorded-content": {
+      "start-replay-duplicate-error": "<ExceptionInfo ResourceAlreadyExistsException('An error occurred (ResourceAlreadyExistsException) when calling the StartReplay operation: Replay <replay-name> already exists.') tblen=3>"
     }
   }
 }

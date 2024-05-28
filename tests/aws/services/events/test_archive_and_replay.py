@@ -746,7 +746,9 @@ class TestReplay:
         snapshot.match("start-replay-unknown-archive-error", error)
 
     @markers.aws.validated
-    def test_start_replay_error_duplicate(self, events_create_archive, aws_client, snapshot):
+    def test_start_replay_error_duplicate_name_same_archive(
+        self, events_create_archive, aws_client, snapshot
+    ):
         event_bus_name = f"test-bus-{short_uid()}"
         event_bus_arn = aws_client.events.create_event_bus(Name=event_bus_name)["EventBusArn"]
 
@@ -777,6 +779,55 @@ class TestReplay:
                 EventEndTime=end_time,
                 Destination={
                     "Arn": event_bus_arn,
+                },
+            )
+
+        snapshot.add_transformer([snapshot.transform.regex(replay_name, "<replay-name>")])
+        snapshot.match("start-replay-duplicate-error", error)
+
+    @markers.aws.validated
+    def test_start_replay_error_duplicate_different_archive(
+        self, events_create_archive, aws_client, snapshot
+    ):
+        event_bus_name_one = f"test-bus-{short_uid()}"
+        event_bus_arn_one = aws_client.events.create_event_bus(Name=event_bus_name_one)[
+            "EventBusArn"
+        ]
+        archive_arn_one = events_create_archive(EventSourceArn=event_bus_arn_one, RetentionDays=1)[
+            "ArchiveArn"
+        ]
+        event_bus_name_two = f"test-bus-{short_uid()}"
+        event_bus_arn_two = aws_client.events.create_event_bus(Name=event_bus_name_two)[
+            "EventBusArn"
+        ]
+        archive_arn_two = events_create_archive(EventSourceArn=event_bus_arn_two, RetentionDays=1)[
+            "ArchiveArn"
+        ]
+
+        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+        end_time = datetime.now(timezone.utc)
+
+        replay_name = f"test-replay-{short_uid()}"
+        aws_client.events.start_replay(
+            ReplayName=replay_name,
+            Description="description of the replay",
+            EventSourceArn=archive_arn_one,
+            EventStartTime=start_time,
+            EventEndTime=end_time,
+            Destination={
+                "Arn": event_bus_arn_one,
+            },
+        )
+
+        with pytest.raises(Exception) as error:
+            aws_client.events.start_replay(
+                ReplayName=replay_name,
+                Description="description of the replay",
+                EventSourceArn=archive_arn_two,
+                EventStartTime=start_time,
+                EventEndTime=end_time,
+                Destination={
+                    "Arn": event_bus_arn_two,
                 },
             )
 
