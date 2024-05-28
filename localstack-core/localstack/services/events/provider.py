@@ -706,7 +706,17 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def cancel_replay(
         self, context: RequestContext, replay_name: ReplayName, **kwargs
     ) -> CancelReplayResponse:
-        raise NotImplementedError
+        # TODO implement async start replay use custom endpoint
+        store = self.get_store(context)
+        replay = self.get_replay(replay_name, store)
+        replay_service = self._replay_service_store[replay.arn]
+        replay_service.stop()
+        response = CancelReplayResponse(
+            ReplayArn=replay_service.arn,
+            State=replay_service.state,
+            # StateReason=replay_service.state_reason,
+        )
+        return response
 
     @handler("DescribeReplay")
     def describe_replay(
