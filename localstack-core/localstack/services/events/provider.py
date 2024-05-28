@@ -722,7 +722,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def describe_replay(
         self, context: RequestContext, replay_name: ReplayName, **kwargs
     ) -> DescribeReplayResponse:
-        raise NotImplementedError
+        store = self.get_store(context)
+        replay = self.get_replay(replay_name, store)
+
+        response = self._replay_to_describe_replay_response(replay)
+        return response
 
     @handler("ListReplays")
     def list_replays(
