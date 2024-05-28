@@ -9,39 +9,60 @@ from typing import Iterable, Optional
 
 OPT_IN = [
     # acm
-    "localstack/services/acm/**",
+    "localstack-core/localstack/services/acm/**",
     "tests/aws/services/acm/**",
     # cloudformation
     # probably the riskiest here since CFn tests are not as isolated as the rest
-    "localstack/services/cloudformation/**",
+    "localstack-core/localstack/services/cloudformation/**",
     "tests/aws/services/cloudformation/**",
     # elasticsearch
-    "localstack/services/es/**",
+    "localstack-core/localstack/services/es/**",
     "tests/aws/services/es/**",
+    # IAM
+    "localstack-core/localstack/services/iam/**",
+    "tests/aws/services/iam/**",
     # lambda
-    "localstack/services/lambda_/**",
+    "localstack-core/localstack/services/lambda_/**",
     "tests/aws/services/lambda_/**",
     # sns
-    "localstack/services/sns/**",
+    "localstack-core/localstack/services/sns/**",
     "tests/aws/services/sns/**",
     # opensearch
-    "localstack/services/opensearch/**",
+    "localstack-core/localstack/services/opensearch/**",
     "tests/aws/services/opensearch/**",
     # stepfunctions
-    "localstack/services/stepfunctions/**",
+    "localstack-core/localstack/services/stepfunctions/**",
     "tests/aws/services/stepfunctions/**",
     # secretsmanager
-    "localstack/services/secretsmanager/**",
+    "localstack-core/localstack/services/secretsmanager/**",
     "tests/aws/services/secretsmanager/**",
     # events
-    "localstack/services/events/**",
+    "localstack-core/localstack/services/events/**",
     "tests/aws/services/events/**",
     # SSM
-    "localstack/services/ssm/**",
+    "localstack-core/localstack/services/ssm/**",
     "tests/aws/services/ssm/**",
     # SQS
-    "localstack/services/sqs/**",
+    "localstack-core/localstack/services/sqs/**",
     "tests/aws/services/sqs/**",
+    # STS
+    "localstack-core/localstack/services/sts/**",
+    "tests/aws/services/sts/**",
+    # KMS
+    "localstack-core/localstack/services/kms/**",
+    "tests/aws/services/kms/**",
+    # transcribe
+    "localstack-core/localstack/services/transcribe/**",
+    "tests/aws/services/transcribe/**",
+    # secretsmanager
+    "localstack-core/localstack/services/secretsmanager/**",
+    "tests/aws/services/secretsmanager/**",
+    # route53resolver
+    "localstack-core/localstack/services/route53resolver/**",
+    "tests/aws/services/route53resolver/**",
+    # route53
+    "localstack-core/localstack/services/route53/**",
+    "tests/aws/services/route53/**",
 ]
 
 
