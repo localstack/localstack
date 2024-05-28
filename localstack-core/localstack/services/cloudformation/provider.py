@@ -726,7 +726,7 @@ class CloudformationProvider(CloudformationApi):
         # a bit gross but use the template ordering to validate missing resources
         try:
             order_resources(
-                template["Resources"],
+                transformed_template["Resources"],
                 resolved_parameters=resolved_parameters,
                 resolved_conditions=resolved_stack_conditions,
             )
