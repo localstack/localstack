@@ -60,6 +60,9 @@ OPT_IN = [
     # route53resolver
     "localstack-core/localstack/services/route53resolver/**",
     "tests/aws/services/route53resolver/**",
+    # route53
+    "localstack-core/localstack/services/route53/**",
+    "tests/aws/services/route53/**",
 ]
 
 
