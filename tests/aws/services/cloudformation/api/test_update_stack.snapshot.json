@@ -68,7 +68,7 @@
       "error": {
         "Error": {
           "Code": "ValidationError",
-          "Message": "Role arn:aws:iam::111111111111:role/role-fb405076 is invalid or cannot be assumed",
+          "Message": "Role arn:<partition>:iam::111111111111:role/role-fb405076 is invalid or cannot be assumed",
           "Type": "Sender"
         },
         "ResponseMetadata": {

@@ -7,7 +7,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -26,7 +26,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -44,7 +44,7 @@
             "taskScheduledEventDetails": {
               "parameters": {
                 "Input": null,
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Name": "TestStartTarget"
               },
               "region": "<region>",
@@ -69,7 +69,7 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
@@ -115,7 +115,7 @@
             "stateExitedEventDetails": {
               "name": "StartExecution",
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
@@ -156,7 +156,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
@@ -212,7 +212,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": {
                   "Hello": "World"
                 },
@@ -233,7 +233,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": {
                   "Hello": "World"
                 },
@@ -255,7 +255,7 @@
                 "Input": {
                   "Hello": "World"
                 },
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Name": "TestStartTarget"
               },
               "region": "<region>",
@@ -280,7 +280,7 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
@@ -326,7 +326,7 @@
             "stateExitedEventDetails": {
               "name": "StartExecution",
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [
@@ -367,7 +367,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
                     "x-amzn-RequestId": [

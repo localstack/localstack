@@ -554,7 +554,7 @@
       "describe_domains": {
         "DomainStatusList": [
           {
-            "ARN": "arn:aws:es:<region>:111111111111:domain/<domain-name:1>",
+            "ARN": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>",
             "AccessPolicies": "",
             "AdvancedOptions": {
               "override_main_response_version": "false",

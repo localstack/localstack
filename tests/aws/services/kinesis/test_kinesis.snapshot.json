@@ -129,17 +129,17 @@
       "One_consumer_by_list_stream": [
         {
           "ConsumerName": "consumer",
-          "ConsumerARN": "arn:aws:kinesis:<region>:111111111111:<stream-name>/<stream-consumer>",
+          "ConsumerARN": "arn:<partition>:kinesis:<region>:111111111111:<stream-name>/<stream-consumer>",
           "ConsumerStatus": "ACTIVE",
           "ConsumerCreationTimestamp": "timestamp"
         }
       ],
       "One_consumer_by_describe_stream": {
-        "ConsumerARN": "arn:aws:kinesis:<region>:111111111111:<stream-name>/<stream-consumer>",
+        "ConsumerARN": "arn:<partition>:kinesis:<region>:111111111111:<stream-name>/<stream-consumer>",
         "ConsumerCreationTimestamp": "timestamp",
         "ConsumerName": "consumer",
         "ConsumerStatus": "ACTIVE",
-        "StreamARN": "arn:aws:kinesis:<region>:111111111111:<stream-name>"
+        "StreamARN": "arn:<partition>:kinesis:<region>:111111111111:<stream-name>"
       }
     }
   },

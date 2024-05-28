@@ -7,7 +7,7 @@
       },
       "describe-user-resource": {
         "User": {
-          "Arn": "arn:aws:iam::111111111111:user/<user-name>",
+          "Arn": "arn:<partition>:iam::111111111111:user/<user-name>",
           "CreateDate": "datetime",
           "Path": "/",
           "UserId": "<user-id:1>",
@@ -21,14 +21,14 @@
       "describe-user-group-association": {
         "Groups": [
           {
-            "Arn": "arn:aws:iam::111111111111:group/<group-name-1>",
+            "Arn": "arn:<partition>:iam::111111111111:group/<group-name-1>",
             "CreateDate": "datetime",
             "GroupId": "<group-id:1>",
             "GroupName": "<group-name-1>",
             "Path": "/"
           },
           {
-            "Arn": "arn:aws:iam::111111111111:group/<group-name-2>",
+            "Arn": "arn:<partition>:iam::111111111111:group/<group-name-2>",
             "CreateDate": "datetime",
             "GroupId": "<group-id:2>",
             "GroupName": "<group-name-2>",

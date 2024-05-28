@@ -3,7 +3,7 @@
     "recorded-date": "17-05-2024, 15:15:31",
     "recorded-content": {
       "create-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "CreationTime": "datetime",
         "State": "ENABLED",
         "ResponseMetadata": {
@@ -17,7 +17,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -29,7 +29,7 @@
         }
       },
       "describe-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "ArchiveName": "<archive-name>",
         "CreationTime": "datetime",
         "Description": "description of the archive",
@@ -47,7 +47,7 @@
             ]
           }
         },
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
         "RetentionDays": 1,
         "SizeBytes": 0,
         "State": "ENABLED",
@@ -57,7 +57,7 @@
         }
       },
       "update-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "CreationTime": "datetime",
         "State": "ENABLED",
         "ResponseMetadata": {
@@ -77,7 +77,7 @@
     "recorded-date": "17-05-2024, 15:15:32",
     "recorded-content": {
       "create-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "CreationTime": "datetime",
         "State": "ENABLED",
         "ResponseMetadata": {
@@ -91,7 +91,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -103,7 +103,7 @@
         }
       },
       "describe-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "ArchiveName": "<archive-name>",
         "CreationTime": "datetime",
         "Description": "description of the archive",
@@ -121,7 +121,7 @@
             ]
           }
         },
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
         "RetentionDays": 1,
         "SizeBytes": 0,
         "State": "ENABLED",
@@ -131,7 +131,7 @@
         }
       },
       "update-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "CreationTime": "datetime",
         "State": "ENABLED",
         "ResponseMetadata": {
@@ -180,7 +180,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -197,7 +197,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -226,7 +226,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -243,7 +243,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -272,7 +272,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -294,7 +294,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -334,7 +334,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -356,7 +356,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 0,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 0,
             "State": "ENABLED"
@@ -378,7 +378,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 10,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 1590,
             "State": "ENABLED"
@@ -390,7 +390,7 @@
         }
       },
       "describe-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "ArchiveName": "<archive-name>",
         "CreationTime": "datetime",
         "Description": "description of the archive",
@@ -408,7 +408,7 @@
             ]
           }
         },
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
         "RetentionDays": 1,
         "SizeBytes": 1590,
         "State": "ENABLED",
@@ -428,7 +428,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 10,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 1590,
             "State": "ENABLED"
@@ -440,7 +440,7 @@
         }
       },
       "describe-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "ArchiveName": "<archive-name>",
         "CreationTime": "datetime",
         "Description": "description of the archive",
@@ -458,7 +458,7 @@
             ]
           }
         },
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
         "RetentionDays": 1,
         "SizeBytes": 1590,
         "State": "ENABLED",
@@ -478,7 +478,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 10,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 10959,
             "State": "ENABLED"
@@ -490,12 +490,12 @@
         }
       },
       "describe-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "ArchiveName": "<archive-name>",
         "CreationTime": "datetime",
         "Description": "description of the archive",
         "EventCount": 10,
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
         "RetentionDays": 1,
         "SizeBytes": 10959,
         "State": "ENABLED",
@@ -515,7 +515,7 @@
             "ArchiveName": "<archive-name>",
             "CreationTime": "datetime",
             "EventCount": 10,
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
             "RetentionDays": 1,
             "SizeBytes": 1590,
             "State": "ENABLED"
@@ -527,12 +527,12 @@
         }
       },
       "describe-archive": {
-        "ArchiveArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "ArchiveArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "ArchiveName": "<archive-name>",
         "CreationTime": "datetime",
         "Description": "description of the archive",
         "EventCount": 10,
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
         "RetentionDays": 1,
         "SizeBytes": 1590,
         "State": "ENABLED",
@@ -547,7 +547,7 @@
     "recorded-date": "27-05-2024, 13:17:56",
     "recorded-content": {
       "start-replay": {
-        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayArn": "arn:<partition>:events:<region>:111111111111:replay/<replay-name>",
         "ReplayStartTime": "datetime",
         "State": "STARTING",
         "ResponseMetadata": {
@@ -631,7 +631,7 @@
           {
             "EventEndTime": "datetime",
             "EventLastReplayedTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "replay-name",
@@ -647,16 +647,16 @@
       "describe-replay": {
         "Description": "description of the replay",
         "Destination": {
-          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
           "FilterArns": [
-            "arn:aws:events:<region>:111111111111:rule/<rule-name>"
+            "arn:<partition>:events:<region>:111111111111:rule/<rule-name>"
           ]
         },
         "EventEndTime": "datetime",
         "EventLastReplayedTime": "datetime",
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "EventStartTime": "datetime",
-        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayArn": "arn:<partition>:events:<region>:111111111111:replay/<replay-name>",
         "ReplayEndTime": "datetime",
         "ReplayName": "replay-name",
         "ReplayStartTime": "datetime",
@@ -667,7 +667,7 @@
         }
       },
       "cancel-replay": {
-        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "ReplayArn": "arn:<partition>:events:<region>:111111111111:replay/<replay-canceled-name>",
         "State": "CANCELLING",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -677,15 +677,15 @@
       "describe-replay-canceled": {
         "Description": "description of the replay",
         "Destination": {
-          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
           "FilterArns": [
-            "arn:aws:events:<region>:111111111111:rule/<rule-name>"
+            "arn:<partition>:events:<region>:111111111111:rule/<rule-name>"
           ]
         },
         "EventEndTime": "datetime",
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "EventStartTime": "datetime",
-        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "ReplayArn": "arn:<partition>:events:<region>:111111111111:replay/<replay-canceled-name>",
         "ReplayName": "replay-name",
         "ReplayStartTime": "datetime",
         "State": "CANCELLING",
@@ -700,7 +700,7 @@
     "recorded-date": "27-05-2024, 13:22:58",
     "recorded-content": {
       "start-replay": {
-        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayArn": "arn:<partition>:events:<region>:111111111111:replay/<replay-name>",
         "ReplayStartTime": "datetime",
         "State": "STARTING",
         "ResponseMetadata": {
@@ -784,7 +784,7 @@
           {
             "EventEndTime": "datetime",
             "EventLastReplayedTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "replay-name",
@@ -800,16 +800,16 @@
       "describe-replay": {
         "Description": "description of the replay",
         "Destination": {
-          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
           "FilterArns": [
-            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<rule-name>"
+            "arn:<partition>:events:<region>:111111111111:rule/<event-bus-name>/<rule-name>"
           ]
         },
         "EventEndTime": "datetime",
         "EventLastReplayedTime": "datetime",
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "EventStartTime": "datetime",
-        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-name>",
+        "ReplayArn": "arn:<partition>:events:<region>:111111111111:replay/<replay-name>",
         "ReplayEndTime": "datetime",
         "ReplayName": "replay-name",
         "ReplayStartTime": "datetime",
@@ -820,7 +820,7 @@
         }
       },
       "cancel-replay": {
-        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "ReplayArn": "arn:<partition>:events:<region>:111111111111:replay/<replay-canceled-name>",
         "State": "CANCELLING",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -830,15 +830,15 @@
       "describe-replay-canceled": {
         "Description": "description of the replay",
         "Destination": {
-          "Arn": "arn:aws:events:<region>:111111111111:event-bus/<event-bus-name>",
+          "Arn": "arn:<partition>:events:<region>:111111111111:event-bus/<event-bus-name>",
           "FilterArns": [
-            "arn:aws:events:<region>:111111111111:rule/<event-bus-name>/<rule-name>"
+            "arn:<partition>:events:<region>:111111111111:rule/<event-bus-name>/<rule-name>"
           ]
         },
         "EventEndTime": "datetime",
-        "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+        "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
         "EventStartTime": "datetime",
-        "ReplayArn": "arn:aws:events:<region>:111111111111:replay/<replay-canceled-name>",
+        "ReplayArn": "arn:<partition>:events:<region>:111111111111:replay/<replay-canceled-name>",
         "ReplayName": "replay-name",
         "ReplayStartTime": "datetime",
         "State": "CANCELLING",
@@ -915,7 +915,7 @@
         "Replays": [
           {
             "EventEndTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "<replay-name-prefix>-test-replay-0",
@@ -924,7 +924,7 @@
           },
           {
             "EventEndTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "<replay-name-prefix>-test-replay-1",
@@ -933,7 +933,7 @@
           },
           {
             "EventEndTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "<replay-name-prefix>-test-replay-2",
@@ -950,7 +950,7 @@
         "Replays": [
           {
             "EventEndTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "<replay-name-prefix>-test-replay-3",
@@ -959,7 +959,7 @@
           },
           {
             "EventEndTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "<replay-name-prefix>-test-replay-4",
@@ -968,7 +968,7 @@
           },
           {
             "EventEndTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/<archive-name>",
+            "EventSourceArn": "arn:<partition>:events:<region>:111111111111:archive/<archive-name>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "<replay-name-prefix>-test-replay-5",

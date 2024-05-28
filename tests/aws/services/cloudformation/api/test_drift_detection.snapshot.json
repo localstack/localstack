@@ -12,7 +12,7 @@
               }
             },
             "Handler": "index.handler",
-            "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
             "Runtime": "python3.8"
           },
           "ExpectedProperties": {
@@ -23,7 +23,7 @@
               }
             },
             "Handler": "index.handler",
-            "Role": "arn:aws:iam::111111111111:role/<resource:1>",
+            "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
             "Runtime": "python3.9"
           },
           "LogicalResourceId": "Function",
@@ -49,7 +49,7 @@
             }
           ],
           "ResourceType": "AWS::Lambda::Function",
-          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/stack-0d03b713/<resource:2>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-0d03b713/<resource:2>",
           "StackResourceDriftStatus": "MODIFIED",
           "Timestamp": "timestamp"
         },

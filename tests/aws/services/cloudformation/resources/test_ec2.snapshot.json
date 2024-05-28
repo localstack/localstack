@@ -16,7 +16,7 @@
         "PhysicalResourceId": "<internet-gateway-ref:1>",
         "ResourceStatus": "CREATE_COMPLETE",
         "ResourceType": "AWS::EC2::InternetGateway",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>"
       }
     }
@@ -84,7 +84,7 @@
           },
           {
             "Key": "aws:cloudformation:stack-id",
-            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-698b113f/d892a0f0-6eb8-11ee-ab19-0a5372e03565"
+            "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-698b113f/d892a0f0-6eb8-11ee-ab19-0a5372e03565"
           }
         ]
       }
@@ -132,10 +132,10 @@
         "Tags": [
           {
             "Key": "Application",
-            "Value": "arn:aws:cloudformation:<region>:111111111111:stack/stack-31597705/521e4e40-ecce-11ee-806c-0affc1ff51e7"
+            "Value": "arn:<partition>:cloudformation:<region>:111111111111:stack/stack-31597705/521e4e40-ecce-11ee-806c-0affc1ff51e7"
           }
         ],
-        "TransitGatewayArn": "arn:aws:ec2:<region>:111111111111:transit-gateway/<transit-gateway-id:1>",
+        "TransitGatewayArn": "arn:<partition>:ec2:<region>:111111111111:transit-gateway/<transit-gateway-id:1>",
         "TransitGatewayId": "<transit-gateway-id:1>"
       }
     }

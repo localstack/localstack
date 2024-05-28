@@ -45,7 +45,7 @@
     "recorded-content": {
       "matching-topic": [
         {
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<topic_name>"
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<topic_name>"
         }
       ]
     }
@@ -55,7 +55,7 @@
     "recorded-content": {
       "matching-topic": [
         {
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<topic_name>"
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<topic_name>"
         }
       ]
     }

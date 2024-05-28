@@ -7,43 +7,43 @@
           {
             "EventId": "<uuid:1>",
             "LogicalResourceId": "<stack-name:1>",
-            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "ResourceStatus": "ROLLBACK_COMPLETE",
             "ResourceType": "AWS::CloudFormation::Stack",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
             "EventId": "<uuid:2>",
             "LogicalResourceId": "<stack-name:1>",
-            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "ResourceStatus": "ROLLBACK_IN_PROGRESS",
             "ResourceStatusReason": "[Error] /Outputs/InvalidOutput/Value/Fn::GetAtt: Resource type AWS::SSM::Parameter does not support attribute {Invalid}. Rollback requested by user.",
             "ResourceType": "AWS::CloudFormation::Stack",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
             "EventId": "<uuid:3>",
             "LogicalResourceId": "<stack-name:1>",
-            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "User Initiated",
             "ResourceType": "AWS::CloudFormation::Stack",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
             "EventId": "<uuid:4>",
             "LogicalResourceId": "<stack-name:1>",
-            "PhysicalResourceId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "ResourceStatus": "REVIEW_IN_PROGRESS",
             "ResourceStatusReason": "User Initiated",
             "ResourceType": "AWS::CloudFormation::Stack",
-            "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
@@ -55,7 +55,7 @@
     "recorded-date": "21-03-2024, 21:10:29",
     "recorded-content": {
       "outputs": {
-        "DeadArn": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+        "DeadArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
       }
     }
   }

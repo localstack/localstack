@@ -3,7 +3,7 @@
     "recorded-date": "26-03-2024, 15:59:20",
     "recorded-content": {
       "put-rule": {
-        "RuleArn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+        "RuleArn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -12,7 +12,7 @@
       "list-rules": {
         "Rules": [
           {
-            "Arn": "arn:aws:events:<region>:111111111111:rule/<rule-name>",
+            "Arn": "arn:<partition>:events:<region>:111111111111:rule/<rule-name>",
             "EventBusName": "default",
             "EventPattern": {
               "source": [

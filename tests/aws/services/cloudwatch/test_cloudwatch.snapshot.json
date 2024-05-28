@@ -3,7 +3,7 @@
     "recorded-date": "12-09-2023, 12:00:45",
     "recorded-content": {
       "cloudwatch_sns_subscription": {
-        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<topic_arn>:<SubscriptionArn:1>",
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<topic_arn>:<SubscriptionArn:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -15,9 +15,9 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "testing cloudwatch alarms",
             "AlarmName": "<alarm-name:1>",
@@ -33,7 +33,7 @@
             "MetricName": "my-metric101",
             "Namespace": "<namespace:1>",
             "OKActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 10,
             "StateReason": "Unchecked: Initial alarm creation",
@@ -57,9 +57,9 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "testing cloudwatch alarms",
             "AlarmName": "<alarm-name:1>",
@@ -75,7 +75,7 @@
             "MetricName": "my-metric101",
             "Namespace": "<namespace:1>",
             "OKActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 10,
             "StateReason": "testing alarm",
@@ -96,9 +96,9 @@
       "alarm-state-sqs-msg": {
         "AWSAccountId": "111111111111",
         "AlarmActions": [
-          "arn:aws:sns:<region>:111111111111:<topic_arn>"
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
         ],
-        "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
         "AlarmConfigurationUpdatedTimestamp": "date",
         "AlarmDescription": "testing cloudwatch alarms",
         "AlarmName": "<alarm-name:1>",
@@ -106,7 +106,7 @@
         "NewStateReason": "testing alarm",
         "NewStateValue": "ALARM",
         "OKActions": [
-          "arn:aws:sns:<region>:111111111111:<topic_arn>"
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
         ],
         "OldStateValue": "INSUFFICIENT_DATA",
         "Region": "<region-name-full:1>",
@@ -137,9 +137,9 @@
           {
             "ActionsEnabled": false,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "testing cloudwatch alarms",
             "AlarmName": "<alarm-name:1>",
@@ -155,7 +155,7 @@
             "MetricName": "my-metric101",
             "Namespace": "<namespace:1>",
             "OKActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 10,
             "StateReason": "testing OK state",
@@ -179,9 +179,9 @@
           {
             "ActionsEnabled": false,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "testing cloudwatch alarms",
             "AlarmName": "<alarm-name:1>",
@@ -197,7 +197,7 @@
             "MetricName": "my-metric101",
             "Namespace": "<namespace:1>",
             "OKActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 10,
             "StateReason": "testing OK state",
@@ -221,9 +221,9 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "testing cloudwatch alarms",
             "AlarmName": "<alarm-name:1>",
@@ -239,7 +239,7 @@
             "MetricName": "my-metric101",
             "Namespace": "<namespace:1>",
             "OKActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 10,
             "StateReason": "testing OK state",
@@ -263,7 +263,7 @@
     "recorded-date": "12-09-2023, 11:56:52",
     "recorded-content": {
       "cloudwatch_sns_subscription": {
-        "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<topic_arn>:<SubscriptionArn:1>",
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<topic_arn>:<SubscriptionArn:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -275,9 +275,9 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "testing cloudwatch alarms",
             "AlarmName": "<alarm-name:1>",
@@ -293,7 +293,7 @@
             "MetricName": "my-metric101",
             "Namespace": "<namespace:1>",
             "OKActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 10,
             "StateReason": "Threshold Crossed: no datapoints were received for 2 periods and 2 missing datapoints were treated as [Breaching].",
@@ -331,9 +331,9 @@
       "alarm-1-sqs-msg": {
         "AWSAccountId": "111111111111",
         "AlarmActions": [
-          "arn:aws:sns:<region>:111111111111:<topic_arn>"
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
         ],
-        "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
         "AlarmConfigurationUpdatedTimestamp": "date",
         "AlarmDescription": "testing cloudwatch alarms",
         "AlarmName": "<alarm-name:1>",
@@ -341,7 +341,7 @@
         "NewStateReason": "Threshold Crossed: no datapoints were received for 2 periods and 2 missing datapoints were treated as [Breaching].",
         "NewStateValue": "ALARM",
         "OKActions": [
-          "arn:aws:sns:<region>:111111111111:<topic_arn>"
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
         ],
         "OldStateValue": "INSUFFICIENT_DATA",
         "Region": "<region-name-full:1>",
@@ -377,9 +377,9 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "testing cloudwatch alarms",
             "AlarmName": "<alarm-name:1>",
@@ -395,7 +395,7 @@
             "MetricName": "my-metric1",
             "Namespace": "<namespace:1>",
             "OKActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 30,
             "StateReason": "Unchecked: Initial alarm creation",
@@ -416,9 +416,9 @@
       "alarm-triggered-sqs-msg": {
         "AWSAccountId": "111111111111",
         "AlarmActions": [
-          "arn:aws:sns:<region>:111111111111:<topic_arn>"
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
         ],
-        "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
         "AlarmConfigurationUpdatedTimestamp": "date",
         "AlarmDescription": "testing cloudwatch alarms",
         "AlarmName": "<alarm-name:1>",
@@ -426,7 +426,7 @@
         "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (2.0).",
         "NewStateValue": "ALARM",
         "OKActions": [
-          "arn:aws:sns:<region>:111111111111:<topic_arn>"
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
         ],
         "OldStateValue": "INSUFFICIENT_DATA",
         "Region": "<region-name-full:1>",
@@ -501,9 +501,9 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "testing cloudwatch alarms",
             "AlarmName": "<alarm-name:1>",
@@ -519,7 +519,7 @@
             "MetricName": "my-metric1",
             "Namespace": "<namespace:1>",
             "OKActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_arn>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
             ],
             "Period": 30,
             "StateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (2.0).",
@@ -662,7 +662,7 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmName": "<alarm-name:1>",
             "ComparisonOperator": "GreaterThanThreshold",
@@ -720,7 +720,7 @@
     "recorded-date": "21-11-2023, 13:38:11",
     "recorded-content": {
       "get_dashboard": {
-        "DashboardArn": "arn:aws:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
+        "DashboardArn": "arn:<partition>:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
         "DashboardBody": {
           "widgets": [
             {
@@ -754,7 +754,7 @@
       "list_dashboards": {
         "DashboardEntries": [
           {
-            "DashboardArn": "arn:aws:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
+            "DashboardArn": "arn:<partition>:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
             "DashboardName": "<dashboard-name:1>",
             "LastModified": "datetime",
             "Size": 225
@@ -775,7 +775,7 @@
       "list_dashboards_prefix": {
         "DashboardEntries": [
           {
-            "DashboardArn": "arn:aws:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
+            "DashboardArn": "arn:<partition>:cloudwatch::111111111111:dashboard/<dashboard-name:1>",
             "DashboardName": "<dashboard-name:1>",
             "LastModified": "datetime",
             "Size": 225
@@ -799,14 +799,14 @@
     "recorded-date": "26-10-2023, 09:12:10",
     "recorded-content": {
       "create_metric_stream": {
-        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/<name:1>",
+        "Arn": "arn:<partition>:cloudwatch:<region>:111111111111:metric-stream/<name:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "get_metric_stream": {
-        "Arn": "arn:aws:cloudwatch:<region>:111111111111:metric-stream/<name:1>",
+        "Arn": "arn:<partition>:cloudwatch:<region>:111111111111:metric-stream/<name:1>",
         "CreationDate": "datetime",
         "FirehoseArn": "<firehose-arn:1>",
         "IncludeLinkedAccountsMetrics": false,
@@ -1099,7 +1099,7 @@
     "recorded-content": {
       "lambda-alarm-invocations": {
         "source": "aws.cloudwatch",
-        "alarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "alarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
         "accountId": "111111111111",
         "time": "date",
         "region": "<region>",
@@ -1146,7 +1146,7 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmName": "<alarm-name:1>",
             "ComparisonOperator": "GreaterThanThreshold",
@@ -1856,9 +1856,9 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_alarm>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
             "AlarmName": "<alarm-name:1>",
@@ -1898,9 +1898,9 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [
-              "arn:aws:sns:<region>:111111111111:<topic_alarm>"
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
             ],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
             "AlarmName": "<alarm-name:1>",
@@ -1945,7 +1945,7 @@
           {
             "ActionsEnabled": true,
             "AlarmActions": [],
-            "AlarmArn": "arn:aws:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
             "AlarmConfigurationUpdatedTimestamp": "timestamp",
             "AlarmName": "<alarm-name:1>",
             "ComparisonOperator": "GreaterThanThreshold",

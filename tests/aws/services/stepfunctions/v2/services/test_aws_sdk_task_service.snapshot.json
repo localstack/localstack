@@ -1227,7 +1227,7 @@
           {
             "executionStartedEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -1246,7 +1246,7 @@
             "previousEventId": 0,
             "stateEnteredEventDetails": {
               "input": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": null,
                 "Name": "TestStartTarget"
               },
@@ -1264,7 +1264,7 @@
             "taskScheduledEventDetails": {
               "parameters": {
                 "Input": null,
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Name": "TestStartTarget"
               },
               "region": "<region>",
@@ -1289,7 +1289,7 @@
             "previousEventId": 4,
             "taskSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "StartDate": "date"
               },
               "outputDetails": {
@@ -1307,7 +1307,7 @@
             "stateExitedEventDetails": {
               "name": "StartExecution",
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "StartDate": "date"
               },
               "outputDetails": {
@@ -1320,7 +1320,7 @@
           {
             "executionSucceededEventDetails": {
               "output": {
-                "ExecutionArn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
+                "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "StartDate": "date"
               },
               "outputDetails": {
@@ -1410,7 +1410,7 @@
             "previousEventId": 4,
             "taskScheduledEventDetails": {
               "parameters": {
-                "StateMachineArn": "arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+                "StateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
                 "Input": {
                   "key": "value"
                 }

@@ -5,7 +5,7 @@
       "create-group": {
         "Group": {
           "Description": "description",
-          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/<name:1>",
           "Name": "<name:1>"
         },
         "ResourceQuery": {
@@ -35,7 +35,7 @@
       "get-group": {
         "Group": {
           "Description": "description",
-          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/<name:1>",
           "Name": "<name:1>"
         },
         "ResponseMetadata": {
@@ -46,14 +46,14 @@
       "list-groups": {
         "GroupIdentifiers": [
           {
-            "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+            "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/<name:1>",
             "GroupName": "<name:1>"
           }
         ],
         "Groups": [
           {
             "Description": "description",
-            "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+            "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/<name:1>",
             "Name": "<name:1>"
           }
         ],
@@ -66,7 +66,7 @@
       "delete-group": {
         "Group": {
           "Description": "description",
-          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/<name:1>",
           "Name": "<name:1>"
         },
         "ResponseMetadata": {
@@ -91,7 +91,7 @@
       "create-group": {
         "Group": {
           "Description": "test-tag-query",
-          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/<name:1>",
           "Name": "<name:1>"
         },
         "ResourceQuery": {
@@ -131,14 +131,14 @@
         "QueryErrors": [],
         "ResourceIdentifiers": [
           {
-            "ResourceArn": "arn:aws:s3:::<resource:1>",
+            "ResourceArn": "arn:<partition>:s3:::<resource:1>",
             "ResourceType": "AWS::S3::Bucket"
           }
         ],
         "Resources": [
           {
             "Identifier": {
-              "ResourceArn": "arn:aws:s3:::<resource:1>",
+              "ResourceArn": "arn:<partition>:s3:::<resource:1>",
               "ResourceType": "AWS::S3::Bucket"
             }
           }
@@ -161,24 +161,24 @@
         "QueryErrors": [],
         "ResourceIdentifiers": [
           {
-            "ResourceArn": "arn:aws:s3:::<resource:1>",
+            "ResourceArn": "arn:<partition>:s3:::<resource:1>",
             "ResourceType": "AWS::S3::Bucket"
           },
           {
-            "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+            "ResourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
             "ResourceType": "AWS::SQS::Queue"
           }
         ],
         "Resources": [
           {
             "Identifier": {
-              "ResourceArn": "arn:aws:s3:::<resource:1>",
+              "ResourceArn": "arn:<partition>:s3:::<resource:1>",
               "ResourceType": "AWS::S3::Bucket"
             }
           },
           {
             "Identifier": {
-              "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+              "ResourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
               "ResourceType": "AWS::SQS::Queue"
             }
           }
@@ -196,7 +196,7 @@
       "create-group": {
         "Group": {
           "Description": "test-tag-query",
-          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/<name:1>",
           "Name": "<name:1>"
         },
         "ResourceQuery": {
@@ -227,14 +227,14 @@
         "QueryErrors": [],
         "ResourceIdentifiers": [
           {
-            "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "ResourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
             "ResourceType": "AWS::SQS::Queue"
           }
         ],
         "Resources": [
           {
             "Identifier": {
-              "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+              "ResourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
               "ResourceType": "AWS::SQS::Queue"
             }
           }
@@ -252,7 +252,7 @@
       "create-group": {
         "Group": {
           "Description": "test-tag-query",
-          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/<name:1>",
           "Name": "<name:1>"
         },
         "ResourceQuery": {
@@ -283,14 +283,14 @@
         "QueryErrors": [],
         "ResourceIdentifiers": [
           {
-            "ResourceArn": "arn:aws:s3:::<resource:1>",
+            "ResourceArn": "arn:<partition>:s3:::<resource:1>",
             "ResourceType": "AWS::S3::Bucket"
           }
         ],
         "Resources": [
           {
             "Identifier": {
-              "ResourceArn": "arn:aws:s3:::<resource:1>",
+              "ResourceArn": "arn:<partition>:s3:::<resource:1>",
               "ResourceType": "AWS::S3::Bucket"
             }
           }
@@ -308,7 +308,7 @@
       "create-group": {
         "Group": {
           "Description": "test-cfn-query",
-          "GroupArn": "arn:aws:resource-groups:<region>:111111111111:group/<name:1>",
+          "GroupArn": "arn:<partition>:resource-groups:<region>:111111111111:group/<name:1>",
           "Name": "<name:1>"
         },
         "ResourceQuery": {
@@ -329,14 +329,14 @@
         "QueryErrors": [],
         "ResourceIdentifiers": [
           {
-            "ResourceArn": "arn:aws:sns:<region>:111111111111:<resource:2>",
+            "ResourceArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>",
             "ResourceType": "AWS::SNS::Topic"
           }
         ],
         "Resources": [
           {
             "Identifier": {
-              "ResourceArn": "arn:aws:sns:<region>:111111111111:<resource:2>",
+              "ResourceArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>",
               "ResourceType": "AWS::SNS::Topic"
             }
           }
@@ -389,7 +389,7 @@
         "QueryErrors": [],
         "ResourceIdentifiers": [
           {
-            "ResourceArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+            "ResourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
             "ResourceType": "AWS::SQS::Queue"
           }
         ],

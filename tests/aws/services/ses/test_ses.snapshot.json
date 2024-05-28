@@ -6,25 +6,25 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:2>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Send",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -90,19 +90,19 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Delivery",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -179,7 +179,7 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         }
       ]
     }
@@ -191,18 +191,18 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:2>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Send",
@@ -265,19 +265,19 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Delivery",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -363,7 +363,7 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         }
       ]
     }
@@ -375,25 +375,25 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:2>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Send",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -428,19 +428,19 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         },
         {
           "Type": "Notification",
           "MessageId": "<uuid:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Subject": "Amazon SES Email Event Notification",
           "Message": {
             "eventType": "Delivery",
             "mail": {
               "timestamp": "timestamp",
               "source": "<sender-email-address>",
-              "sourceArn": "arn:aws:ses:<region>:111111111111:identity/<sender-email-address>",
+              "sourceArn": "arn:<partition>:ses:<region>:111111111111:identity/<sender-email-address>",
               "sendingAccountId": "111111111111",
               "messageId": "<message-id:1>",
               "destination": [
@@ -486,7 +486,7 @@
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:3>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>"
         }
       ]
     }
@@ -546,13 +546,13 @@
         {
           "Type": "Notification",
           "MessageId": "<uuid:1>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
           "Message": "Successfully validated SNS topic for Amazon SES event publishing.",
           "Timestamp": "date",
           "SignatureVersion": "1",
           "Signature": "<signature>",
           "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+          "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
         }
       ]
     }

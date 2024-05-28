@@ -11,15 +11,15 @@
       },
       "describe_type_response": {
         "ProgressStatus": "IN_PROGRESS",
-        "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource",
-        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/<default-version-id:1>",
+        "TypeArn": "arn:<partition>:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource",
+        "TypeVersionArn": "arn:<partition>:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/<default-version-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "describe_response": {
-        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/<default-version-id:1>",
+        "Arn": "arn:<partition>:cloudformation:<region>:111111111111:type/resource/LocalStack-Testing-TestResource/<default-version-id:1>",
         "DefaultVersionId": "<default-version-id:1>",
         "DeprecatedStatus": "LIVE",
         "Description": "An example resource schema demonstrating some basic constructs and validation rules.",
@@ -102,15 +102,15 @@
       },
       "describe_type_response": {
         "ProgressStatus": "IN_PROGRESS",
-        "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE",
-        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/<default-version-id:1>",
+        "TypeArn": "arn:<partition>:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE",
+        "TypeVersionArn": "arn:<partition>:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/<default-version-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "describe_response": {
-        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/<default-version-id:1>",
+        "Arn": "arn:<partition>:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/<default-version-id:1>",
         "DefaultVersionId": "<default-version-id:1>",
         "DeprecatedStatus": "LIVE",
         "Description": "Schema for Module Fragment of type LocalStack::Testing::TestModule::MODULE",
@@ -198,15 +198,15 @@
       },
       "describe_type_response": {
         "ProgressStatus": "IN_PROGRESS",
-        "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook",
-        "TypeVersionArn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/<default-version-id:1>",
+        "TypeArn": "arn:<partition>:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook",
+        "TypeVersionArn": "arn:<partition>:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/<default-version-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
       "describe_response": {
-        "Arn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/<default-version-id:1>",
+        "Arn": "arn:<partition>:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-TestHook/<default-version-id:1>",
         "ConfigurationSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "examples": [
@@ -562,7 +562,7 @@
       "versions": {
         "TypeVersionSummaries": [
           {
-            "Arn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000050",
+            "Arn": "arn:<partition>:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000050",
             "Description": "Schema for Module Fragment of type LocalStack::Testing::TestModule::MODULE",
             "IsDefaultVersion": true,
             "TimeCreated": "datetime",
@@ -571,7 +571,7 @@
             "VersionId": "00000050"
           },
           {
-            "Arn": "arn:aws:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000051",
+            "Arn": "arn:<partition>:cloudformation:<region>:111111111111:type/module/LocalStack-Testing-TestModule-MODULE/00000051",
             "Description": "Schema for Module Fragment of type LocalStack::Testing::TestModule::MODULE",
             "IsDefaultVersion": false,
             "TimeCreated": "datetime",
@@ -651,7 +651,7 @@
     "recorded-date": "06-03-2023, 15:33:33",
     "recorded-content": {
       "set_type_configuration_response": {
-        "ConfigurationArn": "arn:aws:cloudformation:<region>:111111111111:type-configuration/hook/LocalStack-Testing-DeployableHook/default",
+        "ConfigurationArn": "arn:<partition>:cloudformation:<region>:111111111111:type-configuration/hook/LocalStack-Testing-DeployableHook/default",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -663,7 +663,7 @@
         "TypeConfigurations": [
           {
             "Alias": "default",
-            "Arn": "arn:aws:cloudformation:<region>:111111111111:type-configuration/hook/LocalStack-Testing-DeployableHook/default",
+            "Arn": "arn:<partition>:cloudformation:<region>:111111111111:type-configuration/hook/LocalStack-Testing-DeployableHook/default",
             "Configuration": {
               "CloudFormationConfiguration": {
                 "HookConfiguration": {
@@ -673,7 +673,7 @@
               }
             },
             "LastUpdated": "datetime",
-            "TypeArn": "arn:aws:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-DeployableHook"
+            "TypeArn": "arn:<partition>:cloudformation:<region>:111111111111:type/hook/LocalStack-Testing-DeployableHook"
           }
         ],
         "UnprocessedTypeConfigurations": [],

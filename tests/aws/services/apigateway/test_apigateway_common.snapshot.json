@@ -3,7 +3,7 @@
     "recorded-date": "10-01-2024, 00:06:10",
     "recorded-content": {
       "register-lambda": {
-        "fn_arn": "arn:aws:lambda:<region>:111111111111:function:<fn_name:1>",
+        "fn_arn": "arn:<partition>:lambda:<region>:111111111111:function:<fn_name:1>",
         "fn_name": "<fn_name:1>"
       },
       "deploy-1": {
@@ -30,7 +30,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
+          "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
         },
         "methodResponses": {
           "200": {
@@ -76,7 +76,7 @@
           "passthroughBehavior": "WHEN_NO_MATCH",
           "timeoutInMillis": 29000,
           "type": "AWS_PROXY",
-          "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
+          "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<fn_name:1>/invocations"
         },
         "methodResponses": {
           "200": {

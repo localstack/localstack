@@ -336,7 +336,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -351,7 +351,7 @@
           {
             "id": 5,
             "lambdaFunctionFailedEventDetails": {
-              "cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit.",
+              "cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit.",
               "error": "States.DataLimitExceeded"
             },
             "previousEventId": 4,
@@ -365,7 +365,7 @@
               "name": "InvokeLambda",
               "output": {
                 "Error": "States.DataLimitExceeded",
-                "Cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
               },
               "outputDetails": {
                 "truncated": false
@@ -380,7 +380,7 @@
             "stateEnteredEventDetails": {
               "input": {
                 "Error": "States.DataLimitExceeded",
-                "Cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
               },
               "inputDetails": {
                 "truncated": false
@@ -397,7 +397,7 @@
               "name": "HandleDataLimitExceeded",
               "output": {
                 "Error": "States.DataLimitExceeded",
-                "Cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
               },
               "outputDetails": {
                 "truncated": false
@@ -410,7 +410,7 @@
             "executionSucceededEventDetails": {
               "output": {
                 "Error": "States.DataLimitExceeded",
-                "Cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
               },
               "outputDetails": {
                 "truncated": false
@@ -476,7 +476,7 @@
               "inputDetails": {
                 "truncated": false
               },
-              "resource": "arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>"
+              "resource": "arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>"
             },
             "previousEventId": 2,
             "timestamp": "timestamp",
@@ -491,7 +491,7 @@
           {
             "id": 5,
             "lambdaFunctionFailedEventDetails": {
-              "cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit.",
+              "cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit.",
               "error": "States.DataLimitExceeded"
             },
             "previousEventId": 4,
@@ -505,7 +505,7 @@
               "name": "InvokeLambda",
               "output": {
                 "Error": "States.DataLimitExceeded",
-                "Cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
               },
               "outputDetails": {
                 "truncated": false
@@ -520,7 +520,7 @@
             "stateEnteredEventDetails": {
               "input": {
                 "Error": "States.DataLimitExceeded",
-                "Cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
               },
               "inputDetails": {
                 "truncated": false
@@ -537,7 +537,7 @@
               "name": "HandleGeneralError",
               "output": {
                 "Error": "States.DataLimitExceeded",
-                "Cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
               },
               "outputDetails": {
                 "truncated": false
@@ -550,7 +550,7 @@
             "executionSucceededEventDetails": {
               "output": {
                 "Error": "States.DataLimitExceeded",
-                "Cause": "The state/task 'arn:aws:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
+                "Cause": "The state/task 'arn:<partition>:lambda:<region>:111111111111:function:<lambda_function_name>' returned a result with a size exceeding the maximum number of bytes service limit."
               },
               "outputDetails": {
                 "truncated": false

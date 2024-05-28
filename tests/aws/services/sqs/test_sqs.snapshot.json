@@ -384,7 +384,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "604800",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "10",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "20"
@@ -404,7 +404,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "2048",
           "MessageRetentionPeriod": "604800",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "10",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "69"
@@ -429,7 +429,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "604800",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "10",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "20"
@@ -449,7 +449,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "2048",
           "MessageRetentionPeriod": "604800",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "10",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "69"
@@ -740,7 +740,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -764,7 +764,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -793,7 +793,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -817,7 +817,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -1249,8 +1249,8 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_message_attributes": {
     "recorded-date": "30-04-2024, 13:33:55",
     "recorded-content": {
-      "dlq-arn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
-      "sourcen-arn": "arn:aws:sqs:<region>:111111111111:<resource:2>",
+      "dlq-arn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+      "sourcen-arn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
       "rec-pre-dlq": [
         {
           "MessageId": "<uuid:1>",
@@ -1294,7 +1294,7 @@
             "ApproximateReceiveCount": "2",
             "SentTimestamp": "timestamp",
             "AWSTraceHeader": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1",
-            "DeadLetterQueueSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+            "DeadLetterQueueSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
           },
           "MD5OfMessageAttributes": "adb59cd4678ea5a855436b949cd07ab6",
           "MessageAttributes": {
@@ -1313,7 +1313,7 @@
             "ApproximateFirstReceiveTimestamp": "timestamp",
             "ApproximateReceiveCount": "2",
             "SentTimestamp": "timestamp",
-            "DeadLetterQueueSourceArn": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+            "DeadLetterQueueSourceArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
           }
         }
       ]
@@ -1888,7 +1888,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -1969,7 +1969,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -2058,7 +2058,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -2129,7 +2129,7 @@
           "LastModifiedTimestamp": "timestamp",
           "MaximumMessageSize": "262144",
           "MessageRetentionPeriod": "345600",
-          "QueueArn": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
           "SqsManagedSseEnabled": "true",
           "VisibilityTimeout": "30"
@@ -2762,19 +2762,19 @@
         "Attributes": {
           "Policy": {
             "Version": "2008-10-17",
-            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Id": "arn:<partition>:sqs:<region>:111111111111:<resource:2>/<resource:1>",
             "Statement": [
               {
                 "Sid": "crossaccountpermission",
                 "Effect": "Allow",
                 "Principal": {
                   "AWS": [
-                    "arn:aws:iam::668614515564:<resource:3>",
-                    "arn:aws:iam::111111111111:<resource:3>"
+                    "arn:<partition>:iam::668614515564:<resource:3>",
+                    "arn:<partition>:iam::111111111111:<resource:3>"
                   ]
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               }
             ]
           }
@@ -2800,16 +2800,16 @@
         "Attributes": {
           "Policy": {
             "Version": "2008-10-17",
-            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Id": "arn:<partition>:sqs:<region>:111111111111:<resource:2>/<resource:1>",
             "Statement": [
               {
                 "Sid": "crossaccountpermission",
                 "Effect": "Allow",
                 "Principal": {
-                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                  "AWS": "arn:<partition>:iam::111111111111:<resource:3>"
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               }
             ]
           }
@@ -2835,25 +2835,25 @@
         "Attributes": {
           "Policy": {
             "Version": "2008-10-17",
-            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Id": "arn:<partition>:sqs:<region>:111111111111:<resource:2>/<resource:1>",
             "Statement": [
               {
                 "Sid": "crossaccountpermission",
                 "Effect": "Allow",
                 "Principal": {
-                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                  "AWS": "arn:<partition>:iam::111111111111:<resource:3>"
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               },
               {
                 "Sid": "crossaccountpermission2",
                 "Effect": "Allow",
                 "Principal": {
-                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                  "AWS": "arn:<partition>:iam::111111111111:<resource:3>"
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               }
             ]
           }
@@ -2867,16 +2867,16 @@
         "Attributes": {
           "Policy": {
             "Version": "2008-10-17",
-            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Id": "arn:<partition>:sqs:<region>:111111111111:<resource:2>/<resource:1>",
             "Statement": [
               {
                 "Sid": "crossaccountpermission2",
                 "Effect": "Allow",
                 "Principal": {
-                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                  "AWS": "arn:<partition>:iam::111111111111:<resource:3>"
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               }
             ]
           }
@@ -2919,19 +2919,19 @@
         "Attributes": {
           "Policy": {
             "Version": "2008-10-17",
-            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Id": "arn:<partition>:sqs:<region>:111111111111:<resource:2>/<resource:1>",
             "Statement": [
               {
                 "Sid": "crossaccountpermission",
                 "Effect": "Allow",
                 "Principal": {
                   "AWS": [
-                    "arn:aws:iam::668614515564:<resource:3>",
-                    "arn:aws:iam::111111111111:<resource:3>"
+                    "arn:<partition>:iam::668614515564:<resource:3>",
+                    "arn:<partition>:iam::111111111111:<resource:3>"
                   ]
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               }
             ]
           }
@@ -2957,16 +2957,16 @@
         "Attributes": {
           "Policy": {
             "Version": "2008-10-17",
-            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Id": "arn:<partition>:sqs:<region>:111111111111:<resource:2>/<resource:1>",
             "Statement": [
               {
                 "Sid": "crossaccountpermission",
                 "Effect": "Allow",
                 "Principal": {
-                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                  "AWS": "arn:<partition>:iam::111111111111:<resource:3>"
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               }
             ]
           }
@@ -2992,25 +2992,25 @@
         "Attributes": {
           "Policy": {
             "Version": "2008-10-17",
-            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Id": "arn:<partition>:sqs:<region>:111111111111:<resource:2>/<resource:1>",
             "Statement": [
               {
                 "Sid": "crossaccountpermission",
                 "Effect": "Allow",
                 "Principal": {
-                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                  "AWS": "arn:<partition>:iam::111111111111:<resource:3>"
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               },
               {
                 "Sid": "crossaccountpermission2",
                 "Effect": "Allow",
                 "Principal": {
-                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                  "AWS": "arn:<partition>:iam::111111111111:<resource:3>"
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               }
             ]
           }
@@ -3024,16 +3024,16 @@
         "Attributes": {
           "Policy": {
             "Version": "2008-10-17",
-            "Id": "arn:aws:sqs:<region>:111111111111:<resource:2>/<resource:1>",
+            "Id": "arn:<partition>:sqs:<region>:111111111111:<resource:2>/<resource:1>",
             "Statement": [
               {
                 "Sid": "crossaccountpermission2",
                 "Effect": "Allow",
                 "Principal": {
-                  "AWS": "arn:aws:iam::111111111111:<resource:3>"
+                  "AWS": "arn:<partition>:iam::111111111111:<resource:3>"
                 },
                 "Action": "SQS:ReceiveMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:2>"
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:2>"
               }
             ]
           }

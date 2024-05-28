@@ -14,6 +14,7 @@ from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
     TransformerUtility,
 )
+from localstack.utils.aws.arns import get_partition
 from tests.aws.test_terraform import TestTerraform
 
 
@@ -103,6 +104,9 @@ def snapshot(request, _snapshot_session: SnapshotSession, account_id, region_nam
 
     _snapshot_session.add_transformer(RegexTransformer(account_id, "1" * 12), priority=2)
     _snapshot_session.add_transformer(RegexTransformer(region_name, "<region>"), priority=2)
+    _snapshot_session.add_transformer(
+        RegexTransformer(f"arn:{get_partition(region_name)}:", "arn:<partition>:"), priority=2
+    )
 
     # TODO: temporary to migrate to new default transformers.
     #   remove this after all exemptions are gone

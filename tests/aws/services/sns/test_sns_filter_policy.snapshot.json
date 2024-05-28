@@ -386,7 +386,7 @@
       "sub-attrs-after-setting-nested-policy": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "FilterPolicy": {
             "object": {
               "key": [
@@ -401,9 +401,9 @@
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -445,14 +445,14 @@
       "sub-attrs-default": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -462,14 +462,14 @@
       "sub-attrs-filter-scope-body": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -490,7 +490,7 @@
       "sub-attrs-after-setting-policy": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "FilterPolicy": {
             "attr": [
               "match-this"
@@ -501,9 +501,9 @@
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -556,7 +556,7 @@
       "subscription-attributes": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "FilterPolicy": {
             "attr1": [
               {
@@ -574,9 +574,9 @@
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -595,13 +595,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:1>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "This is a test message",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "attr1": {
                   "Type": "Number",
@@ -625,13 +625,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:1>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "This is a test message",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "attr1": {
                   "Type": "Number",
@@ -652,7 +652,7 @@
       "subscription-attributes-2": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "FilterPolicy": {
             "attr1": [
               null,
@@ -666,9 +666,9 @@
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -687,13 +687,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:3>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "This the test message for null",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:4>",
@@ -713,7 +713,7 @@
       "subscription-attributes-policy-1": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "FilterPolicy": {
             "store": [
               {
@@ -726,9 +726,9 @@
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -747,13 +747,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:1>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "message-1",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "def": {
                   "Type": "Number",
@@ -781,13 +781,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:1>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "message-1",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "def": {
                   "Type": "Number",
@@ -812,7 +812,7 @@
       "subscription-attributes-policy-2": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "FilterPolicy": {
             "store": [
               {
@@ -825,9 +825,9 @@
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -840,13 +840,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:3>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "message-3",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "def": {
                   "Type": "Number",
@@ -870,13 +870,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:3>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "message-3",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "def": {
                   "Type": "Number",
@@ -902,7 +902,7 @@
       "subscription-attributes-policy": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "FilterPolicy": {
             "store": [
               "value1"
@@ -913,9 +913,9 @@
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "true",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1026,13 +1026,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:1>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
               "Message": "{\"object\": {\"key\": \"auto-test\"}}",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:2>",
@@ -1050,13 +1050,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:3>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
               "Message": "{\"object\": {\"key\": \"hardcodedvalue\"}}",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:4>",
@@ -1076,7 +1076,7 @@
       "subscription-attributes-with-filter": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "FilterPolicy": {
             "attr1": [
               {
@@ -1094,9 +1094,9 @@
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1106,14 +1106,14 @@
       "subscription-attributes-no-filter": {
         "Attributes": {
           "ConfirmationWasAuthenticated": "true",
-          "Endpoint": "arn:aws:sqs:<region>:111111111111:<resource:5>",
+          "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:5>",
           "Owner": "111111111111",
           "PendingConfirmation": "false",
           "Protocol": "sqs",
           "RawMessageDelivery": "false",
-          "SubscriptionArn": "arn:aws:sns:<region>:111111111111:<resource:4>:<resource:6>",
-          "SubscriptionPrincipal": "arn:aws:iam::111111111111:user/<resource:3>",
-          "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>"
+          "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:6>",
+          "SubscriptionPrincipal": "arn:<partition>:iam::111111111111:user/<resource:3>",
+          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1138,13 +1138,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:1>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "This is a test message",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:6>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:6>",
               "MessageAttributes": {
                 "attr1": {
                   "Type": "Number",
@@ -1168,13 +1168,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:1>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "This is a test message",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:2>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:2>",
               "MessageAttributes": {
                 "attr1": {
                   "Type": "Number",
@@ -1198,13 +1198,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:4>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:4>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
               "Message": "This is another test message",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:4>:<resource:6>",
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:6>",
               "MessageAttributes": {
                 "attr1": {
                   "Type": "Number",
@@ -1245,13 +1245,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:1>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
               "Message": "{\"object\": {\"nested\": \"string.value\"}}",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:2>",
@@ -1269,13 +1269,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:3>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
               "Message": "{\"object.nested\": \"string.value\"}",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:4>",
@@ -1293,13 +1293,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:5>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
               "Message": "{\"object\": {\"nested\": {\"test\": \"string.value\"}}}",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:6>",
@@ -1317,13 +1317,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:7>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
               "Message": "{\"object.nested.test\": \"string.value\"}",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:8>",
@@ -1341,13 +1341,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:9>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
               "Message": "{\"object.nested\": {\"test\": \"string.value\"}}",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:10>",
@@ -1365,13 +1365,13 @@
             "Body": {
               "Type": "Notification",
               "MessageId": "<uuid:11>",
-              "TopicArn": "arn:aws:sns:<region>:111111111111:<resource:1>",
+              "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
               "Message": "{\"object\": {\"nested.test\": \"string.value\"}}",
               "Timestamp": "date",
               "SignatureVersion": "1",
               "Signature": "<signature>",
               "SigningCertURL": "<cert-domain>/SimpleNotificationService-<signing-cert-file:1>",
-              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:<region>:111111111111:<resource:1>:<resource:2>"
+              "UnsubscribeURL": "<unsubscribe-domain>/?Action=Unsubscribe&SubscriptionArn=arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:2>"
             },
             "MD5OfBody": "<md5-hash>",
             "MessageId": "<uuid:12>",
@@ -1532,7 +1532,7 @@
                   "s3": {
                     "bucket": {
                       "name": "<resource:1>",
-                      "arn": "arn:aws:s3:::<resource:1>"
+                      "arn": "arn:<partition>:s3:::<resource:1>"
                     },
                     "object": {
                       "key": "auto-insurance-2314.xml",

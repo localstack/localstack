@@ -13,10 +13,10 @@
                   "Service": "sns.amazonaws.com"
                 },
                 "Action": "sqs:SendMessage",
-                "Resource": "arn:aws:sqs:<region>:111111111111:<resource:1>",
+                "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
                 "Condition": {
                   "ArnEquals": {
-                    "aws:SourceArn": "arn:aws:sns:<region>:111111111111:<resource:2>"
+                    "aws:SourceArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>"
                   }
                 }
               }
@@ -46,7 +46,7 @@
             },
             "LastUpdatedTimestamp": "timestamp",
             "LogicalResourceId": "CdksampleQueueCdksampleStackCdksampleTopicCB3FDFDDC0BCF47C",
-            "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:2>:<resource:3>",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:3>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SNS::Subscription"
           },
@@ -66,7 +66,7 @@
             },
             "LastUpdatedTimestamp": "timestamp",
             "LogicalResourceId": "CdksampleTopic7AD235A4",
-            "PhysicalResourceId": "arn:aws:sns:<region>:111111111111:<resource:2>",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:2>",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SNS::Topic"
           }

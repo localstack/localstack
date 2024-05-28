@@ -26,7 +26,7 @@
               "sqs:GetQueueAttributes",
               "sqs:GetQueueUrl"
             ],
-            "Resource": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+            "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
           }
         ]
       },
@@ -41,7 +41,7 @@
               "sqs:GetQueueAttributes",
               "sqs:GetQueueUrl"
             ],
-            "Resource": "arn:aws:sqs:<region>:111111111111:<resource:1>"
+            "Resource": "arn:<partition>:sqs:<region>:111111111111:<resource:1>"
           }
         ]
       }

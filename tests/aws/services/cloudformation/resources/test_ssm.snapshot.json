@@ -12,7 +12,7 @@
         "PhysicalResourceId": "<physical_resource_id:1>",
         "ResourceStatus": "CREATE_COMPLETE",
         "ResourceType": "AWS::SSM::PatchBaseline",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>"
       }
     }
@@ -23,7 +23,7 @@
       "MaintenanceWindow": [
         {
           "StackName": "<stack-name:1>",
-          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
           "LogicalResourceId": "PatchBaselineAML",
           "PhysicalResourceId": "<physical_resource_id:1>",
           "ResourceType": "AWS::SSM::PatchBaseline",
@@ -35,7 +35,7 @@
         },
         {
           "StackName": "<stack-name:1>",
-          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
           "LogicalResourceId": "PatchBaselineAML2",
           "PhysicalResourceId": "<physical_resource_id:2>",
           "ResourceType": "AWS::SSM::PatchBaseline",
@@ -47,7 +47,7 @@
         },
         {
           "StackName": "<stack-name:1>",
-          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
           "LogicalResourceId": "PatchServerMaintenanceWindow",
           "PhysicalResourceId": "<physical_resource_id:3>",
           "ResourceType": "AWS::SSM::MaintenanceWindow",
@@ -59,7 +59,7 @@
         },
         {
           "StackName": "<stack-name:1>",
-          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
           "LogicalResourceId": "PatchServerMaintenanceWindowTarget",
           "PhysicalResourceId": "<physical_resource_id:4>",
           "ResourceType": "AWS::SSM::MaintenanceWindowTarget",
@@ -71,7 +71,7 @@
         },
         {
           "StackName": "<stack-name:1>",
-          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
           "LogicalResourceId": "PatchServerTask",
           "PhysicalResourceId": "<physical_resource_id:5>",
           "ResourceType": "AWS::SSM::MaintenanceWindowTask",

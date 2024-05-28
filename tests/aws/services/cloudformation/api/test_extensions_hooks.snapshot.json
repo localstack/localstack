@@ -13,7 +13,7 @@
         "PhysicalResourceId": "",
         "ResourceStatus": "CREATE_IN_PROGRESS",
         "ResourceType": "AWS::S3::Bucket",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
         "Timestamp": "timestamp"
       }
@@ -33,7 +33,7 @@
         "PhysicalResourceId": "",
         "ResourceStatus": "CREATE_IN_PROGRESS",
         "ResourceType": "AWS::S3::Bucket",
-        "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
         "StackName": "<stack-name:1>",
         "Timestamp": "timestamp"
       }
