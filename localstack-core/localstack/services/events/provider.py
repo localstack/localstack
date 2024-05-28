@@ -58,6 +58,7 @@ from localstack.aws.api.events import (
     RemoveTargetsResponse,
     ReplayDescription,
     ReplayDestination,
+    ReplayList,
     ReplayName,
     ReplayState,
     ResourceAlreadyExistsException,
@@ -87,6 +88,7 @@ from localstack.aws.api.events import (
 )
 from localstack.aws.api.events import Archive as ApiTypeArchive
 from localstack.aws.api.events import EventBus as ApiTypeEventBus
+from localstack.aws.api.events import Replay as ApiTypeReplay
 from localstack.aws.api.events import Rule as ApiTypeRule
 from localstack.services.events.archive import ArchiveService, ArchiveServiceDict
 from localstack.services.events.event_bus import EventBusService, EventBusServiceDict
@@ -98,6 +100,8 @@ from localstack.services.events.models import (
     EventBusDict,
     EventsStore,
     FormattedEvent,
+    Replay,
+    ReplayDict,
     ResourceType,
     Rule,
     RuleDict,
@@ -108,6 +112,7 @@ from localstack.services.events.models import (
 from localstack.services.events.models import (
     InvalidEventPatternException as InternalInvalidEventPatternException,
 )
+from localstack.services.events.replay import ReplayService, ReplayServiceDict
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
@@ -176,6 +181,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self._rule_services_store: RuleServiceDict = {}
         self._target_sender_store: TargetSenderDict = {}
         self._archive_service_store: ArchiveServiceDict = {}
+        self._replay_service_store: ReplayServiceDict = {}
 
     def on_before_start(self):
         JobScheduler.start()
@@ -726,14 +732,48 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         replay_name: ReplayName,
-        event_source_arn: Arn,
+        event_source_arn: Arn,  # Archive Arn
         event_start_time: Timestamp,
         event_end_time: Timestamp,
         destination: ReplayDestination,
         description: ReplayDescription = None,
         **kwargs,
     ) -> StartReplayResponse:
-        raise NotImplementedError
+        region = context.region
+        account_id = context.account_id
+        store = self.get_store(context)
+        if replay_name in store.replays.keys():
+            raise ResourceAlreadyExistsException(f"Replay {replay_name} already exists.")
+        replay_service = self.create_replay_service(
+            replay_name,
+            region,
+            account_id,
+            event_source_arn,
+            destination,
+            event_start_time,
+            event_end_time,
+            description,
+        )
+        store.replays[replay_service.replay.name] = replay_service.replay
+        archive_service = self._archive_service_store[event_source_arn]
+        replay_service.start()
+        events_to_replay = archive_service.get_events(
+            replay_service.event_start_time, replay_service.event_end_time
+        )
+        replay_service.set_event_last_replayed_time(events_to_replay)
+        re_formatted_event_to_replay = replay_service.re_format_events_from_archive(
+            events_to_replay, replay_name
+        )
+        self._process_entries(context, re_formatted_event_to_replay)
+        replay_service.finish()
+
+        response = StartReplayResponse(
+            ReplayArn=replay_service.arn,
+            State=replay_service.state,
+            StateReason=replay_service.state_reason,
+            ReplayStartTime=replay_service.replay_start_time,
+        )
+        return response
 
     ######
     # Tags
@@ -808,6 +848,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if archive := store.archives.get(name):
             return archive
         raise ResourceNotFoundException(f"Archive {name} does not exist.")
+
+    def get_replay(self, name: ReplayName, store: EventsStore) -> Replay:
+        if replay := store.replays.get(name):
+            return replay
+        raise ResourceNotFoundException(f"Replay {name} does not exist.")
 
     def get_rule_service(
         self, context: RequestContext, rule_name: RuleName, event_bus_name: EventBusName
@@ -894,6 +939,30 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         self._archive_service_store[archive_service.arn] = archive_service
         return archive_service
+
+    def create_replay_service(
+        self,
+        name: ReplayName,
+        region: str,
+        account_id: str,
+        event_source_arn: Arn,
+        destination: ReplayDestination,
+        event_start_time: Timestamp,
+        event_end_time: Timestamp,
+        description: ReplayDescription,
+    ) -> ReplayService:
+        replay_service = ReplayService(
+            name,
+            region,
+            account_id,
+            event_source_arn,
+            destination,
+            event_start_time,
+            event_end_time,
+            description,
+        )
+        self._replay_service_store[replay_service.arn] = replay_service
+        return replay_service
 
     def _delete_rule_services(self, rules: RuleDict | Rule) -> None:
         """
@@ -1081,16 +1150,51 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         }
         return {key: value for key, value in archive_dict.items() if value is not None}
 
+    def _replay_dit_to_replay_response_list(self, replays: ReplayDict) -> ReplayList:
+        """Return a converted dict of Replay model objects as a list of replays in API type Replay format."""
+        replay_list = [self._replay_to_api_type_replay(replay) for replay in replays.values()]
+        return replay_list
+
+    def _replay_to_api_type_replay(self, replay: Replay) -> ApiTypeReplay:
+        replay = {
+            "ReplayName": replay.name,
+            "EventSourceArn": replay.event_source_arn,
+            "State": replay.state,
+            # # "StateReason": replay.state_reason,
+            "EventStartTime": replay.event_start_time,
+            "EventEndTime": replay.event_end_time,
+            "EventLastReplayedTime": replay.event_last_replayed_time,
+            "ReplayStartTime": replay.replay_start_time,
+            "ReplayEndTime": replay.replay_end_time,
+        }
+        return {key: value for key, value in replay.items() if value is not None}
+
+    def _replay_to_describe_replay_response(self, replay: Replay) -> DescribeReplayResponse:
+        replay_dict = {
+            "ReplayName": replay.name,
+            "ReplayArn": replay.arn,
+            "Description": replay.description,
+            "State": replay.state,
+            # # "StateReason": replay.state_reason,
+            "EventSourceArn": replay.event_source_arn,
+            "Destination": replay.destination,
+            "EventStartTime": replay.event_start_time,
+            "EventEndTime": replay.event_end_time,
+            "EventLastReplayedTime": replay.event_last_replayed_time,
+            "ReplayStartTime": replay.replay_start_time,
+            "ReplayEndTime": replay.replay_end_time,
+        }
+        return {key: value for key, value in replay_dict.items() if value is not None}
+
     def _put_to_archive(
         self, context: RequestContext, archive_target_id: str, event: FormattedEvent
     ) -> None:
         archive_name = ARCHIVE_TARGET_ID_NAME_PATTERN.match(archive_target_id).group("name")
 
-        event_formatted = format_event(event, context.region, context.account_id)
         store = self.get_store(context)
         archive = self.get_archive(archive_name, store)
         archive_service = self._archive_service_store[archive.arn]
-        archive_service.put_events([event_formatted])
+        archive_service.put_events([event])
 
     def _process_entries(
         self, context: RequestContext, entries: PutEventsRequestEntryList
