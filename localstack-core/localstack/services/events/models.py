@@ -15,6 +15,11 @@ from localstack.aws.api.events import (
     EventResourceList,
     EventSourceName,
     ManagedBy,
+    ReplayDescription,
+    ReplayDestination,
+    ReplayName,
+    ReplayState,
+    ReplayStateReason,
     RetentionDays,
     RoleArn,
     RuleDescription,
@@ -125,6 +130,30 @@ class Rule:
 
 
 RuleDict = dict[RuleName, Rule]
+
+
+@dataclass
+class Replay:
+    name: str
+    region: str
+    account_id: str
+    event_source_arn: Arn
+    destination: ReplayDestination  # Event Bus Arn or Rule Arns
+    event_start_time: Timestamp
+    event_end_time: Timestamp
+    description: Optional[ReplayDescription] = None
+    state: Optional[ReplayState] = None
+    state_reason: Optional[ReplayStateReason] = None
+    arn: Arn = field(init=False)
+    event_last_replayed_time: Optional[Timestamp] = None
+    replay_start_time: Optional[Timestamp] = None
+    replay_end_time: Optional[Timestamp] = None
+
+    def __post_init__(self):
+        self.arn = f"arn:aws:events:{self.region}:{self.account_id}:replay/{self.name}"
+
+
+ReplayDict = dict[ReplayName, Replay]
 
 
 @dataclass
