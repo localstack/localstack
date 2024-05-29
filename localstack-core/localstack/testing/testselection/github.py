@@ -14,7 +14,10 @@ def get_pr_details_from_number(repo_name: str, pr_number: str, token: str) -> (s
     headers = {"Accept": GITHUB_V3_JSON}
     if token:
         headers["Authorization"] = f"token {token}"
-    pr_data = requests.get(url, headers=headers).json()
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise ValueError(f"Failed to fetch PR data for PR #{pr_number}: {response.text}")
+    pr_data = response.json()
     return pr_data["base"]["sha"], pr_data["head"]["sha"]
 
 
@@ -26,7 +29,12 @@ def get_pr_details_from_branch(repo_name: str, branch: str, token: str) -> (str,
     headers = {"Accept": GITHUB_V3_JSON}
     if token:
         headers["Authorization"] = f"token {token}"
-    pr_data = requests.get(url, headers=headers).json()
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise ValueError(f"Failed to fetch PR data for branch {branch}: {response.text}")
+    pr_data = response.json()
+    if len(pr_data) != 1:
+        raise ValueError(f"Expected 1 PR for branch {branch}, but got {len(pr_data)} PRs")
     print(f"Detected PR Number #{pr_data[0]['number']}")
     return pr_data[0]["base"]["sha"], pr_data[0]["head"]["sha"]
 
