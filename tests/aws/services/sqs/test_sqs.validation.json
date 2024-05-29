@@ -48,10 +48,10 @@
     "last_validated_date": "2024-05-15T02:30:48+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_execution_lambda_mapping_preserves_id[sqs]": {
-    "last_validated_date": "2024-05-28T14:41:06+00:00"
+    "last_validated_date": "2024-05-29T14:12:29+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_execution_lambda_mapping_preserves_id[sqs_query]": {
-    "last_validated_date": "2024-05-28T14:53:13+00:00"
+    "last_validated_date": "2024-05-29T14:14:14+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_message_attributes": {
     "last_validated_date": "2024-04-30T13:33:55+00:00"
