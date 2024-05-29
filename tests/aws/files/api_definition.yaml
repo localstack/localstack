@@ -68,6 +68,7 @@ paths:
             }
         passthroughBehavior: when_no_templates
         contentHandling: CONVERT_TO_TEXT
+        credentials: ${credentials}
 components:
   schemas:
     Empty:

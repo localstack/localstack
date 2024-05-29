@@ -558,12 +558,17 @@ class TestAPIGateway:
             API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
         )
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_api_gateway_lambda_asynchronous_invocation(
-        self, create_rest_apigw, create_lambda_function, aws_client
+        self, create_rest_apigw, create_lambda_function, aws_client, create_role_with_policy
     ):
         api_gateway_name = f"api_gateway_{short_uid()}"
+        stage_name = "test"
         rest_api_id, _, _ = create_rest_apigw(name=api_gateway_name)
+        # create invocation role
+        _, role_arn = create_role_with_policy(
+            "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+        )
 
         fn_name = f"test-{short_uid()}"
         lambda_arn = create_lambda_function(
@@ -571,12 +576,22 @@ class TestAPIGateway:
         )["CreateFunctionResponse"]["FunctionArn"]
 
         spec_file = load_file(TEST_IMPORT_REST_API_ASYNC_LAMBDA)
-        spec_file = spec_file.replace("${lambda_invocation_arn}", lambda_arn)
+        spec_file = spec_file.replace(
+            "${lambda_invocation_arn}",
+            f"arn:aws:apigateway:{aws_client.apigateway.meta.region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations",
+        )
+        spec_file = spec_file.replace("${credentials}", role_arn)
 
         aws_client.apigateway.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
-        url = path_based_url(api_id=rest_api_id, stage_name="latest", path="/wait/3")
-        result = requests.get(url)
-        assert result.status_code == 200
+        aws_client.apigateway.create_deployment(restApiId=rest_api_id, stageName=stage_name)
+        url = api_invoke_url(api_id=rest_api_id, stage=stage_name, path="/wait/3")
+
+        def invoke(url):
+            invoke_response = requests.get(url)
+            assert invoke_response.status_code == 200
+            return invoke_response
+
+        result = retry(invoke, sleep=2, retries=10, url=url)
         assert result.content == b""
 
     @markers.aws.unknown
