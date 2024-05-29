@@ -2,6 +2,7 @@
 USAGE: $ python -m localstack.testing.testselection.scripts.generate_test_selection_from_commits <repo_root_path> <base-commit-sha> <head-commit-sha> <output_file_path>
 """
 
+import argparse
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -17,17 +18,18 @@ def generate_from_commits(
     matching_rules: list[MatchingRule] | None = None,
     repo_name: str = "localstack",
 ):
-    if len(sys.argv) != 5:
-        print(
-            f"Usage: python -m {repo_name}.testing.testselection.scripts.generate_test_selection_from_commits <repo_root_path> <base-commit-sha> <head-commit-sha> <output_file_path>",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Generate test selection from a range of commits")
+    parser.add_argument("repo_root_path", type=str, help="Path to the git repository root")
+    parser.add_argument("base_commit_sha", type=str, help="Base commit SHA")
+    parser.add_argument("head_commit_sha", type=str, help="Head commit SHA")
+    parser.add_argument("output_file_path", type=str, help="Path to the output file")
 
-    output_file_path = sys.argv[-1]
-    head_commit_sha = sys.argv[-2]
-    base_commit_sha = sys.argv[-3]
-    repo_root_path = sys.argv[-4]
+    args = parser.parse_args()
+
+    output_file_path = args.output_file_path
+    head_commit_sha = args.head_commit_sha
+    base_commit_sha = args.base_commit_sha
+    repo_root_path = args.repo_root_path
 
     print(f"Base Commit SHA: {base_commit_sha}")
     print(f"Head Commit SHA: {head_commit_sha}")

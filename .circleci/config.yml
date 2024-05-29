@@ -134,7 +134,7 @@ jobs:
                     circleci-agent step halt
                   else
                     source .venv/bin/activate
-                    PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr /tmp/workspace/repo $CI_PULL_REQUEST target/testselection/test-selection.txt
+                    PYTHONPATH=localstack-core python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr /tmp/workspace/repo target/testselection/test-selection.txt --pr $CI_PULL_REQUEST
                     cat target/testselection/test-selection.txt
                   fi
 
