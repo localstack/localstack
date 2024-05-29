@@ -928,7 +928,8 @@ class TestAPIGateway:
         result = dynamo_client.get_item(TableName=table_name, Key={"id": {"S": "id1"}})
         assert result["Item"]["data"] == {"S": "foobar123"}
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # Doesn't use a fixture that cleans up after itself, and most likely missing roles. Should be moved to common
     def test_multiple_api_keys_validate(self, aws_client, create_iam_role_with_policy):
         request_templates = {
             "application/json": json.dumps(
