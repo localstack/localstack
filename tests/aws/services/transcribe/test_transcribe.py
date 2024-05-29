@@ -92,7 +92,7 @@ class TestTranscribe:
             ("../../files/en-us_video.mp4", "one of the most vital"),
         ],
     )
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_transcribe_supported_media_formats(
         self, transcribe_create_job, media_file, speech, aws_client
     ):
@@ -118,7 +118,7 @@ class TestTranscribe:
 
         retry(_assert_transcript, retries=30, sleep=2)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_transcribe_unsupported_media_format_failure(self, transcribe_create_job, aws_client):
         # Ensure transcribing an empty file fails
         file_path = new_tmp_file()
