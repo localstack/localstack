@@ -1193,8 +1193,23 @@ class Util:
         if args.env_files:
             env_vars = env_vars if env_vars is not None else {}
             for env_file in args.env_files:
-                with open(env_file, mode="rt") as f:
-                    env_file_lines = f.readlines()
+                try:
+                    with open(env_file, mode="rt") as f:
+                        env_file_lines = f.readlines()
+                except FileNotFoundError as e:
+                    LOG.error(
+                        "Specified env file '%s' not found. Please make sure the file is properly mounted into the LocalStack container. Error: %s",
+                        env_file,
+                        e,
+                    )
+                    raise
+                except OSError as e:
+                    LOG.error(
+                        "Could not read env file '%s'. Please make sure the LocalStack container has the permissions to read it. Error: %s",
+                        env_file,
+                        e,
+                    )
+                    raise
                 for idx, line in enumerate(env_file_lines):
                     line = line.strip()
                     if not line or line.startswith("#") or "=" not in line:
