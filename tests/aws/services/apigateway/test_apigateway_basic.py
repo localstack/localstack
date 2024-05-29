@@ -878,7 +878,8 @@ class TestAPIGateway:
 
         assert 400 == response.status_code
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # Missing role, proper url and doesn't clean up after itself. Should be move to dynamodb test file and use fixtures that clean their resources
     def test_put_integration_dynamodb_proxy_validation_with_request_template(
         self,
         aws_client,
