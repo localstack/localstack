@@ -1,5 +1,5 @@
 """
-USAGE: $ GITHUB_API_TOKEN=<your-token> python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr <git-root-dir> <pull-request-url> <output-file-path>
+USAGE: $ GITHUB_API_TOKEN=<your-token> python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr <git-root-dir> <output-file-path> [ --pr <pull-request-url> ]
 """
 
 import argparse
@@ -13,7 +13,10 @@ from localstack.testing.testselection.git import (
     get_branch_name,
     get_changed_files_from_git_diff,
 )
-from localstack.testing.testselection.github import get_pr_details_from_url, get_pr_url_from_branch
+from localstack.testing.testselection.github import (
+    get_pr_details_from_branch,
+    get_pr_details_from_url,
+)
 from localstack.testing.testselection.matching import MatchingRule
 from localstack.testing.testselection.opt_in import complies_with_opt_in
 from localstack.testing.testselection.testselection import get_affected_tests_from_changes
@@ -33,21 +36,22 @@ def generate_from_pr(
     output_file_path = args.output_file_path
     repo_root_path = args.git_root_dir
     github_token = os.environ.get("GITHUB_API_TOKEN")
+    # Handle the mismatch between python module name and github repo name
+    github_repo_name = repo_name.replace("_", "-")
 
     if args.pr is None:
         current_branch = get_branch_name(repo_root_path)
         print(
             f"No pull request URL provided, evaluating based on current branch ({current_branch})"
         )
-        pull_request_url = get_pr_url_from_branch(
-            f"localstack/{repo_name.replace('_', '-')}", current_branch, token=github_token
+        base_commit_sha, head_commit_sha = get_pr_details_from_branch(
+            github_repo_name, current_branch, github_token
         )
-        print(f"Detected pull request: {pull_request_url}")
     else:
-        pull_request_url = args.pr
+        base_commit_sha, head_commit_sha = get_pr_details_from_url(
+            github_repo_name, args.pr, github_token
+        )
 
-    base_commit_sha, head_commit_sha = get_pr_details_from_url(pull_request_url, github_token)
-    print(f"Pull request: {pull_request_url}")
     print(f"Base Commit SHA: {base_commit_sha}")
     print(f"Head Commit SHA: {head_commit_sha}")
 
