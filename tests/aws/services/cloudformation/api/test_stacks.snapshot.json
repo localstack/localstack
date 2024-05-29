@@ -1182,8 +1182,8 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order2[B-C-A]": {
-    "recorded-date": "21-05-2024, 10:01:50",
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[A-B-C]": {
+    "recorded-date": "29-05-2024, 11:44:14",
     "recorded-content": {
       "events": [
         {
@@ -1191,7 +1191,7 @@
           "EventId": "<event-id:1>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-7rM2WLC0kzgt",
+          "PhysicalResourceId": "CFN-A-xvqPt7CmcHKX",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
@@ -1205,13 +1205,13 @@
           "EventId": "<event-id:2>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-P2CzxFUeSsHY",
+          "PhysicalResourceId": "CFN-B-FCaKHvMgdicm",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-7rM2WLC0kzgt"
+            "Value": "CFN-A-xvqPt7CmcHKX"
           }
         },
         {
@@ -1219,13 +1219,13 @@
           "EventId": "<event-id:3>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-yQa2VNQhQGtw",
+          "PhysicalResourceId": "CFN-C-Xr56esN3SasR",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-P2CzxFUeSsHY"
+            "Value": "CFN-B-FCaKHvMgdicm"
           }
         },
         {
@@ -1233,13 +1233,13 @@
           "EventId": "<event-id:4>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-yQa2VNQhQGtw",
+          "PhysicalResourceId": "CFN-C-Xr56esN3SasR",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-P2CzxFUeSsHY"
+            "Value": "CFN-B-FCaKHvMgdicm"
           }
         },
         {
@@ -1247,13 +1247,13 @@
           "EventId": "<event-id:5>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-P2CzxFUeSsHY",
+          "PhysicalResourceId": "CFN-B-FCaKHvMgdicm",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-7rM2WLC0kzgt"
+            "Value": "CFN-A-xvqPt7CmcHKX"
           }
         },
         {
@@ -1261,7 +1261,7 @@
           "EventId": "<event-id:6>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-7rM2WLC0kzgt",
+          "PhysicalResourceId": "CFN-A-xvqPt7CmcHKX",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
@@ -1273,8 +1273,8 @@
       ]
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order2[C-B-A]": {
-    "recorded-date": "21-05-2024, 10:02:33",
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[A-C-B]": {
+    "recorded-date": "29-05-2024, 11:44:32",
     "recorded-content": {
       "events": [
         {
@@ -1282,7 +1282,7 @@
           "EventId": "<event-id:1>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-c3YSFVc34vjq",
+          "PhysicalResourceId": "CFN-A-4tNP69dd8iSL",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
@@ -1296,13 +1296,13 @@
           "EventId": "<event-id:2>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-tW2PJFlBu6c4",
+          "PhysicalResourceId": "CFN-B-d81WSIsD2X3i",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-c3YSFVc34vjq"
+            "Value": "CFN-A-4tNP69dd8iSL"
           }
         },
         {
@@ -1310,13 +1310,13 @@
           "EventId": "<event-id:3>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-0uFSU2D03LeO",
+          "PhysicalResourceId": "CFN-C-kStA2w3izJOh",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-tW2PJFlBu6c4"
+            "Value": "CFN-B-d81WSIsD2X3i"
           }
         },
         {
@@ -1324,13 +1324,13 @@
           "EventId": "<event-id:4>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-0uFSU2D03LeO",
+          "PhysicalResourceId": "CFN-C-kStA2w3izJOh",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-tW2PJFlBu6c4"
+            "Value": "CFN-B-d81WSIsD2X3i"
           }
         },
         {
@@ -1338,13 +1338,13 @@
           "EventId": "<event-id:5>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-tW2PJFlBu6c4",
+          "PhysicalResourceId": "CFN-B-d81WSIsD2X3i",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-c3YSFVc34vjq"
+            "Value": "CFN-A-4tNP69dd8iSL"
           }
         },
         {
@@ -1352,7 +1352,7 @@
           "EventId": "<event-id:6>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-c3YSFVc34vjq",
+          "PhysicalResourceId": "CFN-A-4tNP69dd8iSL",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
@@ -1364,8 +1364,8 @@
       ]
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order2[A-B-C]": {
-    "recorded-date": "21-05-2024, 10:00:44",
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[B-A-C]": {
+    "recorded-date": "29-05-2024, 11:44:51",
     "recorded-content": {
       "events": [
         {
@@ -1373,7 +1373,7 @@
           "EventId": "<event-id:1>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-F19z3jSLbQZT",
+          "PhysicalResourceId": "CFN-A-a0yQkOAYKMk5",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
@@ -1387,13 +1387,13 @@
           "EventId": "<event-id:2>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-3mnTidkQO3tg",
+          "PhysicalResourceId": "CFN-B-RvqPXWdIGzrt",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-F19z3jSLbQZT"
+            "Value": "CFN-A-a0yQkOAYKMk5"
           }
         },
         {
@@ -1401,13 +1401,13 @@
           "EventId": "<event-id:3>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-v5JriLLmsBsl",
+          "PhysicalResourceId": "CFN-C-iPNi3cV9jXAt",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-3mnTidkQO3tg"
+            "Value": "CFN-B-RvqPXWdIGzrt"
           }
         },
         {
@@ -1415,13 +1415,13 @@
           "EventId": "<event-id:4>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-v5JriLLmsBsl",
+          "PhysicalResourceId": "CFN-C-iPNi3cV9jXAt",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-3mnTidkQO3tg"
+            "Value": "CFN-B-RvqPXWdIGzrt"
           }
         },
         {
@@ -1429,13 +1429,13 @@
           "EventId": "<event-id:5>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-3mnTidkQO3tg",
+          "PhysicalResourceId": "CFN-B-RvqPXWdIGzrt",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-F19z3jSLbQZT"
+            "Value": "CFN-A-a0yQkOAYKMk5"
           }
         },
         {
@@ -1443,7 +1443,7 @@
           "EventId": "<event-id:6>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-F19z3jSLbQZT",
+          "PhysicalResourceId": "CFN-A-a0yQkOAYKMk5",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
@@ -1455,8 +1455,8 @@
       ]
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order2[A-C-B]": {
-    "recorded-date": "21-05-2024, 10:01:07",
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[B-C-A]": {
+    "recorded-date": "29-05-2024, 11:45:12",
     "recorded-content": {
       "events": [
         {
@@ -1464,7 +1464,7 @@
           "EventId": "<event-id:1>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-GscsPcQyPYbI",
+          "PhysicalResourceId": "CFN-A-xNtQNbQrdc1T",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
@@ -1478,13 +1478,13 @@
           "EventId": "<event-id:2>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-25O3VVTvkiQC",
+          "PhysicalResourceId": "CFN-B-UY120OHcpDMZ",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-GscsPcQyPYbI"
+            "Value": "CFN-A-xNtQNbQrdc1T"
           }
         },
         {
@@ -1492,13 +1492,13 @@
           "EventId": "<event-id:3>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-qZQBnhdc7aHk",
+          "PhysicalResourceId": "CFN-C-GOhk98pWaTFw",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-25O3VVTvkiQC"
+            "Value": "CFN-B-UY120OHcpDMZ"
           }
         },
         {
@@ -1506,13 +1506,13 @@
           "EventId": "<event-id:4>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-qZQBnhdc7aHk",
+          "PhysicalResourceId": "CFN-C-GOhk98pWaTFw",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-25O3VVTvkiQC"
+            "Value": "CFN-B-UY120OHcpDMZ"
           }
         },
         {
@@ -1520,13 +1520,13 @@
           "EventId": "<event-id:5>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-25O3VVTvkiQC",
+          "PhysicalResourceId": "CFN-B-UY120OHcpDMZ",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-GscsPcQyPYbI"
+            "Value": "CFN-A-xNtQNbQrdc1T"
           }
         },
         {
@@ -1534,7 +1534,7 @@
           "EventId": "<event-id:6>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-GscsPcQyPYbI",
+          "PhysicalResourceId": "CFN-A-xNtQNbQrdc1T",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
@@ -1546,8 +1546,8 @@
       ]
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order2[B-A-C]": {
-    "recorded-date": "21-05-2024, 10:01:29",
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[C-A-B]": {
+    "recorded-date": "29-05-2024, 11:45:31",
     "recorded-content": {
       "events": [
         {
@@ -1555,7 +1555,7 @@
           "EventId": "<event-id:1>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-ZYIuJkuo8IO2",
+          "PhysicalResourceId": "CFN-A-BFvOY1qz1Osv",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
@@ -1569,13 +1569,13 @@
           "EventId": "<event-id:2>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-CJSjowAlTrhu",
+          "PhysicalResourceId": "CFN-B-qCiX6NdW4hEt",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-ZYIuJkuo8IO2"
+            "Value": "CFN-A-BFvOY1qz1Osv"
           }
         },
         {
@@ -1583,13 +1583,13 @@
           "EventId": "<event-id:3>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-VjGjpNfOS4U8",
+          "PhysicalResourceId": "CFN-C-ki0TLXKJfPgN",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-CJSjowAlTrhu"
+            "Value": "CFN-B-qCiX6NdW4hEt"
           }
         },
         {
@@ -1597,13 +1597,13 @@
           "EventId": "<event-id:4>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-VjGjpNfOS4U8",
+          "PhysicalResourceId": "CFN-C-ki0TLXKJfPgN",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-CJSjowAlTrhu"
+            "Value": "CFN-B-qCiX6NdW4hEt"
           }
         },
         {
@@ -1611,13 +1611,13 @@
           "EventId": "<event-id:5>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-CJSjowAlTrhu",
+          "PhysicalResourceId": "CFN-B-qCiX6NdW4hEt",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-ZYIuJkuo8IO2"
+            "Value": "CFN-A-BFvOY1qz1Osv"
           }
         },
         {
@@ -1625,7 +1625,7 @@
           "EventId": "<event-id:6>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-ZYIuJkuo8IO2",
+          "PhysicalResourceId": "CFN-A-BFvOY1qz1Osv",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
@@ -1637,8 +1637,8 @@
       ]
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order2[C-A-B]": {
-    "recorded-date": "21-05-2024, 10:02:12",
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[C-B-A]": {
+    "recorded-date": "29-05-2024, 11:45:50",
     "recorded-content": {
       "events": [
         {
@@ -1646,7 +1646,7 @@
           "EventId": "<event-id:1>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-R62Lgi2kGS4W",
+          "PhysicalResourceId": "CFN-A-LQadBXOC2eGc",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
@@ -1660,13 +1660,13 @@
           "EventId": "<event-id:2>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-mrslJXntQgqn",
+          "PhysicalResourceId": "CFN-B-p6Hy6dxQCfjl",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-R62Lgi2kGS4W"
+            "Value": "CFN-A-LQadBXOC2eGc"
           }
         },
         {
@@ -1674,13 +1674,13 @@
           "EventId": "<event-id:3>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-QvEk4XhnspnJ",
+          "PhysicalResourceId": "CFN-C-YYmzIb8agve7",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "CREATE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-mrslJXntQgqn"
+            "Value": "CFN-B-p6Hy6dxQCfjl"
           }
         },
         {
@@ -1688,13 +1688,13 @@
           "EventId": "<event-id:4>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "C",
-          "PhysicalResourceId": "CFN-C-QvEk4XhnspnJ",
+          "PhysicalResourceId": "CFN-C-YYmzIb8agve7",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-B-mrslJXntQgqn"
+            "Value": "CFN-B-p6Hy6dxQCfjl"
           }
         },
         {
@@ -1702,13 +1702,13 @@
           "EventId": "<event-id:5>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "B",
-          "PhysicalResourceId": "CFN-B-mrslJXntQgqn",
+          "PhysicalResourceId": "CFN-B-p6Hy6dxQCfjl",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",
           "ResourceProperties": {
             "Type": "String",
-            "Value": "CFN-A-R62Lgi2kGS4W"
+            "Value": "CFN-A-LQadBXOC2eGc"
           }
         },
         {
@@ -1716,7 +1716,7 @@
           "EventId": "<event-id:6>",
           "StackName": "<stack-name:1>",
           "LogicalResourceId": "A",
-          "PhysicalResourceId": "CFN-A-R62Lgi2kGS4W",
+          "PhysicalResourceId": "CFN-A-LQadBXOC2eGc",
           "ResourceType": "AWS::SSM::Parameter",
           "Timestamp": "timestamp",
           "ResourceStatus": "DELETE_COMPLETE",

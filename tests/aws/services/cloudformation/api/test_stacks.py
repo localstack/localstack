@@ -792,30 +792,6 @@ def test_describe_stack_events_errors(aws_client, snapshot):
     snapshot.match("describe_stack_events_stack_not_found", e.value.response)
 
 
-@markers.aws.only_localstack
-def test_stack_deploy_order(deploy_cfn_template):
-    template = """
-    Resources:
-        B:
-          Type: AWS::SSM::Parameter
-          Properties:
-            Type: String
-            Value: !GetAtt A.TopicName
-        A:
-          Type: AWS::SNS::Topic
-    Outputs:
-        ParameterName:
-            Value: !Ref B
-    """
-    stack = deploy_cfn_template(
-        template=template,
-    )
-
-    topic_name = stack.outputs["ParameterName"]
-
-    assert topic_name != ""
-
-
 TEMPLATE_ORDER_CASES = list(permutations(["A", "B", "C"]))
 
 
@@ -832,7 +808,7 @@ TEMPLATE_ORDER_CASES = list(permutations(["A", "B", "C"]))
 @pytest.mark.parametrize(
     "deploy_order", TEMPLATE_ORDER_CASES, ids=["-".join(vals) for vals in TEMPLATE_ORDER_CASES]
 )
-def test_stack_deploy_order2(deploy_cfn_template, aws_client, snapshot, deploy_order: tuple[str]):
+def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_order: tuple[str]):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.key_value("EventId"))
     resources = {
