@@ -800,7 +800,7 @@ class TestAPIGateway:
                 domainName=domain_name, basePath=base_path
             )
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_base_path_mapping_root(self, aws_client):
         client = aws_client.apigateway
         response = client.create_rest_api(name="my_api2", description="this is my api")
