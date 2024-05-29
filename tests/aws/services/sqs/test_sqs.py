@@ -2719,14 +2719,18 @@ class TestSqsProvider:
         invalid_attribute = {f"{ends_with_dot}": {"StringValue": "Valid", "DataType": "String"}}
         send_invalid(invalid_attribute)
 
-    @pytest.mark.xfail
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    @markers.aws.validated
     def test_send_message_with_invalid_fifo_parameters(self, sqs_create_queue, aws_sqs_client):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(
             QueueName=fifo_queue_name,
             Attributes={"FifoQueue": "true"},
         )
+        if aws_sqs_client._client._service_model.protocol == "query":
+            expected_error = "Unable to parse response"
+        else:
+            expected_error = "InvalidParameterValue"
         with pytest.raises(Exception) as e:
             aws_sqs_client.send_message(
                 QueueUrl=queue_url,
@@ -2734,7 +2738,7 @@ class TestSqsProvider:
                 MessageDeduplicationId=f"Invalid-{chr(8)}",
                 MessageGroupId="1",
             )
-        e.match("InvalidParameterValue")
+        e.match(expected_error)
 
         with pytest.raises(Exception) as e:
             aws_sqs_client.send_message(
@@ -2743,7 +2747,7 @@ class TestSqsProvider:
                 MessageDeduplicationId="1",
                 MessageGroupId=f"Invalid-{chr(8)}",
             )
-        e.match("InvalidParameterValue")
+        e.match(expected_error)
 
     @markers.aws.validated
     def test_send_message_with_invalid_payload_characters(self, sqs_create_queue, aws_sqs_client):
@@ -3487,10 +3491,9 @@ class TestSqsProvider:
         )
         assert "Messages" not in result_recv_2 or result_recv_2["Messages"] == []
 
-    @pytest.mark.skip
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_dead_letter_queue_execution_lambda_mapping_preserves_id(
-        self, sqs_create_queue, create_lambda_function, aws_sqs_client, region_name
+        self, sqs_create_queue, create_lambda_function, aws_sqs_client, aws_client, region_name
     ):
         # TODO: lambda triggered dead letter delivery does not preserve the message id
         # FIXME: message id is now preserved, but test is broken
@@ -3521,7 +3524,7 @@ class TestSqsProvider:
         queue_arn = "arn:aws:sqs:{}:{}:{}".format(
             region_name, url_parts[len(url_parts) - 2], url_parts[-1]
         )
-        aws_sqs_client.lambda_.create_event_source_mapping(
+        aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=lambda_name
         )
 
@@ -3531,10 +3534,14 @@ class TestSqsProvider:
             QueueUrl=queue_url, MessageBody=json.dumps(payload)
         )
 
+        if is_aws_cloud():
+            timeout = 240.0
+        else:
+            timeout = 15.0
         assert poll_condition(
             lambda: "Messages"
             in aws_sqs_client.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0),
-            5.0,
+            timeout,
             1.0,
         )
         result_recv = aws_sqs_client.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0)
@@ -3793,12 +3800,9 @@ class TestSqsProvider:
         assert queue1_url == region1_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
         assert queue2_url == region2_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
 
-    @pytest.mark.skip(
-        reason="this is an AWS behaviour test that requires 5 minutes to run. Only execute manually"
-    )
-    @markers.aws.unknown
+    @pytest.mark.skip(reason="this test requires 5 minutes to run. Only execute manually")
+    @markers.aws.validated
     def test_deduplication_interval(self, sqs_create_queue, aws_sqs_client):
-        # TODO: AWS behaviour here "seems" inconsistent -> current code might need adaption
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
         message_content = f"test{short_uid()}"
@@ -3819,24 +3823,29 @@ class TestSqsProvider:
             MessageGroupId=group_id,
             MessageDeduplicationId=dedup_id,
         )
-        result_receive = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        result_receive = retry(
+            aws_sqs_client.receive_message, QueueUrl=queue_url, retries=5, sleep=1
+        )
         aws_sqs_client.delete_message(
             QueueUrl=queue_url, ReceiptHandle=result_receive["Messages"][0]["ReceiptHandle"]
         )
-        result_receive_duplicate = aws_sqs_client.receive_message(QueueUrl=queue_url)
+        result_receive_duplicate = retry(
+            aws_sqs_client.receive_message, QueueUrl=queue_url, retries=5, sleep=1
+        )
 
         assert result_send.get("MessageId") == result_receive.get("Messages")[0].get("MessageId")
         assert result_send.get("MD5OfMessageBody") == result_receive.get("Messages")[0].get(
             "MD5OfBody"
         )
-        assert "Messages" in result_receive_duplicate
-        assert result_receive_duplicate["Messages"] == []
+        assert "Messages" not in result_receive_duplicate
+
+        dedup_id_2 = f"fifo_dedup-{short_uid()}"
 
         result_send = aws_sqs_client.send_message(
             QueueUrl=queue_url,
             MessageBody=message_content,
             MessageGroupId=group_id,
-            MessageDeduplicationId=dedup_id,
+            MessageDeduplicationId=dedup_id_2,
         )
         # ZZZZzzz...
         # Fifo Deduplication Interval is 5 minutes at minimum, + there seems no way to change it.
@@ -3847,7 +3856,7 @@ class TestSqsProvider:
             QueueUrl=queue_url,
             MessageBody=message_content_half_time,
             MessageGroupId=group_id,
-            MessageDeduplicationId=dedup_id,
+            MessageDeduplicationId=dedup_id_2,
         )
         time.sleep(6 * 60)
 
@@ -3855,7 +3864,7 @@ class TestSqsProvider:
             QueueUrl=queue_url,
             MessageBody=message_content_duplicate,
             MessageGroupId=group_id,
-            MessageDeduplicationId=dedup_id,
+            MessageDeduplicationId=dedup_id_2,
         )
         result_receive = aws_sqs_client.receive_message(QueueUrl=queue_url)
         aws_sqs_client.delete_message(
