@@ -16,6 +16,7 @@ from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory, connect_to
+from localstack.services.cloudformation import usage
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
     convert_data_types,
@@ -461,6 +462,8 @@ class ResourceProviderExecutor:
                     f"No resource provider found for \"{raw_payload['resourceType']}\"",
                 )
 
+                usage.missing_resource_types.record(raw_payload["resourceType"])
+
                 if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
                     # TODO: figure out a better way to handle non-implemented here?
                     return ProgressEvent(OperationStatus.SUCCESS, resource_model={})
@@ -482,6 +485,9 @@ class ResourceProviderExecutor:
 
         match change_type:
             case "Add":
+                # replicate previous event emitting behaviour
+                usage.resource_type.record(request.resource_type)
+
                 return resource_provider.create(request)
             case "Dynamic" | "Modify":
                 try:
