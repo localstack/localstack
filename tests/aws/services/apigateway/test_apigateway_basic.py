@@ -1241,7 +1241,8 @@ class TestAPIGateway:
             return f"{config.external_service_url(host=host)}/{stage}{path}"
         return f"{config.internal_service_url()}/restapis/{api_id}/{stage}/_user_request_{path}"
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # Doesn't use fixture that cleans up after itself. Should be moved to common
     def test_api_mock_integration_response_params(self, aws_client):
         resps = [
             {
