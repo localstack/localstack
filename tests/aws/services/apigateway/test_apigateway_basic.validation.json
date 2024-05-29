@@ -2,6 +2,9 @@
   "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_api_gateway_lambda_asynchronous_invocation": {
     "last_validated_date": "2024-05-29T19:36:34+00:00"
   },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_api_gateway_mock_integration": {
+    "last_validated_date": "2024-05-29T20:06:17+00:00"
+  },
   "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigateway_with_custom_authorization_method": {
     "last_validated_date": "2024-04-12T22:31:50+00:00"
   },

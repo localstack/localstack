@@ -116,5 +116,14 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_api_gateway_mock_integration": {
+    "recorded-date": "29-05-2024, 20:06:17",
+    "recorded-content": {
+      "mocked-response": {
+        "echo": "foobar",
+        "response": "mocked"
+      }
+    }
   }
 }

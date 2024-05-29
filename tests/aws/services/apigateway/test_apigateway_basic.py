@@ -594,17 +594,19 @@ class TestAPIGateway:
         result = retry(invoke, sleep=2, retries=10, url=url)
         assert result.content == b""
 
-    @markers.aws.unknown
-    def test_api_gateway_mock_integration(self, create_rest_apigw, aws_client):
+    @markers.aws.validated
+    def test_api_gateway_mock_integration(self, create_rest_apigw, aws_client, snapshot):
         rest_api_name = f"apigw-{short_uid()}"
+        stage_name = "test"
         rest_api_id, _, _ = create_rest_apigw(name=rest_api_name)
 
         spec_file = load_file(TEST_IMPORT_MOCK_INTEGRATION)
         aws_client.apigateway.put_rest_api(restApiId=rest_api_id, body=spec_file, mode="overwrite")
+        aws_client.apigateway.create_deployment(restApiId=rest_api_id, stageName=stage_name)
 
-        url = path_based_url(api_id=rest_api_id, stage_name="latest", path="/echo/foobar")
+        url = api_invoke_url(api_id=rest_api_id, stage=stage_name, path="/echo/foobar")
         response = requests.get(url)
-        assert response._content == b'{"echo": "foobar", "response": "mocked"}'
+        snapshot.match("mocked-response", response.json())
 
     @pytest.mark.xfail(reason="Behaviour is not AWS compliant, need to recreate this test")
     @markers.aws.unknown
