@@ -742,7 +742,7 @@ class TestAPIGateway:
         )
         snapshot.match("put-method-response", method_response)
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_base_path_mapping(self, create_rest_apigw, aws_client):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="this is my api")
 
