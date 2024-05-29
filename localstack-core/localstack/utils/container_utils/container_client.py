@@ -1142,6 +1142,12 @@ class Util:
             "--env", "-e", help="Set environment variables", dest="envs", action="append"
         )
         parser.add_argument(
+            "--env-file",
+            help="Set environment variables via a file",
+            dest="env_files",
+            action="append",
+        )
+        parser.add_argument(
             "--label", "-l", help="Add container meta data", dest="labels", action="append"
         )
         parser.add_argument("--network", help="Connect a container to a network")
@@ -1182,6 +1188,35 @@ class Util:
                 extra_hosts = extra_hosts if extra_hosts is not None else {}
                 hosts_split = add_host.split(":")
                 extra_hosts[hosts_split[0]] = hosts_split[1]
+
+        # set env file values before env values, as the latter override the earlier
+        if args.env_files:
+            env_vars = env_vars if env_vars is not None else {}
+            for env_file in args.env_files:
+                try:
+                    with open(env_file, mode="rt") as f:
+                        env_file_lines = f.readlines()
+                except FileNotFoundError as e:
+                    LOG.error(
+                        "Specified env file '%s' not found. Please make sure the file is properly mounted into the LocalStack container. Error: %s",
+                        env_file,
+                        e,
+                    )
+                    raise
+                except OSError as e:
+                    LOG.error(
+                        "Could not read env file '%s'. Please make sure the LocalStack container has the permissions to read it. Error: %s",
+                        env_file,
+                        e,
+                    )
+                    raise
+                for idx, line in enumerate(env_file_lines):
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        # skip comments or empty lines
+                        continue
+                    lhs, _, rhs = line.partition("=")
+                    env_vars[lhs] = rhs
 
         if args.envs:
             env_vars = env_vars if env_vars is not None else {}

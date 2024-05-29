@@ -1,5 +1,6 @@
 import json
 import logging
+import textwrap
 from typing import List
 from unittest.mock import patch
 
@@ -236,6 +237,38 @@ class TestArgumentParsing:
         Util.parse_additional_flags(argument_string, ports=ports)
         assert ports.to_str() == "-p 0:80"
         assert ports.to_dict() == {"80/tcp": None}
+
+    def test_env_files(self, tmp_path):
+        env_file_1 = tmp_path / "env1"
+        env_file_2 = tmp_path / "env2"
+        env_vars_1 = textwrap.dedent("""
+            # Some comment
+            TEST1=VAL1
+            TEST2=VAL2
+            TEST3=${TEST2}
+            """)
+        env_vars_2 = textwrap.dedent("""
+            # Some comment
+            TEST3=VAL3_OVERRIDE
+            """)
+        env_file_1.write_text(env_vars_1)
+        env_file_2.write_text(env_vars_2)
+
+        argument_string = f"--env-file {env_file_1}"
+        flags = Util.parse_additional_flags(argument_string)
+        assert flags.env_vars == {
+            "TEST1": "VAL1",
+            "TEST2": "VAL2",
+            "TEST3": "${TEST2}",
+        }
+
+        argument_string = f"-e TEST2=VAL2_OVERRIDE --env-file {env_file_1} --env-file {env_file_2}"
+        flags = Util.parse_additional_flags(argument_string)
+        assert flags.env_vars == {
+            "TEST1": "VAL1",
+            "TEST2": "VAL2_OVERRIDE",
+            "TEST3": "VAL3_OVERRIDE",
+        }
 
 
 def list_in(a, b):
