@@ -890,7 +890,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
 
-        if s3_object.parts:
+        if s3_object.parts and request.get("PartNumber"):
             response["PartsCount"] = len(s3_object.parts)
 
         if s3_object.version_id:
@@ -1738,16 +1738,18 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if "ObjectSize" in object_attrs:
             response["ObjectSize"] = s3_object.size
         if "Checksum" in object_attrs and (checksum_algorithm := s3_object.checksum_algorithm):
-            response["Checksum"] = {
-                f"Checksum{checksum_algorithm.upper()}": s3_object.checksum_value
-            }
+            if s3_object.parts:
+                checksum_value = s3_object.checksum_value.split("-")[0]
+            else:
+                checksum_value = s3_object.checksum_value
+            response["Checksum"] = {f"Checksum{checksum_algorithm.upper()}": checksum_value}
 
         response["LastModified"] = s3_object.last_modified
 
         if s3_bucket.versioning_status:
             response["VersionId"] = s3_object.version_id
 
-        if s3_object.parts:
+        if "ObjectParts" in object_attrs and s3_object.parts:
             # TODO: implements ObjectParts, this is basically a simplified `ListParts` call on the object, we might
             #  need to store more data about the Parts once we implement checksums for them
             response["ObjectParts"] = GetObjectAttributesParts(TotalPartsCount=len(s3_object.parts))
@@ -1922,6 +1924,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         checksum_algorithm = request.get("ChecksumAlgorithm")
+        if checksum_algorithm != s3_multipart.object.checksum_algorithm:
+            error_req_checksum = checksum_algorithm.lower() if checksum_algorithm else "null"
+            error_mp_checksum = (
+                s3_multipart.object.checksum_algorithm.lower()
+                if s3_multipart.object.checksum_algorithm
+                else "null"
+            )
+            raise InvalidRequest(
+                f"Checksum Type mismatch occurred, expected checksum Type: {error_mp_checksum}, actual checksum Type: {error_req_checksum}"
+            )
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
@@ -2239,6 +2251,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 PartNumber=part_number,
                 Size=part.size,
             )
+            if part.checksum_algorithm:
+                part_item[f"Checksum{part.checksum_algorithm.upper()}"] = part.checksum_value
+
             parts.append(part_item)
             count += 1
 

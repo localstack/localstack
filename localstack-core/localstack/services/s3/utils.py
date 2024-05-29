@@ -196,7 +196,7 @@ def get_s3_checksum(algorithm) -> ChecksumHash:
 
 
 class S3CRC32Checksum:
-    """Implements a unified way of using zlib.crc32 compatibl with hashlib.sha and botocore CrtCrc32cChecksum"""
+    """Implements a unified way of using zlib.crc32 compatible with hashlib.sha and botocore CrtCrc32cChecksum"""
 
     __slots__ = ["checksum"]
 
