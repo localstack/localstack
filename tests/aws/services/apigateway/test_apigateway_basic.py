@@ -1170,7 +1170,7 @@ class TestAPIGateway:
                 body = retry(_invoke_step_function, retries=15, sleep=1)
                 snapshot.match("delete_state_machine_response", body)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_api_gateway_http_integration_with_path_request_parameter(
         self, create_rest_apigw, echo_http_server, aws_client
     ):
