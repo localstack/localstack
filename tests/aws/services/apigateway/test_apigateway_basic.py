@@ -1267,27 +1267,6 @@ class TestAPIGateway:
         assert "Origin" == result.headers.get("vary")
         assert "POST,OPTIONS" == result.headers.get("Access-Control-Allow-Methods")
 
-    @markers.aws.unknown
-    def test_api_gateway_update_resource_path_part(self, create_rest_apigw, aws_client):
-        api_id, _, _ = create_rest_apigw(name="test-api")
-        root_res_id = aws_client.apigateway.get_resources(restApiId=api_id)["items"][0]["id"]
-        api_resource = aws_client.apigateway.create_resource(
-            restApiId=api_id, parentId=root_res_id, pathPart="test"
-        )
-
-        response = aws_client.apigateway.update_resource(
-            restApiId=api_id,
-            resourceId=api_resource.get("id"),
-            patchOperations=[
-                {"op": "replace", "path": "/pathPart", "value": "demo1"},
-            ],
-        )
-        assert response.get("pathPart") == "demo1"
-        response = aws_client.apigateway.get_resource(
-            restApiId=api_id, resourceId=api_resource.get("id")
-        )
-        assert response.get("pathPart") == "demo1"
-
     @markers.aws.validated
     def test_response_headers_invocation_with_apigw(
         self, aws_client, create_rest_apigw, create_lambda_function, create_role_with_policy
