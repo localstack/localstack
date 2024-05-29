@@ -1641,7 +1641,7 @@ class TestAPIGateway:
 
 
 class TestTagging:
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_tag_api(self, create_rest_apigw, aws_client, account_id, region_name):
         api_name = f"api-{short_uid()}"
         tags = {"foo": "bar"}
