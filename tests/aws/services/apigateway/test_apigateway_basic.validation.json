@@ -19,5 +19,17 @@
   },
   "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_update_rest_api_deployment": {
     "last_validated_date": "2024-04-12T21:24:49+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[UrlType.HOST_BASED-ANY]": {
+    "last_validated_date": "2024-05-29T23:33:41+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[UrlType.HOST_BASED-GET]": {
+    "last_validated_date": "2024-05-29T23:33:12+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[path_based_url-ANY]": {
+    "last_validated_date": "2024-05-29T23:32:43+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[path_based_url-GET]": {
+    "last_validated_date": "2024-05-29T23:32:08+00:00"
   }
 }

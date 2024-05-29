@@ -6,6 +6,7 @@ import re
 from collections import namedtuple
 from typing import Callable, Optional
 
+import botocore
 import pytest
 import xmltodict
 from botocore.exceptions import ClientError
@@ -1669,13 +1670,34 @@ def test_apigw_call_api_with_aws_endpoint_url(aws_client, region_name):
 
 
 @pytest.mark.parametrize("method", ["GET", "ANY"])
-@pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
-@markers.aws.unknown
+@pytest.mark.parametrize("url_type", [path_based_url, UrlType.HOST_BASED])
+@markers.aws.validated
+# TODO clean up the client instances. We might not need 4.
+#  We might also be ok not parametrizing the method, as it doesn't seem to be what we are testing here
 def test_rest_api_multi_region(
-    method, url_function, create_rest_apigw, aws_client, aws_client_factory
+    method,
+    url_type,
+    create_rest_apigw,
+    aws_client,
+    aws_client_factory,
+    create_lambda_function,
+    create_role_with_policy,
 ):
-    apigateway_client_eu = aws_client_factory(region_name="eu-west-1").apigateway
-    apigateway_client_us = aws_client_factory(region_name="us-west-1").apigateway
+    stage_name = "test"
+    client_config = botocore.config.Config(
+        # Api gateway can throttle requests pretty heavily. Leading to potentially undeleted apis
+        retries={"max_attempts": 10, "mode": "adaptive"}
+    )
+    apigateway_client_eu = aws_client_factory(
+        region_name="eu-west-1", config=client_config
+    ).apigateway
+    apigateway_client_us = aws_client_factory(
+        region_name="us-west-1", config=client_config
+    ).apigateway
+
+    _, role_arn = create_role_with_policy(
+        "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
+    )
 
     api_eu_id, _, root_resource_eu_id = create_rest_apigw(
         name="test-eu-region", region_name="eu-west-1"
@@ -1709,7 +1731,7 @@ def test_rest_api_multi_region(
     lambda_name = f"lambda-{short_uid()}"
     lambda_eu_west_1_client = aws_client_factory(region_name="eu-west-1").lambda_
     lambda_us_west_1_client = aws_client_factory(region_name="us-west-1").lambda_
-    lambda_eu_arn = testutil.create_lambda_function(
+    lambda_eu_arn = create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
         runtime=Runtime.nodejs16_x,
@@ -1717,7 +1739,7 @@ def test_rest_api_multi_region(
         client=lambda_eu_west_1_client,
     )["CreateFunctionResponse"]["FunctionArn"]
 
-    lambda_us_arn = testutil.create_lambda_function(
+    lambda_us_arn = create_lambda_function(
         handler_file=TEST_LAMBDA_NODEJS,
         func_name=lambda_name,
         runtime=Runtime.nodejs16_x,
@@ -1727,8 +1749,8 @@ def test_rest_api_multi_region(
 
     lambda_eu_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
     lambda_us_west_1_client.get_waiter("function_active_v2").wait(FunctionName=lambda_name)
-    uri_eu = arns.apigateway_invocations_arn(lambda_eu_arn, region_name="eu-west-1")
 
+    uri_eu = arns.apigateway_invocations_arn(lambda_eu_arn, region_name="eu-west-1")
     integration_uri, _ = create_rest_api_integration(
         apigateway_client_eu,
         restApiId=api_eu_id,
@@ -1737,10 +1759,11 @@ def test_rest_api_multi_region(
         type="AWS_PROXY",
         integrationHttpMethod="POST",
         uri=uri_eu,
+        credentials=role_arn,
     )
+    apigateway_client_eu.create_deployment(restApiId=api_eu_id, stageName=stage_name)
 
     uri_us = arns.apigateway_invocations_arn(lambda_us_arn, region_name="us-west-1")
-
     integration_uri, _ = create_rest_api_integration(
         apigateway_client_us,
         restApiId=api_us_id,
@@ -1749,20 +1772,27 @@ def test_rest_api_multi_region(
         type="AWS_PROXY",
         integrationHttpMethod="POST",
         uri=uri_us,
+        credentials=role_arn,
     )
+    apigateway_client_us.create_deployment(restApiId=api_us_id, stageName=stage_name)
 
-    # test valid authorization using bearer token
-    endpoint = url_function(api_eu_id, stage_name="local", path="/demo")
-    result = requests.get(endpoint, headers={}, verify=False)
-    assert result.status_code == 200
-    endpoint = url_function(api_us_id, stage_name="local", path="/demo")
-    result = requests.get(endpoint, headers={}, verify=False)
-    assert result.status_code == 200
+    def _invoke_url(url):
+        invoke_response = requests.get(url)
+        assert invoke_response.status_code == 200
+
+    endpoint = api_invoke_url(
+        api_eu_id, stage=stage_name, path="/demo", region="eu-west-1", url_type=url_type
+    )
+    retry(_invoke_url, retries=20, sleep=2, url=endpoint)
+    endpoint = api_invoke_url(
+        api_us_id, stage=stage_name, path="/demo", region="us-west-1", url_type=url_type
+    )
+    retry(_invoke_url, retries=20, sleep=2, url=endpoint)
 
     delete_rest_api(apigateway_client_eu, restApiId=api_eu_id)
     delete_rest_api(apigateway_client_us, restApiId=api_us_id)
-    aws_client_factory(region_name="eu-west-1").lambda_.delete_function(FunctionName=lambda_name)
-    aws_client_factory(region_name="us-west-1").lambda_.delete_function(FunctionName=lambda_name)
+    lambda_eu_west_1_client.delete_function(FunctionName=lambda_name)
+    lambda_us_west_1_client.delete_function(FunctionName=lambda_name)
 
 
 class TestIntegrations:

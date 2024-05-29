@@ -125,5 +125,21 @@
         "response": "mocked"
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[path_based_url-GET]": {
+    "recorded-date": "29-05-2024, 23:23:26",
+    "recorded-content": {}
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[path_based_url-ANY]": {
+    "recorded-date": "29-05-2024, 23:24:07",
+    "recorded-content": {}
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[UrlType.HOST_BASED-GET]": {
+    "recorded-date": "29-05-2024, 23:24:41",
+    "recorded-content": {}
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[UrlType.HOST_BASED-ANY]": {
+    "recorded-date": "29-05-2024, 23:25:19",
+    "recorded-content": {}
   }
 }
