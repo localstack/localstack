@@ -1796,7 +1796,8 @@ def test_rest_api_multi_region(
 
 
 class TestIntegrations:
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # Attempts to create invalid integration with proxy
     def test_api_gateway_s3_get_integration(
         self, create_rest_apigw, aws_client, create_iam_role_with_policy
     ):
@@ -1811,7 +1812,7 @@ class TestIntegrations:
         api_id, _, _ = create_rest_apigw(name=apigateway_name)
 
         try:
-            resource_util.get_or_create_bucket(bucket_name)
+            resource_util.get_or_create_bucket(bucket_name, s3_client=s3_client)
             s3_client.put_object(
                 Bucket=bucket_name,
                 Key=object_name,
