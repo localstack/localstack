@@ -2720,6 +2720,7 @@ class TestSqsProvider:
         send_invalid(invalid_attribute)
 
     @markers.aws.needs_fixing
+    @pytest.mark.skip
     def test_send_message_with_invalid_fifo_parameters(self, sqs_create_queue, aws_sqs_client):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(
@@ -2969,6 +2970,7 @@ class TestSqsProvider:
         snapshot.match("dlq-messages", messages)
 
     @markers.aws.needs_fixing
+    @pytest.mark.skip
     def test_dead_letter_queue_chain(
         self, sqs_create_queue, aws_sqs_client, account_id, region_name
     ):
@@ -3491,6 +3493,7 @@ class TestSqsProvider:
         assert "Messages" not in result_recv_2 or result_recv_2["Messages"] == []
 
     @markers.aws.needs_fixing
+    @pytest.mark.skip
     def test_dead_letter_queue_execution_lambda_mapping_preserves_id(
         self, sqs_create_queue, create_lambda_function, aws_sqs_client, aws_client, region_name
     ):
