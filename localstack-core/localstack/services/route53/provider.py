@@ -80,7 +80,7 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
         self, context: RequestContext, health_check_id: HealthCheckId, **kwargs
     ) -> GetHealthCheckResponse:
         health_check: Optional[route53_models.HealthCheck] = route53_backends[context.account_id][
-            "global"
+            context.partition
         ].health_checks.get(health_check_id, None)
         if not health_check:
             raise NoSuchHealthCheck(
@@ -111,10 +111,13 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
     def delete_health_check(
         self, context: RequestContext, health_check_id: HealthCheckId, **kwargs
     ) -> DeleteHealthCheckResponse:
-        if health_check_id not in route53_backends[context.account_id]["global"].health_checks:
+        if (
+            health_check_id
+            not in route53_backends[context.account_id][context.partition].health_checks
+        ):
             raise NoSuchHealthCheck(
                 f"No health check exists with the specified ID {health_check_id}"
             )
 
-        route53_backends[context.account_id]["global"].delete_health_check(health_check_id)
+        route53_backends[context.account_id][context.partition].delete_health_check(health_check_id)
         return {}
