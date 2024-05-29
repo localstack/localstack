@@ -66,7 +66,6 @@ from tests.aws.services.apigateway.conftest import (
     STEPFUNCTIONS_ASSUME_ROLE_POLICY,
 )
 from tests.aws.services.lambda_.test_lambda import (
-    TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_NODEJS,
     TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
     TEST_LAMBDA_PYTHON,
@@ -1656,62 +1655,6 @@ class TestTagging:
         # receive and assert tags
         tags_saved = aws_client.apigateway.get_tags(resourceArn=api_arn)["tags"]
         assert tags == tags_saved
-
-
-@markers.aws.unknown
-@markers.only_on_amd64
-def test_apigateway_rust_lambda(
-    create_rest_apigw, create_lambda_function, create_iam_role_with_policy, aws_client
-):
-    function_name = f"test-rust-function-{short_uid()}"
-    api_gateway_name = f"api_gateway_{short_uid()}"
-    role_name = f"test_apigateway_role_{short_uid()}"
-    policy_name = f"test_apigateway_policy_{short_uid()}"
-    stage_name = "test"
-    first_name = f"test_name_{short_uid()}"
-    lambda_create_response = create_lambda_function(
-        func_name=function_name,
-        zip_file=load_file(TEST_LAMBDA_HTTP_RUST, mode="rb"),
-        handler="bootstrap.is.the.handler",
-        runtime="provided.al2",
-    )
-    role_arn = create_iam_role_with_policy(
-        RoleName=role_name,
-        PolicyName=policy_name,
-        RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
-        PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
-    )
-    lambda_arn = lambda_create_response["CreateFunctionResponse"]["FunctionArn"]
-    rest_api_id, _, _ = create_rest_apigw(name=api_gateway_name)
-
-    root_resource_id = aws_client.apigateway.get_resources(restApiId=rest_api_id)["items"][0]["id"]
-    aws_client.apigateway.put_method(
-        restApiId=rest_api_id,
-        resourceId=root_resource_id,
-        httpMethod="GET",
-        authorizationType="NONE",
-    )
-    aws_client.apigateway.put_method_response(
-        restApiId=rest_api_id, resourceId=root_resource_id, httpMethod="GET", statusCode="200"
-    )
-    lambda_target_uri = arns.apigateway_invocations_arn(
-        lambda_uri=lambda_arn, region_name=aws_client.apigateway.meta.region_name
-    )
-    aws_client.apigateway.put_integration(
-        restApiId=rest_api_id,
-        resourceId=root_resource_id,
-        httpMethod="GET",
-        integrationHttpMethod="POST",
-        type="AWS_PROXY",
-        uri=lambda_target_uri,
-        credentials=role_arn,
-    )
-    aws_client.apigateway.create_deployment(restApiId=rest_api_id, stageName=stage_name)
-    url = path_based_url(
-        api_id=rest_api_id, stage_name=stage_name, path=f"/?first_name={first_name}"
-    )
-    result = requests.get(url)
-    assert result.text == f"Hello, {first_name}!"
 
 
 @markers.aws.unknown

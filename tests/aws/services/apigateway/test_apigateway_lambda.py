@@ -12,10 +12,14 @@ from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url, create_rest_resource
-from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
+from tests.aws.services.apigateway.conftest import (
+    APIGATEWAY_ASSUME_ROLE_POLICY,
+    APIGATEWAY_LAMBDA_POLICY,
+)
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_AWS_PROXY,
     TEST_LAMBDA_AWS_PROXY_FORMAT,
+    TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_MAPPING_RESPONSES,
     TEST_LAMBDA_PYTHON_ECHO,
     TEST_LAMBDA_PYTHON_SELECT_PATTERN,
@@ -832,3 +836,64 @@ def test_lambda_aws_proxy_response_format(
         elif lambda_format_type == "wrong-format":
             assert response.status_code == 502
             assert response.json() == {"message": "Internal server error"}
+
+
+@markers.aws.validated
+@markers.only_on_amd64
+def test_lambda_rust_proxy_integration(
+    create_rest_apigw, create_lambda_function, create_iam_role_with_policy, aws_client
+):
+    function_name = f"test-rust-function-{short_uid()}"
+    api_gateway_name = f"api_gateway_{short_uid()}"
+    role_name = f"test_apigateway_role_{short_uid()}"
+    policy_name = f"test_apigateway_policy_{short_uid()}"
+    stage_name = "test"
+    first_name = f"test_name_{short_uid()}"
+    lambda_create_response = create_lambda_function(
+        func_name=function_name,
+        zip_file=load_file(TEST_LAMBDA_HTTP_RUST, mode="rb"),
+        handler="bootstrap.is.the.handler",
+        runtime="provided.al2",
+    )
+    role_arn = create_iam_role_with_policy(
+        RoleName=role_name,
+        PolicyName=policy_name,
+        RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
+        PolicyDefinition=APIGATEWAY_LAMBDA_POLICY,
+    )
+    lambda_arn = lambda_create_response["CreateFunctionResponse"]["FunctionArn"]
+    rest_api_id, _, _ = create_rest_apigw(name=api_gateway_name)
+
+    root_resource_id = aws_client.apigateway.get_resources(restApiId=rest_api_id)["items"][0]["id"]
+    aws_client.apigateway.put_method(
+        restApiId=rest_api_id,
+        resourceId=root_resource_id,
+        httpMethod="GET",
+        authorizationType="NONE",
+    )
+    aws_client.apigateway.put_method_response(
+        restApiId=rest_api_id, resourceId=root_resource_id, httpMethod="GET", statusCode="200"
+    )
+    lambda_target_uri = arns.apigateway_invocations_arn(
+        lambda_uri=lambda_arn, region_name=aws_client.apigateway.meta.region_name
+    )
+    aws_client.apigateway.put_integration(
+        restApiId=rest_api_id,
+        resourceId=root_resource_id,
+        httpMethod="GET",
+        integrationHttpMethod="POST",
+        type="AWS_PROXY",
+        uri=lambda_target_uri,
+        credentials=role_arn,
+    )
+    aws_client.apigateway.create_deployment(restApiId=rest_api_id, stageName=stage_name)
+    url = api_invoke_url(api_id=rest_api_id, stage=stage_name, path=f"/?first_name={first_name}")
+
+    def _invoke_url(url):
+        invoker_response = requests.get(url)
+        assert invoker_response.status_code == 200
+        return invoker_response
+
+    result = retry(_invoke_url, retries=20, sleep=2, url=url)
+
+    assert result.text == f"Hello, {first_name}!"
