@@ -39,6 +39,7 @@ from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
 )
 from localstack.services.cloudformation.stores import exports_map
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.functions import prevent_stack_overflow
 from localstack.utils.json import clone_safe
 from localstack.utils.strings import to_bytes, to_str
@@ -137,7 +138,7 @@ def resolve_ref(
     if ref == "AWS::Region":
         return region_name
     if ref == "AWS::Partition":
-        return "aws"
+        return get_partition(region_name)
     if ref == "AWS::StackName":
         return stack_name
     if ref == "AWS::StackId":
