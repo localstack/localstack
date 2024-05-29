@@ -133,7 +133,7 @@ class IAMUserProvider(ResourceProvider[IAMUserProperties]):
         """
         iam_client = request.aws_client_factory.iam
         iam_client.delete_user(UserName=request.desired_state["Id"])
-        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=None)
+        return ProgressEvent(status=OperationStatus.SUCCESS, resource_model=request.previous_state)
 
     def update(
         self,

@@ -70,7 +70,7 @@ class CDKMetadataProvider(ResourceProvider[CDKMetadataProperties]):
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=None,
+            resource_model=request.previous_state,
         )
 
     def update(

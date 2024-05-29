@@ -146,7 +146,7 @@ class LambdaAliasProvider(ResourceProvider[LambdaAliasProperties]):
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=None,
+            resource_model=request.previous_state,
         )
 
     def update(
