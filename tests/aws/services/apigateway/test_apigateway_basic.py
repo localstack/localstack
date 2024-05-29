@@ -854,7 +854,8 @@ class TestAPIGateway:
         with pytest.raises(Exception):
             client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # invalid operation on aws
     def test_api_account(self, create_rest_apigw, aws_client):
         rest_api_id, _, _ = create_rest_apigw(name="my_api", description="test 123")
 
