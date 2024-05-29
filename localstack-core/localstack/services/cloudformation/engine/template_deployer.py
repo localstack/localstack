@@ -867,7 +867,6 @@ def order_resources(
     return OrderedDict(sorted_mapping)
 
 
-# stub for now
 def order_changes(
     given_changes: list[ChangeConfig],
     resources: dict,
