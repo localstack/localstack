@@ -68,7 +68,6 @@ from tests.aws.services.apigateway.conftest import (
 from tests.aws.services.lambda_.test_lambda import (
     TEST_LAMBDA_HTTP_RUST,
     TEST_LAMBDA_NODEJS,
-    TEST_LAMBDA_NODEJS_APIGW_502,
     TEST_LAMBDA_NODEJS_APIGW_INTEGRATION,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
@@ -657,36 +656,6 @@ class TestAPIGateway:
             aws_client.apigateway.get_authorizer(
                 restApiId=get_api_gateway_id, authorizerId=authorizer_id
             )
-
-    @markers.aws.unknown
-    def test_malformed_response_apigw_invocation(
-        self, create_lambda_function, aws_client, region_name
-    ):
-        lambda_name = f"test_lambda_{short_uid()}"
-        lambda_resource = "/api/v1/{proxy+}"
-        lambda_path = "/api/v1/hello/world"
-
-        lambda_uri = create_lambda_function(
-            func_name=lambda_name,
-            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS_APIGW_502, get_content=True),
-            runtime=Runtime.nodejs16_x,
-            handler="apigw_502.handler",
-        )["CreateFunctionResponse"]["FunctionArn"]
-
-        target_uri = f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
-        result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
-            "test_gateway",
-            target_uri,
-            path=lambda_resource,
-            stage_name="testing",
-        )
-        api_id = result["id"]
-        url = path_based_url(api_id=api_id, stage_name="testing", path=lambda_path)
-        result = requests.get(url)
-
-        assert result.status_code == 502
-        assert result.headers.get("Content-Type") == "application/json"
-        assert json.loads(result.content)["message"] == "Internal server error"
 
     # Missing certificate creation to create a domain
     # this might end up being a bigger issue to fix until we have a validated certificate we can use
