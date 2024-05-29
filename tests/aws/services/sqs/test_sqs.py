@@ -2720,7 +2720,6 @@ class TestSqsProvider:
         send_invalid(invalid_attribute)
 
     @markers.aws.needs_fixing
-    @markers.aws.validated
     def test_send_message_with_invalid_fifo_parameters(self, sqs_create_queue, aws_sqs_client):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(
