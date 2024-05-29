@@ -1657,7 +1657,7 @@ class TestTagging:
         assert tags == tags_saved
 
 
-@markers.aws.unknown
+@markers.aws.needs_fixing
 def test_apigw_call_api_with_aws_endpoint_url(aws_client, region_name):
     headers = mock_aws_request_headers("apigateway", TEST_AWS_ACCESS_KEY_ID, region_name)
     headers["Host"] = "apigateway.us-east-2.amazonaws.com:4566"
