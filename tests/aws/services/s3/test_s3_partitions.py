@@ -2,8 +2,10 @@ import pytest
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
 
+@pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="SNS not enabled in S3 image")
 class TestS3Partitions:
     # We only have access to the AWS partition, not CHINA/US-GOV/etc
     @markers.aws.manual_setup_required

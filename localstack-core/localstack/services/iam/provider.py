@@ -102,7 +102,7 @@ POLICY_ARN_REGEX = re.compile(r"arn:[^:]+:iam::(?:\d{12}|aws):policy/.*")
 
 
 def get_iam_backend(context: RequestContext) -> IAMBackend:
-    return iam_backends[context.account_id]["global"]
+    return iam_backends[context.account_id][context.partition]
 
 
 class IamProvider(IamApi):
