@@ -25,7 +25,6 @@ from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID,
     INTERNAL_AWS_SECRET_ACCESS_KEY,
     MAX_POOL_CONNECTIONS,
-    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.aws.aws_stack import get_s3_hostname
 from localstack.utils.aws.client_types import ServicePrincipal, TypedServiceClientFactory
@@ -558,7 +557,7 @@ class ExternalClientFactory(ClientFactory):
         # Prevent `PartialCredentialsError` when only access key ID is provided
         # The value of secret access key is insignificant and can be set to anything
         if aws_access_key_id:
-            aws_secret_access_key = aws_secret_access_key or TEST_AWS_SECRET_ACCESS_KEY
+            aws_secret_access_key = aws_secret_access_key or INTERNAL_AWS_SECRET_ACCESS_KEY
 
         return self._get_client(
             service_name=service_name,

@@ -16,10 +16,10 @@ from localstack.aws.connect import (
 from localstack.aws.gateway import Gateway
 from localstack.aws.handlers import add_internal_request_params, add_region_from_header
 from localstack.config import HostAndPort
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
 from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.http.hypercorn import GatewayServer
+from localstack.testing.test_config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
 from localstack.utils.net import get_free_tcp_port

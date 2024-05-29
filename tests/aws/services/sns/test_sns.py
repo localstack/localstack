@@ -23,8 +23,6 @@ from localstack import config
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.services.sns.constants import (
     PLATFORM_ENDPOINT_MSGS_ENDPOINT,
@@ -34,6 +32,7 @@ from localstack.services.sns.constants import (
 from localstack.services.sns.provider import SnsProvider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.test_config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils import testutil
 from localstack.utils.aws.arns import parse_arn, sqs_queue_arn
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open

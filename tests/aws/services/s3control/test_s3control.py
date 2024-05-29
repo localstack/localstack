@@ -4,12 +4,9 @@ import pytest
 from botocore.client import Config
 from botocore.exceptions import ClientError
 
-from localstack.constants import (
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_SECRET_ACCESS_KEY,
-)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.test_config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.strings import short_uid
 from localstack.utils.urls import localstack_host
 

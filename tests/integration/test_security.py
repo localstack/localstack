@@ -4,7 +4,7 @@ import requests
 from localstack import config
 from localstack.aws.handlers import cors as cors_handler
 from localstack.aws.handlers.cors import _get_allowed_cors_origins
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
+from localstack.testing.test_config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import short_uid, to_str
 

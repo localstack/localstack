@@ -18,9 +18,6 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.handlers import cors
 from localstack.constants import (
     APPLICATION_JSON,
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
 )
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
@@ -30,6 +27,11 @@ from localstack.services.apigateway.helpers import (
     path_based_url,
 )
 from localstack.testing.pytest import markers
+from localstack.testing.test_config import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_util

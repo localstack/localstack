@@ -15,7 +15,6 @@ from localstack.constants import (
     APPLICATION_XML,
     AWS_REGION_US_EAST_1,
     DEFAULT_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
 )
 from localstack.services.apigateway.helpers import (
     ModelResolver,
@@ -41,6 +40,7 @@ from localstack.services.apigateway.templates import (
     ResponseTemplates,
     VelocityUtilApiGateway,
 )
+from localstack.testing.test_config import TEST_AWS_REGION_NAME
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
 

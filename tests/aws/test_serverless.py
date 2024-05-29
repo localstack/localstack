@@ -4,9 +4,9 @@ import os
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.test_config import TEST_AWS_ACCESS_KEY_ID
 from localstack.utils.aws import arns
 from localstack.utils.common import retry, run
 from localstack.utils.testutil import get_lambda_log_events

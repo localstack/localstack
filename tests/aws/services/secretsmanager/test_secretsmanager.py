@@ -20,8 +20,8 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     ListSecretsResponse,
 )
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
+from localstack.testing.test_config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_REGION_NAME
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.collections import select_from_typed_dict
