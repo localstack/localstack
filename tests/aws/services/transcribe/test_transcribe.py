@@ -116,7 +116,7 @@ class TestTranscribe:
             content = to_str(data["Body"].read())
             assert speech in content
 
-        retry(_assert_transcript, retries=80, sleep=5, sleep_before=5)
+        retry(_assert_transcript, retries=30, sleep=2)
 
     @markers.aws.needs_fixing
     def test_transcribe_unsupported_media_format_failure(self, transcribe_create_job, aws_client):
