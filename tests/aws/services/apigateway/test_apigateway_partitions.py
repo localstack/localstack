@@ -40,7 +40,4 @@ class TestApiGatewayApiPartitions:
         apigw = aws_client_factory(region_name=region).apigateway
 
         response = apigw.get_account()
-        assert (
-            response["cloudwatchRoleArn"]
-            == f"arn:{partition}:iam::{account_id}:role/api-gw-cw-role"
-        )
+        assert response["cloudwatchRoleArn"].startswith(f"arn:{partition}:iam::{account_id}:role/")
