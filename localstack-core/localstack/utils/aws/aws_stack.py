@@ -11,7 +11,6 @@ from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import (
     LOCALHOST,
 )
-from localstack.utils.bootstrap import log_duration
 from localstack.utils.strings import is_string_or_bytes, to_str
 
 # set up logger
@@ -33,7 +32,6 @@ def get_valid_regions():
 
 # FIXME: AWS recommends use of SSM parameter store to determine per region availability
 # https://github.com/aws/aws-sdk/issues/206#issuecomment-1471354853
-@log_duration(min_ms=0)
 @lru_cache()
 def get_valid_regions_for_service(service_name):
     session = boto3.Session()
