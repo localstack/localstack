@@ -866,7 +866,8 @@ class TestAPIGateway:
         )
         assert "foobar" in result["features"]
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # Missing role, proper url and doesn't clean up after itself. Should be move to dynamodb test file and use fixtures that clean their resources
     def test_put_integration_dynamodb_proxy_validation_without_request_template(self, aws_client):
         api_id = self.create_api_gateway_and_deploy(aws_client.apigateway, aws_client.dynamodb)
         url = path_based_url(api_id=api_id, stage_name="staging", path="/")
