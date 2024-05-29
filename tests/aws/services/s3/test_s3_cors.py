@@ -11,8 +11,8 @@ from localstack.constants import (
     LOCALHOST_HOSTNAME,
 )
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
-from localstack.testing.test_config import TEST_AWS_ACCESS_KEY_ID
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.strings import short_uid
 

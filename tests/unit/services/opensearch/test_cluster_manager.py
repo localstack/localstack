@@ -3,7 +3,7 @@ import pytest
 from localstack import config
 from localstack.aws.api.opensearch import EngineType
 from localstack.services.opensearch.cluster_manager import DomainKey, build_cluster_endpoint
-from localstack.testing.test_config import TEST_AWS_ACCOUNT_ID
+from localstack.testing.config import TEST_AWS_ACCOUNT_ID
 
 
 class TestBuildClusterEndpoint:

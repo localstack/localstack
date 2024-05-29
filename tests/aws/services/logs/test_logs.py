@@ -9,8 +9,8 @@ from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.testing.config import TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
-from localstack.testing.test_config import TEST_AWS_REGION_NAME
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid

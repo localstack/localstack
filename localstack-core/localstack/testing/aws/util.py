@@ -22,7 +22,7 @@ from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH, load_service
 from localstack.config import is_env_true
-from localstack.testing.test_config import (
+from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     SECONDARY_TEST_AWS_SESSION_TOKEN,

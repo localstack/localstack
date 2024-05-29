@@ -5,12 +5,12 @@ import threading
 import pytest
 
 from localstack.packages.terraform import terraform_package
-from localstack.testing.pytest import markers
-from localstack.testing.test_config import (
+from localstack.testing.config import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
+from localstack.testing.pytest import markers
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
 
 #  TODO: remove all of these

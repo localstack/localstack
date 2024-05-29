@@ -34,7 +34,7 @@ from localstack.constants import (
 from localstack.services.lambda_.lambda_utils import (
     get_handler_file_from_name,
 )
-from localstack.testing.test_config import (
+from localstack.testing.config import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,

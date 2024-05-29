@@ -26,12 +26,12 @@ from localstack.services.apigateway.helpers import (
     host_based_url,
     path_based_url,
 )
-from localstack.testing.pytest import markers
-from localstack.testing.test_config import (
+from localstack.testing.config import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_REGION_NAME,
 )
+from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns
 from localstack.utils.aws import resources as resource_util

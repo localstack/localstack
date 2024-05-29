@@ -34,7 +34,7 @@ from localstack.services.stores import (
 )
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
-from localstack.testing.test_config import (
+from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCOUNT_ID,
     SECONDARY_TEST_AWS_REGION_NAME,
     TEST_AWS_ACCOUNT_ID,

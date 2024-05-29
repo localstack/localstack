@@ -18,13 +18,13 @@ from localstack.services.sqs.models import sqs_stores
 from localstack.services.sqs.provider import MAX_NUMBER_OF_MESSAGES
 from localstack.services.sqs.utils import parse_queue_url
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest import markers
-from localstack.testing.test_config import (
+from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
+from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import poll_condition, retry, short_uid, to_str

@@ -45,13 +45,13 @@ from localstack.services.s3.utils import (
     rfc_1123_datetime,
 )
 from localstack.testing.aws.util import is_aws_cloud
-from localstack.testing.pytest import markers
-from localstack.testing.snapshots.transformer_utility import TransformerUtility
-from localstack.testing.test_config import (
+from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     TEST_AWS_ACCESS_KEY_ID,
 )
+from localstack.testing.pytest import markers
+from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.resources import create_s3_bucket

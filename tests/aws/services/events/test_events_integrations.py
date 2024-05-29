@@ -7,8 +7,8 @@ import pytest
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
+from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
-from localstack.testing.test_config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.utils.aws import arns, resources
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
