@@ -1790,8 +1790,6 @@ def test_rest_api_multi_region(
 
     delete_rest_api(apigateway_client_eu, restApiId=api_eu_id)
     delete_rest_api(apigateway_client_us, restApiId=api_us_id)
-    lambda_eu_west_1_client.delete_function(FunctionName=lambda_name)
-    lambda_us_west_1_client.delete_function(FunctionName=lambda_name)
 
 
 class TestIntegrations:
