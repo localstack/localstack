@@ -1909,7 +1909,9 @@ class TestIntegrations:
         snapshot.match("mock-response", result.json())
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # TODO replace with fixtures that will clean resources and replave the  `echo_http_server` with `create_echo_http_server`.
+    #  Also has hardcoded localhost endpoint in helper functions
     def test_api_gateway_http_integrations(
         self, int_type, echo_http_server, monkeypatch, aws_client
     ):
