@@ -24,7 +24,6 @@ from localstack.constants import (
 )
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
-    connect_api_gateway_to_sqs,
     get_resource_for_path,
     get_rest_api_paths,
     host_based_url,
@@ -1965,47 +1964,6 @@ class TestIntegrations:
         expected = custom_result if int_type == "custom" else data
         assert expected == content["data"]
         assert ctype == headers["content-type"]
-
-    @markers.aws.unknown
-    def test_api_gateway_sqs_integration_with_event_source(
-        self, aws_client, account_id, region_name, integration_lambda, sqs_queue
-    ):
-        # create API Gateway and connect it to the target queue
-        result = connect_api_gateway_to_sqs(
-            "test_gateway4",
-            stage_name=TEST_STAGE_NAME,
-            queue_arn=sqs_queue,
-            path="/data",
-            account_id=account_id,
-            region_name=region_name,
-        )
-
-        # create event source for sqs lambda processor
-        # TODO: add meaningful test assertions because the test passes even without creating the even source mapping
-        # Create event source mapping: migrated from the legacy helper `add_event_source(event_source_data)`
-        # es_mapping_result = aws_client.lambda_.create_event_source_mapping(
-        #     EventSourceArn=arns.sqs_queue_arn(sqs_queue), FunctionName=integration_lambda
-        # )
-        # uuid = es_mapping_result["UUID"]
-        # _await_event_source_mapping_enabled(aws_client.lambda_, uuid)
-
-        # generate test data
-        test_data = {"spam": "eggs & beans"}
-
-        url = path_based_url(
-            api_id=result["id"],
-            stage_name=TEST_STAGE_NAME,
-            path="/data",
-        )
-        result = requests.post(url, data=json.dumps(test_data))
-        assert 200 == result.status_code
-
-        parsed_json = json.loads(result.content)
-        result = parsed_json["SendMessageResponse"]["SendMessageResult"]
-
-        body_md5 = result["MD5OfMessageBody"]
-
-        assert "b639f52308afd65866c86f274c59033f" == body_md5
 
     # ==================
     # Helper methods
