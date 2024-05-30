@@ -8,8 +8,8 @@ from localstack import version as localstack_version
 
 def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, port: int = 4566):
     volumes = []
-    root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
-    localstack_code_path = os.path.join(root_path, "localstack")
+    root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
+    localstack_code_path = os.path.join(root_path, "localstack-core", "localstack")
     volumes.append(
         {
             "volume": f"{os.path.normpath(localstack_code_path)}:/code/localstack",
