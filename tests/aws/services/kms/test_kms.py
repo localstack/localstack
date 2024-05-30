@@ -540,7 +540,7 @@ class TestKMS:
             )
         assert exc.match("ValidationException")
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_invalid_key_usage(self, kms_create_key, aws_client):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="RSA_4096")["KeyId"]
         with pytest.raises(ClientError) as exc:
@@ -568,7 +568,7 @@ class TestKMS:
             ("RSA_2048", "RSAES_OAEP_SHA_256"),
         ],
     )
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_encrypt_decrypt(self, kms_create_key, key_spec, algo, aws_client):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
@@ -901,7 +901,7 @@ class TestKMS:
         assert alias is not None
         assert alias["TargetKeyId"] == new_key_id
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_get_put_list_key_policies(self, kms_create_key, aws_client, account_id):
         base_policy = {
             "Version": "2012-10-17",
@@ -1282,7 +1282,8 @@ class TestKMS:
 
 
 class TestKMSMultiAccounts:
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # TODO: this test could not work against AWS, we need to assign proper permissions to the user/resources
     def test_cross_accounts_access(
         self, aws_client, secondary_aws_client, kms_create_key, user_arn
     ):
