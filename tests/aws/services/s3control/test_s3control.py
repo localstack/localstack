@@ -13,7 +13,9 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.urls import localstack_host
 
-s3_control_endpoint = f"http://s3-control.{localstack_host()}"
+# TODO: this fails in CI, not sure why yet
+# s3_control_endpoint = f"http://s3-control.{localstack_host()}"
+s3_control_endpoint = f"https://{localstack_host().host_and_port()}"
 
 
 @pytest.fixture
