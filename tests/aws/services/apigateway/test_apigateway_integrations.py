@@ -236,12 +236,12 @@ def test_put_integration_responses(create_rest_apigw, aws_client, echo_http_serv
     snapshot.match("get-integration-response-put", response)
 
 
-@markers.aws.unknown
-def test_put_integration_response_with_response_template(aws_client, echo_http_server_post):
-    response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
-    api_id = response["id"]
-    resources = aws_client.apigateway.get_resources(restApiId=api_id)
-    root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
+@markers.aws.validated
+def test_put_integration_response_with_response_template(
+    aws_client, create_rest_apigw, create_echo_http_server, snapshot
+):
+    echo_server_url = create_echo_http_server(trim_x_headers=True)
+    api_id, _, root_id = create_rest_apigw(name="test-apigw")
 
     aws_client.apigateway.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
@@ -254,7 +254,7 @@ def test_put_integration_response_with_response_template(aws_client, echo_http_s
         resourceId=root_id,
         httpMethod="GET",
         type="HTTP",
-        uri=echo_http_server_post,
+        uri=echo_server_url,
         integrationHttpMethod="POST",
     )
 
@@ -271,16 +271,7 @@ def test_put_integration_response_with_response_template(aws_client, echo_http_s
         restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
     )
 
-    # this is hard to match against, so remove it
-    response["ResponseMetadata"].pop("HTTPHeaders", None)
-    response["ResponseMetadata"].pop("RetryAttempts", None)
-    response["ResponseMetadata"].pop("RequestId", None)
-    assert response == {
-        "statusCode": "200",
-        "selectionPattern": "foobar",
-        "ResponseMetadata": {"HTTPStatusCode": 200},
-        "responseTemplates": {"application/json": json.dumps({"data": "test"})},
-    }
+    snapshot.match("get-integration-response", response)
 
 
 # TODO: add snapshot test!

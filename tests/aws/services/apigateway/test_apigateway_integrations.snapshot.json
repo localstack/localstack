@@ -244,5 +244,23 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_response_with_response_template": {
+    "recorded-date": "30-05-2024, 16:15:58",
+    "recorded-content": {
+      "get-integration-response": {
+        "responseTemplates": {
+          "application/json": {
+            "data": "test"
+          }
+        },
+        "selectionPattern": "foobar",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
