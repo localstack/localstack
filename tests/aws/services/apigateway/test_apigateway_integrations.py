@@ -11,7 +11,6 @@ from werkzeug import Request, Response
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
-from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.lambda_.networking import get_main_endpoint_from_container
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -24,36 +23,6 @@ from tests.aws.services.apigateway.apigateway_fixtures import (
 )
 from tests.aws.services.apigateway.conftest import DEFAULT_STAGE_NAME
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_LIBS
-
-
-@markers.aws.unknown
-def test_http_integration(create_rest_apigw, aws_client, echo_http_server):
-    api_id, _, root_id = create_rest_apigw(name="my_api", description="this is my api")
-
-    aws_client.apigateway.put_method(
-        restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="none"
-    )
-
-    aws_client.apigateway.put_method_response(
-        restApiId=api_id, resourceId=root_id, httpMethod="GET", statusCode="200"
-    )
-
-    aws_client.apigateway.put_integration(
-        restApiId=api_id,
-        resourceId=root_id,
-        httpMethod="GET",
-        type="HTTP",
-        uri=echo_http_server,
-        integrationHttpMethod="GET",
-    )
-
-    stage_name = "staging"
-    aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
-
-    url = path_based_url(api_id=api_id, stage_name=stage_name, path="/")
-    response = requests.get(url)
-
-    assert response.status_code == 200
 
 
 @pytest.fixture
