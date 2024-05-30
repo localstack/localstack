@@ -1,9 +1,12 @@
 {
   "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_aws_integration": {
-    "recorded-date": "12-08-2023, 17:44:13",
+    "recorded-date": "30-05-2024, 17:27:58",
     "recorded-content": {
       "sqs-aws-integration": {
         "message": "great success!"
+      },
+      "sqs-message": {
+        "foo": "bar"
       }
     }
   },
