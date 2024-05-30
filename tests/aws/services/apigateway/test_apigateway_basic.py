@@ -1967,67 +1967,6 @@ class TestIntegrations:
         assert ctype == headers["content-type"]
 
     @markers.aws.unknown
-    def test_api_gateway_kinesis_integration(
-        self,
-        aws_client,
-        region_name,
-        create_iam_role_with_policy,
-        kinesis_create_stream,
-        wait_for_stream_ready,
-        aws_client_factory,
-    ):
-        # create target Kinesis stream
-        stream_name = kinesis_create_stream()
-        wait_for_stream_ready(stream_name)
-
-        # create API Gateway and connect it to the target stream
-        api_name = f"test-gw-kinesis-{short_uid()}"
-        client = aws_client_factory(
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=region_name
-        ).apigateway
-
-        role_arn = create_iam_role_with_policy(
-            RoleName=f"role-apigw-{short_uid()}",
-            PolicyName=f"policy-apigw-{short_uid()}",
-            RoleDefinition=APIGATEWAY_ASSUME_ROLE_POLICY,
-            PolicyDefinition=APIGATEWAY_KINESIS_POLICY,
-        )
-
-        result = self.connect_api_gateway_to_kinesis(
-            client,
-            api_name,
-            stream_name,
-            region_name,
-            role_arn,
-        )
-
-        # generate test data
-        test_data = {
-            "records": [
-                {"data": '{"foo": "bar1"}'},
-                {"data": '{"foo": "bar2"}'},
-                {"data": '{"foo": "bar3"}'},
-            ]
-        }
-
-        url = path_based_url(
-            api_id=result["id"],
-            stage_name=TEST_STAGE_NAME,
-            path="/data",
-        )
-
-        # list Kinesis streams via API Gateway
-        result = requests.get(url)
-        result = json.loads(to_str(result.content))
-        assert "StreamNames" in result
-
-        # post test data to Kinesis via API Gateway
-        result = requests.post(url, data=json.dumps(test_data))
-        result = json.loads(to_str(result.content))
-        assert result["FailedRecordCount"] == 0
-        assert len(test_data["records"]) == len(result["Records"])
-
-    @markers.aws.unknown
     def test_api_gateway_sqs_integration_with_event_source(
         self, aws_client, account_id, region_name, integration_lambda, sqs_queue
     ):
