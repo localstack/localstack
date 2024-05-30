@@ -274,15 +274,22 @@ def test_put_integration_response_with_response_template(
     snapshot.match("get-integration-response", response)
 
 
-# TODO: add snapshot test!
-@markers.aws.unknown
+# TODO: Aws does not return the uri when creating a MOCK integration
+@markers.snapshot.skip_snapshot_verify(paths=["$..not-required-integration-method-MOCK.uri"])
+@markers.aws.validated
 def test_put_integration_validation(
-    aws_client, account_id, echo_http_server, echo_http_server_post
+    aws_client, account_id, create_echo_http_server, create_rest_apigw, snapshot
 ):
-    response = aws_client.apigateway.create_rest_api(name="my_api", description="this is my api")
-    api_id = response["id"]
-    resources = aws_client.apigateway.get_resources(restApiId=api_id)
-    root_id = [resource for resource in resources["items"] if resource["path"] == "/"][0]["id"]
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("echo-server-url"),
+            snapshot.transform.key_value("cacheNamespace"),
+        ]
+    )
+
+    api_id, _, root_id = create_rest_apigw(name="test-apigw")
+    echo_server_url = create_echo_http_server(trim_x_headers=True)
+    snapshot.match("echo-server-url", echo_server_url)
 
     aws_client.apigateway.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
@@ -304,36 +311,36 @@ def test_put_integration_validation(
                 resourceId=root_id,
                 httpMethod="GET",
                 type=_type,
-                uri=echo_http_server,
+                uri=echo_server_url,
             )
-        assert ex.value.response["Error"]["Code"] == "BadRequestException"
-        assert (
-            ex.value.response["Error"]["Message"]
-            == "Enumeration value for HttpMethod must be non-empty"
-        )
+        snapshot.match(f"required-integration-method-{_type}", ex.value)
 
     for _type in types_not_requiring_integration_method:
         # Ensure that integrations of these types do not need the integrationHttpMethod
-        aws_client.apigateway.put_integration(
+        response = aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             httpMethod="GET",
             type=_type,
-            uri=echo_http_server,
+            uri=echo_server_url,
         )
+        snapshot.match(f"not-required-integration-method-{_type}", response)
+
     for _type in http_types:
         # Ensure that it works fine when providing the integrationHttpMethod-argument
-        aws_client.apigateway.put_integration(
+        response = aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             httpMethod="GET",
             type=_type,
-            uri=echo_http_server_post,
+            uri=echo_server_url,
             integrationHttpMethod="POST",
         )
+        snapshot.match(f"http-method-{_type}", response)
+
     for _type in ["AWS"]:
         # Ensure that it works fine when providing the integrationHttpMethod + credentials
-        aws_client.apigateway.put_integration(
+        response = aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
@@ -344,9 +351,11 @@ def test_put_integration_validation(
             uri="arn:aws:apigateway:us-west-2:s3:path/b/k",
             integrationHttpMethod="POST",
         )
+        snapshot.match(f"aws-integration-{_type}", response)
+
     for _type in aws_types:
         # Ensure that credentials are not required when URI points to a Lambda stream
-        aws_client.apigateway.put_integration(
+        response = aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
             httpMethod="GET",
@@ -355,6 +364,8 @@ def test_put_integration_validation(
             "-west-1:012345678901:function:MyLambda/invocations",
             integrationHttpMethod="POST",
         )
+        snapshot.match(f"aws-integration-type-{_type}", response)
+
     for _type in ["AWS_PROXY"]:
         # Ensure that aws_proxy does not support S3
         with pytest.raises(ClientError) as ex:
@@ -369,12 +380,8 @@ def test_put_integration_validation(
                 uri="arn:aws:apigateway:us-west-2:s3:path/b/k",
                 integrationHttpMethod="POST",
             )
-        assert ex.value.response["Error"]["Code"] == "BadRequestException"
-        assert (
-            ex.value.response["Error"]["Message"] == "Integrations of type 'AWS_PROXY' "
-            "currently only supports Lambda function "
-            "and Firehose stream invocations."
-        )
+        snapshot.match(f"no-s3-support-{_type}", ex.value)
+
     for _type in http_types:
         # Ensure that the URI is valid HTTP
         with pytest.raises(ClientError) as ex:
@@ -386,8 +393,7 @@ def test_put_integration_validation(
                 uri="non-valid-http",
                 integrationHttpMethod="POST",
             )
-        assert ex.value.response["Error"]["Code"] == "BadRequestException"
-        assert ex.value.response["Error"]["Message"] == "Invalid HTTP endpoint specified for URI"
+    snapshot.match(f"invalid-uri-{_type}", ex.value)
 
     # Ensure that the URI is an ARN
     with pytest.raises(ClientError) as ex:
@@ -399,8 +405,7 @@ def test_put_integration_validation(
             uri="non-valid-arn",
             integrationHttpMethod="POST",
         )
-    assert ex.value.response["Error"]["Code"] == "BadRequestException"
-    assert ex.value.response["Error"]["Message"] == "Invalid ARN specified in the request"
+    snapshot.match("invalid-uri-not-an-arn", ex.value)
 
     # Ensure that the URI is a valid ARN
     with pytest.raises(ClientError) as ex:
@@ -412,11 +417,7 @@ def test_put_integration_validation(
             uri="arn:aws:iam::0000000000:role/service-role/asdf",
             integrationHttpMethod="POST",
         )
-    assert ex.value.response["Error"]["Code"] == "BadRequestException"
-    assert (
-        ex.value.response["Error"]["Message"] == "AWS ARN for integration must contain path or "
-        "action"
-    )
+    snapshot.match("invalid-uri-invalid-arn", ex.value)
 
 
 @pytest.fixture
