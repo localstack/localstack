@@ -1842,14 +1842,17 @@ class TestIntegrations:
             s3_client.delete_bucket(Bucket=bucket_name)
 
     @pytest.mark.parametrize("method", ["GET", "POST"])
-    @pytest.mark.parametrize("url_function", [path_based_url, host_based_url])
+    @pytest.mark.parametrize("url_type", [UrlType.PATH_BASED, UrlType.HOST_BASED])
     @pytest.mark.parametrize(
         "passthrough_behaviour", ["WHEN_NO_MATCH", "NEVER", "WHEN_NO_TEMPLATES"]
     )
-    @markers.aws.unknown
+    @markers.aws.validated
+    # TODO What are we testing with the 2 methods, could we cut in half this test by testing only one method?
+    #  Also, we are parametrizing `passthrough_behaviour` but we don't appear to be testing it's behaviour
     def test_mock_integration_response(
-        self, method, url_function, passthrough_behaviour, create_rest_apigw, aws_client
+        self, method, url_type, passthrough_behaviour, create_rest_apigw, aws_client, snapshot
     ):
+        stage_name = "test"
         api_id, _, root_resource_id = create_rest_apigw(name="mock-api")
         resource_id, _ = create_rest_resource(
             aws_client.apigateway, restApiId=api_id, parentId=root_resource_id, pathPart="{id}"
@@ -1889,16 +1892,21 @@ class TestIntegrations:
                 "application/json": '{"statusCode": 200, "id": $input.params().path.id}'
             },
         )
+        aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
+        endpoint = api_invoke_url(api_id, stage=stage_name, path="/42", url_type=url_type)
 
-        endpoint = url_function(api_id, stage_name="local", path="/42")
-        result = requests.request(
-            method,
-            endpoint,
-            headers={"Content-Type": "application/json"},
-            verify=False,
-        )
-        assert result.status_code == 200
-        assert to_str(result.content) == '{"statusCode": 200, "id": 42}'
+        def _invoke_api(url, method):
+            invoke_response = requests.request(
+                method,
+                url,
+                headers={"Content-Type": "application/json"},
+                # verify=False,
+            )
+            assert invoke_response.status_code == 200
+            return invoke_response
+
+        result = retry(_invoke_api, retries=20, sleep=2, url=endpoint, method=method)
+        snapshot.match("mock-response", result.json())
 
     @pytest.mark.parametrize("int_type", ["custom", "proxy"])
     @markers.aws.unknown

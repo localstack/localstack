@@ -141,5 +141,113 @@
   "tests/aws/services/apigateway/test_apigateway_basic.py::test_rest_api_multi_region[UrlType.HOST_BASED-ANY]": {
     "recorded-date": "29-05-2024, 23:25:19",
     "recorded-content": {}
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_MATCH-UrlType.PATH_BASED-GET]": {
+    "recorded-date": "30-05-2024, 00:09:54",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_MATCH-UrlType.PATH_BASED-POST]": {
+    "recorded-date": "30-05-2024, 00:10:00",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_MATCH-UrlType.HOST_BASED-GET]": {
+    "recorded-date": "30-05-2024, 00:10:09",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_MATCH-UrlType.HOST_BASED-POST]": {
+    "recorded-date": "30-05-2024, 00:10:20",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[NEVER-UrlType.PATH_BASED-GET]": {
+    "recorded-date": "30-05-2024, 00:10:28",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[NEVER-UrlType.PATH_BASED-POST]": {
+    "recorded-date": "30-05-2024, 00:10:42",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[NEVER-UrlType.HOST_BASED-GET]": {
+    "recorded-date": "30-05-2024, 00:10:53",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[NEVER-UrlType.HOST_BASED-POST]": {
+    "recorded-date": "30-05-2024, 00:11:00",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_TEMPLATES-UrlType.PATH_BASED-GET]": {
+    "recorded-date": "30-05-2024, 00:11:09",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_TEMPLATES-UrlType.PATH_BASED-POST]": {
+    "recorded-date": "30-05-2024, 00:11:14",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_TEMPLATES-UrlType.HOST_BASED-GET]": {
+    "recorded-date": "30-05-2024, 00:11:22",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_basic.py::TestIntegrations::test_mock_integration_response[WHEN_NO_TEMPLATES-UrlType.HOST_BASED-POST]": {
+    "recorded-date": "30-05-2024, 00:11:32",
+    "recorded-content": {
+      "mock-response": {
+        "id": 42,
+        "statusCode": 200
+      }
+    }
   }
 }
