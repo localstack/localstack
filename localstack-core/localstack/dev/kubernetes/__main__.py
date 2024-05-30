@@ -69,8 +69,7 @@ def generate_k8s_cluster_overrides(
         volumes.append(
             {
                 "name": name,
-                "hostPath": {"path": volume["volume"].split(":")[-1]},
-                "type": volume_type,
+                "hostPath": {"path": volume["volume"].split(":")[-1], "type": volume_type},
             }
         )
 
