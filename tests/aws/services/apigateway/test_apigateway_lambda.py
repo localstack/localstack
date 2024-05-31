@@ -838,10 +838,10 @@ def test_lambda_aws_proxy_response_format(
             assert response.json() == {"message": "Internal server error"}
 
 
+# Testing the integration with Rust to prevent future regression with strongly typed language integration
 @markers.aws.validated
-@markers.only_on_amd64
 def test_lambda_rust_proxy_integration(
-    create_rest_apigw, create_lambda_function, create_iam_role_with_policy, aws_client
+    create_rest_apigw, create_lambda_function, create_iam_role_with_policy, aws_client, snapshot
 ):
     function_name = f"test-rust-function-{short_uid()}"
     api_gateway_name = f"api_gateway_{short_uid()}"
@@ -895,5 +895,4 @@ def test_lambda_rust_proxy_integration(
         return invoker_response
 
     result = retry(_invoke_url, retries=20, sleep=2, url=url)
-
-    assert result.text == f"Hello, {first_name}!"
+    snapshot.match("rust-invocation-result", result.text)
