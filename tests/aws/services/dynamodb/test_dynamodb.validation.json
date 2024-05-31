@@ -44,6 +44,9 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_pay_per_request": {
     "last_validated_date": "2023-08-23T14:33:43+00:00"
   },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_records_with_update_item": {
+    "last_validated_date": "2024-05-31T14:44:35+00:00"
+  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_stream_view_type": {
     "last_validated_date": "2023-10-22T21:22:27+00:00"
   },
