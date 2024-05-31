@@ -1453,6 +1453,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         "GetObjectLockConfigurationOutput": "ObjectLockConfiguration",
         "GetObjectRetentionOutput": "Retention",
         "GetObjectTaggingOutput": "Tagging",
+        "GetObjectAttributesOutput": "GetObjectAttributesResponse",
         "GetPublicAccessBlockOutput": "PublicAccessBlockConfiguration",
         "ListBucketAnalyticsConfigurationsOutput": "ListBucketAnalyticsConfigurationResult",
         "ListBucketInventoryConfigurationsOutput": "ListInventoryConfigurationsResult",
