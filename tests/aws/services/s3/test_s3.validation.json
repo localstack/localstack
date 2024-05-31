@@ -86,6 +86,9 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes_versioned": {
     "last_validated_date": "2023-08-03T02:14:03+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes_with_space": {
+    "last_validated_date": "2024-05-31T12:44:23+00:00"
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_content_length_with_virtual_host[False]": {
     "last_validated_date": "2023-08-07T17:56:13+00:00"
   },

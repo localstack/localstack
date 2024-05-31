@@ -1171,6 +1171,48 @@ def test_s3_list_buckets_with_localhost():
     assert parsed_operation_model.name == "ListBuckets"
 
 
+def test_s3_get_object_attributes_with_whitespace():
+    # optional whitespace is accepted for ObjectAttributesList, a list of strings with location:"header"
+    request = HttpRequest(
+        "GET",
+        "/bucket/key?attributes",
+        query_string="attributes",
+        headers={
+            "x-amz-object-attributes": "ETag, Checksum, ObjectParts, StorageClass, ObjectSize",
+        },
+    )
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "GetObjectAttributes"
+    assert parsed_request["ObjectAttributes"] == [
+        "ETag",
+        "Checksum",
+        "ObjectParts",
+        "StorageClass",
+        "ObjectSize",
+    ]
+
+    # assert that with no whitespace, it is identical
+    request = HttpRequest(
+        "GET",
+        "/bucket/key",
+        query_string="attributes",
+        headers={
+            "x-amz-object-attributes": "ETag,Checksum,ObjectParts,StorageClass,ObjectSize",
+        },
+    )
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "GetObjectAttributes"
+    assert parsed_request["ObjectAttributes"] == [
+        "ETag",
+        "Checksum",
+        "ObjectParts",
+        "StorageClass",
+        "ObjectSize",
+    ]
+
+
 def test_s3_list_buckets_with_localhost_and_port():
     # this is the canonical request of `awslocal s3 ls`
     request = HttpRequest("GET", "/", headers={"host": "localhost:4566"})

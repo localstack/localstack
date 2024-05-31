@@ -11908,5 +11908,32 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_get_object_attributes_with_space": {
+    "recorded-date": "31-05-2024, 12:44:23",
+    "recorded-content": {
+      "get-attrs-with-whitespace": {
+        "GetObjectAttributesResponse": {
+          "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+          "Checksum": {
+            "ChecksumSHA256": "2dhlzFTsYGePGxGQhK15rn+TV9HEUZxkV94zFLf7uoo="
+          },
+          "ETag": "70b68ae721a61941a1a62724dde5d5e4",
+          "ObjectSize": "9",
+          "StorageClass": "STANDARD"
+        }
+      },
+      "get-attrs-without-whitespace": {
+        "GetObjectAttributesResponse": {
+          "@xmlns": "http://s3.amazonaws.com/doc/2006-03-01/",
+          "Checksum": {
+            "ChecksumSHA256": "2dhlzFTsYGePGxGQhK15rn+TV9HEUZxkV94zFLf7uoo="
+          },
+          "ETag": "70b68ae721a61941a1a62724dde5d5e4",
+          "ObjectSize": "9",
+          "StorageClass": "STANDARD"
+        }
+      }
+    }
   }
 }

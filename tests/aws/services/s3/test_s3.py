@@ -708,6 +708,46 @@ class TestS3:
         snapshot.match("object-attrs-multiparts-2-parts-checksum", response)
 
     @markers.aws.validated
+    def test_get_object_attributes_with_space(
+        self, s3_bucket, aws_client, aws_http_client_factory, snapshot
+    ):
+        """
+        It seems AWS SDKs are aligning themselves and are now putting whitespace between comas in headers list
+        See https://github.com/aws/aws-sdk-ruby/issues/3032
+        https://www.rfc-editor.org/rfc/rfc9110.html#name-lists-rule-abnf-extension
+        """
+        object_key = "test-attrs"
+        aws_client.s3.put_object(
+            Bucket=s3_bucket, Key=object_key, Body="test-body", ChecksumAlgorithm="SHA256"
+        )
+
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        bucket_url = _bucket_url(s3_bucket)
+
+        get_object_attrs_url = f"{bucket_url}/{object_key}?attributes"
+        get_obj_attrs_resp = s3_http_client.get(
+            get_object_attrs_url,
+            headers={
+                "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
+                "x-amz-object-attributes": "ETag, Checksum, ObjectParts, StorageClass, ObjectSize",
+            },
+        )
+        assert get_obj_attrs_resp.ok
+        body = xmltodict.parse(get_obj_attrs_resp.content)
+        snapshot.match("get-attrs-with-whitespace", body)
+
+        get_obj_attrs_resp = s3_http_client.get(
+            get_object_attrs_url,
+            headers={
+                "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
+                "x-amz-object-attributes": "ETag,Checksum,ObjectParts,StorageClass,ObjectSize",
+            },
+        )
+        assert get_obj_attrs_resp.ok
+        body = xmltodict.parse(get_obj_attrs_resp.content)
+        snapshot.match("get-attrs-without-whitespace", body)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_provider,
         paths=[
