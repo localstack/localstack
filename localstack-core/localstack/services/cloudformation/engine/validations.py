@@ -61,6 +61,7 @@ def resources_top_level_keys(template: dict):
         "Metadata",
         "UpdatePolicy",
         "UpdateReplacePolicy",
+        "Condition",
     }
     for resource_id, resource in resources.items():
         if "Type" not in resource:
