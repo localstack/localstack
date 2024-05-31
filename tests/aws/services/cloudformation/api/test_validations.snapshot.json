@@ -1,0 +1,50 @@
+{
+  "tests/aws/services/cloudformation/api/test_validations.py::test_validations_for_invalid_output_structure[none-value]": {
+    "recorded-date": "31-05-2024, 14:35:21",
+    "recorded-content": {
+      "validation-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "[/Outputs/MyOutput/Value] 'null' values are not allowed in templates",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_validations.py::test_validations_for_invalid_output_structure[missing-def]": {
+    "recorded-date": "31-05-2024, 14:35:21",
+    "recorded-content": {
+      "validation-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "[/Outputs/MyOutput/Value] 'null' values are not allowed in templates",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_validations.py::test_validations_for_invalid_output_structure[multiple-nones]": {
+    "recorded-date": "31-05-2024, 14:35:22",
+    "recorded-content": {
+      "validation-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Every Outputs member must contain a Value object",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  }
+}
