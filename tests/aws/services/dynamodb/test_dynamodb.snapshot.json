@@ -640,7 +640,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_stream_view_type": {
-    "recorded-date": "22-10-2023, 23:22:27",
+    "recorded-date": "31-05-2024, 14:49:57",
     "recorded-content": {
       "create-table": {
         "TableDescription": {

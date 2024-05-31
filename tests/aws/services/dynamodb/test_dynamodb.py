@@ -818,6 +818,9 @@ class TestDynamoDB:
 
         # put item in table - INSERT event
         dynamodb.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
+        # put item again in table - no event as it is the same valur
+        dynamodb.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
+
         # update item in table - MODIFY event
         dynamodb.update_item(
             TableName=table_name,
