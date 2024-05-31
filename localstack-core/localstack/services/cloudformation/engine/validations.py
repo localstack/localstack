@@ -39,6 +39,42 @@ def outputs_have_values(template: dict):
             raise ValidationError(f"[{key}] 'null' values are not allowed in templates")
 
 
+def resources_top_level_keys(template: dict):
+    """
+    Validate that each resource
+    - there is a resources key
+    - includes the `Properties` key
+    - does not include any other keys that should not be there
+    """
+    resources = template.get("Resources")
+    if resources is None:
+        raise ValidationError(
+            "Template format error: At least one Resources member must be defined."
+        )
+
+    allowed_keys = {
+        "Type",
+        "Properties",
+        "DependsOn",
+        "CreationPolicy",
+        "DeletionPolicy",
+        "Metadata",
+        "UpdatePolicy",
+        "UpdateReplacePolicy",
+    }
+    for resource_id, resource in resources.items():
+        if "Type" not in resource:
+            raise ValidationError(
+                f"Template format error: [/Resources/{resource_id}] Every Resources object must contain a Type member."
+            )
+
+        # check for invalid keys
+        for key in resource:
+            if key not in allowed_keys:
+                raise ValidationError(f"Invalid template resource property '{key}'")
+
+
 DEFAULT_TEMPLATE_VALIDATIONS: list[TemplateValidationStep] = [
     outputs_have_values,
+    resources_top_level_keys,
 ]
