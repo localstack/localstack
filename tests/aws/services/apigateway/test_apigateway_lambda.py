@@ -897,4 +897,4 @@ def test_lambda_rust_proxy_integration(
         return invoker_response
 
     result = retry(_invoke_url, retries=20, sleep=2, url=url)
-    snapshot.match("rust-invocation-result", result.text)
+    assert result.text == f"Hello, {first_name}!"

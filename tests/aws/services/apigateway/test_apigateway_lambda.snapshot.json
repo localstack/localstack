@@ -1092,11 +1092,5 @@
         "message": "Internal server error"
       }
     }
-  },
-  "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_rust_proxy_integration": {
-    "recorded-date": "31-05-2024, 19:17:51",
-    "recorded-content": {
-      "rust-invocation-result": "Hello, test_name_a74cd33e!"
-    }
   }
 }
