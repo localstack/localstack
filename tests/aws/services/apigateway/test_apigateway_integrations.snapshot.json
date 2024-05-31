@@ -244,5 +244,115 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_response_with_response_template": {
+    "recorded-date": "30-05-2024, 16:15:58",
+    "recorded-content": {
+      "get-integration-response": {
+        "responseTemplates": {
+          "application/json": {
+            "data": "test"
+          }
+        },
+        "selectionPattern": "foobar",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_validation": {
+    "recorded-date": "30-05-2024, 16:58:31",
+    "recorded-content": {
+      "echo-server-url": "<echo-server-url:1>",
+      "required-integration-method-HTTP": "An error occurred (BadRequestException) when calling the PutIntegration operation: Enumeration value for HttpMethod must be non-empty",
+      "required-integration-method-HTTP_PROXY": "An error occurred (BadRequestException) when calling the PutIntegration operation: Enumeration value for HttpMethod must be non-empty",
+      "required-integration-method-AWS": "An error occurred (BadRequestException) when calling the PutIntegration operation: Enumeration value for HttpMethod must be non-empty",
+      "not-required-integration-method-MOCK": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "MOCK",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "http-method-HTTP": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP",
+        "uri": "<echo-server-url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "http-method-HTTP_PROXY": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionType": "INTERNET",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP_PROXY",
+        "uri": "<echo-server-url:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "aws-integration-AWS": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "credentials": "arn:aws:iam::111111111111:role/service-role/testfunction-role-oe783psq",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "arn:aws:apigateway:us-west-2:s3:path/b/k",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "aws-integration-type-AWS": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS",
+        "uri": "arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:012345678901:function:MyLambda/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "aws-integration-type-AWS_PROXY": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "httpMethod": "POST",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "AWS_PROXY",
+        "uri": "arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:012345678901:function:MyLambda/invocations",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "no-s3-support-AWS_PROXY": "An error occurred (BadRequestException) when calling the PutIntegration operation: Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations.",
+      "invalid-uri-HTTP_PROXY": "An error occurred (BadRequestException) when calling the PutIntegration operation: Invalid HTTP endpoint specified for URI",
+      "invalid-uri-not-an-arn": "An error occurred (BadRequestException) when calling the PutIntegration operation: Invalid ARN specified in the request",
+      "invalid-uri-invalid-arn": "An error occurred (BadRequestException) when calling the PutIntegration operation: AWS ARN for integration must contain path or action"
+    }
   }
 }

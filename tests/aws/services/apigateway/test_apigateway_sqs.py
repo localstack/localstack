@@ -1,53 +1,15 @@
-import base64
 import json
 import re
 
 import requests
 
-from localstack.services.apigateway.helpers import connect_api_gateway_to_sqs, path_based_url
 from localstack.testing.pytest import markers
-from localstack.utils.aws import queries
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import retry
 from localstack.utils.xml import is_valid_xml
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
 from tests.aws.services.apigateway.conftest import APIGATEWAY_ASSUME_ROLE_POLICY
 from tests.aws.services.apigateway.test_apigateway_basic import TEST_STAGE_NAME
-
-
-@markers.aws.unknown
-def test_api_gateway_sqs_integration(
-    aws_client, account_id, region_name, sqs_create_queue, sqs_get_queue_arn
-):
-    # create target SQS stream
-    queue_name = f"queue-{short_uid()}"
-    sqs_create_queue(QueueName=queue_name)
-
-    # create API Gateway and connect it to the target queue
-    result = connect_api_gateway_to_sqs(
-        "test_gateway4",
-        stage_name=TEST_STAGE_NAME,
-        queue_arn=queue_name,
-        path="/data",
-        account_id=account_id,
-        region_name=region_name,
-    )
-
-    # generate test data
-    test_data = {"spam": "eggs"}
-
-    url = path_based_url(
-        api_id=result["id"],
-        stage_name=TEST_STAGE_NAME,
-        path="/data",
-    )
-    result = requests.post(url, data=json.dumps(test_data))
-    assert 200 == result.status_code
-
-    queue_arn = sqs_get_queue_arn(queue_name)
-    messages = queries.sqs_receive_message(queue_arn)["Messages"]
-    assert 1 == len(messages)
-    assert test_data == json.loads(base64.b64decode(messages[0]["Body"]))
 
 
 @markers.aws.validated
@@ -62,7 +24,7 @@ def test_sqs_aws_integration(
 ):
     # create target SQS stream
     queue_name = f"queue-{short_uid()}"
-    sqs_create_queue(QueueName=queue_name)
+    queue_url = sqs_create_queue(QueueName=queue_name)
 
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -130,7 +92,7 @@ def test_sqs_aws_integration(
     invocation_url = api_invoke_url(api_id=api_id, stage=TEST_STAGE_NAME, path="/sqs")
 
     def invoke_api(url):
-        _response = requests.post(url, verify=False)
+        _response = requests.post(url, json={"foo": "bar"})
         assert _response.ok
         content = _response.json()
         assert content == {"message": "great success!"}
@@ -138,6 +100,14 @@ def test_sqs_aws_integration(
 
     response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
     snapshot.match("sqs-aws-integration", response_data)
+
+    def get_sqs_message():
+        messages = aws_client.sqs.receive_message(QueueUrl=queue_url).get("Messages", [])
+        assert 1 == len(messages)
+        return messages[0]
+
+    message = retry(get_sqs_message, sleep=2, retries=10)
+    snapshot.match("sqs-message", json.loads(message["Body"]))
 
 
 @markers.aws.validated
