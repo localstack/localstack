@@ -1,14 +1,17 @@
 import os
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
 
 
-@markers.aws.unknown
-def test_bucketpolicy(deploy_cfn_template, aws_client):
+@markers.aws.validated
+def test_bucketpolicy(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
     bucket_name = f"ls-bucket-{short_uid()}"
+    snapshot.match("bucket", {"BucketName": bucket_name})
     deploy_result = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/s3_bucketpolicy.yaml"
@@ -16,8 +19,8 @@ def test_bucketpolicy(deploy_cfn_template, aws_client):
         parameters={"BucketName": bucket_name},
         template_mapping={"include_policy": True},
     )
-    bucket_policy = aws_client.s3.get_bucket_policy(Bucket=bucket_name)["Policy"]
-    assert bucket_policy
+    response = aws_client.s3.get_bucket_policy(Bucket=bucket_name)["Policy"]
+    snapshot.match("get-policy-true", response)
 
     deploy_cfn_template(
         is_update=True,
@@ -28,10 +31,11 @@ def test_bucketpolicy(deploy_cfn_template, aws_client):
         ),
         template_mapping={"include_policy": False},
     )
-    with pytest.raises(Exception) as err:
-        aws_client.s3.get_bucket_policy(Bucket=bucket_name).get("Policy")
+    with pytest.raises(ClientError) as err:
+        aws_client.s3.get_bucket_policy(Bucket=bucket_name)
+    snapshot.match("no-policy", err.value.response)
 
-    assert err.value.response["Error"]["Code"] == "NoSuchBucketPolicy"
+    # assert err.value.response["Error"]["Code"] == "NoSuchBucketPolicy"
 
 
 @markers.aws.validated
@@ -47,7 +51,7 @@ def test_bucket_autoname(deploy_cfn_template, aws_client):
     assert result.stack_name.lower() in output["OutputValue"]
 
 
-@markers.aws.unknown
+@markers.aws.validated
 def test_bucket_versioning(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
         template_path=os.path.join(

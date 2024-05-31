@@ -101,5 +101,44 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_s3.py::test_bucketpolicy": {
+    "recorded-date": "31-05-2024, 13:41:44",
+    "recorded-content": {
+      "bucket": {
+        "BucketName": "<bucket-name:1>"
+      },
+      "get-policy-true": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Action": [
+              "s3:GetObject*",
+              "s3:GetBucket*",
+              "s3:List*"
+            ],
+            "Resource": [
+              "arn:aws:s3:::<bucket-name:1>",
+              "arn:aws:s3:::<bucket-name:1>/*"
+            ]
+          }
+        ]
+      },
+      "no-policy": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchBucketPolicy",
+          "Message": "The bucket policy does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

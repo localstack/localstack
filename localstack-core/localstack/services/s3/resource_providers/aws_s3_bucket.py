@@ -448,10 +448,11 @@ class S3BucketProvider(ResourceProvider[S3BucketProperties]):
             s3_client.put_bucket_notification_configuration(**put_config)
 
         if version_conf := model.get("VersioningConfiguration"):
+            # from the documentation, it seems we `Status` is a required parameter
             s3_client.put_bucket_versioning(
                 Bucket=model["BucketName"],
                 VersioningConfiguration={
-                    "Status": version_conf.get("Status", "Disabled"),
+                    "Status": version_conf.get("Status", "Suspended"),
                 },
             )
 
