@@ -1094,9 +1094,9 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_lambda.py::test_lambda_rust_proxy_integration": {
-    "recorded-date": "31-05-2024, 18:21:13",
+    "recorded-date": "31-05-2024, 19:17:51",
     "recorded-content": {
-      "rust-invocation-result": "{'Content-Type': 'application/json', 'Content-Length': '26', 'Connection': 'keep-alive', 'Date': 'Fri, 31 May 2024 18:21:13 GMT', 'x-amzn-RequestId': '8c961968-f581-42fd-83f8-c5e5f9a3ef37', 'x-amz-apigw-id': 'Ypg7-FwioAMEUYA=', 'X-Amzn-Trace-Id': 'Root=1-665a1519-798973f165c95d370117774c;Parent=57fef016de08bd9f;Sampled=0;lineage=7d3c9e88:0', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 c9e55bdb1ad65ca3c90f27d27baa2eba.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'YVR52-P2', 'X-Amz-Cf-Id': 'viZFs22BRYSol14FyEW_fJpUZZDN7iYhWY2xinDdHHWIRAW49tDahQ=='}"
+      "rust-invocation-result": "Hello, test_name_a74cd33e!"
     }
   }
 }
