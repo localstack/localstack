@@ -83,6 +83,11 @@ def s3control_create_access_point(s3control_client):
 
 
 class TestLegacyS3Control:
+    """
+    This class is related to the current Moto implementation, which is quite limited and not linked with S3
+    anymore. Remove these tests in favor of the currently skipped ones, once we migrate to the new provider.
+    """
+
     @markers.aws.validated
     def test_lifecycle_public_access_block(self, s3control_client, account_id):
         with pytest.raises(ClientError) as ce:
