@@ -35,8 +35,6 @@ def test_bucketpolicy(deploy_cfn_template, aws_client, snapshot):
         aws_client.s3.get_bucket_policy(Bucket=bucket_name)
     snapshot.match("no-policy", err.value.response)
 
-    # assert err.value.response["Error"]["Code"] == "NoSuchBucketPolicy"
-
 
 @markers.aws.validated
 def test_bucket_autoname(deploy_cfn_template, aws_client):
