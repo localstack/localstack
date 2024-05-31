@@ -66,7 +66,7 @@
     "last_validated_date": "2023-08-23T14:33:37+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming": {
-    "last_validated_date": "2024-04-17T22:45:49+00:00"
+    "last_validated_date": "2024-05-31T14:47:04+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming_for_different_tables": {
     "last_validated_date": "2024-04-02T21:45:36+00:00"

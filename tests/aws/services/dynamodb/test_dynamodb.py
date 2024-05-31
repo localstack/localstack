@@ -2128,6 +2128,16 @@ class TestDynamoDB:
                         "Item": {"id": {"S": "Fred"}, "name": {"S": "Fred"}},
                     }
                 },
+                {
+                    "Update": {
+                        "TableName": table_name,
+                        "Key": {"id": {"S": "NonExistentKey"}},
+                        "UpdateExpression": "SET attr1 = :v1",
+                        "ExpressionAttributeValues": {
+                            ":v1": {"S": "value1"},
+                        },
+                    }
+                },
             ]
         )
         snapshot.match("transact-write-response-delete", response)
@@ -2139,7 +2149,8 @@ class TestDynamoDB:
         # - TransactWriteItem on NonExistentKey insert
         # - TransactWriteItem on NewKey delete
         # - TransactWriteItem on Fred modify via Put
-        # don't send an event when Fred is overwritten with the same value
+        # don't send an event when Fred is overwritten with the same value with Put
+        # or when NonExistentKey is overwritte with Update
         # get all records:
         records = []
 
