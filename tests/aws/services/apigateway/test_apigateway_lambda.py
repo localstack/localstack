@@ -839,7 +839,9 @@ def test_lambda_aws_proxy_response_format(
 
 
 # Testing the integration with Rust to prevent future regression with strongly typed language integration
+# TODO make the test compatible for ARM
 @markers.aws.validated
+@markers.only_on_amd64
 def test_lambda_rust_proxy_integration(
     create_rest_apigw, create_lambda_function, create_iam_role_with_policy, aws_client, snapshot
 ):
