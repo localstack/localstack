@@ -6043,7 +6043,7 @@ class TestS3MultiAccounts:
         """
         return secondary_aws_client.s3
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_shared_bucket_namespace(self, primary_client, secondary_client, cleanups):
         bucket_name = short_uid()
 
@@ -6055,7 +6055,7 @@ class TestS3MultiAccounts:
             create_s3_bucket(bucket_name=bucket_name, s3_client=secondary_client)
         exc.match("BucketAlreadyExists")
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_cross_account_access(
         self, primary_client, secondary_client, cleanups, s3_empty_bucket
     ):
@@ -6096,7 +6096,7 @@ class TestS3MultiAccounts:
         response = primary_client.get_object(Bucket=bucket_name, Key=key_name)
         assert response["Body"].read() == body2
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_cross_account_copy_object(
         self, primary_client, secondary_client, cleanups, s3_empty_bucket
     ):

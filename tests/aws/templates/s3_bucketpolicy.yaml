@@ -6,6 +6,8 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicPolicy: False
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
   {% if include_policy %}
