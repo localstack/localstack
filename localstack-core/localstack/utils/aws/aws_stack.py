@@ -22,19 +22,22 @@ CACHE_S3_HOSTNAME_DNS_STATUS = None
 
 @lru_cache()
 def get_valid_regions():
+    session = boto3.Session()
     valid_regions = set()
-    for partition in set(boto3.Session().get_available_partitions()):
-        for region in boto3.Session().get_available_regions("sns", partition):
+    for partition in set(session.get_available_partitions()):
+        for region in session.get_available_regions("sns", partition):
             valid_regions.add(region)
     return valid_regions
 
 
 # FIXME: AWS recommends use of SSM parameter store to determine per region availability
 # https://github.com/aws/aws-sdk/issues/206#issuecomment-1471354853
+@lru_cache()
 def get_valid_regions_for_service(service_name):
-    regions = list(boto3.Session().get_available_regions(service_name))
-    regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-us-gov"))
-    regions.extend(boto3.Session().get_available_regions("cloudwatch", partition_name="aws-cn"))
+    session = boto3.Session()
+    regions = list(session.get_available_regions(service_name))
+    regions.extend(session.get_available_regions("cloudwatch", partition_name="aws-us-gov"))
+    regions.extend(session.get_available_regions("cloudwatch", partition_name="aws-cn"))
     return regions
 
 
