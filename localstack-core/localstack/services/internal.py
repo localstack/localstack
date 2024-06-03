@@ -1,6 +1,5 @@
 """Module for localstack internal resources, such as health, graph, or _localstack/cloudformation/deploy."""
 
-import json
 import logging
 import os
 import re
@@ -9,13 +8,12 @@ from collections import defaultdict
 from datetime import datetime
 from typing import List
 
-import requests
+from rolo import Request, Resource, Response, Router
+from rolo.dispatcher import handler_dispatcher
 from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
-from localstack.http import Request, Resource, Response, Router
-from localstack.http.dispatcher import handler_dispatcher
 from localstack.services.infra import exit_infra, signal_supervisor_restart
 from localstack.utils.analytics.metadata import (
     get_client_metadata,
@@ -23,15 +21,13 @@ from localstack.utils.analytics.metadata import (
     is_license_activated,
 )
 from localstack.utils.collections import merge_recursive
-from localstack.utils.config_listener import update_config_variable
-from localstack.utils.files import load_file
 from localstack.utils.functions import call_safe
-from localstack.utils.json import parse_json_or_yaml
 from localstack.utils.numbers import is_number
 from localstack.utils.objects import singleton_factory
-from localstack.utils.server.http2_server import HTTP_METHODS
 
 LOG = logging.getLogger(__name__)
+
+HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"]
 
 
 class DeprecatedResource:
@@ -146,41 +142,6 @@ class InfoResource:
             "server_time_utc": datetime.utcnow().isoformat(timespec="seconds"),
             "uptime": uptime,
         }
-
-
-class CloudFormationUi:
-    def on_get(self, request):
-        from localstack.utils.aws.aws_stack import get_valid_regions
-
-        deploy_html_file = os.path.join(
-            constants.MODULE_MAIN_PATH, "services", "cloudformation", "deploy.html"
-        )
-        deploy_html = load_file(deploy_html_file)
-        req_params = request.values
-        params = {
-            "stackName": "stack1",
-            "templateBody": "{}",
-            "errorMessage": "''",
-            "regions": json.dumps(sorted(get_valid_regions())),
-        }
-
-        download_url = req_params.get("templateURL")
-        if download_url:
-            try:
-                LOG.debug("Attempting to download CloudFormation template URL: %s", download_url)
-                template_body = requests.get(download_url).text
-                template_body = parse_json_or_yaml(template_body)
-                params["templateBody"] = json.dumps(template_body)
-            except Exception as e:
-                msg = f"Unable to download CloudFormation template URL: {e}"
-                LOG.info(msg)
-                params["errorMessage"] = json.dumps(msg.replace("\n", " - "))
-
-        # using simple string replacement here, for simplicity (could be replaced with, e.g., jinja)
-        for key, value in params.items():
-            deploy_html = deploy_html.replace(f"<{key}>", value)
-
-        return Response(deploy_html, mimetype="text/html")
 
 
 class UsageResource:
@@ -304,6 +265,8 @@ class ConfigResource:
         return call_safe(diagnose.get_localstack_config)
 
     def on_post(self, request: Request):
+        from localstack.utils.config_listener import update_config_variable
+
         data = request.get_json(force=True)
         variable = data.get("variable", "")
         if not re.match(r"^[_a-zA-Z0-9]+$", variable):
@@ -338,7 +301,6 @@ class LocalstackResources(Router):
         self.add(Resource("/_localstack/plugins", PluginsResource()))
         self.add(Resource("/_localstack/init", InitScriptsResource()))
         self.add(Resource("/_localstack/init/<stage>", InitScriptsStageResource()))
-        self.add(Resource("/_localstack/cloudformation/deploy", CloudFormationUi()))
 
         if config.ENABLE_CONFIG_UPDATES:
             LOG.warning(
