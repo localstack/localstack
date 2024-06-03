@@ -140,9 +140,9 @@ class SchemaProvider:
 
 
 LOCALSTACK_ROOT_DIR = Path(__file__).parent.joinpath("../../../..").resolve()
-LOCALSTACK_PRO_ROOT_DIR = LOCALSTACK_ROOT_DIR.joinpath("../localstack-ext").resolve()
+LOCALSTACK_PRO_ROOT_DIR = LOCALSTACK_ROOT_DIR.joinpath("../../localstack-ext").resolve()
 TESTS_ROOT_DIR = LOCALSTACK_ROOT_DIR.joinpath(
-    "tests/aws/services/cloudformation/resource_providers"
+    "../tests/aws/services/cloudformation/resource_providers"
 )
 TESTS_PRO_ROOT_DIR = LOCALSTACK_PRO_ROOT_DIR.joinpath(
     "tests/aws/services/cloudformation/resource_providers"
