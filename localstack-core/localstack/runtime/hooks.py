@@ -79,6 +79,9 @@ prepare_host = hook_spec(HOOKS_PREPARE_HOST)
 on_infra_start = hook_spec(HOOKS_ON_INFRA_START)
 """Hooks that are executed right before starting the LocalStack infrastructure."""
 
+on_runtime_start = on_infra_start
+"""Alias for on_infra_start. TODO: switch and deprecated `infra` naming."""
+
 on_pro_infra_start = hook_spec(HOOKS_ON_PRO_INFRA_START)
 """Hooks that are executed after on_infra_start hooks, and only if LocalStack pro has been activated."""
 
@@ -86,5 +89,11 @@ on_infra_ready = hook_spec(HOOKS_ON_INFRA_READY)
 """Hooks that are execute after all startup hooks have been executed, and the LocalStack infrastructure has become
 available."""
 
+on_runtime_ready = on_infra_ready
+"""Alias for on_infra_ready. TODO: switch and deprecated `infra` naming."""
+
 on_infra_shutdown = hook_spec(HOOKS_ON_INFRA_SHUTDOWN)
 """Hooks that are execute when localstack shuts down."""
+
+on_runtime_shutdown = on_infra_shutdown
+"""Alias for on_infra_shutdown. TODO: switch and deprecated `infra` naming."""
