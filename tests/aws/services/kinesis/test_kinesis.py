@@ -8,8 +8,8 @@ from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from localstack import config, constants
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.services.kinesis import provider as kinesis_provider
+from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws import resources
 from localstack.utils.aws.request_context import mock_aws_request_headers

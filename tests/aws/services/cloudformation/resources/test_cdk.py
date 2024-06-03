@@ -6,7 +6,7 @@ import requests
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
+from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.files import load_file

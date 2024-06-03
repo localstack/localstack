@@ -22,9 +22,10 @@ from localstack.aws.forwarder import create_http_request
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH, load_service
 from localstack.config import is_env_true
-from localstack.constants import (
+from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+    SECONDARY_TEST_AWS_SESSION_TOKEN,
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
@@ -224,4 +225,5 @@ def secondary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelC
     return client_factory(
         aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
         aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        aws_session_token=SECONDARY_TEST_AWS_SESSION_TOKEN,
     )

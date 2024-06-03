@@ -19,7 +19,7 @@ from localstack.aws.api.dynamodb import (
     Update,
 )
 from localstack.aws.connect import connect_to
-from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
+from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws.arns import dynamodb_table_arn
 from localstack.utils.json import canonical_json
 from localstack.utils.testutil import list_all_resources
@@ -117,7 +117,7 @@ class SchemaExtractor:
             # TODO: consider making in-memory lookup instead of API call
             ddb_client = connect_to(
                 aws_access_key_id=account_id,
-                aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+                aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
                 region_name=region_name,
             ).dynamodb
             try:

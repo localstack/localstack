@@ -52,7 +52,7 @@ from localstack.aws.api.ses import (
     VerificationStatus,
 )
 from localstack.aws.connect import connect_to
-from localstack.constants import TEST_AWS_SECRET_ACCESS_KEY
+from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.http import Resource, Response
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
@@ -633,7 +633,7 @@ class SNSEmitter:
         return connect_to(
             region_name=region,
             aws_access_key_id=access_key_id,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
         ).sns
 
 

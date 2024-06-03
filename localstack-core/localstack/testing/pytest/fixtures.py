@@ -24,10 +24,6 @@ from localstack import config
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
-    SECONDARY_TEST_AWS_ACCOUNT_ID,
-    SECONDARY_TEST_AWS_REGION_NAME,
-    TEST_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
 )
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -38,6 +34,12 @@ from localstack.services.stores import (
 )
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
+from localstack.testing.config import (
+    SECONDARY_TEST_AWS_ACCOUNT_ID,
+    SECONDARY_TEST_AWS_REGION_NAME,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
+)
 from localstack.utils import testutil
 from localstack.utils.aws.client import SigningHttpClient
 from localstack.utils.aws.resources import create_dynamodb_table

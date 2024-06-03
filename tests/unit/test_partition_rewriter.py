@@ -10,9 +10,9 @@ from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers.partition_rewriter import ArnPartitionRewriteHandler
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID
 from localstack.http import Request, Response
 from localstack.http.request import get_full_raw_path, get_raw_path
+from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import to_bytes, to_str
 

@@ -119,7 +119,7 @@ from localstack.aws.connect import connect_to
 from localstack.constants import (
     AUTH_CREDENTIAL_REGEX,
     AWS_REGION_US_EAST_1,
-    TEST_AWS_SECRET_ACCESS_KEY,
+    INTERNAL_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.http import Request, Response, route
 from localstack.services.dynamodb.models import (
@@ -284,7 +284,7 @@ class EventForwarder:
 
             kinesis = connect_to(
                 aws_access_key_id=account_id,
-                aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+                aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
                 region_name=region_name,
             ).kinesis.request_metadata(service_principal="dynamodb", source_arn=table_arn)
 
@@ -300,7 +300,7 @@ class EventForwarder:
 
         kinesis = connect_to(
             aws_access_key_id=account_id,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
             region_name=region_name,
         ).kinesis
         stream_name_from_arn = stream_arn.split("/", 1)[1]
@@ -326,7 +326,7 @@ class SSEUtils:
             return existing_key
         kms_client = connect_to(
             aws_access_key_id=account_id,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
             region_name=region_name,
         ).kms
         key_data = kms_client.create_key(
@@ -1674,7 +1674,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         client = connect_to(
             aws_access_key_id=account_id,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
             region_name=region_name,
         ).dynamodb
         return dynamodb_table_exists(table_name, client)

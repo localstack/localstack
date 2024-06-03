@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from localstack.aws.connect import connect_externally_to
-from localstack.constants import (
+from localstack.testing.config import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,

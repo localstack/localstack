@@ -2,13 +2,17 @@ from unittest.mock import patch
 
 import pytest
 
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 from localstack.services.dynamodb.provider import DynamoDBProvider, get_store
 from localstack.services.dynamodb.utils import (
     SCHEMA_CACHE,
     ItemSet,
     SchemaExtractor,
     dynamize_value,
+)
+from localstack.testing.config import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
 )
 from localstack.utils.aws.arns import dynamodb_table_arn
 from localstack.utils.aws.request_context import mock_aws_request_headers

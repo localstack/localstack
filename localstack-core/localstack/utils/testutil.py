@@ -30,12 +30,14 @@ from localstack import config
 from localstack.constants import (
     LOCALSTACK_ROOT_FOLDER,
     LOCALSTACK_VENV_FOLDER,
-    TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_ACCOUNT_ID,
-    TEST_AWS_REGION_NAME,
 )
 from localstack.services.lambda_.lambda_utils import (
     get_handler_file_from_name,
+)
+from localstack.testing.config import (
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_REGION_NAME,
 )
 from localstack.utils.archives import create_zip_file_cli, create_zip_file_python
 from localstack.utils.collections import ensure_list

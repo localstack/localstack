@@ -7,8 +7,8 @@ import yaml
 from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.cloudformation.engine import template_preparer
+from localstack.testing.config import TEST_AWS_ACCOUNT_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.common import load_file, short_uid
