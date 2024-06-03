@@ -8,8 +8,8 @@ from localstack import version as localstack_version
 
 def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, port: int = 4566):
     volumes = []
-    root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
-    localstack_code_path = os.path.join(root_path, "localstack")
+    root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
+    localstack_code_path = os.path.join(root_path, "localstack-core", "localstack")
     volumes.append(
         {
             "volume": f"{os.path.normpath(localstack_code_path)}:/code/localstack",
@@ -18,11 +18,15 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, por
     )
 
     egg_path = os.path.join(root_path, "localstack_core.egg-info/entry_points.txt")
+    volumes.append(
+        {
+            "volume": f"{os.path.normpath(egg_path)}:/code/entry_points_community",
+            "nodeFilters": ["server:*", "agent:*"],
+        }
+    )
     if pro:
         ext_path = os.path.join(root_path, "..", "localstack-ext")
         ext_code_path = os.path.join(ext_path, "localstack_ext")
-        egg_path = os.path.join(ext_path, "localstack_ext.egg-info/entry_points.txt")
-
         volumes.append(
             {
                 "volume": f"{os.path.normpath(ext_code_path)}:/code/localstack_ext",
@@ -30,12 +34,13 @@ def generate_k8s_cluster_config(pro: bool = False, mount_moto: bool = False, por
             }
         )
 
-    volumes.append(
-        {
-            "volume": f"{os.path.normpath(egg_path)}:/code/entry_points",
-            "nodeFilters": ["server:*", "agent:*"],
-        }
-    )
+        egg_path = os.path.join(ext_path, "localstack_ext.egg-info/entry_points.txt")
+        volumes.append(
+            {
+                "volume": f"{os.path.normpath(egg_path)}:/code/entry_points_ext",
+                "nodeFilters": ["server:*", "agent:*"],
+            }
+        )
 
     if mount_moto:
         moto_path = os.path.join(root_path, "..", "moto", "moto")
@@ -64,8 +69,7 @@ def generate_k8s_cluster_overrides(
         volumes.append(
             {
                 "name": name,
-                "hostPath": {"path": volume["volume"].split(":")[-1]},
-                "type": volume_type,
+                "hostPath": {"path": volume["volume"].split(":")[-1], "type": volume_type},
             }
         )
 
