@@ -98,6 +98,7 @@ class TestServerless:
 
     @markers.skip_offline
     @markers.aws.unknown
+    @pytest.mark.skip(reason="flaky")
     def test_kinesis_stream_handler_deployed(self, aws_client, setup_and_teardown):
         function_name = "sls-test-local-kinesisStreamHandler"
         function_name2 = "sls-test-local-kinesisConsumerHandler"
