@@ -5933,6 +5933,7 @@ class CreateCustomerGatewayRequest(ServiceRequest):
     DeviceName: Optional[String]
     IpAddress: Optional[String]
     DryRun: Optional[Boolean]
+    BgpAsnExtended: Optional[Long]
 
 
 class CustomerGateway(TypedDict, total=False):
@@ -5944,6 +5945,7 @@ class CustomerGateway(TypedDict, total=False):
     Type: Optional[String]
     DeviceName: Optional[String]
     Tags: Optional[TagList]
+    BgpAsnExtended: Optional[String]
 
 
 class CreateCustomerGatewayResult(TypedDict, total=False):

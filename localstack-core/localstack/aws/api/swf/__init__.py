@@ -331,6 +331,12 @@ class TypeDeprecatedFault(ServiceException):
     status_code: int = 400
 
 
+class TypeNotDeprecatedFault(ServiceException):
+    code: str = "TypeNotDeprecatedFault"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class UnknownResourceFault(ServiceException):
     code: str = "UnknownResourceFault"
     sender_fault: bool = False
@@ -1085,6 +1091,16 @@ class DecisionTask(TypedDict, total=False):
     previousStartedEventId: Optional[EventId]
 
 
+class DeleteActivityTypeInput(ServiceRequest):
+    domain: DomainName
+    activityType: ActivityType
+
+
+class DeleteWorkflowTypeInput(ServiceRequest):
+    domain: DomainName
+    workflowType: WorkflowType
+
+
 class DeprecateActivityTypeInput(ServiceRequest):
     domain: DomainName
     activityType: ActivityType
@@ -1493,6 +1509,18 @@ class SwfApi:
     def count_pending_decision_tasks(
         self, context: RequestContext, domain: DomainName, task_list: TaskList, **kwargs
     ) -> PendingTaskCount:
+        raise NotImplementedError
+
+    @handler("DeleteActivityType")
+    def delete_activity_type(
+        self, context: RequestContext, domain: DomainName, activity_type: ActivityType, **kwargs
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteWorkflowType")
+    def delete_workflow_type(
+        self, context: RequestContext, domain: DomainName, workflow_type: WorkflowType, **kwargs
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeprecateActivityType")
