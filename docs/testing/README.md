@@ -289,8 +289,6 @@ def test_something(snapshot):
     snapshot.match(snapshot, {"key": key})
 ```
 
-[documentation](parity-testing/README.md)
-
 ### R11
 
 Be vigilant about changes happening to dependencies (Python dependencies and other) that can affect stability of your added features and tests.
