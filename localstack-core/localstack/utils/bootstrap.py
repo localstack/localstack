@@ -145,9 +145,11 @@ def get_docker_image_details(image_name: str = None) -> Dict[str, str]:
     except ContainerException:
         return {}
 
+    digests = result.get("RepoDigests")
+    sha256 = digests[0].rpartition(":")[2] if digests else "Unavailable"
     result = {
         "id": result["Id"].replace("sha256:", "")[:12],
-        "sha256": result["RepoDigests"][0].rpartition(":")[2],
+        "sha256": sha256,
         "tag": (result.get("RepoTags") or ["latest"])[0].split(":")[-1],
         "created": result["Created"].split(".")[0],
     }
