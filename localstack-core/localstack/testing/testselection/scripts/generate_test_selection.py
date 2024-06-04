@@ -1,5 +1,10 @@
 """
-USAGE: $ GITHUB_API_TOKEN=<your-token> python -m localstack.testing.testselection.scripts.generate_test_selection_from_pr <git-root-dir> <output-file-path> [ --pr <pull-request-url> ]
+USAGE: python -m localstack.testing.testselection.scripts.generate_test_selection <repo_root_path> <output_file_path> \
+                                [--base-commit-sha <base-commit-sha> \
+                                 --head-commit-sha <head-commit-sha> ]
+                                [ --pr-url <pr_url> ]
+Optionally set the GITHUB_API_TOKEN environment variable to use the GitHub API.
+(when using --pr-url, or no commit SHAs provided)
 """
 
 import argparse
@@ -22,34 +27,56 @@ from localstack.testing.testselection.opt_in import complies_with_opt_in
 from localstack.testing.testselection.testselection import get_affected_tests_from_changes
 
 
-def generate_from_pr(
+def generate_test_selection(
     opt_in_rules: Iterable[str] | None = None,
     matching_rules: list[MatchingRule] | None = None,
     repo_name: str = "localstack",
 ):
-    parser = argparse.ArgumentParser(description="Generate test selection from a pull request")
-    parser.add_argument("git_root_dir", type=str, help="Path to the git repository root")
+    parser = argparse.ArgumentParser(
+        description="Generate test selection from a range of commits or a PR URL. "
+        "Determine the corresponding PR based on the current branch if neither provided."
+    )
+    parser.add_argument("repo_root_path", type=str, help="Path to the git repository root")
     parser.add_argument("output_file_path", type=str, help="Path to the output file")
-    parser.add_argument("--pr", type=str, help="Pull request URL")
+
+    parser.add_argument(
+        "--base-commit-sha",
+        type=str,
+        help="Base commit SHA",
+    )
+    parser.add_argument(
+        "--head-commit-sha",
+        type=str,
+        help="Head commit SHA",
+    )
+    parser.add_argument(
+        "--pr-url",
+        type=str,
+        help="URL to a PR",
+    )
+
     args = parser.parse_args()
 
+    repo_root_path = args.repo_root_path
     output_file_path = args.output_file_path
-    repo_root_path = args.git_root_dir
     github_token = os.environ.get("GITHUB_API_TOKEN")
-    # Handle the mismatch between python module name and github repo name
+    # Handle the mismatch between python module name and github repo name on dependent modules
     github_repo_name = repo_name.replace("_", "-")
 
-    if args.pr is None:
-        current_branch = get_branch_name(repo_root_path)
-        print(
-            f"No pull request URL provided, evaluating based on current branch ({current_branch})"
-        )
-        base_commit_sha, head_commit_sha = get_pr_details_from_branch(
-            github_repo_name, current_branch, github_token
+    if args.base_commit_sha is not None and args.head_commit_sha is not None:
+        base_commit_sha = args.base_commit_sha
+        head_commit_sha = args.head_commit_sha
+    elif args.pr_url is not None:
+        print(f"PR URL: {args.pr_url}")
+        base_commit_sha, head_commit_sha = get_pr_details_from_url(
+            repo_name, args.pr_url, github_token
         )
     else:
-        base_commit_sha, head_commit_sha = get_pr_details_from_url(
-            github_repo_name, args.pr, github_token
+        print("Neither commit SHAs nor PR URL provided.")
+        current_branch = get_branch_name(repo_root_path)
+        print(f"Determining based on current branch. ({current_branch})")
+        base_commit_sha, head_commit_sha = get_pr_details_from_branch(
+            github_repo_name, current_branch, github_token
         )
 
     print(f"Base Commit SHA: {base_commit_sha}")
@@ -59,6 +86,7 @@ def generate_from_pr(
     changed_files = get_changed_files_from_git_diff(
         repo_root_path, merge_base_commit, head_commit_sha
     )
+
     # opt-in guard, can be removed after initial testing phase
     print("Checking for confirming to opt-in guards")
     if not complies_with_opt_in(changed_files, opt_in_rules=opt_in_rules):
@@ -92,4 +120,4 @@ def generate_from_pr(
 
 
 if __name__ == "__main__":
-    generate_from_pr()
+    generate_test_selection()
