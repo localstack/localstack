@@ -3364,7 +3364,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_system_attribute_names_filters[sqs]": {
-    "recorded-date": "04-06-2024, 11:46:28",
+    "recorded-date": "04-06-2024, 16:10:07",
     "recorded-content": {
       "all_attributes": {
         "Messages": [
@@ -3450,8 +3450,90 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_system_attribute_names_filters[sqs_query]": {
-    "recorded-date": "04-06-2024, 11:46:30",
-    "recorded-content": {}
+    "recorded-date": "04-06-2024, 16:10:10",
+    "recorded-content": {
+      "all_attributes": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "all_system_and_message_attributes": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "2",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MD5OfMessageAttributes": "ae7155c6026991b6d54b11589678bf9c",
+            "MessageAttributes": {
+              "Foo": {
+                "DataType": "String",
+                "StringValue": "Bar"
+              }
+            },
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "single_attribute": {
+        "Messages": [
+          {
+            "Attributes": {
+              "SenderId": "<sender-id:1>"
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "multiple_attributes": {
+        "Messages": [
+          {
+            "Attributes": {
+              "SenderId": "<sender-id:1>"
+            },
+            "Body": "msg",
+            "MD5OfBody": "6e2baaf3b97dbeef01c0043275f9a0e7",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:4>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_system_attribute_names_with_attribute_names[sqs]": {
     "recorded-date": "04-06-2024, 11:57:55",

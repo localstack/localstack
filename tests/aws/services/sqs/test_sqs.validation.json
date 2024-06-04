@@ -219,7 +219,10 @@
     "last_validated_date": "2024-04-30T13:34:55+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_system_attribute_names_filters[sqs]": {
-    "last_validated_date": "2024-06-04T11:46:28+00:00"
+    "last_validated_date": "2024-06-04T16:10:07+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_receive_message_message_system_attribute_names_filters[sqs_query]": {
+    "last_validated_date": "2024-06-04T16:10:09+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_batch_message_size": {
     "last_validated_date": "2024-04-30T13:33:44+00:00"
