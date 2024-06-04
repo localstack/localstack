@@ -144,8 +144,10 @@ def get_docker_image_details(image_name: str = None) -> Dict[str, str]:
         result = DOCKER_CLIENT.inspect_image(image_name)
     except ContainerException:
         return {}
+
     result = {
         "id": result["Id"].replace("sha256:", "")[:12],
+        "sha256": result["RepoDigests"][0].rpartition(":")[2],
         "tag": (result.get("RepoTags") or ["latest"])[0].split(":")[-1],
         "created": result["Created"].split(".")[0],
     }
