@@ -13,7 +13,6 @@ from localstack.runtime.exceptions import LocalstackExit
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import files, objects
 from localstack.utils.analytics import usage
-from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import (
     get_enabled_apis,
     log_duration,
@@ -25,7 +24,6 @@ from localstack.utils.container_utils.container_client import ContainerException
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import is_port_open
-from localstack.utils.patch import patch
 from localstack.utils.platform import in_docker
 from localstack.utils.sync import poll_condition
 from localstack.utils.threads import (
@@ -80,36 +78,6 @@ def patch_urllib3_connection_pool(**constructor_kwargs):
         poolmanager.pool_classes_by_scheme["http"] = MyHTTPConnectionPool
     except Exception:
         pass
-
-
-def patch_instance_tracker_meta():
-    """Avoid instance collection for moto dashboard"""
-    from importlib.util import find_spec
-
-    if not find_spec("moto"):
-        return
-
-    from moto.core.base_backend import InstanceTrackerMeta
-    from moto.core.common_models import BaseModel
-
-    if hasattr(InstanceTrackerMeta, "_ls_patch_applied"):
-        return  # ensure we're not applying the patch multiple times
-
-    @patch(InstanceTrackerMeta.__new__, pass_target=False)
-    def new_instance(meta, name, bases, dct):
-        cls = super(InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
-        if name == "BaseModel":
-            return cls
-        cls.instances = []
-        return cls
-
-    @patch(BaseModel.__new__, pass_target=False)
-    def new_basemodel(cls, *args, **kwargs):
-        # skip cls.instances.append(..) which is done by the original/upstream constructor
-        instance = super(BaseModel, cls).__new__(cls)
-        return instance
-
-    InstanceTrackerMeta._ls_patch_applied = True
 
 
 def exit_infra(code: int):
@@ -260,7 +228,6 @@ def start_infra(asynchronous=False, apis=None):
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
-        patch_instance_tracker_meta()
 
         # set up logging
         setup_logging()
@@ -312,8 +279,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     def prepare_environment():
         # enable the HTTP/HTTPS duplex socket
         enable_duplex_socket()
-
-        patch_moto_request_handling()
 
     @log_duration()
     def preload_services():

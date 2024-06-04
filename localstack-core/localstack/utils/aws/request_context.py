@@ -166,11 +166,6 @@ def patch_moto_request_handling():
 
     from moto.core import utils as moto_utils
 
-    # enable loading AWS IAM managed policies
-    from moto.core.config import default_user_config
-
-    default_user_config["iam"]["load_aws_managed_policies"] = True
-
     # make sure we properly handle/propagate "not implemented" errors
     @patch(moto_utils.convert_to_flask_response.__call__)
     def convert_to_flask_response_call(fn, *args, **kwargs):
