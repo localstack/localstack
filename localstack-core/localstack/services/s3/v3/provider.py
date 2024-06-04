@@ -211,6 +211,7 @@ from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import (
     ALLOWED_HEADER_OVERRIDES,
     ARCHIVES_STORAGE_CLASSES,
+    CHECKSUM_ALGORITHMS,
     DEFAULT_BUCKET_ENCRYPTION,
 )
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
@@ -241,6 +242,7 @@ from localstack.services.s3.utils import (
     get_owner_for_account_id,
     get_permission_from_header,
     get_retention_from_now,
+    get_s3_checksum_algorithm_from_request,
     get_system_metadata_from_request,
     get_unique_key_id,
     is_bucket_name_valid,
@@ -621,7 +623,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         version_id = generate_version_id(s3_bucket.versioning_status)
 
-        checksum_algorithm = request.get("ChecksumAlgorithm")
+        checksum_algorithm = get_s3_checksum_algorithm_from_request(request)
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
@@ -1844,6 +1846,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: validate the algorithm?
         checksum_algorithm = request.get("ChecksumAlgorithm")
+        if checksum_algorithm and checksum_algorithm not in CHECKSUM_ALGORITHMS:
+            raise InvalidRequest(
+                "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
+            )
 
         encryption_parameters = get_encryption_parameters_from_request_and_bucket(
             request,
@@ -1923,7 +1929,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=part_number,
             )
 
-        checksum_algorithm = request.get("ChecksumAlgorithm")
+        checksum_algorithm = get_s3_checksum_algorithm_from_request(request)
         if checksum_algorithm != s3_multipart.object.checksum_algorithm:
             error_req_checksum = checksum_algorithm.lower() if checksum_algorithm else "null"
             error_mp_checksum = (

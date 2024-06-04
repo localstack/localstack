@@ -335,10 +335,6 @@ class S3Object:
         for metadata_key, metadata_value in self.system_metadata.items():
             headers[metadata_key] = metadata_value
 
-        # this is a bug in AWS: it sets the content encoding header to an empty string (parity tested)
-        if "ContentEncoding" not in headers and self.checksum_algorithm and not self.parts:
-            headers["ContentEncoding"] = ""
-
         if self.storage_class != StorageClass.STANDARD:
             headers["StorageClass"] = self.storage_class
 
