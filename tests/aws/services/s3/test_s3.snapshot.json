@@ -487,7 +487,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[CRC32]": {
-    "recorded-date": "05-10-2023, 20:33:28",
+    "recorded-date": "04-06-2024, 14:28:10",
     "recorded-content": {
       "put-wrong-checksum": {
         "Error": {
@@ -557,7 +557,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[CRC32C]": {
-    "recorded-date": "05-10-2023, 20:33:33",
+    "recorded-date": "04-06-2024, 14:28:13",
     "recorded-content": {
       "put-wrong-checksum": {
         "Error": {
@@ -627,7 +627,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[SHA1]": {
-    "recorded-date": "05-10-2023, 20:33:38",
+    "recorded-date": "04-06-2024, 14:28:16",
     "recorded-content": {
       "put-wrong-checksum": {
         "Error": {
@@ -697,7 +697,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_put_object_checksum[SHA256]": {
-    "recorded-date": "05-10-2023, 20:33:43",
+    "recorded-date": "04-06-2024, 14:28:19",
     "recorded-content": {
       "put-wrong-checksum": {
         "Error": {
@@ -4614,7 +4614,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA256]": {
-    "recorded-date": "03-08-2023, 04:14:55",
+    "recorded-date": "04-06-2024, 14:41:58",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA256": "1YQo81vx2VFUl0q5ccWISq8AkSBQQ0WO80S82TmfdIQ=",
@@ -4685,7 +4685,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[None]": {
-    "recorded-date": "03-08-2023, 04:14:59",
+    "recorded-date": "04-06-2024, 14:42:01",
     "recorded-content": {
       "put-object": {
         "ETag": "\"f2081dd61dfa700a0fd5e29b9c3cc23d\"",
@@ -4747,7 +4747,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_checksum_with_content_encoding": {
-    "recorded-date": "03-08-2023, 04:15:01",
+    "recorded-date": "04-06-2024, 14:25:58",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA256": "WO7lLNG8Mn/d4GkX4DqZXqeaVHJCN+BxvMNJXLOhukg=",
@@ -4966,8 +4966,18 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_multipart_parts_checksum_exceptions": {
-    "recorded-date": "28-05-2024, 17:27:37",
+    "recorded-date": "04-06-2024, 14:03:55",
     "recorded-content": {
+      "create-mpu-wrong-checksum-algo": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "create-mpu-no-checksum": {
         "Bucket": "bucket",
         "Key": "test-multipart-checksum-exc",
@@ -4979,6 +4989,16 @@
         }
       },
       "upload-part-with-checksum": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Checksum Type mismatch occurred, expected checksum Type: null, actual checksum Type: sha256"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "upload-part-with-checksum-calc": {
         "Error": {
           "Code": "InvalidRequest",
           "Message": "Checksum Type mismatch occurred, expected checksum Type: null, actual checksum Type: sha256"
@@ -6385,7 +6405,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32]": {
-    "recorded-date": "03-08-2023, 04:14:45",
+    "recorded-date": "04-06-2024, 14:41:49",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32": "lVk/nw==",
@@ -6456,7 +6476,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[CRC32C]": {
-    "recorded-date": "03-08-2023, 04:14:48",
+    "recorded-date": "04-06-2024, 14:41:52",
     "recorded-content": {
       "put-object": {
         "ChecksumCRC32C": "Fz3epA==",
@@ -6527,7 +6547,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_get_object_checksum[SHA1]": {
-    "recorded-date": "03-08-2023, 04:14:52",
+    "recorded-date": "04-06-2024, 14:41:55",
     "recorded-content": {
       "put-object": {
         "ChecksumSHA1": "jbXkHAsXUrubtL3dqDQ4w+7WXc0=",
@@ -11932,6 +11952,108 @@
           "ETag": "70b68ae721a61941a1a62724dde5d5e4",
           "ObjectSize": "9",
           "StorageClass": "STANDARD"
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_checksum_no_automatic_sdk_calculation": {
+    "recorded-date": "04-06-2024, 14:22:53",
+    "recorded-content": {
+      "wrong-checksum": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "HostId": "<host-id:1>",
+          "Message": "Value for x-amz-checksum-sha256 header is invalid.",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "head-obj-right-checksum": {
+        "AcceptRanges": "bytes",
+        "ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik=",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e6d9226c2a86b7232933663c13467527\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-obj-only-checksum-algo": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e6d9226c2a86b7232933663c13467527\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-obj-diff-checksum-algo": {
+        "AcceptRanges": "bytes",
+        "ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik=",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e6d9226c2a86b7232933663c13467527\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_checksum_no_algorithm": {
+    "recorded-date": "04-06-2024, 14:33:49",
+    "recorded-content": {
+      "put-wrong-checksum": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Value for x-amz-checksum-sha256 header is invalid."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-2-checksums": {
+        "Error": {
+          "Code": "InvalidRequest",
+          "Message": "Expecting a single x-amz-checksum- header. Multiple checksum Types are not allowed."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-right-checksum": {
+        "ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik=",
+        "ETag": "\"e6d9226c2a86b7232933663c13467527\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-obj": {
+        "AcceptRanges": "bytes",
+        "ChecksumSHA256": "2l26x0trnT0r2AvakoFk2MB7eKVKzYESLMxSAKAzoik=",
+        "ContentLength": 11,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"e6d9226c2a86b7232933663c13467527\"",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
