@@ -47,6 +47,12 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_standard_queue_with_fifo_attribute_raises_error[sqs_query]": {
     "last_validated_date": "2024-05-15T02:30:48+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_execution_lambda_mapping_preserves_id[sqs]": {
+    "last_validated_date": "2024-05-29T14:12:29+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_execution_lambda_mapping_preserves_id[sqs_query]": {
+    "last_validated_date": "2024-05-29T14:14:14+00:00"
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_message_attributes": {
     "last_validated_date": "2024-04-30T13:33:55+00:00"
   },
@@ -55,6 +61,12 @@
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_dead_letter_queue_with_fifo_and_content_based_deduplication[sqs_query]": {
     "last_validated_date": "2024-05-21T13:58:16+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_deduplication_interval[sqs]": {
+    "last_validated_date": "2024-05-29T13:41:13+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_deduplication_interval[sqs_query]": {
+    "last_validated_date": "2024-05-29T13:47:36+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_invalid_msg_id[sqs-]": {
     "last_validated_date": "2024-04-30T13:48:34+00:00"
@@ -256,6 +268,12 @@
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_empty_string_attribute[sqs_query]": {
     "last_validated_date": "2024-04-30T13:35:42+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_invalid_fifo_parameters[sqs]": {
+    "last_validated_date": "2024-05-28T14:27:55+00:00"
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_invalid_fifo_parameters[sqs_query]": {
+    "last_validated_date": "2024-05-28T14:19:35+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_updated_maximum_message_size[sqs]": {
     "last_validated_date": "2024-04-30T13:33:02+00:00"
