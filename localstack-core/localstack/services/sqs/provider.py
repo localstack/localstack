@@ -1239,8 +1239,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         # prepare result
         messages = []
+        message_system_attribute_names = message_system_attribute_names or attribute_names
         for i, standard_message in enumerate(result.successful):
-            message = to_sqs_api_message(standard_message, attribute_names, message_attribute_names)
+            message = to_sqs_api_message(
+                standard_message, message_system_attribute_names, message_attribute_names
+            )
             message["ReceiptHandle"] = result.receipt_handles[i]
             messages.append(message)
 
