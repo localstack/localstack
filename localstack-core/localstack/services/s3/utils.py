@@ -192,6 +192,23 @@ def get_s3_checksum_algorithm_from_request(
     return checksum_algorithm[0]
 
 
+def get_s3_checksum_algorithm_from_trailing_headers(
+    trailing_headers: str,
+) -> ChecksumAlgorithm | None:
+    checksum_algorithm: list[ChecksumAlgorithm] = [
+        algo for algo in CHECKSUM_ALGORITHMS if f"x-amz-checksum-{algo.lower()}" in trailing_headers
+    ]
+    if not checksum_algorithm:
+        return None
+
+    if len(checksum_algorithm) > 1:
+        raise InvalidRequest(
+            "Expecting a single x-amz-checksum- header. Multiple checksum Types are not allowed."
+        )
+
+    return checksum_algorithm[0]
+
+
 def get_s3_checksum(algorithm) -> ChecksumHash:
     match algorithm:
         case ChecksumAlgorithm.CRC32:
