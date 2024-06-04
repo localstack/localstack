@@ -4271,14 +4271,10 @@ class TestSqsProvider:
         response = receive_message(["SenderId", "SequenceNumber"])
         assert snapshot.match("multiple_attributes", response)
 
-    @markers.aws.unknown
-    # @markers.snapshot.skip_snapshot_verify(paths=["$..Attributes.SenderId"])
+    @markers.aws.validated
     def test_receive_message_message_system_attribute_names_filters(
         self, sqs_create_queue, snapshot, aws_sqs_client
     ):
-        # TODO -> senderId in LS == account ID, but on AWS it looks quite different: [A-Z]{21}:<email>
-        # account id is replaced with higher priority
-
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 
         aws_sqs_client.send_message(
@@ -4309,14 +4305,10 @@ class TestSqsProvider:
         response = receive_message(["SenderId", "SequenceNumber"])
         assert snapshot.match("multiple_attributes", response)
 
-    @markers.aws.unknown
-    # @markers.snapshot.skip_snapshot_verify(paths=["$..Attributes.SenderId"])
+    @markers.aws.validated
     def test_message_system_attribute_names_with_attribute_names(
         self, sqs_create_queue, snapshot, aws_sqs_client
     ):
-        # TODO -> senderId in LS == account ID, but on AWS it looks quite different: [A-Z]{21}:<email>
-        # account id is replaced with higher priority
-
         queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
 
         aws_sqs_client.send_message(
