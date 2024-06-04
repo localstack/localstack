@@ -8,7 +8,7 @@ aiofiles==23.2.1
     # via quart
 airspeed-ext==0.6.5
     # via localstack-core (pyproject.toml)
-amazon-kclpy==2.1.3
+amazon-kclpy==2.1.5
     # via localstack-core (pyproject.toml)
 annotated-types==0.7.0
     # via pydantic
@@ -41,10 +41,9 @@ blinker==1.8.2
     # via
     #   flask
     #   quart
-boto==2.49.0
-    # via amazon-kclpy
 boto3==1.34.117
     # via
+    #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
@@ -67,13 +66,13 @@ cachetools==5.3.3
     #   localstack-core (pyproject.toml)
 cbor2==5.6.3
     # via localstack-core
-certifi==2024.2.2
+certifi==2024.6.2
     # via
     #   opensearch-py
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.87.3
+cfn-lint==0.87.4
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -117,6 +116,8 @@ docker==7.1.0
     #   moto-ext
 docutils==0.16
     # via awscli
+events==0.5
+    # via opensearch-py
 flask==3.0.3
     # via
     #   localstack-core
@@ -133,7 +134,7 @@ h2==4.1.0
     #   localstack-twisted
 hpack==4.0.0
     # via h2
-hypercorn==0.17.2
+hypercorn==0.17.3
     # via
     #   localstack-core
     #   quart
@@ -161,7 +162,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==0.10.0
+joserfc==0.11.1
     # via moto-ext
 jpype1==1.5.0
     # via localstack-core (pyproject.toml)
@@ -224,7 +225,7 @@ openapi-schema-validator==0.6.2
     # via openapi-spec-validator
 openapi-spec-validator==0.7.1
     # via moto-ext
-opensearch-py==2.4.2
+opensearch-py==2.6.0
     # via localstack-core (pyproject.toml)
 packaging==24.0
     # via
@@ -259,9 +260,9 @@ pyasn1==0.6.0
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.7.1
+pydantic==2.7.3
     # via aws-sam-translator
-pydantic-core==2.18.2
+pydantic-core==2.18.4
     # via pydantic
 pygments==2.18.0
     # via rich
@@ -305,7 +306,7 @@ referencing==0.31.1
     #   jsonschema-specifications
 regex==2024.5.15
     # via cfn-lint
-requests==2.32.2
+requests==2.32.3
     # via
     #   docker
     #   jsonschema-path
@@ -353,13 +354,13 @@ six==1.16.0
     #   python-dateutil
     #   requests-aws4auth
     #   rfc3339-validator
-sympy==1.12
+sympy==1.12.1
     # via cfn-lint
 tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.12.0
+typing-extensions==4.12.1
     # via
     #   aws-sam-translator
     #   localstack-twisted
