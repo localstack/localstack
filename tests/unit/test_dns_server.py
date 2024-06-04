@@ -417,6 +417,33 @@ class TestDnsUtils:
 
         assert "nameserver 127.0.0.1" in new_contents.splitlines()
 
+    def test_exising_resolv_conf_contents(self, tmp_path: Path, monkeypatch):
+        from localstack.dns import server
+
+        monkeypatch.setattr(server, "in_docker", lambda: True)
+
+        file = tmp_path.joinpath("resolv.conf")
+        with file.open("w") as outfile:
+            print(
+                "nameserver 127.0.0.11\n"
+                "search default.svc.cluster.local svc.cluster.local cluster.local\n"
+                "options ndots:5",
+                file=outfile,
+            )
+
+        add_resolv_entry(file)
+
+        with file.open() as infile:
+            new_contents = infile.read()
+
+        lines = new_contents.splitlines()
+        assert "nameserver 127.0.0.1" in lines
+        assert "search default.svc.cluster.local svc.cluster.local cluster.local" in lines
+        assert "options ndots:5" in lines
+
+        # check the previous value is _not_ in the file
+        assert "nameserver 127.0.0.11" not in lines
+
     def test_no_resolv_conf_overwriting_on_host(self, tmp_path: Path, monkeypatch):
         from localstack.dns import server
 
