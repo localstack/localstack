@@ -1,0 +1,16 @@
+name: LocalStack - Validate Codeowners
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  validate-codeowners:
+    uses: localstack/meta/.github/workflows/validate-codeowners.yml@add-validate-codeowners
+    with:
+      codeowners-file: './CODEOWNERS'
+
