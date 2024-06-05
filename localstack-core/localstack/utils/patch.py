@@ -25,6 +25,29 @@ def get_defining_object(method):
     return inspect.getmodule(method)
 
 
+def to_metadata_string(obj: Any) -> str:
+    """
+    Creates a string that helps humans understand where the given object comes from. Examples::
+
+      to_metadata_string(func_thread.run) == "function(localstack.utils.threads:FuncThread.run)"
+
+    :param obj: a class, module, method, function or object
+    :return: a string representing the objects origin
+    """
+    if inspect.isclass(obj):
+        return f"class({obj.__module__}:{obj.__name__})"
+    if inspect.ismodule(obj):
+        return f"module({obj.__name__})"
+    if inspect.ismethod(obj):
+        return f"method({obj.__module__}:{obj.__qualname__})"
+    if inspect.isfunction(obj):
+        # TODO: distinguish bound method
+        return f"function({obj.__module__}:{obj.__qualname__})"
+    if isinstance(obj, object):
+        return f"object({obj.__module__}:{obj.__class__.__name__})"
+    return str(obj)
+
+
 def create_patch_proxy(target: Callable, new: Callable):
     """
     Creates a proxy that calls `new` but passes as first argument the target.
@@ -37,6 +60,9 @@ def create_patch_proxy(target: Callable, new: Callable):
             args = args[1:]
         return new(target, *args, **kwargs)
 
+    # keep track of the real proxy subject (i.e., the new function that is used as patch)
+    proxy.__subject__ = new
+
     _is_bound_method = inspect.ismethod(target)
     if _is_bound_method:
         proxy = types.MethodType(proxy, target.__self__)
@@ -45,6 +71,16 @@ def create_patch_proxy(target: Callable, new: Callable):
 
 
 class Patch:
+    applied_patches: List["Patch"] = []
+    """Bookkeeping for patches that are applied. You can use this to debug patches. For instance,
+    you could write something like::
+
+      for patch in Patch.applied_patches:
+          print(patch)
+
+    Which will output in a human readable format information about the currently active patches.
+    """
+
     obj: Any
     name: str
     new: Any
@@ -60,10 +96,12 @@ class Patch:
     def apply(self):
         setattr(self.obj, self.name, self.new)
         self.is_applied = True
+        Patch.applied_patches.append(self)
 
     def undo(self):
         setattr(self.obj, self.name, self.old)
         self.is_applied = False
+        Patch.applied_patches.remove(self)
 
     def __enter__(self):
         self.apply()
@@ -94,6 +132,17 @@ class Patch:
             new = fn
 
         return Patch(obj, name, new)
+
+    def __str__(self):
+        try:
+            # try to unwrap the original underlying function that is used as patch (basically undoes what
+            # ``create_patch_proxy`` does)
+            new = self.new.__subject__
+        except AttributeError:
+            new = self.new
+
+        old = self.old
+        return f"Patch({to_metadata_string(old)} -> {to_metadata_string(new)}, applied={self.is_applied})"
 
 
 class Patches:
@@ -166,6 +215,7 @@ def patch(target, pass_target=True):
     :returns: the same function, but with a patch created
     """
 
+    @functools.wraps(target)
     def wrapper(fn):
         fn.patch = Patch.function(target, fn, pass_target=pass_target)
         fn.patch.apply()
