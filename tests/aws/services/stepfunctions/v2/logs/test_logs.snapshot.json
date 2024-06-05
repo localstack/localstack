@@ -1,0 +1,369 @@
+{
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[pass_result.json5_ALL_False]": {
+    "recorded-date": "05-06-2024, 19:27:06",
+    "recorded-content": {
+      "log_events": [
+        {
+          "id": "1",
+          "type": "ExecutionStarted",
+          "details": {
+            "roleArn": "snf_role_arn"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "2",
+          "type": "PassStateEntered",
+          "details": {
+            "name": "State_1"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "3",
+          "type": "PassStateExited",
+          "details": {
+            "name": "State_1"
+          },
+          "previous_event_id": "2",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "4",
+          "type": "ExecutionSucceeded",
+          "details": {},
+          "previous_event_id": "3",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[pass_result.json5_ALL_True]": {
+    "recorded-date": "05-06-2024, 19:39:53",
+    "recorded-content": {
+      "log_events": [
+        {
+          "id": "1",
+          "type": "ExecutionStarted",
+          "details": {
+            "input": {},
+            "inputDetails": {
+              "truncated": false
+            },
+            "roleArn": "snf_role_arn"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "2",
+          "type": "PassStateEntered",
+          "details": {
+            "input": {},
+            "inputDetails": {
+              "truncated": false
+            },
+            "name": "State_1"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "3",
+          "type": "PassStateExited",
+          "details": {
+            "name": "State_1",
+            "output": {
+              "Arg1": "argument1"
+            },
+            "outputDetails": {
+              "truncated": false
+            }
+          },
+          "previous_event_id": "2",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "4",
+          "type": "ExecutionSucceeded",
+          "details": {
+            "output": {
+              "Arg1": "argument1"
+            },
+            "outputDetails": {
+              "truncated": false
+            }
+          },
+          "previous_event_id": "3",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[raise_failure.json5_ALL_False]": {
+    "recorded-date": "05-06-2024, 19:29:47",
+    "recorded-content": {
+      "log_events": [
+        {
+          "id": "1",
+          "type": "ExecutionStarted",
+          "details": {
+            "roleArn": "snf_role_arn"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "2",
+          "type": "FailStateEntered",
+          "details": {
+            "name": "FailState"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "3",
+          "type": "ExecutionFailed",
+          "details": {
+            "cause": "This state machines raises a 'SomeFailure' failure.",
+            "error": "SomeFailure"
+          },
+          "previous_event_id": "2",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[raise_failure.json5_ALL_True]": {
+    "recorded-date": "05-06-2024, 19:41:08",
+    "recorded-content": {
+      "log_events": [
+        {
+          "id": "1",
+          "type": "ExecutionStarted",
+          "details": {
+            "input": {},
+            "inputDetails": {
+              "truncated": false
+            },
+            "roleArn": "snf_role_arn"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "2",
+          "type": "FailStateEntered",
+          "details": {
+            "input": {},
+            "inputDetails": {
+              "truncated": false
+            },
+            "name": "FailState"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "3",
+          "type": "ExecutionFailed",
+          "details": {
+            "cause": "This state machines raises a 'SomeFailure' failure.",
+            "error": "SomeFailure"
+          },
+          "previous_event_id": "2",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[wait_seconds_path.json5_ALL_False]": {
+    "recorded-date": "05-06-2024, 19:32:16",
+    "recorded-content": {
+      "log_events": [
+        {
+          "id": "1",
+          "type": "ExecutionStarted",
+          "details": {
+            "roleArn": "snf_role_arn"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "2",
+          "type": "WaitStateEntered",
+          "details": {
+            "name": "WaitState"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "3",
+          "type": "ExecutionFailed",
+          "details": {
+            "cause": "An error occurred while executing the state 'WaitState' (entered at the event id #2). The SecondsPath parameter does not reference an input value: $.input.waitSeconds",
+            "error": "States.Runtime"
+          },
+          "previous_event_id": "2",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[wait_seconds_path.json5_ALL_True]": {
+    "recorded-date": "05-06-2024, 19:33:35",
+    "recorded-content": {
+      "log_events": [
+        {
+          "id": "1",
+          "type": "ExecutionStarted",
+          "details": {
+            "input": {},
+            "inputDetails": {
+              "truncated": false
+            },
+            "roleArn": "snf_role_arn"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "2",
+          "type": "WaitStateEntered",
+          "details": {
+            "input": {},
+            "inputDetails": {
+              "truncated": false
+            },
+            "name": "WaitState"
+          },
+          "previous_event_id": "0",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        },
+        {
+          "id": "3",
+          "type": "ExecutionFailed",
+          "details": {
+            "cause": "An error occurred while executing the state 'WaitState' (entered at the event id #2). The SecondsPath parameter does not reference an input value: $.input.waitSeconds",
+            "error": "States.Runtime"
+          },
+          "previous_event_id": "2",
+          "event_timestamp": "timestamp",
+          "execution_arn": "arn:aws:states:<region>:111111111111:execution:<ArnPart_0idx>:<ExecArnPart_0idx>",
+          "redrive_count": "0"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_deleted_log_group": {
+    "recorded-date": "05-06-2024, 20:42:56",
+    "recorded-content": {
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

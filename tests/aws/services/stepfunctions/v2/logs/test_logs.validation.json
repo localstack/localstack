@@ -1,0 +1,23 @@
+{
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[pass_result.json5_ALL_False]": {
+    "last_validated_date": "2024-06-05T19:27:06+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[pass_result.json5_ALL_True]": {
+    "last_validated_date": "2024-06-05T19:39:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[raise_failure.json5_ALL_False]": {
+    "last_validated_date": "2024-06-05T19:29:47+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[raise_failure.json5_ALL_True]": {
+    "last_validated_date": "2024-06-05T19:41:08+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[wait_seconds_path.json5_ALL_False]": {
+    "last_validated_date": "2024-06-05T19:32:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[wait_seconds_path.json5_ALL_True]": {
+    "last_validated_date": "2024-06-05T19:33:35+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_deleted_log_group": {
+    "last_validated_date": "2024-06-05T20:42:56+00:00"
+  }
+}

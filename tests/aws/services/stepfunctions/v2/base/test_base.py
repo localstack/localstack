@@ -16,7 +16,7 @@ from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSnfBase:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..redriveCount", "$..redriveStatus"])

@@ -116,35 +116,35 @@ class Program(EvalComponent):
             exec_failed_event_details = select_from_typed_dict(
                 typed_dict=ExecutionFailedEventDetails, obj=program_state.error or dict()
             )
-            env.event_history.add_event(
+            env.execution_event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.ExecutionFailed,
-                event_detail=EventDetails(executionFailedEventDetails=exec_failed_event_details),
+                event_type=HistoryEventType.ExecutionFailed,
+                event_details=EventDetails(executionFailedEventDetails=exec_failed_event_details),
             )
         elif isinstance(program_state, ProgramStopped):
             env.event_history_context.source_event_id = 0
-            env.event_history.add_event(
+            env.execution_event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.ExecutionAborted,
-                event_detail=EventDetails(
+                event_type=HistoryEventType.ExecutionAborted,
+                event_details=EventDetails(
                     executionAbortedEventDetails=ExecutionAbortedEventDetails(
                         error=program_state.error, cause=program_state.cause
                     )
                 ),
             )
         elif isinstance(program_state, ProgramTimedOut):
-            env.event_history.add_event(
+            env.execution_event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.ExecutionTimedOut,
-                event_detail=EventDetails(
+                event_type=HistoryEventType.ExecutionTimedOut,
+                event_details=EventDetails(
                     executionTimedOutEventDetails=ExecutionTimedOutEventDetails()
                 ),
             )
         elif isinstance(program_state, ProgramEnded):
-            env.event_history.add_event(
+            env.execution_event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.ExecutionSucceeded,
-                event_detail=EventDetails(
+                event_type=HistoryEventType.ExecutionSucceeded,
+                event_details=EventDetails(
                     executionSucceededEventDetails=ExecutionSucceededEventDetails(
                         output=to_json_str(env.inp, separators=(",", ":")),
                         outputDetails=HistoryEventExecutionDataDetails(

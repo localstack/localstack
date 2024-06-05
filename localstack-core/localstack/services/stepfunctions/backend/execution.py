@@ -33,6 +33,9 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     StateMachine as ContextObjectStateMachine,
 )
+from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+    CloudWatchLoggingSession,
+)
 from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramEnded,
     ProgramError,
@@ -95,6 +98,7 @@ class Execution:
     input_data: Final[Optional[json]]
     input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]]
     trace_header: Final[Optional[TraceHeader]]
+    _cloud_watch_logging_session: Final[Optional[CloudWatchLoggingSession]]
 
     exec_status: Optional[ExecutionStatus]
     stop_date: Optional[Timestamp]
@@ -118,6 +122,7 @@ class Execution:
         region_name: str,
         state_machine: StateMachineInstance,
         start_date: Timestamp,
+        cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
         activity_store: dict[Arn, Activity],
         input_data: Optional[json] = None,
         trace_header: Optional[TraceHeader] = None,
@@ -129,6 +134,7 @@ class Execution:
         self.region_name = region_name
         self.state_machine = state_machine
         self.start_date = start_date
+        self._cloud_watch_logging_session = cloud_watch_logging_session
         self.input_data = input_data
         self.input_details = CloudWatchEventsExecutionDataDetails(included=True)
         self.trace_header = trace_header
@@ -184,6 +190,7 @@ class Execution:
             roleArn=self.role_arn,
             # The date and time the state machine associated with an execution was updated.
             updateDate=state_machine.create_date,
+            loggingConfiguration=state_machine.logging_config,
         )
         revision_id = self.state_machine.revision_id
         if self.state_machine.revision_id:
@@ -211,7 +218,11 @@ class Execution:
         return item
 
     def to_history_output(self) -> GetExecutionHistoryOutput:
-        event_history: HistoryEventList = self.exec_worker.env.event_history.get_event_history()
+        env = self.exec_worker.env
+        event_history: HistoryEventList = list()
+        if env is not None:
+            # The execution has not started yet.
+            event_history: HistoryEventList = env.execution_event_manager.get_event_history()
         return GetExecutionHistoryOutput(events=event_history)
 
     @staticmethod
@@ -251,6 +262,7 @@ class Execution:
             exec_comm=self._get_start_execution_worker_comm(),
             context_object_init=self._get_start_context_object_init_data(),
             aws_execution_details=self._get_start_aws_execution_details(),
+            cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
         )
 

@@ -219,10 +219,10 @@ class ExecutionState(CommonStateField, abc.ABC):
                 break
             except Exception as ex:
                 failure_event: FailureEvent = self._from_error(env=env, ex=ex)
-                env.event_history.add_event(
+                env.execution_event_manager.add_event(
                     context=env.event_history_context,
-                    hist_type_event=failure_event.event_type,
-                    event_detail=failure_event.event_details,
+                    event_type=failure_event.event_type,
+                    event_details=failure_event.event_details,
                 )
 
                 if self.retry:

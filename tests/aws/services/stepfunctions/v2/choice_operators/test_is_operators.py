@@ -10,7 +10,7 @@ from tests.aws.services.stepfunctions.v2.choice_operators.utils import (
 # TODO: test for validation errors, and boundary testing.
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestIsOperators:
     @markers.aws.validated
     def test_is_boolean(

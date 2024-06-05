@@ -117,20 +117,20 @@ class StateMap(ExecutionState):
 
         self.items_path.eval(env)
         if self.item_reader:
-            env.event_history.add_event(
+            env.execution_event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.MapStateStarted,
-                event_detail=EventDetails(
+                event_type=HistoryEventType.MapStateStarted,
+                event_details=EventDetails(
                     mapStateStartedEventDetails=MapStateStartedEventDetails(length=0)
                 ),
             )
             input_items = None
         else:
             input_items = env.stack.pop()
-            env.event_history.add_event(
+            env.execution_event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.MapStateStarted,
-                event_detail=EventDetails(
+                event_type=HistoryEventType.MapStateStarted,
+                event_details=EventDetails(
                     mapStateStartedEventDetails=MapStateStartedEventDetails(length=len(input_items))
                 ),
             )
@@ -177,9 +177,9 @@ class StateMap(ExecutionState):
         env.stack.append(eval_input)
         self.iteration_component.eval(env)
 
-        env.event_history.add_event(
+        env.execution_event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.MapStateSucceeded,
+            event_type=HistoryEventType.MapStateSucceeded,
             update_source_event_id=False,
         )
 
@@ -205,9 +205,9 @@ class StateMap(ExecutionState):
                     if retry_outcome == RetryOutcome.CanRetry:
                         continue
 
-                env.event_history.add_event(
+                env.execution_event_manager.add_event(
                     context=env.event_history_context,
-                    hist_type_event=HistoryEventType.MapStateFailed,
+                    event_type=HistoryEventType.MapStateFailed,
                 )
 
                 if self.catch:

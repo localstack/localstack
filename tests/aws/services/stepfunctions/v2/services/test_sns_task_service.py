@@ -17,7 +17,6 @@ from tests.aws.test_notifications import PUBLICATION_RETRIES, PUBLICATION_TIMEOU
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         # TODO: add support for Sdk Http metadata.
         "$..SdkHttpMetadata",

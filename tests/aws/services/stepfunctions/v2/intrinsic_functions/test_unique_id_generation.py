@@ -11,7 +11,7 @@ from tests.aws.services.stepfunctions.templates.intrinsicfunctions.intrinsic_fun
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestUniqueIdGeneration:
     @markers.aws.validated
     def test_uuid(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):

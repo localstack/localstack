@@ -23,6 +23,9 @@ from localstack.aws.api.stepfunctions import (
     TracingConfiguration,
     ValidationException,
 )
+from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+    CloudWatchLoggingConfiguration,
+)
 from localstack.utils.strings import long_uid
 
 
@@ -34,7 +37,8 @@ class StateMachineInstance:
     role_arn: Arn
     create_date: datetime.datetime
     sm_type: StateMachineType
-    logging_config: Optional[LoggingConfiguration]
+    logging_config: LoggingConfiguration
+    cloud_watch_logging_configuration: Optional[CloudWatchLoggingConfiguration]
     tags: Optional[TagList]
     tracing_config: Optional[TracingConfiguration]
 
@@ -44,9 +48,10 @@ class StateMachineInstance:
         arn: Arn,
         definition: Definition,
         role_arn: Arn,
+        logging_config: LoggingConfiguration,
+        cloud_watch_logging_configuration: Optional[CloudWatchLoggingConfiguration] = None,
         create_date: Optional[datetime.datetime] = None,
         sm_type: Optional[StateMachineType] = None,
-        logging_config: Optional[LoggingConfiguration] = None,
         tags: Optional[TagList] = None,
         tracing_config: Optional[TracingConfiguration] = None,
     ):
@@ -58,6 +63,7 @@ class StateMachineInstance:
         self.create_date = create_date or datetime.datetime.now(tz=datetime.timezone.utc)
         self.sm_type = sm_type or StateMachineType.STANDARD
         self.logging_config = logging_config
+        self.cloud_watch_logging_configuration = cloud_watch_logging_configuration
         self.tags = tags
         self.tracing_config = tracing_config
 
@@ -152,9 +158,10 @@ class StateMachineRevision(StateMachineInstance):
         arn: Arn,
         definition: Definition,
         role_arn: Arn,
+        logging_config: LoggingConfiguration,
+        cloud_watch_logging_configuration: Optional[CloudWatchLoggingConfiguration],
         create_date: Optional[datetime.datetime] = None,
         sm_type: Optional[StateMachineType] = None,
-        logging_config: Optional[LoggingConfiguration] = None,
         tags: Optional[TagList] = None,
         tracing_config: Optional[TracingConfiguration] = None,
     ):
@@ -163,18 +170,24 @@ class StateMachineRevision(StateMachineInstance):
             arn,
             definition,
             role_arn,
+            logging_config,
+            cloud_watch_logging_configuration,
             create_date,
             sm_type,
-            logging_config,
             tags,
             tracing_config,
         )
         self.versions = dict()
         self._version_number = 0
         self.tag_manager = TagManager()
+        if tags:
+            self.tag_manager.add_all(tags)
 
     def create_revision(
-        self, definition: Optional[str], role_arn: Optional[Arn]
+        self,
+        definition: Optional[str],
+        role_arn: Optional[Arn],
+        logging_configuration: Optional[LoggingConfiguration],
     ) -> Optional[RevisionId]:
         update_definition = definition and json.loads(definition) != json.loads(self.definition)
         if update_definition:
@@ -184,7 +197,16 @@ class StateMachineRevision(StateMachineInstance):
         if update_role_arn:
             self.role_arn = role_arn
 
-        if any([update_definition, update_role_arn]):
+        update_logging_configuration = logging_configuration != self.logging_config
+        if update_logging_configuration:
+            self.logging_config = logging_configuration
+            self.cloud_watch_logging_configuration = (
+                CloudWatchLoggingConfiguration.from_logging_configuration(
+                    state_machine_arn=self.arn, logging_configuration=self.logging_config
+                )
+            )
+
+        if any([update_definition, update_role_arn, update_logging_configuration]):
             self.revision_id = long_uid()
 
         return self.revision_id
@@ -234,6 +256,7 @@ class StateMachineVersion(StateMachineInstance):
             create_date=datetime.datetime.now(tz=datetime.timezone.utc),
             sm_type=state_machine_revision.sm_type,
             logging_config=state_machine_revision.logging_config,
+            cloud_watch_logging_configuration=state_machine_revision.cloud_watch_logging_configuration,
             tags=state_machine_revision.tags,
             tracing_config=state_machine_revision.tracing_config,
         )

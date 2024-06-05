@@ -12,7 +12,7 @@ from tests.aws.services.stepfunctions.templates.scenarios.scenarios_templates im
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSnfApiMapRun:
     @markers.aws.validated
     def test_list_map_runs_and_describe_map_run(

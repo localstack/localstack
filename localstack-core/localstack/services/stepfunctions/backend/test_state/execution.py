@@ -87,6 +87,7 @@ class TestStateExecution(Execution):
             exec_comm=self._get_start_execution_worker_comm(),
             context_object_init=self._get_start_context_object_init_data(),
             aws_execution_details=self._get_start_aws_execution_details(),
+            cloud_watch_logging_session=None,
             activity_store=self._activity_store,
         )
 

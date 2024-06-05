@@ -8,7 +8,9 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
     ContextObjectInitData,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistoryContext
+from localstack.services.stepfunctions.asl.eval.event.execution_event_manager import (
+    EventHistoryContext,
+)
 from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunning
 from localstack.services.stepfunctions.asl.eval.test_state.program_state import (
     ProgramChoiceSelected,
@@ -30,6 +32,7 @@ class TestStateEnvironment(Environment):
             aws_execution_details=aws_execution_details,
             context_object_init=context_object_init,
             event_history_context=event_history_context,
+            cloud_watch_logging_session=None,
             activity_store=activity_store,
         )
         self.inspection_data = InspectionData()

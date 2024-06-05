@@ -12,7 +12,7 @@ from tests.aws.services.stepfunctions.templates.activities.activity_templates im
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestActivities:
     @markers.aws.validated
     def test_activity_task(
