@@ -194,6 +194,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download AMD64 image
         uses: actions/download-artifact@v4
         with:
