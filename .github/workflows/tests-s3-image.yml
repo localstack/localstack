@@ -194,6 +194,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: Download docker-helper.sh
+        run: |
+          curl -o /tmp/docker-helper.sh -L https://raw.githubusercontent.com/localstack/localstack/master/bin/docker-helper.sh -H 'Accept: application/vnd.github.v3.raw'
+          chmod +x /tmp/docker-helper.sh
+
       - name: Download AMD64 image
         uses: actions/download-artifact@v4
         with:
@@ -207,25 +212,25 @@ jobs:
       - name: Load AMD64 image
         env:
           PLATFORM: amd64
-        run: ./bin/docker-helper.sh load
+        run: /tmp/docker-helper.sh load
 
       - name: Push AMD64 image
         env:
           PLATFORM: amd64
-        run: ./bin/docker-helper.sh push
+        run: /tmp/docker-helper.sh push
 
       - name: Load ARM64 image
         env:
           PLATFORM: arm64
-        run: ./bin/docker-helper.sh load
+        run: /tmp/docker-helper.sh load
 
       - name: Push ARM64 image
         env:
           PLATFORM: arm64
-        run: ./bin/docker-helper.sh push
+        run: /tmp/docker-helper.sh push
 
       - name: Create and push manifest
-        run: ./bin/docker-helper.sh push-manifests
+        run: /tmp/docker-helper.sh push-manifests
 
   cleanup:
     name: "Clean up"
