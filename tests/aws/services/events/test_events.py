@@ -22,8 +22,12 @@ from localstack.utils.aws import arns
 from localstack.utils.files import load_file
 from localstack.utils.strings import long_uid, short_uid, to_str
 from localstack.utils.sync import poll_condition, retry
-from tests.aws.services.events.conftest import assert_valid_event, sqs_collect_messages
-from tests.aws.services.events.helper_functions import is_old_provider, is_v2_provider
+from tests.aws.services.events.conftest import assert_valid_event
+from tests.aws.services.events.helper_functions import (
+    is_old_provider,
+    is_v2_provider,
+    sqs_collect_messages,
+)
 
 EVENT_DETAIL = {"command": "update-account", "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"}}
 
