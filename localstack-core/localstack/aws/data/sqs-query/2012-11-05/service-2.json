@@ -1166,6 +1166,9 @@
         "AttributeNames":{
           "shape":"AttributeNameList"
         },
+        "MessageSystemAttributeNames":{
+          "shape":"AttributeNameList"
+        },
         "MessageAttributeNames":{
           "shape":"MessageAttributeNameList"
         },

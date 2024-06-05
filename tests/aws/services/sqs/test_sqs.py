@@ -4272,6 +4272,68 @@ class TestSqsProvider:
         assert snapshot.match("multiple_attributes", response)
 
     @markers.aws.validated
+    def test_receive_message_message_system_attribute_names_filters(
+        self, sqs_create_queue, snapshot, aws_sqs_client
+    ):
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="msg",
+            MessageAttributes={
+                "Foo": {"DataType": "String", "StringValue": "Bar"},
+            },
+        )
+
+        def receive_message(message_system_attribute_names, message_attribute_names=None):
+            return aws_sqs_client.receive_message(
+                QueueUrl=queue_url,
+                WaitTimeSeconds=5,
+                MessageSystemAttributeNames=message_system_attribute_names,
+                MessageAttributeNames=message_attribute_names or [],
+            )
+
+        response = receive_message(["All"])
+        assert snapshot.match("all_attributes", response)
+
+        response = receive_message(["All"], ["All"])
+        assert snapshot.match("all_system_and_message_attributes", response)
+
+        response = receive_message(["SenderId"])
+        assert snapshot.match("single_attribute", response)
+
+        response = receive_message(["SenderId", "SequenceNumber"])
+        assert snapshot.match("multiple_attributes", response)
+
+    @markers.aws.validated
+    def test_message_system_attribute_names_with_attribute_names(
+        self, sqs_create_queue, snapshot, aws_sqs_client
+    ):
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "0"})
+
+        aws_sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="msg",
+            MessageAttributes={
+                "Foo": {"DataType": "String", "StringValue": "Bar"},
+            },
+        )
+
+        def receive_message(message_system_attribute_names, attribute_names):
+            return aws_sqs_client.receive_message(
+                QueueUrl=queue_url,
+                WaitTimeSeconds=5,
+                MessageSystemAttributeNames=message_system_attribute_names,
+                AttributeNames=attribute_names,
+            )
+
+        response = receive_message(["All"], attribute_names=["All"])
+        assert snapshot.match("same_values", response)
+
+        response = receive_message(["All"], attribute_names=["SenderId"])
+        assert snapshot.match("different_values", response)
+
+    @markers.aws.validated
     def test_change_visibility_on_deleted_message_raises_invalid_parameter_value(
         self, sqs_queue, aws_sqs_client
     ):
