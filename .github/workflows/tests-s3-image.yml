@@ -43,7 +43,7 @@ on:
         description: 'Publish S3-only images on Dockerhub'
         required: false
         type: boolean
-        default: false
+        default: true
       PYTEST_LOGLEVEL:
         type: choice
         description: Loglevel for PyTest
