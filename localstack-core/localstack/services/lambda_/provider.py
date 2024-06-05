@@ -973,8 +973,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self, context: RequestContext, request: UpdateFunctionConfigurationRequest
     ) -> FunctionConfiguration:
         """updates the $LATEST version of the function"""
-        function_name = request.get("FunctionName")  # TODO: can this be an ARN too?
-        state = lambda_stores[context.account_id][context.region]
+        function_name = request.get("FunctionName")
+
+        # in case we got ARN or partial ARN
+        function_name, qualifier = api_utils.get_name_and_qualifier(function_name, None, context)
+        account_id, region = api_utils.get_account_and_region(function_name, context)
+        state = lambda_stores[account_id][region]
 
         if function_name not in state.functions:
             raise ResourceNotFoundException(
