@@ -669,9 +669,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             "STREAMING-"
         ) or "aws-chunked" in headers.get("content-encoding", "")
         if is_aws_chunked:
-            if checksum_algorithm := get_s3_checksum_algorithm_from_trailing_headers(
-                headers.get("x-amz-trailer", "")
-            ):
+            checksum_algorithm = (
+                checksum_algorithm
+                or get_s3_checksum_algorithm_from_trailing_headers(headers.get("x-amz-trailer", ""))
+            )
+            if checksum_algorithm:
                 s3_object.checksum_algorithm = checksum_algorithm
 
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
@@ -1955,9 +1957,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         ) or "aws-chunked" in headers.get("content-encoding", "")
         # check if chunked request
         if is_aws_chunked:
-            if checksum_algorithm := get_s3_checksum_algorithm_from_trailing_headers(
-                headers.get("x-amz-trailer", "")
-            ):
+            checksum_algorithm = (
+                checksum_algorithm
+                or get_s3_checksum_algorithm_from_trailing_headers(headers.get("x-amz-trailer", ""))
+            )
+            if checksum_algorithm:
                 s3_part.checksum_algorithm = checksum_algorithm
 
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
