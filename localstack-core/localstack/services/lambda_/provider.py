@@ -2039,11 +2039,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         invoke_mode: InvokeMode = None,
         **kwargs,
     ) -> CreateFunctionUrlConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
-
         function_name, qualifier = api_utils.get_name_and_qualifier(
             function_name, qualifier, context
         )
+        account_id, region = api_utils.get_account_and_region(function_name, context)
+        state = lambda_stores[account_id][region]
         self._validate_qualifier(qualifier)
         self._validate_invoke_mode(invoke_mode)
 
@@ -2064,11 +2064,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         normalized_qualifier = qualifier or "$LATEST"
 
         function_arn = (
-            api_utils.qualified_lambda_arn(
-                function_name, qualifier, context.account_id, context.region
-            )
+            api_utils.qualified_lambda_arn(function_name, qualifier, account_id, region)
             if qualifier
-            else api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)
+            else api_utils.unqualified_lambda_arn(function_name, account_id, region)
         )
 
         # create function URL config
