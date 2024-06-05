@@ -1,0 +1,101 @@
+{
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventCrossRegion::test_event_bus_to_event_bus_cross_region": {
+    "recorded-date": "05-06-2024, 14:32:29",
+    "recorded-content": {
+      "messages_primary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "AQEB0HsxWOSql/KxyMJH9ePHyHPVSkagnG8TQlBjnPlfYlOdH8FfTJvxbFMTyAWgccPNCYeI4nLoJJY7loK3TpPXiG93Engnu6tQvdX8lODd4zl/z26Suz0KAesLF0XLCfEHPTuDa88P/EAIhiXyLscP3/dtX8lo74KuOAANDVqwsTnJEoMkHJo0qrSiSLqjPJduKdK/j+srn97q92LiH/qlcPZFfZV+9Gi+ucg9faIM6RhllFps9l/TF9SN5+EhVi8/V/F88nrwnrnAmz2TiQTkvlCj9ir+AUnn233Uqkhn7SFIBSif0djvE0OB7a+H1GFwDnXwnEJl8HiCgFWjrUzgEGrlRTvCuBuQZbjOu1NZ3vZwkbfjiGxdk6IPVKdUOK5l05DG9tU+HRcsPiLI6hH3ZsN2qPtg6ZEe42Z80wzEtvU=",
+          "MD5OfBody": "40881a88204d469f1bacabfbbe6c0cb4",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "AQEBR0prdh7jiHByr4JqvVrID0mYvujhCFmHwp3LQmaWkC1B/1sp5mjy44AnOojWs+zbY3FyBpbmmN69sxm26+KTmECI3OYcXOGplf6GihhNfN6X69LU5Cg2o0PS2mSbxfSZ7eVy8/fa0h5tWthxIh5OO1dLxMgcFbjUFKTdy4+VjNNRqUu3VEwlnphuyNVgZ/+RbNb4/rgVR+uBPcI2nepgdHLSmCu2SbNtYIzI7iCVsJn/syy61fzn38GJNqij0KUWTIL2JK88D1xrK4sDk2qWA3i1W7/l9a8tcW2URUPK1pT9O9m08J/WJk0NfqB4pNObzQCMOc1onP75hhZjHrnEEE8gw2A8xb7u34GJZ0SdlnS7XsePSoW8KXuGc/eIE/hp/fJehTgA6CMVO+8pYSwWNmr68JadqWQA4RZ40rk/SSc=",
+          "MD5OfBody": "a081e223a17fa3e3c2e1934dbb3828d3",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_secondary_event_bus": [
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "AQEBVt9FjHVclnP2ODMvKA6aZ5q4R1vAEyVxhKgtETw03n3M5iQMeTCaA3FCHbdDJtv3BqJUhnR9b6aH9GkgpkB94Z5bvVF1qEdxTr4Y99T9SV57beTIi56/f1/OGx/cp2cV/OStd/4fWqnZvIVsOXlTyaeeejngUBpn04hv1lrEUXdwKAwhdRixvNfywVJE/WBN1Hpip9bJOlT13gS3ljk77FoDiuLWbs/PSP03Tea3zkElSr4eII47o2GzQzXODyXy0whUW4JdkfB9XRhNwNJ9nX1Ge2ufU9o7ZZHJoOCxwjSI73n+9j5z5kv/5KTo2zYFpx4AJNmiWgGJ+TRFCyvFO+k2l0l2AK04lD/gKZKMrzrkTY3rVUT26mvDq3TclF4O8S9tSWZSke8+DRWKl0aLZVov26gJOih5O1bSA4jmF1w=",
+          "MD5OfBody": "db9fdefe60b55863aec1a38b20e3a56a",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        },
+        {
+          "MessageId": "<uuid:7>",
+          "ReceiptHandle": "AQEB9VuHce/zh31EycVDdDkCsJqYCmAvQRRioOfl9i2Epfr+MDNHjMQVw/xmhJLvEETCKXJVE4aUXG6LgUESjdkykuv6ABqB3cYRX/qTT8JtcejZPyY/14duW9qmKkxHYChJTcY8FW6AAJkQlSQ7Ejy4lHkSdxr0t0zXY6y1zYffgIiaZhWfXT6wuyzPi7k26d3ISCDYj1QOfTq8hfb8FLnGdmEiMoIVgkQAcjaSLc7tNgrisC8s0pc31wJKBNR9Pthi7eBDpGDl4K3p3cvotYeW88h9qPlqhHsjw+Tj0q1q27X5SQzW4CbRW4EYGZNAQ8mW1Gw/G6wp2iStiom9JaVAm1S54KUY9fv0e5mGTq4mBi2HL4dGme6QanFgRcV5JMdCCoZrx/MydeM4qhwqU3QSU+oDr/TDKOeLBHaVluG3kfo=",
+          "MD5OfBody": "c7fde7ad28a51821cf22739798abe416",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:8>",
+            "detail-type": "core.update-account-command",
+            "source": "source-secondary",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
