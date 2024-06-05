@@ -43,7 +43,7 @@ on:
         description: 'Publish S3-only images on Dockerhub'
         required: false
         type: boolean
-        default: true
+        default: false
       PYTEST_LOGLEVEL:
         type: choice
         description: Loglevel for PyTest
@@ -183,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build-test-s3
-    if: inputs.publishDockerImage
+    # if: inputs.publishDockerImage
     env:
       IMAGE_NAME: "localstack/localstack"
       DEFAULT_TAG: "s3-latest"
