@@ -107,8 +107,12 @@ class TestSTSIntegrations:
                 snapshot.transform.key_value("SessionToken"),
             ]
         )
+        snapshot.add_transformer(snapshot.transform.key_value("RoleSessionName"), priority=-1)
 
         test_role_session_name = f"test-assume-role-{short_uid()}"
+        # we snapshot the test role session name with a transformer in order to validate its presence in the
+        # `AssumedRoleId` and Àrn` of the `AssumedRoleUser`
+        snapshot.match("role-session-name", {"RoleSessionName": test_role_session_name})
         test_role_name = f"role-{short_uid()}"
         assume_policy_doc = {
             "Version": "2012-10-17",
@@ -133,10 +137,6 @@ class TestSTSIntegrations:
 
         response = retry(assume_role, sleep=5, retries=4)
         snapshot.match("assume-role", response)
-
-        if response["AssumedRoleUser"]["AssumedRoleId"]:
-            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
-            assert assume_role_id_parts[1] == test_role_session_name
 
     @markers.aws.only_localstack
     def test_assume_non_existent_role(self, aws_client):
