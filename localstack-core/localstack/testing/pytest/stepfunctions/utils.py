@@ -272,7 +272,6 @@ def await_on_execution_logs(
             if not log_streams:
                 return False
 
-            # TODO: SFN create an extra log stream to validate the configuration: add test.
             log_stream_name = log_streams[-1]["logStreamName"]
             if (
                 log_stream_name
