@@ -1471,17 +1471,39 @@ class TestDynamoDB:
 
         item_id = "my-item-id"
         # assert that when we insert/update the record with the same value, no event is sent
-        for _ in range(2):
-            aws_client.dynamodb.update_item(
-                TableName=table_name,
-                Key={PARTITION_KEY: {"S": item_id}},
-                UpdateExpression="SET attr1 = :v1, attr2 = :v2",
-                ExpressionAttributeValues={
-                    ":v1": {"S": "value1"},
-                    ":v2": {"S": "value2"},
-                },
-            )
 
+        aws_client.dynamodb.update_item(
+            TableName=table_name,
+            Key={PARTITION_KEY: {"S": item_id}},
+            UpdateExpression="SET attr1 = :v1, attr2 = :v2",
+            ExpressionAttributeValues={
+                ":v1": {"S": "value1"},
+                ":v2": {"S": "value2"},
+            },
+        )
+
+        def _get_item():
+            res = aws_client.dynamodb.get_item(
+                TableName=table_name, Key={PARTITION_KEY: {"S": item_id}}
+            )
+            assert res["Item"]["attr1"] == {"S": "value1"}
+            assert res["Item"]["attr2"] == {"S": "value2"}
+
+        # we need this retry to make sure the item is properly existing in DynamoDB before trying to overwrite it
+        # with the same value, thus not sending the event again
+        retry(_get_item, retries=3, sleep=0.1)
+
+        # send the same update, this should not publish an event to the stream
+        aws_client.dynamodb.update_item(
+            TableName=table_name,
+            Key={PARTITION_KEY: {"S": item_id}},
+            UpdateExpression="SET attr1 = :v1, attr2 = :v2",
+            ExpressionAttributeValues={
+                ":v1": {"S": "value1"},
+                ":v2": {"S": "value2"},
+            },
+        )
+        # send a different update, this will trigger an `MODIFY` event
         aws_client.dynamodb.update_item(
             TableName=table_name,
             Key={PARTITION_KEY: {"S": item_id}},
