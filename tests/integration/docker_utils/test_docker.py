@@ -365,8 +365,9 @@ class TestDockerClient:
             docker_client.remove_container(container_name)
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
-    @pytest.mark.skip(
-        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman get_networks(..) does not return list of networks in CI",
     )
     def test_get_network(self, docker_client: ContainerClient, dummy_container):
         networks = docker_client.get_networks(dummy_container.container_name)
@@ -418,8 +419,9 @@ class TestDockerClient:
         assert ipaddress.IPv4Address(result_custom_network) in ipaddress.IPv4Network(custom_network)
 
     # TODO: currently failing under Podman
-    @pytest.mark.skip(
-        _is_podman_test(), reason="Podman inspect_network does not return `Containers` attribute"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman inspect_network does not return `Containers` attribute",
     )
     def test_get_container_ip_for_network_wrong_network(
         self, docker_client: ContainerClient, dummy_container, create_network
@@ -439,8 +441,9 @@ class TestDockerClient:
             )
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
-    @pytest.mark.skip(
-        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman get_networks(..) does not return list of networks in CI",
     )
     def test_get_container_ip_for_host_network(
         self, docker_client: ContainerClient, create_container
@@ -466,8 +469,9 @@ class TestDockerClient:
             )
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
-    @pytest.mark.skip(
-        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman get_networks(..) does not return list of networks in CI",
     )
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
@@ -1283,8 +1287,8 @@ class TestDockerClient:
         assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]
 
     # TODO: currently failing under Podman
-    @pytest.mark.skip(
-        _is_podman_test(), reason="Podman inspect_network does not return `Id` attribute"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(), reason="Podman inspect_network does not return `Id` attribute"
     )
     def test_inspect_network(self, docker_client: ContainerClient, create_network):
         network_name = f"ls_test_network_{short_uid()}"
