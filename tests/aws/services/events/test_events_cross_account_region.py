@@ -28,24 +28,17 @@ class TestEventCrossRegion:
         # Create event buses
         event_bus_name_primary = f"test-event-bus-primary-{short_uid()}"
         aws_client_primary.events.create_event_bus(Name=event_bus_name_primary)["EventBusArn"]
-        cleanups.append(
-            lambda: aws_client_primary.events.delete_event_bus(Name=event_bus_name_primary)
-        )
 
         event_bus_name_secondary = f"test-event-bus-secondary-{short_uid()}"
         event_bus_arn_secondary = aws_client_secondary.events.create_event_bus(
             Name=event_bus_name_secondary
         )["EventBusArn"]
-        cleanups.append(
-            lambda: aws_client_secondary.events.delete_event_bus(Name=event_bus_name_secondary)
-        )
 
         # Create SQS queues
         queue_name_primary = f"test-queue-primary-{short_uid()}"
         queue_url_primary = aws_client_primary.sqs.create_queue(QueueName=queue_name_primary)[
             "QueueUrl"
         ]
-        cleanups.append(lambda: aws_client_primary.sqs.delete_queue(QueueUrl=queue_url_primary))
         queue_arn_primary = aws_client_primary.sqs.get_queue_attributes(
             QueueUrl=queue_url_primary, AttributeNames=["QueueArn"]
         )["Attributes"]["QueueArn"]
@@ -70,7 +63,6 @@ class TestEventCrossRegion:
         queue_url_secondary = aws_client_secondary.sqs.create_queue(QueueName=queue_name_secondary)[
             "QueueUrl"
         ]
-        cleanups.append(lambda: aws_client_secondary.sqs.delete_queue(QueueUrl=queue_url_secondary))
         queue_arn_secondary = aws_client_secondary.sqs.get_queue_attributes(
             QueueUrl=queue_url_secondary, AttributeNames=["QueueArn"]
         )["Attributes"]["QueueArn"]
@@ -100,7 +92,6 @@ class TestEventCrossRegion:
             # EventPattern=json.dumps({"source": [SOURCE_PRIMARY], **TEST_EVENT_PATTERN_NO_SOURCE}),
             EventBusName=event_bus_name_primary,
         )
-        cleanups.append(lambda: aws_client_primary.events.delete_rule(Name=rule_name))
 
         # Create target in primary region sqs
         target_id_sqs_primary = f"test-target-primary-sqs-{short_uid()}"
@@ -136,11 +127,6 @@ class TestEventCrossRegion:
                 assume_role_policy_document_bus_primary_to_bus_secondary
             ),
         )["Role"]["Arn"]
-        cleanups.append(
-            lambda: aws_client_primary.iam.delete_role(
-                RoleName=role_name_bus_primary_to_bus_secondary
-            )
-        )
 
         policy_name_bus_primary_to_bus_secondary = (
             f"event-bus-primary-to-secondary-policy-{short_uid()}"
@@ -162,12 +148,6 @@ class TestEventCrossRegion:
             PolicyName=policy_name_bus_primary_to_bus_secondary,
             PolicyDocument=json.dumps(policy_document_bus_primary_to_bus_secondary),
         )
-        cleanups.append(
-            lambda: aws_client_primary.iam.delete_role_policy(
-                RoleName=role_name_bus_primary_to_bus_secondary,
-                PolicyName=policy_name_bus_primary_to_bus_secondary,
-            )
-        )
 
         if is_aws_cloud():
             time.sleep(10)
@@ -184,14 +164,6 @@ class TestEventCrossRegion:
                     "RoleArn": role_arn_bus_primary_to_bus_secondary,
                 }
             ],
-        )
-
-        cleanups.append(
-            lambda: aws_client_primary.events.remove_targets(
-                Rule=rule_name,
-                EventBusName=event_bus_name_primary,
-                Ids=[target_id_sqs_primary, target_id_event_bus_secondary],
-            )
         )
 
         # Create rule in secondary region
@@ -263,3 +235,34 @@ class TestEventCrossRegion:
             aws_client_secondary, queue_url_secondary, min_events=1, wait_time=1, retries=5
         )
         snapshot.match("messages_secondary_queue_from_secondary_event_bus", messages_secondary)
+
+        # Custom cleanup
+        aws_client_primary.events.remove_targets(
+            Rule=rule_name,
+            EventBusName=event_bus_name_primary,
+            Ids=[target_id_sqs_primary, target_id_event_bus_secondary],
+        )
+        aws_client_primary.events.delete_rule(EventBusName=event_bus_name_primary, Name=rule_name)
+        aws_client_primary.events.delete_event_bus(Name=event_bus_name_primary)
+
+        aws_client_secondary.events.remove_targets(
+            Rule=rule_name_secondary,
+            EventBusName=event_bus_name_secondary,
+            Ids=[target_id_sqs_secondary],
+        )
+        aws_client_secondary.events.delete_rule(
+            EventBusName=event_bus_name_secondary, Name=rule_name_secondary
+        )
+        aws_client_secondary.events.delete_event_bus(Name=event_bus_name_secondary)
+
+        aws_client_primary.sqs.delete_queue(QueueUrl=queue_url_primary)
+        aws_client_secondary.sqs.delete_queue(QueueUrl=queue_url_secondary)
+
+        aws_client_primary.iam.delete_role_policy(
+            RoleName=role_name_bus_primary_to_bus_secondary,
+            PolicyName=policy_name_bus_primary_to_bus_secondary,
+        )
+        aws_client_primary.iam.delete_role(RoleName=role_name_bus_primary_to_bus_secondary)
+
+
+# class TestEventsCrossAccount:
