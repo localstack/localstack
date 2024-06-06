@@ -61,6 +61,19 @@ VALIDATION_LOG_STREAM_NAME: Final[str] = (
 )
 
 
+def is_event_in_context(log_level: LogLevel, history_event_type: HistoryEventType) -> bool:
+    # Checks whether the history event type is in the context of a give LogLevel.
+    match log_level:
+        case LogLevel.ALL:
+            return True
+        case LogLevel.OFF:
+            return False
+        case LogLevel.ERROR:
+            return history_event_type in _ERROR_LOG_EVENT_TYPES
+        case LogLevel.FATAL:
+            return history_event_type in _FATAL_LOG_EVENT_TYPES
+
+
 class CloudWatchLoggingConfiguration:
     state_machine_arn: Final[LongArn]
     log_level: Final[LogLevel]
@@ -168,15 +181,9 @@ class CloudWatchLoggingSession:
 
     def log_level_filter(self, history_event_type: HistoryEventType) -> bool:
         # Checks whether the history event type should be logged in this session.
-        match self.configuration.log_level:
-            case LogLevel.ALL:
-                return True
-            case LogLevel.OFF:
-                return False
-            case LogLevel.ERROR:
-                return history_event_type in _ERROR_LOG_EVENT_TYPES
-            case LogLevel.FATAL:
-                return history_event_type in _FATAL_LOG_EVENT_TYPES
+        return is_event_in_context(
+            log_level=self.configuration.log_level, history_event_type=history_event_type
+        )
 
     def publish_history_log(self, history_log: HistoryLog) -> None:
         if self._setup_failed:
@@ -209,6 +216,10 @@ class CloudWatchLoggingSession:
             )
             self._setup_failed = False
         except ClientError as error:
-            LOG.error(
-                f"Could not create execution log stream for execution '{self.execution_arn}' due to {error}"
-            )
+            error_code = error.response["Error"]["Code"]
+            if error_code == "ResourceAlreadyExistsException":
+                self._setup_failed = False
+            else:
+                LOG.error(
+                    f"Could not create execution log stream for execution '{self.execution_arn}' due to {error}"
+                )

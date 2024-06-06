@@ -150,7 +150,6 @@ class ExecutionEventManager:
         event_type: HistoryEventType,
         timestamp: datetime.datetime,
         event_details: Optional[EventDetails],
-        include_execution_data: bool,
     ):
         # No logging session for this execution.
         if self._cloud_watch_logging_session is None:
@@ -167,7 +166,7 @@ class ExecutionEventManager:
             timestamp=timestamp,
             execution_arn=self._cloud_watch_logging_session.execution_arn,
             event_details=event_details,
-            include_execution_data=include_execution_data,
+            include_execution_data=self._cloud_watch_logging_session.configuration.include_execution_data,
         )
         self._cloud_watch_logging_session.publish_history_log(history_log=history_log)
 
@@ -201,7 +200,6 @@ class ExecutionEventManager:
                 event_type=event_type,
                 timestamp=timestamp,
                 event_details=event_details,
-                include_execution_data=self._cloud_watch_logging_session.configuration.include_execution_data,
             )
 
             return event_id

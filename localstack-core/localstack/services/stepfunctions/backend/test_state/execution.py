@@ -72,6 +72,7 @@ class TestStateExecution(Execution):
             start_date=start_date,
             activity_store=activity_store,
             input_data=input_data,
+            cloud_watch_logging_session=None,
             trace_header=None,
         )
         self._execution_terminated_event = threading.Event()

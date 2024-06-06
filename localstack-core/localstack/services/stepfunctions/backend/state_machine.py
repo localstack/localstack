@@ -197,7 +197,9 @@ class StateMachineRevision(StateMachineInstance):
         if update_role_arn:
             self.role_arn = role_arn
 
-        update_logging_configuration = logging_configuration != self.logging_config
+        update_logging_configuration = (
+            logging_configuration and logging_configuration != self.logging_config
+        )
         if update_logging_configuration:
             self.logging_config = logging_configuration
             self.cloud_watch_logging_configuration = (

@@ -22,6 +22,7 @@ from localstack.aws.api.stepfunctions import (
     LogDestination,
     LoggingConfiguration,
     LogLevel,
+    LongArn,
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.asl.utils.json_path import JSONPathUtils
@@ -348,7 +349,7 @@ def launch_and_record_execution(
     state_machine_arn,
     execution_input,
     verify_execution_description=False,
-):
+) -> LongArn:
     exec_resp = stepfunctions_client.start_execution(
         stateMachineArn=state_machine_arn, input=execution_input
     )
@@ -377,6 +378,8 @@ def launch_and_record_execution(
         pass
 
     sfn_snapshot.match("get_execution_history", get_execution_history)
+
+    return execution_arn
 
 
 def launch_and_record_logs(

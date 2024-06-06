@@ -2,7 +2,7 @@ import itertools
 import json
 
 import pytest
-from localstack_snapshot.snapshots.transformer import RegexTransformer
+from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 from rolo.testing.pytest import poll_condition
 
 from localstack.aws.api.stepfunctions import (
@@ -11,12 +11,14 @@ from localstack.aws.api.stepfunctions import (
     LoggingConfiguration,
     LogLevel,
 )
+from localstack.services.stepfunctions.asl.eval.event.execution_logging import is_event_in_context
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
+    await_execution_terminated,
     create,
     create_and_record_execution_logs,
     launch_and_record_execution,
-    launch_and_record_logs,
 )
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
@@ -43,15 +45,13 @@ _TEST_PARTIAL_LOG_LEVEL_CONFIGURATIONS = list(
         # test case:
         [
             BaseTemplate.BASE_PASS_RESULT,
-            # BaseTemplate.BASE_RAISE_FAILURE,
-            # BaseTemplate.WAIT_SECONDS_PATH,
+            BaseTemplate.BASE_RAISE_FAILURE,
+            BaseTemplate.WAIT_SECONDS_PATH,
         ],
         # log level:
-        [LogLevel.ERROR],
-        # [LogLevel.ERROR, LogLevel.FATAL, LogLevel.OFF],
+        [LogLevel.ERROR, LogLevel.FATAL, LogLevel.OFF],
         # include execution data
-        # [False, True],
-        [True],
+        [False, True],
     )
 )
 _TEST_PARTIAL_LOG_LEVEL_CONFIGURATIONS_IDS = [
@@ -104,6 +104,7 @@ class TestLogs:
         _TEST_PARTIAL_LOG_LEVEL_CONFIGURATIONS,
         ids=_TEST_PARTIAL_LOG_LEVEL_CONFIGURATIONS_IDS,
     )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     def test_partial_log_levels(
         self,
         aws_client,
@@ -141,28 +142,60 @@ class TestLogs:
         )
 
         execution_input = json.dumps({})
-        launch_and_record_execution(
+        execution_arn = launch_and_record_execution(
             aws_client.stepfunctions,
             sfn_snapshot,
             state_machine_arn,
             execution_input,
         )
 
-        logs_client = aws_client.logs
-        log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
-        if len(log_streams) < 2:
-            # No logs recorded resulted in no log stream creation.
+        # Determine how many log events are expected.
+        execution_history = aws_client.stepfunctions.get_execution_history(
+            executionArn=execution_arn
+        )
+        expected_events_count = sum(
+            [
+                is_event_in_context(log_level=log_level, history_event_type=event["type"])
+                for event in execution_history["events"]
+            ]
+        )
+
+        # If no events are expected, then terminate, no stream would have been created.
+        if expected_events_count == 0:
             return
 
-        log_stream_name = log_streams[-1]["logStreamName"]
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..event_timestamp",
+                replacement="timestamp",
+                replace_reference=False,
+            )
+        )
 
-        log_events = logs_client.get_log_events(
-            logGroupName=log_group_name, logStreamName=log_stream_name, startFromHead=True
-        )["events"]
+        logs_client = aws_client.logs
+        log_events = list()
+
+        def _collect_log_events():
+            log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)[
+                "logStreams"
+            ]
+            if len(log_streams) < 2:
+                return False
+
+            log_stream_name = log_streams[-1]["logStreamName"]
+            nonlocal log_events
+            log_events.clear()
+            log_events = logs_client.get_log_events(
+                logGroupName=log_group_name, logStreamName=log_stream_name, startFromHead=True
+            )["events"]
+            return len(log_events) == expected_events_count
+
+        timeout = 360 if is_aws_cloud() else 120
+        interval = 60 if is_aws_cloud() else 1
+        poll_condition(condition=_collect_log_events, timeout=timeout, interval=interval)
 
         events = [json.loads(e["message"]) for e in log_events]
         logged_execution_events = sorted(events, key=lambda event: int(event.get("id")))
-
         sfn_snapshot.match("logged_execution_events", logged_execution_events)
 
     @markers.aws.validated
@@ -228,6 +261,14 @@ class TestLogs:
         sfn_snapshot,
         aws_client,
     ):
+        sfn_snapshot.add_transformer(
+            JsonpathTransformer(
+                jsonpath="$..event_timestamp",
+                replacement="timestamp",
+                replace_reference=False,
+            )
+        )
+
         logs_client = aws_client.logs
         log_group_name = sfn_create_log_group()
         log_group_arn = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)[
@@ -256,19 +297,45 @@ class TestLogs:
             logging_configuration,
         )
 
-        execution_input = json.dumps({})
-        launch_and_record_logs(
-            aws_client,
-            sfn_snapshot,
-            state_machine_arn,
-            log_group_name,
-            execution_input,
-        )
+        expected_events_count = 0
+        for i in range(3):
+            execution_input = json.dumps({"ExecutionNumber": i})
+            start_execution_response = aws_client.stepfunctions.start_execution(
+                stateMachineArn=state_machine_arn, input=execution_input
+            )
+            execution_arn = start_execution_response["executionArn"]
+            sfn_snapshot.add_transformer(
+                sfn_snapshot.transform.sfn_sm_exec_arn(start_execution_response, i)
+            )
+            await_execution_terminated(
+                stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+            )
+            execution_history = aws_client.stepfunctions.get_execution_history(
+                executionArn=execution_arn
+            )
+            expected_events_count += len(execution_history["events"])
 
-        launch_and_record_logs(
-            aws_client,
-            sfn_snapshot,
-            state_machine_arn,
-            log_group_name,
-            execution_input,
-        )
+        logs_client = aws_client.logs
+        log_events = list()
+
+        def _collect_log_events():
+            log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)[
+                "logStreams"
+            ]
+            if len(log_streams) < 2:
+                return False
+
+            log_stream_name = log_streams[-1]["logStreamName"]
+            nonlocal log_events
+            log_events.clear()
+            log_events = logs_client.get_log_events(
+                logGroupName=log_group_name, logStreamName=log_stream_name, startFromHead=True
+            )["events"]
+            return len(log_events) == expected_events_count
+
+        timeout = 360 if is_aws_cloud() else 120
+        interval = 60 if is_aws_cloud() else 1
+        poll_condition(condition=_collect_log_events, timeout=timeout, interval=interval)
+
+        logged_execution_events = [json.loads(e["message"]) for e in log_events]
+        sfn_snapshot.match("logged_execution_events", logged_execution_events)

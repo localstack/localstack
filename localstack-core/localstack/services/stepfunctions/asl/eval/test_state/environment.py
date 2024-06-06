@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Final
+from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import Arn, InspectionData
 from localstack.services.stepfunctions.asl.eval.aws_execution_details import AWSExecutionDetails
@@ -10,6 +10,9 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.execution_event_manager import (
     EventHistoryContext,
+)
+from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+    CloudWatchLoggingSession,
 )
 from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunning
 from localstack.services.stepfunctions.asl.eval.test_state.program_state import (
@@ -27,12 +30,13 @@ class TestStateEnvironment(Environment):
         context_object_init: ContextObjectInitData,
         event_history_context: EventHistoryContext,
         activity_store: dict[Arn, Activity],
+        cloud_watch_logging_session: Optional[CloudWatchLoggingSession] = None,
     ):
         super().__init__(
             aws_execution_details=aws_execution_details,
             context_object_init=context_object_init,
             event_history_context=event_history_context,
-            cloud_watch_logging_session=None,
+            cloud_watch_logging_session=cloud_watch_logging_session,
             activity_store=activity_store,
         )
         self.inspection_data = InspectionData()

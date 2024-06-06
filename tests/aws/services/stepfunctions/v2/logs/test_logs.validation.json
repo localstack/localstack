@@ -19,5 +19,62 @@
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_deleted_log_group": {
     "last_validated_date": "2024-06-05T20:42:56+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_log_group_with_multiple_runs": {
+    "last_validated_date": "2024-06-06T19:07:24+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_ERROR_False]": {
+    "last_validated_date": "2024-06-06T18:23:44+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_ERROR_True]": {
+    "last_validated_date": "2024-06-06T18:23:59+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_FATAL_False]": {
+    "last_validated_date": "2024-06-06T18:24:14+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_FATAL_True]": {
+    "last_validated_date": "2024-06-06T18:24:34+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_OFF_False]": {
+    "last_validated_date": "2024-06-06T18:24:50+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_OFF_True]": {
+    "last_validated_date": "2024-06-06T18:25:04+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_ERROR_False]": {
+    "last_validated_date": "2024-06-06T18:26:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_ERROR_True]": {
+    "last_validated_date": "2024-06-06T18:27:30+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_FATAL_False]": {
+    "last_validated_date": "2024-06-06T18:28:47+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_FATAL_True]": {
+    "last_validated_date": "2024-06-06T18:30:02+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_OFF_False]": {
+    "last_validated_date": "2024-06-06T18:30:17+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_OFF_True]": {
+    "last_validated_date": "2024-06-06T18:30:32+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_ERROR_False]": {
+    "last_validated_date": "2024-06-06T18:31:47+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_ERROR_True]": {
+    "last_validated_date": "2024-06-06T18:33:02+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_FATAL_False]": {
+    "last_validated_date": "2024-06-06T18:34:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_FATAL_True]": {
+    "last_validated_date": "2024-06-06T18:35:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_OFF_False]": {
+    "last_validated_date": "2024-06-06T18:35:54+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_OFF_True]": {
+    "last_validated_date": "2024-06-06T18:36:09+00:00"
   }
 }
