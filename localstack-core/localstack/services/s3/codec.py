@@ -120,6 +120,7 @@ class AwsChunkedDecoder(io.RawIOBase):
         the provided checksum value by the client in the S3 logic.
         """
         if checksum_algorithm := getattr(self.s3_object, "checksum_algorithm", None):
-            self.s3_object.checksum_value = self._trailing_headers.get(
+            if checksum_value := self._trailing_headers.get(
                 f"x-amz-checksum-{checksum_algorithm.lower()}"
-            )
+            ):
+                self.s3_object.checksum_value = checksum_value

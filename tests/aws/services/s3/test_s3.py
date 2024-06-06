@@ -1107,6 +1107,13 @@ class TestS3:
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
     )
+    @markers.snapshot.skip_snapshot_verify(
+        # https://github.com/aws/aws-sdk/issues/498
+        # https://github.com/boto/boto3/issues/3568
+        # This issue seems to only happen when the ContentEncoding is internally set to `aws-chunked`. Because we
+        # don't use HTTPS when testing, the issue does not happen, so we skip the flag
+        paths=["$..ContentEncoding"],
+    )
     def test_put_object_checksum(self, s3_create_bucket, algorithm, snapshot, aws_client):
         bucket = s3_create_bucket()
         key = f"file-{short_uid()}"
@@ -1176,6 +1183,13 @@ class TestS3:
     @markers.snapshot.skip_snapshot_verify(
         condition=is_v2_provider,
         paths=["$..ServerSideEncryption"],
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        # https://github.com/aws/aws-sdk/issues/498
+        # https://github.com/boto/boto3/issues/3568
+        # This issue seems to only happen when the ContentEncoding is internally set to `aws-chunked`. Because we
+        # don't use HTTPS when testing, the issue does not happen, so we skip the flag
+        paths=["$..ContentEncoding"],
     )
     def test_s3_get_object_checksum(self, s3_bucket, snapshot, algorithm, aws_client):
         key = "test-checksum-retrieval"
@@ -1250,6 +1264,123 @@ class TestS3:
             ObjectAttributes=["Checksum"],
         )
         snapshot.match("get-object-attrs", object_attrs)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER, reason="Not implemented in legacy provider"
+    )
+    def test_s3_checksum_no_algorithm(self, s3_bucket, snapshot, aws_client):
+        key = f"file-{short_uid()}"
+        data = b"test data.."
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key,
+                Body=data,
+                ChecksumSHA256=short_uid(),
+            )
+        snapshot.match("put-wrong-checksum", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket,
+                Key=key,
+                Body=data,
+                ChecksumSHA256=short_uid(),
+                ChecksumCRC32=short_uid(),
+            )
+        snapshot.match("put-2-checksums", e.value.response)
+
+        resp = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=key,
+            Body=data,
+            ChecksumSHA256=hash_sha256(data),
+        )
+        snapshot.match("put-right-checksum", resp)
+
+        head_obj = aws_client.s3.head_object(Bucket=s3_bucket, Key=key, ChecksumMode="ENABLED")
+        snapshot.match("head-obj", head_obj)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=LEGACY_V2_S3_PROVIDER, reason="Not implemented in legacy provider"
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$.wrong-checksum.Error.HostId",  # FIXME: not returned in the exception
+        ]
+    )
+    def test_s3_checksum_no_automatic_sdk_calculation(
+        self, s3_bucket, snapshot, aws_client, aws_http_client_factory
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("HostId"),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        headers = {"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
+        data = b"test data.."
+        hash_256_data = hash_sha256(data)
+
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        bucket_url = _bucket_url(s3_bucket)
+
+        wrong_object_key = "wrong-checksum"
+        wrong_put_object_url = f"{bucket_url}/{wrong_object_key}"
+        wrong_put_object_headers = {**headers, "x-amz-checksum-sha256": short_uid()}
+        resp = s3_http_client.put(wrong_put_object_url, headers=wrong_put_object_headers, data=data)
+        resp_dict = xmltodict.parse(resp.content)
+        snapshot.match("wrong-checksum", resp_dict)
+
+        object_key = "right-checksum"
+        put_object_url = f"{bucket_url}/{object_key}"
+        put_object_headers = {**headers, "x-amz-checksum-sha256": hash_256_data}
+        resp = s3_http_client.put(put_object_url, headers=put_object_headers, data=data)
+        assert resp.ok
+
+        head_obj = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=object_key, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-obj-right-checksum", head_obj)
+
+        algo_object_key = "algo-only-checksum"
+        algo_put_object_url = f"{bucket_url}/{algo_object_key}"
+        algo_put_object_headers = {**headers, "x-amz-checksum-algorithm": "SHA256"}
+        resp = s3_http_client.put(algo_put_object_url, headers=algo_put_object_headers, data=data)
+        assert resp.ok
+
+        head_obj = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=algo_object_key, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-obj-only-checksum-algo", head_obj)
+
+        wrong_algo_object_key = "algo-wrong-checksum"
+        wrong_algo_put_object_url = f"{bucket_url}/{wrong_algo_object_key}"
+        wrong_algo_put_object_headers = {**headers, "x-amz-checksum-algorithm": "TEST"}
+        resp = s3_http_client.put(
+            wrong_algo_put_object_url, headers=wrong_algo_put_object_headers, data=data
+        )
+        assert resp.ok
+
+        algo_diff_object_key = "algo-diff-checksum"
+        algo_diff_put_object_url = f"{bucket_url}/{algo_diff_object_key}"
+        algo_diff_put_object_headers = {
+            **headers,
+            "x-amz-checksum-algorithm": "SHA1",
+            "x-amz-checksum-sha256": hash_256_data,
+        }
+        resp = s3_http_client.put(
+            algo_diff_put_object_url, headers=algo_diff_put_object_headers, data=data
+        )
+        assert resp.ok
+
+        head_obj = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=algo_diff_object_key, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-obj-diff-checksum-algo", head_obj)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -2997,7 +3128,9 @@ class TestS3:
         reason="Not implemented in other providers than stream",
         condition=LEGACY_V2_S3_PROVIDER,
     )
-    def test_put_object_chunked_newlines_with_checksum(self, s3_bucket, aws_client, region_name):
+    def test_put_object_chunked_newlines_with_trailing_checksum(
+        self, s3_bucket, aws_client, region_name
+    ):
         # Boto still does not support chunk encoding, which means we can't test with the client nor
         # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
         # Test for https://github.com/localstack/localstack/issues/6659
@@ -3014,7 +3147,6 @@ class TestS3:
             "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER",
             "X-Amz-Date": "20190918T051509Z",
             "X-Amz-Decoded-Content-Length": str(len(body)),
-            "x-amz-sdk-checksum-algorithm": "SHA256",
             "x-amz-trailer": "x-amz-checksum-sha256",
             "Content-Encoding": "aws-chunked",
         }
@@ -3043,6 +3175,60 @@ class TestS3:
         # put object with good checksum
         valid_data = get_data(body, valid_checksum)
         req = requests.put(url, valid_data, headers=headers, verify=False)
+        assert req.ok
+
+        # get object and assert content length
+        downloaded_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+        download_file_object = to_str(downloaded_object["Body"].read())
+        assert len(body) == len(str(download_file_object))
+        assert body == str(download_file_object)
+
+    @markers.aws.only_localstack
+    @pytest.mark.skipif(
+        reason="Not implemented in other providers than stream",
+        condition=LEGACY_V2_S3_PROVIDER,
+    )
+    def test_put_object_chunked_checksum(self, s3_bucket, aws_client, region_name):
+        # Boto still does not support chunk encoding, which means we can't test with the client nor
+        # aws_http_client_factory. See open issue: https://github.com/boto/boto3/issues/751
+        # Test for https://github.com/localstack/localstack/issues/6659
+        object_key = "data"
+        body = "Hello Blob"
+        valid_checksum = hash_sha256(body)
+        headers = {
+            "Authorization": mock_aws_request_headers(
+                "s3",
+                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                region_name=region_name,
+            )["Authorization"],
+            "Content-Type": "audio/mpeg",
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
+            "X-Amz-Date": "20190918T051509Z",
+            "X-Amz-Decoded-Content-Length": str(len(body)),
+            "Content-Encoding": "aws-chunked",
+        }
+
+        data = (
+            "a;chunk-signature=b5311ac60a88890e740a41e74f3d3b03179fd058b1e24bb3ab224042377c4ec9\r\n"
+            f"{body}\r\n"
+            "0;chunk-signature=78fae1c533e34dbaf2b83ad64ff02e4b64b7bc681ea76b6acf84acf1c48a83cb\r\n"
+        )
+
+        url = f"{config.internal_service_url()}/{s3_bucket}/{object_key}"
+
+        # test with wrong checksum
+        headers["x-amz-checksum-sha256"] = "wrongchecksum"
+        request = requests.put(url, data, headers=headers, verify=False)
+        assert request.status_code == 400
+        assert "Value for x-amz-checksum-sha256 header is invalid." in request.text
+
+        # assert the object has not been created
+        with pytest.raises(ClientError):
+            aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key)
+
+        # put object with good checksum
+        headers["x-amz-checksum-sha256"] = valid_checksum
+        req = requests.put(url, data, headers=headers, verify=False)
         assert req.ok
 
         # get object and assert content length
@@ -5290,6 +5476,13 @@ class TestS3:
         )
 
         key_name = "test-multipart-checksum-exc"
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.create_multipart_upload(
+                Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="TEST"
+            )
+        snapshot.match("create-mpu-wrong-checksum-algo", e.value.response)
+
         response = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=key_name)
         snapshot.match("create-mpu-no-checksum", response)
         upload_id = response["UploadId"]
@@ -5308,6 +5501,17 @@ class TestS3:
                 ChecksumAlgorithm="SHA256",
             )
         snapshot.match("upload-part-with-checksum", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=key_name,
+                Body=part_data,
+                PartNumber=1,
+                UploadId=upload_id,
+                ChecksumSHA256=checksum_part,
+            )
+        snapshot.match("upload-part-with-checksum-calc", e.value.response)
 
         upload_resp = aws_client.s3.upload_part(
             Bucket=s3_bucket,

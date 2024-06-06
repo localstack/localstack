@@ -1,4 +1,5 @@
 from localstack.aws.api.s3 import (
+    ChecksumAlgorithm,
     Grantee,
     Permission,
     PublicAccessBlockConfiguration,
@@ -52,6 +53,13 @@ VALID_STORAGE_CLASSES = [
 ARCHIVES_STORAGE_CLASSES = [
     StorageClass.GLACIER,
     StorageClass.DEEP_ARCHIVE,
+]
+
+CHECKSUM_ALGORITHMS: list[ChecksumAlgorithm] = [
+    ChecksumAlgorithm.SHA1,
+    ChecksumAlgorithm.SHA256,
+    ChecksumAlgorithm.CRC32,
+    ChecksumAlgorithm.CRC32C,
 ]
 
 # response header overrides the client may request

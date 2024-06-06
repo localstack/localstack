@@ -41,9 +41,11 @@ from localstack.aws.api.s3 import (
     Owner,
     Permission,
     PreconditionFailed,
+    PutObjectRequest,
     SSEKMSKeyId,
     TaggingHeader,
     TagSet,
+    UploadPartRequest,
 )
 from localstack.aws.api.s3 import Type as GranteeType
 from localstack.aws.chain import HandlerChain
@@ -52,6 +54,7 @@ from localstack.http import Response
 from localstack.services.s3.constants import (
     ALL_USERS_ACL_GRANTEE,
     AUTHENTICATED_USERS_ACL_GRANTEE,
+    CHECKSUM_ALGORITHMS,
     LOG_DELIVERY_ACL_GRANTEE,
     S3_CHUNK_SIZE,
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
@@ -73,8 +76,6 @@ from localstack.utils.strings import (
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
-
-checksum_keys = ["ChecksumSHA1", "ChecksumSHA256", "ChecksumCRC32", "ChecksumCRC32C"]
 
 BUCKET_NAME_REGEX = (
     r"(?=^.{3,63}$)(?!^(\d+\.)+\d+$)"
@@ -172,6 +173,40 @@ class ChecksumHash(Protocol):
     def digest(self) -> bytes: ...
 
     def update(self, value: bytes): ...
+
+
+def get_s3_checksum_algorithm_from_request(
+    request: PutObjectRequest | UploadPartRequest,
+) -> ChecksumAlgorithm | None:
+    checksum_algorithm: list[ChecksumAlgorithm] = [
+        algo for algo in CHECKSUM_ALGORITHMS if request.get(f"Checksum{algo}")
+    ]
+    if not checksum_algorithm:
+        return None
+
+    if len(checksum_algorithm) > 1:
+        raise InvalidRequest(
+            "Expecting a single x-amz-checksum- header. Multiple checksum Types are not allowed."
+        )
+
+    return checksum_algorithm[0]
+
+
+def get_s3_checksum_algorithm_from_trailing_headers(
+    trailing_headers: str,
+) -> ChecksumAlgorithm | None:
+    checksum_algorithm: list[ChecksumAlgorithm] = [
+        algo for algo in CHECKSUM_ALGORITHMS if f"x-amz-checksum-{algo.lower()}" in trailing_headers
+    ]
+    if not checksum_algorithm:
+        return None
+
+    if len(checksum_algorithm) > 1:
+        raise InvalidRequest(
+            "Expecting a single x-amz-checksum- header. Multiple checksum Types are not allowed."
+        )
+
+    return checksum_algorithm[0]
 
 
 def get_s3_checksum(algorithm) -> ChecksumHash:

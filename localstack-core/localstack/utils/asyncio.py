@@ -1,5 +1,5 @@
 import asyncio
-import concurrent.futures
+import concurrent.futures.thread
 import functools
 import time
 from contextvars import copy_context
@@ -11,7 +11,28 @@ from .threads import TMP_THREADS, start_worker_thread
 EVENT_LOOPS = {}
 
 
-class AdaptiveThreadPool(concurrent.futures.ThreadPoolExecutor):
+class DaemonAwareThreadPool(concurrent.futures.thread.ThreadPoolExecutor):
+    """
+    This thread pool executor removes the threads it creates from the global ``_thread_queues`` of
+    ``concurrent.futures.thread``, which joins all created threads at python exit and will block
+    interpreter shutdown if any threads are still running, even if they are daemon threads. Threads created
+    by the thread pool will be daemon threads by default if the thread owning the thread pool is also a
+    deamon thread.
+    """
+
+    def _adjust_thread_count(self) -> None:
+        super()._adjust_thread_count()
+
+        for t in self._threads:
+            if not t.daemon:
+                continue
+            try:
+                del concurrent.futures.thread._threads_queues[t]
+            except KeyError:
+                pass
+
+
+class AdaptiveThreadPool(DaemonAwareThreadPool):
     """Thread pool executor that maintains a maximum of 'core_size' reusable threads in
     the core pool, and creates new thread instances as needed (if the core pool is full)."""
 

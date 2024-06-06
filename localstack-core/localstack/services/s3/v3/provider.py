@@ -211,6 +211,7 @@ from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import (
     ALLOWED_HEADER_OVERRIDES,
     ARCHIVES_STORAGE_CLASSES,
+    CHECKSUM_ALGORITHMS,
     DEFAULT_BUCKET_ENCRYPTION,
 )
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
@@ -241,6 +242,8 @@ from localstack.services.s3.utils import (
     get_owner_for_account_id,
     get_permission_from_header,
     get_retention_from_now,
+    get_s3_checksum_algorithm_from_request,
+    get_s3_checksum_algorithm_from_trailing_headers,
     get_system_metadata_from_request,
     get_unique_key_id,
     is_bucket_name_valid,
@@ -621,7 +624,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         version_id = generate_version_id(s3_bucket.versioning_status)
 
-        checksum_algorithm = request.get("ChecksumAlgorithm")
+        checksum_algorithm = get_s3_checksum_algorithm_from_request(request)
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
@@ -666,13 +669,23 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             "STREAMING-"
         ) or "aws-chunked" in headers.get("content-encoding", "")
         if is_aws_chunked:
+            checksum_algorithm = (
+                checksum_algorithm
+                or get_s3_checksum_algorithm_from_trailing_headers(headers.get("x-amz-trailer", ""))
+            )
+            if checksum_algorithm:
+                s3_object.checksum_algorithm = checksum_algorithm
+
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             body = AwsChunkedDecoder(body, decoded_content_length, s3_object=s3_object)
 
         with self._storage_backend.open(bucket_name, s3_object, mode="w") as s3_stored_object:
             s3_stored_object.write(body)
 
-            if checksum_algorithm and s3_object.checksum_value != s3_stored_object.checksum:
+            if (
+                s3_object.checksum_algorithm
+                and s3_object.checksum_value != s3_stored_object.checksum
+            ):
                 self._storage_backend.remove(bucket_name, s3_object)
                 raise InvalidRequest(
                     f"Value for x-amz-checksum-{checksum_algorithm.lower()} header is invalid."
@@ -705,7 +718,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["VersionId"] = s3_object.version_id
 
         if s3_object.checksum_algorithm:
-            response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
+            response[f"Checksum{s3_object.checksum_algorithm}"] = s3_object.checksum_value
 
         if s3_bucket.lifecycle_rules:
             if expiration_header := self._get_expiration_header(
@@ -1844,6 +1857,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # TODO: validate the algorithm?
         checksum_algorithm = request.get("ChecksumAlgorithm")
+        if checksum_algorithm and checksum_algorithm not in CHECKSUM_ALGORITHMS:
+            raise InvalidRequest(
+                "Checksum algorithm provided is unsupported. Please try again with any of the valid types: [CRC32, CRC32C, SHA1, SHA256]"
+            )
 
         encryption_parameters = get_encryption_parameters_from_request_and_bucket(
             request,
@@ -1923,17 +1940,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=part_number,
             )
 
-        checksum_algorithm = request.get("ChecksumAlgorithm")
-        if checksum_algorithm != s3_multipart.object.checksum_algorithm:
-            error_req_checksum = checksum_algorithm.lower() if checksum_algorithm else "null"
-            error_mp_checksum = (
-                s3_multipart.object.checksum_algorithm.lower()
-                if s3_multipart.object.checksum_algorithm
-                else "null"
-            )
-            raise InvalidRequest(
-                f"Checksum Type mismatch occurred, expected checksum Type: {error_mp_checksum}, actual checksum Type: {error_req_checksum}"
-            )
+        checksum_algorithm = get_s3_checksum_algorithm_from_request(request)
         checksum_value = (
             request.get(f"Checksum{checksum_algorithm.upper()}") if checksum_algorithm else None
         )
@@ -1950,8 +1957,26 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         ) or "aws-chunked" in headers.get("content-encoding", "")
         # check if chunked request
         if is_aws_chunked:
+            checksum_algorithm = (
+                checksum_algorithm
+                or get_s3_checksum_algorithm_from_trailing_headers(headers.get("x-amz-trailer", ""))
+            )
+            if checksum_algorithm:
+                s3_part.checksum_algorithm = checksum_algorithm
+
             decoded_content_length = int(headers.get("x-amz-decoded-content-length", 0))
             body = AwsChunkedDecoder(body, decoded_content_length, s3_part)
+
+        if s3_part.checksum_algorithm != s3_multipart.object.checksum_algorithm:
+            error_req_checksum = checksum_algorithm.lower() if checksum_algorithm else "null"
+            error_mp_checksum = (
+                s3_multipart.object.checksum_algorithm.lower()
+                if s3_multipart.object.checksum_algorithm
+                else "null"
+            )
+            raise InvalidRequest(
+                f"Checksum Type mismatch occurred, expected checksum Type: {error_mp_checksum}, actual checksum Type: {error_req_checksum}"
+            )
 
         stored_multipart = self._storage_backend.get_multipart(bucket_name, s3_multipart)
         with stored_multipart.open(s3_part, mode="w") as stored_s3_part:
@@ -1976,7 +2001,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         add_encryption_to_response(response, s3_object=s3_multipart.object)
 
         if s3_part.checksum_algorithm:
-            response[f"Checksum{checksum_algorithm.upper()}"] = s3_part.checksum_value
+            response[f"Checksum{s3_part.checksum_algorithm.upper()}"] = s3_part.checksum_value
 
         # TODO: RequestCharged: Optional[RequestCharged]
         return response

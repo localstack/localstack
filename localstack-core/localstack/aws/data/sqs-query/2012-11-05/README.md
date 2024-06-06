@@ -6,3 +6,5 @@ This switch removed a lot of spec data which is necessary for the proper parsing
 - The file is licensed with Apache License 2.0.
 - Modifications:
   - Removal of documentation strings with the following regex: `(,)?\n\s+"documentation":".*"`
+  - Added `MessageSystemAttributeNames` to `ReceiveMessageRequest.members` with AWS deprecating `AttributeNames`.
+  The patches in `spec-patches.json` are not present in the boto client for our sqs-query tests right now because the custom loading is not fully integrated at the moment, so it is changed directly in the spec.
