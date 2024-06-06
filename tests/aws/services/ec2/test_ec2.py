@@ -4,8 +4,10 @@ import pytest
 from botocore.exceptions import ClientError
 from moto.ec2 import ec2_backends
 
+from localstack.testing.config import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 
 # public amazon image used for ec2 launch templates
 PUBLIC_AMAZON_LINUX_IMAGE = "ami-06c39ed6b42908a36"
@@ -188,78 +190,93 @@ class TestEc2Integrations:
         )
         assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-    @markers.aws.unknown
-    def test_vcp_peering_difference_regions(self, aws_client_factory, region_name):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # AWS doesn't populate all info of the requester to the peer describe until connection available
+            "$..pending-acceptance..VpcPeeringConnections..AccepterVpcInfo.CidrBlock",
+            "$..pending-acceptance..VpcPeeringConnections..AccepterVpcInfo.PeeringOptions",
+            # LS leaves as `[]`
+            "$..VpcPeeringConnections..AccepterVpcInfo.CidrBlockSet",
+            "$..VpcPeeringConnections..RequesterVpcInfo.CidrBlockSet",
+            # LS adds, not on AWS
+            "$..VpcPeeringConnections..AccepterVpcInfo.Ipv6CidrBlockSet",
+            "$..VpcPeeringConnections..RequesterVpcInfo.Ipv6CidrBlockSet",
+            # LS doesn't add
+            "$..VpcPeeringConnections..ExpirationTime",
+        ]
+    )
+    @markers.aws.validated
+    def test_vcp_peering_difference_regions(
+        self, aws_client_factory, region_name, cleanups, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("vpc1-id"),
+                snapshot.transform.key_value("vpc2-id"),
+                snapshot.transform.key_value("peering-connection-id"),
+            ]
+        )
         region1 = region_name
-        region2 = region_name  # When cross-region peering is supported, change to SECONDARY_TEST_AWS_REGION_NAME
-
-        # Note: different regions currently not supported due to set_default_region_in_headers(..) in edge.py
+        region2 = SECONDARY_TEST_AWS_REGION_NAME
         ec2_client1 = aws_client_factory(region_name=region1).ec2
         ec2_client2 = aws_client_factory(region_name=region2).ec2
 
-        cidr_block1 = "192.168.1.2/24"
-        cidr_block2 = "192.168.1.2/24"
-        peer_vpc1 = ec2_client1.create_vpc(CidrBlock=cidr_block1)
-        peer_vpc2 = ec2_client2.create_vpc(CidrBlock=cidr_block2)
+        def _delete_vpc(client, vpc_id):
+            # The Peering connection in the peer vpc might have a delay to detach from the vpc
+            return lambda: retry(lambda: client.delete_vpc(VpcId=vpc_id), retries=10, sleep=5)
 
-        assert 200 == peer_vpc1["ResponseMetadata"]["HTTPStatusCode"]
-        assert cidr_block1 == peer_vpc1["Vpc"]["CidrBlock"]
-        assert 200 == peer_vpc2["ResponseMetadata"]["HTTPStatusCode"]
-        assert cidr_block2 == peer_vpc2["Vpc"]["CidrBlock"]
+        # CIDR range can't overlap when creating peering connection
+        cidr_block1 = "192.168.1.0/24"
+        cidr_block2 = "192.168.2.0/24"
+        peer_vpc1_id = ec2_client1.create_vpc(CidrBlock=cidr_block1)["Vpc"]["VpcId"]
+        cleanups.append(_delete_vpc(ec2_client1, peer_vpc1_id))
+        snapshot.match("vpc1-id", peer_vpc1_id)
 
-        cross_region = ec2_client1.create_vpc_peering_connection(
-            PeerVpcId=peer_vpc2["Vpc"]["VpcId"],
-            VpcId=peer_vpc1["Vpc"]["VpcId"],
+        peer_vpc2_id = ec2_client2.create_vpc(CidrBlock=cidr_block2)["Vpc"]["VpcId"]
+        cleanups.append(_delete_vpc(ec2_client2, peer_vpc2_id))
+        snapshot.match("vpc2-id", peer_vpc2_id)
+
+        peering_connection_id = ec2_client1.create_vpc_peering_connection(
+            VpcId=peer_vpc1_id,
+            PeerVpcId=peer_vpc2_id,
             PeerRegion=region2,
+        )["VpcPeeringConnection"]["VpcPeeringConnectionId"]
+        cleanups.append(
+            lambda: ec2_client1.delete_vpc_peering_connection(
+                VpcPeeringConnectionId=peering_connection_id
+            )
         )
-        assert 200 == cross_region["ResponseMetadata"]["HTTPStatusCode"]
-        assert (
-            peer_vpc1["Vpc"]["VpcId"]
-            == cross_region["VpcPeeringConnection"]["RequesterVpcInfo"]["VpcId"]
-        )
-        assert (
-            peer_vpc2["Vpc"]["VpcId"]
-            == cross_region["VpcPeeringConnection"]["AccepterVpcInfo"]["VpcId"]
-        )
+        snapshot.match("peering-connection-id", peering_connection_id)
 
-        accept_vpc = ec2_client2.accept_vpc_peering_connection(
-            VpcPeeringConnectionId=cross_region["VpcPeeringConnection"]["VpcPeeringConnectionId"]
-        )
-        assert 200 == accept_vpc["ResponseMetadata"]["HTTPStatusCode"]
-        assert (
-            peer_vpc1["Vpc"]["VpcId"]
-            == accept_vpc["VpcPeeringConnection"]["RequesterVpcInfo"]["VpcId"]
-        )
-        assert (
-            peer_vpc2["Vpc"]["VpcId"]
-            == accept_vpc["VpcPeeringConnection"]["AccepterVpcInfo"]["VpcId"]
-        )
-        assert (
-            cross_region["VpcPeeringConnection"]["VpcPeeringConnectionId"]
-            == accept_vpc["VpcPeeringConnection"]["VpcPeeringConnectionId"]
-        )
+        def _describe_peering_connections(client, expected_status):
+            response = client.describe_vpc_peering_connections(
+                VpcPeeringConnectionIds=[peering_connection_id]
+            )
+            assert response["VpcPeeringConnections"][0]["Status"]["Code"] == expected_status
+            return response
 
-        requester_peer = ec2_client1.describe_vpc_peering_connections(
-            VpcPeeringConnectionIds=[accept_vpc["VpcPeeringConnection"]["VpcPeeringConnectionId"]]
+        # wait for the peering connection to be observable in the peer region
+        pending_peer = retry(
+            lambda: _describe_peering_connections(ec2_client2, "pending-acceptance"),
+            retries=10,
+            sleep=5,
         )
-        assert 1 == len(requester_peer["VpcPeeringConnections"])
-        assert region1 == requester_peer["VpcPeeringConnections"][0]["RequesterVpcInfo"]["Region"]
-        assert region2 == requester_peer["VpcPeeringConnections"][0]["AccepterVpcInfo"]["Region"]
+        snapshot.match("pending-acceptance", pending_peer)
 
-        accepter_peer = ec2_client2.describe_vpc_peering_connections(
-            VpcPeeringConnectionIds=[accept_vpc["VpcPeeringConnection"]["VpcPeeringConnectionId"]]
+        # Not creating a snapshot of the response as aws isn't consistent
+        ec2_client2.accept_vpc_peering_connection(VpcPeeringConnectionId=peering_connection_id)
+
+        # wait for peering connection to be active in the requester region
+        requester_peer = retry(
+            lambda: _describe_peering_connections(ec2_client1, "active"), retries=10, sleep=5
         )
-        assert 1 == len(accepter_peer["VpcPeeringConnections"])
-        assert region1 == accepter_peer["VpcPeeringConnections"][0]["RequesterVpcInfo"]["Region"]
-        assert region2 == accepter_peer["VpcPeeringConnections"][0]["AccepterVpcInfo"]["Region"]
+        snapshot.match("requester-peer", requester_peer)
 
-        # Clean up
-        ec2_client1.delete_vpc_peering_connection(
-            VpcPeeringConnectionId=cross_region["VpcPeeringConnection"]["VpcPeeringConnectionId"]
+        # wait for peering connection to be active in the peer region
+        accepter_peer = retry(
+            lambda: _describe_peering_connections(ec2_client2, "active"), retries=10, sleep=5
         )
-
-        ec2_client1.delete_vpc(VpcId=peer_vpc1["Vpc"]["VpcId"])
-        ec2_client2.delete_vpc(VpcId=peer_vpc2["Vpc"]["VpcId"])
+        snapshot.match("accepter-peer", accepter_peer)
 
     @markers.aws.unknown
     def test_describe_vpn_gateways_filter_by_vpc(self, aws_client):

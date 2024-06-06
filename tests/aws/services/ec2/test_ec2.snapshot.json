@@ -35,5 +35,147 @@
         }
       ]
     }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_vcp_peering_difference_regions": {
+    "recorded-date": "06-06-2024, 22:40:50",
+    "recorded-content": {
+      "vpc1-id": "<vpc1-id:1>",
+      "vpc2-id": "<vpc2-id:1>",
+      "peering-connection-id": "<peering-connection-id:1>",
+      "pending-acceptance": {
+        "VpcPeeringConnections": [
+          {
+            "AccepterVpcInfo": {
+              "OwnerId": "111111111111",
+              "Region": "ap-southeast-1",
+              "VpcId": "<vpc2-id:1>"
+            },
+            "ExpirationTime": "<datetime>",
+            "RequesterVpcInfo": {
+              "CidrBlock": "192.168.1.0/24",
+              "CidrBlockSet": [
+                {
+                  "CidrBlock": "192.168.1.0/24"
+                }
+              ],
+              "OwnerId": "111111111111",
+              "PeeringOptions": {
+                "AllowDnsResolutionFromRemoteVpc": false,
+                "AllowEgressFromLocalClassicLinkToRemoteVpc": false,
+                "AllowEgressFromLocalVpcToRemoteClassicLink": false
+              },
+              "Region": "<region>",
+              "VpcId": "<vpc1-id:1>"
+            },
+            "Status": {
+              "Code": "pending-acceptance",
+              "Message": "Pending Acceptance by 111111111111"
+            },
+            "Tags": [],
+            "VpcPeeringConnectionId": "<peering-connection-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "requester-peer": {
+        "VpcPeeringConnections": [
+          {
+            "AccepterVpcInfo": {
+              "CidrBlock": "192.168.2.0/24",
+              "CidrBlockSet": [
+                {
+                  "CidrBlock": "192.168.2.0/24"
+                }
+              ],
+              "OwnerId": "111111111111",
+              "PeeringOptions": {
+                "AllowDnsResolutionFromRemoteVpc": false,
+                "AllowEgressFromLocalClassicLinkToRemoteVpc": false,
+                "AllowEgressFromLocalVpcToRemoteClassicLink": false
+              },
+              "Region": "ap-southeast-1",
+              "VpcId": "<vpc2-id:1>"
+            },
+            "RequesterVpcInfo": {
+              "CidrBlock": "192.168.1.0/24",
+              "CidrBlockSet": [
+                {
+                  "CidrBlock": "192.168.1.0/24"
+                }
+              ],
+              "OwnerId": "111111111111",
+              "PeeringOptions": {
+                "AllowDnsResolutionFromRemoteVpc": false,
+                "AllowEgressFromLocalClassicLinkToRemoteVpc": false,
+                "AllowEgressFromLocalVpcToRemoteClassicLink": false
+              },
+              "Region": "<region>",
+              "VpcId": "<vpc1-id:1>"
+            },
+            "Status": {
+              "Code": "active",
+              "Message": "Active"
+            },
+            "Tags": [],
+            "VpcPeeringConnectionId": "<peering-connection-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "accepter-peer": {
+        "VpcPeeringConnections": [
+          {
+            "AccepterVpcInfo": {
+              "CidrBlock": "192.168.2.0/24",
+              "CidrBlockSet": [
+                {
+                  "CidrBlock": "192.168.2.0/24"
+                }
+              ],
+              "OwnerId": "111111111111",
+              "PeeringOptions": {
+                "AllowDnsResolutionFromRemoteVpc": false,
+                "AllowEgressFromLocalClassicLinkToRemoteVpc": false,
+                "AllowEgressFromLocalVpcToRemoteClassicLink": false
+              },
+              "Region": "ap-southeast-1",
+              "VpcId": "<vpc2-id:1>"
+            },
+            "RequesterVpcInfo": {
+              "CidrBlock": "192.168.1.0/24",
+              "CidrBlockSet": [
+                {
+                  "CidrBlock": "192.168.1.0/24"
+                }
+              ],
+              "OwnerId": "111111111111",
+              "PeeringOptions": {
+                "AllowDnsResolutionFromRemoteVpc": false,
+                "AllowEgressFromLocalClassicLinkToRemoteVpc": false,
+                "AllowEgressFromLocalVpcToRemoteClassicLink": false
+              },
+              "Region": "<region>",
+              "VpcId": "<vpc1-id:1>"
+            },
+            "Status": {
+              "Code": "active",
+              "Message": "Active"
+            },
+            "Tags": [],
+            "VpcPeeringConnectionId": "<peering-connection-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
