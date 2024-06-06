@@ -100,6 +100,10 @@ from localstack.services.cloudformation.engine.template_utils import resolve_sta
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
 )
+from localstack.services.cloudformation.engine.validations import (
+    DEFAULT_TEMPLATE_VALIDATIONS,
+    ValidationError,
+)
 from localstack.services.cloudformation.stores import (
     cloudformation_stores,
     find_active_stack_by_name_or_id,
@@ -150,13 +154,6 @@ def stack_not_found_error(stack_name: str):
 def not_found_error(message: str):
     # FIXME
     raise ResourceNotFoundException(message)
-
-
-class ValidationError(CommonServiceException):
-    """General validation error type (defined in the AWS docs, but not part of the botocore spec)"""
-
-    def __init__(self, message=None):
-        super().__init__("ValidationError", message=message, sender_fault=True)
 
 
 class ResourceNotFoundException(CommonServiceException):
@@ -212,6 +209,11 @@ class CloudformationProvider(CloudformationApi):
         api_utils.prepare_template_body(request)  # TODO: avoid mutating request directly
 
         template = template_preparer.parse_template(request["TemplateBody"])
+
+        # perform basic static analysis on the template
+        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
+            validation_fn(template)
+
         stack_name = template["StackName"] = request.get("StackName")
         if api_utils.validate_stack_name(stack_name) is False:
             raise ValidationError(
@@ -331,6 +333,10 @@ class CloudformationProvider(CloudformationApi):
 
         api_utils.prepare_template_body(request)
         template = template_preparer.parse_template(request["TemplateBody"])
+
+        # perform basic static analysis on the template
+        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
+            validation_fn(template)
 
         if (
             "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
@@ -606,6 +612,10 @@ class CloudformationProvider(CloudformationApi):
                 "TemplateBody"
             ]  # should then have been set by prepare_template_body
         template = template_preparer.parse_template(req_params["TemplateBody"])
+
+        # perform basic static analysis on the template
+        for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
+            validation_fn(template)
 
         del req_params["TemplateBody"]  # TODO: stop mutating req_params
         template["StackName"] = stack_name
