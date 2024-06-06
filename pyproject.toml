@@ -65,9 +65,8 @@ base-runtime = [
     "Werkzeug>=3.0.0",
     "xmltodict>=0.13.0",
     "rolo>=0.4",
-    # TODO: remove those 2 dependencies
+    # TODO: to be removed when the last usages of Flask in API GW have been removed
     "flask>=3.0.0",
-    "Quart>=0.19.2",
 ]
 
 # required to actually run localstack on the host
