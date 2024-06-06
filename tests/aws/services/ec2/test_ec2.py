@@ -156,7 +156,8 @@ class TestEc2Integrations:
         assert vpc["Vpc"]["VpcId"] == vpc_endpoint["VpcEndpoint"]["VpcId"]
         assert len(vpc_endpoint["VpcEndpoint"]["DnsEntries"]) > 0
 
-    @markers.aws.unknown
+    @markers.aws.only_localstack
+    # This test would attempt to purchase Reserved instance.
     def test_reserved_instance_api(self, aws_client):
         rs = aws_client.ec2.describe_reserved_instances_offerings(
             AvailabilityZone="us-east-1a",
