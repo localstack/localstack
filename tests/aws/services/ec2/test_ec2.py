@@ -470,7 +470,7 @@ def pickle_backends():
     return _can_pickle
 
 
-@markers.aws.unknown
+@markers.aws.only_localstack
 def test_pickle_ec2_backend(pickle_backends, aws_client):
     _ = aws_client.ec2.describe_account_attributes()
     pickle_backends(ec2_backends)
