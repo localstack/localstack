@@ -91,6 +91,54 @@ def test_sqs_query_parse_tag_map_with_member_name_as_location():
     }
 
 
+def test_sqs_query_parse_map_with_nested_dict():
+    # see https://github.com/localstack/localstack/issues/10949
+    parser = create_parser(load_service("sqs-query"))
+
+    # with "MessageAttribute." it works (this is the default request)
+    request = HttpRequest(
+        "POST",
+        "/",
+        body="Action=SendMessage&"
+        "MessageBody=foobar&"
+        "QueueUrl=http://localhost:4566/000000000000/foobar&"
+        "MessageAttribute.1.Name=Foo&"
+        "MessageAttribute.1.Value.DataType=String&"
+        "MessageAttribute.1.Value.StringValue=Bar",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    operation, params = parser.parse(request)
+    assert operation.name == "SendMessage"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/foobar",
+        "MessageBody": "foobar",
+        "MessageAttributes": {"Foo": {"DataType": "String", "StringValue": "Bar"}},
+    }
+
+    # Aws also accepts MessageAttributes. Most likely related to issue
+    # https://github.com/localstack/localstack/issues/4391
+    request = HttpRequest(
+        "POST",
+        "/",
+        body="Action=SendMessage&"
+        "MessageBody=foobar&"
+        "QueueUrl=http://localhost:4566/000000000000/foobar&"
+        "MessageAttributes.1.Name=Foo&"
+        "MessageAttributes.1.Value.DataType=String&"
+        "MessageAttributes.1.Value.StringValue=Bar",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    operation, params = parser.parse(request)
+    assert operation.name == "SendMessage"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/foobar",
+        "MessageAttributes": {"Foo": {"DataType": "String", "StringValue": "Bar"}},
+        "MessageBody": "foobar",
+    }
+
+
 def test_query_parser_uri():
     """
     Basic test for the QueryParser with a simple example (SQS SendMessage request),
