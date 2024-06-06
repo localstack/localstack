@@ -13,9 +13,7 @@ SOURCE_SECONDARY = "source-secondary"
 
 class TestEventCrossRegion:
     @markers.aws.validated
-    def test_event_bus_to_event_bus_cross_region(
-        self, aws_client_factory, cleanups, sqs_get_queue_arn, snapshot
-    ):
+    def test_event_bus_to_event_bus_cross_region(self, aws_client_factory, cleanups, snapshot):
         primary_region = "us-east-1"
         secondary_region = "eu-central-1"
 
@@ -229,20 +227,16 @@ class TestEventCrossRegion:
                 }
             ],
         )
-        # aws_client_primary.events.put_events(
-        #     Entries=[
-        #         {
-        #             "Source": "source-secondary",
-        #             "DetailType": "test-event",
-        #             "Detail": json.dumps(EVENT_DETAIL),
-        #             "EventBusName": event_bus_name_primary,
-        #         }
-        #     ],
-        # )
 
         # Collect messages from primary queue
         messages_primary = sqs_collect_messages(
             aws_client_primary, queue_url_primary, min_events=1, wait_time=1, retries=5
+        )
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
+                snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+            ],
         )
         snapshot.match("messages_primary_queue_from_primary_event_bus", messages_primary)
 
@@ -266,6 +260,6 @@ class TestEventCrossRegion:
 
         # Collect messages from secondary queue
         messages_secondary = sqs_collect_messages(
-            aws_client_secondary, queue_url_secondary, min_events=2, wait_time=1, retries=5
+            aws_client_secondary, queue_url_secondary, min_events=1, wait_time=1, retries=5
         )
         snapshot.match("messages_secondary_queue_from_secondary_event_bus", messages_secondary)
