@@ -333,7 +333,8 @@ class TestEc2Integrations:
         gateway = retry(_describe_vpn_gateway, retries=20, sleep=5)
         snapshot.match("attached-gateway", gateway)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # AWS returns 272 elements and a fair bit more information about them than LS
     def test_describe_vpc_endpoints_with_filter(self, aws_client, region_name):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         vpc_id = vpc["Vpc"]["VpcId"]
