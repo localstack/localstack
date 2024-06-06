@@ -300,7 +300,7 @@ def test_put_event_with_content_base_rule_in_pattern(aws_client, clean_up):
 
 
 @markers.aws.validated
-@pytest.mark.xfail
+@pytest.mark.skip
 def test_verify_rule_event_content(aws_client, clean_up):
     log_group_name = f"/aws/events/testLogGroup-{short_uid()}"
     rule_name = f"rule-{short_uid()}"

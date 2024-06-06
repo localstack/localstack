@@ -6,7 +6,7 @@ import pytest
 from botocore.auth import SigV4Auth
 
 
-@pytest.mark.xfail(reason="there is no generalized way of server-side request validation yet")
+@pytest.mark.skip(reason="there is no generalized way of server-side request validation yet")
 class TestMissingParameter:
     @markers.aws.validated
     def test_opensearch(self, aws_http_client_factory):

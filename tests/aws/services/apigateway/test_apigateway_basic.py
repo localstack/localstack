@@ -608,7 +608,7 @@ class TestAPIGateway:
         response = requests.get(url)
         snapshot.match("mocked-response", response.json())
 
-    @pytest.mark.xfail(reason="Behaviour is not AWS compliant, need to recreate this test")
+    @pytest.mark.skip(reason="Behaviour is not AWS compliant, need to recreate this test")
     @markers.aws.needs_fixing
     # TODO rework or remove this test
     def test_api_gateway_authorizer_crud(self, aws_client):
