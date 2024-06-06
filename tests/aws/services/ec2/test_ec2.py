@@ -81,8 +81,11 @@ class TestEc2Integrations:
         ]:
             assert route_tables["Associations"] == []
 
-    @markers.aws.unknown
-    def test_create_vpc_end_point(self, cleanups, aws_client):
+    @markers.aws.needs_fixing
+    # TODO LocalStack fails to delete endpoints
+    #  LocalStack does not properly initiate Endpoints with no VpcEndpointType fix probably needed in moto
+    #  AWS does not allow for lowercase VpcEndpointType: gateway => Gateway
+    def test_create_vpc_endpoint(self, cleanups, aws_client):
         vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
         cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
         subnet = aws_client.ec2.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
@@ -94,28 +97,28 @@ class TestEc2Integrations:
             )
         )
 
-        # test without any end point type specified
-        vpc_end_point = aws_client.ec2.create_vpc_endpoint(
+        # test without any endpoint type specified
+        vpc_endpoint = aws_client.ec2.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             RouteTableIds=[route_table["RouteTable"]["RouteTableId"]],
         )
         cleanups.append(
             lambda: aws_client.ec2.delete_vpc_endpoints(
-                VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
+                VpcEndpointIds=[vpc_endpoint["VpcEndpoint"]["VpcEndpointId"]]
             )
         )
 
-        assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
+        assert "com.amazonaws.us-east-1.s3" == vpc_endpoint["VpcEndpoint"]["ServiceName"]
         assert (
             route_table["RouteTable"]["RouteTableId"]
-            == vpc_end_point["VpcEndpoint"]["RouteTableIds"][0]
+            == vpc_endpoint["VpcEndpoint"]["RouteTableIds"][0]
         )
-        assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
-        assert 0 == len(vpc_end_point["VpcEndpoint"]["DnsEntries"])
+        assert vpc["Vpc"]["VpcId"] == vpc_endpoint["VpcEndpoint"]["VpcId"]
+        assert 0 == len(vpc_endpoint["VpcEndpoint"]["DnsEntries"])
 
-        # test with any end point type as gateway
-        vpc_end_point = aws_client.ec2.create_vpc_endpoint(
+        # test with any endpoint type as gateway
+        vpc_endpoint = aws_client.ec2.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             RouteTableIds=[route_table["RouteTable"]["RouteTableId"]],
@@ -123,20 +126,20 @@ class TestEc2Integrations:
         )
         cleanups.append(
             lambda: aws_client.ec2.delete_vpc_endpoints(
-                VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
+                VpcEndpointIds=[vpc_endpoint["VpcEndpoint"]["VpcEndpointId"]]
             )
         )
 
-        assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
+        assert "com.amazonaws.us-east-1.s3" == vpc_endpoint["VpcEndpoint"]["ServiceName"]
         assert (
             route_table["RouteTable"]["RouteTableId"]
-            == vpc_end_point["VpcEndpoint"]["RouteTableIds"][0]
+            == vpc_endpoint["VpcEndpoint"]["RouteTableIds"][0]
         )
-        assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
-        assert 0 == len(vpc_end_point["VpcEndpoint"]["DnsEntries"])
+        assert vpc["Vpc"]["VpcId"] == vpc_endpoint["VpcEndpoint"]["VpcId"]
+        assert 0 == len(vpc_endpoint["VpcEndpoint"]["DnsEntries"])
 
-        # test with end point type as interface
-        vpc_end_point = aws_client.ec2.create_vpc_endpoint(
+        # test with endpoint type as interface
+        vpc_endpoint = aws_client.ec2.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             SubnetIds=[subnet["Subnet"]["SubnetId"]],
@@ -144,14 +147,14 @@ class TestEc2Integrations:
         )
         cleanups.append(
             lambda: aws_client.ec2.delete_vpc_endpoints(
-                VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
+                VpcEndpointIds=[vpc_endpoint["VpcEndpoint"]["VpcEndpointId"]]
             )
         )
 
-        assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
-        assert subnet["Subnet"]["SubnetId"] == vpc_end_point["VpcEndpoint"]["SubnetIds"][0]
-        assert vpc["Vpc"]["VpcId"] == vpc_end_point["VpcEndpoint"]["VpcId"]
-        assert len(vpc_end_point["VpcEndpoint"]["DnsEntries"]) > 0
+        assert "com.amazonaws.us-east-1.s3" == vpc_endpoint["VpcEndpoint"]["ServiceName"]
+        assert subnet["Subnet"]["SubnetId"] == vpc_endpoint["VpcEndpoint"]["SubnetIds"][0]
+        assert vpc["Vpc"]["VpcId"] == vpc_endpoint["VpcEndpoint"]["VpcId"]
+        assert len(vpc_endpoint["VpcEndpoint"]["DnsEntries"]) > 0
 
     @markers.aws.unknown
     def test_reserved_instance_api(self, aws_client):
