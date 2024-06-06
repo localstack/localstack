@@ -4,10 +4,10 @@ import logging
 from datetime import datetime
 from typing import Final, NotRequired, Optional, TypedDict
 
+from botocore.client import BaseClient
 from botocore.exceptions import ClientError
-from mypy_boto3_logs.client import CloudWatchLogsClient
-from mypy_boto3_logs.type_defs import InputLogEventTypeDef
 
+from localstack.aws.api.logs import InputLogEvent
 from localstack.aws.api.stepfunctions import (
     HistoryEventType,
     InvalidLoggingConfiguration,
@@ -170,7 +170,7 @@ class HistoryLog(TypedDict):
 class CloudWatchLoggingSession:
     execution_arn: Final[LongArn]
     configuration: Final[CloudWatchLoggingConfiguration]
-    _logs_client: Final[CloudWatchLogsClient]
+    _logs_client: Final[BaseClient]
     _setup_failed: bool
 
     def __init__(self, execution_arn: LongArn, configuration: CloudWatchLoggingConfiguration):
@@ -196,7 +196,7 @@ class CloudWatchLoggingSession:
                 logGroupName=self.configuration.log_group_name,
                 logStreamName=self.configuration.log_stream_name,
                 logEvents=[
-                    InputLogEventTypeDef(
+                    InputLogEvent(
                         timestamp=timestamp_value,
                         message=message,
                     )
