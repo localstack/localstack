@@ -39,7 +39,9 @@ def apply_runtime_patches():
         return
     _applied = True
 
+    from localstack.http.duplex_socket import enable_duplex_socket
     from localstack.services.infra import patch_urllib3_connection_pool
 
     patch_urllib3_connection_pool(maxsize=128)
     patch_thread_pool()
+    enable_duplex_socket()
