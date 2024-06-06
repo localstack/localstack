@@ -1267,7 +1267,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_records_with_update_item": {
-    "recorded-date": "31-05-2024, 14:44:35",
+    "recorded-date": "06-06-2024, 09:08:30",
     "recorded-content": {
       "create-table": {
         "TableDescription": {

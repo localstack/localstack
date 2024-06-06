@@ -818,7 +818,7 @@ class TestDynamoDB:
 
         # put item in table - INSERT event
         dynamodb.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
-        # put item again in table - no event as it is the same valur
+        # put item again in table - no event as it is the same value
         dynamodb.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
 
         # update item in table - MODIFY event
@@ -1513,9 +1513,6 @@ class TestDynamoDB:
             datetime,
         )
         assert event_insert["dynamodb"]["ApproximateCreationDateTime"].microsecond == 0
-        assert event_insert["eventVersion"] == "1.1"
-        assert event_insert["eventName"] == "INSERT"
-        assert "OldImage" not in event_insert["dynamodb"]
         insert_seq_number = int(event_insert["dynamodb"]["SequenceNumber"])
         # TODO: maybe fix sequence number, seems something related to Kinesis
         if is_aws_cloud():
@@ -1527,9 +1524,6 @@ class TestDynamoDB:
             datetime,
         )
         assert event_update["dynamodb"]["ApproximateCreationDateTime"].microsecond == 0
-        assert event_update["eventVersion"] == "1.1"
-        assert event_update["eventName"] == "MODIFY"
-        assert "OldImage" in event_update["dynamodb"]
         assert int(event_update["dynamodb"]["SequenceNumber"]) > starting_sequence_number
 
     @markers.aws.only_localstack
