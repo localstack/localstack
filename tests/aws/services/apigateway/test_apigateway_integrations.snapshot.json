@@ -264,12 +264,41 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_integrations.py::test_put_integration_validation": {
-    "recorded-date": "30-05-2024, 16:58:31",
+    "recorded-date": "06-06-2024, 12:23:04",
     "recorded-content": {
-      "echo-server-url": "<echo-server-url:1>",
-      "required-integration-method-HTTP": "An error occurred (BadRequestException) when calling the PutIntegration operation: Enumeration value for HttpMethod must be non-empty",
-      "required-integration-method-HTTP_PROXY": "An error occurred (BadRequestException) when calling the PutIntegration operation: Enumeration value for HttpMethod must be non-empty",
-      "required-integration-method-AWS": "An error occurred (BadRequestException) when calling the PutIntegration operation: Enumeration value for HttpMethod must be non-empty",
+      "required-integration-method-HTTP": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Enumeration value for HttpMethod must be non-empty"
+        },
+        "message": "Enumeration value for HttpMethod must be non-empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "required-integration-method-HTTP_PROXY": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Enumeration value for HttpMethod must be non-empty"
+        },
+        "message": "Enumeration value for HttpMethod must be non-empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "required-integration-method-AWS": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Enumeration value for HttpMethod must be non-empty"
+        },
+        "message": "Enumeration value for HttpMethod must be non-empty",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "not-required-integration-method-MOCK": {
         "cacheKeyParameters": [],
         "cacheNamespace": "<cache-namespace:1>",
@@ -289,7 +318,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "HTTP",
-        "uri": "<echo-server-url:1>",
+        "uri": "http://example.com",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -303,7 +332,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "HTTP_PROXY",
-        "uri": "<echo-server-url:1>",
+        "uri": "http://example.com",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -317,7 +346,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "AWS",
-        "uri": "arn:aws:apigateway:us-west-2:s3:path/b/k",
+        "uri": "arn:aws:apigateway:<region>:s3:path/b/k",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -330,7 +359,7 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "AWS",
-        "uri": "arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:012345678901:function:MyLambda/invocations",
+        "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:MyLambda/invocations",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -343,16 +372,67 @@
         "passthroughBehavior": "WHEN_NO_MATCH",
         "timeoutInMillis": 29000,
         "type": "AWS_PROXY",
-        "uri": "arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-west-1:012345678901:function:MyLambda/invocations",
+        "uri": "arn:aws:apigateway:<region>:lambda:path/2015-03-31/functions/arn:aws:lambda:<region>:111111111111:function:MyLambda/invocations",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
         }
       },
-      "no-s3-support-AWS_PROXY": "An error occurred (BadRequestException) when calling the PutIntegration operation: Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations.",
-      "invalid-uri-HTTP_PROXY": "An error occurred (BadRequestException) when calling the PutIntegration operation: Invalid HTTP endpoint specified for URI",
-      "invalid-uri-not-an-arn": "An error occurred (BadRequestException) when calling the PutIntegration operation: Invalid ARN specified in the request",
-      "invalid-uri-invalid-arn": "An error occurred (BadRequestException) when calling the PutIntegration operation: AWS ARN for integration must contain path or action"
+      "no-s3-support-AWS_PROXY": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations."
+        },
+        "message": "Integrations of type 'AWS_PROXY' currently only supports Lambda function and Firehose stream invocations.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-uri-HTTP": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid HTTP endpoint specified for URI"
+        },
+        "message": "Invalid HTTP endpoint specified for URI",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-uri-HTTP_PROXY": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid HTTP endpoint specified for URI"
+        },
+        "message": "Invalid HTTP endpoint specified for URI",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-uri-not-an-arn": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid ARN specified in the request"
+        },
+        "message": "Invalid ARN specified in the request",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-uri-invalid-arn": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "AWS ARN for integration must contain path or action"
+        },
+        "message": "AWS ARN for integration must contain path or action",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
     }
   }
 }
