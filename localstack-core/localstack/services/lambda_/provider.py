@@ -982,7 +982,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if function_name not in state.functions:
             raise ResourceNotFoundException(
-                f"Function not found: {api_utils.unqualified_lambda_arn(function_name=function_name, region=context.region, account=context.account_id)}",
+                f"Function not found: {api_utils.unqualified_lambda_arn(function_name=function_name, region=region, account=account_id)}",
                 Type="User",
             )
         function = state.functions[function_name]
@@ -1027,9 +1027,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             replace_kwargs["dead_letter_arn"] = request.get("DeadLetterConfig", {}).get("TargetArn")
 
         if vpc_config := request.get("VpcConfig"):
-            replace_kwargs["vpc_config"] = self._build_vpc_config(
-                context.account_id, context.region, vpc_config
-            )
+            replace_kwargs["vpc_config"] = self._build_vpc_config(account_id, region, vpc_config)
 
         if "Handler" in request:
             replace_kwargs["handler"] = request["Handler"]
@@ -1065,9 +1063,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "Layers" in request:
             new_layers = request["Layers"]
             if new_layers:
-                self._validate_layers(
-                    new_layers, region=context.region, account_id=context.account_id
-                )
+                self._validate_layers(new_layers, region=region, account_id=account_id)
             replace_kwargs["layers"] = self.map_layers(new_layers)
 
         if "ImageConfig" in request:
