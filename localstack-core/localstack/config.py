@@ -1041,6 +1041,9 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 # Show exceptions for CloudFormation deploy errors
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
 
+# Allow fallback to previous template deployer implementation
+CFN_LEGACY_TEMPLATE_DEPLOYER = is_env_true("CFN_LEGACY_TEMPLATE_DEPLOYER")
+
 # Set the timeout to deploy each individual CloudFormation resource
 CFN_PER_RESOURCE_TIMEOUT = int(os.environ.get("CFN_PER_RESOURCE_TIMEOUT") or 300)
 
@@ -1104,6 +1107,7 @@ CONFIG_ENV_VARS = [
     "BOTO_WAITER_MAX_ATTEMPTS",
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
+    "CFN_LEGACY_TEMPLATE_DEPLOYER",
     "CFN_VERBOSE_ERRORS",
     "CI",
     "CUSTOM_SSL_CERT_PATH",
