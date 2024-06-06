@@ -278,35 +278,60 @@ class TestEc2Integrations:
         )
         snapshot.match("accepter-peer", accepter_peer)
 
-    @markers.aws.unknown
-    def test_describe_vpn_gateways_filter_by_vpc(self, aws_client):
-        vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
-        vpc_id = vpc["Vpc"]["VpcId"]
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..VpnGateway.AmazonSideAsn",
+            "$..VpnGateway.AvailabilityZone",
+            "$..VpnGateway.Tags",
+        ]
+    )
+    @markers.aws.validated
+    def test_describe_vpn_gateways_filter_by_vpc(self, aws_client, cleanups, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("vpc-id"),
+                snapshot.transform.key_value("VpnGatewayId"),
+            ]
+        )
+
+        vpc_id = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
+        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc_id))
+        snapshot.match("vpc-id", vpc_id)
 
         gateway = aws_client.ec2.create_vpn_gateway(AvailabilityZone="us-east-1a", Type="ipsec.1")
-        assert 200 == gateway["ResponseMetadata"]["HTTPStatusCode"]
-        assert "ipsec.1" == gateway["VpnGateway"]["Type"]
-        assert gateway["VpnGateway"]["VpnGatewayId"] is not None
-
         gateway_id = gateway["VpnGateway"]["VpnGatewayId"]
+        cleanups.append(lambda: aws_client.ec2.delete_vpn_gateway(VpnGatewayId=gateway_id))
+        snapshot.match("gateway", gateway)
+
+        def _detach_vpn_gateway():
+            aws_client.ec2.detach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
+            # This is a bit convoluted, but trying to delete a vpc with an attached vpn gateway
+            # fails silently. So a simple retry on the delete_vpc will not work.
+            retry(
+                lambda: aws_client.ec2.describe_vpn_gateways(
+                    Filters=[
+                        {"Name": "vpn-gateway-id", "Values": gateway_id},
+                        {"Name": "attachment.state", "Values": ["detached"]},
+                    ]
+                )["VpnGateways"][0],
+                retries=20,
+                sleep=5,
+            )
 
         aws_client.ec2.attach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
+        cleanups.append(_detach_vpn_gateway)
 
-        gateways = aws_client.ec2.describe_vpn_gateways(
-            Filters=[
-                {"Name": "attachment.vpc-id", "Values": [vpc_id]},
-            ],
-        )
-        assert 200 == gateways["ResponseMetadata"]["HTTPStatusCode"]
-        assert 1 == len(gateways["VpnGateways"])
-        assert gateway_id == gateways["VpnGateways"][0]["VpnGatewayId"]
-        assert "attached" == gateways["VpnGateways"][0]["VpcAttachments"][0]["State"]
-        assert vpc_id == gateways["VpnGateways"][0]["VpcAttachments"][0]["VpcId"]
+        def _describe_vpn_gateway():
+            gateways = aws_client.ec2.describe_vpn_gateways(
+                Filters=[
+                    {"Name": "attachment.vpc-id", "Values": [vpc_id]},
+                ],
+            )["VpnGateways"]
+            assert gateways[0]["VpcAttachments"][0]["State"] == "attached"
+            return gateways[0]
 
-        # clean up
-        aws_client.ec2.detach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
-        aws_client.ec2.delete_vpn_gateway(VpnGatewayId=gateway_id)
-        aws_client.ec2.delete_vpc(VpcId=vpc_id)
+        gateway = retry(_describe_vpn_gateway, retries=20, sleep=5)
+        snapshot.match("attached-gateway", gateway)
 
     @markers.aws.unknown
     def test_describe_vpc_endpoints_with_filter(self, aws_client, region_name):

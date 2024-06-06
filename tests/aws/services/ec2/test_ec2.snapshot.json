@@ -177,5 +177,37 @@
         }
       }
     }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_describe_vpn_gateways_filter_by_vpc": {
+    "recorded-date": "06-06-2024, 23:36:39",
+    "recorded-content": {
+      "vpc-id": "<vpc-id:1>",
+      "gateway": {
+        "VpnGateway": {
+          "AmazonSideAsn": 64512,
+          "State": "available",
+          "Type": "ipsec.1",
+          "VpcAttachments": [],
+          "VpnGatewayId": "<vpn-gateway-id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "attached-gateway": {
+        "AmazonSideAsn": 64512,
+        "State": "available",
+        "Tags": [],
+        "Type": "ipsec.1",
+        "VpcAttachments": [
+          {
+            "State": "attached",
+            "VpcId": "<vpc-id:1>"
+          }
+        ],
+        "VpnGatewayId": "<vpn-gateway-id:1>"
+      }
+    }
   }
 }
