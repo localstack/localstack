@@ -1,0 +1,39 @@
+{
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_create_route_table_association": {
+    "recorded-date": "06-06-2024, 19:21:49",
+    "recorded-content": {
+      "vpc_id": "<vpc_id:1>",
+      "subnet_id": "<subnet_id:1>",
+      "route_table_id": "<route_table_id:1>",
+      "association_id": "<association_id:1>",
+      "route_tables": [
+        {
+          "Associations": [
+            {
+              "Main": false,
+              "RouteTableAssociationId": "<association_id:1>",
+              "RouteTableId": "<route_table_id:1>",
+              "SubnetId": "<subnet_id:1>",
+              "AssociationState": {
+                "State": "associated"
+              }
+            }
+          ],
+          "PropagatingVgws": [],
+          "RouteTableId": "<route_table_id:1>",
+          "Routes": [
+            {
+              "DestinationCidrBlock": "10.0.0.0/16",
+              "GatewayId": "local",
+              "Origin": "CreateRouteTable",
+              "State": "active"
+            }
+          ],
+          "Tags": [],
+          "VpcId": "<vpc_id:1>",
+          "OwnerId": "111111111111"
+        }
+      ]
+    }
+  }
+}

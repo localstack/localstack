@@ -33,39 +33,53 @@ def create_launch_template(aws_client):
 
 
 class TestEc2Integrations:
-    @markers.aws.unknown
-    def test_create_route_table_association(self, cleanups, aws_client):
-        vpc = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")
-        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
-        subnet = aws_client.ec2.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
-        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
-
-        route_table = aws_client.ec2.create_route_table(VpcId=vpc["Vpc"]["VpcId"])
-        cleanups.append(
-            lambda: aws_client.ec2.delete_route_table(
-                RouteTableId=route_table["RouteTable"]["RouteTableId"]
-            )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PropagatingVgws"])
+    @markers.aws.validated
+    def test_create_route_table_association(self, cleanups, aws_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("vpc_id"),
+                snapshot.transform.key_value("subnet_id"),
+                snapshot.transform.key_value("route_table_id"),
+                snapshot.transform.key_value("association_id"),
+                snapshot.transform.key_value("ClientToken"),
+            ]
         )
+        vpc_id = aws_client.ec2.create_vpc(CidrBlock="10.0.0.0/16")["Vpc"]["VpcId"]
+        cleanups.append(lambda: aws_client.ec2.delete_vpc(VpcId=vpc_id))
+        snapshot.match("vpc_id", vpc_id)
+
+        subnet_id = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="10.0.0.0/24")["Subnet"][
+            "SubnetId"
+        ]
+        cleanups.append(lambda: aws_client.ec2.delete_subnet(SubnetId=subnet_id))
+        snapshot.match("subnet_id", subnet_id)
+
+        route_table_id = aws_client.ec2.create_route_table(VpcId=vpc_id)["RouteTable"][
+            "RouteTableId"
+        ]
+        cleanups.append(lambda: aws_client.ec2.delete_route_table(RouteTableId=route_table_id))
+        snapshot.match("route_table_id", route_table_id)
+
         association_id = aws_client.ec2.associate_route_table(
-            RouteTableId=route_table["RouteTable"]["RouteTableId"],
-            SubnetId=subnet["Subnet"]["SubnetId"],
+            RouteTableId=route_table_id,
+            SubnetId=subnet_id,
         )["AssociationId"]
         cleanups.append(
             lambda: aws_client.ec2.disassociate_route_table(AssociationId=association_id)
         )
+        snapshot.match("association_id", association_id)
 
-        for route_tables in aws_client.ec2.describe_route_tables()["RouteTables"]:
-            for association in route_tables["Associations"]:
-                if association["RouteTableId"] == route_table["RouteTable"]["RouteTableId"]:
-                    if association.get("Main"):
-                        continue  # default route table associations have no SubnetId in moto
-                    assert association["SubnetId"] == subnet["Subnet"]["SubnetId"]
-                    assert association["AssociationState"]["State"] == "associated"
+        route_tables = aws_client.ec2.describe_route_tables(RouteTableIds=[route_table_id])[
+            "RouteTables"
+        ]
+        snapshot.match("route_tables", route_tables)
 
         aws_client.ec2.disassociate_route_table(AssociationId=association_id)
-        for route_tables in aws_client.ec2.describe_route_tables()["RouteTables"]:
-            associations = [a for a in route_tables["Associations"] if not a.get("Main")]
-            assert associations == []
+        for route_tables in aws_client.ec2.describe_route_tables(RouteTableIds=[route_table_id])[
+            "RouteTables"
+        ]:
+            assert route_tables["Associations"] == []
 
     @markers.aws.unknown
     def test_create_vpc_end_point(self, cleanups, aws_client):
