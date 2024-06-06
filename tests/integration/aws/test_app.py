@@ -171,7 +171,7 @@ class TestHttps:
         assert response.ok
 
 
-@pytest.mark.skip(
+@pytest.mark.skipif(
     condition=config.GATEWAY_SERVER not in ["hypercorn"],
     reason=f"websockets not supported with {config.GATEWAY_SERVER}",
 )
