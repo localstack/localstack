@@ -18,19 +18,25 @@ LOG = logging.getLogger(__name__)
 class RestApiHandler:
     def __init__(self, deployment: RestApiDeployment, stage: str):
         request_parser_handler = InvocationRequestParser(deployment, stage=stage)
-        # TODO: make the list of handlers configurable, in order to be able to easily extend it
-        # also, think about composite handlers for the future?
+        # think about more composite handlers for the future?
         self.gateway = ApiGateway(
             request_handlers=[
                 request_parser_handler,
-                # TODO: here add request handlers for method and integration + final integration handler
+                # TODO: for extending in -ext
+                handlers.preprocess_request,
+                handlers.method_request_handler,
+                handlers.integration_request_handler,
+                handlers.integration_handler,
+                # temporary handler which executes everything for now
                 handlers.global_temporary_handler,
             ],
             response_handlers=[
-                # TODO: add integration response and method response here
+                handlers.integration_response_handler,
+                handlers.method_response_handler,
+                # add composite response handlers?
             ],
             exception_handlers=[
-                # TODO: we need the exception handler, things seems like they're silently swallowed now
+                # TODO: we need the exception handler instead of serializing them
             ],
             context_class=InvocationContext,
         )
