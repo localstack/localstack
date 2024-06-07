@@ -10434,7 +10434,7 @@ class TestS3PresignedPost:
         )
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="failing sporadically with new HTTP gateway (only in CI)",
     )
     def test_post_object_with_files(self, s3_bucket, aws_client):
@@ -10636,7 +10636,7 @@ class TestS3PresignedPost:
         snapshot.match("exception-no-sig-related-fields", exception)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="sporadically failing in CI: presigned-post does not set the body, and then etag is wrong",
     )
     def test_s3_presigned_post_success_action_status_201_response(

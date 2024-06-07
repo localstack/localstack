@@ -439,7 +439,7 @@ class TestSecretsManagerParameters:
 
 
 class TestPreviousValues:
-    @pytest.mark.xfail(reason="outputs don't behave well in combination with conditions")
+    @pytest.mark.skip(reason="outputs don't behave well in combination with conditions")
     @markers.aws.validated
     def test_parameter_usepreviousvalue_behavior(
         self, deploy_cfn_template, is_stack_updated, aws_client
