@@ -997,8 +997,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 api_id=rest_api_id,
                 stage=stage_name,
             )
-            # TODO: check if there are existing rules?
-            if existing_rules := self.routing_rules.get((rest_api_id, stage_name)):
+
+            if existing_rules := self.routing_rules.pop((rest_api_id, stage_name), None):
                 ROUTER.remove(existing_rules)
             self.routing_rules[(rest_api_id, stage_name)] = rules
 
@@ -1091,8 +1091,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                         api_id=rest_api_id,
                         stage=stage_name,
                     )
-                    # TODO: check if there are existing rules?
-                    if existing_rules := self.routing_rules.get((rest_api_id, stage_name)):
+
+                    if existing_rules := self.routing_rules.pop((rest_api_id, stage_name), None):
                         ROUTER.remove(existing_rules)
                     self.routing_rules[(rest_api_id, stage_name)] = rules
 
@@ -1107,9 +1107,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self, context: RequestContext, rest_api_id: String, stage_name: String, **kwargs
     ) -> None:
         call_moto(context)
-        # TODO: check if there are existing rules?
+
         if config.ENABLE_APIGW_NEXT_GEN:
-            if existing_rules := self.routing_rules.get((rest_api_id, stage_name)):
+            if existing_rules := self.routing_rules.pop((rest_api_id, stage_name), None):
                 ROUTER.remove(existing_rules)
 
     def _patch_stage_response(self, response: dict):
@@ -1156,8 +1156,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     api_id=rest_api_id,
                     stage=stage_name,
                 )
-                # TODO: check if there are existing rules?
-                if existing_rules := self.routing_rules.get((rest_api_id, stage_name)):
+
+                if existing_rules := self.routing_rules.pop((rest_api_id, stage_name), None):
                     ROUTER.remove(existing_rules)
                 self.routing_rules[(rest_api_id, stage_name)] = rules
 
