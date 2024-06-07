@@ -179,7 +179,7 @@
     }
   },
   "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_describe_vpn_gateways_filter_by_vpc": {
-    "recorded-date": "06-06-2024, 23:36:39",
+    "recorded-date": "07-06-2024, 01:11:12",
     "recorded-content": {
       "vpc-id": "<vpc-id:1>",
       "gateway": {

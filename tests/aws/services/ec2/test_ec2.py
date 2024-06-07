@@ -279,11 +279,7 @@ class TestEc2Integrations:
         snapshot.match("accepter-peer", accepter_peer)
 
     @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..VpnGateway.AmazonSideAsn",
-            "$..VpnGateway.AvailabilityZone",
-            "$..VpnGateway.Tags",
-        ]
+        paths=["$..AmazonSideAsn", "$..AvailabilityZone", "$..Tags"]
     )
     @markers.aws.validated
     def test_describe_vpn_gateways_filter_by_vpc(self, aws_client, cleanups, snapshot):
@@ -310,7 +306,7 @@ class TestEc2Integrations:
             retry(
                 lambda: aws_client.ec2.describe_vpn_gateways(
                     Filters=[
-                        {"Name": "vpn-gateway-id", "Values": gateway_id},
+                        {"Name": "vpn-gateway-id", "Values": [gateway_id]},
                         {"Name": "attachment.state", "Values": ["detached"]},
                     ]
                 )["VpnGateways"][0],
