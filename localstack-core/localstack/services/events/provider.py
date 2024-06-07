@@ -790,15 +790,15 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         )
         store.replays[replay_service.replay.name] = replay_service.replay
         archive_service = self._archive_service_store[event_source_arn]
-        replay_service.start()
         events_to_replay = archive_service.get_events(
             replay_service.event_start_time, replay_service.event_end_time
         )
-        replay_service.set_event_last_replayed_time(events_to_replay)
-        re_formatted_event_to_replay = replay_service.re_format_events_from_archive(
-            events_to_replay, replay_name
-        )
-        self._process_entries(context, re_formatted_event_to_replay)
+        replay_service.start(events_to_replay)
+        if events_to_replay:
+            re_formatted_event_to_replay = replay_service.re_format_events_from_archive(
+                events_to_replay, replay_name
+            )
+            self._process_entries(context, re_formatted_event_to_replay)
         replay_service.finish()
 
         response = StartReplayResponse(

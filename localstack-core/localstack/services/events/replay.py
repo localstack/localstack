@@ -44,11 +44,11 @@ class ReplayService:
     def set_state(self, state: ReplayState) -> None:
         self.replay.state = state
 
-    def start(self) -> None:
+    def start(self, events: FormattedEventList | None) -> None:
         self.set_state(ReplayState.RUNNING)
-        timestamp_now = datetime.now(timezone.utc)
-        self.replay.replay_start_time = timestamp_now
-        self.replay.event_last_replayed_time = timestamp_now
+        self.replay.replay_start_time = datetime.now(timezone.utc)
+        if events:
+            self._set_event_last_replayed_time(events)
 
     def finish(self) -> None:
         self.set_state(ReplayState.COMPLETED)
@@ -58,10 +58,6 @@ class ReplayService:
         self.set_state(ReplayState.CANCELLING)
         self.replay.event_last_replayed_time = None
         self.replay.replay_end_time = None
-
-    def set_event_last_replayed_time(self, events: FormattedEventList) -> None:
-        latest_event_time = max(event["time"] for event in events)
-        self.replay.event_last_replayed_time = latest_event_time
 
     def re_format_events_from_archive(
         self, events: FormattedEventList, replay_name: ReplayName
@@ -86,6 +82,10 @@ class ReplayService:
         if event_end_time.tzinfo is None:
             event_end_time = event_end_time.replace(tzinfo=timezone.utc)
         return event_start_time, event_end_time
+
+    def _set_event_last_replayed_time(self, events: FormattedEventList) -> None:
+        latest_event_time = max(event["time"] for event in events)
+        self.replay.event_last_replayed_time = latest_event_time
 
 
 ReplayServiceDict = dict[ReplayName, ReplayService]
