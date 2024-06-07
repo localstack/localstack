@@ -124,7 +124,7 @@ class SourceVolumeMountConfigurator:
 
     def __call__(self, cfg: ContainerConfiguration):
         # localstack source code if available
-        source = self.host_paths.localstack_project_dir / "localstack"
+        source = self.host_paths.localstack_project_dir / "localstack-core" / "localstack"
         if source.exists():
             cfg.volumes.add(
                 VolumeBind(str(source), self.container_paths.localstack_source_dir, read_only=True)

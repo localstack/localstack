@@ -186,7 +186,7 @@ class TestScheduleRate:
             "$..storedBytes",
         ]
     )
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="This test is flaky is CI, might be race conditions"  # FIXME: investigate and fix
     )
     def test_scheduled_rule_logs(

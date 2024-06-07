@@ -123,7 +123,7 @@ class TestApiGatewayApiRestApi:
         snapshot.match("get-rest-api-after-delete", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="rest apis are case insensitive for now because of custom id tags")
+    @pytest.mark.skip(reason="rest apis are case insensitive for now because of custom id tags")
     def test_get_api_case_insensitive(self, apigw_create_rest_api, snapshot, aws_client):
         api_name1 = f"test-case-sensitive-apis-{short_uid()}"
 

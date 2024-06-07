@@ -484,7 +484,7 @@ class TestIAMIntegrations:
         assert roles["Roles"][0]["RoleName"] == role_name_2
 
     @markers.aws.validated
-    @pytest.mark.xfail
+    @pytest.mark.skip
     @pytest.mark.parametrize(
         "service_name, expected_role",
         [

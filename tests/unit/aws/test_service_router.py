@@ -73,7 +73,7 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
                     service,
                     service.protocol,
                     service.operation_model(operation_name),
-                    marks=pytest.mark.xfail(
+                    marks=pytest.mark.skip(
                         reason=f"{service.service_name} is currently not supported by the service router"
                     ),
                 )

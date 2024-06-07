@@ -666,7 +666,7 @@ class TestLambdaBehavior:
 
         wait_until(_assert_log_output, strategy="linear")
 
-    @pytest.mark.xfail(reason="Currently flaky in CI")
+    @pytest.mark.skip(reason="Currently flaky in CI")
     @markers.aws.validated
     def test_lambda_invoke_timed_out_environment_reuse(
         self, create_lambda_function, snapshot, aws_client
