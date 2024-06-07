@@ -1033,7 +1033,8 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
 # Whether to enable the Next Gen APIGW invocation logic (handler chain)
-ENABLE_APIGW_NEXT_GEN = is_env_true("ENABLE_APIGW_NEXT_GEN")
+# TODO: fix this, set `is_env_true` to disabled by default
+ENABLE_APIGW_NEXT_GEN = is_env_not_false("ENABLE_APIGW_NEXT_GEN")
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
