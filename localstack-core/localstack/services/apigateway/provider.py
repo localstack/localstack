@@ -11,6 +11,7 @@ from moto.apigateway import models as apigw_models
 from moto.apigateway.models import Resource as MotoResource
 from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
+from werkzeug.routing import Rule
 
 from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceRequest, handler
@@ -179,6 +180,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     def __init__(self, router: ApigatewayRouter = None):
         self.router = router or ApigatewayRouter(ROUTER)
+        self.routing_rules: dict[tuple[str, str], list[Rule]] = {}
 
     def on_after_init(self):
         apply_patches()
@@ -968,8 +970,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     @handler("CreateStage", expand=False)
     def create_stage(self, context: RequestContext, request: CreateStageRequest) -> Stage:
         call_moto(context)
-        moto_api = get_moto_rest_api(context, rest_api_id=request["restApiId"])
-        stage = moto_api.stages.get(request["stageName"])
+        rest_api_id = request["restApiId"]
+        stage_name = request["stageName"]
+        moto_api = get_moto_rest_api(context, rest_api_id=rest_api_id)
+        stage = moto_api.stages.get(stage_name)
         if not stage:
             raise NotFoundException("Invalid Stage identifier specified")
 
@@ -977,11 +981,27 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             stage.documentation_version = request.get("documentationVersion")
 
         # make sure we update the stage_name on the deployment entity in moto
-        deployment = moto_api.deployments.get(request["deploymentId"])
+        deployment_id = request["deploymentId"]
+        deployment = moto_api.deployments.get(deployment_id)
         deployment.stage_name = stage.name
 
         response = stage.to_json()
         self._patch_stage_response(response)
+
+        if config.ENABLE_APIGW_NEXT_GEN:
+            store = get_apigateway_store(context=context)
+            frozen_deployment = store.internal_deployments.get(deployment_id)
+            rules = register_api_deployment(
+                router=ROUTER,
+                deployment=frozen_deployment,
+                api_id=rest_api_id,
+                stage=stage_name,
+            )
+            # TODO: check if there are existing rules?
+            if existing_rules := self.routing_rules.get((rest_api_id, stage_name)):
+                ROUTER.remove(existing_rules)
+            self.routing_rules[(rest_api_id, stage_name)] = rules
+
         return response
 
     def get_stage(
@@ -1057,16 +1077,24 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 patch_operation["value"] = value and value.lower() == "true" or False
 
             # TODO: if `update_stage` has `deploymentId`, we need to register the routes
-            if patch_path == "/deploymentId" and patch_operation["op"] == "replace":
+            if (
+                config.ENABLE_APIGW_NEXT_GEN
+                and patch_path == "/deploymentId"
+                and patch_operation["op"] == "replace"
+            ):
                 if deployment_id := patch_operation.get("value"):
                     store = get_apigateway_store(context=context)
                     frozen_deployment = store.internal_deployments.get(deployment_id)
-                    register_api_deployment(
+                    rules = register_api_deployment(
                         router=ROUTER,
                         deployment=frozen_deployment,
                         api_id=rest_api_id,
                         stage=stage_name,
                     )
+                    # TODO: check if there are existing rules?
+                    if existing_rules := self.routing_rules.get((rest_api_id, stage_name)):
+                        ROUTER.remove(existing_rules)
+                    self.routing_rules[(rest_api_id, stage_name)] = rules
 
         _patch_api_gateway_entity(moto_stage, patch_operations)
         moto_stage.apply_operations(patch_operations)
@@ -1074,6 +1102,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = moto_stage.to_json()
         self._patch_stage_response(response)
         return response
+
+    def delete_stage(
+        self, context: RequestContext, rest_api_id: String, stage_name: String, **kwargs
+    ) -> None:
+        call_moto(context)
+        # TODO: check if there are existing rules?
+        if config.ENABLE_APIGW_NEXT_GEN:
+            if existing_rules := self.routing_rules.get((rest_api_id, stage_name)):
+                ROUTER.remove(existing_rules)
 
     def _patch_stage_response(self, response: dict):
         """Apply a few patches required for AWS parity"""
@@ -1113,12 +1150,16 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             store.internal_deployments[deployment["id"]] = frozen_deployment
 
             if stage_name:
-                register_api_deployment(
+                rules = register_api_deployment(
                     router=ROUTER,
                     deployment=frozen_deployment,
                     api_id=rest_api_id,
                     stage=stage_name,
                 )
+                # TODO: check if there are existing rules?
+                if existing_rules := self.routing_rules.get((rest_api_id, stage_name)):
+                    ROUTER.remove(existing_rules)
+                self.routing_rules[(rest_api_id, stage_name)] = rules
 
         return deployment
 
