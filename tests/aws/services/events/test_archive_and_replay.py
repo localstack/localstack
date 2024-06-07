@@ -592,7 +592,10 @@ class TestReplay:
         response_list_replays_full_name = aws_client.events.list_replays(NamePrefix=replay_name)
 
         snapshot.add_transformer(
-            [snapshot.transform.regex(replay_name_prefix, "<replay-name-prefix>")]
+            [
+                snapshot.transform.regex(replay_name_prefix, "<replay-name-prefix>"),
+                snapshot.transform.regex(archive_arn, "<archive-arn>"),
+            ]
         )
         snapshot.match("list-replays-with-full-name", response_list_replays_full_name)
 

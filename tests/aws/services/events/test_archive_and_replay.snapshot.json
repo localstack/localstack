@@ -875,7 +875,7 @@
         "Replays": [
           {
             "EventEndTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-5b45b58b",
+            "EventSourceArn": "<archive-arn>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "<replay-name-prefix>-test-replay",
@@ -892,7 +892,7 @@
         "Replays": [
           {
             "EventEndTime": "datetime",
-            "EventSourceArn": "arn:aws:events:<region>:111111111111:archive/test-archive-5b45b58b",
+            "EventSourceArn": "<archive-arn>",
             "EventStartTime": "datetime",
             "ReplayEndTime": "datetime",
             "ReplayName": "<replay-name-prefix>-test-replay",
