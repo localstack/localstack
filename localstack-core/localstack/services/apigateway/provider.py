@@ -12,6 +12,7 @@ from moto.apigateway.models import Resource as MotoResource
 from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
     Account,
@@ -25,6 +26,7 @@ from localstack.aws.api.apigateway import (
     BasePathMappings,
     Blob,
     Boolean,
+    CacheClusterSize,
     ClientCertificate,
     ClientCertificates,
     ConflictException,
@@ -33,6 +35,7 @@ from localstack.aws.api.apigateway import (
     CreateRestApiRequest,
     CreateStageRequest,
     Deployment,
+    DeploymentCanarySettings,
     DocumentationPart,
     DocumentationPartIds,
     DocumentationPartLocation,
@@ -92,6 +95,8 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.connect import connect_to
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
+from localstack.services.apigateway.execute_api.helpers import freeze_rest_api
+from localstack.services.apigateway.execute_api.router import register_api_deployment
 from localstack.services.apigateway.exporter import OpenApiExporter
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
@@ -1051,6 +1056,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             if patch_path == "/tracingEnabled" and (value := patch_operation.get("value")):
                 patch_operation["value"] = value and value.lower() == "true" or False
 
+            # TODO: if `update_stage` has `deploymentId`, we need to register the routes
+            if patch_path == "/deploymentId" and patch_operation["op"] == "replace":
+                if deployment_id := patch_operation.get("value"):
+                    store = get_apigateway_store(context=context)
+                    frozen_deployment = store.internal_deployments.get(deployment_id)
+                    register_api_deployment(
+                        router=ROUTER,
+                        deployment=frozen_deployment,
+                        api_id=rest_api_id,
+                        stage=stage_name,
+                    )
+
         _patch_api_gateway_entity(moto_stage, patch_operations)
         moto_stage.apply_operations(patch_operations)
 
@@ -1064,6 +1081,46 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response.setdefault("tracingEnabled", False)
         if not response.get("variables"):
             response.pop("variables", None)
+
+    def create_deployment(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        stage_name: String = None,
+        stage_description: String = None,
+        description: String = None,
+        cache_cluster_enabled: NullableBoolean = None,
+        cache_cluster_size: CacheClusterSize = None,
+        variables: MapOfStringToString = None,
+        canary_settings: DeploymentCanarySettings = None,
+        tracing_enabled: NullableBoolean = None,
+        **kwargs,
+    ) -> Deployment:
+        deployment: Deployment = call_moto(context)
+        if config.ENABLE_APIGW_NEXT_GEN:
+            # https://docs.aws.amazon.com/apigateway/latest/developerguide/updating-api.html
+            #
+            # TODO: the deployment is not accessible until it is linked to a stage
+            # you can combine a stage or later update the deployment with a stage id
+            store = get_apigateway_store(context=context)
+            moto_rest_api = get_moto_rest_api(context, rest_api_id)
+            rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+            frozen_deployment = freeze_rest_api(
+                moto_rest_api=moto_rest_api,
+                localstack_rest_api=rest_api_container,
+            )
+            # TODO: also delete deployment
+            store.internal_deployments[deployment["id"]] = frozen_deployment
+
+            if stage_name:
+                register_api_deployment(
+                    router=ROUTER,
+                    deployment=frozen_deployment,
+                    api_id=rest_api_id,
+                    stage=stage_name,
+                )
+
+        return deployment
 
     def update_deployment(
         self,

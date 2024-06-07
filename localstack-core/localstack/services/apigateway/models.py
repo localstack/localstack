@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 
+from moto.apigateway.models import RestAPI as MotoRestAPI
 from requests.structures import CaseInsensitiveDict
 
 from localstack.aws.api.apigateway import (
@@ -55,6 +56,12 @@ class RestApiContainer:
         self.resource_children = {}
 
 
+class RestApiDeployment:
+    def __init__(self, localstack_rest_api: RestApiContainer, moto_rest_api: MotoRestAPI):
+        self.localstack_rest_api = localstack_rest_api
+        self.moto_rest_api = moto_rest_api
+
+
 class ApiGatewayStore(BaseStore):
     # maps (API id) -> RestApiContainer
     # TODO: remove CaseInsensitiveDict, and lower the value of the ID when getting it from the tags
@@ -77,6 +84,9 @@ class ApiGatewayStore(BaseStore):
 
     # maps resource ARN to tags
     TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
+
+    # internal deployments, represents a frozen REST API for a deployment
+    internal_deployments: dict[str, RestApiDeployment] = LocalAttribute(default=dict)
 
     def __init__(self):
         super().__init__()
