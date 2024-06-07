@@ -134,6 +134,30 @@ class TestSnfApi:
         sfn_snapshot.match("describe_nonexistent_sm", exc.value)
 
     @markers.aws.validated
+    def test_describe_sm_arn_containing_punctuation(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        # ARN will contain a punctuation symbol
+        sm_name = f"state.machine_{short_uid()}"
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
+
+        describe_resp = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=creation_resp["stateMachineArn"]
+        )
+        sfn_snapshot.match("describe_resp", describe_resp)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..exception_value"])
     def test_describe_invalid_arn_sm(self, sfn_snapshot, aws_client):
         with pytest.raises(Exception) as exc:
@@ -978,6 +1002,42 @@ class TestSnfApi:
         sfn_snapshot.match(
             "exception", {"exception_typename": exc.typename, "exception_value": exc.value}
         )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..redriveCount", "$..redriveStatus", "$..redriveStatusReason"]
+    )
+    def test_describe_execution_arn_containing_punctuation(
+        self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client
+    ):
+        snf_role_arn = create_iam_role_for_sfn()
+        sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
+
+        sm_name: str = f"state.machine_{short_uid()}"
+        definition = BaseTemplate.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
+        definition_str = json.dumps(definition)
+
+        creation_resp = create_state_machine(
+            name=sm_name, definition=definition_str, roleArn=snf_role_arn
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_create_arn(creation_resp, 0))
+        sfn_snapshot.match("creation_resp", creation_resp)
+
+        # ARN will contain a punctuation symbol
+        exec_name: str = f"state.machine.execution_{short_uid()}"
+        exec_resp = aws_client.stepfunctions.start_execution(
+            stateMachineArn=creation_resp["stateMachineArn"], name=exec_name
+        )
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_exec_arn(exec_resp, 0))
+        sfn_snapshot.match("exec_resp", exec_resp)
+        execution_arn = exec_resp["executionArn"]
+
+        await_execution_success(
+            stepfunctions_client=aws_client.stepfunctions, execution_arn=execution_arn
+        )
+
+        describe_execution = aws_client.stepfunctions.describe_execution(executionArn=execution_arn)
+        sfn_snapshot.match("describe_execution", describe_execution)
 
     @markers.aws.needs_fixing
     def test_get_execution_history_no_such_execution(
