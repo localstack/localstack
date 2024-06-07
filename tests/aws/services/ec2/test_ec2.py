@@ -4,7 +4,6 @@ import pytest
 from botocore.exceptions import ClientError
 from moto.ec2 import ec2_backends
 
-from localstack.testing.config import SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -207,17 +206,17 @@ class TestEc2Integrations:
     )
     @markers.aws.validated
     def test_vcp_peering_difference_regions(
-        self, aws_client_factory, region_name, cleanups, snapshot
+        self, aws_client_factory, region_name, cleanups, snapshot, secondary_region_name
     ):
         snapshot.add_transformers_list(
             [
-                snapshot.transform.key_value("vpc1-id"),
-                snapshot.transform.key_value("vpc2-id"),
+                snapshot.transform.key_value("vpc-id"),
                 snapshot.transform.key_value("peering-connection-id"),
+                snapshot.transform.key_value("region"),
             ]
         )
         region1 = region_name
-        region2 = SECONDARY_TEST_AWS_REGION_NAME
+        region2 = secondary_region_name
         ec2_client1 = aws_client_factory(region_name=region1).ec2
         ec2_client2 = aws_client_factory(region_name=region2).ec2
 
@@ -230,11 +229,11 @@ class TestEc2Integrations:
         cidr_block2 = "192.168.2.0/24"
         peer_vpc1_id = ec2_client1.create_vpc(CidrBlock=cidr_block1)["Vpc"]["VpcId"]
         cleanups.append(_delete_vpc(ec2_client1, peer_vpc1_id))
-        snapshot.match("vpc1-id", peer_vpc1_id)
+        snapshot.match("vpc1", {"vpc-id": peer_vpc1_id, "region": region1})
 
         peer_vpc2_id = ec2_client2.create_vpc(CidrBlock=cidr_block2)["Vpc"]["VpcId"]
         cleanups.append(_delete_vpc(ec2_client2, peer_vpc2_id))
-        snapshot.match("vpc2-id", peer_vpc2_id)
+        snapshot.match("vpc2", {"vpc-id": peer_vpc2_id, "region": region2})
 
         peering_connection_id = ec2_client1.create_vpc_peering_connection(
             VpcId=peer_vpc1_id,
