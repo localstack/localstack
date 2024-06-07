@@ -128,9 +128,7 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                 error = None
                 if result.is_error:
                     error = "?"
-                result_payload = (
-                    to_str(json.loads(result.payload)) if result.payload else ""
-                )
+                result_payload = to_str(json.loads(result.payload)) if result.payload else ""
                 callback(
                     result=LegacyInvocationResult(
                         result=result_payload,
