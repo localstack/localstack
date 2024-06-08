@@ -7,7 +7,6 @@ from botocore.model import ServiceModel
 
 from localstack.aws.api import (
     CommonServiceException,
-    HttpResponse,
     RequestContext,
     ServiceException,
 )
@@ -15,6 +14,7 @@ from localstack.aws.api.core import ServiceRequest, ServiceRequestHandler, Servi
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.protocol.serializer import ResponseSerializer, create_serializer
 from localstack.aws.spec import load_service
+from localstack.http import Response
 from localstack.utils import analytics
 from localstack.utils.coverage_docs import get_coverage_link_for_service
 
@@ -130,7 +130,7 @@ class Skeleton:
         else:
             self.dispatch_table = create_dispatch_table(implementation)
 
-    def invoke(self, context: RequestContext) -> HttpResponse:
+    def invoke(self, context: RequestContext) -> Response:
         serializer = create_serializer(context.service)
 
         if context.operation and context.service_request:
@@ -159,7 +159,7 @@ class Skeleton:
 
     def dispatch_request(
         self, serializer: ResponseSerializer, context: RequestContext, instance: ServiceRequest
-    ) -> HttpResponse:
+    ) -> Response:
         operation = context.operation
 
         handler = self.dispatch_table[operation.name]
@@ -168,26 +168,26 @@ class Skeleton:
         result = handler(context, instance) or {}
 
         # if the service handler returned an HTTP request, forego serialization and return immediately
-        if isinstance(result, HttpResponse):
+        if isinstance(result, Response):
             return result
 
         context.service_response = result
 
-        # Serialize result dict to an HTTPResponse and return it
+        # Serialize result dict to a Response and return it
         return serializer.serialize_to_response(
             result, operation, context.request.headers, context.request_id
         )
 
     def on_service_exception(
         self, serializer: ResponseSerializer, context: RequestContext, exception: ServiceException
-    ) -> HttpResponse:
+    ) -> Response:
         """
         Called by invoke if the handler of the operation raised a ServiceException.
 
         :param serializer: serializer which should be used to serialize the exception
         :param context: the request context
         :param exception: the exception that was raised
-        :return: an HttpResponse object
+        :return: a Response object
         """
         context.service_exception = exception
 
@@ -200,14 +200,14 @@ class Skeleton:
         serializer: ResponseSerializer,
         context: RequestContext,
         exception: NotImplementedError,
-    ) -> HttpResponse:
+    ) -> Response:
         """
         Called by invoke if either the dispatch table did not contain an entry for the operation, or the service
         provider raised a NotImplementedError
         :param serializer: the serialzier which should be used to serialize the NotImplementedError
         :param context: the request context
         :param exception: the NotImplementedError that was raised
-        :return: an HttpResponse object
+        :return: a Response object
         """
         operation = context.operation
 
