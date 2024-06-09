@@ -18,6 +18,7 @@ from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
+    CrossAccountAttribute,
     CrossRegionAttribute,
     LocalAttribute,
 )
@@ -87,6 +88,10 @@ class ApiGatewayStore(BaseStore):
 
     # internal deployments, represents a frozen REST API for a deployment
     internal_deployments: dict[str, RestApiDeployment] = LocalAttribute(default=dict)
+
+    # active deployments, mapping API ID + Stage to deployment ID
+    # TODO: make sure API ID are unique across all accounts
+    active_deployments: dict[(str, str), str] = CrossAccountAttribute(dict)
 
     def __init__(self):
         super().__init__()
