@@ -27,7 +27,6 @@ class ApiGatewayHandler:
     def __call__(self, request: Request, **kwargs) -> Response:
         # api_id can be cased because of custom-tag id
         api_id, stage = kwargs.get("api_id", "").lower(), kwargs.get("stage")
-        print(f"{api_id=} / {stage=}")
         if self.is_rest_api(api_id, stage):
             LOG.info("Next-gen handler for APIGW v1 called")
             response = Response()

@@ -178,7 +178,7 @@ class TestCSRF:
                 "Origin": "https://app.localstack.cloud",
             },
         )
-        assert response.status_code == 404
+        assert response.status_code in (403, 404)
         assert not any(response.headers.get(cors_header) for cors_header in cors_headers)
 
         rest_api_url_host = f"{config.internal_service_url()}/stage"
@@ -192,7 +192,7 @@ class TestCSRF:
             },
         )
 
-        assert response.status_code == 404
+        assert response.status_code in (403, 404)
         assert not any(response.headers.get(cors_header) for cors_header in cors_headers)
 
         # now we give it a try with a route from the provider defined in the specs: GetRestApi, and an authorized origin

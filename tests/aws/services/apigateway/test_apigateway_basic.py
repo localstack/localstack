@@ -1262,6 +1262,7 @@ class TestAPIGateway:
             aws_client.dynamodb,
             integration_type="MOCK",
             integration_responses=resps,
+            stage_name=TEST_STAGE_NAME,
         )
 
         url = path_based_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path="/")
