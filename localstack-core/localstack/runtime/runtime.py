@@ -164,23 +164,23 @@ class LocalstackRuntime:
     @property
     def exit_code(self):
         # FIXME: legacy compatibility code
-        from localstack.services.infra import EXIT_CODE
+        from localstack.runtime import legacy
 
-        return EXIT_CODE.get()
+        return legacy.EXIT_CODE.get()
 
     @exit_code.setter
     def exit_code(self, value):
         # FIXME: legacy compatibility code
-        from localstack.services.infra import EXIT_CODE
+        from localstack.runtime import legacy
 
-        EXIT_CODE.set(value)
+        legacy.EXIT_CODE.set(value)
 
     def _run_shutdown_monitor(self):
         # FIXME: legacy compatibility code. this can be removed once we replace access to the
         #  ``SHUTDOWN_INFRA`` event with ``get_current_runtime().shutdown()``.
-        from localstack.services import infra
+        from localstack.runtime import legacy
 
-        infra.SHUTDOWN_INFRA.wait()
+        legacy.SHUTDOWN_INFRA.wait()
         self.shutdown()
 
 
@@ -193,6 +193,8 @@ def create_from_environment() -> LocalstackRuntime:
 
     :return: a new LocalstackRuntime instance
     """
+    hooks.on_runtime_create.run()
+
     plugin_manager = PluginManager(Components.namespace)
     components = plugin_manager.load_all()
 

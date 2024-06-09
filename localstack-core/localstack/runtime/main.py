@@ -3,8 +3,9 @@ manages the interaction with the operating system - mostly signal handlers for n
 
 import signal
 import sys
+import traceback
 
-from localstack import config
+from localstack import config, constants
 from localstack.runtime.exceptions import LocalstackExit
 
 
@@ -26,11 +27,46 @@ def main_legacy():
     sys.exit(infra.EXIT_CODE.get())
 
 
-def print_runtime_information():
-    # FIXME: refactor legacy code
-    from localstack.services.infra import print_runtime_information
+def print_runtime_information(in_docker: bool = False):
+    # FIXME: this is legacy code from the old CLI, reconcile with new CLI and runtime output
+    from localstack.utils.container_networking import get_main_container_name
+    from localstack.utils.container_utils.container_client import ContainerException
+    from localstack.utils.docker_utils import DOCKER_CLIENT
 
-    print_runtime_information()
+    print()
+    print(f"LocalStack version: {constants.VERSION}")
+    if in_docker:
+        try:
+            container_name = get_main_container_name()
+            print("LocalStack Docker container name: %s" % container_name)
+            inspect_result = DOCKER_CLIENT.inspect_container(container_name)
+            container_id = inspect_result["Id"]
+            print("LocalStack Docker container id: %s" % container_id[:12])
+            image_sha = inspect_result["Image"]
+            print("LocalStack Docker image sha: %s" % image_sha)
+        except ContainerException:
+            print(
+                "LocalStack Docker container info: Failed to inspect the LocalStack docker container. "
+                "This is likely because the docker socket was not mounted into the container. "
+                "Without access to the docker socket, LocalStack will not function properly. Please "
+                "consult the LocalStack documentation on how to correctly start up LocalStack. ",
+                end="",
+            )
+            if config.DEBUG:
+                print("Docker debug information:")
+                traceback.print_exc()
+            else:
+                print(
+                    "You can run LocalStack with `DEBUG=1` to get more information about the error."
+                )
+
+    if config.LOCALSTACK_BUILD_DATE:
+        print("LocalStack build date: %s" % config.LOCALSTACK_BUILD_DATE)
+
+    if config.LOCALSTACK_BUILD_GIT_HASH:
+        print("LocalStack build git hash: %s" % config.LOCALSTACK_BUILD_GIT_HASH)
+
+    print()
 
 
 def main_v2():

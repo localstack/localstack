@@ -1,14 +1,13 @@
 import logging
 import os
-import signal
 import sys
-import threading
 import traceback
 
 from localstack import config, constants
 from localstack.constants import LOCALSTACK_INFRA_PROCESS, VERSION
 from localstack.http.duplex_socket import enable_duplex_socket
 from localstack.runtime import events, hooks
+from localstack.runtime import legacy as legacy_runtime
 from localstack.runtime.exceptions import LocalstackExit
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import files, objects
@@ -42,13 +41,13 @@ LOG = logging.getLogger(__name__)
 
 # event flag indicating the infrastructure has been started and that the ready marker has been printed
 # TODO: deprecated, use events.infra_ready
-INFRA_READY = events.infra_ready
+INFRA_READY = legacy_runtime.INFRA_READY
 
 # event flag indicating that the infrastructure has been shut down
-SHUTDOWN_INFRA = threading.Event()
+SHUTDOWN_INFRA = legacy_runtime.SHUTDOWN_INFRA
 
 # can be set
-EXIT_CODE: objects.Value[int] = objects.Value(0)
+EXIT_CODE: objects.Value[int] = legacy_runtime.EXIT_CODE
 
 
 # ---------------
@@ -57,27 +56,9 @@ EXIT_CODE: objects.Value[int] = objects.Value(0)
 
 
 def patch_urllib3_connection_pool(**constructor_kwargs):
-    """
-    Override the default parameters of HTTPConnectionPool, e.g., set the pool size via maxsize=16
-    """
-    try:
-        from urllib3 import connectionpool, poolmanager
+    from localstack.runtime.patches import patch_urllib3_connection_pool
 
-        class MyHTTPSConnectionPool(connectionpool.HTTPSConnectionPool):
-            def __init__(self, *args, **kwargs):
-                kwargs.update(constructor_kwargs)
-                super(MyHTTPSConnectionPool, self).__init__(*args, **kwargs)
-
-        poolmanager.pool_classes_by_scheme["https"] = MyHTTPSConnectionPool
-
-        class MyHTTPConnectionPool(connectionpool.HTTPConnectionPool):
-            def __init__(self, *args, **kwargs):
-                kwargs.update(constructor_kwargs)
-                super(MyHTTPConnectionPool, self).__init__(*args, **kwargs)
-
-        poolmanager.pool_classes_by_scheme["http"] = MyHTTPConnectionPool
-    except Exception:
-        pass
+    patch_urllib3_connection_pool(**constructor_kwargs)
 
 
 def exit_infra(code: int):
@@ -87,8 +68,7 @@ def exit_infra(code: int):
 
     :param code: the exit code the main process should return with
     """
-    EXIT_CODE.set(code)
-    SHUTDOWN_INFRA.set()
+    legacy_runtime.exit_infra(code)
 
 
 def stop_infra():
@@ -153,10 +133,7 @@ def log_startup_message(service):
 
 
 def signal_supervisor_restart():
-    if pid := os.environ.get("SUPERVISOR_PID"):
-        os.kill(int(pid), signal.SIGUSR1)
-    else:
-        LOG.warning("could not signal supervisor to restart localstack")
+    legacy_runtime.signal_supervisor_restart()
 
 
 # -------------
@@ -241,7 +218,7 @@ def start_infra(asynchronous=False, apis=None):
         if not asynchronous and thread:
             # We're making sure that we stay in the execution context of the
             # main thread, otherwise our signal handlers don't work
-            SHUTDOWN_INFRA.wait()
+            events.infra_stopped.wait()
 
         return thread
 

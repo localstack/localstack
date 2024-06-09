@@ -14,7 +14,7 @@ from localstack import config, constants
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Request, Resource, Response, Router
 from localstack.http.dispatcher import handler_dispatcher
-from localstack.services.infra import exit_infra, signal_supervisor_restart
+from localstack.runtime.legacy import exit_infra, signal_supervisor_restart
 from localstack.utils.analytics.metadata import (
     get_client_metadata,
     get_localstack_edition,

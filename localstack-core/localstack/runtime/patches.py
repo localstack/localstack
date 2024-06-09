@@ -28,6 +28,30 @@ def patch_thread_pool():
                 pass
 
 
+def patch_urllib3_connection_pool(**constructor_kwargs):
+    """
+    Override the default parameters of HTTPConnectionPool, e.g., set the pool size via maxsize=16
+    """
+    try:
+        from urllib3 import connectionpool, poolmanager
+
+        class MyHTTPSConnectionPool(connectionpool.HTTPSConnectionPool):
+            def __init__(self, *args, **kwargs):
+                kwargs.update(constructor_kwargs)
+                super(MyHTTPSConnectionPool, self).__init__(*args, **kwargs)
+
+        poolmanager.pool_classes_by_scheme["https"] = MyHTTPSConnectionPool
+
+        class MyHTTPConnectionPool(connectionpool.HTTPConnectionPool):
+            def __init__(self, *args, **kwargs):
+                kwargs.update(constructor_kwargs)
+                super(MyHTTPConnectionPool, self).__init__(*args, **kwargs)
+
+        poolmanager.pool_classes_by_scheme["http"] = MyHTTPConnectionPool
+    except Exception:
+        pass
+
+
 _applied = False
 
 
@@ -40,7 +64,6 @@ def apply_runtime_patches():
     _applied = True
 
     from localstack.http.duplex_socket import enable_duplex_socket
-    from localstack.services.infra import patch_urllib3_connection_pool
 
     patch_urllib3_connection_pool(maxsize=128)
     patch_thread_pool()
