@@ -25,7 +25,9 @@ class ApiGatewayHandler:
         )
 
     def __call__(self, request: Request, **kwargs) -> Response:
-        api_id, stage = kwargs.get("api_id"), kwargs.get("stage")
+        # api_id can be cased because of custom-tag id
+        api_id, stage = kwargs.get("api_id", "").lower(), kwargs.get("stage")
+        print(f"{api_id=} / {stage=}")
         if self.is_rest_api(api_id, stage):
             LOG.info("Next-gen handler for APIGW v1 called")
             response = Response()
@@ -38,7 +40,8 @@ class ApiGatewayHandler:
 
         else:
             # TODO: return right response
-            return Response("Not found", status=404)
+            print("here?")
+            return Response("Not authorized", status=403)
 
     def is_rest_api(self, api_id: str, stage: str):
         return (api_id, stage) in self._global_store.active_deployments
@@ -73,47 +76,39 @@ class ApiGatewayRouter:
         LOG.debug("Registering API Gateway routes.")
         host_pattern = "<regex('[^-]+'):api_id><regex('(-vpce-[^.]+)?'):vpce_suffix>.execute-api.<regex('.*'):server>"
         rules = [
-            Rule(
-                string="/",
+            self.router.add(
+                path="/",
                 host=host_pattern,
                 endpoint=self.handler,
                 defaults={"path": "", "stage": None},
                 strict_slashes=True,
             ),
-            Rule(
-                string="/",
-                host=host_pattern,
-                endpoint=self.handler,
-                defaults={"path": "", "stage": None},
-                strict_slashes=True,
-            ),
-            Rule(
-                string="/<stage>/",
+            self.router.add(
+                path="/<stage>/",
                 host=host_pattern,
                 endpoint=self.handler,
                 defaults={"path": ""},
                 strict_slashes=False,
             ),
-            Rule(
-                string="/<stage>/<path:path>",
+            self.router.add(
+                path="/<stage>/<path:path>",
                 host=host_pattern,
                 endpoint=self.handler,
                 strict_slashes=True,
             ),
             # add the localstack-specific _user_request_ routes
-            Rule(
-                string="/restapis/<api_id>/<stage>/_user_request_",
+            self.router.add(
+                path="/restapis/<api_id>/<stage>/_user_request_",
                 endpoint=self.handler,
                 defaults={"path": ""},
             ),
-            Rule(
-                string="/restapis/<api_id>/<stage>/_user_request_/<path:path>",
+            self.router.add(
+                path="/restapis/<api_id>/<stage>/_user_request_/<path:path>",
                 endpoint=self.handler,
                 strict_slashes=True,
             ),
         ]
         for rule in rules:
-            self.router.add_rule(rule)
             self.registered_rules.append(rule)
 
     def unregister_routes(self):

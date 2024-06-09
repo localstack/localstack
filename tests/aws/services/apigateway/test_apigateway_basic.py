@@ -172,6 +172,8 @@ class TestAPIGateway:
         spec_file = load_file(TEST_IMPORT_MOCK_INTEGRATION)
         aws_client.apigateway.put_rest_api(restApiId=test_id, body=spec_file, mode="overwrite")
 
+        aws_client.apigateway.create_deployment(restApiId=test_id, stageName="latest")
+
         url = url_function(test_id, stage_name="latest", path="/echo/foobar")
         response = requests.get(url)
 

@@ -46,7 +46,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
     def create_stage(self, context: RequestContext, request: CreateStageRequest) -> Stage:
         response = super().create_stage(context, request)
         store = get_apigateway_store(context=context)
-        store.active_deployments[(request["restApiId"], request["stageName"])] = request[
+        store.active_deployments[(request["restApiId"].lower(), request["stageName"])] = request[
             "deploymentId"
         ]
         return response
@@ -70,7 +70,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
             if patch_path == "/deploymentId" and patch_operation["op"] == "replace":
                 if deployment_id := patch_operation.get("value"):
                     store = get_apigateway_store(context=context)
-                    store.active_deployments[(rest_api_id, stage_name)] = deployment_id
+                    store.active_deployments[(rest_api_id.lower(), stage_name)] = deployment_id
 
         return response
 
@@ -79,7 +79,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
     ) -> None:
         call_moto(context)
         store = get_apigateway_store(context=context)
-        store.active_deployments.pop((rest_api_id, stage_name), None)
+        store.active_deployments.pop((rest_api_id.lower(), stage_name), None)
 
     def create_deployment(
         self,
@@ -106,10 +106,11 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
             moto_rest_api=moto_rest_api,
             localstack_rest_api=rest_api_container,
         )
-        store.internal_deployments[(rest_api_id, deployment["id"])] = frozen_deployment
+        router_api_id = rest_api_id.lower()
+        store.internal_deployments[(router_api_id, deployment["id"])] = frozen_deployment
 
         if stage_name:
-            store.active_deployments[(rest_api_id, stage_name)] = deployment["id"]
+            store.active_deployments[(router_api_id, stage_name)] = deployment["id"]
 
         return deployment
 
@@ -118,4 +119,4 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
     ) -> None:
         call_moto(context)
         store = get_apigateway_store(context=context)
-        store.internal_deployments.pop((rest_api_id, deployment_id), None)
+        store.internal_deployments.pop((rest_api_id.lower(), deployment_id), None)
