@@ -86,8 +86,10 @@ class ApiGatewayStore(BaseStore):
     # maps resource ARN to tags
     TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
 
-    # internal deployments, represents a frozen REST API for a deployment
-    internal_deployments: dict[str, RestApiDeployment] = LocalAttribute(default=dict)
+    # internal deployments, represents a frozen REST API for a deployment, used in our router
+    # TODO: make sure API ID are unique across all accounts
+    # maps ApiID + deploymentId to a RestApiDeployment, an executable/snapshot of a REST API
+    internal_deployments: dict[(str, str), RestApiDeployment] = CrossAccountAttribute(default=dict)
 
     # active deployments, mapping API ID + Stage to deployment ID
     # TODO: make sure API ID are unique across all accounts

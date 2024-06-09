@@ -6,7 +6,6 @@ from .context import RestApiInvocationContext
 
 
 class RestApiGateway(Gateway):
-    # TODO: not sure we need to extend it, might remove if not needed
     def __init__(self):
         super().__init__(context_class=RestApiInvocationContext)
         self.request_handlers.extend(

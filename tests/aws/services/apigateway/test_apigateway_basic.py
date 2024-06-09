@@ -309,7 +309,6 @@ class TestAPIGateway:
 
         url = api_invoke_url(api_id, stage=stage, path="/test")
         response = requests.post(url, json={"test": "test"})
-        print(response.content)
 
         assert response.headers["Content-Type"] == "text/html"
         assert response.headers["Access-Control-Allow-Origin"] == "*"

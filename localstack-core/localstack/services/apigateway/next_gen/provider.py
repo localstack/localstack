@@ -106,7 +106,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
             moto_rest_api=moto_rest_api,
             localstack_rest_api=rest_api_container,
         )
-        store.internal_deployments[deployment["id"]] = frozen_deployment
+        store.internal_deployments[(rest_api_id, deployment["id"])] = frozen_deployment
 
         if stage_name:
             store.active_deployments[(rest_api_id, stage_name)] = deployment["id"]
@@ -118,4 +118,4 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
     ) -> None:
         call_moto(context)
         store = get_apigateway_store(context=context)
-        store.internal_deployments.pop(deployment_id, None)
+        store.internal_deployments.pop((rest_api_id, deployment_id), None)

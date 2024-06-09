@@ -48,7 +48,7 @@ class ApiGatewayHandler:
     ):
         try:
             deployment_id = self._global_store.active_deployments[(api_id, stage)]
-            frozen_deployment = self._global_store.internal_deployments[deployment_id]
+            frozen_deployment = self._global_store.internal_deployments[(api_id, deployment_id)]
 
         except KeyError:
             # TODO: find proper error when trying to hit an API with no deployment/stage linked

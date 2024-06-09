@@ -11,7 +11,6 @@ from moto.apigateway import models as apigw_models
 from moto.apigateway.models import Resource as MotoResource
 from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
-from werkzeug.routing import Rule
 
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
@@ -180,7 +179,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     def __init__(self, router: ApigatewayRouter | ApiGatewayRouterNextGen = None):
         self.router = router or ApigatewayRouter(ROUTER)
-        self.routing_rules: dict[tuple[str, str], list[Rule]] = {}
 
     def on_after_init(self):
         apply_patches()
@@ -970,10 +968,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     @handler("CreateStage", expand=False)
     def create_stage(self, context: RequestContext, request: CreateStageRequest) -> Stage:
         call_moto(context)
-        rest_api_id = request["restApiId"]
-        stage_name = request["stageName"]
-        moto_api = get_moto_rest_api(context, rest_api_id=rest_api_id)
-        stage = moto_api.stages.get(stage_name)
+        moto_api = get_moto_rest_api(context, rest_api_id=request["restApiId"])
+        stage = moto_api.stages.get(request["stageName"])
         if not stage:
             raise NotFoundException("Invalid Stage identifier specified")
 
@@ -981,13 +977,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             stage.documentation_version = request.get("documentationVersion")
 
         # make sure we update the stage_name on the deployment entity in moto
-        deployment_id = request["deploymentId"]
-        deployment = moto_api.deployments.get(deployment_id)
+        deployment = moto_api.deployments.get(request["deploymentId"])
         deployment.stage_name = stage.name
 
         response = stage.to_json()
         self._patch_stage_response(response)
-
         return response
 
     def get_stage(
