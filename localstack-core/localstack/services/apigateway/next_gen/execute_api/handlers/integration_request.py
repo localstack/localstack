@@ -2,19 +2,22 @@ import logging
 
 from localstack.http import Response
 
-from ..api import ApiGatewayHandler, ApiGatewayHandlerChain
-from ..context import InvocationContext
+from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
+from ..context import RestApiInvocationContext
 
 LOG = logging.getLogger(__name__)
 
 
-class IntegrationRequestHandler(ApiGatewayHandler):
+class IntegrationRequestHandler(RestApiGatewayHandler):
     """
     This class will take care of the Integration Request part, which is mostly linked to template mapping
     See https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-integration-settings-integration-request.html
     """
 
     def __call__(
-        self, chain: ApiGatewayHandlerChain, context: InvocationContext, response: Response
+        self,
+        chain: RestApiGatewayHandlerChain,
+        context: RestApiInvocationContext,
+        response: Response,
     ):
         return

@@ -2,12 +2,12 @@ from rolo import Request
 from werkzeug.exceptions import NotFound
 
 from localstack.http import Response
+from localstack.services.apigateway.helpers import get_api_account_id_and_region
+from localstack.services.apigateway.invocations import invoke_rest_api_from_request
+from localstack.services.apigateway.router_asf import convert_response, to_invocation_context
 
-from ...helpers import get_api_account_id_and_region
-from ...invocations import invoke_rest_api_from_request
-from ...router_asf import convert_response, to_invocation_context
-from ..api import ApiGatewayHandler, ApiGatewayHandlerChain
-from ..context import InvocationContext
+from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
+from ..context import RestApiInvocationContext
 
 
 # Copy-pasted from `router_asf.py`, to migrate parts slowly away
@@ -34,9 +34,12 @@ def invoke_rest_api(request: Request, api_id: str, stage: str) -> Response:
     raise NotFound()
 
 
-class GlobalTemporaryHandler(ApiGatewayHandler):
+class GlobalTemporaryHandler(RestApiGatewayHandler):
     def __call__(
-        self, chain: ApiGatewayHandlerChain, context: InvocationContext, response: Response
+        self,
+        chain: RestApiGatewayHandlerChain,
+        context: RestApiInvocationContext,
+        response: Response,
     ):
         invocation_response = invoke_rest_api(
             context.request, api_id=context.api_id, stage=context.stage

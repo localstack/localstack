@@ -13,7 +13,6 @@ from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.core.utils import camelcase_to_underscores
 from werkzeug.routing import Rule
 
-from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext, ServiceRequest, handler
 from localstack.aws.api.apigateway import (
     Account,
@@ -27,7 +26,6 @@ from localstack.aws.api.apigateway import (
     BasePathMappings,
     Blob,
     Boolean,
-    CacheClusterSize,
     ClientCertificate,
     ClientCertificates,
     ConflictException,
@@ -36,7 +34,6 @@ from localstack.aws.api.apigateway import (
     CreateRestApiRequest,
     CreateStageRequest,
     Deployment,
-    DeploymentCanarySettings,
     DocumentationPart,
     DocumentationPartIds,
     DocumentationPartLocation,
@@ -96,8 +93,6 @@ from localstack.aws.api.apigateway import (
 from localstack.aws.connect import connect_to
 from localstack.aws.forwarder import NotImplementedAvoidFallbackError, create_aws_request_context
 from localstack.constants import APPLICATION_JSON
-from localstack.services.apigateway.execute_api.helpers import freeze_rest_api
-from localstack.services.apigateway.execute_api.router import register_api_deployment
 from localstack.services.apigateway.exporter import OpenApiExporter
 from localstack.services.apigateway.helpers import (
     EMPTY_MODEL,
@@ -105,7 +100,9 @@ from localstack.services.apigateway.helpers import (
     OpenAPIExt,
     apply_json_patch_safe,
     get_apigateway_store,
+    get_moto_rest_api,
     get_regional_domain_name,
+    get_rest_api_container,
     import_api_from_openapi_spec,
     is_greedy_path,
     is_variable_path,
@@ -115,6 +112,9 @@ from localstack.services.apigateway.helpers import (
 )
 from localstack.services.apigateway.invocations import invoke_rest_api_from_request
 from localstack.services.apigateway.models import ApiGatewayStore, RestApiContainer
+from localstack.services.apigateway.next_gen.execute_api.router import (
+    ApiGatewayRouter as ApiGatewayRouterNextGen,
+)
 from localstack.services.apigateway.patches import apply_patches
 from localstack.services.apigateway.router_asf import ApigatewayRouter, to_invocation_context
 from localstack.services.edge import ROUTER
@@ -176,9 +176,9 @@ VALID_INTEGRATION_TYPES = {
 
 
 class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
-    router: ApigatewayRouter
+    router: ApigatewayRouter | ApiGatewayRouterNextGen
 
-    def __init__(self, router: ApigatewayRouter = None):
+    def __init__(self, router: ApigatewayRouter | ApiGatewayRouterNextGen = None):
         self.router = router or ApigatewayRouter(ROUTER)
         self.routing_rules: dict[tuple[str, str], list[Rule]] = {}
 
@@ -988,20 +988,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         response = stage.to_json()
         self._patch_stage_response(response)
 
-        if config.ENABLE_APIGW_NEXT_GEN:
-            store = get_apigateway_store(context=context)
-            frozen_deployment = store.internal_deployments.get(deployment_id)
-            rules = register_api_deployment(
-                router=ROUTER,
-                deployment=frozen_deployment,
-                api_id=rest_api_id,
-                stage=stage_name,
-            )
-
-            if existing_rules := self.routing_rules.pop((rest_api_id, stage_name), None):
-                ROUTER.remove(existing_rules)
-            self.routing_rules[(rest_api_id, stage_name)] = rules
-
         return response
 
     def get_stage(
@@ -1076,26 +1062,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             if patch_path == "/tracingEnabled" and (value := patch_operation.get("value")):
                 patch_operation["value"] = value and value.lower() == "true" or False
 
-            # TODO: if `update_stage` has `deploymentId`, we need to register the routes
-            if (
-                config.ENABLE_APIGW_NEXT_GEN
-                and patch_path == "/deploymentId"
-                and patch_operation["op"] == "replace"
-            ):
-                if deployment_id := patch_operation.get("value"):
-                    store = get_apigateway_store(context=context)
-                    frozen_deployment = store.internal_deployments.get(deployment_id)
-                    rules = register_api_deployment(
-                        router=ROUTER,
-                        deployment=frozen_deployment,
-                        api_id=rest_api_id,
-                        stage=stage_name,
-                    )
-
-                    if existing_rules := self.routing_rules.pop((rest_api_id, stage_name), None):
-                        ROUTER.remove(existing_rules)
-                    self.routing_rules[(rest_api_id, stage_name)] = rules
-
         _patch_api_gateway_entity(moto_stage, patch_operations)
         moto_stage.apply_operations(patch_operations)
 
@@ -1103,65 +1069,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self._patch_stage_response(response)
         return response
 
-    def delete_stage(
-        self, context: RequestContext, rest_api_id: String, stage_name: String, **kwargs
-    ) -> None:
-        call_moto(context)
-
-        if config.ENABLE_APIGW_NEXT_GEN:
-            if existing_rules := self.routing_rules.pop((rest_api_id, stage_name), None):
-                ROUTER.remove(existing_rules)
-
     def _patch_stage_response(self, response: dict):
         """Apply a few patches required for AWS parity"""
         response.setdefault("cacheClusterStatus", "NOT_AVAILABLE")
         response.setdefault("tracingEnabled", False)
         if not response.get("variables"):
             response.pop("variables", None)
-
-    def create_deployment(
-        self,
-        context: RequestContext,
-        rest_api_id: String,
-        stage_name: String = None,
-        stage_description: String = None,
-        description: String = None,
-        cache_cluster_enabled: NullableBoolean = None,
-        cache_cluster_size: CacheClusterSize = None,
-        variables: MapOfStringToString = None,
-        canary_settings: DeploymentCanarySettings = None,
-        tracing_enabled: NullableBoolean = None,
-        **kwargs,
-    ) -> Deployment:
-        deployment: Deployment = call_moto(context)
-        if config.ENABLE_APIGW_NEXT_GEN:
-            # https://docs.aws.amazon.com/apigateway/latest/developerguide/updating-api.html
-            #
-            # TODO: the deployment is not accessible until it is linked to a stage
-            # you can combine a stage or later update the deployment with a stage id
-            store = get_apigateway_store(context=context)
-            moto_rest_api = get_moto_rest_api(context, rest_api_id)
-            rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
-            frozen_deployment = freeze_rest_api(
-                moto_rest_api=moto_rest_api,
-                localstack_rest_api=rest_api_container,
-            )
-            # TODO: also delete deployment
-            store.internal_deployments[deployment["id"]] = frozen_deployment
-
-            if stage_name:
-                rules = register_api_deployment(
-                    router=ROUTER,
-                    deployment=frozen_deployment,
-                    api_id=rest_api_id,
-                    stage=stage_name,
-                )
-
-                if existing_rules := self.routing_rules.pop((rest_api_id, stage_name), None):
-                    ROUTER.remove(existing_rules)
-                self.routing_rules[(rest_api_id, stage_name)] = rules
-
-        return deployment
 
     def update_deployment(
         self,
@@ -1225,7 +1138,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         **kwargs,
     ) -> Authorizers:
         # TODO add paging, validation
-        rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
         result = [
             to_authorizer_response_json(rest_api_id, a)
             for a in rest_api_container.authorizers.values()
@@ -1308,7 +1221,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> DocumentationParts:
         # TODO: add validation
         api_id = request["restApiId"]
-        rest_api_container = _get_rest_api_container(context, rest_api_id=api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=api_id)
 
         result = [
             to_documentation_part_response_json(api_id, a)
@@ -1342,7 +1255,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         **kwargs,
     ) -> DocumentationPart:
         entity_id = short_uid()[:6]  # length 6 for AWS parity / Terraform compatibility
-        rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
 
         # TODO: add complete validation for
         # location parameter: https://docs.aws.amazon.com/apigateway/latest/api/API_DocumentationPartLocation.html
@@ -1432,7 +1345,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         self, context: RequestContext, rest_api_id: String, documentation_part_id: String, **kwargs
     ) -> None:
         # TODO: add validation if document_part does not exist, or rest_api
-        rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
 
         documentation_part = rest_api_container.documentation_parts.get(documentation_part_id)
 
@@ -1454,7 +1367,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         body_data = body.read()
         openapi_spec = parse_json_or_yaml(to_str(body_data))
 
-        rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
 
         # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-documenting-api-quick-start-import-export.html
         resolved_schema = resolve_references(openapi_spec, rest_api_id=rest_api_id)
@@ -1484,7 +1397,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         description: String = None,
         **kwargs,
     ) -> DocumentationVersion:
-        rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
 
         result = DocumentationVersion(
             version=documentation_version, createdDate=datetime.now(), description=description
@@ -1496,7 +1409,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     def get_documentation_version(
         self, context: RequestContext, rest_api_id: String, documentation_version: String, **kwargs
     ) -> DocumentationVersion:
-        rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
 
         result = rest_api_container.documentation_versions.get(documentation_version)
         if not result:
@@ -1512,14 +1425,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         limit: NullableInteger = None,
         **kwargs,
     ) -> DocumentationVersions:
-        rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
         result = list(rest_api_container.documentation_versions.values())
         return DocumentationVersions(items=result)
 
     def delete_documentation_version(
         self, context: RequestContext, rest_api_id: String, documentation_version: String, **kwargs
     ) -> None:
-        rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
 
         result = rest_api_container.documentation_versions.pop(documentation_version, None)
         if not result:
@@ -1533,7 +1446,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         patch_operations: ListOfPatchOperation = None,
         **kwargs,
     ) -> DocumentationVersion:
-        rest_api_container = _get_rest_api_container(context, rest_api_id=rest_api_id)
+        rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
 
         result = rest_api_container.documentation_versions.get(documentation_version)
         if not result:
@@ -2603,16 +2516,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 # ---------------
 
 
-def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
-    moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
-    if rest_api := moto_backend.apis.get(rest_api_id):
-        return rest_api
-    else:
-        raise NotFoundException(
-            f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
-        )
-
-
 def remove_empty_attributes_from_rest_api(rest_api: RestApi, remove_tags=True) -> RestApi:
     if not rest_api.get("binaryMediaTypes"):
         rest_api.pop("binaryMediaTypes", None)
@@ -2848,15 +2751,6 @@ DEFAULT_ERROR_MODEL = Model(
         }
     ),
 )
-
-
-def _get_rest_api_container(context: RequestContext, rest_api_id: str) -> RestApiContainer:
-    store = get_apigateway_store(context=context)
-    if not (rest_api_container := store.rest_apis.get(rest_api_id)):
-        raise NotFoundException(
-            f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
-        )
-    return rest_api_container
 
 
 # TODO: maybe extract this in its own files, or find a better generalizable way

@@ -23,6 +23,15 @@ def apigateway():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+@aws_provider(api="apigateway", name="next_gen")
+def apigateway_next_gen():
+    from localstack.services.apigateway.next_gen.provider import ApigatewayNextGenProvider
+    from localstack.services.moto import MotoFallbackDispatcher
+
+    provider = ApigatewayNextGenProvider()
+    return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
 @aws_provider()
 def cloudformation():
     from localstack.services.cloudformation.provider import CloudformationProvider
