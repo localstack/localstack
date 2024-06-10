@@ -382,7 +382,7 @@ class TestArchive:
         snapshot.match("list-archives-unknown-event-bus-error", error)
 
     @markers.aws.validated
-    @pytest.marker.skip(reason="not possible to test with localstack")
+    @pytest.mark.skip(reason="not possible to test with localstack")
     def test_update_archive_error_unknown_archive(self, aws_client, snapshot):
         not_existing_archive_name = f"doesnotexist-{short_uid()}"
         with pytest.raises(Exception) as error:

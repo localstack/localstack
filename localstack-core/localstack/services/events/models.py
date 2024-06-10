@@ -38,6 +38,7 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.utils.aws.arns import event_archive_arn
 from localstack.utils.tagging import TaggingService
 
 TargetDict = dict[TargetId, Target]
@@ -171,13 +172,13 @@ class Archive:
     event_pattern: EventPattern = None
     retention_days: RetentionDays = None
     state: ArchiveState = ArchiveState.DISABLED
-    arn: Arn = field(init=False)
     creation_time: Timestamp = None
     size_bytes: int = 0  # TODO how to deal with updating this value?
     events: FormattedEventDict = field(default_factory=dict)
 
-    def __post_init__(self):
-        self.arn = f"arn:aws:events:{self.region}:{self.account_id}:archive/{self.name}"
+    @property
+    def arn(self) -> Arn:
+        return event_archive_arn(self.name, self.account_id, self.region)
 
     @property
     def event_count(self) -> int:
