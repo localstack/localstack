@@ -778,6 +778,11 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         if replay_name in store.replays.keys():
             raise ResourceAlreadyExistsException(f"Replay {replay_name} already exists.")
+        if event_source_arn not in self._archive_service_store:
+            archive_name = event_source_arn.split("/")[-1]
+            raise ValidationException(
+                f"Parameter EventSourceArn is not valid. Reason: Archive {archive_name} does not exist."
+            )
         self._validate_replay_destination(destination, event_source_arn)
         replay_service = self.create_replay_service(
             replay_name,
