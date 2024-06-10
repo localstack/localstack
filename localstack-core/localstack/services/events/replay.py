@@ -25,7 +25,9 @@ class ReplayService:
         event_end_time: Timestamp,
         description: ReplayDescription,
     ):
-        event_start_time, event_end_time = self._validate_input(event_start_time, event_end_time)
+        event_start_time, event_end_time = self._convert_input_time(
+            event_start_time, event_end_time
+        )
         self.replay = Replay(
             name,
             region,
@@ -71,7 +73,7 @@ class ReplayService:
         ]
         return re_formatted_events_from_archive
 
-    def _validate_input(
+    def _convert_input_time(
         self, event_start_time: Timestamp, event_end_time: Timestamp
     ) -> tuple[Timestamp, Timestamp]:
         if event_end_time <= event_start_time:
