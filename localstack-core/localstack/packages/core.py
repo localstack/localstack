@@ -249,6 +249,7 @@ class PythonPackageInstaller(PackageInstaller):
 
     def __init__(self, name: str, version: str, *args, **kwargs):
         super().__init__(name, version, *args, **kwargs)
+        self.package_url = kwargs.get("package_url")
         self.normalized_name = self._normalize_package_name(name)
 
     def _normalize_package_name(self, name: str):
@@ -289,8 +290,15 @@ class PythonPackageInstaller(PackageInstaller):
         venv = self._get_venv(target)
         python_bin = os.path.join(venv.venv_dir, "bin/python")
 
-        # run pip via the python binary of the venv
-        run([python_bin, "-m", "pip", "install", f"{self.name}=={self.version}"], print_error=False)
+        if self.package_url:
+            # install the package from a custom package URL
+            run([python_bin, "-m", "pip", "install", self.package_url], print_error=False)
+        else:
+            # run pip via the python binary of the venv
+            run(
+                [python_bin, "-m", "pip", "install", f"{self.name}=={self.version}"],
+                print_error=False,
+            )
 
     def _setup_existing_installation(self, target: InstallTarget) -> None:
         """If the venv is already present, it just needs to be initialized once."""
