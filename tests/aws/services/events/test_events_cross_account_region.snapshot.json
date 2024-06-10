@@ -1,6 +1,6 @@
 {
   "tests/aws/services/events/test_events_cross_account_region.py::TestEventCrossRegion::test_event_bus_to_event_bus_cross_region": {
-    "recorded-date": "06-06-2024, 14:59:10",
+    "recorded-date": "10-06-2024, 10:06:02",
     "recorded-content": {
       "messages_primary_queue_from_primary_event_bus": [
         {
@@ -14,7 +14,7 @@
             "source": "source-primary",
             "account": "111111111111",
             "time": "date",
-            "region": "<region>",
+            "region": "<region-name>",
             "resources": [],
             "detail": {
               "command": "update-account",
@@ -38,7 +38,7 @@
             "source": "source-primary",
             "account": "111111111111",
             "time": "date",
-            "region": "<region>",
+            "region": "<region-name-secondary>",
             "resources": [],
             "detail": {
               "command": "update-account",
@@ -62,7 +62,7 @@
             "source": "source-secondary",
             "account": "111111111111",
             "time": "date",
-            "region": "<region>",
+            "region": "<region-name-secondary>",
             "resources": [],
             "detail": {
               "command": "update-account",

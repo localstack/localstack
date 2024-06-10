@@ -1,5 +1,5 @@
 {
   "tests/aws/services/events/test_events_cross_account_region.py::TestEventCrossRegion::test_event_bus_to_event_bus_cross_region": {
-    "last_validated_date": "2024-06-06T14:59:10+00:00"
+    "last_validated_date": "2024-06-10T10:06:02+00:00"
   }
 }
