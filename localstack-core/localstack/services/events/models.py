@@ -38,7 +38,7 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
-from localstack.utils.aws.arns import event_archive_arn
+from localstack.utils.aws.arns import events_archive_arn, events_replay_arn
 from localstack.utils.tagging import TaggingService
 
 TargetDict = dict[TargetId, Target]
@@ -150,13 +150,13 @@ class Replay:
     description: Optional[ReplayDescription] = None
     state: Optional[ReplayState] = None
     state_reason: Optional[ReplayStateReason] = None
-    arn: Arn = field(init=False)
     event_last_replayed_time: Optional[Timestamp] = None
     replay_start_time: Optional[Timestamp] = None
     replay_end_time: Optional[Timestamp] = None
 
-    def __post_init__(self):
-        self.arn = f"arn:aws:events:{self.region}:{self.account_id}:replay/{self.name}"
+    @property
+    def arn(self) -> Arn:
+        return event_replay_arn(self.name, self.account_id, self.region)
 
 
 ReplayDict = dict[ReplayName, Replay]
