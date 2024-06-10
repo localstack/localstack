@@ -74,8 +74,10 @@ class ReplayService:
     def _validate_input(
         self, event_start_time: Timestamp, event_end_time: Timestamp
     ) -> tuple[Timestamp, Timestamp]:
-        if event_end_time < event_start_time:
-            raise ValidationException("Event start time must be before event end time.")
+        if event_end_time <= event_start_time:
+            raise ValidationException(
+                "Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime."
+            )
         # Convert event_start_time and event_end_time to timezone-aware datetimes
         if event_start_time.tzinfo is None:
             event_start_time = event_start_time.replace(tzinfo=timezone.utc)
