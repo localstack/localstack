@@ -247,9 +247,9 @@ class PythonPackageInstaller(PackageInstaller):
     normalized_name: str
     """Normalized package name according to PEP440."""
 
-    def __init__(self, name: str, version: str, *args, **kwargs):
+    def __init__(self, name: str, version: str, package_url: str = None, *args, **kwargs):
         super().__init__(name, version, *args, **kwargs)
-        self.package_url = kwargs.get("package_url")
+        self.package_url = package_url
         self.normalized_name = self._normalize_package_name(name)
 
     def _normalize_package_name(self, name: str):
