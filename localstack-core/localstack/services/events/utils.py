@@ -128,7 +128,7 @@ def re_format_event(event: FormattedEvent, event_bus_name: EventBusName) -> PutE
             "detail-type"
         ],  # detail_type automatically interpreted as detail-type in typedict
         "Detail": json.dumps(event["detail"]),
-        # "Time": event["time"],
+        "Time": event["time"],
     }
     if event.get("resources"):
         re_formatted_event["Resources"] = event["resources"]
