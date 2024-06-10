@@ -778,6 +778,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         if replay_name in store.replays.keys():
             raise ResourceAlreadyExistsException(f"Replay {replay_name} already exists.")
+        self._validate_replay_destination(destination, event_source_arn)
         replay_service = self.create_replay_service(
             replay_name,
             region,
@@ -1084,6 +1085,20 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> None:
         event_bus_name = extract_event_bus_name(event_bus_name_or_arn)
         self.get_event_bus(event_bus_name, store)
+
+    def _validate_replay_destination(
+        self, destination: ReplayDestination, event_source_arn: Arn
+    ) -> None:
+        archive_service = self._archive_service_store[event_source_arn]
+        if destination_arn := destination.get("Arn"):
+            if destination_arn != archive_service.archive.event_source_arn:
+                if destination_arn in self._event_bus_services_store.keys():
+                    raise ValidationException(
+                        "Parameter Destination.Arn is not valid. Reason: Cross event bus replay is not permitted."
+                    )
+                else:
+                    event_bus_name = extract_event_bus_name(destination_arn)
+                    raise ResourceNotFoundException(f"Event bus {event_bus_name} does not exist.")
 
     # Internal type to API type remappings
 
