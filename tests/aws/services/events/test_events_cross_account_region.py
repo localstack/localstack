@@ -13,17 +13,18 @@ SOURCE_SECONDARY = "source-secondary"
 
 class TestEventCrossRegion:
     @markers.aws.validated
-    def test_event_bus_to_event_bus_cross_region(self, aws_client_factory, cleanups, snapshot):
-        primary_region = "us-east-1"
-        secondary_region = "eu-central-1"
-
+    def test_event_bus_to_event_bus_cross_region(
+        self, region_name, secondary_region_name, aws_client_factory, cleanups, snapshot
+    ):
         # overwriting randomized region https://docs.localstack.cloud/contributing/multi-account-region-testing/
         # requires manually adding region replacement for snapshot
-        snapshot.add_transformer(snapshot.transform.regex(primary_region, "<region>"))
-        snapshot.add_transformer(snapshot.transform.regex(secondary_region, "<region>"))
+        snapshot.add_transformer(snapshot.transform.regex(region_name, "<region-name>"))
+        snapshot.add_transformer(
+            snapshot.transform.regex(secondary_region_name, "<region-name-secondary>")
+        )
 
-        aws_client_primary = aws_client_factory(region_name=primary_region)
-        aws_client_secondary = aws_client_factory(region_name=secondary_region)
+        aws_client_primary = aws_client_factory(region_name=region_name)
+        aws_client_secondary = aws_client_factory(region_name=secondary_region_name)
 
         # Create event buses
         event_bus_name_primary = f"test-event-bus-primary-{short_uid()}"
