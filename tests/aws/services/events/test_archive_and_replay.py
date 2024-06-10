@@ -603,15 +603,42 @@ class TestReplay:
         snapshot.match("list-replays-with-prefix", response_list_replays_prefix)
 
     @markers.aws.validated
-    def test_list_replays_with_event_source_arn(self, events_start_replay, aws_client, snapshot):
-        archive_arn = events_start_replay()["EventSourceArn"]
+    def test_list_replays_with_event_source_arn(
+        self, events_create_event_bus, events_create_archive, aws_client, snapshot
+    ):
+        start_time = datetime.now(timezone.utc)
 
-        events_start_replay()
+        event_bus_name = f"test-bus-{short_uid()}"
+        event_bus_arn = events_create_event_bus(Name=event_bus_name)["EventBusArn"]
+        archive_arn = events_create_archive(
+            EventSourceArn=event_bus_arn,
+            RetentionDays=1,
+        )["ArchiveArn"]
+
+        end_time = datetime.now(timezone.utc)
+
+        replay_name = f"test-replay-{short_uid()}"
+        aws_client.events.start_replay(
+            ReplayName=replay_name,
+            EventSourceArn=archive_arn,
+            EventStartTime=start_time,
+            EventEndTime=end_time,
+            Destination={
+                "Arn": event_bus_arn,
+            },
+        )
+
+        wait_for_replay_in_state(aws_client, replay_name, "COMPLETED", retries=35, sleep=10)
 
         response_list_replays = aws_client.events.list_replays(EventSourceArn=archive_arn)
 
-        snapshot.add_transformer([snapshot.transform.regex(archive_arn, "<archive-arn>")])
-        snapshot.match("list-replays-with-source-arn", response_list_replays)
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(replay_name, "<replay-name>"),
+                snapshot.transform.regex(archive_arn, "<archive-arn>"),
+            ]
+        )
+        snapshot.match("list-replays-with-event-source-arn", response_list_replays)
 
     @markers.aws.validated
     def test_list_replay_with_limit(

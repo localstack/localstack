@@ -1020,17 +1020,18 @@
     }
   },
   "tests/aws/services/events/test_archive_and_replay.py::TestReplay::test_list_replays_with_event_source_arn": {
-    "recorded-date": "22-05-2024, 15:51:17",
+    "recorded-date": "10-06-2024, 14:31:54",
     "recorded-content": {
-      "list-replays-with-source-arn": {
+      "list-replays-with-event-source-arn": {
         "Replays": [
           {
             "EventEndTime": "datetime",
             "EventSourceArn": "<archive-arn>",
             "EventStartTime": "datetime",
-            "ReplayName": "test-replay-ae4051f3",
+            "ReplayEndTime": "datetime",
+            "ReplayName": "<replay-name>",
             "ReplayStartTime": "datetime",
-            "State": "STARTING"
+            "State": "COMPLETED"
           }
         ],
         "ResponseMetadata": {
