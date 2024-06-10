@@ -778,6 +778,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         store = self.get_store(context)
         if replay_name in store.replays.keys():
             raise ResourceAlreadyExistsException(f"Replay {replay_name} already exists.")
+        self._validate_replay_time(event_start_time, event_end_time)
         if event_source_arn not in self._archive_service_store:
             archive_name = event_source_arn.split("/")[-1]
             raise ValidationException(
@@ -1090,6 +1091,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> None:
         event_bus_name = extract_event_bus_name(event_bus_name_or_arn)
         self.get_event_bus(event_bus_name, store)
+
+    def _validate_replay_time(self, event_start_time: Timestamp, event_end_time: Timestamp) -> None:
+        if event_end_time <= event_start_time:
+            raise ValidationException(
+                "Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime."
+            )
 
     def _validate_replay_destination(
         self, destination: ReplayDestination, event_source_arn: Arn

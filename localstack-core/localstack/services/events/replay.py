@@ -9,7 +9,7 @@ from localstack.aws.api.events import (
     ReplayState,
     Timestamp,
 )
-from localstack.services.events.models import FormattedEventList, Replay, ValidationException
+from localstack.services.events.models import FormattedEventList, Replay
 from localstack.services.events.utils import extract_event_bus_name, re_format_event
 
 
@@ -76,10 +76,6 @@ class ReplayService:
     def _convert_input_time(
         self, event_start_time: Timestamp, event_end_time: Timestamp
     ) -> tuple[Timestamp, Timestamp]:
-        if event_end_time <= event_start_time:
-            raise ValidationException(
-                "Parameter EventEndTime is not valid. Reason: EventStartTime must be before EventEndTime."
-            )
         # Convert event_start_time and event_end_time to timezone-aware datetimes
         if event_start_time.tzinfo is None:
             event_start_time = event_start_time.replace(tzinfo=timezone.utc)
