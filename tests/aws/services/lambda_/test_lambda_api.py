@@ -99,7 +99,6 @@ class TestPartialARNMatching:
         for name in valid_names:
             aws_client.lambda_.update_function_configuration(
                 FunctionName=name,
-                Runtime=Runtime.python3_11,
                 Description="Changed-Description",
                 MemorySize=512,
                 Timeout=10,
