@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_create_route_table_association": {
+    "last_validated_date": "2024-06-06T19:21:49+00:00"
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_describe_vpn_gateways_filter_by_vpc": {
+    "last_validated_date": "2024-06-07T01:11:12+00:00"
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_vcp_peering_difference_regions": {
+    "last_validated_date": "2024-06-07T21:28:25+00:00"
+  }
+}
