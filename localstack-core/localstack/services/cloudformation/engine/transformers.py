@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from copy import deepcopy
 from typing import Dict, Optional, Type, Union
 
 import boto3
@@ -88,10 +89,14 @@ def apply_intrinsic_transformations(
             )
             if transformer_class:
                 transformer = transformer_class()
-                return transformer.transform(account_id, region_name, parameters)
+                transformed = transformer.transform(account_id, region_name, parameters)
+                obj_copy = deepcopy(obj)
+                obj_copy.pop("Fn::Transform")
+                obj_copy.update(transformed)
+                return obj_copy
 
             elif transform_name in macro_store:
-                obj_copy = dict(obj)
+                obj_copy = deepcopy(obj)
                 obj_copy.pop("Fn::Transform")
                 result = execute_macro(
                     account_id, region_name, obj_copy, transform, stack_parameters, parameters, True
@@ -116,7 +121,7 @@ def apply_global_transformations(
     conditions: dict[str, bool],
     stack_parameters: dict,
 ) -> dict:
-    processed_template = dict(template)
+    processed_template = deepcopy(template)
     transformations = format_template_transformations_into_list(
         processed_template.get("Transform", [])
     )

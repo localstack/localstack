@@ -38,5 +38,55 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_transformer_property_level": {
+    "recorded-date": "06-06-2024, 10:37:03",
+    "recorded-content": {
+      "original_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": "\nParameters:\n  BucketName:\n    Type: String\nResources:\n  MyParameter:\n    Type: AWS::SSM::Parameter\n    Properties:\n      Description: hello\n      Type: String\n      \"Fn::Transform\":\n        Name: \"AWS::Include\"\n        Parameters:\n          Location: !Sub \"s3://${BucketName}/data.yaml\"\nOutputs:\n  ParameterName:\n    Value: !Ref MyParameter\n",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "processed_template": {
+        "StagesAvailable": [
+          "Original",
+          "Processed"
+        ],
+        "TemplateBody": {
+          "Outputs": {
+            "ParameterName": {
+              "Value": {
+                "Ref": "MyParameter"
+              }
+            }
+          },
+          "Parameters": {
+            "BucketName": {
+              "Type": "String"
+            }
+          },
+          "Resources": {
+            "MyParameter": {
+              "Properties": {
+                "Description": "hello",
+                "Type": "String",
+                "Value": "from_transformation"
+              },
+              "Type": "AWS::SSM::Parameter"
+            }
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
