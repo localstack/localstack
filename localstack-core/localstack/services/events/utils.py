@@ -12,6 +12,7 @@ from localstack.aws.api.events import (
     EventTime,
     PutEventsRequestEntry,
     RuleArn,
+    Timestamp,
 )
 from localstack.services.events.models import FormattedEvent, ResourceType, ValidationException
 from localstack.utils.aws.arns import parse_arn
@@ -136,6 +137,14 @@ def re_format_event(event: FormattedEvent, event_bus_name: EventBusName) -> PutE
     if event.get("replay-name"):
         re_formatted_event["ReplayName"] = event["replay_name"]
     return re_formatted_event
+
+
+def convert_to_timezone_aware_datetime(
+    timestamp: Timestamp,
+) -> Timestamp:
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    return timestamp
 
 
 def recursive_remove_none_values_from_dict(d: Dict[str, Any]) -> Dict[str, Any]:

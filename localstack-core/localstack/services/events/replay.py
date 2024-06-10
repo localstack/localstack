@@ -10,7 +10,11 @@ from localstack.aws.api.events import (
     Timestamp,
 )
 from localstack.services.events.models import FormattedEventList, Replay
-from localstack.services.events.utils import extract_event_bus_name, re_format_event
+from localstack.services.events.utils import (
+    convert_to_timezone_aware_datetime,
+    extract_event_bus_name,
+    re_format_event,
+)
 
 
 class ReplayService:
@@ -25,9 +29,8 @@ class ReplayService:
         event_end_time: Timestamp,
         description: ReplayDescription,
     ):
-        event_start_time, event_end_time = self._convert_input_time(
-            event_start_time, event_end_time
-        )
+        event_start_time = convert_to_timezone_aware_datetime(event_start_time)
+        event_end_time = convert_to_timezone_aware_datetime(event_end_time)
         self.replay = Replay(
             name,
             region,
@@ -72,16 +75,6 @@ class ReplayService:
             {**event, "ReplayName": replay_name} for event in re_formatted_events
         ]
         return re_formatted_events_from_archive
-
-    def _convert_input_time(
-        self, event_start_time: Timestamp, event_end_time: Timestamp
-    ) -> tuple[Timestamp, Timestamp]:
-        # Convert event_start_time and event_end_time to timezone-aware datetimes
-        if event_start_time.tzinfo is None:
-            event_start_time = event_start_time.replace(tzinfo=timezone.utc)
-        if event_end_time.tzinfo is None:
-            event_end_time = event_end_time.replace(tzinfo=timezone.utc)
-        return event_start_time, event_end_time
 
     def _set_event_last_replayed_time(self, events: FormattedEventList) -> None:
         latest_event_time = max(event["time"] for event in events)
