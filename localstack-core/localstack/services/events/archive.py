@@ -89,7 +89,6 @@ class ArchiveService:
         self.set_state(ArchiveState.ENABLED)
 
     def delete(self) -> None:
-        # TODO handle active replays
         self.set_state(ArchiveState.DISABLED)
         try:
             self.client.remove_targets(
