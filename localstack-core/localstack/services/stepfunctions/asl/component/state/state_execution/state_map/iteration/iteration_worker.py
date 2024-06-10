@@ -57,7 +57,7 @@ class IterationWorker(abc.ABC):
             name=self._work_name, index=job.job_index
         )
 
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.MapIterationStarted,
             event_details=EventDetails(mapIterationStartedEventDetails=map_iteration_event_details),
@@ -111,7 +111,7 @@ class IterationWorker(abc.ABC):
                 )
 
             # Otherwise, execution succeeded and the output of this operation is available.
-            env.execution_event_manager.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.MapIterationSucceeded,
                 event_details=EventDetails(
@@ -129,7 +129,7 @@ class IterationWorker(abc.ABC):
             # At this depth, the next event is either a MapIterationFailed (for any reasons) or a MapIterationAborted
             # if explicitly indicated.
             if failure_event_ex.failure_event.event_type == HistoryEventType.MapIterationAborted:
-                env.execution_event_manager.add_event(
+                env.event_manager.add_event(
                     context=env.event_history_context,
                     event_type=HistoryEventType.MapIterationAborted,
                     event_details=EventDetails(
@@ -138,7 +138,7 @@ class IterationWorker(abc.ABC):
                     update_source_event_id=False,
                 )
             else:
-                env.execution_event_manager.add_event(
+                env.event_manager.add_event(
                     context=env.event_history_context,
                     event_type=HistoryEventType.MapIterationFailed,
                     event_details=EventDetails(
@@ -156,7 +156,7 @@ class IterationWorker(abc.ABC):
             # Pass the exception upstream leading to evaluation halt.
             job_output = ex
 
-            env.execution_event_manager.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.MapIterationFailed,
                 event_details=EventDetails(

@@ -21,11 +21,11 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
     ContextObjectManager,
     Task,
 )
-from localstack.services.stepfunctions.asl.eval.event.execution_event_manager import (
+from localstack.services.stepfunctions.asl.eval.event.event_manager import (
     EventHistoryContext,
-    ExecutionEventManager,
+    EventManager,
 )
-from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+from localstack.services.stepfunctions.asl.eval.event.logging import (
     CloudWatchLoggingSession,
 )
 from localstack.services.stepfunctions.asl.eval.program_state import (
@@ -46,7 +46,7 @@ class Environment:
     _program_state: Optional[ProgramState]
     program_state_event: Final[threading.Event()]
 
-    execution_event_manager: ExecutionEventManager
+    event_manager: EventManager
     event_history_context: Final[EventHistoryContext]
     cloud_watch_logging_session: Final[Optional[CloudWatchLoggingSession]]
     aws_execution_details: Final[AWSExecutionDetails]
@@ -76,9 +76,7 @@ class Environment:
         self.program_state_event = threading.Event()
 
         self.cloud_watch_logging_session = cloud_watch_logging_session
-        self.execution_event_manager = ExecutionEventManager(
-            cloud_watch_logging_session=cloud_watch_logging_session
-        )
+        self.event_manager = EventManager(cloud_watch_logging_session=cloud_watch_logging_session)
         self.event_history_context = event_history_context
 
         self.aws_execution_details = aws_execution_details
@@ -119,7 +117,7 @@ class Environment:
             activity_store=env.activity_store,
         )
         frame._is_frame = True
-        frame.execution_event_manager = env.execution_event_manager
+        frame.event_manager = env.event_manager
         if "State" in env.context_object_manager.context_object:
             frame.context_object_manager.context_object["State"] = copy.deepcopy(
                 env.context_object_manager.context_object["State"]

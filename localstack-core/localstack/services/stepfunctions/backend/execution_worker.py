@@ -17,10 +17,10 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.eval.event.execution_event_manager import (
+from localstack.services.stepfunctions.asl.eval.event.event_manager import (
     EventHistoryContext,
 )
-from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+from localstack.services.stepfunctions.asl.eval.event.logging import (
     CloudWatchLoggingSession,
 )
 from localstack.services.stepfunctions.asl.parse.asl_parser import AmazonStateLanguageParser
@@ -79,7 +79,7 @@ class ExecutionWorker:
             self._input_data
         )  # The program will mutate the input_data, which is otherwise constant in regard to the execution value.
 
-        self.env.execution_event_manager.add_event(
+        self.env.event_manager.add_event(
             context=self.env.event_history_context,
             event_type=HistoryEventType.ExecutionStarted,
             event_details=EventDetails(

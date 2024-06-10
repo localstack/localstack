@@ -23,7 +23,7 @@ from localstack.aws.api.stepfunctions import (
     TracingConfiguration,
     ValidationException,
 )
-from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+from localstack.services.stepfunctions.asl.eval.event.logging import (
     CloudWatchLoggingConfiguration,
 )
 from localstack.utils.strings import long_uid

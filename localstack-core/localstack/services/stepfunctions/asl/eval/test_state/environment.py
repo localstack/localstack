@@ -8,10 +8,10 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
     ContextObjectInitData,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.eval.event.execution_event_manager import (
+from localstack.services.stepfunctions.asl.eval.event.event_manager import (
     EventHistoryContext,
 )
-from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+from localstack.services.stepfunctions.asl.eval.event.logging import (
     CloudWatchLoggingSession,
 )
 from localstack.services.stepfunctions.asl.eval.program_state import ProgramRunning

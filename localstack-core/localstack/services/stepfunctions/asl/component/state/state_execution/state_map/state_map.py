@@ -117,7 +117,7 @@ class StateMap(ExecutionState):
 
         self.items_path.eval(env)
         if self.item_reader:
-            env.execution_event_manager.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.MapStateStarted,
                 event_details=EventDetails(
@@ -127,7 +127,7 @@ class StateMap(ExecutionState):
             input_items = None
         else:
             input_items = env.stack.pop()
-            env.execution_event_manager.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.MapStateStarted,
                 event_details=EventDetails(
@@ -177,7 +177,7 @@ class StateMap(ExecutionState):
         env.stack.append(eval_input)
         self.iteration_component.eval(env)
 
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.MapStateSucceeded,
             update_source_event_id=False,
@@ -205,7 +205,7 @@ class StateMap(ExecutionState):
                     if retry_outcome == RetryOutcome.CanRetry:
                         continue
 
-                env.execution_event_manager.add_event(
+                env.event_manager.add_event(
                     context=env.event_history_context,
                     event_type=HistoryEventType.MapStateFailed,
                 )

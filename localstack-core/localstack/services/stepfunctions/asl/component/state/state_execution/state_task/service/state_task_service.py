@@ -240,13 +240,13 @@ class StateTaskService(StateTask, abc.ABC):
             self.heartbeat.eval(env=env)
             heartbeat_seconds = env.stack.pop()
             scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.TaskScheduled,
             event_details=EventDetails(taskScheduledEventDetails=scheduled_event_details),
         )
 
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.TaskStarted,
             event_details=EventDetails(
@@ -264,7 +264,7 @@ class StateTaskService(StateTask, abc.ABC):
     ) -> None:
         output = env.stack[-1]
         self._verify_size_quota(env=env, value=output)
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.TaskSucceeded,
             event_details=EventDetails(

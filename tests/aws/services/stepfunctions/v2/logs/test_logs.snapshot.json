@@ -1,8 +1,71 @@
 {
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[pass_result.json5_ALL_False]": {
-    "recorded-date": "05-06-2024, 19:27:06",
+    "recorded-date": "10-06-2024, 13:36:31",
     "recorded-content": {
-      "log_events": [
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "logged_execution_events": [
         {
           "id": "1",
           "type": "ExecutionStarted",
@@ -49,9 +112,72 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[pass_result.json5_ALL_True]": {
-    "recorded-date": "05-06-2024, 19:39:53",
+    "recorded-date": "10-06-2024, 13:44:09",
     "recorded-content": {
-      "log_events": [
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "State_1"
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateEntered"
+          },
+          {
+            "id": 3,
+            "previousEventId": 2,
+            "stateExitedEventDetails": {
+              "name": "State_1",
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "timestamp": "timestamp",
+            "type": "PassStateExited"
+          },
+          {
+            "executionSucceededEventDetails": {
+              "output": {
+                "Arg1": "argument1"
+              },
+              "outputDetails": {
+                "truncated": false
+              }
+            },
+            "id": 4,
+            "previousEventId": 3,
+            "timestamp": "timestamp",
+            "type": "ExecutionSucceeded"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "logged_execution_events": [
         {
           "id": "1",
           "type": "ExecutionStarted",
@@ -119,9 +245,53 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[raise_failure.json5_ALL_False]": {
-    "recorded-date": "05-06-2024, 19:29:47",
+    "recorded-date": "10-06-2024, 13:35:15",
     "recorded-content": {
-      "log_events": [
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "FailState"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "This state machines raises a 'SomeFailure' failure.",
+              "error": "SomeFailure"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "logged_execution_events": [
         {
           "id": "1",
           "type": "ExecutionStarted",
@@ -160,9 +330,53 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[raise_failure.json5_ALL_True]": {
-    "recorded-date": "05-06-2024, 19:41:08",
+    "recorded-date": "10-06-2024, 13:39:03",
     "recorded-content": {
-      "log_events": [
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "FailState"
+            },
+            "timestamp": "timestamp",
+            "type": "FailStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "This state machines raises a 'SomeFailure' failure.",
+              "error": "SomeFailure"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "logged_execution_events": [
         {
           "id": "1",
           "type": "ExecutionStarted",
@@ -209,9 +423,53 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[wait_seconds_path.json5_ALL_False]": {
-    "recorded-date": "05-06-2024, 19:32:16",
+    "recorded-date": "10-06-2024, 14:28:29",
     "recorded-content": {
-      "log_events": [
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'WaitState' (entered at the event id #2). The SecondsPath parameter does not reference an input value: $.input.waitSeconds",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "logged_execution_events": [
         {
           "id": "1",
           "type": "ExecutionStarted",
@@ -250,9 +508,53 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_base[wait_seconds_path.json5_ALL_True]": {
-    "recorded-date": "05-06-2024, 19:33:35",
+    "recorded-date": "10-06-2024, 14:30:12",
     "recorded-content": {
-      "log_events": [
+      "get_execution_history": {
+        "events": [
+          {
+            "executionStartedEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "roleArn": "snf_role_arn"
+            },
+            "id": 1,
+            "previousEventId": 0,
+            "timestamp": "timestamp",
+            "type": "ExecutionStarted"
+          },
+          {
+            "id": 2,
+            "previousEventId": 0,
+            "stateEnteredEventDetails": {
+              "input": {},
+              "inputDetails": {
+                "truncated": false
+              },
+              "name": "WaitState"
+            },
+            "timestamp": "timestamp",
+            "type": "WaitStateEntered"
+          },
+          {
+            "executionFailedEventDetails": {
+              "cause": "An error occurred while executing the state 'WaitState' (entered at the event id #2). The SecondsPath parameter does not reference an input value: $.input.waitSeconds",
+              "error": "States.Runtime"
+            },
+            "id": 3,
+            "previousEventId": 2,
+            "timestamp": "timestamp",
+            "type": "ExecutionFailed"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "logged_execution_events": [
         {
           "id": "1",
           "type": "ExecutionStarted",
@@ -367,7 +669,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_ERROR_False]": {
-    "recorded-date": "06-06-2024, 18:23:44",
+    "recorded-date": "10-06-2024, 12:17:10",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -435,7 +737,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_ERROR_True]": {
-    "recorded-date": "06-06-2024, 18:23:59",
+    "recorded-date": "10-06-2024, 12:17:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -503,7 +805,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_FATAL_False]": {
-    "recorded-date": "06-06-2024, 18:24:14",
+    "recorded-date": "10-06-2024, 12:17:41",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -571,7 +873,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_FATAL_True]": {
-    "recorded-date": "06-06-2024, 18:24:34",
+    "recorded-date": "10-06-2024, 12:17:56",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -639,7 +941,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_OFF_False]": {
-    "recorded-date": "06-06-2024, 18:24:50",
+    "recorded-date": "10-06-2024, 12:18:12",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -707,7 +1009,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[pass_result.json5_OFF_True]": {
-    "recorded-date": "06-06-2024, 18:25:04",
+    "recorded-date": "10-06-2024, 12:18:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -775,7 +1077,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_ERROR_False]": {
-    "recorded-date": "06-06-2024, 18:26:15",
+    "recorded-date": "10-06-2024, 12:18:48",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -849,7 +1151,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_ERROR_True]": {
-    "recorded-date": "06-06-2024, 18:27:31",
+    "recorded-date": "10-06-2024, 12:19:11",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -927,7 +1229,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_FATAL_False]": {
-    "recorded-date": "06-06-2024, 18:28:47",
+    "recorded-date": "10-06-2024, 12:19:32",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -990,7 +1292,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_FATAL_True]": {
-    "recorded-date": "06-06-2024, 18:30:02",
+    "recorded-date": "10-06-2024, 12:19:57",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1053,7 +1355,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_OFF_False]": {
-    "recorded-date": "06-06-2024, 18:30:17",
+    "recorded-date": "10-06-2024, 12:20:11",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1102,7 +1404,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[raise_failure.json5_OFF_True]": {
-    "recorded-date": "06-06-2024, 18:30:32",
+    "recorded-date": "10-06-2024, 12:20:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1151,7 +1453,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_ERROR_False]": {
-    "recorded-date": "06-06-2024, 18:31:47",
+    "recorded-date": "10-06-2024, 12:20:57",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1214,7 +1516,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_ERROR_True]": {
-    "recorded-date": "06-06-2024, 18:33:02",
+    "recorded-date": "10-06-2024, 12:21:23",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1277,7 +1579,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_FATAL_False]": {
-    "recorded-date": "06-06-2024, 18:34:18",
+    "recorded-date": "10-06-2024, 12:21:46",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1340,7 +1642,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_FATAL_True]": {
-    "recorded-date": "06-06-2024, 18:35:33",
+    "recorded-date": "10-06-2024, 12:22:11",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1403,7 +1705,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_OFF_False]": {
-    "recorded-date": "06-06-2024, 18:35:54",
+    "recorded-date": "10-06-2024, 12:22:27",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1452,7 +1754,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_partial_log_levels[wait_seconds_path.json5_OFF_True]": {
-    "recorded-date": "06-06-2024, 18:36:09",
+    "recorded-date": "10-06-2024, 12:22:42",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1501,7 +1803,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/logs/test_logs.py::TestLogs::test_log_group_with_multiple_runs": {
-    "recorded-date": "06-06-2024, 19:07:24",
+    "recorded-date": "10-06-2024, 14:19:04",
     "recorded-content": {
       "logged_execution_events": [
         {

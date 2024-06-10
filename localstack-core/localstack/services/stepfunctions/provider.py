@@ -99,7 +99,7 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackOutcomeFailure,
     CallbackOutcomeSuccess,
 )
-from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+from localstack.services.stepfunctions.asl.eval.event.logging import (
     CloudWatchLoggingConfiguration,
     CloudWatchLoggingSession,
 )
@@ -296,8 +296,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         level = level or LogLevel.OFF
 
         # Default for includeExecutionData is False.
-        include_flag = logging_configuration.get("includeExecutionData")
-        include_flag = include_flag or False
+        include_flag = logging_configuration.get("includeExecutionData", False)
 
         # Update configuration object.
         logging_configuration["level"] = level
@@ -387,7 +386,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             stateMachineArn=state_machine.arn, creationDate=state_machine.create_date
         )
 
-        # Create the first version is the 'publish' flag is used.
+        # Create the first version if the 'publish' flag is used.
         if request.get("publish", False):
             version_description = request.get("versionDescription")
             state_machine_version = state_machine.create_version(description=version_description)

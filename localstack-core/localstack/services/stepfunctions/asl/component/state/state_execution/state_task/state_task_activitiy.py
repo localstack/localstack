@@ -143,7 +143,7 @@ class StateTaskActivity(StateTask):
             scheduled_event_details["timeoutInSeconds"] = timeout_seconds
         if heartbeat_seconds is not None:
             scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.ActivityScheduled,
             event_details=EventDetails(activityScheduledEventDetails=scheduled_event_details),
@@ -157,7 +157,7 @@ class StateTaskActivity(StateTask):
             started_event_details = ActivityStartedEventDetails()
             if task_start_outcome.worker_name is not None:
                 started_event_details["workerName"] = task_start_outcome.worker_name
-            env.execution_event_manager.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.ActivityStarted,
                 event_details=EventDetails(activityStartedEventDetails=started_event_details),
@@ -193,7 +193,7 @@ class StateTaskActivity(StateTask):
         else:
             raise NotImplementedError(f"Unsupported CallbackOutcome type '{type(outcome)}'.")
 
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.ActivitySucceeded,
             event_details=EventDetails(

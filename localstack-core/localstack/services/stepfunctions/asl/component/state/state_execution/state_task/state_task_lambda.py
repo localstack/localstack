@@ -131,13 +131,13 @@ class StateTaskLambda(StateTask):
             self.timeout.eval(env=env)
             timeout_seconds = env.stack.pop()
             scheduled_event_details["timeoutInSeconds"] = timeout_seconds
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.LambdaFunctionScheduled,
             event_details=EventDetails(lambdaFunctionScheduledEventDetails=scheduled_event_details),
         )
 
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.LambdaFunctionStarted,
         )
@@ -160,7 +160,7 @@ class StateTaskLambda(StateTask):
         output_payload = output["Payload"]
         env.stack.append(output_payload)
 
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.LambdaFunctionSucceeded,
             event_details=EventDetails(

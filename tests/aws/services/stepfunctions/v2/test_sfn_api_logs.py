@@ -183,7 +183,7 @@ class TestSnfApiLogs:
                 "logGroups", None
             )
 
-        poll_condition(condition=_log_group_is_deleted)
+        assert poll_condition(condition=_log_group_is_deleted)
 
         snf_role_arn = create_iam_role_for_sfn()
         sfn_snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))

@@ -116,14 +116,14 @@ class Program(EvalComponent):
             exec_failed_event_details = select_from_typed_dict(
                 typed_dict=ExecutionFailedEventDetails, obj=program_state.error or dict()
             )
-            env.execution_event_manager.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.ExecutionFailed,
                 event_details=EventDetails(executionFailedEventDetails=exec_failed_event_details),
             )
         elif isinstance(program_state, ProgramStopped):
             env.event_history_context.source_event_id = 0
-            env.execution_event_manager.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.ExecutionAborted,
                 event_details=EventDetails(
@@ -133,7 +133,7 @@ class Program(EvalComponent):
                 ),
             )
         elif isinstance(program_state, ProgramTimedOut):
-            env.execution_event_manager.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.ExecutionTimedOut,
                 event_details=EventDetails(
@@ -141,7 +141,7 @@ class Program(EvalComponent):
                 ),
             )
         elif isinstance(program_state, ProgramEnded):
-            env.execution_event_manager.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.ExecutionSucceeded,
                 event_details=EventDetails(

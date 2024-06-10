@@ -14,7 +14,7 @@ from localstack.aws.api.stepfunctions import (
     Timestamp,
 )
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+from localstack.services.stepfunctions.asl.eval.event.logging import (
     CloudWatchLoggingSession,
     HistoryLog,
 )
@@ -57,7 +57,7 @@ class EventIdGenerator:
         return next_id
 
 
-class ExecutionEventManager:
+class EventManager:
     _mutex: Final[threading.Lock]
     _event_id_gen: EventIdGenerator
     _history_event_list: Final[HistoryEventList]
@@ -70,6 +70,40 @@ class ExecutionEventManager:
         self._cloud_watch_logging_session = cloud_watch_logging_session
         if self._cloud_watch_logging_session is not None:
             self._cloud_watch_logging_session.setup()
+
+    def add_event(
+        self,
+        context: EventHistoryContext,
+        event_type: HistoryEventType,
+        event_details: Optional[EventDetails] = None,
+        timestamp: Timestamp = None,
+        update_source_event_id: bool = True,
+    ) -> int:
+        with self._mutex:
+            event_id: int = self._event_id_gen.get()
+            source_event_id: int = context.source_event_id
+            timestamp = timestamp or self._get_current_timestamp()
+
+            context.last_published_event_id = event_id
+            if update_source_event_id:
+                context.source_event_id = event_id
+
+            self._publish_history_event(
+                event_id=event_id,
+                source_event_id=source_event_id,
+                event_type=event_type,
+                timestamp=timestamp,
+                event_details=event_details,
+            )
+            self._publish_history_log(
+                event_id=event_id,
+                source_event_id=source_event_id,
+                event_type=event_type,
+                timestamp=timestamp,
+                event_details=event_details,
+            )
+
+            return event_id
 
     @staticmethod
     def _get_current_timestamp() -> datetime.datetime:
@@ -139,7 +173,7 @@ class ExecutionEventManager:
             if not include_execution_data:
                 # clone the object before modifying it as the change is limited to the history log value.
                 details_body = copy.deepcopy(details_body)
-                ExecutionEventManager._remove_data_from_history_log(details_body=details_body)
+                EventManager._remove_data_from_history_log(details_body=details_body)
             log["details"] = details_body
         return log
 
@@ -169,40 +203,6 @@ class ExecutionEventManager:
             include_execution_data=self._cloud_watch_logging_session.configuration.include_execution_data,
         )
         self._cloud_watch_logging_session.publish_history_log(history_log=history_log)
-
-    def add_event(
-        self,
-        context: EventHistoryContext,
-        event_type: HistoryEventType,
-        event_details: Optional[EventDetails] = None,
-        timestamp: Timestamp = None,
-        update_source_event_id: bool = True,
-    ) -> int:
-        with self._mutex:
-            event_id: int = self._event_id_gen.get()
-            source_event_id: int = context.source_event_id
-            timestamp = timestamp or self._get_current_timestamp()
-
-            context.last_published_event_id = event_id
-            if update_source_event_id:
-                context.source_event_id = event_id
-
-            self._publish_history_event(
-                event_id=event_id,
-                source_event_id=source_event_id,
-                event_type=event_type,
-                timestamp=timestamp,
-                event_details=event_details,
-            )
-            self._publish_history_log(
-                event_id=event_id,
-                source_event_id=source_event_id,
-                event_type=event_type,
-                timestamp=timestamp,
-                event_details=event_details,
-            )
-
-            return event_id
 
     def get_event_history(self) -> HistoryEventList:
         with self._mutex:

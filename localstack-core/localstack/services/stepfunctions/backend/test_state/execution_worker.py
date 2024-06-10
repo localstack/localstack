@@ -2,7 +2,7 @@ from typing import Optional
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.services.stepfunctions.asl.eval.event.execution_event_manager import (
+from localstack.services.stepfunctions.asl.eval.event.event_manager import (
     EventHistoryContext,
 )
 from localstack.services.stepfunctions.asl.eval.test_state.environment import TestStateEnvironment

@@ -47,8 +47,8 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.eval.event.execution_event_manager import (
-    ExecutionEventManager,
+from localstack.services.stepfunctions.asl.eval.event.event_manager import (
+    EventManager,
 )
 
 
@@ -152,7 +152,7 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         )
         env.map_run_record_pool_manager.add(self._map_run_record)
 
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
             event_type=HistoryEventType.MapRunStarted,
             event_details=EventDetails(
@@ -162,14 +162,14 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             ),
         )
 
-        execution_event_history = env.execution_event_manager
+        parent_event_manager = env.event_manager
         try:
             if self._eval_input.item_reader:
                 self._eval_input.item_reader.eval(env=env)
             else:
                 env.stack.append(self._eval_input.input_items)
 
-            env.execution_event_manager = ExecutionEventManager()
+            env.event_manager = EventManager()
             self._map_run(env=env)
 
         except FailureEventException as failure_event_ex:
@@ -183,8 +183,8 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
                 if cause:
                     map_run_fail_event_detail["cause"] = cause
 
-            env.execution_event_manager = execution_event_history
-            env.execution_event_manager.add_event(
+            env.event_manager = parent_event_manager
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.MapRunFailed,
                 event_details=EventDetails(mapRunFailedEventDetails=map_run_fail_event_detail),
@@ -193,8 +193,8 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             raise failure_event_ex
 
         except Exception as ex:
-            env.execution_event_manager = execution_event_history
-            env.execution_event_manager.add_event(
+            env.event_manager = parent_event_manager
+            env.event_manager.add_event(
                 context=env.event_history_context,
                 event_type=HistoryEventType.MapRunFailed,
                 event_details=EventDetails(mapRunFailedEventDetails=MapRunFailedEventDetails()),
@@ -202,14 +202,14 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
             self._map_run_record.set_stop(status=MapRunStatus.FAILED)
             raise ex
         finally:
-            env.execution_event_manager = execution_event_history
+            env.event_manager = parent_event_manager
             self._eval_input = None
             self._workers.clear()
 
         # TODO: review workflow of program stops and maprunstops
         # program_state = env.program_state()
         # if isinstance(program_state, ProgramSucceeded)
-        env.execution_event_manager.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context, event_type=HistoryEventType.MapRunSucceeded
         )
         self._map_run_record.set_stop(status=MapRunStatus.SUCCEEDED)

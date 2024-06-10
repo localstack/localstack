@@ -11,14 +11,13 @@ from localstack.aws.api.stepfunctions import (
     LoggingConfiguration,
     LogLevel,
 )
-from localstack.services.stepfunctions.asl.eval.event.execution_logging import is_event_in_context
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
     await_execution_terminated,
     create,
-    create_and_record_execution_logs,
+    create_and_record_logs,
     launch_and_record_execution,
+    launch_and_record_logs,
 )
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
@@ -86,7 +85,7 @@ class TestLogs:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
-        create_and_record_execution_logs(
+        create_and_record_logs(
             aws_client,
             create_iam_role_for_sfn,
             create_state_machine,
@@ -142,61 +141,10 @@ class TestLogs:
         )
 
         execution_input = json.dumps({})
-        execution_arn = launch_and_record_execution(
-            aws_client.stepfunctions,
-            sfn_snapshot,
-            state_machine_arn,
-            execution_input,
+
+        launch_and_record_logs(
+            aws_client, state_machine_arn, execution_input, log_level, log_group_name, sfn_snapshot
         )
-
-        # Determine how many log events are expected.
-        execution_history = aws_client.stepfunctions.get_execution_history(
-            executionArn=execution_arn
-        )
-        expected_events_count = sum(
-            [
-                is_event_in_context(log_level=log_level, history_event_type=event["type"])
-                for event in execution_history["events"]
-            ]
-        )
-
-        # If no events are expected, then terminate, no stream would have been created.
-        if expected_events_count == 0:
-            return
-
-        sfn_snapshot.add_transformer(
-            JsonpathTransformer(
-                jsonpath="$..event_timestamp",
-                replacement="timestamp",
-                replace_reference=False,
-            )
-        )
-
-        logs_client = aws_client.logs
-        log_events = list()
-
-        def _collect_log_events():
-            log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)[
-                "logStreams"
-            ]
-            if len(log_streams) < 2:
-                return False
-
-            log_stream_name = log_streams[-1]["logStreamName"]
-            nonlocal log_events
-            log_events.clear()
-            log_events = logs_client.get_log_events(
-                logGroupName=log_group_name, logStreamName=log_stream_name, startFromHead=True
-            )["events"]
-            return len(log_events) == expected_events_count
-
-        timeout = 360 if is_aws_cloud() else 120
-        interval = 60 if is_aws_cloud() else 1
-        poll_condition(condition=_collect_log_events, timeout=timeout, interval=interval)
-
-        events = [json.loads(e["message"]) for e in log_events]
-        logged_execution_events = sorted(events, key=lambda event: int(event.get("id")))
-        sfn_snapshot.match("logged_execution_events", logged_execution_events)
 
     @markers.aws.validated
     def test_deleted_log_group(
@@ -242,7 +190,7 @@ class TestLogs:
                 "logGroups", None
             )
 
-        poll_condition(condition=_log_group_is_deleted)
+        assert poll_condition(condition=_log_group_is_deleted)
 
         execution_input = json.dumps({})
         launch_and_record_execution(
@@ -333,9 +281,7 @@ class TestLogs:
             )["events"]
             return len(log_events) == expected_events_count
 
-        timeout = 360 if is_aws_cloud() else 120
-        interval = 60 if is_aws_cloud() else 1
-        poll_condition(condition=_collect_log_events, timeout=timeout, interval=interval)
+        assert poll_condition(condition=_collect_log_events)
 
         logged_execution_events = [json.loads(e["message"]) for e in log_events]
         sfn_snapshot.match("logged_execution_events", logged_execution_events)

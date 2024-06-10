@@ -33,7 +33,7 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
 from localstack.services.stepfunctions.asl.eval.contextobject.contex_object import (
     StateMachine as ContextObjectStateMachine,
 )
-from localstack.services.stepfunctions.asl.eval.event.execution_logging import (
+from localstack.services.stepfunctions.asl.eval.event.logging import (
     CloudWatchLoggingSession,
 )
 from localstack.services.stepfunctions.asl.eval.program_state import (
@@ -222,7 +222,7 @@ class Execution:
         event_history: HistoryEventList = list()
         if env is not None:
             # The execution has not started yet.
-            event_history: HistoryEventList = env.execution_event_manager.get_event_history()
+            event_history: HistoryEventList = env.event_manager.get_event_history()
         return GetExecutionHistoryOutput(events=event_history)
 
     @staticmethod
