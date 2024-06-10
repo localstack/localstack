@@ -72,6 +72,7 @@ PutResponseRecordId = str
 RedshiftRetryDurationInSeconds = int
 RetryDurationInSeconds = int
 RoleARN = str
+SecretARN = str
 SizeInMBs = int
 SnowflakeAccountUrl = str
 SnowflakeContentColumnName = str
@@ -540,6 +541,12 @@ class CopyCommand(TypedDict, total=False):
     CopyOptions: Optional[CopyOptions]
 
 
+class SecretsManagerConfiguration(TypedDict, total=False):
+    SecretARN: Optional[SecretARN]
+    RoleARN: Optional[RoleARN]
+    Enabled: BooleanObject
+
+
 class SnowflakeRetryOptions(TypedDict, total=False):
     DurationInSeconds: Optional[SnowflakeRetryDurationInSeconds]
 
@@ -555,9 +562,9 @@ class SnowflakeRoleConfiguration(TypedDict, total=False):
 
 class SnowflakeDestinationConfiguration(TypedDict, total=False):
     AccountUrl: SnowflakeAccountUrl
-    PrivateKey: SnowflakePrivateKey
+    PrivateKey: Optional[SnowflakePrivateKey]
     KeyPassphrase: Optional[SnowflakeKeyPassphrase]
-    User: SnowflakeUser
+    User: Optional[SnowflakeUser]
     Database: SnowflakeDatabase
     Schema: SnowflakeSchema
     Table: SnowflakeTable
@@ -572,6 +579,7 @@ class SnowflakeDestinationConfiguration(TypedDict, total=False):
     RetryOptions: Optional[SnowflakeRetryOptions]
     S3BackupMode: Optional[SnowflakeS3BackupMode]
     S3Configuration: S3DestinationConfiguration
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class MSKSourceConfiguration(TypedDict, total=False):
@@ -626,6 +634,7 @@ class HttpEndpointDestinationConfiguration(TypedDict, total=False):
     RetryOptions: Optional[HttpEndpointRetryOptions]
     S3BackupMode: Optional[HttpEndpointS3BackupMode]
     S3Configuration: S3DestinationConfiguration
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class SplunkBufferingHints(TypedDict, total=False):
@@ -640,7 +649,7 @@ class SplunkRetryOptions(TypedDict, total=False):
 class SplunkDestinationConfiguration(TypedDict, total=False):
     HECEndpoint: HECEndpoint
     HECEndpointType: HECEndpointType
-    HECToken: HECToken
+    HECToken: Optional[HECToken]
     HECAcknowledgmentTimeoutInSeconds: Optional[HECAcknowledgmentTimeoutInSeconds]
     RetryOptions: Optional[SplunkRetryOptions]
     S3BackupMode: Optional[SplunkS3BackupMode]
@@ -648,6 +657,7 @@ class SplunkDestinationConfiguration(TypedDict, total=False):
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     BufferingHints: Optional[SplunkBufferingHints]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class ElasticsearchRetryOptions(TypedDict, total=False):
@@ -684,14 +694,15 @@ class RedshiftDestinationConfiguration(TypedDict, total=False):
     RoleARN: RoleARN
     ClusterJDBCURL: ClusterJDBCURL
     CopyCommand: CopyCommand
-    Username: Username
-    Password: Password
+    Username: Optional[Username]
+    Password: Optional[Password]
     RetryOptions: Optional[RedshiftRetryOptions]
     S3Configuration: S3DestinationConfiguration
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     S3BackupMode: Optional[RedshiftS3BackupMode]
     S3BackupConfiguration: Optional[S3DestinationConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class RetryOptions(TypedDict, total=False):
@@ -861,6 +872,7 @@ class SnowflakeDestinationDescription(TypedDict, total=False):
     RetryOptions: Optional[SnowflakeRetryOptions]
     S3BackupMode: Optional[SnowflakeS3BackupMode]
     S3DestinationDescription: Optional[S3DestinationDescription]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class HttpEndpointDescription(TypedDict, total=False):
@@ -878,6 +890,7 @@ class HttpEndpointDestinationDescription(TypedDict, total=False):
     RetryOptions: Optional[HttpEndpointRetryOptions]
     S3BackupMode: Optional[HttpEndpointS3BackupMode]
     S3DestinationDescription: Optional[S3DestinationDescription]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class SplunkDestinationDescription(TypedDict, total=False):
@@ -891,6 +904,7 @@ class SplunkDestinationDescription(TypedDict, total=False):
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     BufferingHints: Optional[SplunkBufferingHints]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class ElasticsearchDestinationDescription(TypedDict, total=False):
@@ -914,13 +928,14 @@ class RedshiftDestinationDescription(TypedDict, total=False):
     RoleARN: RoleARN
     ClusterJDBCURL: ClusterJDBCURL
     CopyCommand: CopyCommand
-    Username: Username
+    Username: Optional[Username]
     RetryOptions: Optional[RedshiftRetryOptions]
     S3DestinationDescription: S3DestinationDescription
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     S3BackupMode: Optional[RedshiftS3BackupMode]
     S3BackupDescription: Optional[S3DestinationDescription]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class ExtendedS3DestinationDescription(TypedDict, total=False):
@@ -1065,6 +1080,7 @@ class HttpEndpointDestinationUpdate(TypedDict, total=False):
     RetryOptions: Optional[HttpEndpointRetryOptions]
     S3BackupMode: Optional[HttpEndpointS3BackupMode]
     S3Update: Optional[S3DestinationUpdate]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class ListDeliveryStreamsInput(ServiceRequest):
@@ -1141,6 +1157,7 @@ class RedshiftDestinationUpdate(TypedDict, total=False):
     S3BackupMode: Optional[RedshiftS3BackupMode]
     S3BackupUpdate: Optional[S3DestinationUpdate]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class SnowflakeDestinationUpdate(TypedDict, total=False):
@@ -1161,6 +1178,7 @@ class SnowflakeDestinationUpdate(TypedDict, total=False):
     RetryOptions: Optional[SnowflakeRetryOptions]
     S3BackupMode: Optional[SnowflakeS3BackupMode]
     S3Update: Optional[S3DestinationUpdate]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class SplunkDestinationUpdate(TypedDict, total=False):
@@ -1174,6 +1192,7 @@ class SplunkDestinationUpdate(TypedDict, total=False):
     ProcessingConfiguration: Optional[ProcessingConfiguration]
     CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
     BufferingHints: Optional[SplunkBufferingHints]
+    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
 
 
 class StartDeliveryStreamEncryptionInput(ServiceRequest):
