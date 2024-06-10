@@ -1,0 +1,5 @@
+{
+  "tests/aws/test_multiregion.py::TestMultiRegion::test_multi_region_sns": {
+    "last_validated_date": "2024-06-10T06:09:20+00:00"
+  }
+}
