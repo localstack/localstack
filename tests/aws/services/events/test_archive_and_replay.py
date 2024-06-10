@@ -421,6 +421,8 @@ class TestReplay:
         snapshot,
     ):
         event_start_time = datetime.now(timezone.utc)
+        event_end_time = event_start_time + timedelta(minutes=1)
+
         # setup event bus
         if event_bus_type == "default":
             event_bus_name = "default"
@@ -473,8 +475,6 @@ class TestReplay:
         sqs_collect_messages(
             aws_client, queue_url, num_events, wait_time=5, retries=12
         )  # reset queue for replay
-
-        event_end_time = datetime.now(timezone.utc)
 
         # start replay
         replay_name = f"test-replay-{short_uid()}"
@@ -551,7 +551,8 @@ class TestReplay:
     def test_list_replays_with_prefix(
         self, events_create_archive, events_create_event_bus, aws_client, snapshot
     ):
-        start_time = datetime.now(timezone.utc)
+        event_start_time = datetime.now(timezone.utc)
+        event_end_time = event_start_time + timedelta(minutes=1)
 
         event_bus_name = f"test-bus-{short_uid()}"
         event_bus_arn = events_create_event_bus(Name=event_bus_name)["EventBusArn"]
@@ -560,8 +561,6 @@ class TestReplay:
             RetentionDays=1,
         )["ArchiveArn"]
 
-        end_time = datetime.now(timezone.utc)
-
         replay_name_prefix = (
             short_uid()  # prefix must be unique since replays are stored 90 days
         )
@@ -569,8 +568,8 @@ class TestReplay:
         aws_client.events.start_replay(
             ReplayName=replay_name,
             EventSourceArn=archive_arn,
-            EventStartTime=start_time,
-            EventEndTime=end_time,
+            EventStartTime=event_start_time,
+            EventEndTime=event_end_time,
             Destination={
                 "Arn": event_bus_arn,
             },
@@ -582,8 +581,8 @@ class TestReplay:
         aws_client.events.start_replay(
             ReplayName=replay_name_second,
             EventSourceArn=archive_arn,
-            EventStartTime=start_time,
-            EventEndTime=end_time,
+            EventStartTime=event_start_time,
+            EventEndTime=event_end_time,
             Destination={
                 "Arn": event_bus_arn,
             },
@@ -606,7 +605,8 @@ class TestReplay:
     def test_list_replays_with_event_source_arn(
         self, events_create_event_bus, events_create_archive, aws_client, snapshot
     ):
-        start_time = datetime.now(timezone.utc)
+        event_start_time = datetime.now(timezone.utc)
+        event_end_time = event_start_time + timedelta(minutes=1)
 
         event_bus_name = f"test-bus-{short_uid()}"
         event_bus_arn = events_create_event_bus(Name=event_bus_name)["EventBusArn"]
@@ -615,14 +615,12 @@ class TestReplay:
             RetentionDays=1,
         )["ArchiveArn"]
 
-        end_time = datetime.now(timezone.utc)
-
         replay_name = f"test-replay-{short_uid()}"
         aws_client.events.start_replay(
             ReplayName=replay_name,
             EventSourceArn=archive_arn,
-            EventStartTime=start_time,
-            EventEndTime=end_time,
+            EventStartTime=event_start_time,
+            EventEndTime=event_end_time,
             Destination={
                 "Arn": event_bus_arn,
             },
@@ -644,7 +642,8 @@ class TestReplay:
     def test_list_replay_with_limit(
         self, events_create_event_bus, events_create_archive, aws_client, snapshot
     ):
-        start_time = datetime.now(timezone.utc)
+        event_start_time = datetime.now(timezone.utc)
+        event_end_time = event_start_time + timedelta(minutes=1)
 
         event_bus_name = f"test-bus-{short_uid()}"
         event_bus_arn = events_create_event_bus(Name=event_bus_name)["EventBusArn"]
@@ -656,8 +655,6 @@ class TestReplay:
             RetentionDays=1,
         )["ArchiveArn"]
 
-        end_time = datetime.now(timezone.utc)
-
         replay_name_prefix = short_uid()
 
         num_replays = 6
@@ -667,8 +664,8 @@ class TestReplay:
                 ReplayName=replay_name,
                 Description="description of the replay",
                 EventSourceArn=archive_arn,
-                EventStartTime=start_time,
-                EventEndTime=end_time,
+                EventStartTime=event_start_time,
+                EventEndTime=event_end_time,
                 Destination={
                     "Arn": event_bus_arn,
                 },
