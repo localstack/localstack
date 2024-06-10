@@ -17,7 +17,6 @@ from werkzeug.routing import Map, Rule
 from localstack import constants
 from localstack.aws.api import (
     CommonServiceException,
-    HttpRequest,
     RequestContext,
     ServiceRequest,
     ServiceResponse,
@@ -31,9 +30,9 @@ from localstack.aws.skeleton import DispatchTable
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.constants import VERSION as LOCALSTACK_VERSION
 from localstack.http import Response
-from localstack.http.request import get_full_raw_path, get_raw_current_url
+from localstack.http.request import Request, get_full_raw_path, get_raw_current_url
 
-MotoDispatcher = Callable[[HttpRequest, str, dict], Response]
+MotoDispatcher = Callable[[Request, str, dict], Response]
 
 user_agent = f"Localstack/{LOCALSTACK_VERSION} Python/{sys.version.split(' ')[0]}"
 

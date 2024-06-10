@@ -7,10 +7,9 @@ import urllib
 from datetime import datetime
 from http import HTTPStatus
 
-from localstack.aws.api import HttpResponse
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.protocol.serializer import gen_amzn_requestid
-from localstack.http import Request, Router
+from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
 from localstack.services.lambda_.api_utils import FULL_FN_ARN_PATTERN
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
@@ -55,8 +54,8 @@ class FunctionUrlRouter:
 
     def handle_lambda_url_invocation(
         self, request: Request, api_id: str, region: str, **url_params: dict[str, str]
-    ) -> HttpResponse:
-        response = HttpResponse()
+    ) -> Response:
+        response = Response()
         response.mimetype = "application/json"
 
         lambda_url_config = None
@@ -94,7 +93,7 @@ class FunctionUrlRouter:
             request_id=gen_amzn_requestid(),
         )
         if result.is_error:
-            response = HttpResponse("Internal Server Error", HTTPStatus.BAD_GATEWAY)
+            response = Response("Internal Server Error", HTTPStatus.BAD_GATEWAY)
         else:
             response = lambda_result_to_response(result)
         return response
@@ -172,7 +171,7 @@ def event_for_lambda_url(api_id: str, path: str, data, headers, method: str) -> 
 
 
 def lambda_result_to_response(result: InvocationResult):
-    response = HttpResponse()
+    response = Response()
 
     # Set default headers
     response.headers.update(
