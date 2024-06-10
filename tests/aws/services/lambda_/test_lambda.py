@@ -1832,7 +1832,7 @@ class TestLambdaMultiAccounts:
     def secondary_client(self, secondary_aws_client):
         return secondary_aws_client.lambda_
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_cross_account_access(
         self, primary_client, secondary_client, create_lambda_function, dummylayer
     ):

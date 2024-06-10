@@ -4158,10 +4158,6 @@
     "recorded-date": "08-04-2024, 16:57:14",
     "recorded-content": {}
   },
-  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_cross_account_access": {
-    "recorded-date": "08-04-2024, 16:59:40",
-    "recorded-content": {}
-  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaCleanup::test_recreate_function": {
     "recorded-date": "15-05-2024, 10:16:45",
     "recorded-content": {
