@@ -604,13 +604,13 @@ class TestReplay:
 
     @markers.aws.validated
     def test_list_replays_with_event_source_arn(self, events_start_replay, aws_client, snapshot):
-        archive_arn_one = events_start_replay()["EventSourceArn"]
+        archive_arn = events_start_replay()["EventSourceArn"]
 
         events_start_replay()
 
-        response_list_replays = aws_client.events.list_replays(EventSourceArn=archive_arn_one)
+        response_list_replays = aws_client.events.list_replays(EventSourceArn=archive_arn)
 
-        snapshot.add_transformer([snapshot.transform.regex(archive_arn_one, "<archive-name>")])
+        snapshot.add_transformer([snapshot.transform.regex(archive_arn, "<archive-arn>")])
         snapshot.match("list-replays-with-source-arn", response_list_replays)
 
     @markers.aws.validated

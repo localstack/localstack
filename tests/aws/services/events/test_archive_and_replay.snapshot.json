@@ -1026,7 +1026,7 @@
         "Replays": [
           {
             "EventEndTime": "datetime",
-            "EventSourceArn": "<archive-name>",
+            "EventSourceArn": "<archive-arn>",
             "EventStartTime": "datetime",
             "ReplayName": "test-replay-ae4051f3",
             "ReplayStartTime": "datetime",
