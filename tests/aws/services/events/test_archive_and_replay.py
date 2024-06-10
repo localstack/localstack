@@ -896,6 +896,7 @@ class TestReplay:
         snapshot.match("start-replay-invalid-end-time-error", error)
 
     @markers.aws.validated
+    @pytest.mark.skip(reason="currently no concurrency for replays in localstack")
     def tests_concurrency_error_too_many_active_replays(
         self, events_create_event_bus, events_create_archive, aws_client, snapshot
     ):
