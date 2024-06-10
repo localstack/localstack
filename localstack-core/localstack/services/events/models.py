@@ -156,7 +156,7 @@ class Replay:
 
     @property
     def arn(self) -> Arn:
-        return event_replay_arn(self.name, self.account_id, self.region)
+        return events_replay_arn(self.name, self.account_id, self.region)
 
 
 ReplayDict = dict[ReplayName, Replay]
@@ -178,7 +178,7 @@ class Archive:
 
     @property
     def arn(self) -> Arn:
-        return event_archive_arn(self.name, self.account_id, self.region)
+        return events_archive_arn(self.name, self.account_id, self.region)
 
     @property
     def event_count(self) -> int:
