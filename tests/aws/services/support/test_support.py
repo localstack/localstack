@@ -46,7 +46,7 @@ class TestConfigService:
             if case_id in open_cases_id:
                 support_client.resolve_case(caseId=case_id)
 
-    @markers.aws.only_localstack
+    @markers.aws.needs_fixing
     # we cannot use APIs from AWS Support due to the following:
     # An error occurred (SubscriptionRequiredException) when calling the DescribeCases/CreateCase operation:
     # Amazon Web Services Premium Support Subscription is required to use this service.
