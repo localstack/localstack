@@ -120,12 +120,6 @@ class StateTaskService(StateTask, abc.ABC):
                 parameter_value = self._to_boto_request_value(
                     parameter_value, norm_member_bind_shape
                 )
-                #                if isinstance(norm_member_bind_shape, StructureShape):
-                #                    self._to_boto_request(parameter_value, norm_member_bind_shape)
-                #                elif isinstance(norm_member_bind_shape, StringShape) and not isinstance(
-                #                    parameter_value, str
-                #                ):
-                #                    parameter_value = to_json_str(parameter_value)
                 parameters[norm_member_bind_key] = parameter_value
 
     @staticmethod
