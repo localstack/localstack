@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import re
@@ -10,7 +11,7 @@ from botocore.client import BaseClient
 from localstack.aws.api.events import Arn, InputTransformer, RuleName, Target, TargetInputPath
 from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
-from localstack.services.events.utils import EventJSONEncoder
+from localstack.services.events.utils import EventJSONEncoder, event_time_to_time_string
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
     extract_account_id_from_arn,
@@ -73,7 +74,11 @@ def replace_template_placeholders(
     def replace_placeholder(match):
         key = match.group(1)
         value = replacements.get(key, match.group(0))  # handle non defined placeholders
-        return json.dumps(value) if is_json else value
+        if is_json:
+            return json.dumps(value, cls=EventJSONEncoder)
+        if isinstance(value, datetime.datetime):
+            return event_time_to_time_string(value)
+        return value
 
     formatted_template = TRANSFORMER_PLACEHOLDER_PATTERN.sub(replace_placeholder, template)
 
