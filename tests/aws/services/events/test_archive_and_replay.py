@@ -208,9 +208,6 @@ class TestArchive:
         snapshot.match("list-archives-state-enabled", response_list_archives)
 
     @markers.aws.validated
-    # the archive seams to persist events also after deletion of the archive
-    # and restores them if recreated for the same event source arn
-    # this causes issues with the default event bus and the expected event count
     # TODO test with input path and input transformer
     @pytest.mark.parametrize("event_bus_type", ["default", "custom"])
     @pytest.mark.parametrize("archive_pattern_match", [True, False])
