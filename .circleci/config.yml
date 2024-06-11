@@ -123,6 +123,7 @@ commands:
                 name: Set partition to aws-gov
                 command: |
                   echo "export TEST_AWS_REGION_NAME=us-gov-west-1" >> $BASH_ENV
+                  echo "export SECONDARY_TEST_AWS_REGION_NAME=us-gov-east-1" >> $BASH_ENV
                   echo 'export PYTEST_ARGS="-m aws_validated"' >> $BASH_ENV
                   source $BASH_ENV
 

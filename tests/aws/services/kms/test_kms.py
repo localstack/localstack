@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.services.kms.models import IV_LEN, Ciphertext, _serialize_ciphertext_blob
 from localstack.services.kms.utils import get_hash_algorithm
+from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
@@ -803,6 +804,9 @@ class TestKMS:
         assert not key["KeyId"].startswith("mrk-")
         snapshot.match("non_multi_region_keys_should_not_have_multi_region_properties", key)
 
+    @pytest.mark.skipif(
+        not in_default_partition(), reason="Test not applicable in non-default partitions"
+    )
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[

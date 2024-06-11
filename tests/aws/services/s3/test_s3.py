@@ -53,6 +53,7 @@ from localstack.testing.config import (
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils import testutil
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.aws.resources import create_s3_bucket
 from localstack.utils.files import load_file
@@ -5986,7 +5987,7 @@ class TestS3:
         snapshot.match("if_match_err_1", e.value.response["Error"])
 
     @markers.aws.validated
-    def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot):
+    def test_s3_inventory_report_crud(self, aws_client, s3_create_bucket, snapshot, region_name):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
         dest_bucket = s3_create_bucket()
@@ -5999,7 +6000,7 @@ class TestS3:
                     "Effect": "Allow",
                     "Principal": {"Service": "s3.amazonaws.com"},
                     "Action": "s3:PutObject",
-                    "Resource": [f"arn:aws:s3:::{dest_bucket}/*"],
+                    "Resource": [f"arn:{get_partition(region_name)}:s3:::{dest_bucket}/*"],
                     "Condition": {
                         "ArnLike": {"aws:SourceArn": f"arn:aws:s3:::{src_bucket}"},
                     },
@@ -6012,7 +6013,7 @@ class TestS3:
             "Id": "test-inventory",
             "Destination": {
                 "S3BucketDestination": {
-                    "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                    "Bucket": f"arn:{get_partition(region_name)}:s3:::{dest_bucket}",
                     "Format": "CSV",
                 }
             },
@@ -6127,7 +6128,9 @@ class TestS3:
         snapshot.match("wrong-optional-field", e.value.response)
 
     @markers.aws.validated
-    def test_put_bucket_inventory_config_order(self, aws_client, s3_create_bucket, snapshot):
+    def test_put_bucket_inventory_config_order(
+        self, aws_client, s3_create_bucket, snapshot, region_name
+    ):
         snapshot.add_transformer(snapshot.transform.resource_name())
         src_bucket = s3_create_bucket()
         dest_bucket = s3_create_bucket()
@@ -6137,7 +6140,7 @@ class TestS3:
                 "Id": config_id,
                 "Destination": {
                     "S3BucketDestination": {
-                        "Bucket": f"arn:aws:s3:::{dest_bucket}",
+                        "Bucket": f"arn:{get_partition(region_name)}:s3:::{dest_bucket}",
                         "Format": "CSV",
                     }
                 },

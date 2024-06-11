@@ -3303,7 +3303,9 @@ class TestLambdaProvisionedConcurrency:
 
 class TestLambdaPermissions:
     @markers.aws.validated
-    def test_permission_exceptions(self, create_lambda_function, account_id, snapshot, aws_client):
+    def test_permission_exceptions(
+        self, create_lambda_function, account_id, snapshot, aws_client, region_name
+    ):
         function_name = f"lambda_func-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(function_name, "<function-name>"))
         create_lambda_function(
@@ -3329,7 +3331,7 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
                 Principal="s3.amazonaws.com",
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
                 Qualifier="42",
             )
         snapshot.match("add_permission_fn_qualifier_mismatch", e.value.response)
@@ -3340,7 +3342,7 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
                 Principal="s3.amazonaws.com",
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
                 Qualifier="$LATEST",
             )
         snapshot.match("add_permission_fn_qualifier_latest", e.value.response)
@@ -3374,7 +3376,7 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
                 Principal="s3.amazonaws.com",
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
             )
         snapshot.match("add_permission_fn_doesnotexist", e.value.response)
 
@@ -3391,7 +3393,7 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
                 Principal="s3.amazonaws.com",
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
             )
         snapshot.match("add_permission_fn_alias_doesnotexist", e.value.response)
 
@@ -3401,7 +3403,7 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
                 Principal="s3.amazonaws.com",
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
                 Qualifier="42",
             )
         snapshot.match("add_permission_fn_version_doesnotexist", e.value.response)
@@ -3412,7 +3414,7 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
                 Principal="s3.amazonaws.com",
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
                 Qualifier="invalid-qualifier-with-?-char",
             )
         snapshot.match("add_permission_fn_qualifier_invalid", e.value.response)
@@ -3423,7 +3425,7 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId="s3",
                 Principal="s3.amazonaws.com",
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
                 # NOTE: $ is allowed here because "$LATEST" is a valid version
                 Qualifier="valid-with-$-but-doesnotexist",
             )
@@ -3434,7 +3436,7 @@ class TestLambdaPermissions:
             Action="lambda:InvokeFunction",
             StatementId="s3",
             Principal="s3.amazonaws.com",
-            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
         )
 
         sid = "s3"
@@ -3444,7 +3446,7 @@ class TestLambdaPermissions:
                 Action="lambda:InvokeFunction",
                 StatementId=sid,
                 Principal="s3.amazonaws.com",
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
             )
         snapshot.match("add_permission_conflicting_statement_id", e.value.response)
 
@@ -3464,7 +3466,7 @@ class TestLambdaPermissions:
 
     @markers.aws.validated
     def test_add_lambda_permission_aws(
-        self, create_lambda_function, account_id, snapshot, aws_client
+        self, create_lambda_function, account_id, snapshot, aws_client, region_name
     ):
         """Testing the add_permission call on lambda, by adding a new resource-based policy to a lambda function"""
 
@@ -3484,7 +3486,7 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=sid,
             Principal=principal,
-            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
         )
         snapshot.match("add_permission", resp)
 
@@ -3494,7 +3496,7 @@ class TestLambdaPermissions:
 
     @markers.aws.validated
     def test_lambda_permission_fn_versioning(
-        self, create_lambda_function, account_id, snapshot, aws_client
+        self, create_lambda_function, account_id, snapshot, aws_client, region_name
     ):
         """Testing how lambda permissions behave when publishing different function versions and using qualifiers"""
         function_name = f"lambda_func-{short_uid()}"
@@ -3513,7 +3515,7 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=sid,
             Principal=principal,
-            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
         )
         snapshot.match("add_permission", resp)
 
@@ -3546,7 +3548,7 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=sid,
             Principal=principal,
-            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
             Qualifier=fn_version,
         )
         get_policy_result_version = aws_client.lambda_.get_policy(
@@ -3575,7 +3577,7 @@ class TestLambdaPermissions:
                 Action=action,
                 StatementId=sid,
                 Principal=principal,
-                SourceArn=arns.s3_bucket_arn("test-bucket"),
+                SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
                 Qualifier=alias_name,
                 RevisionId="wrong",
             )
@@ -3587,7 +3589,7 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=sid,
             Principal=principal,
-            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
             Qualifier=alias_name,
             RevisionId=create_alias_response["RevisionId"],
         )
@@ -3605,7 +3607,7 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=f"{sid}_2",
             Principal=principal,
-            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
             RevisionId=get_policy_result["RevisionId"],
         )
 
@@ -3614,7 +3616,7 @@ class TestLambdaPermissions:
 
     @markers.aws.validated
     def test_add_lambda_permission_fields(
-        self, create_lambda_function, account_id, snapshot, aws_client
+        self, create_lambda_function, account_id, snapshot, aws_client, region_name
     ):
         # prevent resource transformer from matching the LS default username "root", which collides with other resources
         snapshot.add_transformer(
@@ -3676,7 +3678,7 @@ class TestLambdaPermissions:
             Action="lambda:InvokeFunctionUrl",
             Principal="*",
             # optional fields:
-            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
             SourceAccount=account_id,
             PrincipalOrgID="o-1234567890",
             # "FunctionUrlAuthType is only supported for lambda:InvokeFunctionUrl action"
@@ -3697,7 +3699,9 @@ class TestLambdaPermissions:
         snapshot.match("add_permission_alexa_skill", response)
 
     @markers.aws.validated
-    def test_remove_multi_permissions(self, create_lambda_function, snapshot, aws_client):
+    def test_remove_multi_permissions(
+        self, create_lambda_function, snapshot, aws_client, region_name
+    ):
         """Tests creation and subsequent removal of multiple permissions, including the changes in the policy"""
 
         function_name = f"lambda_func-{short_uid()}"
@@ -3725,7 +3729,7 @@ class TestLambdaPermissions:
             Action=action,
             StatementId=sid_2,
             Principal=principal_2,
-            SourceArn=arns.s3_bucket_arn("test-bucket"),
+            SourceArn=arns.s3_bucket_arn("test-bucket", region=region_name),
         )
         snapshot.match("add_permission_2", permission_2_add)
         policy_response = aws_client.lambda_.get_policy(
@@ -4835,7 +4839,9 @@ class TestLambdaTags:
 
         # invalid ARN
         with pytest.raises(aws_client.lambda_.exceptions.ClientError) as e:
-            aws_client.lambda_.tag_resource(Resource="arn:aws:something", Tags={"key_a": "value_a"})
+            aws_client.lambda_.tag_resource(
+                Resource=f"arn:{get_partition(region_name)}:something", Tags={"key_a": "value_a"}
+            )
         snapshot.match("tag_lambda_invalidarn", e.value.response)
 
         # ARN valid but lambda function doesn't exist

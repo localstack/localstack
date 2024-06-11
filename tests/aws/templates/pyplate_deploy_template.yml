@@ -33,7 +33,11 @@ Resources:
                   - logs:*
                 Resource: arn:aws:logs:*:*:*
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AdministratorAccess
 
   TransformFunction:
     Type: AWS::Lambda::Function

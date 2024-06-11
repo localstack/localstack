@@ -31,12 +31,17 @@ from localstack.testing.config import (
     TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.aws.request_context import get_account_id_from_request
 from localstack.utils.sync import poll_condition
 
 
 def is_aws_cloud() -> bool:
     return os.environ.get("TEST_TARGET", "") == "AWS_CLOUD"
+
+
+def in_default_partition() -> bool:
+    return is_aws_cloud() or get_partition(TEST_AWS_REGION_NAME) == "aws"
 
 
 def get_lambda_logs(func_name, logs_client):

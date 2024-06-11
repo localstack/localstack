@@ -34,7 +34,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
-from localstack.utils.aws.arns import parse_arn, sqs_queue_arn
+from localstack.utils.aws.arns import get_partition, parse_arn, sqs_queue_arn
 from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.strings import short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition, retry
@@ -432,12 +432,12 @@ class TestSNSPublishCrud:
         snapshot.match("error-batch", e.value.response)
 
     @markers.aws.validated
-    def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client):
+    def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client, region_name):
         topic_arn = sns_create_topic()["TopicArn"]
         account_id = parse_arn(topic_arn)["account"]
         with pytest.raises(ClientError) as ex:
             aws_client.sns.publish(
-                TargetArn=f"arn:aws:sns:us-east-1:{account_id}:endpoint/APNS/abcdef/0f7d5971-aa8b-4bd5-b585-0826e9f93a66",
+                TargetArn=f"arn:{get_partition(region_name)}:sns:us-east-1:{account_id}:endpoint/APNS/abcdef/0f7d5971-aa8b-4bd5-b585-0826e9f93a66",
                 Message="This is a push notification",
             )
         snapshot.match("non-existent-endpoint", ex.value.response)
@@ -3587,6 +3587,7 @@ class TestSNSSubscriptionFirehose:
         sns_create_topic,
         sns_subscription,
         aws_client,
+        region_name,
     ):
         role_name = f"test-role-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
@@ -3618,11 +3619,12 @@ class TestSNSSubscriptionFirehose:
 
         aws_client.iam.attach_role_policy(
             RoleName=role_name,
-            PolicyArn="arn:aws:iam::aws:policy/AmazonKinesisFirehoseFullAccess",
+            PolicyArn=f"arn:{get_partition(region_name)}:iam::aws:policy/AmazonKinesisFirehoseFullAccess",
         )
 
         aws_client.iam.attach_role_policy(
-            RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AmazonS3FullAccess"
+            RoleName=role_name,
+            PolicyArn=f"arn:{get_partition(region_name)}:iam::aws:policy/AmazonS3FullAccess",
         )
         subscription_role_arn = role["Role"]["Arn"]
 
@@ -3636,7 +3638,7 @@ class TestSNSSubscriptionFirehose:
             DeliveryStreamType="DirectPut",
             S3DestinationConfiguration={
                 "RoleARN": subscription_role_arn,
-                "BucketARN": f"arn:aws:s3:::{bucket_name}",
+                "BucketARN": f"arn:{get_partition(region_name)}:s3:::{bucket_name}",
                 "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 60},
             },
         )

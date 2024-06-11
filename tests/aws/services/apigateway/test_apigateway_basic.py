@@ -26,6 +26,7 @@ from localstack.services.apigateway.helpers import (
     host_based_url,
     path_based_url,
 )
+from localstack.testing.aws.util import in_default_partition
 from localstack.testing.config import (
     TEST_AWS_ACCESS_KEY_ID,
     TEST_AWS_ACCOUNT_ID,
@@ -1672,6 +1673,9 @@ def test_apigw_call_api_with_aws_endpoint_url(aws_client, region_name):
     assert isinstance(content.get("item"), list)
 
 
+@pytest.mark.skipif(
+    not in_default_partition(), reason="Test not applicable in non-default partitions"
+)
 @pytest.mark.parametrize("method", ["GET", "ANY"])
 @pytest.mark.parametrize("url_type", [path_based_url, UrlType.HOST_BASED])
 @markers.aws.validated

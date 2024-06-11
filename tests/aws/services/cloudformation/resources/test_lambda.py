@@ -8,7 +8,9 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime, State
+from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import short_uid
 from localstack.utils.files import load_file
 from localstack.utils.http import safe_requests
@@ -197,6 +199,9 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("Alias", alias)
 
 
+@pytest.mark.skipif(
+    not in_default_partition(), reason="Test not applicable in non-default partitions"
+)
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..DestinationConfig"])
 def test_lambda_code_signing_config(deploy_cfn_template, snapshot, account_id, aws_client):
@@ -204,9 +209,7 @@ def test_lambda_code_signing_config(deploy_cfn_template, snapshot, account_id, a
     snapshot.add_transformer(snapshot.transform.lambda_api())
     snapshot.add_transformer(SortingTransformer("StackResources", lambda x: x["LogicalResourceId"]))
 
-    signer_arn = (
-        f"arn:aws:signer:{aws_client.lambda_.meta.region_name}:{account_id}:/signing-profiles/test"
-    )
+    signer_arn = f"arn:{get_partition(aws_client.lambda_.meta.region_name)}:signer:{aws_client.lambda_.meta.region_name}:{account_id}:/signing-profiles/test"
 
     stack = deploy_cfn_template(
         template_path=os.path.join(

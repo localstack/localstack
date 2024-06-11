@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.http import safe_requests as requests
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
@@ -49,10 +50,12 @@ class TestS3NotificationsToLambda:
 
         role = create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
         aws_client.iam.attach_role_policy(
-            RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AWSLambdaExecute"
+            RoleName=role_name,
+            PolicyArn=f"arn:{get_partition(aws_client.iam.meta.region_name)}:iam::aws:policy/AWSLambdaExecute",
         )
         aws_client.iam.attach_role_policy(
-            RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+            RoleName=role_name,
+            PolicyArn=f"arn:{get_partition(aws_client.iam.meta.region_name)}:iam::aws:policy/AmazonDynamoDBFullAccess",
         )
         lambda_role = role["Role"]["Arn"]
 
@@ -114,8 +117,8 @@ class TestS3NotificationsToLambda:
         snapshot.add_transformer(snapshot.transform.s3_dynamodb_notifications())
 
         bucket_name = s3_create_bucket()
-        function_name = "func-%s" % short_uid()
-        table_name = "table-%s" % short_uid()
+        function_name = f"func-{short_uid()}"
+        table_name = f"table-{short_uid()}"
         role_name = f"test-role-{short_uid()}"
         trust_policy = {
             "Version": "2012-10-17",
@@ -129,10 +132,12 @@ class TestS3NotificationsToLambda:
         }
         role = create_role(RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
         aws_client.iam.attach_role_policy(
-            RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AWSLambdaExecute"
+            RoleName=role_name,
+            PolicyArn=f"arn:{get_partition(aws_client.iam.meta.region_name)}:iam::aws:policy/AWSLambdaExecute",
         )
         aws_client.iam.attach_role_policy(
-            RoleName=role_name, PolicyArn="arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+            RoleName=role_name,
+            PolicyArn=f"arn:{get_partition(aws_client.iam.meta.region_name)}:iam::aws:policy/AmazonDynamoDBFullAccess",
         )
         lambda_role = role["Role"]["Arn"]
 
