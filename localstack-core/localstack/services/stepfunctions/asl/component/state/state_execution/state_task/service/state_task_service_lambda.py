@@ -79,16 +79,27 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
             ),
         )
 
+    def _normalise_parameters(
+        self,
+        parameters: dict,
+        boto_service_name: Optional[str] = None,
+        service_action_name: Optional[str] = None,
+    ) -> None:
+        # Run Payload value casting before normalisation.
+        if "Payload" in parameters:
+            parameters["Payload"] = lambda_eval_utils.to_payload_type(parameters["Payload"])
+        super()._normalise_parameters(
+            parameters=parameters,
+            boto_service_name=boto_service_name,
+            service_action_name=service_action_name,
+        )
+
     def _eval_service_task(
         self,
         env: Environment,
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
     ):
-        if "Payload" in normalised_parameters:
-            normalised_parameters["Payload"] = lambda_eval_utils.to_payload_type(
-                normalised_parameters["Payload"]
-            )
         lambda_eval_utils.exec_lambda_function(
             env=env,
             parameters=normalised_parameters,

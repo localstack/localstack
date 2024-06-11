@@ -97,8 +97,9 @@ class StateTaskService(StateTask, abc.ABC):
             self._to_boto_request(request_value, value_shape)
         elif isinstance(value_shape, StringShape) and not isinstance(request_value, str):
             boto_request_value = to_json_str(request_value)
-        elif value_shape.type_name == "blob":
-            boto_request_value = to_json_str(request_value, separators=(":", ","))
+        elif value_shape.type_name == "blob" and not isinstance(boto_request_value, bytes):
+            if not isinstance(boto_request_value, str):
+                boto_request_value = to_json_str(request_value, separators=(":", ","))
             boto_request_value = to_bytes(boto_request_value)
         return boto_request_value
 
