@@ -214,6 +214,10 @@ class TestInputPath:
 
 class TestInputTransformer:
     @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     @pytest.mark.parametrize(
         "input_template",
         [
