@@ -68,8 +68,6 @@ class EventManager:
         self._event_id_gen = EventIdGenerator()
         self._history_event_list = list()
         self._cloud_watch_logging_session = cloud_watch_logging_session
-        if self._cloud_watch_logging_session is not None:
-            self._cloud_watch_logging_session.setup()
 
     def add_event(
         self,

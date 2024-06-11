@@ -178,7 +178,6 @@ class CloudWatchLoggingSession:
         self.execution_arn = execution_arn
         self.configuration = configuration
         self._logs_client = connect_to().logs
-        self._is_log_stream_available = True
 
     def log_level_filter(self, history_event_type: HistoryEventType) -> bool:
         # Checks whether the history event type should be logged in this session.
@@ -187,36 +186,51 @@ class CloudWatchLoggingSession:
         )
 
     def publish_history_log(self, history_log: HistoryLog) -> None:
-        if self._is_log_stream_available:
+        timestamp_value = int(history_log["event_timestamp"].timestamp() * 1000)
+        message = to_json_str(history_log)
+        log_events = [InputLogEvent(timestamp=timestamp_value, message=message)]
+        LOG.debug(
+            f"New CloudWatch Log for execution '{self.execution_arn}' with message: '{message}'"
+        )
+        self._publish_history_log_or_setup(log_events=log_events)
+
+    def _publish_history_log_or_setup(self, log_events: list[InputLogEvent]):
+        # Attempts to put the events into the given log group and stream, and attempts to create the stream if
+        # this does not already exist.
+        is_events_put = self._put_events(log_events=log_events)
+        if is_events_put:
+            return
+
+        is_setup = self._setup()
+        if not is_setup:
             LOG.debug(
                 "CloudWatch Log was not published due to setup errors encountered "
                 f"while creating the LogStream for execution '{self.execution_arn}'."
             )
             return
 
-        timestamp_value = int(history_log["event_timestamp"].timestamp() * 1000)
-        message = to_json_str(history_log)
-        LOG.debug(
-            f"New CloudWatch Log for execution '{self.execution_arn}' with message: '{message}'"
-        )
+        self._put_events(log_events=log_events)
 
+    def _put_events(self, log_events: list[InputLogEvent]) -> bool:
+        # Puts the events to the targe log group and stream, and returns false if the LogGroup or LogStream could
+        # not be found, true otherwise.
         try:
             self._logs_client.put_log_events(
                 logGroupName=self.configuration.log_group_name,
                 logStreamName=self.configuration.log_stream_name,
-                logEvents=[
-                    InputLogEvent(
-                        timestamp=timestamp_value,
-                        message=message,
-                    )
-                ],
+                logEvents=log_events,
             )
+        except ClientError as error:
+            error_code = error.response["Error"]["Code"]
+            if error_code == "ResourceNotFoundException":
+                return False
         except Exception as ignored:
             LOG.warning(
                 f"State Machine execution log event could not be published due to an error: '{ignored}'"
             )
+        return True
 
-    def setup(self):
+    def _setup(self) -> bool:
         # Create the log stream if one does not exist already.
         # TODO: enhance the verification logic to match AWS's logic to ensure IAM features work as expected.
         #  https://docs.aws.amazon.com/step-functions/latest/dg/cw-logs.html#cloudwatch-iam-policy
@@ -225,12 +239,11 @@ class CloudWatchLoggingSession:
                 logGroupName=self.configuration.log_group_name,
                 logStreamName=self.configuration.log_stream_name,
             )
-            self._is_log_stream_available = False
         except ClientError as error:
             error_code = error.response["Error"]["Code"]
-            if error_code == "ResourceAlreadyExistsException":
-                self._is_log_stream_available = False
-            else:
+            if error_code != "ResourceAlreadyExistsException":
                 LOG.error(
                     f"Could not create execution log stream for execution '{self.execution_arn}' due to {error}"
                 )
+                return False
+        return True
