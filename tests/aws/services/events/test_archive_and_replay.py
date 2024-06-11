@@ -474,7 +474,7 @@ class TestReplay:
             entries,
         )["ArchiveArn"]
         sqs_collect_messages(
-            aws_client, queue_url, num_events, wait_time=5, retries=12
+            aws_client, queue_url, expected_events_count=num_events, wait_time=5, retries=12
         )  # reset queue for replay
 
         # start replay

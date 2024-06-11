@@ -195,8 +195,12 @@ class TestInputPath:
             ]
         )
 
-        messages_queue_1 = sqs_collect_messages(aws_client, queue_url_1, min_events=1, retries=3)
-        messages_queue_2 = sqs_collect_messages(aws_client, queue_url_2, min_events=1, retries=3)
+        messages_queue_1 = sqs_collect_messages(
+            aws_client, queue_url_1, expected_events_count=1, retries=3
+        )
+        messages_queue_2 = sqs_collect_messages(
+            aws_client, queue_url_2, expected_events_count=1, retries=3
+        )
 
         snapshot.add_transformers_list(
             [
@@ -440,7 +444,7 @@ class TestInputTransformer:
             ]
         )
 
-        messages = sqs_collect_messages(aws_client, queue_url, min_events=1, retries=3)
+        messages = sqs_collect_messages(aws_client, queue_url, expected_events_count=1, retries=3)
 
         snapshot.add_transformer(
             [
