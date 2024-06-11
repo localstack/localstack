@@ -1,0 +1,16 @@
+{
+  "Comment": "AWS_SDK_S3_PUT_OBJECT",
+  "StartAt": "S3PutObject",
+  "States": {
+    "S3PutObject": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:s3:putObject",
+      "Parameters": {
+        "Bucket.$": "$.Bucket",
+        "Key.$": "$.Key",
+        "Body.$": "$.Body"
+      },
+      "End": true
+    }
+  }
+}
