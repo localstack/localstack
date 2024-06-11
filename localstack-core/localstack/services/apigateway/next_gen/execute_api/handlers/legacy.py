@@ -34,7 +34,7 @@ def invoke_rest_api(request: Request, api_id: str, stage: str) -> Response:
     raise NotFound()
 
 
-class GlobalTemporaryHandler(RestApiGatewayHandler):
+class LegacyHandler(RestApiGatewayHandler):
     def __call__(
         self,
         chain: RestApiGatewayHandlerChain,

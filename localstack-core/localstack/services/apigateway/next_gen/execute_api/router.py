@@ -16,7 +16,13 @@ LOG = logging.getLogger(__name__)
 
 
 # TODO: subclass from -ext, and this handler will do the dispatching between v1 and v2 Gateways
-class ApiGatewayHandler:
+class ApiGatewayEndpoint:
+    """
+    This class is the endpoint for API Gateway invocations of the `execute-api` route. It will take the incoming
+    invocation request, create a context from the API matching the route parameters, and dispatch the request to the
+    Gateway to be processed by the handler chain.
+    """
+
     def __init__(self, rest_gateway: RestApiGateway = None, store: ApiGatewayStore = None):
         self.rest_gateway = rest_gateway or RestApiGateway()
         # we only access CrossAccount attributes in the handler, so we use a global store in default account and region
@@ -28,7 +34,7 @@ class ApiGatewayHandler:
         # api_id can be cased because of custom-tag id
         api_id, stage = kwargs.get("api_id", "").lower(), kwargs.get("stage")
         if self.is_rest_api(api_id, stage):
-            LOG.info("Next-gen handler for APIGW v1 called")
+            LOG.debug("APIGW v1 Endpoint called")
             response = Response()
             context = RestApiInvocationContext(request)
             self.populate_rest_api_invocation_context(context, api_id, stage)
@@ -53,7 +59,6 @@ class ApiGatewayHandler:
 
         except KeyError:
             # TODO: find proper error when trying to hit an API with no deployment/stage linked
-            print("error getting the frozen deployment")
             return
 
         context.deployment = frozen_deployment
@@ -63,11 +68,11 @@ class ApiGatewayHandler:
 
 class ApiGatewayRouter:
     router: Router[Handler]
-    handler: ApiGatewayHandler
+    handler: ApiGatewayEndpoint
 
-    def __init__(self, router: Router[Handler] = None, handler: ApiGatewayHandler = None):
+    def __init__(self, router: Router[Handler] = None, handler: ApiGatewayEndpoint = None):
         self.router = router or ROUTER
-        self.handler = handler or ApiGatewayHandler()
+        self.handler = handler or ApiGatewayEndpoint()
         self.registered_rules: list[Rule] = []
 
     def register_routes(self) -> None:

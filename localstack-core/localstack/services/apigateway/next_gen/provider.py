@@ -23,18 +23,18 @@ from localstack.services.moto import call_moto
 
 from ..models import apigateway_stores
 from .execute_api.helpers import freeze_rest_api
-from .execute_api.router import ApiGatewayHandler, ApiGatewayRouter
+from .execute_api.router import ApiGatewayEndpoint, ApiGatewayRouter
 
 
 class ApigatewayNextGenProvider(ApigatewayProvider):
     router: ApiGatewayRouter
-    route_handler: ApiGatewayHandler
+    route_handler: ApiGatewayEndpoint
 
     def __init__(self, router: ApiGatewayRouter = None):
         # we initialize the route handler with a global store with default account and region, because it only ever
         # access values with CrossAccount attributes
         store = apigateway_stores[DEFAULT_AWS_ACCOUNT_ID][AWS_REGION_US_EAST_1]
-        route_handler = ApiGatewayHandler(store=store)
+        route_handler = ApiGatewayEndpoint(store=store)
         super().__init__(router=router or ApiGatewayRouter(ROUTER, handler=route_handler))
         self.route_handler = route_handler
 

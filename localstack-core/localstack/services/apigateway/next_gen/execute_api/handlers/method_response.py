@@ -10,8 +10,8 @@ LOG = logging.getLogger(__name__)
 
 class MethodResponseHandler(RestApiGatewayHandler):
     """
-    This class might not too much, we still need to investigate but from a first look, does not have much impact
-    on the HTTP response
+    Currently, it seems the `MethodResponse` APIGW resource might not add logic/data to the returning
+    IntegrationResponse. We will need to investigate if this handler is needed.
     """
 
     def __call__(
