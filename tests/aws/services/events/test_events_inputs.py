@@ -412,7 +412,7 @@ class TestInputTransformer:
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
 
-        rule_name = f"test-rule-/slash-{short_uid()}"
+        rule_name = f"test-rule-{short_uid()}"
         events_put_rule(
             Name=rule_name,
             EventBusName=bus_name,
