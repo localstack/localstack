@@ -154,7 +154,7 @@ def events_allow_event_rule_to_sqs_queue(aws_client):
 
 
 @pytest.fixture
-def clean_up(aws_client):
+def clean_up(aws_client):  # TODO remove and use individual fixtures for creating resources instead
     def _clean_up(
         bus_name=None,
         rule_name=None,
