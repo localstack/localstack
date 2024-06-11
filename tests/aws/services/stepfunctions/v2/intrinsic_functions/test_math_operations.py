@@ -13,7 +13,7 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 # TODO: test for validation errors, and boundary testing.
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestMathOperations:
     @markers.aws.validated
     def test_math_random(

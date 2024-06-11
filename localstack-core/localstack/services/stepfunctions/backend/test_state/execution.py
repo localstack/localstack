@@ -72,6 +72,7 @@ class TestStateExecution(Execution):
             start_date=start_date,
             activity_store=activity_store,
             input_data=input_data,
+            cloud_watch_logging_session=None,
             trace_header=None,
         )
         self._execution_terminated_event = threading.Event()
@@ -87,6 +88,7 @@ class TestStateExecution(Execution):
             exec_comm=self._get_start_execution_worker_comm(),
             context_object_init=self._get_start_context_object_init_data(),
             aws_execution_details=self._get_start_aws_execution_details(),
+            cloud_watch_logging_session=None,
             activity_store=self._activity_store,
         )
 

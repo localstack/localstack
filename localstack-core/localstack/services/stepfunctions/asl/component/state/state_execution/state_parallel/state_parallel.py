@@ -38,14 +38,14 @@ class StateParallel(ExecutionState):
         )
 
     def _eval_execution(self, env: Environment) -> None:
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.ParallelStateStarted,
+            event_type=HistoryEventType.ParallelStateStarted,
         )
         self.branches.eval(env)
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.ParallelStateSucceeded,
+            event_type=HistoryEventType.ParallelStateSucceeded,
             update_source_event_id=False,
         )
 
@@ -72,9 +72,9 @@ class StateParallel(ExecutionState):
                     if retry_outcome == RetryOutcome.CanRetry:
                         continue
 
-                env.event_history.add_event(
+                env.event_manager.add_event(
                     context=env.event_history_context,
-                    hist_type_event=HistoryEventType.ParallelStateFailed,
+                    event_type=HistoryEventType.ParallelStateFailed,
                 )
 
                 if self.catch is not None:

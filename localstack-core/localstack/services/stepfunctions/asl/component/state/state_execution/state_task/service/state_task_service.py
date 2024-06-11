@@ -240,16 +240,16 @@ class StateTaskService(StateTask, abc.ABC):
             self.heartbeat.eval(env=env)
             heartbeat_seconds = env.stack.pop()
             scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.TaskScheduled,
-            event_detail=EventDetails(taskScheduledEventDetails=scheduled_event_details),
+            event_type=HistoryEventType.TaskScheduled,
+            event_details=EventDetails(taskScheduledEventDetails=scheduled_event_details),
         )
 
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.TaskStarted,
-            event_detail=EventDetails(
+            event_type=HistoryEventType.TaskStarted,
+            event_details=EventDetails(
                 taskStartedEventDetails=TaskStartedEventDetails(
                     resource=self._get_sfn_resource(), resourceType=self._get_sfn_resource_type()
                 )
@@ -264,10 +264,10 @@ class StateTaskService(StateTask, abc.ABC):
     ) -> None:
         output = env.stack[-1]
         self._verify_size_quota(env=env, value=output)
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.TaskSucceeded,
-            event_detail=EventDetails(
+            event_type=HistoryEventType.TaskSucceeded,
+            event_details=EventDetails(
                 taskSucceededEventDetails=TaskSucceededEventDetails(
                     resource=self._get_sfn_resource(),
                     resourceType=self._get_sfn_resource_type(),

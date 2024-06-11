@@ -23,7 +23,6 @@ class RunConfig(TypedDict):
 @markers.snapshot.skip_snapshot_verify(
     condition=is_not_legacy_provider,
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",

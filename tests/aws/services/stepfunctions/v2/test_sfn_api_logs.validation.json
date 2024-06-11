@@ -1,0 +1,50 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_deleted_log_group": {
+    "last_validated_date": "2024-06-01T10:21:03+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_incomplete_logging_configuration[logging_configuration0]": {
+    "last_validated_date": "2024-06-01T10:19:47+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_incomplete_logging_configuration[logging_configuration1]": {
+    "last_validated_date": "2024-06-01T10:20:01+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_invalid_logging_configuration[logging_configuration0]": {
+    "last_validated_date": "2024-06-01T10:20:15+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_invalid_logging_configuration[logging_configuration1]": {
+    "last_validated_date": "2024-06-01T10:20:28+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_invalid_logging_configuration[logging_configuration2]": {
+    "last_validated_date": "2024-06-01T10:20:37+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[ALL-False]": {
+    "last_validated_date": "2024-06-01T10:17:53+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[ALL-True]": {
+    "last_validated_date": "2024-06-01T10:18:07+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[ERROR-False]": {
+    "last_validated_date": "2024-06-01T10:18:49+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[ERROR-True]": {
+    "last_validated_date": "2024-06-01T10:19:05+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[FATAL-False]": {
+    "last_validated_date": "2024-06-01T10:18:21+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[FATAL-True]": {
+    "last_validated_date": "2024-06-01T10:18:35+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[OFF-False]": {
+    "last_validated_date": "2024-06-01T10:19:20+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_logging_configuration[OFF-True]": {
+    "last_validated_date": "2024-06-01T10:19:33+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_multiple_destinations": {
+    "last_validated_date": "2024-06-01T10:21:18+00:00"
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_logs.py::TestSnfApiLogs::test_update_logging_configuration": {
+    "last_validated_date": "2024-06-03T08:40:56+00:00"
+  }
+}

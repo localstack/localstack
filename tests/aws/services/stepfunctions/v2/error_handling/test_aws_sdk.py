@@ -14,7 +14,7 @@ from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_tem
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestAwsSdk:
     @markers.aws.validated
     def test_invalid_secret_name(

@@ -25,7 +25,7 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestBaseScenarios:
     @markers.snapshot.skip_snapshot_verify(paths=["$..cause"])
     @markers.aws.validated

@@ -45,7 +45,6 @@ IDS_BASE_TEMPLATE_INPUT_BINDINGS: list[str] = [
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",

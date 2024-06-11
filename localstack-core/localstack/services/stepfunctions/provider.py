@@ -34,6 +34,7 @@ from localstack.aws.api.stepfunctions import (
     InvalidArn,
     InvalidDefinition,
     InvalidExecutionInput,
+    InvalidLoggingConfiguration,
     InvalidName,
     InvalidToken,
     ListActivitiesOutput,
@@ -44,6 +45,7 @@ from localstack.aws.api.stepfunctions import (
     ListStateMachineVersionsOutput,
     ListTagsForResourceOutput,
     LoggingConfiguration,
+    LogLevel,
     LongArn,
     MaxConcurrency,
     MissingRequiredParameter,
@@ -96,6 +98,10 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
     CallbackNotifyConsumerError,
     CallbackOutcomeFailure,
     CallbackOutcomeSuccess,
+)
+from localstack.services.stepfunctions.asl.eval.event.logging import (
+    CloudWatchLoggingConfiguration,
+    CloudWatchLoggingSession,
 )
 from localstack.services.stepfunctions.asl.parse.asl_parser import (
     ASLParserException,
@@ -210,7 +216,13 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return maybe_activity
 
     def _idempotent_revision(
-        self, context: RequestContext, request: CreateStateMachineInput
+        self,
+        context: RequestContext,
+        name: str,
+        definition: Definition,
+        state_machine_type: StateMachineType,
+        logging_configuration: LoggingConfiguration,
+        tracing_configuration: TracingConfiguration,
     ) -> Optional[StateMachineRevision]:
         # CreateStateMachine's idempotency check is based on the state machine name, definition, type,
         # LoggingConfiguration and TracingConfiguration.
@@ -224,11 +236,11 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         for state_machine in revisions:
             check = all(
                 [
-                    state_machine.name == request["name"],
-                    state_machine.definition == request["definition"],
-                    state_machine.sm_type == request.get("type") or StateMachineType.STANDARD,
-                    state_machine.logging_config == request.get("loggingConfiguration"),
-                    state_machine.tracing_config == request.get("tracingConfiguration"),
+                    state_machine.name == name,
+                    state_machine.definition == definition,
+                    state_machine.sm_type == state_machine_type,
+                    state_machine.logging_config == logging_configuration,
+                    state_machine.tracing_config == tracing_configuration,
                 ]
             )
             if check:
@@ -264,66 +276,117 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             )
             raise invalid_definition
 
+    @staticmethod
+    def _sanitise_logging_configuration(logging_configuration: LoggingConfiguration) -> None:
+        level = logging_configuration.get("level")
+        destinations = logging_configuration.get("destinations")
+
+        if destinations is not None and len(destinations) > 1:
+            raise InvalidLoggingConfiguration(
+                "Invalid Logging Configuration: Must specify exactly one Log Destination."
+            )
+
+        # A LogLevel that is not OFF, should have a destination.
+        if level is not None and level != LogLevel.OFF and not destinations:
+            raise InvalidLoggingConfiguration(
+                "Invalid Logging Configuration: Must specify exactly one Log Destination."
+            )
+
+        # Default for level is OFF.
+        level = level or LogLevel.OFF
+
+        # Default for includeExecutionData is False.
+        include_flag = logging_configuration.get("includeExecutionData", False)
+
+        # Update configuration object.
+        logging_configuration["level"] = level
+        logging_configuration["includeExecutionData"] = include_flag
+
     def create_state_machine(
         self, context: RequestContext, request: CreateStateMachineInput, **kwargs
     ) -> CreateStateMachineOutput:
         if not request.get("publish", False) and request.get("versionDescription"):
             raise ValidationException("Version description can only be set when publish is true")
 
+        # Extract parameters and set defaults.
+        state_machine_name = request["name"]
+        state_machine_role_arn = request["roleArn"]
+        state_machine_definition = request["definition"]
+        state_machine_type = request.get("type") or StateMachineType.STANDARD
+        state_machine_tracing_configuration = request.get("tracingConfiguration")
+        state_machine_tags = request.get("tags")
+        state_machine_logging_configuration = request.get(
+            "loggingConfiguration", LoggingConfiguration()
+        )
+        self._sanitise_logging_configuration(
+            logging_configuration=state_machine_logging_configuration
+        )
+
         # CreateStateMachine is an idempotent API. Subsequent requests won’t create a duplicate resource if it was
         # already created.
         idem_state_machine: Optional[StateMachineRevision] = self._idempotent_revision(
-            context=context, request=request
+            context=context,
+            name=state_machine_name,
+            definition=state_machine_definition,
+            state_machine_type=state_machine_type,
+            logging_configuration=state_machine_logging_configuration,
+            tracing_configuration=state_machine_tracing_configuration,
         )
         if idem_state_machine is not None:
             return CreateStateMachineOutput(
                 stateMachineArn=idem_state_machine.arn, creationDate=idem_state_machine.create_date
             )
 
+        # Assert this state machine name is unique.
         state_machine_with_name: Optional[StateMachineRevision] = self._revision_by_name(
-            context=context, name=request["name"]
+            context=context, name=state_machine_name
         )
         if state_machine_with_name is not None:
             raise StateMachineAlreadyExists(
                 f"State Machine Already Exists: '{state_machine_with_name.arn}'"
             )
 
-        state_machine_definition: str = request["definition"]
+        # Compute the state machine's Arn.
+        state_machine_arn = stepfunctions_state_machine_arn(
+            name=state_machine_name, account_id=context.account_id, region_name=context.region
+        )
+        state_machines = self.get_store(context).state_machines
+
+        # Reduce the logging configuration to a usable cloud watch representation, and validate the destinations
+        # if any were given.
+        cloud_watch_logging_configuration = (
+            CloudWatchLoggingConfiguration.from_logging_configuration(
+                state_machine_arn=state_machine_arn,
+                logging_configuration=state_machine_logging_configuration,
+            )
+        )
+        if cloud_watch_logging_configuration is not None:
+            cloud_watch_logging_configuration.validate()
+
+        # Run static analysers on the definition given.
         StepFunctionsProvider._validate_definition(
             definition=state_machine_definition, static_analysers=[StaticAnalyser()]
         )
 
-        name: Optional[Name] = request["name"]
-        arn = stepfunctions_state_machine_arn(
-            name=name, account_id=context.account_id, region_name=context.region
-        )
-
-        state_machines = self.get_store(context).state_machines
-
-        if not name and arn in state_machines:
-            raise InvalidName()
-
+        # Create the state machine and add it to the store.
         state_machine = StateMachineRevision(
-            name=name,
-            arn=arn,
-            role_arn=request["roleArn"],
-            definition=request["definition"],
-            sm_type=request.get("type"),
-            logging_config=request.get("loggingConfiguration"),
-            tags=request.get("tags"),
-            tracing_config=request.get("tracingConfiguration"),
+            name=state_machine_name,
+            arn=state_machine_arn,
+            role_arn=state_machine_role_arn,
+            definition=state_machine_definition,
+            sm_type=state_machine_type,
+            logging_config=state_machine_logging_configuration,
+            cloud_watch_logging_configuration=cloud_watch_logging_configuration,
+            tracing_config=state_machine_tracing_configuration,
+            tags=state_machine_tags,
         )
-
-        tags = request.get("tags")
-        if tags:
-            state_machine.tag_manager.add_all(tags)
-
-        state_machines[arn] = state_machine
+        state_machines[state_machine_arn] = state_machine
 
         create_output = CreateStateMachineOutput(
             stateMachineArn=state_machine.arn, creationDate=state_machine.create_date
         )
 
+        # Create the first version if the 'publish' flag is used.
         if request.get("publish", False):
             version_description = request.get("versionDescription")
             state_machine_version = state_machine.create_version(description=version_description)
@@ -447,6 +510,14 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if exec_arn in self.get_store(context).executions:
             raise InvalidName()  # TODO
 
+        # Create the execution logging session, if logging is configured.
+        cloud_watch_logging_session = None
+        if state_machine.cloud_watch_logging_configuration is not None:
+            cloud_watch_logging_session = CloudWatchLoggingSession(
+                execution_arn=exec_arn,
+                configuration=state_machine.cloud_watch_logging_configuration,
+            )
+
         execution = Execution(
             name=exec_name,
             role_arn=state_machine_clone.role_arn,
@@ -455,6 +526,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             region_name=context.region,
             state_machine=state_machine_clone,
             start_date=datetime.datetime.now(tz=datetime.timezone.utc),
+            cloud_watch_logging_session=cloud_watch_logging_session,
             input_data=input_data,
             trace_header=trace_header,
             activity_store=self.get_store(context).activities,
@@ -659,13 +731,19 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
         if not any([definition, role_arn, logging_configuration]):
             raise MissingRequiredParameter(
-                "Either the definition, the role ARN, the LoggingConfiguration, or the TracingConfiguration must be specified"
+                "Either the definition, the role ARN, the LoggingConfiguration, "
+                "or the TracingConfiguration must be specified"
             )
 
         if definition is not None:
             self._validate_definition(definition=definition, static_analysers=[StaticAnalyser()])
 
-        revision_id = state_machine.create_revision(definition=definition, role_arn=role_arn)
+        if logging_configuration is not None:
+            self._sanitise_logging_configuration(logging_configuration=logging_configuration)
+
+        revision_id = state_machine.create_revision(
+            definition=definition, role_arn=role_arn, logging_configuration=logging_configuration
+        )
 
         version_arn = None
         if publish:

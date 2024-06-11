@@ -6,7 +6,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSnfApiActivities:
     @markers.aws.validated
     def test_create_describe_delete_activity(

@@ -49,7 +49,6 @@ def _handle_sqs_task_token_with_heartbeats_and_success(aws_client, queue_url) ->
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",

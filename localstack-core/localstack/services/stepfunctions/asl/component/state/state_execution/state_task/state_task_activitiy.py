@@ -143,10 +143,10 @@ class StateTaskActivity(StateTask):
             scheduled_event_details["timeoutInSeconds"] = timeout_seconds
         if heartbeat_seconds is not None:
             scheduled_event_details["heartbeatInSeconds"] = heartbeat_seconds
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.ActivityScheduled,
-            event_detail=EventDetails(activityScheduledEventDetails=scheduled_event_details),
+            event_type=HistoryEventType.ActivityScheduled,
+            event_details=EventDetails(activityScheduledEventDetails=scheduled_event_details),
         )
 
         # Await for the task to be sampled with timeout.
@@ -157,10 +157,10 @@ class StateTaskActivity(StateTask):
             started_event_details = ActivityStartedEventDetails()
             if task_start_outcome.worker_name is not None:
                 started_event_details["workerName"] = task_start_outcome.worker_name
-            env.event_history.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.ActivityStarted,
-                event_detail=EventDetails(activityStartedEventDetails=started_event_details),
+                event_type=HistoryEventType.ActivityStarted,
+                event_details=EventDetails(activityStartedEventDetails=started_event_details),
             )
         else:
             raise EvalTimeoutError()
@@ -193,10 +193,10 @@ class StateTaskActivity(StateTask):
         else:
             raise NotImplementedError(f"Unsupported CallbackOutcome type '{type(outcome)}'.")
 
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.ActivitySucceeded,
-            event_detail=EventDetails(
+            event_type=HistoryEventType.ActivitySucceeded,
+            event_details=EventDetails(
                 activitySucceededEventDetails=ActivitySucceededEventDetails(
                     output=outcome.output,
                     outputDetails=HistoryEventExecutionDataDetails(

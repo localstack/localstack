@@ -14,7 +14,6 @@ from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates impor
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
         "$..SdkHttpMetadata",
         "$..SdkResponseMetadata",

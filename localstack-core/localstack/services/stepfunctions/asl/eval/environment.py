@@ -5,7 +5,11 @@ import logging
 import threading
 from typing import Any, Final, Optional
 
-from localstack.aws.api.stepfunctions import Arn, ExecutionFailedEventDetails, Timestamp
+from localstack.aws.api.stepfunctions import (
+    Arn,
+    ExecutionFailedEventDetails,
+    Timestamp,
+)
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.iteration.itemprocessor.map_run_record import (
     MapRunRecordPoolManager,
 )
@@ -17,9 +21,12 @@ from localstack.services.stepfunctions.asl.eval.contextobject.contex_object impo
     ContextObjectManager,
     Task,
 )
-from localstack.services.stepfunctions.asl.eval.event.event_history import (
-    EventHistory,
+from localstack.services.stepfunctions.asl.eval.event.event_manager import (
     EventHistoryContext,
+    EventManager,
+)
+from localstack.services.stepfunctions.asl.eval.event.logging import (
+    CloudWatchLoggingSession,
 )
 from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramEnded,
@@ -39,8 +46,9 @@ class Environment:
     _program_state: Optional[ProgramState]
     program_state_event: Final[threading.Event()]
 
-    event_history: EventHistory
+    event_manager: EventManager
     event_history_context: Final[EventHistoryContext]
+    cloud_watch_logging_session: Final[Optional[CloudWatchLoggingSession]]
     aws_execution_details: Final[AWSExecutionDetails]
     callback_pool_manager: CallbackPoolManager
     map_run_record_pool_manager: MapRunRecordPoolManager
@@ -59,6 +67,7 @@ class Environment:
         aws_execution_details: AWSExecutionDetails,
         context_object_init: ContextObjectInitData,
         event_history_context: EventHistoryContext,
+        cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
         activity_store: dict[Arn, Activity],
     ):
         super(Environment, self).__init__()
@@ -66,8 +75,10 @@ class Environment:
         self._program_state = None
         self.program_state_event = threading.Event()
 
-        self.event_history = EventHistory()
+        self.cloud_watch_logging_session = cloud_watch_logging_session
+        self.event_manager = EventManager(cloud_watch_logging_session=cloud_watch_logging_session)
         self.event_history_context = event_history_context
+
         self.aws_execution_details = aws_execution_details
         self.callback_pool_manager = CallbackPoolManager(activity_store=activity_store)
         self.map_run_record_pool_manager = MapRunRecordPoolManager()
@@ -102,10 +113,11 @@ class Environment:
             aws_execution_details=env.aws_execution_details,
             context_object_init=context_object_init,
             event_history_context=event_history_frame_cache,
+            cloud_watch_logging_session=env.cloud_watch_logging_session,
             activity_store=env.activity_store,
         )
         frame._is_frame = True
-        frame.event_history = env.event_history
+        frame.event_manager = env.event_manager
         if "State" in env.context_object_manager.context_object:
             frame.context_object_manager.context_object["State"] = copy.deepcopy(
                 env.context_object_manager.context_object["State"]

@@ -22,7 +22,7 @@ from tests.aws.services.stepfunctions.lambda_functions import lambda_functions
 from tests.aws.services.stepfunctions.templates.base.base_templates import BaseTemplate
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSnfApi:
     @markers.aws.validated
     def test_create_delete_valid_sm(

@@ -7,7 +7,7 @@ from tests.aws.services.stepfunctions.v2.intrinsic_functions.utils import create
 # TODO: test for validation errors, and boundary testing.
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestHashCalculations:
     @markers.aws.validated
     def test_hash(self, create_iam_role_for_sfn, create_state_machine, sfn_snapshot, aws_client):

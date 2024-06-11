@@ -143,10 +143,10 @@ class CommonStateField(EvalComponent, ABC):
     def _eval_state(self, env: Environment) -> None: ...
 
     def _eval_body(self, env: Environment) -> None:
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=self.state_entered_event_type,
-            event_detail=EventDetails(
+            event_type=self.state_entered_event_type,
+            event_details=EventDetails(
                 stateEnteredEventDetails=self._get_state_entered_event_details(env=env)
             ),
         )
@@ -174,10 +174,10 @@ class CommonStateField(EvalComponent, ABC):
             self.output_path.eval(env)
 
         if self.state_exited_event_type is not None:
-            env.event_history.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=self.state_exited_event_type,
-                event_detail=EventDetails(
+                event_type=self.state_exited_event_type,
+                event_details=EventDetails(
                     stateExitedEventDetails=self._get_state_exited_event_details(env=env),
                 ),
             )
