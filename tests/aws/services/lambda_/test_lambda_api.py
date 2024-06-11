@@ -106,6 +106,25 @@ class TestPartialARNMatching:
             )
             aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
 
+    @markers.aws.validated
+    def test_cross_region_arn_function_access(
+        self, create_lambda_function, aws_client, secondary_aws_client
+    ):
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            MemorySize=256,
+            Timeout=5,
+        )
+
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        full_arn = create_response["CreateFunctionResponse"]["FunctionArn"]
+        # if nothing breaks, all is good :)
+        secondary_aws_client.lambda_.get_function(FunctionName=full_arn)
+
 
 class TestLoggingConfig:
     @markers.aws.validated
