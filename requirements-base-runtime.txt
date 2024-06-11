@@ -6,7 +6,7 @@
 #
 attrs==23.2.0
     # via localstack-twisted
-awscrt==0.20.10
+awscrt==0.20.11
     # via localstack-core (pyproject.toml)
 blinker==1.8.2
     # via flask
@@ -21,7 +21,7 @@ build==1.2.1
     # via localstack-core (pyproject.toml)
 cachetools==5.3.3
     # via localstack-core (pyproject.toml)
-cbor2==5.6.3
+cbor2==5.6.4
     # via localstack-core (pyproject.toml)
 certifi==2024.6.2
     # via requests
@@ -35,7 +35,7 @@ click==8.1.7
     #   localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==42.0.7
+cryptography==42.0.8
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
@@ -82,7 +82,7 @@ jmespath==1.0.1
     #   botocore
 jsonpatch==1.33
     # via localstack-core (pyproject.toml)
-jsonpointer==2.4
+jsonpointer==3.0.0
     # via jsonpatch
 localstack-twisted==24.3.0
     # via localstack-core (pyproject.toml)
@@ -94,7 +94,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-packaging==24.0
+packaging==24.1
     # via build
 plux==1.10.0
     # via localstack-core (pyproject.toml)
@@ -144,7 +144,7 @@ six==1.16.0
     #   requests-aws4auth
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
-typing-extensions==4.12.1
+typing-extensions==4.12.2
     # via
     #   localstack-twisted
     #   readerwriterlock

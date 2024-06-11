@@ -29,11 +29,11 @@ aws-sam-translator==1.89.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
-aws-xray-sdk==2.13.1
+aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.33.4
     # via localstack-core (pyproject.toml)
-awscrt==0.20.10
+awscrt==0.20.11
     # via localstack-core
 blinker==1.8.2
     # via flask
@@ -60,7 +60,7 @@ cachetools==5.3.3
     #   airspeed-ext
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cbor2==5.6.3
+cbor2==5.6.4
     # via localstack-core
 certifi==2024.6.2
     # via
@@ -68,7 +68,7 @@ certifi==2024.6.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.87.4
+cfn-lint==0.87.5
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -83,7 +83,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.7
+cryptography==42.0.8
     # via
     #   joserfc
     #   localstack-core
@@ -170,9 +170,9 @@ jsonpath-ng==1.6.1
     #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
-jsonpickle==3.0.4
+jsonpickle==3.2.1
     # via jschema-to-python
-jsonpointer==2.4
+jsonpointer==3.0.0
     # via jsonpatch
 jsonschema==4.22.0
     # via
@@ -214,7 +214,7 @@ openapi-spec-validator==0.7.1
     # via moto-ext
 opensearch-py==2.6.0
     # via localstack-core (pyproject.toml)
-packaging==24.0
+packaging==24.1
     # via
     #   apispec
     #   build
@@ -253,7 +253,7 @@ pydantic-core==2.18.4
     # via pydantic
 pygments==2.18.0
     # via rich
-pymongo==4.7.2
+pymongo==4.7.3
     # via localstack-core (pyproject.toml)
 pyopenssl==24.1.0
     # via
@@ -304,7 +304,7 @@ requests==2.32.3
     #   rolo
 requests-aws4auth==1.2.3
     # via localstack-core
-responses==0.25.0
+responses==0.25.2
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
@@ -345,7 +345,7 @@ tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.12.1
+typing-extensions==4.12.2
     # via
     #   aws-sam-translator
     #   localstack-twisted
