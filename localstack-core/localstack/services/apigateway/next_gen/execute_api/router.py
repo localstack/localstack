@@ -39,7 +39,6 @@ class ApiGatewayHandler:
 
         else:
             # TODO: return right response
-            print("here?")
             return Response("Not authorized", status=403)
 
     def is_rest_api(self, api_id: str, stage: str):
