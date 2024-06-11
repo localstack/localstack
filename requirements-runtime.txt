@@ -68,7 +68,7 @@ certifi==2024.6.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.87.4
+cfn-lint==0.87.5
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -170,9 +170,9 @@ jsonpath-ng==1.6.1
     #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
-jsonpickle==3.0.4
+jsonpickle==3.2.1
     # via jschema-to-python
-jsonpointer==2.4
+jsonpointer==3.0.0
     # via jsonpatch
 jsonschema==4.22.0
     # via
@@ -214,7 +214,7 @@ openapi-spec-validator==0.7.1
     # via moto-ext
 opensearch-py==2.6.0
     # via localstack-core (pyproject.toml)
-packaging==24.0
+packaging==24.1
     # via
     #   apispec
     #   build
@@ -345,7 +345,7 @@ tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.12.1
+typing-extensions==4.12.2
     # via
     #   aws-sam-translator
     #   localstack-twisted

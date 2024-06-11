@@ -82,7 +82,7 @@ jmespath==1.0.1
     #   botocore
 jsonpatch==1.33
     # via localstack-core (pyproject.toml)
-jsonpointer==2.4
+jsonpointer==3.0.0
     # via jsonpatch
 localstack-twisted==24.3.0
     # via localstack-core (pyproject.toml)
@@ -94,7 +94,7 @@ markupsafe==2.1.5
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-packaging==24.0
+packaging==24.1
     # via build
 plux==1.10.0
     # via localstack-core (pyproject.toml)
@@ -144,7 +144,7 @@ six==1.16.0
     #   requests-aws4auth
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
-typing-extensions==4.12.1
+typing-extensions==4.12.2
     # via
     #   localstack-twisted
     #   readerwriterlock

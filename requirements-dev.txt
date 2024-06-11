@@ -35,7 +35,7 @@ aws-cdk-asset-kubectl-v20==2.1.2
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.0.3
     # via aws-cdk-lib
-aws-cdk-lib==2.144.0
+aws-cdk-lib==2.145.0
     # via localstack-core
 aws-sam-translator==1.89.0
     # via
@@ -87,7 +87,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==0.87.4
+cfn-lint==0.87.5
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -231,9 +231,9 @@ jsonpath-ng==1.6.1
     #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core
-jsonpickle==3.0.4
+jsonpickle==3.2.1
     # via jschema-to-python
-jsonpointer==2.4
+jsonpointer==3.0.0
     # via jsonpatch
 jsonschema==4.22.0
     # via
@@ -283,7 +283,7 @@ opensearch-py==2.6.0
     # via localstack-core
 ordered-set==4.1.0
     # via deepdiff
-packaging==24.0
+packaging==24.1
     # via
     #   apispec
     #   build
@@ -472,7 +472,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-typing-extensions==4.12.1
+typing-extensions==4.12.2
     # via
     #   aws-sam-translator
     #   jsii
