@@ -1,10 +1,12 @@
 import json
 import time
 
+import pytest
+
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
-from tests.aws.services.events.helper_functions import sqs_collect_messages
+from tests.aws.services.events.helper_functions import is_old_provider, sqs_collect_messages
 from tests.aws.services.events.test_events import EVENT_DETAIL, TEST_EVENT_PATTERN_NO_SOURCE
 
 SOURCE_PRIMARY = "source-primary"
@@ -13,6 +15,7 @@ SOURCE_SECONDARY = "source-secondary"
 
 class TestEventCrossRegion:
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="Not supported in v1 provider")
     def test_event_bus_to_event_bus_cross_region(
         self, region_name, secondary_region_name, aws_client_factory, cleanups, snapshot
     ):
