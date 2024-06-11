@@ -2877,7 +2877,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn = state.functions.get(function_name)
         if fn is None:
             raise ResourceNotFoundException(
-                f"Function not found: {api_utils.unqualified_lambda_arn(function_name, context.account_id, context.region)}",
+                f"Function not found: {api_utils.unqualified_lambda_arn(function_name, account_id, region)}",
                 Type="User",
             )
 
@@ -3717,10 +3717,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def get_function_concurrency(
         self, context: RequestContext, function_name: FunctionName, **kwargs
     ) -> GetFunctionConcurrencyResponse:
+        account_id, region = api_utils.get_account_and_region(function_name, context)
         function_name = api_utils.get_function_name(function_name, context)
-        fn = self._get_function(
-            function_name=function_name, region=context.region, account_id=context.account_id
-        )
+        fn = self._get_function(function_name=function_name, region=region, account_id=account_id)
         return GetFunctionConcurrencyResponse(
             ReservedConcurrentExecutions=fn.reserved_concurrent_executions
         )
