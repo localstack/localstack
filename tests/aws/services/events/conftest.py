@@ -232,11 +232,9 @@ def create_sqs_events_target(aws_client, sqs_get_queue_arn):
 
 
 @pytest.fixture
-def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up):
-    event_bus_names = []
-    rule_names = []
-    target_ids = []
-
+def put_events_with_filter_to_sqs(
+    aws_client, events_create_event_bus, events_put_rule, create_sqs_events_target
+):
     def _put_events_with_filter_to_sqs(
         pattern: dict,
         entries_asserts: list[Tuple[list[dict], bool]],
@@ -248,17 +246,15 @@ def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up
         target_id = f"test-target-{short_uid()}"
         if not event_bus_name:
             event_bus_name = f"test-bus-{short_uid()}"
-            aws_client.events.create_event_bus(Name=event_bus_name)
-            event_bus_names.append(event_bus_name)
+            events_create_event_bus(Name=event_bus_name)
 
         queue_url, queue_arn = create_sqs_events_target()
 
-        aws_client.events.put_rule(
+        events_put_rule(
             Name=rule_name,
             EventBusName=event_bus_name,
             EventPattern=json.dumps(pattern),
         )
-        rule_names.append(rule_name)
 
         kwargs = {"InputPath": input_path} if input_path else {}
         if input_transformer:
@@ -269,7 +265,6 @@ def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up
             EventBusName=event_bus_name,
             Targets=[{"Id": target_id, "Arn": queue_arn, **kwargs}],
         )
-        target_ids.append(target_id)
 
         assert response["FailedEntryCount"] == 0
         assert response["FailedEntries"] == []
@@ -292,13 +287,6 @@ def put_events_with_filter_to_sqs(aws_client, create_sqs_events_target, clean_up
         return messages
 
     yield _put_events_with_filter_to_sqs
-
-    for event_bus_name, rule_name, target_id in zip(event_bus_names, rule_names, target_ids):
-        clean_up(
-            bus_name=event_bus_name,
-            rule_name=rule_name,
-            target_ids=target_id,
-        )
 
 
 @pytest.fixture
