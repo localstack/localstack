@@ -12,6 +12,8 @@ from localstack.aws.connect import connect_to
 from localstack.services.events.models import FormattedEvent, TransformedEvent, ValidationException
 from localstack.utils import collections
 from localstack.utils.aws.arns import (
+    extract_account_id_from_arn,
+    extract_region_from_arn,
     extract_service_from_arn,
     firehose_name,
     sqs_queue_url_for_arn,
@@ -81,18 +83,17 @@ class TargetSender(ABC):
     def __init__(
         self,
         target: Target,
-        region: str,
-        account_id: str,
         rule_arn: Arn,
         rule_name: RuleName,
         service: str,
     ):
         self.target = target
-        self.region = region
-        self.account_id = account_id
         self.rule_arn = rule_arn
         self.rule_name = rule_name
         self.service = service
+
+        self.region = extract_region_from_arn(self.target["Arn"])
+        self.account_id = extract_account_id_from_arn(self.target["Arn"])
 
         self._validate_input(target)
         self._client: BaseClient | None = None
@@ -151,10 +152,12 @@ class TargetSender(ABC):
         If no role is provided the client will be initialized with the account ID and region.
         In both cases event bridge is requested as service principal"""
         service_principal = ServicePrincipal.events
-        if role_arn := self.target.get("role_arn"):
+        if role_arn := self.target.get("RoleArn"):
             # assumed role sessions expires after 6 hours in AWS, currently no expiration in LocalStack
             client_factory = connect_to.with_assumed_role(
-                role_arn=role_arn, service_principal=service_principal, region_name=self.region
+                role_arn=role_arn,
+                service_principal=service_principal,
+                region_name=self.region,
             )
         else:
             client_factory = connect_to(aws_access_key_id=self.account_id, region_name=self.region)
@@ -395,12 +398,8 @@ class TargetSenderFactory:
         # TODO custom endpoints via http target
     }
 
-    def __init__(
-        self, target: Target, region: str, account_id: str, rule_arn: Arn, rule_name: RuleName
-    ):
+    def __init__(self, target: Target, rule_arn: Arn, rule_name: RuleName):
         self.target = target
-        self.region = region
-        self.account_id = account_id
         self.rule_arn = rule_arn
         self.rule_name = rule_name
 
@@ -410,7 +409,5 @@ class TargetSenderFactory:
             target_sender_class = self.target_map[service]
         else:
             raise Exception(f"Unsupported target for Service: {service}")
-        target_sender = target_sender_class(
-            self.target, self.region, self.account_id, self.rule_arn, self.rule_name, service
-        )
+        target_sender = target_sender_class(self.target, self.rule_arn, self.rule_name, service)
         return target_sender
