@@ -1032,11 +1032,7 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 # Whether to really publish to GCM while using SNS Platform Application (needs credentials)
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
-# Whether to enable the Next Gen APIGW invocation logic (handler chain)
-# TODO: remove this before merge!
-if not os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY"):
-    os.environ["PROVIDER_OVERRIDE_APIGATEWAY"] = "next_gen"
-
+# Whether the Next Gen APIGW invocation logic is enabled (handler chain)
 APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") == "next_gen"
 
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
