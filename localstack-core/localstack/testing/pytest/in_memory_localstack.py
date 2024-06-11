@@ -83,6 +83,12 @@ def pytest_sessionfinish(session: Session):
 
     from localstack.runtime import get_current_runtime
 
+    try:
+        get_current_runtime()
+    except ValueError:
+        LOG.warning("Could not access the current runtime in a pytest sessionfinish hook.")
+        return
+
     get_current_runtime().shutdown()
     LOG.info("waiting for runtime to stop")
 

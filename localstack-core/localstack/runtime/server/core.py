@@ -42,7 +42,7 @@ class RuntimeServer:
 
 class RuntimeServerPlugin(Plugin):
     """
-    Plugin to expose RuntimeServer plugins to the
+    Plugin that serves as a factory for specific ```RuntimeServer`` implementations.
     """
 
     namespace = "localstack.runtime.server"
