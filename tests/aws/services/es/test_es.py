@@ -66,7 +66,7 @@ def try_cluster_health(cluster_url: str):
     ], "expected cluster state to be in a valid state"
 
 
-@pytest.mark.skip("flaky")
+@pytest.mark.skip(reason="flaky")
 class TestElasticsearchProvider:
     @markers.aws.unknown
     def test_list_versions(self, aws_client):
