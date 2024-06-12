@@ -5,7 +5,7 @@ import copy
 import json
 from typing import Any, Final, Optional, Union
 
-from botocore.model import ListShape, OperationModel, StringShape, StructureShape
+from botocore.model import ListShape, OperationModel, Shape, StringShape, StructureShape
 from botocore.response import StreamingBody
 
 from localstack.aws.api.stepfunctions import (
@@ -39,7 +39,7 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.quotas import is_within_size_quota
-from localstack.utils.strings import camel_to_snake_case, snake_to_camel_case, to_str
+from localstack.utils.strings import camel_to_snake_case, snake_to_camel_case, to_bytes, to_str
 
 
 class StateTaskService(StateTask, abc.ABC):
@@ -91,7 +91,19 @@ class StateTaskService(StateTask, abc.ABC):
         operation_model = service.operation_model(boto_operation_name)
         return operation_model
 
-    def _to_boto_args(self, parameters: dict, structure_shape: StructureShape) -> None:
+    def _to_boto_request_value(self, request_value: Any, value_shape: Shape) -> Any:
+        boto_request_value = request_value
+        if isinstance(value_shape, StructureShape):
+            self._to_boto_request(request_value, value_shape)
+        elif isinstance(value_shape, StringShape) and not isinstance(request_value, str):
+            boto_request_value = to_json_str(request_value)
+        elif value_shape.type_name == "blob" and not isinstance(boto_request_value, bytes):
+            if not isinstance(boto_request_value, str):
+                boto_request_value = to_json_str(request_value, separators=(":", ","))
+            boto_request_value = to_bytes(boto_request_value)
+        return boto_request_value
+
+    def _to_boto_request(self, parameters: dict, structure_shape: StructureShape) -> None:
         shape_members = structure_shape.members
         norm_member_binds: dict[str, tuple[str, StructureShape]] = {
             camel_to_snake_case(member_key): (member_key, member_value)
@@ -106,12 +118,9 @@ class StateTaskService(StateTask, abc.ABC):
             if norm_member_bind is not None:
                 norm_member_bind_key, norm_member_bind_shape = norm_member_bind
                 parameter_value = parameters.pop(parameter_key)
-                if isinstance(norm_member_bind_shape, StructureShape):
-                    self._to_boto_args(parameter_value, norm_member_bind_shape)
-                elif isinstance(norm_member_bind_shape, StringShape) and not isinstance(
-                    parameter_value, str
-                ):
-                    parameter_value = to_json_str(parameter_value)
+                parameter_value = self._to_boto_request_value(
+                    parameter_value, norm_member_bind_shape
+                )
                 parameters[norm_member_bind_key] = parameter_value
 
     @staticmethod
@@ -171,7 +180,7 @@ class StateTaskService(StateTask, abc.ABC):
             boto_service_name=boto_service_name, service_action_name=service_action_name
         ).input_shape
         if input_shape is not None:
-            self._to_boto_args(parameters, input_shape)  # noqa
+            self._to_boto_request(parameters, input_shape)  # noqa
 
     def _normalise_response(
         self,
