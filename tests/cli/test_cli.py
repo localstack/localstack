@@ -10,13 +10,13 @@ import localstack.utils.container_utils.docker_cmd_client
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
 from localstack.config import Directories, in_docker
-from localstack.constants import LOCALHOST_HOSTNAME, LOCALHOST_IP, MODULE_MAIN_PATH, TRUE_STRINGS
+from localstack.constants import MODULE_MAIN_PATH, TRUE_STRINGS
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import poll_condition
 from localstack.utils.container_utils.container_client import ContainerClient, NoSuchImage
 from localstack.utils.files import mkdir
-from localstack.utils.net import get_free_udp_port, send_dns_query
+from localstack.utils.net import get_free_udp_port
 from localstack.utils.run import run, to_str
 
 LOG = logging.getLogger(__name__)
@@ -236,7 +236,7 @@ class TestCliContainerLifecycle:
 
 @pytest.mark.skipif(condition=in_docker(), reason="cannot run CLI tests in docker")
 class TestDNSServer:
-    def test_dns_port_published(self, runner, container_client, monkeypatch):
+    def test_dns_port_published_with_flag(self, runner, container_client, monkeypatch):
         port = get_free_udp_port()
         monkeypatch.setenv("DEBUG", "1")
         monkeypatch.setenv("DNS_PORT", str(port))
@@ -248,18 +248,14 @@ class TestDNSServer:
         inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
         assert f"{port}/udp" in inspect["HostConfig"]["PortBindings"]
 
-    @pytest.mark.skip(reason="For this change, the tests run on the previous image")
-    def test_dns_server_custom_port(self, runner, container_client, monkeypatch):
-        port = get_free_udp_port()
+    def test_dns_port_not_published_by_default(self, runner, container_client, monkeypatch):
         monkeypatch.setenv("DEBUG", "1")
-        monkeypatch.setenv("DNS_PORT", str(port))
-        monkeypatch.setattr(config, "DNS_PORT", port)
 
-        runner.invoke(cli, ["start", "-d", "--host-dns"])
+        runner.invoke(cli, ["start", "-d"])
         runner.invoke(cli, ["wait", "-t", "60"])
 
-        reply = send_dns_query(name=LOCALHOST_HOSTNAME, port=port)
-        assert str(reply.a.rdata) == LOCALHOST_IP
+        inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
+        assert "53/udp" not in inspect["HostConfig"]["PortBindings"]
 
 
 class TestHooks:
