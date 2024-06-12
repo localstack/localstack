@@ -136,6 +136,7 @@ from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
 from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
 from localstack.aws.connect import connect_to
 from localstack.aws.spec import load_service
+from localstack.config import LAMBDA_RUNTIME_VALIDATION
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
@@ -760,7 +761,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         package_type = request.get("PackageType", PackageType.Zip)
         runtime = request.get("Runtime")
-        if package_type == PackageType.Zip and runtime not in ALL_RUNTIMES:
+        runtimes = ALL_RUNTIMES
+        if LAMBDA_RUNTIME_VALIDATION:
+            runtimes = VALID_RUNTIMES
+
+        if package_type == PackageType.Zip and runtime not in runtimes:
             raise InvalidParameterValueException(
                 f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                 Type="User",
@@ -1032,7 +1037,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if "Runtime" in request:
             runtime = request["Runtime"]
-            if runtime not in ALL_RUNTIMES:
+            runtimes = ALL_RUNTIMES
+            if LAMBDA_RUNTIME_VALIDATION:
+                runtimes = VALID_RUNTIMES
+
+            if runtime not in runtimes:
                 raise InvalidParameterValueException(
                     f"Value {runtime} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                     Type="User",
