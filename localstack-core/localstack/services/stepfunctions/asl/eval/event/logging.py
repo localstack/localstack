@@ -180,7 +180,9 @@ class CloudWatchLoggingConfiguration:
 
     def validate(self) -> None:
         # Asserts that the logging configuration can be used for logging.
-        logs_client = connect_to().logs
+        logs_client = connect_to(
+            aws_access_key_id=self.log_account_id, region_name=self.log_region
+        ).logs
         try:
             logs_client.create_log_stream(
                 logGroupName=self.log_group_name, logStreamName=VALIDATION_LOG_STREAM_NAME
