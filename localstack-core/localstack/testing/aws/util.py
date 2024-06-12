@@ -28,6 +28,7 @@ from localstack.testing.config import (
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     SECONDARY_TEST_AWS_SESSION_TOKEN,
     TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.aws.request_context import get_account_id_from_request
@@ -215,7 +216,7 @@ def secondary_aws_session() -> boto3.Session:
     return session
 
 
-def base_aws_client_factory(session: boto3.Session, region: str) -> ClientFactory:
+def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
     config = None
     if is_env_true("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
         config = botocore.config.Config(
@@ -231,7 +232,7 @@ def base_aws_client_factory(session: boto3.Session, region: str) -> ClientFactor
             config = botocore.config.Config()
 
         # Prevent this fixture from using the region configured in system config
-        config = config.merge(botocore.config.Config(region_name=region))
+        config = config.merge(botocore.config.Config(region_name=TEST_AWS_REGION_NAME))
         return ExternalClientFactory(session=session, config=config)
 
 

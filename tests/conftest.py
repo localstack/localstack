@@ -78,9 +78,8 @@ def aws_client_factory(aws_session):
     Use this fixture if you need to use custom endpoint or Boto config.
     """
     from localstack.testing.aws.util import base_aws_client_factory
-    from localstack.testing.config import TEST_AWS_REGION_NAME
 
-    return base_aws_client_factory(aws_session, TEST_AWS_REGION_NAME)
+    return base_aws_client_factory(aws_session)
 
 
 @pytest.fixture(scope="session")
@@ -91,9 +90,8 @@ def secondary_aws_client_factory(secondary_aws_session):
     Use this fixture if you need to use custom endpoint or Boto config.
     """
     from localstack.testing.aws.util import base_aws_client_factory
-    from localstack.testing.config import SECONDARY_TEST_AWS_REGION_NAME
 
-    return base_aws_client_factory(secondary_aws_session, SECONDARY_TEST_AWS_REGION_NAME)
+    return base_aws_client_factory(secondary_aws_session)
 
 
 @pytest.fixture(scope="session")
