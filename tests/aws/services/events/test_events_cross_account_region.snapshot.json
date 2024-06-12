@@ -14,7 +14,7 @@
             "source": "source-primary",
             "account": "111111111111",
             "time": "date",
-            "region": "<region-name>",
+            "region": "<region>",
             "resources": [],
             "detail": {
               "command": "update-account",
@@ -38,7 +38,7 @@
             "source": "source-primary",
             "account": "111111111111",
             "time": "date",
-            "region": "<region-name-secondary>",
+            "region": "<region-secondary>",
             "resources": [],
             "detail": {
               "command": "update-account",
@@ -62,7 +62,84 @@
             "source": "source-secondary",
             "account": "111111111111",
             "time": "date",
-            "region": "<region-name-secondary>",
+            "region": "<region-secondary>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventsCrossAccount::test_event_bus_to_event_bus_cross_account": {
+    "recorded-date": "12-06-2024, 12:07:46",
+    "recorded-content": {
+      "messages_primary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account-id>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "<account-id>",
+            "time": "date",
+            "region": "<region>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_secondary_event_bus": [
+        {
+          "MessageId": "<uuid:4>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:5>",
+            "detail-type": "core.update-account-command",
+            "source": "source-secondary",
+            "account": "<account-id-secondary>",
+            "time": "date",
+            "region": "<region>",
             "resources": [],
             "detail": {
               "command": "update-account",
