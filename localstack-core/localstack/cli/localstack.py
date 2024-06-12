@@ -457,6 +457,13 @@ def _print_service_table(services: Dict[str, str]) -> None:
     multiple=True,
     required=False,
 )
+@click.option(
+    "--host-dns",
+    help="Expose the LocalStack DNS server to the host using port bindings.",
+    required=False,
+    is_flag=True,
+    default=False,
+)
 @publish_invocation
 def cmd_start(
     docker: bool,
@@ -467,6 +474,7 @@ def cmd_start(
     env: Tuple = (),
     publish: Tuple = (),
     volume: Tuple = (),
+    host_dns: bool = False,
 ) -> None:
     """
     Start the LocalStack runtime.
