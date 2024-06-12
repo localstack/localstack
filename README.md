@@ -80,6 +80,34 @@ The `localstack-cli` installation enables you to run the Docker image containing
 
 > **Important**: Do not use `sudo` or run as `root` user. LocalStack must be installed and started entirely under a local non-root user. If you have problems with permissions in macOS High Sierra, install with `pip install --user localstack`
 
+### Nix (MacOS, Linux)
+
+LocalStack can be installed using the Nix package manager, using `nix profile`.
+
+```bash
+nix profile install nixpkgs#localstack
+```
+
+Or `nix-env`.
+
+```bash
+nix-env --install localstack
+```
+
+It's also possible to get a temporary shell with localstack installed in it.
+
+```bash
+nix-shell -p localstack
+```
+
+### Flox (MacOS, Linux)
+
+LocalStack is available for installation within in a Flox environment.
+
+```bash
+flox install localstack
+```
+
 ## Quickstart
 
 Start LocalStack inside a Docker container by running:
