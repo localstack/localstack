@@ -24,10 +24,10 @@ from localstack.aws.spec import LOCALSTACK_BUILTIN_DATA_PATH, load_service
 from localstack.config import is_env_true
 from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+    SECONDARY_TEST_AWS_PROFILE,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
     SECONDARY_TEST_AWS_SESSION_TOKEN,
     TEST_AWS_ACCESS_KEY_ID,
-    TEST_AWS_REGION_NAME,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
 from localstack.utils.aws.request_context import get_account_id_from_request
@@ -195,7 +195,27 @@ def base_aws_session() -> boto3.Session:
     return session
 
 
-def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
+def secondary_aws_session() -> boto3.Session:
+    if is_aws_cloud() and SECONDARY_TEST_AWS_PROFILE:
+        return boto3.Session(profile_name=SECONDARY_TEST_AWS_PROFILE)
+
+    # Otherwise, when running against LS or AWS, but have no profile set for the secondary account,
+    # we use secondary test credentials to initialize the session.
+    # This set here in the session so that both `secondary_aws_client` and `secondary_aws_client_factory` can work
+    # without explicit creds.
+    session = boto3.Session(
+        aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
+        aws_session_token=SECONDARY_TEST_AWS_SESSION_TOKEN,
+    )
+    if not is_aws_cloud():
+        # make sure we consider our custom data paths for legacy specs (like SQS query protocol), only if we run against
+        # LocalStack
+        session._loader.search_paths.append(LOCALSTACK_BUILTIN_DATA_PATH)
+    return session
+
+
+def base_aws_client_factory(session: boto3.Session, region: str) -> ClientFactory:
     config = None
     if is_env_true("TEST_DISABLE_RETRIES_AND_TIMEOUTS"):
         config = botocore.config.Config(
@@ -211,19 +231,10 @@ def base_aws_client_factory(session: boto3.Session) -> ClientFactory:
             config = botocore.config.Config()
 
         # Prevent this fixture from using the region configured in system config
-        config = config.merge(botocore.config.Config(region_name=TEST_AWS_REGION_NAME))
+        config = config.merge(botocore.config.Config(region_name=region))
         return ExternalClientFactory(session=session, config=config)
 
 
-def primary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
+def base_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
     # Primary test credentials are already set in the boto3 session, so they're not set here again
     return client_factory()
-
-
-def secondary_testing_aws_client(client_factory: ClientFactory) -> ServiceLevelClientFactory:
-    # Setting secondary creds here, overriding the ones from the session
-    return client_factory(
-        aws_access_key_id=SECONDARY_TEST_AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
-        aws_session_token=SECONDARY_TEST_AWS_SESSION_TOKEN,
-    )
