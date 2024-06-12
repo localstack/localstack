@@ -44,6 +44,10 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtestloop(session: Session):
+    # avoid starting up localstack if we only collect the tests (-co / --collect-only)
+    if session.config.option.collectonly:
+        return
+
     if not session.config.option.start_localstack:
         return
 
