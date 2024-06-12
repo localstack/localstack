@@ -283,6 +283,19 @@ class TransformerUtility:
         ]
 
     @staticmethod
+    def dynamodb_streams_api():
+        return [
+            TransformerUtility.key_value("TableName"),
+            TransformerUtility.key_value("TableStatus"),
+            TransformerUtility.key_value("LatestStreamLabel"),
+            TransformerUtility.key_value("StartingSequenceNumber", reference_replacement=False),
+            TransformerUtility.key_value("ShardId"),
+            TransformerUtility.key_value("StreamLabel"),
+            TransformerUtility.key_value("SequenceNumber"),
+            TransformerUtility.key_value("eventID"),
+        ]
+
+    @staticmethod
     def iam_api():
         """
         :return: array with Transformers, for iam api.

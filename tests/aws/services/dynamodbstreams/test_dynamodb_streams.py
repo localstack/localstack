@@ -1,6 +1,7 @@
 import json
 import re
 
+import aws_cdk as cdk
 import pytest
 
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
@@ -17,6 +18,39 @@ PARTITION_KEY = "id"
 
 
 class TestDynamoDBStreams:
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
+            "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+            "$..Table.Replicas",
+        ]
+    )
+    def test_table_v2_stream(self, aws_client, infrastructure_setup, snapshot):
+        snapshot.add_transformer(snapshot.transform.dynamodb_streams_api())
+        snapshot.add_transformer(snapshot.transform.key_value("LatestStreamArn"), priority=-1)
+        snapshot.add_transformer(snapshot.transform.key_value("TableArn"), priority=-1)
+
+        infra = infrastructure_setup(namespace="TestTableV2Stream")
+        stack = cdk.Stack(infra.cdk_app, "TableV2StreamStack")
+
+        table = cdk.aws_dynamodb.TableV2(
+            stack,
+            "v2table",
+            partition_key=cdk.aws_dynamodb.Attribute(
+                name=PARTITION_KEY, type=cdk.aws_dynamodb.AttributeType.STRING
+            ),
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            dynamo_stream=cdk.aws_dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
+        )
+
+        cdk.CfnOutput(stack, "tableName", value=table.table_name)
+
+        with infra.provisioner(skip_teardown=False) as prov:
+            table_name = prov.get_stack_outputs(stack_name="TableV2StreamStack")["tableName"]
+            response = aws_client.dynamodb.describe_table(TableName=table_name)
+            snapshot.match("global-table-v2", response)
+
     @markers.aws.only_localstack
     def test_stream_spec_and_region_replacement(self, aws_client, region_name):
         ddbstreams = aws_client.dynamodbstreams
