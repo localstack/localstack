@@ -224,8 +224,23 @@ from localstack.services.s3.exceptions import (
     NoSuchObjectLockConfiguration,
     UnexpectedContent,
 )
+from localstack.services.s3.models import (
+    BucketCorsIndex,
+    EncryptionParameters,
+    ObjectLockParameters,
+    S3Bucket,
+    S3DeleteMarker,
+    S3Multipart,
+    S3Object,
+    S3Part,
+    S3Store,
+    VersionedKeyStore,
+    s3_stores,
+)
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.presigned_url import validate_post_policy
+from localstack.services.s3.storage.core import LimitedIterableStream, S3ObjectStore
+from localstack.services.s3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.services.s3.utils import (
     ObjectRange,
     add_expiration_days_to_datetime,
@@ -259,21 +274,6 @@ from localstack.services.s3.utils import (
     validate_kms_key_id,
     validate_tag_set,
 )
-from localstack.services.s3.v3.models import (
-    BucketCorsIndex,
-    EncryptionParameters,
-    ObjectLockParameters,
-    S3Bucket,
-    S3DeleteMarker,
-    S3Multipart,
-    S3Object,
-    S3Part,
-    S3Store,
-    VersionedKeyStore,
-    s3_stores,
-)
-from localstack.services.s3.v3.storage.core import LimitedIterableStream, S3ObjectStore
-from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.services.s3.validation import (
     parse_grants_in_headers,
     validate_acl_acp,

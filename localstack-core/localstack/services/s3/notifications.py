@@ -35,8 +35,8 @@ from localstack.aws.api.s3 import (
 )
 from localstack.aws.connect import connect_to
 from localstack.config import LEGACY_V2_S3_PROVIDER
+from localstack.services.s3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.services.s3.utils import _create_invalid_argument_exc
-from localstack.services.s3.v3.models import S3Bucket, S3DeleteMarker, S3Object
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -47,8 +47,8 @@ from localstack.utils.time import parse_timestamp, timestamp_millis
 if LEGACY_V2_S3_PROVIDER:
     from moto.s3.models import FakeBucket, FakeDeleteMarker, FakeKey
 
-    from localstack.services.s3.models import get_moto_s3_backend
-    from localstack.services.s3.utils_moto import (
+    from localstack.services.s3.legacy.models import get_moto_s3_backend
+    from localstack.services.s3.legacy.utils_moto import (
         get_bucket_from_moto,
         get_key_from_moto_bucket,
     )

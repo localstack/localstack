@@ -17,8 +17,8 @@ from localstack.services.s3 import utils as s3_utils
 from localstack.services.s3.codec import AwsChunkedDecoder
 from localstack.services.s3.constants import S3_CHUNK_SIZE
 from localstack.services.s3.exceptions import MalformedXML
-from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
-from localstack.services.s3.v3.storage.ephemeral import EphemeralS3ObjectStore
+from localstack.services.s3.models import S3Multipart, S3Object, S3Part
+from localstack.services.s3.storage.ephemeral import EphemeralS3ObjectStore
 from localstack.services.s3.validation import validate_canned_acl
 
 
