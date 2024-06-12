@@ -6,6 +6,7 @@ from typing import Final, NotRequired, Optional, TypedDict
 
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
+from botocore.utils import InvalidArnException
 
 from localstack.aws.api.logs import InputLogEvent
 from localstack.aws.api.stepfunctions import (
@@ -17,6 +18,10 @@ from localstack.aws.api.stepfunctions import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
+from localstack.utils.aws.arns import (
+    ArnData,
+    parse_arn,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -78,6 +83,8 @@ def is_logging_enabled_for(log_level: LogLevel, history_event_type: HistoryEvent
 class CloudWatchLoggingConfiguration:
     state_machine_arn: Final[LongArn]
     log_level: Final[LogLevel]
+    log_account_id: Final[str]
+    log_region: Final[str]
     log_group_name: Final[str]
     log_stream_name: Final[str]
     include_execution_data: Final[bool]
@@ -85,21 +92,28 @@ class CloudWatchLoggingConfiguration:
     def __init__(
         self,
         state_machine_arn: LongArn,
-        log_level: LogLevel,
+        log_account_id: str,
+        log_region: str,
         log_group_name: str,
+        log_level: LogLevel,
         include_execution_data: bool,
     ):
         self.state_machine_arn = state_machine_arn
         self.log_level = log_level
         self.log_group_name = log_group_name
+        self.log_account_id = log_account_id
+        self.log_region = log_region
         # TODO: AWS appears to append a date and a serial number to the log
         #  stream name: more investigations are needed in this area.
         self.log_stream_name = f"states/{state_machine_arn}"
         self.include_execution_data = include_execution_data
 
     @staticmethod
-    def extract_log_group_name_from(logging_configuration: LoggingConfiguration) -> Optional[str]:
-        # Returns the log group name if the logging configuration specifies one, none otherwise.
+    def extract_log_arn_parts_from(
+        logging_configuration: LoggingConfiguration,
+    ) -> Optional[tuple[str, str, str]]:
+        # Returns a tuple with: account_id, region, and log group name if the logging configuration
+        # specifies a valid cloud watch log group arn, none otherwise.
 
         destinations = logging_configuration.get("destinations")
         if not destinations or len(destinations) > 1:  # Only one destination can be defined.
@@ -113,12 +127,29 @@ class CloudWatchLoggingConfiguration:
         if not log_group_arn:
             return None
 
-        log_group_arn_parts = log_group_arn.split(":log-group:")
-        if not log_group_arn_parts:
+        try:
+            arn_data: ArnData = parse_arn(log_group_arn)
+        except InvalidArnException:
             return None
 
-        log_group_name = log_group_arn_parts[-1].split(":")[0]
-        return log_group_name
+        log_region = arn_data.get("region")
+        if log_region is None:
+            return None
+
+        log_account_id = arn_data.get("account")
+        if log_account_id is None:
+            return None
+
+        log_resource = arn_data.get("resource")
+        if log_resource is None:
+            return None
+
+        log_resource_parts = log_resource.split("log-group:")
+        if not log_resource_parts:
+            return None
+
+        log_group_name = log_resource_parts[-1].split(":")[0]
+        return log_account_id, log_region, log_group_name
 
     @staticmethod
     def from_logging_configuration(
@@ -129,24 +160,29 @@ class CloudWatchLoggingConfiguration:
         if log_level == LogLevel.OFF:
             return None
 
-        log_group_name = CloudWatchLoggingConfiguration.extract_log_group_name_from(
+        log_arn_parts = CloudWatchLoggingConfiguration.extract_log_arn_parts_from(
             logging_configuration=logging_configuration
         )
-        if not log_group_name:
+        if not log_arn_parts:
             return None
+        log_account_id, log_region, log_group_name = log_arn_parts
 
         include_execution_data = logging_configuration["includeExecutionData"]
 
         return CloudWatchLoggingConfiguration(
             state_machine_arn=state_machine_arn,
-            log_level=log_level,
+            log_account_id=log_account_id,
+            log_region=log_region,
             log_group_name=log_group_name,
+            log_level=log_level,
             include_execution_data=include_execution_data,
         )
 
     def validate(self) -> None:
         # Asserts that the logging configuration can be used for logging.
-        logs_client = connect_to().logs
+        logs_client = connect_to(
+            aws_access_key_id=self.log_account_id, region_name=self.log_region
+        ).logs
         try:
             logs_client.create_log_stream(
                 logGroupName=self.log_group_name, logStreamName=VALIDATION_LOG_STREAM_NAME
@@ -177,7 +213,10 @@ class CloudWatchLoggingSession:
     def __init__(self, execution_arn: LongArn, configuration: CloudWatchLoggingConfiguration):
         self.execution_arn = execution_arn
         self.configuration = configuration
-        self._logs_client = connect_to().logs
+        self._logs_client = connect_to(
+            aws_access_key_id=self.configuration.log_account_id,
+            region_name=self.configuration.log_region,
+        ).logs
 
     def log_level_filter(self, history_event_type: HistoryEventType) -> bool:
         # Checks whether the history event type should be logged in this session.
