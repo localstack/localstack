@@ -74,6 +74,9 @@ def resolve_dependencies(d: dict, evaluated_conditions: dict[str, bool]) -> set[
                     items = items.union(resolve_dependencies(item, evaluated_conditions))
             else:
                 pass
+    elif isinstance(d, list):
+        for item in d:
+            items = items.union(resolve_dependencies(item, evaluated_conditions))
     r = {i for i in items if not i.startswith("AWS::")}
     return r
 

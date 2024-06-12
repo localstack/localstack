@@ -1032,6 +1032,9 @@ OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
 # Whether to really publish to GCM while using SNS Platform Application (needs credentials)
 LEGACY_SNS_GCM_PUBLISHING = is_env_true("LEGACY_SNS_GCM_PUBLISHING")
 
+# Whether the Next Gen APIGW invocation logic is enabled (handler chain)
+APIGW_NEXT_GEN_PROVIDER = os.environ.get("PROVIDER_OVERRIDE_APIGATEWAY", "") == "next_gen"
+
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
 
@@ -1040,6 +1043,9 @@ PARITY_AWS_ACCESS_KEY_ID = is_env_true("PARITY_AWS_ACCESS_KEY_ID")
 
 # Show exceptions for CloudFormation deploy errors
 CFN_VERBOSE_ERRORS = is_env_true("CFN_VERBOSE_ERRORS")
+
+# Allow fallback to previous template deployer implementation
+CFN_LEGACY_TEMPLATE_DEPLOYER = is_env_true("CFN_LEGACY_TEMPLATE_DEPLOYER")
 
 # Set the timeout to deploy each individual CloudFormation resource
 CFN_PER_RESOURCE_TIMEOUT = int(os.environ.get("CFN_PER_RESOURCE_TIMEOUT") or 300)
@@ -1104,6 +1110,7 @@ CONFIG_ENV_VARS = [
     "BOTO_WAITER_MAX_ATTEMPTS",
     "BUCKET_MARKER_LOCAL",
     "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
+    "CFN_LEGACY_TEMPLATE_DEPLOYER",
     "CFN_VERBOSE_ERRORS",
     "CI",
     "CUSTOM_SSL_CERT_PATH",
@@ -1156,6 +1163,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_DOCKER_NETWORK",
     "LAMBDA_EVENTS_INTERNAL_SQS",
+    "LAMBDA_IGNORE_ARCHITECTURE",
     "LAMBDA_INIT_DEBUG",
     "LAMBDA_INIT_BIN_PATH",
     "LAMBDA_INIT_BOOTSTRAP_PATH",

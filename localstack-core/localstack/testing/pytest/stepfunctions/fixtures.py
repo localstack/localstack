@@ -642,3 +642,24 @@ def sfn_glue_create_job(aws_client, create_role, create_policy, wait_and_assume_
         except Exception as ex:
             # TODO: the glue provider should not fail on deletion of deleted job, however this is currently the case.
             LOG.warning(f"Could not delete job '{job_name}': {ex}")
+
+
+@pytest.fixture
+def sfn_create_log_group(aws_client, snapshot):
+    log_group_names = []
+
+    def _create() -> str:
+        log_group_name = f"/aws/vendedlogs/states/sfn-test-group-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(log_group_name, "log_group_name"))
+        aws_client.logs.create_log_group(logGroupName=log_group_name)
+        log_group_names.append(log_group_name)
+
+        return log_group_name
+
+    yield _create
+
+    for log_group_name in log_group_names:
+        try:
+            aws_client.logs.delete_log_group(logGroupName=log_group_name)
+        except Exception:
+            LOG.debug(f"Cannot delete log group {log_group_name}")

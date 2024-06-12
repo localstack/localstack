@@ -1181,5 +1181,551 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[A-B-C]": {
+    "recorded-date": "29-05-2024, 11:44:14",
+    "recorded-content": {
+      "events": [
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:1>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-xvqPt7CmcHKX",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:2>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-FCaKHvMgdicm",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-xvqPt7CmcHKX"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:3>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-Xr56esN3SasR",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-FCaKHvMgdicm"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:4>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-Xr56esN3SasR",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-FCaKHvMgdicm"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:5>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-FCaKHvMgdicm",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-xvqPt7CmcHKX"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:6>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-xvqPt7CmcHKX",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[A-C-B]": {
+    "recorded-date": "29-05-2024, 11:44:32",
+    "recorded-content": {
+      "events": [
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:1>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-4tNP69dd8iSL",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:2>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-d81WSIsD2X3i",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-4tNP69dd8iSL"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:3>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-kStA2w3izJOh",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-d81WSIsD2X3i"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:4>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-kStA2w3izJOh",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-d81WSIsD2X3i"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:5>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-d81WSIsD2X3i",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-4tNP69dd8iSL"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:6>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-4tNP69dd8iSL",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[B-A-C]": {
+    "recorded-date": "29-05-2024, 11:44:51",
+    "recorded-content": {
+      "events": [
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:1>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-a0yQkOAYKMk5",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:2>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-RvqPXWdIGzrt",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-a0yQkOAYKMk5"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:3>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-iPNi3cV9jXAt",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-RvqPXWdIGzrt"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:4>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-iPNi3cV9jXAt",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-RvqPXWdIGzrt"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:5>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-RvqPXWdIGzrt",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-a0yQkOAYKMk5"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:6>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-a0yQkOAYKMk5",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[B-C-A]": {
+    "recorded-date": "29-05-2024, 11:45:12",
+    "recorded-content": {
+      "events": [
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:1>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-xNtQNbQrdc1T",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:2>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-UY120OHcpDMZ",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-xNtQNbQrdc1T"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:3>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-GOhk98pWaTFw",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-UY120OHcpDMZ"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:4>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-GOhk98pWaTFw",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-UY120OHcpDMZ"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:5>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-UY120OHcpDMZ",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-xNtQNbQrdc1T"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:6>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-xNtQNbQrdc1T",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[C-A-B]": {
+    "recorded-date": "29-05-2024, 11:45:31",
+    "recorded-content": {
+      "events": [
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:1>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-BFvOY1qz1Osv",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:2>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-qCiX6NdW4hEt",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-BFvOY1qz1Osv"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:3>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-ki0TLXKJfPgN",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-qCiX6NdW4hEt"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:4>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-ki0TLXKJfPgN",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-qCiX6NdW4hEt"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:5>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-qCiX6NdW4hEt",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-BFvOY1qz1Osv"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:6>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-BFvOY1qz1Osv",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order[C-B-A]": {
+    "recorded-date": "29-05-2024, 11:45:50",
+    "recorded-content": {
+      "events": [
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:1>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-LQadBXOC2eGc",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:2>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-p6Hy6dxQCfjl",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-LQadBXOC2eGc"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:3>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-YYmzIb8agve7",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-p6Hy6dxQCfjl"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:4>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "C",
+          "PhysicalResourceId": "CFN-C-YYmzIb8agve7",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-B-p6Hy6dxQCfjl"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:5>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "B",
+          "PhysicalResourceId": "CFN-B-p6Hy6dxQCfjl",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "CFN-A-LQadBXOC2eGc"
+          }
+        },
+        {
+          "StackId": "arn:aws:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+          "EventId": "<event-id:6>",
+          "StackName": "<stack-name:1>",
+          "LogicalResourceId": "A",
+          "PhysicalResourceId": "CFN-A-LQadBXOC2eGc",
+          "ResourceType": "AWS::SSM::Parameter",
+          "Timestamp": "timestamp",
+          "ResourceStatus": "DELETE_COMPLETE",
+          "ResourceProperties": {
+            "Type": "String",
+            "Value": "root"
+          }
+        }
+      ]
+    }
   }
 }

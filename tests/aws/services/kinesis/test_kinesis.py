@@ -36,13 +36,14 @@ def get_shard_iterator(stream_name, kinesis_client):
 
 
 class TestKinesis:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_stream_without_stream_name_raises(self, aws_client_factory):
         boto_config = BotoConfig(parameter_validation=False)
         kinesis_client = aws_client_factory(config=boto_config).kinesis
         with pytest.raises(ClientError) as e:
             kinesis_client.create_stream()
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        # TODO snapshotting reveals that the Error.Message is different
 
     @markers.aws.validated
     def test_create_stream_without_shard_count(
@@ -214,7 +215,9 @@ class TestKinesis:
         results.sort(key=lambda k: k.get("Data"))
         snapshot.match("Records", results)
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # this might be a localstack-only test - there doesn't seem to be an endpoint for kinesis on AWS
+    # the test seems to address https://github.com/localstack/localstack/issues/2997 with java AWS SDK usage
     def test_get_records(
         self, kinesis_create_stream, wait_for_stream_ready, aws_client, region_name
     ):
@@ -258,7 +261,9 @@ class TestKinesis:
             == result["Records"][0]["ApproximateArrivalTimestamp"]
         )
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
+    # this might be a localstack-only test - there doesn't seem to be an endpoint for kinesis on AWS
+    # the test seems to address https://github.com/localstack/localstack/issues/2997 with java AWS SDK usage
     def test_get_records_empty_stream(
         self,
         kinesis_create_stream,
@@ -434,7 +439,7 @@ class TestKinesis:
 
 class TestKinesisPythonClient:
     @markers.skip_offline
-    @markers.aws.unknown
+    @markers.aws.only_localstack
     def test_run_kcl(self, aws_client, account_id, region_name):
         result = []
 

@@ -365,8 +365,9 @@ class TestDockerClient:
             docker_client.remove_container(container_name)
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman get_networks(..) does not return list of networks in CI",
     )
     def test_get_network(self, docker_client: ContainerClient, dummy_container):
         networks = docker_client.get_networks(dummy_container.container_name)
@@ -418,8 +419,9 @@ class TestDockerClient:
         assert ipaddress.IPv4Address(result_custom_network) in ipaddress.IPv4Network(custom_network)
 
     # TODO: currently failing under Podman
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman inspect_network does not return `Containers` attribute"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman inspect_network does not return `Containers` attribute",
     )
     def test_get_container_ip_for_network_wrong_network(
         self, docker_client: ContainerClient, dummy_container, create_network
@@ -439,8 +441,9 @@ class TestDockerClient:
             )
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman get_networks(..) does not return list of networks in CI",
     )
     def test_get_container_ip_for_host_network(
         self, docker_client: ContainerClient, create_container
@@ -466,8 +469,9 @@ class TestDockerClient:
             )
 
     # TODO: currently failing under Podman in CI (works locally under MacOS)
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman get_networks(..) does not return list of networks in CI"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(),
+        reason="Podman get_networks(..) does not return list of networks in CI",
     )
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
@@ -1283,8 +1287,8 @@ class TestDockerClient:
         assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]
 
     # TODO: currently failing under Podman
-    @pytest.mark.xfail(
-        _is_podman_test(), reason="Podman inspect_network does not return `Id` attribute"
+    @pytest.mark.skipif(
+        condition=_is_podman_test(), reason="Podman inspect_network does not return `Id` attribute"
     )
     def test_inspect_network(self, docker_client: ContainerClient, create_network):
         network_name = f"ls_test_network_{short_uid()}"
@@ -1446,7 +1450,7 @@ class TestRunWithAdditionalArgs:
         assert stdout.decode(config.DEFAULT_ENCODING).strip() == "1024"
 
     def test_run_with_additional_arguments_env_files(
-        self, docker_client: ContainerClient, tmp_path
+        self, docker_client: ContainerClient, tmp_path, monkeypatch
     ):
         env_variable = "TEST1=VAL1"
         env_file = tmp_path / "env1"
@@ -1456,6 +1460,7 @@ class TestRunWithAdditionalArgs:
             TEST2=VAL2
             TEST3=${TEST2}
             TEST4=VAL # end comment
+            TEST5="VAL"
             """)
         env_file.write_text(env_vars)
 
@@ -1472,6 +1477,7 @@ class TestRunWithAdditionalArgs:
         assert "TEST2=VAL2" in env_output
         assert "TEST3=${TEST2}" in env_output
         assert "TEST4=VAL # end comment" in env_output
+        assert 'TEST5="VAL"' in env_output
 
         env_vars = textwrap.dedent("""
             # Some comment
@@ -1487,6 +1493,31 @@ class TestRunWithAdditionalArgs:
         )
         env_output = stdout.decode(config.DEFAULT_ENCODING)
         assert "TEST1" not in env_output
+
+        monkeypatch.setenv("TEST1", "VAL1")
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            remove=True,
+            command=["env"],
+            additional_flags=f"--env-file {env_file}",
+        )
+        env_output = stdout.decode(config.DEFAULT_ENCODING)
+        assert "TEST1=VAL1" in env_output
+
+        env_vars = textwrap.dedent("""
+            # Some comment
+            TEST1=
+            """)
+        env_file.write_text(env_vars)
+
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            remove=True,
+            command=["env"],
+            additional_flags=f"--env-file {env_file}",
+        )
+        env_output = stdout.decode(config.DEFAULT_ENCODING)
+        assert "TEST1=" in env_output.splitlines()
 
 
 class TestDockerImages:

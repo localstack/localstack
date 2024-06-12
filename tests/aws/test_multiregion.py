@@ -17,7 +17,7 @@ REGION4 = "eu-central-1"
 
 
 class TestMultiRegion:
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_multi_region_sns(self, aws_client_factory):
         sns_1 = aws_client_factory(region_name=REGION1).sns
         sns_2 = aws_client_factory(region_name=REGION2).sns
@@ -38,7 +38,7 @@ class TestMultiRegion:
         assert len(result2) == len_2 + 1
         assert REGION2 in result2[0]["TopicArn"]
 
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_multi_region_api_gateway(self, aws_client_factory, account_id):
         gw_1 = aws_client_factory(region_name=REGION1).apigateway
         gw_2 = aws_client_factory(region_name=REGION2).apigateway

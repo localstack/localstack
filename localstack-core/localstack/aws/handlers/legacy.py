@@ -1,4 +1,4 @@
-"""Handlers for compatibility with legacy edge proxy and the quart http framework."""
+"""Handlers for compatibility with legacy thread local storages."""
 
 import logging
 

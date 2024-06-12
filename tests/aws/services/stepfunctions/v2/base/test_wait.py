@@ -13,7 +13,7 @@ from tests.aws.services.stepfunctions.templates.base.base_templates import BaseT
 
 # TODO: add tests for seconds, secondspath, timestamp
 # TODO: add tests that actually validate waiting time (e.g. x minutes) BUT mark them accordingly and skip them by default!
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestSfnWait:
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not implemented")
     @markers.aws.validated

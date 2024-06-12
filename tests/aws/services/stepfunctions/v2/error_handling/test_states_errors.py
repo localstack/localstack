@@ -14,7 +14,6 @@ from tests.aws.services.stepfunctions.templates.errorhandling.error_handling_tem
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..loggingConfiguration",
         "$..tracingConfiguration",
     ]
 )

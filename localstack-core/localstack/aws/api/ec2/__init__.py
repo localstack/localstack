@@ -2051,6 +2051,15 @@ class InstanceType(str):
     g6_48xlarge = "g6.48xlarge"
     gr6_4xlarge = "gr6.4xlarge"
     gr6_8xlarge = "gr6.8xlarge"
+    c7i_flex_large = "c7i-flex.large"
+    c7i_flex_xlarge = "c7i-flex.xlarge"
+    c7i_flex_2xlarge = "c7i-flex.2xlarge"
+    c7i_flex_4xlarge = "c7i-flex.4xlarge"
+    c7i_flex_8xlarge = "c7i-flex.8xlarge"
+    u7i_12tb_224xlarge = "u7i-12tb.224xlarge"
+    u7in_16tb_224xlarge = "u7in-16tb.224xlarge"
+    u7in_24tb_224xlarge = "u7in-24tb.224xlarge"
+    u7in_32tb_224xlarge = "u7in-32tb.224xlarge"
 
 
 class InstanceTypeHypervisor(str):

@@ -10,10 +10,10 @@ from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-from tests.aws.services.events.conftest import sqs_collect_messages
 from tests.aws.services.events.helper_functions import (
     events_time_string_to_timestamp,
     get_cron_expression,
+    sqs_collect_messages,
 )
 
 
@@ -186,7 +186,7 @@ class TestScheduleRate:
             "$..storedBytes",
         ]
     )
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="This test is flaky is CI, might be race conditions"  # FIXME: investigate and fix
     )
     def test_scheduled_rule_logs(

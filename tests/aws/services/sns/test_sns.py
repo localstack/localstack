@@ -2968,7 +2968,7 @@ class TestSNSPlatformEndpoint:
         assert e.value.response["Error"]["Message"] == "Endpoint is disabled"
 
     @markers.aws.only_localstack  # needs real credentials for GCM/FCM
-    @pytest.mark.xfail(reason="Need to implement credentials validation when creating platform")
+    @pytest.mark.skip(reason="Need to implement credentials validation when creating platform")
     def test_publish_to_gcm(self, sns_create_platform_application, aws_client):
         key = "mock_server_key"
         token = "mock_token"

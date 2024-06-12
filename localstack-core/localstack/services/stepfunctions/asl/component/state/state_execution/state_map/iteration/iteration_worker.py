@@ -57,10 +57,10 @@ class IterationWorker(abc.ABC):
             name=self._work_name, index=job.job_index
         )
 
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.MapIterationStarted,
-            event_detail=EventDetails(mapIterationStartedEventDetails=map_iteration_event_details),
+            event_type=HistoryEventType.MapIterationStarted,
+            event_details=EventDetails(mapIterationStartedEventDetails=map_iteration_event_details),
         )
 
         job_output = RuntimeError(
@@ -111,10 +111,10 @@ class IterationWorker(abc.ABC):
                 )
 
             # Otherwise, execution succeeded and the output of this operation is available.
-            env.event_history.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.MapIterationSucceeded,
-                event_detail=EventDetails(
+                event_type=HistoryEventType.MapIterationSucceeded,
+                event_details=EventDetails(
                     mapIterationSucceededEventDetails=map_iteration_event_details
                 ),
                 update_source_event_id=False,
@@ -129,19 +129,19 @@ class IterationWorker(abc.ABC):
             # At this depth, the next event is either a MapIterationFailed (for any reasons) or a MapIterationAborted
             # if explicitly indicated.
             if failure_event_ex.failure_event.event_type == HistoryEventType.MapIterationAborted:
-                env.event_history.add_event(
+                env.event_manager.add_event(
                     context=env.event_history_context,
-                    hist_type_event=HistoryEventType.MapIterationAborted,
-                    event_detail=EventDetails(
+                    event_type=HistoryEventType.MapIterationAborted,
+                    event_details=EventDetails(
                         mapIterationAbortedEventDetails=map_iteration_event_details
                     ),
                     update_source_event_id=False,
                 )
             else:
-                env.event_history.add_event(
+                env.event_manager.add_event(
                     context=env.event_history_context,
-                    hist_type_event=HistoryEventType.MapIterationFailed,
-                    event_detail=EventDetails(
+                    event_type=HistoryEventType.MapIterationFailed,
+                    event_details=EventDetails(
                         mapIterationFailedEventDetails=map_iteration_event_details
                     ),
                     update_source_event_id=False,
@@ -156,10 +156,10 @@ class IterationWorker(abc.ABC):
             # Pass the exception upstream leading to evaluation halt.
             job_output = ex
 
-            env.event_history.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.MapIterationFailed,
-                event_detail=EventDetails(
+                event_type=HistoryEventType.MapIterationFailed,
+                event_details=EventDetails(
                     mapIterationFailedEventDetails=map_iteration_event_details
                 ),
                 update_source_event_id=False,

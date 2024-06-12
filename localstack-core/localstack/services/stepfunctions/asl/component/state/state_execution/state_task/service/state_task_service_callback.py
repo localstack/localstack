@@ -164,10 +164,10 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
     ) -> None:
         if self._is_condition():
             output = env.stack[-1]
-            env.event_history.add_event(
+            env.event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.TaskSubmitted,
-                event_detail=EventDetails(
+                event_type=HistoryEventType.TaskSubmitted,
+                event_details=EventDetails(
                     taskSubmittedEventDetails=TaskSubmittedEventDetails(
                         resource=self._get_sfn_resource(),
                         resourceType=self._get_sfn_resource_type(),

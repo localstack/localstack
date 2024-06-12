@@ -128,9 +128,10 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                 error = None
                 if result.is_error:
                     error = "?"
+                result_payload = to_str(json.loads(result.payload)) if result.payload else ""
                 callback(
                     result=LegacyInvocationResult(
-                        result=to_str(json.loads(result.payload)),
+                        result=result_payload,
                         log_output=result.logs,
                     ),
                     func_arn="doesntmatter",
@@ -182,9 +183,12 @@ class EventSourceAsfAdapter(EventSourceAdapter):
                         error = None
                         if result.is_error:
                             error = "?"
+                        result_payload = (
+                            to_str(json.loads(result.payload)) if result.payload else ""
+                        )
                         callback(
                             result=LegacyInvocationResult(
-                                result=to_str(json.loads(result.payload)),
+                                result=result_payload,
                                 log_output=result.logs,
                             ),
                             func_arn="doesntmatter",

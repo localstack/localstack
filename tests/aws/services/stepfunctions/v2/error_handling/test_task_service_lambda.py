@@ -15,7 +15,7 @@ from tests.aws.services.stepfunctions.templates.timeouts.timeout_templates impor
 )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..loggingConfiguration", "$..tracingConfiguration"])
+@markers.snapshot.skip_snapshot_verify(paths=["$..tracingConfiguration"])
 class TestTaskServiceLambda:
     @markers.aws.validated
     def test_raise_exception(

@@ -930,6 +930,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 # remove the ReturnValues if the client didn't ask for it
                 existing_item = result.pop("Attributes", None)
 
+            if existing_item == item:
+                return result
+
             # create record
             record = self.get_record_template(
                 context.region,
@@ -1039,7 +1042,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 region_name=context.region,
                 endpoint_url=self.server.url,
             )
-            if not updated_item:
+            if not updated_item or updated_item == existing_item:
                 return result
 
             record = self.get_record_template(context.region)
@@ -1812,6 +1815,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     existing_item = find_item_for_keys_values_in_batch(
                         table_name, keys, existing_items
                     )
+                    if existing_item == updated_item:
+                        # if the item is the same as the previous version, AWS does not send an event
+                        continue
 
                     if stream_type.stream_view_type:
                         record["dynamodb"]["StreamViewType"] = stream_type.stream_view_type
@@ -1972,7 +1978,6 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             "dynamodb": {
                 # expects nearest second rounded down
                 "ApproximateCreationDateTime": int(time.time()),
-                # 'StreamViewType': 'NEW_AND_OLD_IMAGES',
                 "SizeBytes": -1,
             },
             "awsRegion": region_name,

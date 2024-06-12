@@ -71,7 +71,17 @@ API_DEPENDENCIES = {
 API_DEPENDENCIES_OPTIONAL = {
     # firehose's optional dependencies are supported delivery stream destinations
     "firehose": ["es", "opensearch", "s3", "redshift"],
-    "lambda": ["cloudwatch", "dynamodbstreams", "logs", "kafka", "kinesis", "msk", "sqs"],
+    "lambda": [
+        "cloudwatch",  # Lambda metrics
+        "dynamodbstreams",  # Event source mapping source
+        "events",  # Lambda destination
+        "logs",  # Function logging
+        "kinesis",  # Event source mapping source
+        "sqs",  # Event source mapping source + Lambda destination
+        "sns",  # Lambda destination
+        "sts",  # Credentials injection
+        # Additional dependencies to Pro-only services are defined in ext
+    ],
     "ses": ["sns"],
     "sns": ["sqs", "lambda", "firehose", "ses", "logs"],
     "sqs": ["cloudwatch"],

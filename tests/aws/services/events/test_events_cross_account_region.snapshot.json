@@ -1,0 +1,79 @@
+{
+  "tests/aws/services/events/test_events_cross_account_region.py::TestEventCrossRegion::test_event_bus_to_event_bus_cross_region": {
+    "recorded-date": "10-06-2024, 10:06:02",
+    "recorded-content": {
+      "messages_primary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:2>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region-name>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_primary_event_bus": [
+        {
+          "MessageId": "<uuid:3>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:4>",
+            "detail-type": "core.update-account-command",
+            "source": "source-primary",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region-name-secondary>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ],
+      "messages_secondary_queue_from_secondary_event_bus": [
+        {
+          "MessageId": "<uuid:5>",
+          "ReceiptHandle": "receipt-handle",
+          "MD5OfBody": "m-d5-of-body",
+          "Body": {
+            "version": "0",
+            "id": "<uuid:6>",
+            "detail-type": "core.update-account-command",
+            "source": "source-secondary",
+            "account": "111111111111",
+            "time": "date",
+            "region": "<region-name-secondary>",
+            "resources": [],
+            "detail": {
+              "command": "update-account",
+              "payload": {
+                "acc_id": "0a787ecb-4015",
+                "sf_id": "baz"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

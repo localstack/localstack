@@ -8,10 +8,6 @@ from localstack.aws.connect import InternalRequestParameters
 from localstack.http import Request, Response
 from localstack.utils.strings import long_uid
 
-# FIXME: deprecated, use localstack.http.Request and localstack.http.Response instead
-HttpRequest = Request
-HttpResponse = Response
-
 
 class ServiceRequest(TypedDict):
     pass

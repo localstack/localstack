@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/cloudformation/api/test_validations.py::test_invalid_output_structure[missing-def]": {
+    "last_validated_date": "2024-05-31T14:53:31+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_validations.py::test_invalid_output_structure[multiple-nones]": {
+    "last_validated_date": "2024-05-31T14:53:31+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_validations.py::test_invalid_output_structure[none-value]": {
+    "last_validated_date": "2024-05-31T14:53:31+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_validations.py::test_missing_resources_block": {
+    "last_validated_date": "2024-05-31T14:53:31+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_validations.py::test_resources_blocks[invalid-key]": {
+    "last_validated_date": "2024-05-31T14:53:32+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_validations.py::test_resources_blocks[missing-type]": {
+    "last_validated_date": "2024-05-31T14:53:32+00:00"
+  }
+}

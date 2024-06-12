@@ -214,8 +214,8 @@ jobs:
 
       - name: Push AMD64 image
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
           PLATFORM: amd64
         run: ./bin/docker-helper.sh push
 
@@ -226,15 +226,15 @@ jobs:
 
       - name: Push ARM64 image
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
           PLATFORM: arm64
         run: ./bin/docker-helper.sh push
 
       - name: Create and push manifest
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: ./bin/docker-helper.sh push-manifests
 
   cleanup:

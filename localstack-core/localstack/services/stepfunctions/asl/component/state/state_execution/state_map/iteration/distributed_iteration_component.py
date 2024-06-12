@@ -47,7 +47,9 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.component.states import States
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
-from localstack.services.stepfunctions.asl.eval.event.event_history import EventHistory
+from localstack.services.stepfunctions.asl.eval.event.event_manager import (
+    EventManager,
+)
 
 
 class DistributedIterationComponentEvalInput(InlineIterationComponentEvalInput):
@@ -150,25 +152,24 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
         )
         env.map_run_record_pool_manager.add(self._map_run_record)
 
-        env.event_history.add_event(
+        env.event_manager.add_event(
             context=env.event_history_context,
-            hist_type_event=HistoryEventType.MapRunStarted,
-            event_detail=EventDetails(
+            event_type=HistoryEventType.MapRunStarted,
+            event_details=EventDetails(
                 mapRunStartedEventDetails=MapRunStartedEventDetails(
                     mapRunArn=self._map_run_record.map_run_arn
                 )
             ),
         )
 
-        execution_event_history = env.event_history
+        parent_event_manager = env.event_manager
         try:
             if self._eval_input.item_reader:
                 self._eval_input.item_reader.eval(env=env)
             else:
                 env.stack.append(self._eval_input.input_items)
 
-            # TODO: investigate if this is truly propagated also to eventual sub programs in map run states.
-            env.event_history = EventHistory()
+            env.event_manager = EventManager()
             self._map_run(env=env)
 
         except FailureEventException as failure_event_ex:
@@ -182,33 +183,33 @@ class DistributedIterationComponent(InlineIterationComponent, abc.ABC):
                 if cause:
                     map_run_fail_event_detail["cause"] = cause
 
-            env.event_history = execution_event_history
-            env.event_history.add_event(
+            env.event_manager = parent_event_manager
+            env.event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.MapRunFailed,
-                event_detail=EventDetails(mapRunFailedEventDetails=map_run_fail_event_detail),
+                event_type=HistoryEventType.MapRunFailed,
+                event_details=EventDetails(mapRunFailedEventDetails=map_run_fail_event_detail),
             )
             self._map_run_record.set_stop(status=MapRunStatus.FAILED)
             raise failure_event_ex
 
         except Exception as ex:
-            env.event_history = execution_event_history
-            env.event_history.add_event(
+            env.event_manager = parent_event_manager
+            env.event_manager.add_event(
                 context=env.event_history_context,
-                hist_type_event=HistoryEventType.MapRunFailed,
-                event_detail=EventDetails(mapRunFailedEventDetails=MapRunFailedEventDetails()),
+                event_type=HistoryEventType.MapRunFailed,
+                event_details=EventDetails(mapRunFailedEventDetails=MapRunFailedEventDetails()),
             )
             self._map_run_record.set_stop(status=MapRunStatus.FAILED)
             raise ex
         finally:
-            env.event_history = execution_event_history
+            env.event_manager = parent_event_manager
             self._eval_input = None
             self._workers.clear()
 
         # TODO: review workflow of program stops and maprunstops
         # program_state = env.program_state()
         # if isinstance(program_state, ProgramSucceeded)
-        env.event_history.add_event(
-            context=env.event_history_context, hist_type_event=HistoryEventType.MapRunSucceeded
+        env.event_manager.add_event(
+            context=env.event_history_context, event_type=HistoryEventType.MapRunSucceeded
         )
         self._map_run_record.set_stop(status=MapRunStatus.SUCCEEDED)

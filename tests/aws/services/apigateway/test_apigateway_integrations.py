@@ -278,18 +278,15 @@ def test_put_integration_response_with_response_template(
 @markers.snapshot.skip_snapshot_verify(paths=["$..not-required-integration-method-MOCK.uri"])
 @markers.aws.validated
 def test_put_integration_validation(
-    aws_client, account_id, create_echo_http_server, create_rest_apigw, snapshot
+    aws_client, account_id, region_name, create_rest_apigw, snapshot
 ):
     snapshot.add_transformers_list(
         [
-            snapshot.transform.key_value("echo-server-url"),
             snapshot.transform.key_value("cacheNamespace"),
         ]
     )
 
     api_id, _, root_id = create_rest_apigw(name="test-apigw")
-    echo_server_url = create_echo_http_server(trim_x_headers=True)
-    snapshot.match("echo-server-url", echo_server_url)
 
     aws_client.apigateway.put_method(
         restApiId=api_id, resourceId=root_id, httpMethod="GET", authorizationType="NONE"
@@ -311,9 +308,9 @@ def test_put_integration_validation(
                 resourceId=root_id,
                 httpMethod="GET",
                 type=_type,
-                uri=echo_server_url,
+                uri="http://example.com",
             )
-        snapshot.match(f"required-integration-method-{_type}", ex.value)
+        snapshot.match(f"required-integration-method-{_type}", ex.value.response)
 
     for _type in types_not_requiring_integration_method:
         # Ensure that integrations of these types do not need the integrationHttpMethod
@@ -322,7 +319,7 @@ def test_put_integration_validation(
             resourceId=root_id,
             httpMethod="GET",
             type=_type,
-            uri=echo_server_url,
+            uri="http://example.com",
         )
         snapshot.match(f"not-required-integration-method-{_type}", response)
 
@@ -333,7 +330,7 @@ def test_put_integration_validation(
             resourceId=root_id,
             httpMethod="GET",
             type=_type,
-            uri=echo_server_url,
+            uri="http://example.com",
             integrationHttpMethod="POST",
         )
         snapshot.match(f"http-method-{_type}", response)
@@ -343,12 +340,10 @@ def test_put_integration_validation(
         response = aws_client.apigateway.put_integration(
             restApiId=api_id,
             resourceId=root_id,
-            credentials="arn:aws:iam::{}:role/service-role/testfunction-role-oe783psq".format(
-                account_id,
-            ),
+            credentials=f"arn:aws:iam::{account_id}:role/service-role/testfunction-role-oe783psq",
             httpMethod="GET",
             type=_type,
-            uri="arn:aws:apigateway:us-west-2:s3:path/b/k",
+            uri=f"arn:aws:apigateway:{region_name}:s3:path/b/k",
             integrationHttpMethod="POST",
         )
         snapshot.match(f"aws-integration-{_type}", response)
@@ -360,8 +355,7 @@ def test_put_integration_validation(
             resourceId=root_id,
             httpMethod="GET",
             type=_type,
-            uri="arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu"
-            "-west-1:012345678901:function:MyLambda/invocations",
+            uri=f"arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/arn:aws:lambda:{region_name}:{account_id}:function:MyLambda/invocations",
             integrationHttpMethod="POST",
         )
         snapshot.match(f"aws-integration-type-{_type}", response)
@@ -377,10 +371,10 @@ def test_put_integration_validation(
                 ),
                 httpMethod="GET",
                 type=_type,
-                uri="arn:aws:apigateway:us-west-2:s3:path/b/k",
+                uri=f"arn:aws:apigateway:{region_name}:s3:path/b/k",
                 integrationHttpMethod="POST",
             )
-        snapshot.match(f"no-s3-support-{_type}", ex.value)
+        snapshot.match(f"no-s3-support-{_type}", ex.value.response)
 
     for _type in http_types:
         # Ensure that the URI is valid HTTP
@@ -393,7 +387,7 @@ def test_put_integration_validation(
                 uri="non-valid-http",
                 integrationHttpMethod="POST",
             )
-    snapshot.match(f"invalid-uri-{_type}", ex.value)
+        snapshot.match(f"invalid-uri-{_type}", ex.value.response)
 
     # Ensure that the URI is an ARN
     with pytest.raises(ClientError) as ex:
@@ -405,7 +399,7 @@ def test_put_integration_validation(
             uri="non-valid-arn",
             integrationHttpMethod="POST",
         )
-    snapshot.match("invalid-uri-not-an-arn", ex.value)
+    snapshot.match("invalid-uri-not-an-arn", ex.value.response)
 
     # Ensure that the URI is a valid ARN
     with pytest.raises(ClientError) as ex:
@@ -417,7 +411,7 @@ def test_put_integration_validation(
             uri="arn:aws:iam::0000000000:role/service-role/asdf",
             integrationHttpMethod="POST",
         )
-    snapshot.match("invalid-uri-invalid-arn", ex.value)
+    snapshot.match("invalid-uri-invalid-arn", ex.value.response)
 
 
 @pytest.fixture

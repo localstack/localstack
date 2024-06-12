@@ -4,8 +4,6 @@
 #
 #    pip-compile --extra=runtime --output-file=requirements-runtime.txt --strip-extras --unsafe-package=distribute --unsafe-package=localstack-core --unsafe-package=pip --unsafe-package=setuptools pyproject.toml
 #
-aiofiles==23.2.1
-    # via quart
 airspeed-ext==0.6.5
     # via localstack-core (pyproject.toml)
 amazon-kclpy==2.1.5
@@ -31,23 +29,21 @@ aws-sam-translator==1.89.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
-aws-xray-sdk==2.13.1
+aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.32.117
+awscli==1.33.4
     # via localstack-core (pyproject.toml)
-awscrt==0.20.10
+awscrt==0.20.11
     # via localstack-core
 blinker==1.8.2
-    # via
-    #   flask
-    #   quart
-boto3==1.34.117
+    # via flask
+boto3==1.34.122
     # via
     #   amazon-kclpy
     #   aws-sam-translator
     #   localstack-core
     #   moto-ext
-botocore==1.34.117
+botocore==1.34.122
     # via
     #   aws-xray-sdk
     #   awscli
@@ -64,7 +60,7 @@ cachetools==5.3.3
     #   airspeed-ext
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cbor2==5.6.3
+cbor2==5.6.4
     # via localstack-core
 certifi==2024.6.2
     # via
@@ -72,7 +68,7 @@ certifi==2024.6.2
     #   requests
 cffi==1.16.0
     # via cryptography
-cfn-lint==0.87.4
+cfn-lint==0.87.5
     # via moto-ext
 charset-normalizer==3.3.2
     # via requests
@@ -81,14 +77,13 @@ click==8.1.7
     #   flask
     #   localstack-core
     #   localstack-core (pyproject.toml)
-    #   quart
 colorama==0.4.6
     # via awscli
 constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.1
     # via localstack-core (pyproject.toml)
-cryptography==42.0.7
+cryptography==42.0.8
     # via
     #   joserfc
     #   localstack-core
@@ -119,9 +114,7 @@ docutils==0.16
 events==0.5
     # via opensearch-py
 flask==3.0.3
-    # via
-    #   localstack-core
-    #   quart
+    # via localstack-core
 graphql-core==3.2.3
     # via moto-ext
 h11==0.14.0
@@ -135,9 +128,7 @@ h2==4.1.0
 hpack==4.0.0
     # via h2
 hypercorn==0.17.3
-    # via
-    #   localstack-core
-    #   quart
+    # via localstack-core
 hyperframe==6.0.1
     # via h2
 hyperlink==21.0.0
@@ -150,14 +141,11 @@ idna==3.7
 incremental==22.10.0
     # via localstack-twisted
 itsdangerous==2.2.0
-    # via
-    #   flask
-    #   quart
+    # via flask
 jinja2==3.1.4
     # via
     #   flask
     #   moto-ext
-    #   quart
 jmespath==1.0.1
     # via
     #   boto3
@@ -182,9 +170,9 @@ jsonpath-ng==1.6.1
     #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
-jsonpickle==3.0.4
+jsonpickle==3.2.1
     # via jschema-to-python
-jsonpointer==2.4
+jsonpointer==3.0.0
     # via jsonpatch
 jsonschema==4.22.0
     # via
@@ -209,11 +197,10 @@ markdown-it-py==3.0.0
 markupsafe==2.1.5
     # via
     #   jinja2
-    #   quart
     #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
-moto-ext==5.0.8.post2
+moto-ext==5.0.9.post1
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -227,7 +214,7 @@ openapi-spec-validator==0.7.1
     # via moto-ext
 opensearch-py==2.6.0
     # via localstack-core (pyproject.toml)
-packaging==24.0
+packaging==24.1
     # via
     #   apispec
     #   build
@@ -266,7 +253,7 @@ pydantic-core==2.18.4
     # via pydantic
 pygments==2.18.0
     # via rich
-pymongo==4.7.2
+pymongo==4.7.3
     # via localstack-core (pyproject.toml)
 pyopenssl==24.1.0
     # via
@@ -295,8 +282,6 @@ pyyaml==6.0.1
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   responses
-quart==0.19.6
-    # via localstack-core
 readerwriterlock==1.0.9
     # via localstack-core
 referencing==0.31.1
@@ -319,7 +304,7 @@ requests==2.32.3
     #   rolo
 requests-aws4auth==1.2.3
     # via localstack-core
-responses==0.25.0
+responses==0.25.2
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
@@ -360,7 +345,7 @@ tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.12.1
+typing-extensions==4.12.2
     # via
     #   aws-sam-translator
     #   localstack-twisted
@@ -380,7 +365,6 @@ werkzeug==3.0.3
     #   flask
     #   localstack-core
     #   moto-ext
-    #   quart
     #   rolo
 wrapt==1.16.0
     # via aws-xray-sdk

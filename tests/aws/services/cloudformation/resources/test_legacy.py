@@ -585,7 +585,7 @@ class TestCloudFormation:
         assert len([c for c in certs if c.get("DomainName") == "example.com"]) == 0
 
     # TODO: refactor
-    @pytest.mark.xfail(reason="fails due to / depending on other tests")
+    @pytest.mark.skip(reason="fails due to / depending on other tests")
     @markers.aws.unknown
     def test_deploy_stack_with_sub_select_and_sub_getaz(
         self, deploy_cfn_template, cleanups, aws_client, account_id, region_name

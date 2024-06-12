@@ -811,7 +811,7 @@ class TestSqsProvider:
         snapshot.match("get_updated_queue_attributes", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5938")
+    @pytest.mark.skip(reason="see https://github.com/localstack/localstack/issues/5938")
     def test_create_queue_with_default_arguments_works_with_modified_attributes(
         self, sqs_create_queue, aws_sqs_client
     ):
@@ -850,7 +850,7 @@ class TestSqsProvider:
         assert queue_url == sqs_create_queue(QueueName=queue_name)
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="see https://github.com/localstack/localstack/issues/5938")
+    @pytest.mark.skip(reason="see https://github.com/localstack/localstack/issues/5938")
     def test_create_queue_after_modified_attributes(self, sqs_create_queue, aws_sqs_client):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(
@@ -2026,7 +2026,7 @@ class TestSqsProvider:
         assert get_qsize(aws_sqs_client, queue_url) == 1
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="not implemented in localstack at the moment")
+    @pytest.mark.skip(reason="not implemented in localstack at the moment")
     def test_fifo_delete_message_with_expired_receipt_handle(
         self, sqs_create_queue, aws_sqs_client, snapshot
     ):
@@ -2460,7 +2460,7 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
 
-    @pytest.mark.xfail
+    @pytest.mark.skip
     @markers.aws.validated
     def test_redrive_policy_attribute_validity(
         self, sqs_create_queue, sqs_get_queue_arn, aws_sqs_client
@@ -2511,7 +2511,7 @@ class TestSqsProvider:
         )
 
     @markers.aws.validated
-    @pytest.mark.xfail(reason="behavior not implemented yet")
+    @pytest.mark.skip(reason="behavior not implemented yet")
     def test_invalid_dead_letter_arn_rejected_before_lookup(self, sqs_create_queue, snapshot):
         dl_dummy_arn = "dummy"
         max_receive_count = 42
@@ -3266,7 +3266,7 @@ class TestSqsProvider:
         snapshot.match("get-dedup-messages", response)
 
     @markers.aws.validated
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="localstack allows queue names with slashes, but this should be deprecated"
     )
     def test_disallow_queue_name_with_slashes(self, sqs_create_queue):
@@ -4150,7 +4150,7 @@ class TestSqsProvider:
         )
         snapshot.match("sse_sqs_attributes", response)
 
-    @pytest.mark.xfail(reason="validation currently not implemented in localstack")
+    @pytest.mark.skip(reason="validation currently not implemented in localstack")
     @markers.aws.validated
     def test_sse_kms_and_sqs_are_mutually_exclusive(
         self, sqs_create_queue, snapshot, aws_sqs_client
@@ -4901,7 +4901,7 @@ class TestSqsQueryApi:
         assert queue1_url.split("/")[-1] not in response.text
         assert queue2_url.split("/")[-1] in response.text
 
-    @pytest.mark.xfail(reason="json serialization not supported yet")
+    @pytest.mark.skip(reason="json serialization not supported yet")
     @markers.aws.validated
     def test_get_list_queues_fails_json_format(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
@@ -4919,7 +4919,7 @@ class TestSqsQueryApi:
         assert doc["Error"]["Code"] == "InvalidAction"
         assert doc["Error"]["Message"] == "The action ListQueues is not valid for this endpoint."
 
-    @pytest.mark.xfail(reason="json serialization not supported yet")
+    @pytest.mark.skip(reason="json serialization not supported yet")
     @markers.aws.validated
     def test_get_queue_attributes_json_format(self, sqs_create_queue, sqs_http_client):
         queue_url = sqs_create_queue()
