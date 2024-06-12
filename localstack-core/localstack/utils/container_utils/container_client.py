@@ -1212,11 +1212,16 @@ class Util:
                     raise
                 for idx, line in enumerate(env_file_lines):
                     line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
+                    if not line or line.startswith("#"):
                         # skip comments or empty lines
                         continue
-                    lhs, _, rhs = line.partition("=")
-                    env_vars[lhs] = rhs
+                    lhs, separator, rhs = line.partition("=")
+                    if rhs or separator:
+                        env_vars[lhs] = rhs
+                    else:
+                        # No "=" in the line, only the name => lookup in local env
+                        if env_value := os.environ.get(lhs):
+                            env_vars[lhs] = env_value
 
         if args.envs:
             env_vars = env_vars if env_vars is not None else {}
