@@ -719,6 +719,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateFunctionRequest,
     ) -> FunctionConfiguration:
+        context_region = context.region
+        context_account_id = context.account_id
+
         zip_file = request.get("Code", {}).get("ZipFile")
         if zip_file and len(zip_file) > config.LAMBDA_LIMITS_CODE_SIZE_ZIPPED:
             raise RequestEntityTooLargeException(
@@ -747,7 +750,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             self._verify_env_variables(env_vars)
 
         if layers := request.get("Layers", []):
-            self._validate_layers(layers, region=context.region, account_id=context.account_id)
+            self._validate_layers(layers, region=context_region, account_id=context_account_id)
 
         if not api_utils.is_role_arn(request.get("Role")):
             raise ValidationException(
@@ -778,7 +781,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         ):  # just function name
             pass
         elif function_name and account and qualifier is None and region is None:  # partial arn
-            if account != context.account_id:
+            if account != context_account_id:
                 raise AccessDeniedException(None)
         elif function_name and account and region and qualifier is None:  # unqualified arn
             if len(request_function_name) > 140:
@@ -790,7 +793,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     f"Functions from '{region}' are not reachable in this region ('{context.region}')",
                     Type="User",
                 )
-            if account != context.account_id:
+            if account != context_account_id:
                 raise AccessDeniedException(None)
         else:
             pattern = r"(arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}((-gov)|(-iso(b?)))?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"
@@ -811,7 +814,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         if snap_start := request.get("SnapStart"):
             self._validate_snapstart(snap_start, runtime)
-        state = lambda_stores[context.account_id][context.region]
+        state = lambda_stores[context_account_id][context_region]
 
         with self.create_fn_lock:
             if function_name in state.functions:
@@ -820,8 +823,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             arn = VersionIdentifier(
                 function_name=function_name,
                 qualifier="$LATEST",
-                region=context.region,
-                account=context.account_id,
+                region=context_region,
+                account=context_account_id,
             )
             # save function code to s3
             code = None
@@ -830,7 +833,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             runtime_version_config = RuntimeVersionConfig(
                 # Limitation: the runtime id (presumably sha256 of image) is currently hardcoded
                 # Potential implementation: provide (cached) sha256 hash of used Docker image
-                RuntimeVersionArn=f"arn:aws:lambda:{context.region}::runtime:8eeff65f6809a3ce81507fe733fe09b835899b99481ba22fd75b5a7338290ec1"
+                RuntimeVersionArn=f"arn:aws:lambda:{context_region}::runtime:8eeff65f6809a3ce81507fe733fe09b835899b99481ba22fd75b5a7338290ec1"
             )
             request_code = request.get("Code")
             if package_type == PackageType.Zip:
@@ -839,8 +842,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     code = store_lambda_archive(
                         archive_file=zip_file,
                         function_name=function_name,
-                        region_name=context.region,
-                        account_id=context.account_id,
+                        region_name=context_region,
+                        account_id=context_account_id,
                     )
                 elif s3_bucket := request_code.get("S3Bucket"):
                     s3_key = request_code["S3Key"]
@@ -850,8 +853,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                         archive_key=s3_key,
                         archive_version=s3_object_version,
                         function_name=function_name,
-                        region_name=context.region,
-                        account_id=context.account_id,
+                        region_name=context_region,
+                        account_id=context_account_id,
                     )
                 else:
                     raise LambdaServiceException("Gotta have s3 bucket or zip file")
@@ -928,7 +931,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     runtime_version_config=runtime_version_config,
                     dead_letter_arn=request.get("DeadLetterConfig", {}).get("TargetArn"),
                     vpc_config=self._build_vpc_config(
-                        context.account_id, context.region, request.get("VpcConfig")
+                        context_account_id, context_region, request.get("VpcConfig")
                     ),
                     state=VersionState(
                         state=State.Pending,
@@ -947,7 +950,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if request.get("Publish"):
             version = self._publish_version_with_changes(
-                function_name=function_name, region=context.region, account_id=context.account_id
+                function_name=function_name, region=context_region, account_id=context_account_id
             )
 
         if config.LAMBDA_SYNCHRONOUS_CREATE:
@@ -1771,7 +1774,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 Type="User",
             )
 
-        state = lambda_stores[context.account_id][context.region]
         request_function_name = request["FunctionName"]
         # can be either a partial arn or a full arn for the version/alias
         function_name, qualifier, account, region = function_locators_from_arn(
@@ -1779,6 +1781,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
         account = account or context.account_id
         region = region or context.region
+
+        state = lambda_stores[account][region]
 
         fn = state.functions.get(function_name)
         if not fn:
@@ -2446,12 +2450,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         code_signing_policies: CodeSigningPolicies = None,
         **kwargs,
     ) -> CreateCodeSigningConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        account = context.account_id
+        region = context.region
+
+        state = lambda_stores[account][region]
         # TODO: can there be duplicates?
         csc_id = f"csc-{get_random_hex(17)}"  # e.g. 'csc-077c33b4c19e26036'
-        csc_arn = (
-            f"arn:aws:lambda:{context.region}:{context.account_id}:code-signing-config:{csc_id}"
-        )
+        csc_arn = f"arn:aws:lambda:{region}:{account}:code-signing-config:{csc_id}"
         csc = CodeSigningConfig(
             csc_id=csc_id,
             arn=csc_arn,
@@ -2605,7 +2610,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         max_items: MaxListItems = None,
         **kwargs,
     ) -> ListFunctionsByCodeSigningConfigResponse:
-        state = lambda_stores[context.account_id][context.region]
+        account = context.account_id
+        region = context.region
+
+        state = lambda_stores[account][region]
 
         if code_signing_config_arn not in state.code_signing_configs:
             raise ResourceNotFoundException(
@@ -2613,7 +2621,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
 
         fn_arns = [
-            api_utils.unqualified_lambda_arn(fn.function_name, context.account_id, context.region)
+            api_utils.unqualified_lambda_arn(fn.function_name, account, region)
             for fn in state.functions.values()
             if fn.code_signing_config_arn == code_signing_config_arn
         ]
@@ -3298,6 +3306,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         Note that there are no $LATEST versions with layers!
 
         """
+        account = context.account_id
+        region = context.region
+
         validation_errors = api_utils.validate_layer_runtimes_and_architectures(
             compatible_runtimes, compatible_architectures
         )
@@ -3306,15 +3317,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 f"{len(validation_errors)} validation error{'s' if len(validation_errors) > 1 else ''} detected: {'; '.join(validation_errors)}"
             )
 
-        state = lambda_stores[context.account_id][context.region]
+        state = lambda_stores[account][region]
         with self.create_layer_lock:
             if layer_name not in state.layers:
                 # we don't have a version so create new layer object
                 # lock is required to avoid creating two v1 objects for the same name
                 layer = Layer(
-                    arn=api_utils.layer_arn(
-                        layer_name=layer_name, account=context.account_id, region=context.region
-                    )
+                    arn=api_utils.layer_arn(layer_name=layer_name, account=account, region=region)
                 )
                 state.layers[layer_name] = layer
 
@@ -3328,8 +3337,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             code = store_lambda_archive(
                 archive_file=content["ZipFile"],
                 function_name=layer_name,
-                region_name=context.region,
-                account_id=context.account_id,
+                region_name=region,
+                account_id=account,
             )
         else:
             code = store_s3_bucket_archive(
@@ -3337,15 +3346,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 archive_key=content["S3Key"],
                 archive_version=content.get("S3ObjectVersion"),
                 function_name=layer_name,
-                region_name=context.region,
-                account_id=context.account_id,
+                region_name=region,
+                account_id=account,
             )
 
         new_layer_version = LayerVersion(
             layer_version_arn=api_utils.layer_version_arn(
                 layer_name=layer_name,
-                account=context.account_id,
-                region=context.region,
+                account=account,
+                region=region,
                 version=str(next_version),
             ),
             layer_arn=layer.arn,
