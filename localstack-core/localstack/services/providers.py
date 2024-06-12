@@ -231,7 +231,7 @@ def route53resolver():
 @aws_provider(api="s3", name="asf")
 def s3_asf():
     from localstack.services.moto import MotoFallbackDispatcher
-    from localstack.services.s3.provider import S3Provider
+    from localstack.services.s3.legacy.provider import S3Provider
 
     provider = S3Provider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
@@ -240,7 +240,7 @@ def s3_asf():
 @aws_provider(api="s3", name="v2")
 def s3_v2():
     from localstack.services.moto import MotoFallbackDispatcher
-    from localstack.services.s3.provider import S3Provider
+    from localstack.services.s3.legacy.provider import S3Provider
 
     provider = S3Provider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
@@ -249,7 +249,7 @@ def s3_v2():
 @aws_provider(api="s3", name="legacy_v2")
 def s3_legacy_v2():
     from localstack.services.moto import MotoFallbackDispatcher
-    from localstack.services.s3.provider import S3Provider
+    from localstack.services.s3.legacy.provider import S3Provider
 
     provider = S3Provider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
@@ -257,7 +257,7 @@ def s3_legacy_v2():
 
 @aws_provider(api="s3", name="default")
 def s3():
-    from localstack.services.s3.v3.provider import S3Provider
+    from localstack.services.s3.provider import S3Provider
 
     provider = S3Provider()
     return Service.for_provider(provider)
@@ -265,7 +265,7 @@ def s3():
 
 @aws_provider(api="s3", name="stream")
 def s3_stream():
-    from localstack.services.s3.v3.provider import S3Provider
+    from localstack.services.s3.provider import S3Provider
 
     provider = S3Provider()
     return Service.for_provider(provider)
@@ -273,7 +273,7 @@ def s3_stream():
 
 @aws_provider(api="s3", name="v3")
 def s3_v3():
-    from localstack.services.s3.v3.provider import S3Provider
+    from localstack.services.s3.provider import S3Provider
 
     provider = S3Provider()
     return Service.for_provider(provider)

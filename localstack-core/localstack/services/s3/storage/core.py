@@ -3,8 +3,8 @@ from io import RawIOBase
 from typing import IO, Iterable, Iterator, Literal, Optional
 
 from localstack.aws.api.s3 import BucketName, PartNumber
+from localstack.services.s3.models import S3Multipart, S3Object, S3Part
 from localstack.services.s3.utils import ObjectRange
-from localstack.services.s3.v3.models import S3Multipart, S3Object, S3Part
 
 
 class LimitedIterableStream(Iterable[bytes]):

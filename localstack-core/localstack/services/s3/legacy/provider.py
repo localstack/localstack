@@ -152,7 +152,17 @@ from localstack.services.s3.exceptions import (
     NoSuchConfiguration,
     UnexpectedContent,
 )
-from localstack.services.s3.models import BucketCorsIndex, S3Store, get_moto_s3_backend, s3_stores
+from localstack.services.s3.legacy.models import (
+    BucketCorsIndex,
+    S3Store,
+    get_moto_s3_backend,
+    s3_stores,
+)
+from localstack.services.s3.legacy.utils_moto import (
+    get_bucket_from_moto,
+    get_key_from_moto_bucket,
+    is_moto_key_expired,
+)
 from localstack.services.s3.notifications import NotificationDispatcher, S3EventNotificationContext
 from localstack.services.s3.presigned_url import validate_post_policy
 from localstack.services.s3.utils import (
@@ -169,11 +179,6 @@ from localstack.services.s3.utils import (
     serialize_expiration_header,
     validate_kms_key_id,
     verify_checksum,
-)
-from localstack.services.s3.utils_moto import (
-    get_bucket_from_moto,
-    get_key_from_moto_bucket,
-    is_moto_key_expired,
 )
 from localstack.services.s3.validation import (
     parse_grants_in_headers,
