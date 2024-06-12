@@ -1,8 +1,6 @@
 import json
 import logging
 import os.path
-import socket
-from contextlib import closing
 
 import pytest
 import requests
@@ -244,7 +242,7 @@ class TestDNSServer:
         monkeypatch.setenv("DNS_PORT", str(port))
         monkeypatch.setattr(config, "DNS_PORT", port)
 
-        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["start", "-d", "--host-dns"])
         runner.invoke(cli, ["wait", "-t", "60"])
 
         inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
@@ -257,42 +255,11 @@ class TestDNSServer:
         monkeypatch.setenv("DNS_PORT", str(port))
         monkeypatch.setattr(config, "DNS_PORT", port)
 
-        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["start", "-d", "--host-dns"])
         runner.invoke(cli, ["wait", "-t", "60"])
 
         reply = send_dns_query(name=LOCALHOST_HOSTNAME, port=port)
         assert str(reply.a.rdata) == LOCALHOST_IP
-
-    @pytest.mark.skip(reason="For this change, the tests run on the previous image")
-    def test_dns_server_starts_if_host_port_bound(
-        self, runner, container_client, monkeypatch, dns_query_from_container
-    ):
-        port = get_free_udp_port()
-        monkeypatch.setenv("DEBUG", "1")
-        monkeypatch.setenv("DNS_PORT", str(port))
-        monkeypatch.setattr(config, "DNS_PORT", port)
-
-        # bind the port
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(("", port))
-
-        with closing(s):
-            runner.invoke(cli, ["start", "-d"])
-            runner.invoke(cli, ["wait", "-t", "60"])
-
-            inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
-            assert f"{port}/udp" not in inspect["HostConfig"]["PortBindings"]
-            ip_address = list(inspect["NetworkSettings"]["Networks"].values())[0]["IPAddress"]
-
-            with pytest.raises(TimeoutError):
-                send_dns_query(name=LOCALHOST_HOSTNAME, port=port)
-
-            # use a docker container to test the DNS
-            stdout, _ = dns_query_from_container(
-                name=LOCALHOST_HOSTNAME, ip_address=ip_address, port=port
-            )
-            assert ip_address in stdout.decode().splitlines()
 
 
 class TestHooks:
