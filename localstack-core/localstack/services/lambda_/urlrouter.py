@@ -7,6 +7,8 @@ import urllib
 from datetime import datetime
 from http import HTTPStatus
 
+from rolo.request import restore_payload
+
 from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.http import Request, Response, Router
@@ -77,7 +79,7 @@ class FunctionUrlRouter:
             return response
 
         event = event_for_lambda_url(
-            api_id, request.full_path, request.data, request.headers, request.method
+            api_id, request.full_path, restore_payload(request), request.headers, request.method
         )
 
         match = FULL_FN_ARN_PATTERN.search(lambda_url_config.function_arn).groupdict()
@@ -136,6 +138,7 @@ def event_for_lambda_url(api_id: str, path: str, data, headers, method: str) -> 
 
     is_base64_encoded = not (data.isascii() and content_type_is_text) if data else False
     body = base64.b64encode(data).decode() if is_base64_encoded else data
+    print(f"{body=}")
     if isinstance(body, bytes):
         body = to_str(body)
 
