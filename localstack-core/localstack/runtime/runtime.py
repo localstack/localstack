@@ -79,7 +79,8 @@ class LocalstackRuntime:
         :param code: the exit code to be set
         """
         self.exit_code = code
-        self.shutdown()
+        # we don't know yet why, but shutdown does not work on the main thread
+        threading.Thread(target=self.shutdown, name="Runtime-Shutdown").start()
 
     def shutdown(self):
         """
