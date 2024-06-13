@@ -147,13 +147,17 @@ class TargetSender(ABC):
             self._validate_input_transformer(input_transformer)
 
     def _initialize_client(self) -> BaseClient:
-        """Initializes internal botocore client.
+        """Initializes internal boto client.
         If a role from a target is provided, the client will be initialized with the assumed role.
-        If no role is provided the client will be initialized with the account ID and region.
+        If no role is provided or the role is not in the target account,
+        the client will be initialized with the account ID and region.
         In both cases event bridge is requested as service principal"""
         service_principal = ServicePrincipal.events
-        if role_arn := self.target.get("RoleArn"):
-            # assumed role sessions expires after 6 hours in AWS, currently no expiration in LocalStack
+        role_arn = self.target.get("RoleArn")
+        if role_arn and self.account_id == extract_account_id_from_arn(
+            role_arn
+        ):  # required for cross account
+            # assumed role sessions expire after 6 hours in AWS, currently no expiration in LocalStack
             client_factory = connect_to.with_assumed_role(
                 role_arn=role_arn,
                 service_principal=service_principal,
