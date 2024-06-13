@@ -1,5 +1,11 @@
 {
   "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3": {
-    "last_validated_date": "2024-06-11T23:37:02+00:00"
+    "last_validated_date": "2024-06-13T22:24:32+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3_any": {
+    "last_validated_date": "2024-06-13T23:10:19+00:00"
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3_method_mapping": {
+    "last_validated_date": "2024-06-13T23:48:59+00:00"
   }
 }

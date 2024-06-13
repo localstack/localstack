@@ -1,27 +1,55 @@
 {
   "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3": {
-    "recorded-date": "11-06-2024, 23:37:02",
+    "recorded-date": "13-06-2024, 22:24:32",
     "recorded-content": {
-      "get-object-empty": {
-        "Error": {
-          "Code": "NoSuchKey",
-          "HostId": "GtejUaU/e0/NITH+fgql01ETYjpFvSclLmVTfP7hp1Wso/stsFt0Y1gRW5u/5iY5ludWnt/MC9w=",
-          "Key": "test.json",
-          "Message": "The specified key does not exist.",
-          "RequestId": "8Z2HJSFVMQ7EWXQR"
-        }
+      "get-object-1": {
+        "put_id": 1
       },
-      "get-object-1": "put_id=1",
-      "get-object-2": "put_id=2",
-      "get-object-deleted": {
+      "get-object-2": {
+        "put_id": 2
+      },
+      "get-object-s3": {
         "Error": {
           "Code": "NoSuchKey",
-          "HostId": "+SvuCQfKi2SsSuYmIfP3wpMveUmE0PsNUx8oW5BnAa205aFRAi6vSoVFrhOkJ/9XPTX287W8Zv8=",
           "Key": "test.json",
-          "Message": "The specified key does not exist.",
-          "RequestId": "BN3QPY0E8AAXHC4V"
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3_any": {
+    "recorded-date": "13-06-2024, 23:10:19",
+    "recorded-content": {
+      "get-object-1": {
+        "put_id": 1
+      },
+      "get-object-2": {
+        "put_id": 2
+      },
+      "get-object-s3": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "test.json",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3_method_mapping": {
+    "recorded-date": "13-06-2024, 23:48:59",
+    "recorded-content": {
+      "get-object": {
+        "message": "great success!"
+      },
+      "get-deleted-object": "b'<?xml version=\"1.0\" encoding=\"UTF-8\"?>\\n<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message><Key>test.json</Key><RequestId>EENKG69QCT1EWSC1</RequestId><HostId>1zYps0DF5XgqCBb3dPp6/LwXpEojpUQD/nRdFvt/x63I/AYnhQ1l5QKHFU6mwkMlBDcWkBQ1ucM=</HostId></Error>'"
     }
   }
 }
