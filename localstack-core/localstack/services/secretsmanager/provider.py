@@ -239,6 +239,8 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         secret_id = request.get("SecretId")
         version_id = request.get("VersionId")
         version_stage = request.get("VersionStage")
+        if not version_id and not version_stage:
+            version_stage = "AWSCURRENT"
         self._raise_if_invalid_secret_id(secret_id)
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
         self._raise_if_default_kms_key(secret_id, context, backend)
