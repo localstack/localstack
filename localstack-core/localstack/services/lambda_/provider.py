@@ -1,9 +1,11 @@
 import base64
 import dataclasses
 import datetime
+import itertools
 import json
 import logging
 import os
+import re
 import threading
 import time
 from typing import IO, Optional, Tuple
@@ -192,6 +194,7 @@ from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
     DEPRECATED_RUNTIMES,
+    RUNTIMES_AGGREGATED,
     SNAP_START_SUPPORTED_RUNTIMES,
     VALID_RUNTIMES,
 )
@@ -763,9 +766,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         runtime = request.get("Runtime")
         runtimes = ALL_RUNTIMES
         if LAMBDA_RUNTIME_VALIDATION:
-            runtimes = VALID_RUNTIMES
+            runtimes = list(itertools.chain(RUNTIMES_AGGREGATED.values()))
 
         if package_type == PackageType.Zip and runtime not in runtimes:
+            # deprecated runtimes have different error
+            if runtime in DEPRECATED_RUNTIMES:
+                self._check_for_recomended_migration_target(runtime)
+
             raise InvalidParameterValueException(
                 f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                 Type="User",
@@ -972,6 +979,26 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         return api_utils.map_config_out(
             version, return_qualified_arn=False, return_update_status=False
         )
+
+    def _check_for_recomended_migration_target(self, deprecated_runtime):
+        match deprecated_runtime:
+            case Runtime.go1_x:
+                latest_runtime = RUNTIMES_AGGREGATED["provided"][0]
+            case Runtime.nodejs12_x:
+                latest_runtime = Runtime.nodejs18_x
+            case _:
+                match = re.match(r"^[a-zA-Z]+", deprecated_runtime)
+                runtime_type = match.group(0)
+
+                if runtime_type in RUNTIMES_AGGREGATED:
+                    latest_runtime = RUNTIMES_AGGREGATED[runtime_type][0]
+                else:
+                    latest_runtime = None
+        if latest_runtime is not None:
+            raise InvalidParameterValueException(
+                f"The runtime parameter of {deprecated_runtime} is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime ({latest_runtime}) while creating or updating functions.",
+                Type="User",
+            )
 
     @handler(operation="UpdateFunctionConfiguration", expand=False)
     def update_function_configuration(
