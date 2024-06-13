@@ -190,6 +190,7 @@ from localstack.services.lambda_.invocation.lambda_service import (
 )
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
+from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.runtimes import (
     ALL_RUNTIMES,
@@ -767,19 +768,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             )
         package_type = request.get("PackageType", PackageType.Zip)
         runtime = request.get("Runtime")
-        runtimes = ALL_RUNTIMES
-        if LAMBDA_RUNTIME_VALIDATION:
-            runtimes = list(itertools.chain(RUNTIMES_AGGREGATED.values()))
+        self._validate_runtime(package_type, runtime)
 
-        if package_type == PackageType.Zip and runtime not in runtimes:
-            # deprecated runtimes have different error
-            if runtime in DEPRECATED_RUNTIMES:
-                self._check_for_recomended_migration_target(runtime)
-
-            raise InvalidParameterValueException(
-                f"Value {request.get('Runtime')} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
-                Type="User",
-            )
         request_function_name = request["FunctionName"]
         # Validate FunctionName:
         # a) Function name: just function name (max 64 chars)
@@ -983,12 +973,36 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             version, return_qualified_arn=False, return_update_status=False
         )
 
+    def _validate_runtime(self, package_type, runtime):
+        runtimes = ALL_RUNTIMES
+        if LAMBDA_RUNTIME_VALIDATION:
+            runtimes = list(itertools.chain(RUNTIMES_AGGREGATED.values()))
+
+        if package_type == PackageType.Zip and runtime not in runtimes:
+            # deprecated runtimes have different error
+            if runtime in DEPRECATED_RUNTIMES:
+                HINT_LOG.info(
+                    "Set env variable LAMBDA_RUNTIME_VALIDATION to 0"
+                    " in order to allow usage of deprecated runtimes"
+                )
+                self._check_for_recomended_migration_target(runtime)
+
+            raise InvalidParameterValueException(
+                f"Value {runtime} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
+                Type="User",
+            )
+
     def _check_for_recomended_migration_target(self, deprecated_runtime):
+        # AWS offers recommended runtime for migration for "newly" deprecated runtimes
+        # in order to preserve parity with error messages we need the code bellow
+
         match deprecated_runtime:
             case Runtime.go1_x:
                 latest_runtime = RUNTIMES_AGGREGATED["provided"][0]
             case Runtime.nodejs12_x:
                 latest_runtime = Runtime.nodejs18_x
+            case Runtime.dotnetcore3_1:
+                latest_runtime = RUNTIMES_AGGREGATED["dotnet"][0]
             case _:
                 match = re.match(r"^[a-zA-Z]+", deprecated_runtime)
                 runtime_type = match.group(0)
@@ -997,6 +1011,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     latest_runtime = RUNTIMES_AGGREGATED[runtime_type][0]
                 else:
                     latest_runtime = None
+
         if latest_runtime is not None:
             raise InvalidParameterValueException(
                 f"The runtime parameter of {deprecated_runtime} is no longer supported for creating or updating AWS Lambda functions. We recommend you use the new runtime ({latest_runtime}) while creating or updating functions.",

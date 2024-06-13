@@ -84,7 +84,6 @@ def environment_length_bytes(e: dict) -> int:
 
 class TestRuntimeValidation:
     @markers.aws.only_localstack
-    @pytest.mark.parametrize("runtime", DEPRECATED_RUNTIMES)
     def test_create_deprecated_function_runtime_with_validation_disabled(
         self, create_lambda_function, lambda_su_role, aws_client, monkeypatch
     ):

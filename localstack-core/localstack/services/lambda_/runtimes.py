@@ -74,10 +74,7 @@ DEPRECATED_RUNTIMES: list[Runtime] = [
     Runtime.ruby2_7,  # deprecated Dec 7, 2023 => Jan 9, 2024 => Feb 8, 2024
     Runtime.nodejs14_x,  # deprecated Dec 4, 2023  => Jan 9, 2024  => Feb 8, 2024
     Runtime.python3_7,  # deprecated Dec 4, 2023 => Jan 9, 2024 => Feb 8, 2024
-    # TODO can we remove this?
-    # AWS does not treat this as deprecation anymore (at least based on error message)
-    # they have moved away from .net core and are now only offering .NET
-    # Runtime.dotnetcore3_1,  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
+    Runtime.dotnetcore3_1,  # deprecated Apr 3, 2023 => Apr 3, 2023 => May 3, 2023
     Runtime.nodejs12_x,  # deprecated Mar 31, 2023 => Mar 31, 2023 => Apr 30, 2023
 ]
 # An unordered list of all AWS-supported runtimes.
