@@ -242,7 +242,7 @@ class ContainerTargetSender(TargetSender):
 
 class EventsTargetSender(TargetSender):
     def send_event(self, event):
-        eventbus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
+        event_bus_name = self.target["Arn"].split(":")[-1].split("/")[-1]
         source = (
             event.get("source")
             if event.get("source") is not None
@@ -259,18 +259,37 @@ class EventsTargetSender(TargetSender):
             if event.get("resources") is not None
             else ([self.rule_arn] if self.rule_arn else [])
         )
+        entries = [
+            {
+                "EventBusName": event_bus_name,
+                "Source": source,
+                "DetailType": detail_type,
+                "Detail": json.dumps(detail),
+                "Resources": resources,
+            }
+        ]
+        if encoded_original_id := self._get_trace_header_encoded_message_for_cross_account(event):
+            entries[0]["TraceHeader"] = encoded_original_id
+        self.client.put_events(Entries=entries)
 
-        self.client.put_events(
-            Entries=[
-                {
-                    "EventBusName": eventbus_name,
-                    "Source": source,
-                    "DetailType": detail_type,
-                    "Detail": json.dumps(detail),
-                    "Resources": resources,
-                }
-            ]
-        )
+    def _get_trace_header_encoded_message_for_cross_account(
+        self, event: FormattedEvent
+    ) -> str | None:
+        """Encode the original id for cross account event bus communication in the trace header.
+        For event bus to event bus communication in a different account the event id is preserved.
+        This is not the case for region to region"""
+
+        # account id from target bus different than from self
+        original_account = event.get("account")
+        print(f"\n\nevent\n{event}\n\n\n")
+        print(f"\n\ntarget\n{self.target}\n\n\n")
+        if original_account != self.account_id:
+            original_id = event.get("id")
+            message = {
+                "original_id": original_id,
+                "original_account": original_account,
+            }
+            return json.dumps(message)
 
 
 class FirehoseTargetSender(TargetSender):
