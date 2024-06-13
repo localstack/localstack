@@ -6,7 +6,7 @@ import pytest
 from localstack.testing.pytest import markers
 
 
-@pytest.skip(reason="flaky")
+@pytest.mark.skip(reason="flaky")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
