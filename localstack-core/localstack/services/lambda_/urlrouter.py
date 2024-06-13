@@ -138,7 +138,6 @@ def event_for_lambda_url(api_id: str, path: str, data, headers, method: str) -> 
 
     is_base64_encoded = not (data.isascii() and content_type_is_text) if data else False
     body = base64.b64encode(data).decode() if is_base64_encoded else data
-    print(f"{body=}")
     if isinstance(body, bytes):
         body = to_str(body)
 
