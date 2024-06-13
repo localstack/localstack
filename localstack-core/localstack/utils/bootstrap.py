@@ -31,10 +31,10 @@ from localstack.utils.container_utils.container_client import (
     VolumeMappings,
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
-from localstack.utils.docker_utils import DOCKER_CLIENT, container_ports_can_be_bound
+from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.files import cache_dir, mkdir
 from localstack.utils.functions import call_safe
-from localstack.utils.net import Port, get_free_tcp_port, get_free_tcp_port_range
+from localstack.utils.net import get_free_tcp_port, get_free_tcp_port_range
 from localstack.utils.run import is_command_available, run, to_str
 from localstack.utils.serving import Server
 from localstack.utils.strings import short_uid
@@ -154,8 +154,12 @@ def get_docker_image_details(image_name: str = None) -> Dict[str, str]:
         result = DOCKER_CLIENT.inspect_image(image_name)
     except ContainerException:
         return {}
+
+    digests = result.get("RepoDigests")
+    sha256 = digests[0].rpartition(":")[2] if digests else "Unavailable"
     result = {
         "id": result["Id"].replace("sha256:", "")[:12],
+        "sha256": sha256,
         "tag": (result.get("RepoTags") or ["latest"])[0].split(":")[-1],
         "created": result["Created"].split(".")[0],
     }
@@ -549,28 +553,6 @@ class ContainerConfigurators:
         return _cfg
 
     @staticmethod
-    def publish_dns_ports(cfg: ContainerConfiguration):
-        dns_ports = [
-            Port(config.DNS_PORT, protocol="udp"),
-            Port(config.DNS_PORT, protocol="tcp"),
-        ]
-        if container_ports_can_be_bound(dns_ports, address=config.DNS_ADDRESS):
-            # expose the DNS server to the host
-            # TODO: update ContainerConfiguration to support multiple PortMappings objects with different bind addresses
-            docker_flags = []
-            for port in dns_ports:
-                docker_flags.extend(
-                    [
-                        "-p",
-                        f"{config.DNS_ADDRESS}:{port.port}:{port.port}/{port.protocol}",
-                    ]
-                )
-            if cfg.additional_flags is None:
-                cfg.additional_flags = " ".join(docker_flags)
-            else:
-                cfg.additional_flags += " " + " ".join(docker_flags)
-
-    @staticmethod
     def container_name(name: str):
         def _cfg(cfg: ContainerConfiguration):
             cfg.name = name
@@ -692,6 +674,10 @@ class ContainerConfigurators:
         def _cfg(cfg: ContainerConfiguration):
             if params.get("network"):
                 cfg.network = params.get("network")
+
+            if params.get("host_dns"):
+                cfg.ports.add(config.DNS_PORT, config.DNS_PORT, "udp")
+                cfg.ports.add(config.DNS_PORT, config.DNS_PORT, "tcp")
 
             # processed parsed -e, -p, and -v flags
             ContainerConfigurators.env_cli_params(params.get("env"))(cfg)
@@ -1186,7 +1172,6 @@ def configure_container(container: Container):
             ContainerConfigurators.service_port_range,
             ContainerConfigurators.mount_localstack_volume(config.VOLUME_DIR),
             ContainerConfigurators.mount_docker_socket,
-            ContainerConfigurators.publish_dns_ports,
             # overwrites any env vars set in the config that were previously set by configurators
             ContainerConfigurators.config_env_vars,
             # ensure that GATEWAY_LISTEN is taken from the config and not

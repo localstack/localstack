@@ -13,7 +13,9 @@ from urllib import parse as urlparse
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
-from moto.apigateway.models import Integration, Resource, RestAPI, apigateway_backends
+from moto.apigateway import models as apigw_models
+from moto.apigateway.models import Integration, Resource, apigateway_backends
+from moto.apigateway.models import RestAPI as MotoRestAPI
 from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
@@ -26,6 +28,7 @@ from localstack.aws.api.apigateway import (
     DocumentationPartLocation,
     IntegrationType,
     Model,
+    NotFoundException,
     RequestValidator,
 )
 from localstack.aws.connect import connect_to
@@ -139,6 +142,25 @@ def get_apigateway_store_for_invocation(context: ApiInvocationContext) -> ApiGat
     account_id = context.account_id or DEFAULT_AWS_ACCOUNT_ID
     region_name = context.region_name or AWS_REGION_US_EAST_1
     return apigateway_stores[account_id][region_name]
+
+
+def get_moto_rest_api(context: RequestContext, rest_api_id: str) -> MotoRestAPI:
+    moto_backend = apigw_models.apigateway_backends[context.account_id][context.region]
+    if rest_api := moto_backend.apis.get(rest_api_id):
+        return rest_api
+    else:
+        raise NotFoundException(
+            f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+        )
+
+
+def get_rest_api_container(context: RequestContext, rest_api_id: str) -> RestApiContainer:
+    store = get_apigateway_store(context=context)
+    if not (rest_api_container := store.rest_apis.get(rest_api_id)):
+        raise NotFoundException(
+            f"Invalid API identifier specified {context.account_id}:{rest_api_id}"
+        )
+    return rest_api_container
 
 
 class ApiGatewayIntegrationError(Exception):
@@ -918,8 +940,8 @@ def add_documentation_parts(rest_api_container, documentation):
 
 
 def import_api_from_openapi_spec(
-    rest_api: RestAPI, body: dict, context: RequestContext
-) -> Optional[RestAPI]:
+    rest_api: MotoRestAPI, body: dict, context: RequestContext
+) -> Optional[MotoRestAPI]:
     """Import an API from an OpenAPI spec document"""
 
     query_params: dict = context.request.values.to_dict()

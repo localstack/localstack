@@ -16337,5 +16337,13 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_update_function_configuration_full_arn": {
+    "recorded-date": "05-06-2024, 11:49:05",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_cross_region_arn_function_access": {
+    "recorded-date": "11-06-2024, 13:06:45",
+    "recorded-content": {}
   }
 }

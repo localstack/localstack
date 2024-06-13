@@ -125,6 +125,55 @@ class TestRuntimeValidation:
         snapshot.match("deprecation_error", e.value.response)
 
 
+class TestPartialARNMatching:
+    @markers.aws.validated
+    def test_update_function_configuration_full_arn(self, create_lambda_function, aws_client):
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            MemorySize=256,
+            Timeout=5,
+        )
+
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        full_arn = create_response["CreateFunctionResponse"]["FunctionArn"]
+        partial_arn = ":".join(full_arn.split(":")[-3:])
+        valid_names = [full_arn, function_name, partial_arn]
+
+        # update configuration with various clarifiers
+        for name in valid_names:
+            aws_client.lambda_.update_function_configuration(
+                FunctionName=name,
+                Description="Changed-Description",
+                MemorySize=512,
+                Timeout=10,
+                Environment={"Variables": {"ENV_A": "a"}},
+            )
+            aws_client.lambda_.get_waiter("function_updated_v2").wait(FunctionName=function_name)
+
+    @markers.aws.validated
+    def test_cross_region_arn_function_access(
+        self, create_lambda_function, aws_client, secondary_aws_client
+    ):
+        function_name = f"fn-{short_uid()}"
+        create_response = create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=Runtime.python3_12,
+            MemorySize=256,
+            Timeout=5,
+        )
+
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+        full_arn = create_response["CreateFunctionResponse"]["FunctionArn"]
+        # if nothing breaks, all is good :)
+        secondary_aws_client.lambda_.get_function(FunctionName=full_arn)
+
+
 class TestLoggingConfig:
     @markers.aws.validated
     def test_function_advanced_logging_configuration(

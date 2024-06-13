@@ -285,3 +285,42 @@ class TestTaskServiceAwsSdk:
             definition,
             exec_input,
         )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # The serialisation of json values cannot currently lead to an output that can match the ETag obtainable
+            # from through AWS SFN uploading to s3. This is true regardless of sorting or separator settings. Further
+            # investigation into AWS's behaviour is needed.
+            "$..ETag"
+        ]
+    )
+    @pytest.mark.parametrize(
+        "body",
+        ["text data", {"Dict": "Value"}, ["List", "Data"], False, 0],
+        ids=["str", "dict", "list", "bool", "num"],
+    )
+    def test_s3_put_object(
+        self,
+        aws_client,
+        s3_create_bucket,
+        create_iam_role_for_sfn,
+        create_state_machine,
+        sfn_snapshot,
+        body,
+    ):
+        bucket_name = s3_create_bucket()
+        sfn_snapshot.add_transformer(RegexTransformer(bucket_name, "bucket-name"))
+
+        template = ST.load_sfn_template(ST.AWS_SDK_S3_PUT_OBJECT)
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"Bucket": bucket_name, "Key": "file-key", "Body": body})
+        create_and_record_execution(
+            aws_client.stepfunctions,
+            create_iam_role_for_sfn,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )

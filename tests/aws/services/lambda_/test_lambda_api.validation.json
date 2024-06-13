@@ -376,5 +376,11 @@
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[ruby2.7]": {
     "last_validated_date": "2024-06-13T08:52:55+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_cross_region_arn_function_access": {
+    "last_validated_date": "2024-06-11T13:06:44+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_update_function_configuration_full_arn": {
+    "last_validated_date": "2024-06-05T11:49:05+00:00"
   }
 }

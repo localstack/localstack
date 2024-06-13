@@ -31,7 +31,6 @@ LOG.info("Pytest plugin for in-memory-localstack session loaded.")
 if localstack_config.is_collect_metrics_mode():
     pytest_plugins = "localstack.testing.pytest.metric_collection"
 
-
 _started = threading.Event()
 
 
@@ -45,6 +44,10 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtestloop(session: Session):
+    # avoid starting up localstack if we only collect the tests (-co / --collect-only)
+    if session.config.option.collectonly:
+        return
+
     if not session.config.option.start_localstack:
         return
 
@@ -54,8 +57,6 @@ def pytest_runtestloop(session: Session):
         LOG.info("TEST_SKIP_LOCALSTACK_START is set, not starting localstack")
         return
 
-    from localstack.runtime import events
-    from localstack.services import infra
     from localstack.utils.common import safe_requests
 
     if is_aws_cloud():
@@ -66,11 +67,16 @@ def pytest_runtestloop(session: Session):
     os.environ[ENV_INTERNAL_TEST_RUN] = "1"
     safe_requests.verify_ssl = False
 
+    from localstack.runtime import current
+
     _started.set()
-    infra.start_infra(asynchronous=True)
-    # wait for infra to start (threading event)
-    if not events.infra_ready.wait(timeout=120):
-        raise TimeoutError("gave up waiting for infra to be ready")
+    runtime = current.initialize_runtime()
+    # start runtime asynchronously
+    threading.Thread(target=runtime.run).start()
+
+    # wait for runtime to be ready
+    if not runtime.ready.wait(timeout=120):
+        raise TimeoutError("gave up waiting for runtime to be ready")
 
 
 @pytest.hookimpl(trylast=True)
@@ -79,16 +85,17 @@ def pytest_sessionfinish(session: Session):
     if not _started.is_set():
         return
 
-    from localstack.runtime import events
-    from localstack.services import infra
-    from localstack.utils.threads import start_thread
+    from localstack.runtime import get_current_runtime
 
-    def _stop_infra(*_args):
-        LOG.info("stopping infra")
-        infra.stop_infra()
+    try:
+        get_current_runtime()
+    except ValueError:
+        LOG.warning("Could not access the current runtime in a pytest sessionfinish hook.")
+        return
 
-    start_thread(_stop_infra)
-    LOG.info("waiting for infra to stop")
+    get_current_runtime().shutdown()
+    LOG.info("waiting for runtime to stop")
 
-    if not events.infra_stopped.wait(timeout=20):
-        LOG.warning("gave up waiting for infra to stop, returning anyway")
+    # wait for runtime to shut down
+    if not get_current_runtime().stopped.wait(timeout=20):
+        LOG.warning("gave up waiting for runtime to stop, returning anyway")
