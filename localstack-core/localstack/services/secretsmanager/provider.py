@@ -238,7 +238,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     ) -> GetSecretValueResponse:
         secret_id = request.get("SecretId")
         version_id = request.get("VersionId")
-        version_stage = request.get("VersionStage")
+        version_stage = request.get("VersionStage", "AWSCURRENT")
         self._raise_if_invalid_secret_id(secret_id)
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
         self._raise_if_default_kms_key(secret_id, context, backend)
@@ -247,6 +247,13 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         except moto_exception.SecretNotFoundException:
             raise ResourceNotFoundException(
                 f"Secrets Manager can't find the specified secret value for staging label: {version_stage}"
+            )
+        except moto_exception.ResourceNotFoundException:
+            error_message = (
+                f"VersionId: {version_id}" if version_id else f"staging label: {version_stage}"
+            )
+            raise ResourceNotFoundException(
+                f"Secrets Manager can't find the specified secret value for {error_message}"
             )
         except moto_exception.SecretStageVersionMismatchException:
             raise InvalidRequestException(
