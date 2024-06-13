@@ -112,3 +112,32 @@ def test_transformer_property_level(deploy_cfn_template, s3_bucket, aws_client, 
         StackName=result.stack_id, TemplateStage="Processed"
     )
     snapshot.match("processed_template", processed_template)
+
+
+@markers.aws.validated
+def test_transformer_individual_resource_level(deploy_cfn_template, s3_bucket, aws_client):
+    api_spec = textwrap.dedent("""
+    Type: AWS::SNS::Topic
+    """)
+    aws_client.s3.put_object(Bucket=s3_bucket, Key="data.yaml", Body=to_bytes(api_spec))
+
+    # deploy template
+    template = textwrap.dedent("""
+        Parameters:
+          BucketName:
+            Type: String
+        Resources:
+          MyResource:
+            "Fn::Transform":
+                Name: "AWS::Include"
+                Parameters:
+                  Location: !Sub "s3://${BucketName}/data.yaml"
+        Outputs:
+          ResourceRef:
+            Value: !Ref MyResource
+        """)
+
+    result = deploy_cfn_template(template=template, parameters={"BucketName": s3_bucket})
+    resource_ref = result.outputs["ResourceRef"]
+    # just checking that this doens't fail, i.e. the topic exists
+    aws_client.sns.get_topic_attributes(TopicArn=resource_ref)

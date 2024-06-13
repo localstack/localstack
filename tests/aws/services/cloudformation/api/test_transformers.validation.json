@@ -2,6 +2,9 @@
   "tests/aws/services/cloudformation/api/test_transformers.py::test_duplicate_resources": {
     "last_validated_date": "2024-04-15T22:51:13+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_transformer_individual_resource_level": {
+    "last_validated_date": "2024-06-13T06:43:21+00:00"
+  },
   "tests/aws/services/cloudformation/api/test_transformers.py::test_transformer_property_level": {
     "last_validated_date": "2024-06-06T10:38:33+00:00"
   }

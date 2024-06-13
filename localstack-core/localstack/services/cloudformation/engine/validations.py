@@ -39,6 +39,7 @@ def outputs_have_values(template: dict):
             raise ValidationError(f"[{key}] 'null' values are not allowed in templates")
 
 
+# TODO: this would need to be split into different validations pre- and post- transform
 def resources_top_level_keys(template: dict):
     """
     Validate that each resource
