@@ -8,8 +8,10 @@ from typing import Callable, Optional
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
 from localstack.aws.api.events import (
+    Action,
     Arn,
     Boolean,
+    Condition,
     CreateEventBusResponse,
     DeadLetterConfig,
     DescribeEventBusResponse,
@@ -31,6 +33,8 @@ from localstack.aws.api.events import (
     ListTagsForResourceResponse,
     ListTargetsByRuleResponse,
     NextToken,
+    NonPartnerEventBusName,
+    Principal,
     PutEventsRequestEntry,
     PutEventsRequestEntryList,
     PutEventsResponse,
@@ -50,6 +54,8 @@ from localstack.aws.api.events import (
     RuleResponseList,
     RuleState,
     ScheduleExpression,
+    StatementId,
+    String,
     TagKeyList,
     TagList,
     TagResourceResponse,
@@ -287,6 +293,20 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if next_token is not None:
             response["NextToken"] = next_token
         return response
+
+    @handler("PutPermission")
+    def put_permission(
+        self,
+        context: RequestContext,
+        event_bus_name: NonPartnerEventBusName = None,
+        action: Action = None,
+        principal: Principal = None,
+        statement_id: StatementId = None,
+        condition: Condition = None,
+        policy: String = None,
+        **kwargs,
+    ) -> None:
+        pass  # TODO align with policy streaming
 
     #######
     # Rules
