@@ -1,0 +1,41 @@
+{
+  "Resources": {
+    "v2table6C40CC77": {
+      "Type": "AWS::DynamoDB::GlobalTable",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "id",
+            "AttributeType": "S"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "id",
+            "KeyType": "HASH"
+          }
+        ],
+        "Replicas": [
+          {
+            "Region": {
+              "Ref": "AWS::Region"
+            }
+          }
+        ],
+        "StreamSpecification": {
+          "StreamViewType": "NEW_AND_OLD_IMAGES"
+        }
+      },
+      "UpdateReplacePolicy": "Delete",
+      "DeletionPolicy": "Delete"
+    }
+  },
+  "Outputs": {
+    "tableName": {
+      "Value": {
+        "Ref": "v2table6C40CC77"
+      }
+    }
+  }
+}

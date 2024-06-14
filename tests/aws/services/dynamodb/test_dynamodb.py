@@ -41,18 +41,7 @@ def dynamodb_snapshot_transformer(snapshot):
 
 @pytest.fixture
 def dynamodbstreams_snapshot_transformers(snapshot):
-    snapshot.add_transformers_list(
-        [
-            snapshot.transform.key_value("TableName"),
-            snapshot.transform.key_value("TableStatus"),
-            snapshot.transform.key_value("LatestStreamLabel"),
-            snapshot.transform.key_value("StartingSequenceNumber", reference_replacement=False),
-            snapshot.transform.key_value("ShardId"),
-            snapshot.transform.key_value("StreamLabel"),
-            snapshot.transform.key_value("SequenceNumber"),
-            snapshot.transform.key_value("eventID"),
-        ]
-    )
+    snapshot.add_transformer(snapshot.transform.dynamodb_streams_api())
     snapshot.add_transformer(snapshot.transform.key_value("NextShardIterator"), priority=-1)
     snapshot.add_transformer(snapshot.transform.key_value("ShardIterator"), priority=-1)
 

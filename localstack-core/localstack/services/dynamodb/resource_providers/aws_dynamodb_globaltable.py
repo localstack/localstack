@@ -239,6 +239,12 @@ class DynamoDBGlobalTableProvider(ResourceProvider[DynamoDBGlobalTableProperties
                 # rename bool attribute to fit boto call
                 sse_specification["Enabled"] = sse_specification.pop("SSEEnabled")
 
+            if stream_spec := model.get("StreamSpecification"):
+                create_params["StreamSpecification"] = {
+                    "StreamEnabled": True,
+                    **stream_spec,
+                }
+
             creation_response = request.aws_client_factory.dynamodb.create_table(**create_params)
             model["Arn"] = creation_response["TableDescription"]["TableArn"]
             model["TableId"] = creation_response["TableDescription"]["TableId"]
