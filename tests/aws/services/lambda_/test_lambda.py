@@ -1201,6 +1201,47 @@ class TestLambdaURL:
         )
         snapshot.match("url_response", response.json())
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..origin",  # FIXME: LS does not populate the value
+        ]
+    )
+    def test_lambda_url_form_payload(self, create_echo_http_server, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("domain"),
+                snapshot.transform.key_value("origin"),
+            ]
+        )
+        echo_server_url = create_echo_http_server(trim_x_headers=True)
+        # multipart body
+        body = (
+            b"\r\n--4efd159eae0c4f4e125a5a509e073d85\r\n"
+            b'Content-Disposition: form-data; name="formfield"\r\n\r\n'
+            b"not a file, just a field"
+            b"\r\n--4efd159eae0c4f4e125a5a509e073d85\r\n"
+            b'Content-Disposition: form-data; name="foo"; filename="foo"\r\n'
+            b"Content-Type: text/plain;\r\n\r\n"
+            b"bar"
+            b"\r\n\r\n--4efd159eae0c4f4e125a5a509e073d85--\r\n"
+        )
+        response = requests.post(
+            url=f"{echo_server_url}/test/value",
+            headers={
+                "Content-Type": "multipart/form-data; boundary=4efd159eae0c4f4e125a5a509e073d85",
+                "User-Agent": "python/test-request",
+            },
+            data=body,
+            verify=False,
+        )
+        assert response.status_code == 200
+        response_json = response.json()
+        snapshot.match("url_response", response_json)
+
+        form_data = base64.b64decode(response_json["data"])
+        assert form_data == body
+
 
 @pytest.mark.skipif(not is_aws_cloud(), reason="Not yet implemented")
 class TestLambdaPermissions:
