@@ -1083,11 +1083,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         if "Runtime" in request:
             runtime = request["Runtime"]
-            runtimes = ALL_RUNTIMES
-            if config.LAMBDA_RUNTIME_VALIDATION:
-                runtimes = VALID_RUNTIMES
 
-            if runtime not in runtimes:
+            if runtime not in ALL_RUNTIMES:
                 raise InvalidParameterValueException(
                     f"Value {runtime} at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: {VALID_RUNTIMES} or be a valid ARN",
                     Type="User",
