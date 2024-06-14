@@ -64,251 +64,251 @@ def test_event_bus_to_event_bus_cross_account_region(
         event_bus_arn_secondary = secondary_aws_client.events.create_event_bus(
             Name=event_bus_name_secondary
         )["EventBusArn"]
-        secondary_aws_client.events.put_permission(
-            StatementId=f"SecondaryEventBusAccessPermission{short_uid()}",
-            EventBusName=event_bus_name_secondary,
-            Action="events:PutEvents",
-            Principal="*",
-        )
 
-        # Create SQS queues
-        queue_name_primary = f"test-queue-primary-{short_uid()}"
-        queue_url_primary = aws_client.sqs.create_queue(QueueName=queue_name_primary)["QueueUrl"]
-        queue_arn_primary = aws_client.sqs.get_queue_attributes(
-            QueueUrl=queue_url_primary, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
-        policy_events_sqs_primary = {
-            "Version": "2012-10-17",
-            "Id": f"sqs-eventbridge-{short_uid()}",
-            "Statement": [
-                {
-                    "Sid": f"SendMessage-{short_uid()}",
-                    "Effect": "Allow",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Action": "sqs:SendMessage",
-                    "Resource": queue_arn_primary,
-                }
-            ],
-        }
-        aws_client.sqs.set_queue_attributes(
-            QueueUrl=queue_url_primary, Attributes={"Policy": json.dumps(policy_events_sqs_primary)}
-        )
+    # Permission for event bus in secondary region to receive events to event bus in primary region
+    secondary_aws_client.events.put_permission(
+        StatementId=f"SecondaryEventBusAccessPermission{short_uid()}",
+        EventBusName=event_bus_name_secondary,
+        Action="events:PutEvents",
+        Principal="*",
+    )
 
-        queue_name_secondary = f"test-queue-secondary-{short_uid()}"
-        queue_url_secondary = secondary_aws_client.sqs.create_queue(QueueName=queue_name_secondary)[
-            "QueueUrl"
-        ]
-        queue_arn_secondary = secondary_aws_client.sqs.get_queue_attributes(
-            QueueUrl=queue_url_secondary, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
-        policy_events_sqs_secondary = {
-            "Version": "2012-10-17",
-            "Id": f"sqs-eventbridge-{short_uid()}",
-            "Statement": [
-                {
-                    "Sid": f"SendMessage-{short_uid()}",
-                    "Effect": "Allow",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Action": "sqs:SendMessage",
-                    "Resource": queue_arn_secondary,
-                }
-            ],
-        }
-        secondary_aws_client.sqs.set_queue_attributes(
-            QueueUrl=queue_url_secondary,
-            Attributes={"Policy": json.dumps(policy_events_sqs_secondary)},
-        )
+    # Create SQS queues
+    queue_name_primary = f"test-queue-primary-{short_uid()}"
+    queue_url_primary = aws_client.sqs.create_queue(QueueName=queue_name_primary)["QueueUrl"]
+    queue_arn_primary = aws_client.sqs.get_queue_attributes(
+        QueueUrl=queue_url_primary, AttributeNames=["QueueArn"]
+    )["Attributes"]["QueueArn"]
+    policy_events_sqs_primary = {
+        "Version": "2012-10-17",
+        "Id": f"sqs-eventbridge-{short_uid()}",
+        "Statement": [
+            {
+                "Sid": f"SendMessage-{short_uid()}",
+                "Effect": "Allow",
+                "Principal": {"Service": "events.amazonaws.com"},
+                "Action": "sqs:SendMessage",
+                "Resource": queue_arn_primary,
+            }
+        ],
+    }
+    aws_client.sqs.set_queue_attributes(
+        QueueUrl=queue_url_primary, Attributes={"Policy": json.dumps(policy_events_sqs_primary)}
+    )
 
-        # Create rule in primary region
-        rule_name = f"test-rule-primary-sqs-{short_uid()}"
-        aws_client.events.put_rule(
-            Name=rule_name,
-            EventPattern=json.dumps({"source": [SOURCE_PRIMARY]}),
-            # EventPattern=json.dumps({"source": [SOURCE_PRIMARY], **TEST_EVENT_PATTERN_NO_SOURCE}),
-            EventBusName=event_bus_name_primary,
-        )
+    queue_name_secondary = f"test-queue-secondary-{short_uid()}"
+    queue_url_secondary = secondary_aws_client.sqs.create_queue(QueueName=queue_name_secondary)[
+        "QueueUrl"
+    ]
+    queue_arn_secondary = secondary_aws_client.sqs.get_queue_attributes(
+        QueueUrl=queue_url_secondary, AttributeNames=["QueueArn"]
+    )["Attributes"]["QueueArn"]
+    policy_events_sqs_secondary = {
+        "Version": "2012-10-17",
+        "Id": f"sqs-eventbridge-{short_uid()}",
+        "Statement": [
+            {
+                "Sid": f"SendMessage-{short_uid()}",
+                "Effect": "Allow",
+                "Principal": {"Service": "events.amazonaws.com"},
+                "Action": "sqs:SendMessage",
+                "Resource": queue_arn_secondary,
+            }
+        ],
+    }
+    secondary_aws_client.sqs.set_queue_attributes(
+        QueueUrl=queue_url_secondary,
+        Attributes={"Policy": json.dumps(policy_events_sqs_secondary)},
+    )
 
-        # Create target in primary region sqs
-        target_id_sqs_primary = f"test-target-primary-sqs-{short_uid()}"
-        aws_client.events.put_targets(
-            Rule=rule_name,
-            EventBusName=event_bus_name_primary,
-            Targets=[
-                {
-                    "Id": target_id_sqs_primary,
-                    "Arn": queue_arn_primary,
-                }
-            ],
-        )
+    # Create rule in primary region
+    rule_name = f"test-rule-primary-sqs-{short_uid()}"
+    aws_client.events.put_rule(
+        Name=rule_name,
+        EventPattern=json.dumps({"source": [SOURCE_PRIMARY]}),
+        # EventPattern=json.dumps({"source": [SOURCE_PRIMARY], **TEST_EVENT_PATTERN_NO_SOURCE}),
+        EventBusName=event_bus_name_primary,
+    )
 
-        # Create permission for event bus in primary region to send events to event bus in secondary region
-        role_name_bus_primary_to_bus_secondary = (
-            f"event-bus-primary-to-secondary-role-{short_uid()}"
-        )
-        assume_role_policy_document_bus_primary_to_bus_secondary = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Action": "sts:AssumeRole",
-                }
-            ],
-        }
+    # Create target in primary region sqs
+    target_id_sqs_primary = f"test-target-primary-sqs-{short_uid()}"
+    aws_client.events.put_targets(
+        Rule=rule_name,
+        EventBusName=event_bus_name_primary,
+        Targets=[
+            {
+                "Id": target_id_sqs_primary,
+                "Arn": queue_arn_primary,
+            }
+        ],
+    )
 
-        role_arn_bus_primary_to_bus_secondary = aws_client.iam.create_role(
-            RoleName=role_name_bus_primary_to_bus_secondary,
-            AssumeRolePolicyDocument=json.dumps(
-                assume_role_policy_document_bus_primary_to_bus_secondary
-            ),
-        )["Role"]["Arn"]
+    # Create permission for event bus in primary region to send events to event bus in secondary region
+    role_name_bus_primary_to_bus_secondary = f"event-bus-primary-to-secondary-role-{short_uid()}"
+    assume_role_policy_document_bus_primary_to_bus_secondary = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {"Service": "events.amazonaws.com"},
+                "Action": "sts:AssumeRole",
+            }
+        ],
+    }
 
-        policy_name_bus_primary_to_bus_secondary = (
-            f"event-bus-primary-to-secondary-policy-{short_uid()}"
-        )
-        policy_document_bus_primary_to_bus_secondary = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "",
-                    "Effect": "Allow",
-                    "Action": "events:PutEvents",
-                    "Resource": "arn:aws:events:*:*:event-bus/*",
-                }
-            ],
-        }
+    role_arn_bus_primary_to_bus_secondary = aws_client.iam.create_role(
+        RoleName=role_name_bus_primary_to_bus_secondary,
+        AssumeRolePolicyDocument=json.dumps(
+            assume_role_policy_document_bus_primary_to_bus_secondary
+        ),
+    )["Role"]["Arn"]
 
-        aws_client.iam.put_role_policy(
-            RoleName=role_name_bus_primary_to_bus_secondary,
-            PolicyName=policy_name_bus_primary_to_bus_secondary,
-            PolicyDocument=json.dumps(policy_document_bus_primary_to_bus_secondary),
-        )
+    policy_name_bus_primary_to_bus_secondary = (
+        f"event-bus-primary-to-secondary-policy-{short_uid()}"
+    )
+    policy_document_bus_primary_to_bus_secondary = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "",
+                "Effect": "Allow",
+                "Action": "events:PutEvents",
+                "Resource": "arn:aws:events:*:*:event-bus/*",
+            }
+        ],
+    }
 
-        if is_aws_cloud():
-            time.sleep(10)
+    aws_client.iam.put_role_policy(
+        RoleName=role_name_bus_primary_to_bus_secondary,
+        PolicyName=policy_name_bus_primary_to_bus_secondary,
+        PolicyDocument=json.dumps(policy_document_bus_primary_to_bus_secondary),
+    )
 
-        # Create target in primary region event bus secondary region
-        target_id_event_bus_secondary = f"test-target-primary-events-{short_uid()}"
-        aws_client.events.put_targets(
-            Rule=rule_name,
-            EventBusName=event_bus_name_primary,
-            Targets=[
-                {
-                    "Id": target_id_event_bus_secondary,
-                    "Arn": event_bus_arn_secondary,
-                    "RoleArn": role_arn_bus_primary_to_bus_secondary,
-                }
-            ],
-        )
+    if is_aws_cloud():
+        time.sleep(10)
 
-        # Create rule in secondary region
-        rule_name_secondary = f"test-rule-secondary-sqs-{short_uid()}"
-        secondary_aws_client.events.put_rule(
-            Name=rule_name_secondary,
-            EventPattern=json.dumps({"source": [SOURCE_PRIMARY, SOURCE_SECONDARY]}),
-            EventBusName=event_bus_name_secondary,
-        )
-        cleanups.append(lambda: secondary_aws_client.events.delete_rule(Name=rule_name_secondary))
+    # Create target in primary region event bus secondary region
+    target_id_event_bus_secondary = f"test-target-primary-events-{short_uid()}"
+    aws_client.events.put_targets(
+        Rule=rule_name,
+        EventBusName=event_bus_name_primary,
+        Targets=[
+            {
+                "Id": target_id_event_bus_secondary,
+                "Arn": event_bus_arn_secondary,
+                "RoleArn": role_arn_bus_primary_to_bus_secondary,
+            }
+        ],
+    )
 
-        # Create target in secondary region sqs
-        target_id_sqs_secondary = f"test-target-secondary-{short_uid()}"
-        secondary_aws_client.events.put_targets(
-            Rule=rule_name_secondary,
-            EventBusName=event_bus_name_secondary,
-            Targets=[
-                {
-                    "Id": target_id_sqs_secondary,
-                    "Arn": queue_arn_secondary,
-                }
-            ],
-        )
+    # Create rule in secondary region
+    rule_name_secondary = f"test-rule-secondary-sqs-{short_uid()}"
+    secondary_aws_client.events.put_rule(
+        Name=rule_name_secondary,
+        EventPattern=json.dumps({"source": [SOURCE_PRIMARY, SOURCE_SECONDARY]}),
+        EventBusName=event_bus_name_secondary,
+    )
+    cleanups.append(lambda: secondary_aws_client.events.delete_rule(Name=rule_name_secondary))
 
-        ######
-        # Test
-        ######
+    # Create target in secondary region sqs
+    target_id_sqs_secondary = f"test-target-secondary-{short_uid()}"
+    secondary_aws_client.events.put_targets(
+        Rule=rule_name_secondary,
+        EventBusName=event_bus_name_secondary,
+        Targets=[
+            {
+                "Id": target_id_sqs_secondary,
+                "Arn": queue_arn_secondary,
+            }
+        ],
+    )
 
-        # Put events into primary event bus
-        aws_client.events.put_events(
-            Entries=[
-                {
-                    "Source": SOURCE_PRIMARY,
-                    "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
-                    "EventBusName": event_bus_name_primary,
-                }
-            ],
-        )
+    ######
+    # Test
+    ######
 
-        # Collect messages from primary queue
-        messages_primary = sqs_collect_messages(
-            aws_client, queue_url_primary, min_events=1, wait_time=1, retries=5
-        )
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
-                snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
-            ],
-        )
-        snapshot.match("messages_primary_queue_from_primary_event_bus", messages_primary)
+    # Put events into primary event bus
+    aws_client.events.put_events(
+        Entries=[
+            {
+                "Source": SOURCE_PRIMARY,
+                "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+                "EventBusName": event_bus_name_primary,
+            }
+        ],
+    )
 
-        # # Collect messages from secondary queue
-        messages_secondary = sqs_collect_messages(
-            secondary_aws_client, queue_url_secondary, min_events=1, wait_time=1, retries=5
-        )
-        snapshot.match("messages_secondary_queue_from_primary_event_bus", messages_secondary)
+    # Collect messages from primary queue
+    messages_primary = sqs_collect_messages(
+        aws_client, queue_url_primary, min_events=1, wait_time=1, retries=5
+    )
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("ReceiptHandle", reference_replacement=False),
+            snapshot.transform.key_value("MD5OfBody", reference_replacement=False),
+        ],
+    )
+    snapshot.match("messages_primary_queue_from_primary_event_bus", messages_primary)
 
-        # Put events into secondary event bus
-        secondary_aws_client.events.put_events(
-            Entries=[
-                {
-                    "Source": SOURCE_SECONDARY,
-                    "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
-                    "Detail": json.dumps(EVENT_DETAIL),
-                    "EventBusName": event_bus_name_secondary,
-                }
-            ],
-        )
+    # # Collect messages from secondary queue
+    messages_secondary = sqs_collect_messages(
+        secondary_aws_client, queue_url_secondary, min_events=1, wait_time=1, retries=5
+    )
+    snapshot.match("messages_secondary_queue_from_primary_event_bus", messages_secondary)
 
-        # Collect messages from secondary queue
-        messages_secondary = sqs_collect_messages(
-            secondary_aws_client, queue_url_secondary, min_events=1, wait_time=1, retries=5
-        )
-        snapshot.match("messages_secondary_queue_from_secondary_event_bus", messages_secondary)
+    # Put events into secondary event bus
+    secondary_aws_client.events.put_events(
+        Entries=[
+            {
+                "Source": SOURCE_SECONDARY,
+                "DetailType": TEST_EVENT_PATTERN_NO_SOURCE["detail-type"][0],
+                "Detail": json.dumps(EVENT_DETAIL),
+                "EventBusName": event_bus_name_secondary,
+            }
+        ],
+    )
 
-        # Custom cleanup
-        aws_client.events.remove_targets(
-            Rule=rule_name,
-            EventBusName=event_bus_name_primary,
-            Ids=[target_id_sqs_primary, target_id_event_bus_secondary],
-        )
-        aws_client.events.delete_rule(EventBusName=event_bus_name_primary, Name=rule_name)
-        try:
-            aws_client.events.delete_event_bus(
-                Name=event_bus_name_primary
-            )  # default bus cannot be deleted
-        except Exception:
-            pass
+    # Collect messages from secondary queue
+    messages_secondary = sqs_collect_messages(
+        secondary_aws_client, queue_url_secondary, min_events=1, wait_time=1, retries=5
+    )
+    snapshot.match("messages_secondary_queue_from_secondary_event_bus", messages_secondary)
 
-        secondary_aws_client.events.remove_targets(
-            Rule=rule_name_secondary,
-            EventBusName=event_bus_name_secondary,
-            Ids=[target_id_sqs_secondary],
-        )
-        secondary_aws_client.events.delete_rule(
-            EventBusName=event_bus_name_secondary, Name=rule_name_secondary
-        )
-        try:
-            secondary_aws_client.events.delete_event_bus(
-                Name=event_bus_name_secondary
-            )  # default bus cannot be deleted
-        except Exception:
-            pass
+    # Custom cleanup
+    aws_client.events.remove_targets(
+        Rule=rule_name,
+        EventBusName=event_bus_name_primary,
+        Ids=[target_id_sqs_primary, target_id_event_bus_secondary],
+    )
+    aws_client.events.delete_rule(EventBusName=event_bus_name_primary, Name=rule_name)
+    try:
+        aws_client.events.delete_event_bus(
+            Name=event_bus_name_primary
+        )  # default bus cannot be deleted
+    except Exception:
+        pass
 
-        aws_client.sqs.delete_queue(QueueUrl=queue_url_primary)
-        secondary_aws_client.sqs.delete_queue(QueueUrl=queue_url_secondary)
+    secondary_aws_client.events.remove_targets(
+        Rule=rule_name_secondary,
+        EventBusName=event_bus_name_secondary,
+        Ids=[target_id_sqs_secondary],
+    )
+    secondary_aws_client.events.delete_rule(
+        EventBusName=event_bus_name_secondary, Name=rule_name_secondary
+    )
+    try:
+        secondary_aws_client.events.delete_event_bus(
+            Name=event_bus_name_secondary
+        )  # default bus cannot be deleted
+    except Exception:
+        pass
 
-        aws_client.iam.delete_role_policy(
-            RoleName=role_name_bus_primary_to_bus_secondary,
-            PolicyName=policy_name_bus_primary_to_bus_secondary,
-        )
-        aws_client.iam.delete_role(RoleName=role_name_bus_primary_to_bus_secondary)
+    aws_client.sqs.delete_queue(QueueUrl=queue_url_primary)
+    secondary_aws_client.sqs.delete_queue(QueueUrl=queue_url_secondary)
+
+    aws_client.iam.delete_role_policy(
+        RoleName=role_name_bus_primary_to_bus_secondary,
+        PolicyName=policy_name_bus_primary_to_bus_secondary,
+    )
+    aws_client.iam.delete_role(RoleName=role_name_bus_primary_to_bus_secondary)
