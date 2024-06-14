@@ -138,7 +138,6 @@ from localstack.aws.api.lambda_ import FunctionVersion as FunctionVersionApi
 from localstack.aws.api.lambda_ import ServiceException as LambdaServiceException
 from localstack.aws.connect import connect_to
 from localstack.aws.spec import load_service
-from localstack.config import LAMBDA_RUNTIME_VALIDATION
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_ import api_utils
 from localstack.services.lambda_ import hooks as lambda_hooks
@@ -975,7 +974,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def _validate_runtime(self, package_type, runtime):
         runtimes = ALL_RUNTIMES
-        if LAMBDA_RUNTIME_VALIDATION:
+        if config.LAMBDA_RUNTIME_VALIDATION:
             runtimes = list(itertools.chain(RUNTIMES_AGGREGATED.values()))
 
         if package_type == PackageType.Zip and runtime not in runtimes:
@@ -1085,7 +1084,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         if "Runtime" in request:
             runtime = request["Runtime"]
             runtimes = ALL_RUNTIMES
-            if LAMBDA_RUNTIME_VALIDATION:
+            if config.LAMBDA_RUNTIME_VALIDATION:
                 runtimes = VALID_RUNTIMES
 
             if runtime not in runtimes:
