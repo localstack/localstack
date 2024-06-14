@@ -4326,5 +4326,45 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_cross_account_access": {
     "recorded-date": "14-06-2024, 12:09:32",
     "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_lambda_layer": {
+    "recorded-date": "14-06-2024, 15:16:46",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_function": {
+    "recorded-date": "14-06-2024, 15:16:50",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_get_function_configuration": {
+    "recorded-date": "14-06-2024, 15:16:53",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_list_versions_by_function": {
+    "recorded-date": "14-06-2024, 15:16:56",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_concurrency": {
+    "recorded-date": "14-06-2024, 15:16:59",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_alias": {
+    "recorded-date": "14-06-2024, 15:17:03",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_tags": {
+    "recorded-date": "14-06-2024, 15:17:07",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_function_invocation": {
+    "recorded-date": "14-06-2024, 15:17:10",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_publish_version": {
+    "recorded-date": "14-06-2024, 15:17:14",
+    "recorded-content": {}
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_delete_function": {
+    "recorded-date": "14-06-2024, 15:17:17",
+    "recorded-content": {}
   }
 }

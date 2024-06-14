@@ -1865,72 +1865,16 @@ class TestLambdaCleanup:
 
 
 class TestLambdaMultiAccounts:
-    @markers.aws.validated
-    def test_cross_account_access(
-        self, aws_client, secondary_aws_client, create_lambda_function, dummylayer
-    ):
-        # TODO: AWS validate this test
-        # As of 2024-02, AWS restricts the input for adding resource-based policy to layer versions via AddLayerVersionPermission.
-        # Only 'lambda:GetLayerVersion' is accepted for Action.
-        # https://github.com/boto/botocore/blob/cf7b8449643187670620ab699596ca785e3ec889/botocore/data/lambda/2015-03-31/service-2.json#L3906-L3909
-        # This appears to have been the case atleast since 2021-06.
-        # Furthermore this contradicts with what its docs on valid IAM actions for layer versions:
-        # https://docs.aws.amazon.com/lambda/latest/dg/lambda-api-permissions-ref.html#permissions-resources-layers
-        primary_client = aws_client.lambda_
-        secondary_client = secondary_aws_client.lambda_
+    @pytest.fixture
+    def primary_client(self, aws_client):
+        yield aws_client.lambda_
 
-        secondary_account_id = secondary_aws_client.sts.get_caller_identity().get("Account")
+    @pytest.fixture
+    def secondary_client(self, secondary_aws_client):
+        yield secondary_aws_client.lambda_
 
-        # Create resources using primary test credentials
-        func_name = f"func-{short_uid()}"
-        func_arn = create_lambda_function(
-            func_name=func_name,
-            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
-            runtime=Runtime.python3_12,
-        )["CreateFunctionResponse"]["FunctionArn"]
-
-        statement_id = f"stm-{short_uid()}"
-        primary_client.add_permission(
-            FunctionName=func_name,
-            StatementId=statement_id,
-            Principal=secondary_account_id,
-            Action="lambda:*",
-        )
-
-        layer_name = f"layer-{short_uid()}"
-        layer_arn = primary_client.publish_layer_version(
-            LayerName=layer_name, Content={"ZipFile": dummylayer}
-        )["LayerArn"]
-
-        layer_statement_id = f"stm-{short_uid()}"
-        primary_client.add_layer_version_permission(
-            LayerName=layer_arn,
-            StatementId=layer_statement_id,
-            Principal=secondary_account_id,
-            Action="lambda:GetLayerVersion",
-            VersionNumber=1,
-        )
-
-        # Operations related to Lambda layers supported by cross account
-        # - GetLayerVersion
-        # - GetLayerVersionByArn
-
-        # Operations not supported by lambda layer cross account
-        # - ListLayerVersions
-        # - DeleteLayerVersion
-        # - AddLayerVersionPermission
-        # - GetLayerVersionPolicy
-        # - RemoveLayerVersionPermission
-
-        # Run assertions using secondary test credentials
-
-        assert secondary_client.get_layer_version(LayerName=layer_arn, VersionNumber=1)
-
-        assert secondary_client.get_layer_version_by_arn(Arn=layer_arn + ":1")
-
-        # just a little bit of clean up
-        assert primary_client.delete_layer_version(LayerName=layer_arn, VersionNumber=1)
-
+    @pytest.fixture
+    def created_lambda(self, create_lambda_function, primary_client, secondary_account_id):
         # Operations related to functions.
         # See: https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html#permissions-resource-xaccountinvoke
         #
@@ -1953,33 +1897,101 @@ class TestLambdaMultiAccounts:
         # - TagResource
         # - UntagResource
 
-        assert (
-            secondary_client.get_function(FunctionName=func_arn)["Configuration"]["FunctionArn"]
-            == func_arn
+        func_name = f"func-{short_uid()}"
+        func_arn = create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_INTROSPECT_PYTHON,
+            runtime=Runtime.python3_12,
+        )["CreateFunctionResponse"]["FunctionArn"]
+
+        statement_id = f"stm-{short_uid()}"
+        primary_client.add_permission(
+            FunctionName=func_name,
+            StatementId=statement_id,
+            Principal=secondary_account_id,
+            Action="lambda:*",
+        )
+        yield func_arn
+
+    @pytest.fixture
+    def created_layer(
+        self, primary_client, create_lambda_function, dummylayer, secondary_account_id
+    ):
+        # As of 2024-02, AWS restricts the input for adding resource-based policy to layer versions via AddLayerVersionPermission.
+        # Only 'lambda:GetLayerVersion' is accepted for Action.
+        # https://github.com/boto/botocore/blob/cf7b8449643187670620ab699596ca785e3ec889/botocore/data/lambda/2015-03-31/service-2.json#L3906-L3909
+        # This appears to have been the case at least since 2021-06.
+        # Furthermore this contradicts with what its docs on valid IAM actions for layer versions:
+        # https://docs.aws.amazon.com/lambda/latest/dg/lambda-api-permissions-ref.html#permissions-resources-layers
+
+        # Operations related to Lambda layers supported by cross account
+        # - GetLayerVersion
+        # - GetLayerVersionByArn
+
+        # Operations not supported by lambda layer cross account
+        # - ListLayerVersions
+        # - DeleteLayerVersion
+        # - AddLayerVersionPermission
+        # - GetLayerVersionPolicy
+        # - RemoveLayerVersionPermission
+
+        layer_name = f"layer-{short_uid()}"
+        layer_arn = primary_client.publish_layer_version(
+            LayerName=layer_name, Content={"ZipFile": dummylayer}
+        )["LayerArn"]
+
+        layer_statement_id = f"stm-{short_uid()}"
+        primary_client.add_layer_version_permission(
+            LayerName=layer_arn,
+            StatementId=layer_statement_id,
+            Principal=secondary_account_id,
+            Action="lambda:GetLayerVersion",
+            VersionNumber=1,
         )
 
-        assert (
-            secondary_client.get_function_configuration(FunctionName=func_arn)["FunctionArn"]
-            == func_arn
-        )
+        yield layer_arn
 
-        assert secondary_client.list_versions_by_function(FunctionName=func_arn)
+    @markers.aws.validated
+    def test_get_lambda_layer(self, secondary_client, created_layer):
+        layer_arn = created_layer
+        secondary_client.get_layer_version(LayerName=layer_arn, VersionNumber=1)
+        secondary_client.get_layer_version_by_arn(Arn=layer_arn + ":1")
 
-        assert secondary_client.put_function_concurrency(
+    @markers.aws.validated
+    def test_get_function(self, secondary_client, created_lambda):
+        func_arn = created_lambda
+        secondary_client.get_function(FunctionName=func_arn)
+
+    @markers.aws.validated
+    def test_get_function_configuration(self, secondary_client, created_lambda):
+        func_arn = created_lambda
+        secondary_client.get_function_configuration(FunctionName=func_arn)
+
+    @markers.aws.validated
+    def test_list_versions_by_function(self, secondary_client, created_lambda):
+        func_arn = created_lambda
+        secondary_client.get_function_configuration(FunctionName=func_arn)
+
+    @markers.aws.validated
+    def test_function_concurrency(self, secondary_client, created_lambda):
+        func_arn = created_lambda
+        secondary_client.put_function_concurrency(
             FunctionName=func_arn, ReservedConcurrentExecutions=1
         )
+        secondary_client.delete_function_concurrency(FunctionName=func_arn)
 
-        assert secondary_client.delete_function_concurrency(FunctionName=func_arn)
-
+    @markers.aws.validated
+    def test_function_alias(self, secondary_client, created_lambda):
+        func_arn = created_lambda
         alias_name = f"alias-{short_uid()}"
-        assert secondary_client.create_alias(
+        secondary_client.create_alias(
             FunctionName=func_arn, FunctionVersion="$LATEST", Name=alias_name
         )
 
-        assert secondary_client.get_alias(FunctionName=func_arn, Name=alias_name)
+        secondary_client.get_alias(FunctionName=func_arn, Name=alias_name)
 
         alias_description = f"alias-description-{short_uid()}"
-        assert secondary_client.update_alias(
+        secondary_client.update_alias(
             FunctionName=func_arn, Name=alias_name, Description=alias_description
         )
 
@@ -1987,20 +1999,31 @@ class TestLambdaMultiAccounts:
         assert len(resp["Aliases"]) == 1
         assert resp["Aliases"][0]["Description"] == alias_description
 
-        assert secondary_client.delete_alias(FunctionName=func_arn, Name=alias_name)
+        secondary_client.delete_alias(FunctionName=func_arn, Name=alias_name)
+
+    @markers.aws.validated
+    def test_function_tags(self, secondary_client, created_lambda):
+        func_arn = created_lambda
 
         tags = {"foo": "bar"}
-        assert secondary_client.tag_resource(Resource=func_arn, Tags=tags)
-
+        secondary_client.tag_resource(Resource=func_arn, Tags=tags)
         assert secondary_client.list_tags(Resource=func_arn)["Tags"] == tags
+        secondary_client.untag_resource(Resource=func_arn, TagKeys=["lorem"])
 
-        assert secondary_client.untag_resource(Resource=func_arn, TagKeys=["lorem"])
+    @markers.aws.validated
+    def test_function_invocation(self, secondary_client, created_lambda):
+        func_arn = created_lambda
+        secondary_client.invoke(FunctionName=func_arn)
 
-        assert secondary_client.invoke(FunctionName=func_arn)
+    @markers.aws.validated
+    def test_publish_version(self, secondary_client, created_lambda):
+        func_arn = created_lambda
+        secondary_client.publish_version(FunctionName=func_arn)
 
-        assert secondary_client.publish_version(FunctionName=func_arn)
-
-        assert secondary_client.delete_function(FunctionName=func_arn)
+    @markers.aws.validated
+    def test_delete_function(self, secondary_client, created_lambda):
+        func_arn = created_lambda
+        secondary_client.delete_function(FunctionName=func_arn)
 
 
 class TestLambdaConcurrency:
