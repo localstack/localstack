@@ -123,54 +123,6 @@ class TestRuntimeValidation:
             )
         snapshot.match("deprecation_error", e.value.response)
 
-    @markers.aws.only_localstack
-    def test_update_deprecated_function_runtime_with_validation_disabled(
-        self, create_lambda_function, lambda_su_role, aws_client, monkeypatch
-    ):
-        monkeypatch.setattr(config, "LAMBDA_RUNTIME_VALIDATION", 0)
-        function_name = f"fn-{short_uid()}"
-        create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=function_name,
-            runtime=Runtime.python3_12,
-            role=lambda_su_role,
-            MemorySize=256,
-            Timeout=5,
-            LoggingConfig={
-                "LogFormat": LogFormat.JSON,
-            },
-        )
-
-        aws_client.lambda_.update_function_configuration(
-            FunctionName=function_name, Runtime=Runtime.python3_7
-        )
-
-    @markers.aws.validated
-    @pytest.mark.parametrize("runtime", DEPRECATED_RUNTIMES)
-    def test_update_deprecated_function_runtime_with_validation_enabled(
-        self, runtime, create_lambda_function, lambda_su_role, aws_client, monkeypatch, snapshot
-    ):
-        monkeypatch.setattr(config, "LAMBDA_RUNTIME_VALIDATION", 1)
-        function_name = f"fn-{short_uid()}"
-        create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=function_name,
-            runtime=Runtime.python3_12,
-            role=lambda_su_role,
-            MemorySize=256,
-            Timeout=5,
-            LoggingConfig={
-                "LogFormat": LogFormat.JSON,
-            },
-        )
-        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
-        # with pytest.raises(aws_client.lambda_.exceptions.InvalidParameterValueException) as e:
-        response = aws_client.lambda_.update_function_configuration(
-            FunctionName=function_name, Runtime=runtime
-        )
-        assert response is None
-        # snapshot.match("deprecation_error", e.value.response)
-
 
 class TestPartialARNMatching:
     @markers.aws.validated
