@@ -173,6 +173,9 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_echo_invoke[RESPONSE_STREAM]": {
     "last_validated_date": "2024-04-08T16:57:09+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_form_payload": {
+    "last_validated_date": "2024-06-13T21:01:15+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_url_headers_and_status": {
     "last_validated_date": "2024-04-08T16:57:13+00:00"
   },
