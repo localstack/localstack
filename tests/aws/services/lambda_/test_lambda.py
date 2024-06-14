@@ -1824,17 +1824,9 @@ class TestLambdaCleanup:
 
 
 class TestLambdaMultiAccounts:
-    @pytest.fixture
-    def primary_client(self, aws_client):
-        return aws_client.lambda_
-
-    @pytest.fixture
-    def secondary_client(self, secondary_aws_client):
-        return secondary_aws_client.lambda_
-
-    @markers.aws.needs_fixing
+    @markers.aws.validated
     def test_cross_account_access(
-        self, primary_client, secondary_client, create_lambda_function, dummylayer
+        self, aws_client, secondary_aws_client, create_lambda_function, dummylayer
     ):
         # TODO: AWS validate this test
         # As of 2024-02, AWS restricts the input for adding resource-based policy to layer versions via AddLayerVersionPermission.
@@ -1843,6 +1835,10 @@ class TestLambdaMultiAccounts:
         # This appears to have been the case atleast since 2021-06.
         # Furthermore this contradicts with what its docs on valid IAM actions for layer versions:
         # https://docs.aws.amazon.com/lambda/latest/dg/lambda-api-permissions-ref.html#permissions-resources-layers
+        primary_client = aws_client.lambda_
+        secondary_client = secondary_aws_client.lambda_
+
+        secondary_account_id = secondary_aws_client.sts.get_caller_identity().get("Account")
 
         # Create resources using primary test credentials
         func_name = f"func-{short_uid()}"
@@ -1852,14 +1848,33 @@ class TestLambdaMultiAccounts:
             runtime=Runtime.python3_12,
         )["CreateFunctionResponse"]["FunctionArn"]
 
+        statement_id = f"stm-{short_uid()}"
+        primary_client.add_permission(
+            FunctionName=func_name,
+            StatementId=statement_id,
+            Principal=secondary_account_id,
+            Action="lambda:*",
+        )
+
         layer_name = f"layer-{short_uid()}"
         layer_arn = primary_client.publish_layer_version(
             LayerName=layer_name, Content={"ZipFile": dummylayer}
         )["LayerArn"]
 
-        # Operations related to Lambda layers
+        layer_statement_id = f"stm-{short_uid()}"
+        primary_client.add_layer_version_permission(
+            LayerName=layer_arn,
+            StatementId=layer_statement_id,
+            Principal=secondary_account_id,
+            Action="lambda:GetLayerVersion",
+            VersionNumber=1,
+        )
+
+        # Operations related to Lambda layers supported by cross account
         # - GetLayerVersion
         # - GetLayerVersionByArn
+
+        # Operations not supported by lambda layer cross account
         # - ListLayerVersions
         # - DeleteLayerVersion
         # - AddLayerVersionPermission
@@ -1872,23 +1887,8 @@ class TestLambdaMultiAccounts:
 
         assert secondary_client.get_layer_version_by_arn(Arn=layer_arn + ":1")
 
-        assert secondary_client.list_layer_versions(LayerName=layer_arn)
-
-        assert secondary_client.add_layer_version_permission(
-            LayerName=layer_arn,
-            VersionNumber=1,
-            Action="lambda:GetLayerVersion",
-            Principal="*",
-            StatementId="s1",
-        )
-
-        assert secondary_client.get_layer_version_policy(LayerName=layer_arn, VersionNumber=1)
-
-        assert secondary_client.remove_layer_version_permission(
-            LayerName=layer_arn, VersionNumber=1, StatementId="s1"
-        )
-
-        assert secondary_client.delete_layer_version(LayerName=layer_arn, VersionNumber=1)
+        # just a little bit of clean up
+        assert primary_client.delete_layer_version(LayerName=layer_arn, VersionNumber=1)
 
         # Operations related to functions.
         # See: https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html#permissions-resource-xaccountinvoke
@@ -1896,7 +1896,7 @@ class TestLambdaMultiAccounts:
         # - Invoke
         # - GetFunction
         # - GetFunctionConfiguration
-        # - UpdateFunctionCode (NOT TESTED)
+        # - UpdateFunctionCode
         # - DeleteFunction
         # - PublishVersion
         # - ListVersionsByFunction
@@ -1905,7 +1905,7 @@ class TestLambdaMultiAccounts:
         # - ListAliases
         # - UpdateAlias
         # - DeleteAlias
-        # - GetPolicy (NOT TESTED)
+        # - GetPolicy
         # - PutFunctionConcurrency
         # - DeleteFunctionConcurrency
         # - ListTags

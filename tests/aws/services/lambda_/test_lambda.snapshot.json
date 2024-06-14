@@ -4301,5 +4301,9 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_cross_account_access": {
+    "recorded-date": "14-06-2024, 12:09:32",
+    "recorded-content": {}
   }
 }

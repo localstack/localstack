@@ -146,6 +146,9 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_upload_lambda_from_s3": {
     "last_validated_date": "2024-04-08T16:58:25+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaMultiAccounts::test_cross_account_access": {
+    "last_validated_date": "2024-06-14T12:09:31+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaPermissions::test_lambda_permission_url_invocation": {
     "last_validated_date": "2024-04-08T16:57:37+00:00"
   },
