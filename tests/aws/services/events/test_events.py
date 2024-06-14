@@ -628,6 +628,71 @@ class TestEventBus:
         )
         snapshot.match("list-event-buses-limit-next-token", response)
 
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_put_permission(self, bus_name, create_event_bus, aws_client, account_id, snapshot):
+        if bus_name == "custom":
+            bus_name = f"test-bus-{short_uid()}"
+            create_event_bus(Name=bus_name)
+        if bus_name == "default":
+            try:
+                aws_client.events.remove_permission(
+                    EventBusName=bus_name, RemoveAllPermissions=True
+                )  # error if no permission is present
+            except Exception:
+                pass
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(bus_name, "<bus-name>"),
+                snapshot.transform.key_value("Sid", reference_replacement=False),
+            ]
+        )
+
+        statement_id = f"statement-{short_uid()}"
+
+        response = aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal="*",  # required if condition is present
+            StatementId=statement_id,
+            # Condition={"Type": "StringEquals", "Key": "aws:PrincipalOrgID", "Value": "org id"},
+        )
+        snapshot.match("put-permission", response)
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-put-permission", response)
+
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": f"test-{short_uid()}",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "events:ListRules",
+                    "Resource": "*",
+                }
+            ],
+        }
+        response = aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Policy=json.dumps(policy),
+        )
+        snapshot.match("put-permission-policy", response)
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-put-permission-policy", response)
+
+        try:
+            aws_client.events.remove_permission(EventBusName=bus_name, RemoveAllPermissions=True)
+        except Exception:
+            pass
+
     @markers.aws.needs_fixing  # TODO use fixture setup_sqs_queue_as_event_target to simplify
     @pytest.mark.skipif(is_aws_cloud(), reason="not validated")
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])

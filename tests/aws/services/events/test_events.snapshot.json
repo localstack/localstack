@@ -1208,5 +1208,131 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[custom]": {
+    "recorded-date": "14-06-2024, 12:51:52",
+    "recorded-content": {
+      "put-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission": {
+        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-permission-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission-policy": {
+        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              },
+              "Action": "events:ListRules",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
+    "recorded-date": "14-06-2024, 12:51:53",
+    "recorded-content": {
+      "put-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission": {
+        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-permission-policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-put-permission-policy": {
+        "Arn": "arn:aws:events:<region>:111111111111:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com"
+              },
+              "Action": "events:ListRules",
+              "Resource": "*"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
