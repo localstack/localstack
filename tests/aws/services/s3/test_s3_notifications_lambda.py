@@ -2,6 +2,7 @@ import json
 import os
 
 import pytest
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
@@ -113,6 +114,7 @@ class TestS3NotificationsToLambda:
         create_role,
         snapshot,
         aws_client,
+        aws_client_factory,
     ):
         snapshot.add_transformer(snapshot.transform.s3_dynamodb_notifications())
 
@@ -169,12 +171,15 @@ class TestS3NotificationsToLambda:
             },
         )
 
-        put_url = aws_client.s3.generate_presigned_url(
+        s3_sigv4_client = aws_client_factory(
+            config=Config(signature_version="s3v4"),
+        ).s3
+        put_url = s3_sigv4_client.generate_presigned_url(
             ClientMethod="put_object", Params={"Bucket": bucket_name, "Key": table_name}
         )
         requests.put(put_url, data="by_presigned_put")
 
-        presigned_post = aws_client.s3.generate_presigned_post(Bucket=bucket_name, Key=table_name)
+        presigned_post = s3_sigv4_client.generate_presigned_post(Bucket=bucket_name, Key=table_name)
         # method 1
         requests.post(
             presigned_post["url"],

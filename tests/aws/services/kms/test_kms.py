@@ -175,6 +175,9 @@ class TestKMS:
     def test_get_key_in_different_region(
         self, kms_client_for_region, kms_create_key, snapshot, region_name, secondary_region_name
     ):
+        snapshot.add_transformer(
+            snapshot.transform.regex(secondary_region_name, "<secondary-region>")
+        )
         client_region = region_name
         key_region = secondary_region_name
         us_east_1_kms_client = kms_client_for_region(client_region)

@@ -44,7 +44,7 @@ from localstack.services.s3.utils import (
     parse_expiration_header,
     rfc_1123_datetime,
 )
-from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.aws.util import in_default_partition, is_aws_cloud
 from localstack.testing.config import (
     SECONDARY_TEST_AWS_ACCESS_KEY_ID,
     SECONDARY_TEST_AWS_SECRET_ACCESS_KEY,
@@ -4734,6 +4734,9 @@ class TestS3:
         assert len(proxied_response.headers["server"].split(",")) == 1
         assert len(proxied_response.headers["date"].split(",")) == 2  # coma in the date
 
+    @pytest.mark.skipif(
+        not in_default_partition(), reason="Test not applicable in non-default partitions"
+    )
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
     def test_s3_sse_validate_kms_key(
@@ -7133,6 +7136,8 @@ class TestS3PresignedUrl:
         account_id,
         wait_and_assume_role,
         patch_s3_skip_signature_validation_false,
+        region_name,
+        aws_client_factory,
     ):
         bucket_name = f"bucket-{short_uid()}"
         key_name = "key"
@@ -7166,6 +7171,7 @@ class TestS3PresignedUrl:
 
         client = boto3.client(
             "s3",
+            region_name=region_name,
             config=Config(signature_version="s3v4"),
             endpoint_url=_endpoint_url(),
             aws_access_key_id=credentials["AccessKeyId"],
@@ -7173,8 +7179,13 @@ class TestS3PresignedUrl:
             aws_session_token=credentials["SessionToken"],
         )
 
+        kwargs = (
+            {"CreateBucketConfiguration": {"LocationConstraint": region_name}}
+            if region_name != "us-east-1"
+            else {}
+        )
         retry(
-            lambda: s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name),
+            lambda: s3_create_bucket_with_client(s3_client=client, Bucket=bucket_name, **kwargs),
             sleep=3 if is_aws_cloud() else 0.5,
         )
 
