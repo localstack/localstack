@@ -16338,36 +16338,8 @@
       }
     }
   },
-  "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_update_function_configuration_full_arn": {
-    "recorded-date": "05-06-2024, 11:49:05",
-    "recorded-content": {}
-  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_cross_region_arn_function_access": {
     "recorded-date": "11-06-2024, 13:06:45",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_update_deprecated_function_runtime_with_validation_enabled[java8]": {
-    "recorded-date": "13-06-2024, 15:17:55",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_update_deprecated_function_runtime_with_validation_enabled[go1.x]": {
-    "recorded-date": "13-06-2024, 15:11:46",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_update_deprecated_function_runtime_with_validation_enabled[provided]": {
-    "recorded-date": "13-06-2024, 15:11:49",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_update_deprecated_function_runtime_with_validation_enabled[ruby2.7]": {
-    "recorded-date": "13-06-2024, 15:11:52",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_update_deprecated_function_runtime_with_validation_enabled[nodejs14.x]": {
-    "recorded-date": "13-06-2024, 15:11:55",
-    "recorded-content": {}
-  },
-  "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_update_deprecated_function_runtime_with_validation_enabled[python3.7]": {
-    "recorded-date": "13-06-2024, 15:11:59",
     "recorded-content": {}
   }
 }
