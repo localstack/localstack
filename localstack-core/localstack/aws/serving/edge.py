@@ -7,7 +7,7 @@ from rolo.gateway.wsgi import WsgiGateway
 from localstack import config
 from localstack.aws.app import LocalstackAwsGateway
 from localstack.config import HostAndPort
-from localstack.runtime import components
+from localstack.runtime import get_current_runtime
 from localstack.runtime.shutdown import ON_AFTER_SERVICE_SHUTDOWN_HANDLERS
 from localstack.utils.collections import ensure_list
 
@@ -22,7 +22,7 @@ def serve_gateway(
     LocalstackAwsGateway.
     """
 
-    gateway = components.gateway()
+    gateway = get_current_runtime().components.gateway
 
     listens = ensure_list(listen)
 

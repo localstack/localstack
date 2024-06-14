@@ -451,9 +451,9 @@ class InternalClientFactory(ClientFactory):
         if localstack_config.IN_MEMORY_CLIENT:
             # this make the client call the gateway directly
             from localstack.aws.client import GatewayShortCircuit
-            from localstack.runtime import components
+            from localstack.runtime import get_current_runtime
 
-            GatewayShortCircuit.modify_client(client, components.gateway())
+            GatewayShortCircuit.modify_client(client, get_current_runtime().components.gateway)
 
         return client
 
