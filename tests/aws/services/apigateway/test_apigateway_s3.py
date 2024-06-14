@@ -109,9 +109,14 @@ def test_apigateway_s3_any(
 
 
 @pytest.mark.skip(reason="Need to implement a solution for method mapping")
+@markers.aws.validated
 def test_apigateway_s3_method_mapping(
     aws_client, create_rest_apigw, s3_create_bucket, region_name, create_role_with_policy, snapshot
 ):
+    snapshot.add_transformers_list(
+        [snapshot.transform.key_value("HostId"), snapshot.transform.key_value("RequestId")]
+    )
+
     api_id, api_name, root_id = create_rest_apigw()
     bucket = s3_create_bucket()
     stage_name = "test"
@@ -208,17 +213,19 @@ def test_apigateway_s3_method_mapping(
     put_invoke_url = api_invoke_url(api_id, stage_name, path="/put")
     delete_invoke_url = api_invoke_url(api_id, stage_name, path="/delete")
 
-    def _invoke(url, json_response: bool = False):
+    def _invoke(url, get_json: bool = False, get_xml: bool = False):
         response = requests.get(url=url)
         assert response.status_code == 200
-        if json_response:
-            return response.json()
+        if get_json:
+            response = response.json()
+        elif get_xml:
+            response = xmltodict.parse(response.text)
         return response
 
     retry(lambda: _invoke(put_invoke_url), retries=10, sleep=2)
-    get_object = retry(lambda: _invoke(get_invoke_url, json_response=True), retries=10, sleep=3)
+    get_object = retry(lambda: _invoke(get_invoke_url, get_json=True), retries=10, sleep=3)
     snapshot.match("get-object", get_object)
     _invoke(delete_invoke_url)
 
-    get_object = retry(lambda: _invoke(get_invoke_url), retries=10, sleep=2)
-    snapshot.match("get-deleted-object", xmltodict.parse(get_object.content))
+    get_object = retry(lambda: _invoke(get_invoke_url, get_xml=True), retries=10, sleep=2)
+    snapshot.match("get-deleted-object", get_object)

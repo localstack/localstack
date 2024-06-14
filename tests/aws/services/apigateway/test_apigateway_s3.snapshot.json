@@ -44,12 +44,20 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3_method_mapping": {
-    "recorded-date": "13-06-2024, 23:48:59",
+    "recorded-date": "14-06-2024, 16:12:27",
     "recorded-content": {
       "get-object": {
         "message": "great success!"
       },
-      "get-deleted-object": "b'<?xml version=\"1.0\" encoding=\"UTF-8\"?>\\n<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message><Key>test.json</Key><RequestId>EENKG69QCT1EWSC1</RequestId><HostId>1zYps0DF5XgqCBb3dPp6/LwXpEojpUQD/nRdFvt/x63I/AYnhQ1l5QKHFU6mwkMlBDcWkBQ1ucM=</HostId></Error>'"
+      "get-deleted-object": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "HostId": "<host-id:1>",
+          "Key": "test.json",
+          "Message": "The specified key does not exist.",
+          "RequestId": "<request-id:1>"
+        }
+      }
     }
   }
 }
