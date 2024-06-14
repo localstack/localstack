@@ -16185,6 +16185,9 @@
       }
     }
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestPartialARNMatching::test_update_function_configuration_full_arn": {
+    "recorded-date": "05-06-2024, 11:49:05",
+    "recorded-content": {},
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled": {
     "recorded-date": "12-06-2024, 14:19:11",
     "recorded-content": {
