@@ -161,6 +161,7 @@ def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> 
         except json.JSONDecodeError:
             pass
     id = message.get("original_id", str(long_uid()))
+    region = message.get("original_region", region)
     account_id = message.get("original_account", account_id)
 
     formatted_event = {

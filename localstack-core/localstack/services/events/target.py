@@ -268,28 +268,28 @@ class EventsTargetSender(TargetSender):
                 "Resources": resources,
             }
         ]
-        if encoded_original_id := self._get_trace_header_encoded_message_for_cross_account(event):
+        if encoded_original_id := self._get_trace_header_encoded_region_account(event):
             entries[0]["TraceHeader"] = encoded_original_id
         self.client.put_events(Entries=entries)
 
-    def _get_trace_header_encoded_message_for_cross_account(
-        self, event: FormattedEvent
-    ) -> str | None:
-        """Encode the original id for cross account event bus communication in the trace header.
-        For event bus to event bus communication in a different account the event id is preserved.
-        This is not the case for region to region"""
-
-        # account id from target bus different than from self
+    def _get_trace_header_encoded_region_account(self, event: FormattedEvent) -> str | None:
+        """Encode the original region and account_id for cross-region and cross-account
+        event bus communication in the trace header. For event bus to event bus communication
+        in a different account the event id is preserved. This is not the case if the region differs."""
+        original_id = event.get("id")
         original_account = event.get("account")
-        print(f"\n\nevent\n{event}\n\n\n")
-        print(f"\n\ntarget\n{self.target}\n\n\n")
+        original_region = event.get("region")
+        if original_region != self.region and original_account != self.account_id:
+            return json.dumps(
+                {
+                    "original_region": original_region,
+                    "original_account": original_account,
+                }
+            )
+        if original_region != self.region:
+            return json.dumps({"original_region": original_region})
         if original_account != self.account_id:
-            original_id = event.get("id")
-            message = {
-                "original_id": original_id,
-                "original_account": original_account,
-            }
-            return json.dumps(message)
+            return json.dumps({"original_id": original_id, "original_account": original_account})
 
 
 class FirehoseTargetSender(TargetSender):
