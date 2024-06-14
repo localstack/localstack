@@ -1,26 +1,4 @@
 {
-  "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3": {
-    "recorded-date": "13-06-2024, 22:24:32",
-    "recorded-content": {
-      "get-object-1": {
-        "put_id": 1
-      },
-      "get-object-2": {
-        "put_id": 2
-      },
-      "get-object-s3": {
-        "Error": {
-          "Code": "NoSuchKey",
-          "Key": "test.json",
-          "Message": "The specified key does not exist."
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
   "tests/aws/services/apigateway/test_apigateway_s3.py::test_apigateway_s3_any": {
     "recorded-date": "13-06-2024, 23:10:19",
     "recorded-content": {
