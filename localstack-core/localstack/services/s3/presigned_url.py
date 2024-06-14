@@ -777,7 +777,7 @@ def validate_post_policy(
     except ValueError:
         # this means the policy has been tampered with
         signature = request_form.get("signature") if is_v2 else request_form.get("x-amz-signature")
-        credentials = get_credentials_from_parameters(request_form)
+        credentials = get_credentials_from_parameters(request_form, "us-east-1")
         ex: SignatureDoesNotMatch = create_signature_does_not_match_sig_v2(
             request_signature=signature,
             string_to_sign=policy,
