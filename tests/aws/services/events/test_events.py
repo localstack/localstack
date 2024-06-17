@@ -636,11 +636,17 @@ class TestEventBus:
     )
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
     def test_put_permission(
-        self, bus_name, create_event_bus, aws_client, account_id, secondary_account_id, snapshot
+        self,
+        bus_name,
+        events_create_event_bus,
+        aws_client,
+        account_id,
+        secondary_account_id,
+        snapshot,
     ):
         if bus_name == "custom":
             bus_name = f"test-bus-{short_uid()}"
-            create_event_bus(Name=bus_name)
+            events_create_event_bus(Name=bus_name)
         if bus_name == "default":
             try:
                 aws_client.events.remove_permission(
@@ -744,11 +750,17 @@ class TestEventBus:
     )
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
     def test_remove_permission(
-        self, bus_name, create_event_bus, aws_client, account_id, secondary_account_id, snapshot
+        self,
+        bus_name,
+        events_create_event_bus,
+        aws_client,
+        account_id,
+        secondary_account_id,
+        snapshot,
     ):
         if bus_name == "custom":
             bus_name = f"test-bus-{short_uid()}"
-            create_event_bus(Name=bus_name)
+            events_create_event_bus(Name=bus_name)
         if bus_name == "default":
             try:
                 aws_client.events.remove_permission(
@@ -803,6 +815,32 @@ class TestEventBus:
             aws_client.events.remove_permission(EventBusName=bus_name, RemoveAllPermissions=True)
         except Exception:
             pass
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_remove_permission_non_existing_sid(
+        self, aws_client, bus_name, events_create_event_bus, snapshot
+    ):
+        if bus_name == "custom":
+            bus_name = f"test-bus-{short_uid()}"
+            events_create_event_bus(Name=bus_name)
+        if bus_name == "default":
+            try:
+                aws_client.events.remove_permission(
+                    EventBusName=bus_name, RemoveAllPermissions=True
+                )  # error if no permission is present
+            except Exception:
+                pass
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.remove_permission(
+                EventBusName=bus_name, StatementId="non-existing-sid"
+            )
+        snapshot.match("remove-permission-non-existing-sid-error", e)
 
     @markers.aws.needs_fixing  # TODO use fixture setup_sqs_queue_as_event_target to simplify
     @pytest.mark.skipif(is_aws_cloud(), reason="not validated")

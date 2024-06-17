@@ -1574,5 +1574,17 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[custom]": {
+    "recorded-date": "17-06-2024, 10:47:29",
+    "recorded-content": {
+      "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[default]": {
+    "recorded-date": "17-06-2024, 10:47:30",
+    "recorded-content": {
+      "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
+    }
   }
 }

@@ -38,6 +38,12 @@
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[default]": {
     "last_validated_date": "2024-06-17T10:34:06+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[custom]": {
+    "last_validated_date": "2024-06-17T10:47:29+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission_non_existing_sid[default]": {
+    "last_validated_date": "2024-06-17T10:47:30+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_nested": {
     "last_validated_date": "2024-04-29T13:17:16+00:00"
   },
