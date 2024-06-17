@@ -1334,5 +1334,107 @@
         }
       }
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[custom]": {
+    "recorded-date": "17-06-2024, 09:26:01",
+    "recorded-content": {
+      "remove-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-remove-permission": {
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-permission-all": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-remove-permission-all": {
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[default]": {
+    "recorded-date": "17-06-2024, 09:26:03",
+    "recorded-content": {
+      "remove-permission": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-remove-permission": {
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "remove-permission-all": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-event-bus-remove-permission-all": {
+        "Arn": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>",
+        "CreationTime": "datetime",
+        "LastModifiedTime": "datetime",
+        "Name": "<bus-name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

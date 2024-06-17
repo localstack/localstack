@@ -655,6 +655,8 @@ class TestEventBus:
 
         statement_id = f"statement-{short_uid()}"
 
+        # only events:PutEvents is allowed for actions
+        # only a single access policy is allowed per event bus
         response = aws_client.events.put_permission(
             EventBusName=bus_name,
             Action="events:PutEvents",
@@ -662,6 +664,15 @@ class TestEventBus:
             StatementId=statement_id,
             # Condition={"Type": "StringEquals", "Key": "aws:PrincipalOrgID", "Value": "org id"},
         )
+
+        # put permission just replaces the existing permission
+        response = aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal="*",  # required if condition is present
+            StatementId=statement_id,
+        )
+
         snapshot.match("put-permission", response)
 
         response = aws_client.events.describe_event_bus(Name=bus_name)
@@ -687,6 +698,72 @@ class TestEventBus:
 
         response = aws_client.events.describe_event_bus(Name=bus_name)
         snapshot.match("describe-event-bus-put-permission-policy", response)
+
+        try:
+            aws_client.events.remove_permission(EventBusName=bus_name, RemoveAllPermissions=True)
+        except Exception:
+            pass
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
+    @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    def test_remove_permission(
+        self, bus_name, create_event_bus, aws_client, account_id, secondary_account_id, snapshot
+    ):
+        if bus_name == "custom":
+            bus_name = f"test-bus-{short_uid()}"
+            create_event_bus(Name=bus_name)
+        if bus_name == "default":
+            try:
+                aws_client.events.remove_permission(
+                    EventBusName=bus_name, RemoveAllPermissions=True
+                )  # error if no permission is present
+            except Exception:
+                pass
+
+        snapshot.add_transformer(
+            [
+                snapshot.transform.regex(bus_name, "<bus-name>"),
+                snapshot.transform.regex(account_id, "<account-id>"),
+                snapshot.transform.regex(secondary_account_id, "<secondary-account-id>"),
+                snapshot.transform.key_value("Sid", reference_replacement=False),
+            ]
+        )
+
+        statement_id_primary = f"statement-{short_uid()}"
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=account_id,
+            StatementId=statement_id_primary,
+        )
+
+        statement_id_secondary = f"statement-{short_uid()}"
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=secondary_account_id,
+            StatementId=statement_id_secondary,
+        )
+
+        response_remove_permission = aws_client.events.remove_permission(
+            EventBusName=bus_name, StatementId=statement_id_primary, RemoveAllPermissions=False
+        )
+        snapshot.match("remove-permission", response_remove_permission)
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-remove-permission", response)
+
+        response_remove_all = aws_client.events.remove_permission(
+            EventBusName=bus_name, RemoveAllPermissions=True
+        )
+        snapshot.match("remove-permission-all", response_remove_all)
+
+        response = aws_client.events.describe_event_bus(Name=bus_name)
+        snapshot.match("describe-event-bus-remove-permission-all", response)
 
         try:
             aws_client.events.remove_permission(EventBusName=bus_name, RemoveAllPermissions=True)

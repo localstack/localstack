@@ -32,6 +32,12 @@
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
     "last_validated_date": "2024-06-14T12:51:53+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[custom]": {
+    "last_validated_date": "2024-06-17T09:26:01+00:00"
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[default]": {
+    "last_validated_date": "2024-06-17T09:26:03+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_nested": {
     "last_validated_date": "2024-04-29T13:17:16+00:00"
   },
