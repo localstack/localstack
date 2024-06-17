@@ -6,6 +6,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack.testing.aws.lambda_utils import _await_dynamodb_table_active
+from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import get_partition
@@ -99,6 +100,10 @@ class TestS3NotificationsToLambda:
 
         retry(check_table, retries=5, sleep=1)
 
+    @pytest.mark.skipif(
+        not in_default_partition(),
+        reason="presigned_url_post currently not working with non-default partitions",
+    )
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[

@@ -1001,20 +1001,28 @@ class TestS3:
         snapshot.match("exc", e.value.response)
 
     @markers.aws.validated
-    def test_create_bucket_via_host_name(self, s3_vhost_client, aws_client):
+    def test_create_bucket_via_host_name(self, s3_vhost_client, aws_client, region_name):
         # TODO check redirection (happens in AWS because of region name), should it happen in LS?
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#VirtualHostingBackwardsCompatibility
         bucket_name = f"test-{short_uid()}"
         try:
             response = s3_vhost_client.create_bucket(
                 Bucket=bucket_name,
-                CreateBucketConfiguration={"LocationConstraint": "eu-central-1"},
+                CreateBucketConfiguration={
+                    "LocationConstraint": region_name
+                    if region_name != "us-east-1"
+                    else "eu-central-1"
+                },
             )
             assert "Location" in response
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
             response = s3_vhost_client.get_bucket_location(Bucket=bucket_name)
             assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-            assert response["LocationConstraint"] == "eu-central-1"
+            assert (
+                response["LocationConstraint"] == region_name
+                if region_name != "us-east-1"
+                else "eu-central-1"
+            )
         finally:
             s3_vhost_client.delete_bucket(Bucket=bucket_name)
 
