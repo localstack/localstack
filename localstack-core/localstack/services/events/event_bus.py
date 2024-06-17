@@ -8,6 +8,7 @@ from localstack.aws.api.events import (
     Condition,
     EventBusName,
     Principal,
+    ResourceNotFoundException,
     StatementId,
     String,
     TagList,
@@ -74,7 +75,12 @@ class EventBusService:
                 self.event_bus.policy = parsed_policy
 
     def revoke_put_events_permission(self, statement_id: str):
-        if policy := self.event_bus.policy:
+        policy = self.event_bus.policy
+        if not policy or not any(
+            statement.get("Sid") == statement_id for statement in policy["Statement"]
+        ):
+            raise ResourceNotFoundException("Statement with the provided id does not exist.")
+        if policy:
             policy["Statement"] = [
                 statement
                 for statement in policy["Statement"]
