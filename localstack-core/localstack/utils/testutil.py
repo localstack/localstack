@@ -56,7 +56,7 @@ from localstack.utils.strings import short_uid, to_str
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
 LAMBDA_DEFAULT_HANDLER = "handler.handler"
-LAMBDA_DEFAULT_RUNTIME = Runtime.python3_9
+LAMBDA_DEFAULT_RUNTIME = Runtime.python3_12
 LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 LAMBDA_TIMEOUT_SEC = 30
 LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"

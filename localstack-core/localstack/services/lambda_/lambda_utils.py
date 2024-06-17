@@ -14,7 +14,7 @@ HINT_LOG = logging.getLogger("localstack.services.lambda_.hints")
 def get_handler_file_from_name(handler_name: str, runtime: str = None):
     # Previously used DEFAULT_LAMBDA_RUNTIME here but that is only relevant for testing and this helper is still used in
     # a CloudFormation model in localstack.services.cloudformation.models.lambda_.LambdaFunction.get_lambda_code_param
-    runtime = runtime or Runtime.python3_9
+    runtime = runtime or Runtime.python3_12
 
     # TODO: consider using localstack/testing/aws/lambda_utils.py:RUNTIMES_AGGREGATED for testing or moving the constant
     #   RUNTIMES_AGGREGATED to LocalStack core if this helper remains relevant within CloudFormation.
