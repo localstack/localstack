@@ -50,25 +50,42 @@ class EventBusService:
     ):
         if policy and any([action, principal, statement_id, condition]):
             raise ValueError("Combination of policy with other arguments is not allowed")
-        if policy:
+        self.event_bus.creation_time = datetime.now(timezone.utc)
+        self.event_bus.last_modified_time = datetime.now(timezone.utc)
+        if policy:  # policy document replaces all existing permissions
             policy = json.loads(policy)
             parsed_policy = ResourcePolicy(**policy)
+            self.event_bus.policy = parsed_policy
         else:
             permission_statement = self._pars_statement(
                 statement_id, action, principal, self.arn, condition
             )
-            parsed_policy = ResourcePolicy(Version="2012-10-17", Statement=[permission_statement])
 
-        self.event_bus.policy = parsed_policy
-        self.event_bus.creation_time = datetime.now(timezone.utc)
-        self.event_bus.last_modified_time = datetime.now(timezone.utc)
+            if existing_policy := self.event_bus.policy:
+                if permission_statement["Principal"] == "*":
+                    for statement in existing_policy["Statement"]:
+                        if "*" == statement["Principal"]:
+                            return
+                existing_policy["Statement"].append(permission_statement)
+            else:
+                parsed_policy = ResourcePolicy(
+                    Version="2012-10-17", Statement=[permission_statement]
+                )
+                self.event_bus.policy = parsed_policy
 
-    def revoke_put_events_permission(self, account_id: str):
-        self.event_bus.policy = None
+    def revoke_put_events_permission(self, statement_id: str):
+        if policy := self.event_bus.policy:
+            policy["Statement"] = [
+                statement
+                for statement in policy["Statement"]
+                if statement.get("Sid") != statement_id
+            ]
 
     def _pars_statement(self, statement_id, action, principal, resource_arn, condition):
         if condition and principal != "*":
             raise ValueError("Condition can only be set when principal is '*'")
+        if principal != "*":
+            principal = {"AWS": f"arn:aws:iam::{principal}:root"}
         statement = Statement(
             Sid=statement_id,
             Effect="Allow",
