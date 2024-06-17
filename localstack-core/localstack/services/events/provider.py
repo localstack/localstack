@@ -89,6 +89,7 @@ from localstack.services.events.models import (
 from localstack.services.events.rule import RuleService, RuleServiceDict
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.events.target import TargetSender, TargetSenderDict, TargetSenderFactory
+from localstack.services.events.utils import recursive_remove_none_values_from_dict
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import truncate
@@ -752,8 +753,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             "Name": event_bus.name,
             "Arn": event_bus.arn,
         }
+        if event_bus.creation_time:
+            event_bus_api_type["CreationTime"] = event_bus.creation_time
+        if event_bus.last_modified_time:
+            event_bus_api_type["LastModifiedTime"] = event_bus.last_modified_time
         if event_bus.policy:
-            event_bus_api_type["Policy"] = event_bus.policy
+            event_bus_api_type["Policy"] = recursive_remove_none_values_from_dict(event_bus.policy)
 
         return event_bus_api_type
 
