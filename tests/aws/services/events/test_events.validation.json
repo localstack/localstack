@@ -27,16 +27,16 @@
     "last_validated_date": "2024-04-29T13:16:20+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[custom]": {
-    "last_validated_date": "2024-06-17T09:37:16+00:00"
+    "last_validated_date": "2024-06-17T10:32:30+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
-    "last_validated_date": "2024-06-17T09:37:18+00:00"
+    "last_validated_date": "2024-06-17T10:32:33+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[custom]": {
-    "last_validated_date": "2024-06-17T09:26:01+00:00"
+    "last_validated_date": "2024-06-17T10:34:04+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[default]": {
-    "last_validated_date": "2024-06-17T09:26:03+00:00"
+    "last_validated_date": "2024-06-17T10:34:06+00:00"
   },
   "tests/aws/services/events/test_events.py::TestEventPattern::test_put_events_pattern_nested": {
     "last_validated_date": "2024-04-29T13:17:16+00:00"

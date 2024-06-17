@@ -10,6 +10,7 @@ import uuid
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
@@ -653,11 +654,12 @@ class TestEventBus:
                 snapshot.transform.regex(bus_name, "<bus-name>"),
                 snapshot.transform.regex(account_id, "<account-id>"),
                 snapshot.transform.regex(secondary_account_id, "<secondary-account-id>"),
-                snapshot.transform.key_value("Sid", reference_replacement=False),
+                SortingTransformer("Statement", lambda o: o["Sid"]),
+                snapshot.transform.key_value("Sid"),
             ]
         )
 
-        statement_id_primary = f"statement-{short_uid()}"
+        statement_id_primary = f"statement-1-{short_uid()}"
         response = aws_client.events.put_permission(
             EventBusName=bus_name,
             Action="events:PutEvents",
@@ -666,7 +668,7 @@ class TestEventBus:
         )
         snapshot.match("put-permission", response)
 
-        statement_id_primary = f"statement-{short_uid()}"
+        statement_id_primary = f"statement-2-{short_uid()}"
         aws_client.events.put_permission(
             EventBusName=bus_name,
             Action="events:PutEvents",
@@ -674,7 +676,7 @@ class TestEventBus:
             StatementId=statement_id_primary,
         )
 
-        statement_id_secondary = f"statement-{short_uid()}"
+        statement_id_secondary = f"statement-3-{short_uid()}"
         aws_client.events.put_permission(
             EventBusName=bus_name,
             Action="events:PutEvents",
@@ -686,7 +688,7 @@ class TestEventBus:
         snapshot.match("describe-event-bus-put-permission-multiple-principals", response)
 
         # allow all principals to put events
-        statement_id = f"statement-{short_uid()}"
+        statement_id = f"statement-4-{short_uid()}"
         # only events:PutEvents is allowed for actions
         # only a single access policy is allowed per event bus
         aws_client.events.put_permission(
@@ -713,7 +715,7 @@ class TestEventBus:
             "Version": "2012-10-17",
             "Statement": [
                 {
-                    "Sid": f"test-{short_uid()}",
+                    "Sid": f"statement-5-{short_uid()}",
                     "Effect": "Allow",
                     "Principal": {"Service": "events.amazonaws.com"},
                     "Action": "events:ListRules",
@@ -760,11 +762,12 @@ class TestEventBus:
                 snapshot.transform.regex(bus_name, "<bus-name>"),
                 snapshot.transform.regex(account_id, "<account-id>"),
                 snapshot.transform.regex(secondary_account_id, "<secondary-account-id>"),
-                snapshot.transform.key_value("Sid", reference_replacement=False),
+                SortingTransformer("Statement", lambda o: o["Sid"]),
+                snapshot.transform.key_value("Sid"),
             ]
         )
 
-        statement_id_primary = f"statement-{short_uid()}"
+        statement_id_primary = f"statement-1-{short_uid()}"
         aws_client.events.put_permission(
             EventBusName=bus_name,
             Action="events:PutEvents",
@@ -772,7 +775,7 @@ class TestEventBus:
             StatementId=statement_id_primary,
         )
 
-        statement_id_secondary = f"statement-{short_uid()}"
+        statement_id_secondary = f"statement-2-{short_uid()}"
         aws_client.events.put_permission(
             EventBusName=bus_name,
             Action="events:PutEvents",

@@ -1210,7 +1210,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[custom]": {
-    "recorded-date": "17-06-2024, 09:37:16",
+    "recorded-date": "17-06-2024, 10:32:30",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -1227,28 +1227,28 @@
           "Version": "2012-10-17",
           "Statement": [
             {
-              "Sid": "sid",
+              "Sid": "<sid:1>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:2>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:3>",
               "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<secondary-account-id>:root"
-              },
-              "Action": "events:PutEvents",
-              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
-            },
-            {
-              "Sid": "sid",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": "arn:aws:iam::<account-id>:root"
-              },
-              "Action": "events:PutEvents",
-              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
-            },
-            {
-              "Sid": "sid",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": "arn:aws:iam::<account-id>:root"
               },
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
@@ -1269,14 +1269,25 @@
           "Version": "2012-10-17",
           "Statement": [
             {
-              "Sid": "sid",
+              "Sid": "<sid:1>",
               "Effect": "Allow",
-              "Principal": "*",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             },
             {
-              "Sid": "sid",
+              "Sid": "<sid:2>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:3>",
               "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<secondary-account-id>:root"
@@ -1285,20 +1296,9 @@
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             },
             {
-              "Sid": "sid",
+              "Sid": "<sid:4>",
               "Effect": "Allow",
-              "Principal": {
-                "AWS": "arn:aws:iam::<account-id>:root"
-              },
-              "Action": "events:PutEvents",
-              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
-            },
-            {
-              "Sid": "sid",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": "arn:aws:iam::<account-id>:root"
-              },
+              "Principal": "*",
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             }
@@ -1324,7 +1324,7 @@
           "Version": "2012-10-17",
           "Statement": [
             {
-              "Sid": "sid",
+              "Sid": "<sid:5>",
               "Effect": "Allow",
               "Principal": {
                 "Service": "events.amazonaws.com"
@@ -1342,7 +1342,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
-    "recorded-date": "17-06-2024, 09:37:18",
+    "recorded-date": "17-06-2024, 10:32:33",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -1359,7 +1359,7 @@
           "Version": "2012-10-17",
           "Statement": [
             {
-              "Sid": "sid",
+              "Sid": "<sid:1>",
               "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<account-id>:root"
@@ -1368,19 +1368,19 @@
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             },
             {
-              "Sid": "sid",
+              "Sid": "<sid:2>",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "<sid:3>",
               "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<secondary-account-id>:root"
-              },
-              "Action": "events:PutEvents",
-              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
-            },
-            {
-              "Sid": "sid",
-              "Effect": "Allow",
-              "Principal": {
-                "AWS": "arn:aws:iam::<account-id>:root"
               },
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
@@ -1401,7 +1401,7 @@
           "Version": "2012-10-17",
           "Statement": [
             {
-              "Sid": "sid",
+              "Sid": "<sid:1>",
               "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<account-id>:root"
@@ -1410,14 +1410,16 @@
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             },
             {
-              "Sid": "sid",
+              "Sid": "<sid:2>",
               "Effect": "Allow",
-              "Principal": "*",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             },
             {
-              "Sid": "sid",
+              "Sid": "<sid:3>",
               "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<secondary-account-id>:root"
@@ -1426,11 +1428,9 @@
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             },
             {
-              "Sid": "sid",
+              "Sid": "<sid:4>",
               "Effect": "Allow",
-              "Principal": {
-                "AWS": "arn:aws:iam::<account-id>:root"
-              },
+              "Principal": "*",
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             }
@@ -1456,7 +1456,7 @@
           "Version": "2012-10-17",
           "Statement": [
             {
-              "Sid": "sid",
+              "Sid": "<sid:5>",
               "Effect": "Allow",
               "Principal": {
                 "Service": "events.amazonaws.com"
@@ -1474,7 +1474,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[custom]": {
-    "recorded-date": "17-06-2024, 09:26:01",
+    "recorded-date": "17-06-2024, 10:34:04",
     "recorded-content": {
       "remove-permission": {
         "ResponseMetadata": {
@@ -1491,7 +1491,7 @@
           "Version": "2012-10-17",
           "Statement": [
             {
-              "Sid": "sid",
+              "Sid": "<sid:1>",
               "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<secondary-account-id>:root"
@@ -1525,7 +1525,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[default]": {
-    "recorded-date": "17-06-2024, 09:26:03",
+    "recorded-date": "17-06-2024, 10:34:06",
     "recorded-content": {
       "remove-permission": {
         "ResponseMetadata": {
@@ -1542,7 +1542,7 @@
           "Version": "2012-10-17",
           "Statement": [
             {
-              "Sid": "sid",
+              "Sid": "<sid:1>",
               "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<secondary-account-id>:root"
