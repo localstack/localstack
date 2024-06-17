@@ -715,8 +715,24 @@ class S3Integration(BackendIntegration):
 
         bucket, object_key = uri_match.group("bucket", "object")
         LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
+
+        action = None
+        invoke_args = {"Bucket": bucket, "Key": object_key}
+        match invocation_context.method:
+            case HTTPMethod.GET:
+                action = s3.get_object
+            case HTTPMethod.PUT:
+                invoke_args["Body"] = invocation_context.data
+                action = s3.put_object
+            case HTTPMethod.DELETE:
+                action = s3.delete_object
+            case _:
+                make_error_response(
+                    "The specified method is not allowed against this resource.", 405
+                )
+
         try:
-            object = s3.get_object(Bucket=bucket, Key=object_key)
+            object = action(**invoke_args)
         except s3.exceptions.NoSuchKey:
             msg = f"Object {object_key} not found"
             LOG.debug(msg)
@@ -732,7 +748,10 @@ class S3Integration(BackendIntegration):
             headers["Content-Type"] = object["ContentType"]
 
         # stream used so large files do not fill memory
-        response = request_response_stream(stream=object["Body"], headers=headers)
+        if body := object.get("Body"):
+            response = request_response_stream(stream=body, headers=headers)
+        else:
+            response = requests_response(content="", headers=headers)
         return response
 
 
