@@ -148,7 +148,7 @@ typing-extensions==4.12.2
     # via
     #   localstack-twisted
     #   readerwriterlock
-urllib3==2.2.1
+urllib3==2.2.2
     # via
     #   botocore
     #   docker
