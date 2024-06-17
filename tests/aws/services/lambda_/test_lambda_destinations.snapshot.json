@@ -186,7 +186,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDLQ::test_dead_letter_queue": {
-    "recorded-date": "21-03-2024, 12:20:31",
+    "recorded-date": "17-06-2024, 11:49:58",
     "recorded-content": {
       "create_lambda_with_dlq": {
         "CreateEventSourceMappingResponse": null,
@@ -218,7 +218,7 @@
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-          "Runtime": "python3.9",
+          "Runtime": "python3.12",
           "RuntimeVersionConfig": {
             "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
           },
@@ -302,7 +302,7 @@
         "PackageType": "Zip",
         "RevisionId": "<uuid:3>",
         "Role": "arn:aws:iam::111111111111:role/<resource:2>",
-        "Runtime": "python3.9",
+        "Runtime": "python3.12",
         "RuntimeVersionConfig": {
           "RuntimeVersionArn": "arn:aws:lambda:<region>::runtime:<resource:3>"
         },

@@ -1,6 +1,6 @@
 {
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDLQ::test_dead_letter_queue": {
-    "last_validated_date": "2024-03-21T12:20:31+00:00"
+    "last_validated_date": "2024-06-17T11:49:58+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_destinations.py::TestLambdaDestinationEventbridge::test_invoke_lambda_eventbridge": {
     "last_validated_date": "2023-08-07T15:39:40+00:00"
