@@ -1210,7 +1210,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[custom]": {
-    "recorded-date": "17-06-2024, 09:32:22",
+    "recorded-date": "17-06-2024, 09:37:16",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -1230,6 +1230,15 @@
               "Sid": "sid",
               "Effect": "Allow",
               "Principal": {
+                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
                 "AWS": "arn:aws:iam::<account-id>:root"
               },
               "Action": "events:PutEvents",
@@ -1239,7 +1248,7 @@
               "Sid": "sid",
               "Effect": "Allow",
               "Principal": {
-                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+                "AWS": "arn:aws:iam::<account-id>:root"
               },
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
@@ -1270,6 +1279,15 @@
               "Sid": "sid",
               "Effect": "Allow",
               "Principal": {
+                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
                 "AWS": "arn:aws:iam::<account-id>:root"
               },
               "Action": "events:PutEvents",
@@ -1279,7 +1297,7 @@
               "Sid": "sid",
               "Effect": "Allow",
               "Principal": {
-                "AWS": "arn:aws:iam::<secondary-account-id>:root"
+                "AWS": "arn:aws:iam::<account-id>:root"
               },
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
@@ -1324,7 +1342,7 @@
     }
   },
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
-    "recorded-date": "17-06-2024, 09:32:25",
+    "recorded-date": "17-06-2024, 09:37:18",
     "recorded-content": {
       "put-permission": {
         "ResponseMetadata": {
@@ -1357,6 +1375,15 @@
               },
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
             }
           ]
         },
@@ -1376,13 +1403,6 @@
             {
               "Sid": "sid",
               "Effect": "Allow",
-              "Principal": "*",
-              "Action": "events:PutEvents",
-              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
-            },
-            {
-              "Sid": "sid",
-              "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<account-id>:root"
               },
@@ -1392,8 +1412,24 @@
             {
               "Sid": "sid",
               "Effect": "Allow",
+              "Principal": "*",
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
               "Principal": {
                 "AWS": "arn:aws:iam::<secondary-account-id>:root"
+              },
+              "Action": "events:PutEvents",
+              "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"
+            },
+            {
+              "Sid": "sid",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::<account-id>:root"
               },
               "Action": "events:PutEvents",
               "Resource": "arn:aws:events:<region>:<account-id>:event-bus/<bus-name>"

@@ -666,6 +666,14 @@ class TestEventBus:
         )
         snapshot.match("put-permission", response)
 
+        statement_id_primary = f"statement-{short_uid()}"
+        aws_client.events.put_permission(
+            EventBusName=bus_name,
+            Action="events:PutEvents",
+            Principal=account_id,
+            StatementId=statement_id_primary,
+        )
+
         statement_id_secondary = f"statement-{short_uid()}"
         aws_client.events.put_permission(
             EventBusName=bus_name,
