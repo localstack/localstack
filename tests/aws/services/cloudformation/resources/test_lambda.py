@@ -1161,3 +1161,49 @@ def test_lambda_cfn_dead_letter_config_async_invocation(
 
     retry(check_dlq_message, response=response, retries=5, sleep=2.5)
     snapshot.match("failed-async-lambda", response)
+
+    @pytest.mark.skipif(
+        reason="fails/times out. Check Lambda resource cleanup for new provider (was tested for old provider)."
+    )
+    @markers.aws.unknown
+    def test_update_lambda_function(self, s3_create_bucket, deploy_cfn_template, aws_client):
+        bucket_name = f"bucket-{short_uid()}"
+        key_name = "lambda-package"
+        role_name = f"role-{short_uid()}"
+        function_name = f"func-{short_uid()}"
+        package_path = os.path.join(
+            os.path.dirname(__file__), "../../lambda_/functions/lambda_echo.js"
+        )
+        template = json.loads(
+            load_file(
+                os.path.join(
+                    os.path.dirname(__file__), "../../../templates/update_lambda_template.json"
+                )
+            )
+        )
+        template["Resources"]["PullMarketsRole"]["Properties"]["RoleName"] = role_name
+
+        props = template["Resources"]["SomeNameFunction"]["Properties"]
+        props["Code"]["S3Bucket"] = bucket_name
+        props["Code"]["S3Key"] = key_name
+        props["FunctionName"] = function_name
+
+        s3_create_bucket(Bucket=bucket_name, ACL="public-read")
+        aws_client.s3.put_object(
+            Bucket=bucket_name,
+            Key=key_name,
+            Body=create_zip_file(package_path, get_content=True),
+        )
+
+        stack = deploy_cfn_template(template=json.dumps(template))
+
+        props.update({"Environment": {"Variables": {"AWS_NODEJS_CONNECTION_REUSE_ENABLED": 1}}})
+        deploy_cfn_template(
+            stack_name=stack.stack_name, template=json.dumps(template), is_update=True
+        )
+
+        rs = aws_client.lambda_.get_function(FunctionName=function_name)
+        assert rs["Configuration"]["FunctionName"] == function_name
+        assert (
+            "AWS_NODEJS_CONNECTION_REUSE_ENABLED" in rs["Configuration"]["Environment"]["Variables"]
+        )

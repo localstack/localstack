@@ -190,3 +190,89 @@ def test_transit_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
         TransitGatewayAttachmentIds=[stack.outputs["Attachment"]]
     )["TransitGatewayAttachments"]
     assert attachment_description[0]["State"] == "deleted"
+
+
+@markers.aws.unknown
+def test_cfn_with_route_table(self, deploy_cfn_template, aws_client):
+    resp = aws_client.ec2.describe_vpcs()
+    # TODO: fix assertion, to make tests parallelizable!
+    vpcs_before = [vpc["VpcId"] for vpc in resp["Vpcs"]]
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/template33.yaml")
+    )
+    resp = aws_client.ec2.describe_vpcs()
+    vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
+    assert len(vpcs) == 1
+
+    resp = aws_client.ec2.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpcs[0]]}])
+    # Each VPC always have 1 default RouteTable
+    assert len(resp["RouteTables"]) == 2
+
+    # The 2nd RouteTable was created by cfn template
+    route_table_id = resp["RouteTables"][1]["RouteTableId"]
+    routes = resp["RouteTables"][1]["Routes"]
+
+    # Each RouteTable has 1 default route
+    assert len(routes) == 2
+
+    assert routes[0]["DestinationCidrBlock"] == "100.0.0.0/20"
+
+    # The 2nd Route was created by cfn template
+    assert routes[1]["DestinationCidrBlock"] == "0.0.0.0/0"
+
+    exports = aws_client.cloudformation.list_exports()["Exports"]
+    export_values = {ex["Name"]: ex["Value"] for ex in exports}
+    assert "publicRoute-identify" in export_values
+    assert export_values["publicRoute-identify"] == f"{route_table_id}~0.0.0.0/0"
+
+    stack.destroy()
+
+    resp = aws_client.ec2.describe_vpcs()
+    vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
+    assert not vpcs
+
+
+@pytest.mark.skip(reason="update doesn't change value for instancetype")
+@markers.aws.unknown
+def test_cfn_update_ec2_instance_type(self, deploy_cfn_template, aws_client):
+    if aws_client.cloudformation.meta.region_name not in [
+        "ap-northeast-1",
+        "eu-central-1",
+        "eu-south-1",
+        "eu-west-1",
+        "eu-west-2",
+        "us-east-1",
+    ]:
+        pytest.skip()
+    aws_client.ec2.create_key_pair(KeyName="testkey")  # TODO: cleanup
+
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "templates/template30.yaml"),
+        parameters={"KeyName": "testkey"},
+    )
+
+    def get_instance_id():
+        resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
+            "StackResourceSummaries"
+        ]
+        instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
+        assert len(instances) == 1
+        return instances[0]["PhysicalResourceId"]
+
+    instance_id = get_instance_id()
+    resp = aws_client.ec2.describe_instances(InstanceIds=[instance_id])
+    assert len(resp["Reservations"][0]["Instances"]) == 1
+    assert resp["Reservations"][0]["Instances"][0]["InstanceType"] == "t2.nano"
+
+    deploy_cfn_template(
+        stack_name=stack.stack_name,
+        template_path=os.path.join(os.path.dirname(__file__), "templates/template30.yaml"),
+        parameters={"InstanceType": "t2.medium"},
+    )
+
+    instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
+    resp = aws_client.ec2.describe_instances(InstanceIds=[instance_id])
+    reservations = resp["Reservations"]
+    assert len(reservations) == 1
+    assert reservations[0]["Instances"][0]["InstanceType"] == "t2.medium"

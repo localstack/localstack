@@ -85,3 +85,21 @@ def test_useful_error_when_invalid_ref(deploy_cfn_template, snapshot):
         deploy_cfn_template(template=template)
 
     snapshot.match("validation_error", exc_info.value.response)
+
+
+@markers.aws.validated
+def test_resolve_transitive_placeholders_in_strings(deploy_cfn_template, aws_client):
+    queue_name = f"q-{short_uid()}"
+    parameter_ver = f"v{short_uid()}"
+    stack_name = f"stack-{short_uid()}"
+    stack = deploy_cfn_template(
+        stack_name=stack_name,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/legacy_transitive_ref.yaml"
+        ),
+        max_wait=500,
+        parameters={"QueueName": queue_name, "Qualifier": parameter_ver},
+    )
+    tags = aws_client.sqs.list_queue_tags(QueueUrl=stack.outputs["QueueURL"])
+    test_tag = tags["Tags"]["test"]
+    assert f"cdk-bootstrap/{parameter_ver}/version" in test_tag

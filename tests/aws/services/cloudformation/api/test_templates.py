@@ -92,3 +92,36 @@ def test_create_stack_from_s3_template_url(
             t for res in results for t in res["Topics"] if t["TopicArn"].endswith(topic_name)
         ]
         snapshot.match("matching-topic", matching)
+
+
+from localstack.utils.common import load_file, short_uid
+
+
+@markers.aws.unknown
+def test_validate_template(self, aws_client):
+    template = template_preparer.template_to_json(
+        load_file(os.path.join(os.path.dirname(__file__), "../../../templates/valid_template.json"))
+    )
+    resp = aws_client.cloudformation.validate_template(TemplateBody=template)
+
+    assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
+    assert len(resp["Parameters"]) == 1
+    assert resp["Parameters"][0]["ParameterKey"] == "KeyExample"
+    assert (
+        resp["Parameters"][0]["Description"]
+        == "The EC2 Key Pair to allow SSH access to the instance"
+    )
+
+
+from botocore.parsers import ResponseParserError
+
+
+@markers.aws.unknown
+def test_validate_invalid_json_template_should_fail(self, aws_client):
+    invalid_json = '{"this is invalid JSON"="bobbins"}'
+
+    with pytest.raises((ClientError, ResponseParserError)) as ctx:
+        aws_client.cloudformation.validate_template(TemplateBody=invalid_json)
+    if isinstance(ctx.value, ClientError):
+        assert ctx.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert ctx.value.response["Error"]["Message"] == "Template Validation Error"

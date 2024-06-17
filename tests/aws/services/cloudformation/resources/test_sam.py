@@ -62,3 +62,35 @@ def test_sam_sqs_event(deploy_cfn_template, aws_client):
     body = retry(get_object, retries=10, sleep=5.0)
 
     assert body == message_body
+
+    @pytest.mark.parametrize(
+        "create_bucket_first,bucket_region", [(True, "eu-west-1"), (False, "us-east-1")]
+    )
+    @markers.aws.unknown
+    def test_cfn_handle_serverless_api_resource(
+        self, deploy_cfn_template, aws_client, account_id, region_name
+    ):
+        stack = deploy_cfn_template(template=TEST_TEMPLATE_22)
+
+        res = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
+            "StackResourceSummaries"
+        ]
+        rest_api_ids = [
+            r["PhysicalResourceId"] for r in res if r["ResourceType"] == "AWS::ApiGateway::RestApi"
+        ]
+        lambda_func_names = [
+            r["PhysicalResourceId"] for r in res if r["ResourceType"] == "AWS::Lambda::Function"
+        ]
+
+        assert len(rest_api_ids) == 1
+        assert len(lambda_func_names) == 1
+
+        rs = aws_client.apigateway.get_resources(restApiId=rest_api_ids[0])
+        assert len(rs["items"]) == 1
+        resource = rs["items"][0]
+
+        uri = resource["resourceMethods"]["GET"]["methodIntegration"]["uri"]
+        lambda_arn = arns.lambda_function_arn(
+            lambda_func_names[0], account_id=account_id, region_name=region_name
+        )
+        assert lambda_arn in uri

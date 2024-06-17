@@ -121,3 +121,57 @@ def test_object_lock_configuration(deploy_cfn_template, snapshot, aws_client):
     bucket_name_required = result.outputs["LockConfigOnlyRequired"]
     cors_info = aws_client.s3.get_object_lock_configuration(Bucket=bucket_name_required)
     snapshot.match("object-lock-info-only-enabled", cors_info)
+
+    @markers.aws.unknown
+    def test_cfn_handle_s3_notification_configuration(
+        self,
+        account_id,
+        region_name,
+        bucket_region,
+        aws_client_factory,
+        deploy_cfn_template,
+        create_bucket_first,
+    ):
+        TEST_TEMPLATE_17 = """
+        AWSTemplateFormatVersion: 2010-09-09
+        Resources:
+          TestQueue:
+            Type: AWS::SQS::Queue
+            Properties:
+              QueueName: %s
+              ReceiveMessageWaitTimeSeconds: 0
+              VisibilityTimeout: 30
+              MessageRetentionPeriod: 1209600
+
+          TestBucket:
+            Type: AWS::S3::Bucket
+            Properties:
+              BucketName: %s
+              NotificationConfiguration:
+                QueueConfigurations:
+                  - Event: s3:ObjectCreated:*
+                    Queue: %s
+        """
+        s3_client = aws_client_factory(region_name=bucket_region).s3
+        bucket_name = f"target-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+        queue_arn = arns.sqs_queue_arn(queue_name, account_id, region_name)
+        if create_bucket_first:
+            s3_client.create_bucket(
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"LocationConstraint": s3_client.meta.region_name},
+            )
+        stack = deploy_cfn_template(
+            template=TEST_TEMPLATE_17 % (queue_name, bucket_name, queue_arn),
+        )
+        rs = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        assert "QueueConfigurations" in rs
+        assert len(rs["QueueConfigurations"]) == 1
+        assert rs["QueueConfigurations"][0]["QueueArn"] == queue_arn
+
+        stack.destroy()
+
+        # exception below tested against AWS
+        with pytest.raises(Exception) as exc:
+            s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        exc.match("NoSuchBucket")

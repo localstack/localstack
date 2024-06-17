@@ -447,3 +447,91 @@ class TestCloudFormationConditions:
         assert "TestBucket" not in stack.outputs
         assert stack.outputs["ProdBucket"] == f"{nested_bucket_name}-prod"
         assert aws_client.s3.head_bucket(Bucket=stack.outputs["ProdBucket"])
+
+    @markers.aws.unknown
+    def test_cfn_conditional_deployment(self, account_id, deploy_cfn_template, aws_client):
+        TEST_TEMPLATE_19 = (
+            """
+            Conditions:
+              IsPRD:
+                Fn::Equals:
+                - !Ref AWS::AccountId
+                - xxxxxxxxxxxxxx
+              IsDEV:
+                Fn::Equals:
+                - !Ref AWS::AccountId
+                - "%s"
+    
+            Resources:
+              TestBucketDev:
+                Type: AWS::S3::Bucket
+                Condition: IsDEV
+                Properties:
+                  BucketName: cf-dev-{id}
+              TestBucketProd:
+                Type: AWS::S3::Bucket
+                Condition: IsPRD
+                Properties:
+                  BucketName: cf-prd-{id}
+            """
+            % account_id
+        )
+        bucket_id = short_uid()
+        deploy_cfn_template(template=TEST_TEMPLATE_19.format(id=bucket_id))
+
+        buckets = aws_client.s3.list_buckets()["Buckets"]
+        dev_bucket = f"cf-dev-{bucket_id}"
+        prd_bucket = f"cf-prd-{bucket_id}"
+        dev_bucket = [b for b in buckets if b["Name"] == dev_bucket]
+        prd_bucket = [b for b in buckets if b["Name"] == prd_bucket]
+
+        assert not prd_bucket
+        assert dev_bucket
+
+    @markers.aws.unknown
+    def test_update_conditions(self, deploy_cfn_template, aws_client):
+        TEST_TEMPLATE_3 = """
+        AWSTemplateFormatVersion: "2010-09-09"
+        Resources:
+          S3Setup:
+            Type: AWS::S3::Bucket
+            Properties:
+              BucketName: test-%s
+        """ % short_uid()
+
+        stack = deploy_cfn_template(template=TEST_TEMPLATE_3)
+        template = yaml.safe_load(TEST_TEMPLATE_3)
+
+        # TODO: avoid changing template here
+        # update stack with additional resources and conditions
+        bucket1 = f"b-{short_uid()}"
+        bucket2 = f"b-{short_uid()}"
+        template["Resources"].update(
+            {
+                "ToBeCreated": {
+                    "Type": "AWS::S3::Bucket",
+                    "Condition": "TrueCondition",
+                    "Properties": {"BucketName": bucket1},
+                },
+                "NotToBeCreated": {
+                    "Type": "AWS::S3::Bucket",
+                    "Condition": "FalseCondition",
+                    "Properties": {"BucketName": bucket2},
+                },
+            }
+        )
+        template["Conditions"] = {
+            "TrueCondition": {"Fn::Equals": ["same", "same"]},
+            "FalseCondition": {"Fn::Equals": ["this", "other"]},
+        }
+        aws_client.cloudformation.update_stack(
+            StackName=stack.stack_name, TemplateBody=json.dumps(template)
+        )
+        aws_client.cloudformation.get_waiter("stack_update_complete").wait(
+            StackName=stack.stack_name
+        )
+
+        # bucket1 should have been created, bucket2 not
+        aws_client.s3.head_bucket(Bucket=bucket1)
+        with pytest.raises(Exception):
+            aws_client.s3.head_bucket(Bucket=bucket2)

@@ -280,6 +280,35 @@ class TestIntrinsicFunctions:
             max_wait=120,
         )
 
+    @markers.aws.unknown
+    def test_cfn_template_with_short_form_fn_sub(self, deploy_cfn_template, aws_client):
+        environment = f"env-{short_uid()}"
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/template23.yaml"
+            ),
+            parameters={"Environment": environment, "ApiKey": "12345"},
+        )
+
+        # 2 roles created successfully
+        rs = aws_client.iam.list_roles()
+        roles = [role for role in rs["Roles"] if stack.stack_name in role["RoleName"]]
+        assert len(roles) == 2
+
+        state_machines_after = aws_client.stepfunctions.list_state_machines()["stateMachines"]
+        state_machines = [
+            sm for sm in state_machines_after if f"{stack.stack_name}-StateMachine-" in sm["name"]
+        ]
+        assert len(state_machines) == 1
+
+        rs = aws_client.stepfunctions.describe_state_machine(
+            stateMachineArn=state_machines[0]["stateMachineArn"]
+        )
+        definition = json.loads(rs["definition"].replace("\n", ""))
+        payload = definition["States"]["time-series-update"]["Parameters"]["Payload"]
+        assert payload == {"key": "12345"}
+
 
 class TestImports:
     @pytest.mark.skip(reason="flaky due to issues in parameter handling and re-resolving")
@@ -492,6 +521,29 @@ class TestPreviousValues:
 
 
 class TestImportValues:
+    @markers.aws.unknown
+    def test_cfn_with_exports(self, deploy_cfn_template, aws_client):
+        # fetch initial list of exports
+        exports_before = aws_client.cloudformation.list_exports()["Exports"]
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/template32.yaml"
+            )
+        )
+        stack_name = stack.stack_name
+
+        exports = aws_client.cloudformation.list_exports()["Exports"]
+        # TODO: fix assertion, to make tests parallelizable!
+        assert len(exports) == len(exports_before) + 6
+        export_names = [e["Name"] for e in exports]
+        assert f"{stack_name}-FullAccessCentralControlPolicy" in export_names
+        assert f"{stack_name}-ReadAccessCentralControlPolicy" in export_names
+        assert f"{stack_name}-cc-groups-stream" in export_names
+        assert f"{stack_name}-cc-scenes-stream" in export_names
+        assert f"{stack_name}-cc-customscenes-stream" in export_names
+        assert f"{stack_name}-cc-schedules-stream" in export_names
+
     @markers.aws.validated
     def test_import_values_across_stacks(self, deploy_cfn_template, aws_client):
         export_name = f"b-{short_uid()}"
