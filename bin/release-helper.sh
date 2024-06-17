@@ -3,7 +3,7 @@
 set -e
 
 VERSION_FILE=${VERSION_FILE-VERSION}
-VERSION_PY=${VERSION_PY-*/version.py}
+VERSION_PY=${VERSION_PY-"**/version.py"}
 DEPENDENCY_FILE=${DEPENDENCY_FILE-pyproject.toml}
 
 function usage() {
@@ -193,7 +193,7 @@ function cmd-git-commit-release() {
     echo $1 || verify_valid_version
 
     for file in ${VERSION_FILE} ${VERSION_PY} ${DEPENDENCY_FILE}; do
-            [ -e "$file" ] && git add "$file"
+            git add "$file" || echo "did not add file '$file' to commit"
     done
     git commit -m "release version ${1}"
     git tag -a "v${1}" -m "Release version ${1}"
