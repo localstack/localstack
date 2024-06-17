@@ -2786,6 +2786,7 @@ class ResourceType(str):
     verified_access_trust_provider = "verified-access-trust-provider"
     vpn_connection_device_type = "vpn-connection-device-type"
     vpc_block_public_access_exclusion = "vpc-block-public-access-exclusion"
+    vpc_encryption_control = "vpc-encryption-control"
     ipam_resource_discovery = "ipam-resource-discovery"
     ipam_resource_discovery_association = "ipam-resource-discovery-association"
     instance_connect_endpoint = "instance-connect-endpoint"
@@ -8055,6 +8056,7 @@ class TrafficMirrorFilterRule(TypedDict, total=False):
     DestinationCidrBlock: Optional[String]
     SourceCidrBlock: Optional[String]
     Description: Optional[String]
+    Tags: Optional[TagList]
 
 
 TrafficMirrorFilterRuleList = List[TrafficMirrorFilterRule]
@@ -8092,6 +8094,7 @@ class CreateTrafficMirrorFilterRuleRequest(ServiceRequest):
     Description: Optional[String]
     DryRun: Optional[Boolean]
     ClientToken: Optional[String]
+    TagSpecifications: Optional[TagSpecificationList]
 
 
 class CreateTrafficMirrorFilterRuleResult(TypedDict, total=False):
@@ -13477,6 +13480,26 @@ TagDescriptionList = List[TagDescription]
 class DescribeTagsResult(TypedDict, total=False):
     NextToken: Optional[String]
     Tags: Optional[TagDescriptionList]
+
+
+TrafficMirrorFilterRuleIdList = List[TrafficMirrorFilterRuleIdWithResolver]
+
+
+class DescribeTrafficMirrorFilterRulesRequest(ServiceRequest):
+    TrafficMirrorFilterRuleIds: Optional[TrafficMirrorFilterRuleIdList]
+    TrafficMirrorFilterId: Optional[TrafficMirrorFilterId]
+    DryRun: Optional[Boolean]
+    Filters: Optional[FilterList]
+    MaxResults: Optional[TrafficMirroringMaxResults]
+    NextToken: Optional[NextToken]
+
+
+TrafficMirrorFilterRuleSet = List[TrafficMirrorFilterRule]
+
+
+class DescribeTrafficMirrorFilterRulesResult(TypedDict, total=False):
+    TrafficMirrorFilterRules: Optional[TrafficMirrorFilterRuleSet]
+    NextToken: Optional[String]
 
 
 TrafficMirrorFilterIdList = List[TrafficMirrorFilterId]
@@ -19815,6 +19838,7 @@ class Ec2Api:
         description: String = None,
         dry_run: Boolean = None,
         client_token: String = None,
+        tag_specifications: TagSpecificationList = None,
         **kwargs,
     ) -> CreateTrafficMirrorFilterRuleResult:
         raise NotImplementedError
@@ -22441,6 +22465,20 @@ class Ec2Api:
         next_token: String = None,
         **kwargs,
     ) -> DescribeTagsResult:
+        raise NotImplementedError
+
+    @handler("DescribeTrafficMirrorFilterRules")
+    def describe_traffic_mirror_filter_rules(
+        self,
+        context: RequestContext,
+        traffic_mirror_filter_rule_ids: TrafficMirrorFilterRuleIdList = None,
+        traffic_mirror_filter_id: TrafficMirrorFilterId = None,
+        dry_run: Boolean = None,
+        filters: FilterList = None,
+        max_results: TrafficMirroringMaxResults = None,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> DescribeTrafficMirrorFilterRulesResult:
         raise NotImplementedError
 
     @handler("DescribeTrafficMirrorFilters")
