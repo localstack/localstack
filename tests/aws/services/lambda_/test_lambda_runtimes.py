@@ -254,6 +254,7 @@ class TestJavaRuntimes:
         snapshot,
         aws_client,
     ):
+        # TODO check if we can update this test and others in this file to utilise java 21
         java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
         expected = ['.*"echo": "echo".*']
 

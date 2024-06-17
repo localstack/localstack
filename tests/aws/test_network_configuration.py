@@ -214,7 +214,7 @@ class TestLambda:
         create_lambda_function(
             func_name=function_name,
             handler_file=handler_file,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         function_url = aws_client.lambda_.create_function_url_config(
@@ -237,7 +237,7 @@ class TestLambda:
         create_lambda_function(
             func_name=function_name,
             handler_file=handler_file,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         client = aws_http_client_factory("lambda", signer_factory=SigV4Auth)

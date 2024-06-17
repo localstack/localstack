@@ -116,7 +116,7 @@ def test_lambda_aws_proxy_integration(
         func_name=function_name,
         handler_file=TEST_LAMBDA_AWS_PROXY,
         handler="lambda_aws_proxy.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -268,7 +268,7 @@ def test_lambda_aws_proxy_integration_non_post_method(
         func_name=function_name,
         handler_file=TEST_LAMBDA_AWS_PROXY,
         handler="lambda_aws_proxy.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -347,7 +347,7 @@ def test_lambda_aws_integration(
         func_name=function_name,
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         handler="lambda_echo.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -434,7 +434,7 @@ def test_lambda_aws_integration_with_request_template(
         func_name=function_name,
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         handler="lambda_echo.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -539,7 +539,7 @@ def test_lambda_aws_integration_response_with_mapping_templates(
         func_name=function_name,
         handler_file=TEST_LAMBDA_MAPPING_RESPONSES,
         handler="lambda_mapping_responses.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     _, role_arn = create_role_with_policy(
@@ -645,7 +645,7 @@ def test_lambda_selection_patterns(
         func_name=function_name,
         handler_file=TEST_LAMBDA_PYTHON_SELECT_PATTERN,
         handler="lambda_select_pattern.handler",
-        runtime=Runtime.python3_10,
+        runtime=Runtime.python3_12,
     )
 
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]
@@ -762,7 +762,7 @@ def test_lambda_aws_proxy_response_format(
         func_name=function_name,
         handler_file=TEST_LAMBDA_AWS_PROXY_FORMAT,
         handler="lambda_aws_proxy_format.handler",
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
     # create invocation role
     lambda_arn = create_function_response["CreateFunctionResponse"]["FunctionArn"]

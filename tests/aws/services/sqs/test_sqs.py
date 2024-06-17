@@ -1233,7 +1233,7 @@ class TestSqsProvider:
         create_lambda_function(
             func_name=lambda_name,
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         delete_batch_payload = {lambda_integration.MSG_BODY_DELETE_BATCH: queue_url}
         batch = []
@@ -3519,7 +3519,7 @@ class TestSqsProvider:
         create_lambda_function(
             func_name=lambda_name,
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
         # create arn
         url_parts = queue_url.split("/")

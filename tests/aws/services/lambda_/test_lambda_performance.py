@@ -62,7 +62,7 @@ def test_invoke_warm_start(create_lambda_function, aws_client):
     create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         func_name=function_name,
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
 
     def invoke():
@@ -86,7 +86,7 @@ def test_invoke_cold_start(create_lambda_function, aws_client, monkeypatch):
     create_lambda_function(
         handler_file=TEST_LAMBDA_PYTHON_ECHO,
         func_name=function_name,
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
     )
 
     def invoke():

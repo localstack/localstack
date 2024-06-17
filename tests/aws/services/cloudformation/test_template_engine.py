@@ -81,7 +81,7 @@ def create_macro(
     create_lambda_function(
         func_name=func_name,
         handler_file=macro_function_path,
-        runtime=Runtime.python3_8,
+        runtime=Runtime.python3_12,
         client=lambda_client,
         timeout=1,
     )
@@ -540,7 +540,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
         )
 
@@ -585,7 +585,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )
@@ -644,7 +644,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )
@@ -689,7 +689,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_10,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
         )
 
@@ -731,7 +731,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )
@@ -785,7 +785,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )
@@ -851,7 +851,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )
@@ -900,7 +900,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )
@@ -973,7 +973,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )
@@ -1039,7 +1039,7 @@ class TestMacros:
         create_lambda_function(
             func_name=func_name,
             handler_file=macro_function_path,
-            runtime=Runtime.python3_8,
+            runtime=Runtime.python3_12,
             client=aws_client.lambda_,
             timeout=1,
         )

@@ -96,7 +96,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=role_arn,
         )
         create_table_result = dynamodb_create_table(
@@ -179,7 +179,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name_1,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
 
@@ -204,7 +204,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name_2,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         create_event_source_mapping(
@@ -233,7 +233,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         dynamodb_create_table_result = dynamodb_create_table(
@@ -293,7 +293,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         create_dynamodb_table_response = dynamodb_create_table(
@@ -367,7 +367,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=role_arn,
         )
         dynamodb_create_table(table_name=table_name, partition_key=partition_key)
@@ -641,7 +641,7 @@ class TestDynamoDBEventSourceMapping:
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         dynamodb_create_table(table_name=table_name, partition_key="id")

@@ -62,7 +62,7 @@ class TestLambdaDLQ:
         create_lambda_response = create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             func_name=lambda_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             DeadLetterConfig={"TargetArn": queue_arn},
             role=lambda_su_role,
         )
@@ -154,7 +154,7 @@ class TestLambdaDestinationSqs:
         queue_arn = sqs_get_queue_arn(queue_url)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             func_name=lambda_name,
             role=lambda_su_role,
         )
@@ -210,7 +210,7 @@ class TestLambdaDestinationSqs:
         queue_arn = sqs_get_queue_arn(queue_url)
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             func_name=lambda_name,
             role=lambda_su_role,
         )
@@ -284,7 +284,7 @@ class TestLambdaDestinationSqs:
         create_lambda_function(
             handler_file=os.path.join(os.path.dirname(__file__), "functions/lambda_echofail.py"),
             func_name=fn_name,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         aws_client.lambda_.put_function_event_invoke_config(

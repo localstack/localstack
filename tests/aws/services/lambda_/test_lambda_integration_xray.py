@@ -21,7 +21,7 @@ def test_traceid_outside_handler(create_lambda_function, lambda_su_role, tracing
     create_lambda_function(
         func_name=fn_name,
         handler_file=TEST_LAMBDA_XRAY_TRACEID,
-        runtime=Runtime.python3_9,
+        runtime=Runtime.python3_12,
         role=lambda_su_role,
         TracingConfig={"Mode": tracing_mode},
     )

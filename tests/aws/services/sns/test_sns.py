@@ -986,7 +986,7 @@ class TestSNSSubscriptionLambda:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
@@ -1065,7 +1065,7 @@ class TestSNSSubscriptionLambda:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
             DeadLetterConfig={"TargetArn": dlq_topic_arn},
         )
@@ -1144,7 +1144,7 @@ class TestSNSSubscriptionLambda:
         lambda_arn = create_lambda_function(
             func_name=lambda_name,
             handler_file=TEST_LAMBDA_PYTHON,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )["CreateFunctionResponse"]["FunctionArn"]
 
@@ -1203,7 +1203,7 @@ class TestSNSSubscriptionLambda:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]
@@ -3947,7 +3947,7 @@ class TestSNSPublishDelivery:
         lambda_creation_response = create_lambda_function(
             func_name=function_name,
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
             role=lambda_su_role,
         )
         lambda_arn = lambda_creation_response["CreateFunctionResponse"]["FunctionArn"]

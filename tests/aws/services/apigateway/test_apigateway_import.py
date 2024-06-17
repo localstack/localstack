@@ -199,7 +199,7 @@ def apigateway_placeholder_authorizer_lambda_invocation_arn(
             # create_response is the original create call response, even though the fixture waits until it's not pending
             create_response = aws_client.lambda_.create_function(
                 FunctionName=f"test-authorizer-import-{short_uid()}",
-                Runtime=Runtime.python3_10,
+                Runtime=Runtime.python3_12,
                 Handler="handler.handler",
                 Role=lambda_su_role,
                 Code={"ZipFile": zip_file},

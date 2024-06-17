@@ -95,7 +95,7 @@ class TestTaskApiGateway:
         create_function_response = create_lambda_function(
             func_name=function_name,
             handler_file=lambda_function_filename,
-            runtime=Runtime.python3_9,
+            runtime=Runtime.python3_12,
         )
 
         _, role_arn = create_role_with_policy(
