@@ -307,7 +307,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         policy: String = None,
         **kwargs,
     ) -> None:
-        pass  # TODO align with policy streaming
+        store = self.get_store(context)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        event_bus_service = self._event_bus_services_store[event_bus.arn]
+        event_bus_service.put_permission(action, principal, statement_id, condition, policy)
 
     #######
     # Rules
