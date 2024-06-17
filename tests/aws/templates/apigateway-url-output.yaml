@@ -34,10 +34,6 @@ Resources:
       RestApiId:
         Ref: apiC8550315
       Description: Automatically created by the RestApi construct
-      StageDescription:
-        TracingEnabled: true
-        LoggingLevel: ERROR
-        DataTraceEnabled: true
     DependsOn:
       - apiGETECF0BD67
   apiDeploymentStageprod896C8101:
