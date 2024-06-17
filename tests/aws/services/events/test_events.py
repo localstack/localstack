@@ -748,6 +748,24 @@ class TestEventBus:
         is_old_provider(),
         reason="V1 provider does not support this feature",
     )
+    def test_put_permission_non_existing_event_bus(self, aws_client, snapshot):
+        non_exist_bus_name = f"non-existing-bus-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(non_exist_bus_name, "<bus-name>"))
+
+        with pytest.raises(ClientError) as e:
+            aws_client.events.put_permission(
+                EventBusName=non_exist_bus_name,
+                Action="events:PutEvents",
+                Principal="*",
+                StatementId="statement-id",
+            )
+        snapshot.match("remove-permission-non-existing-sid-error", e)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        is_old_provider(),
+        reason="V1 provider does not support this feature",
+    )
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
     def test_remove_permission(
         self,

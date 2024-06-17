@@ -1586,5 +1586,11 @@
     "recorded-content": {
       "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the RemovePermission operation: Statement with the provided id does not exist.') tblen=3>"
     }
+  },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission_non_existing_event_bus": {
+    "recorded-date": "17-06-2024, 10:50:49",
+    "recorded-content": {
+      "remove-permission-non-existing-sid-error": "<ExceptionInfo ResourceNotFoundException('An error occurred (ResourceNotFoundException) when calling the PutPermission operation: Event bus <bus-name> does not exist.') tblen=3>"
+    }
   }
 }

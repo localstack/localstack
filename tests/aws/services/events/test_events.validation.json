@@ -32,6 +32,9 @@
   "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission[default]": {
     "last_validated_date": "2024-06-17T10:32:33+00:00"
   },
+  "tests/aws/services/events/test_events.py::TestEventBus::test_put_permission_non_existing_event_bus": {
+    "last_validated_date": "2024-06-17T10:50:49+00:00"
+  },
   "tests/aws/services/events/test_events.py::TestEventBus::test_remove_permission[custom]": {
     "last_validated_date": "2024-06-17T10:34:04+00:00"
   },
