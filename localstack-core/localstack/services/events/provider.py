@@ -160,13 +160,13 @@ def format_event(event: PutEventsRequestEntry, region: str, account_id: str) -> 
             message = json.loads(trace_header)
         except json.JSONDecodeError:
             pass
-    id = message.get("original_id", str(long_uid()))
+    message_id = message.get("original_id", str(long_uid()))
     region = message.get("original_region", region)
     account_id = message.get("original_account", account_id)
 
     formatted_event = {
         "version": "0",
-        "id": id,
+        "id": message_id,
         "detail-type": event.get("DetailType"),
         "source": event.get("Source"),
         "account": account_id,
