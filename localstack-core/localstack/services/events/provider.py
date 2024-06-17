@@ -313,6 +313,25 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         event_bus_service = self._event_bus_services_store[event_bus.arn]
         event_bus_service.put_permission(action, principal, statement_id, condition, policy)
 
+    @handler("RemovePermission")
+    def remove_permission(
+        self,
+        context: RequestContext,
+        statement_id: StatementId = None,
+        remove_all_permissions: Boolean = None,
+        event_bus_name: NonPartnerEventBusName = None,
+        **kwargs,
+    ) -> None:
+        store = self.get_store(context)
+        event_bus = self.get_event_bus(event_bus_name, store)
+        event_bus_service = self._event_bus_services_store[event_bus.arn]
+        if remove_all_permissions:
+            event_bus_service.event_bus.policy = None
+            return
+        if not statement_id:
+            raise ValidationException("Parameter StatementId is required.")
+        event_bus_service.revoke_put_events_permission(statement_id)
+
     #######
     # Rules
     #######
