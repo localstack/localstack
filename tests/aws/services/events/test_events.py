@@ -840,8 +840,9 @@ class TestEventBus:
         reason="V1 provider does not support this feature",
     )
     @pytest.mark.parametrize("bus_name", ["custom", "default"])
+    @pytest.mark.parametrize("policy_exists", [True, False])
     def test_remove_permission_non_existing_sid(
-        self, aws_client, bus_name, events_create_event_bus, snapshot
+        self, aws_client, bus_name, policy_exists, events_create_event_bus, account_id, snapshot
     ):
         if bus_name == "custom":
             bus_name = f"test-bus-{short_uid()}"
@@ -853,6 +854,14 @@ class TestEventBus:
                 )  # error if no permission is present
             except Exception:
                 pass
+
+        if policy_exists:
+            aws_client.events.put_permission(
+                EventBusName=bus_name,
+                Action="events:PutEvents",
+                Principal=account_id,
+                StatementId=f"statement-{short_uid()}",
+            )
 
         with pytest.raises(ClientError) as e:
             aws_client.events.remove_permission(
